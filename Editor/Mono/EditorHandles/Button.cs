@@ -1,0 +1,107 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEditor;
+using UnityEngine;
+
+namespace UnityEditorInternal
+{
+    internal class Button
+    {
+        // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
+        [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
+        #pragma warning disable 618
+        public static bool Do(int id, Vector3 position, Quaternion direction, float size, float pickSize, Handles.DrawCapFunction capFunc)
+        #pragma warning restore 618
+        {
+            Event evt = Event.current;
+
+            switch (evt.GetTypeForControl(id))
+            {
+                case EventType.layout:
+                    if (GUI.enabled)
+                        HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, pickSize));
+                    break;
+                case EventType.mouseMove:
+                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                        HandleUtility.Repaint();
+                    break;
+                case EventType.mouseDown:
+                    // am I closest to the thingy?
+                    if (HandleUtility.nearestControl == id && (evt.button == 0 || evt.button == 2))
+                    {
+                        GUIUtility.hotControl = id; // Grab mouse focus
+                        evt.Use();
+                    }
+                    break;
+                case EventType.mouseUp:
+                    if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
+                    {
+                        GUIUtility.hotControl = 0;
+                        evt.Use();
+
+                        if (HandleUtility.nearestControl == id)
+                            return true;
+                    }
+                    break;
+                case EventType.repaint:
+                    Color origColor = Handles.color;
+                    if (HandleUtility.nearestControl == id && GUI.enabled)
+                        Handles.color = Handles.selectedColor;
+
+                    capFunc(id, position, direction, size);
+
+                    Handles.color = origColor;
+                    break;
+            }
+            return false;
+        }
+
+        public static bool Do(int id, Vector3 position, Quaternion direction, float size, float pickSize, Handles.CapFunction capFunction)
+        {
+            Event evt = Event.current;
+
+            switch (evt.GetTypeForControl(id))
+            {
+                case EventType.layout:
+                    if (GUI.enabled)
+                        capFunction(id, position, direction, pickSize, EventType.Layout);
+                    break;
+                case EventType.mouseMove:
+                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                        HandleUtility.Repaint();
+                    break;
+                case EventType.mouseDown:
+                    // am I closest to the thingy?
+                    if (HandleUtility.nearestControl == id && (evt.button == 0 || evt.button == 2))
+                    {
+                        GUIUtility.hotControl = id; // Grab mouse focus
+                        evt.Use();
+                    }
+                    break;
+                case EventType.mouseUp:
+                    if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
+                    {
+                        GUIUtility.hotControl = 0;
+                        evt.Use();
+
+                        if (HandleUtility.nearestControl == id)
+                            return true;
+                    }
+                    break;
+                case EventType.repaint:
+                    Color origColor = Handles.color;
+                    if (HandleUtility.nearestControl == id && GUI.enabled)
+                        Handles.color = Handles.selectedColor;
+
+                    capFunction(id, position, direction, size, EventType.Repaint);
+
+                    Handles.color = origColor;
+                    break;
+            }
+            return false;
+        }
+    }
+}

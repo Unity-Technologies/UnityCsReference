@@ -1,0 +1,52 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "DataContract", "..\..\Tools\PackageManager\DataContract\DataContract.csproj", "{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.CecilTools", "..\..\Tools\Unity.CecilTools\Unity.CecilTools.csproj", "{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "Unity.SerializationLogic", "..\..\Tools\Unity.SerializationLogic\Unity.SerializationLogic.csproj", "{A6749DFF-E369-4FE6-9019-6B7C555E80EA}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UNetWeaver", "..\..\Extensions\Networking\Weaver\UNetWeaver.csproj", "{709222FD-15C2-497D-8B31-366ADCC074CD}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UnityEngine", "UnityEngine.csproj", "{F0499708-3EB6-4026-8362-97E6FFC4E7C8}"
+EndProject
+Project("{840379C4-B6F5-7CA3-A826-FA675F01E79C}") = "UnityEditor", "UnityEditor.csproj", "{016C8D73-3641-47FB-8D33-7A015A7EC7DB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{35FF4EBD-85F0-4727-8AC0-32AE4F3723D0}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6749DFF-E369-4FE6-9019-6B7C555E80EA}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{709222FD-15C2-497D-8B31-366ADCC074CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{709222FD-15C2-497D-8B31-366ADCC074CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{709222FD-15C2-497D-8B31-366ADCC074CD}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{709222FD-15C2-497D-8B31-366ADCC074CD}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{F0499708-3EB6-4026-8362-97E6FFC4E7C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0499708-3EB6-4026-8362-97E6FFC4E7C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0499708-3EB6-4026-8362-97E6FFC4E7C8}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0499708-3EB6-4026-8362-97E6FFC4E7C8}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{016C8D73-3641-47FB-8D33-7A015A7EC7DB}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

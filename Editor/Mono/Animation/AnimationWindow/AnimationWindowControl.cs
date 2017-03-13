@@ -1,0 +1,810 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System;
+using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+using System.Collections;
+using Object = UnityEngine.Object;
+
+namespace UnityEditorInternal
+{
+    internal class AnimationWindowControl : IAnimationWindowControl, IAnimationContextualResponder
+    {
+        class CandidateRecordingState : IAnimationRecordingState
+        {
+            public GameObject activeGameObject { get; private set; }
+            public GameObject activeRootGameObject { get; private set; }
+            public AnimationClip activeAnimationClip { get; private set; }
+            public int currentFrame { get { return 0; } }
+
+            public bool addZeroFrame { get { return false; } }
+
+            public EditorCurveBinding[] acceptedBindings { get; private set; }
+
+            public CandidateRecordingState(AnimationWindowState state, AnimationClip candidateClip)
+            {
+                activeGameObject = state.activeGameObject;
+                activeRootGameObject = state.activeRootGameObject;
+                activeAnimationClip = candidateClip;
+
+                acceptedBindings = AnimationUtility.GetCurveBindings(state.activeAnimationClip);
+            }
+
+            public void SaveCurve(AnimationWindowCurve curve)
+            {
+                Undo.RegisterCompleteObjectUndo(curve.clip, "Edit Candidate Curve");
+                AnimationRecording.SaveModifiedCurve(curve, curve.clip);
+            }
+
+            public void AddPropertyModification(EditorCurveBinding binding, PropertyModification propertyModification, bool keepPrefabOverride)
+            {
+                AnimationMode.AddCandidate(binding, propertyModification, keepPrefabOverride);
+            }
+        }
+
+        class RecordingState : IAnimationRecordingState
+        {
+            private AnimationWindowState m_State;
+
+            public GameObject activeGameObject { get { return m_State.activeGameObject; } }
+            public GameObject activeRootGameObject { get { return m_State.activeRootGameObject; } }
+            public AnimationClip activeAnimationClip { get { return m_State.activeAnimationClip; } }
+            public int currentFrame { get { return m_State.currentFrame; } }
+
+            public bool addZeroFrame { get { return true; } }
+            public bool addPropertyModification { get { return m_State.previewing; } }
+
+            public EditorCurveBinding[] acceptedBindings { get { return null; } }
+
+            public RecordingState(AnimationWindowState state)
+            {
+                m_State = state;
+            }
+
+            public void SaveCurve(AnimationWindowCurve curve)
+            {
+                m_State.SaveCurve(curve);
+            }
+
+            public void AddPropertyModification(EditorCurveBinding binding, PropertyModification propertyModification, bool keepPrefabOverride)
+            {
+                AnimationMode.AddPropertyModification(binding, propertyModification, keepPrefabOverride);
+            }
+        }
+
+        [SerializeField] private AnimationKeyTime m_Time;
+
+        [NonSerialized] private float m_PreviousUpdateTime;
+
+        [NonSerialized] public AnimationWindowState state;
+
+        [SerializeField] private AnimationClip m_CandidateClip;
+        [NonSerialized] private List<UndoPropertyModification> m_Candidates;
+
+        [SerializeField] private AnimationModeDriver m_Driver;
+        [SerializeField] private AnimationModeDriver m_CandidateDriver;
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+
+            AnimationPropertyContextualMenu.Instance.AddResponder(this);
+        }
+
+        public void OnDisable()
+        {
+            StopPreview();
+            StopPlayback();
+
+            if (AnimationMode.InAnimationMode(GetAnimationModeDriver()))
+                AnimationMode.StopAnimationMode(GetAnimationModeDriver());
+
+            AnimationPropertyContextualMenu.Instance.RemoveResponder(this);
+        }
+
+        public override void OnSelectionChanged()
+        {
+            // Set back time at beginning and stop recording.
+            if (state != null)
+                m_Time = AnimationKeyTime.Time(0f, state.frameRate);
+
+            StopPreview();
+            StopPlayback();
+        }
+
+        public override AnimationKeyTime time
+        {
+            get
+            {
+                return m_Time;
+            }
+        }
+
+        public override void GoToTime(float time)
+        {
+            SetCurrentTime(time);
+        }
+
+        public override void GoToFrame(int frame)
+        {
+            SetCurrentFrame(frame);
+        }
+
+        public override void StartScrubTime()
+        {
+            // nothing to do...
+        }
+
+        public override void ScrubTime(float time)
+        {
+            SetCurrentTime(time);
+        }
+
+        public override void EndScrubTime()
+        {
+            // nothing to do...
+        }
+
+        public override void GoToPreviousFrame()
+        {
+            SetCurrentFrame(time.frame - 1);
+        }
+
+        public override void GoToNextFrame()
+        {
+            SetCurrentFrame(time.frame + 1);
+        }
+
+        public override void GoToPreviousKeyframe()
+        {
+            List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
+
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+        }
+
+        public void GoToPreviousKeyframe(SerializedProperty property)
+        {
+            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return;
+
+            List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
+            for (int i = 0; i < state.allCurves.Count; ++i)
+            {
+                AnimationWindowCurve curve = state.allCurves[i];
+                if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
+                    curves.Add(curve);
+            }
+
+            float newTime = AnimationWindowUtility.GetPreviousKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+
+            state.Repaint();
+        }
+
+        public override void GoToNextKeyframe()
+        {
+            List<AnimationWindowCurve> curves = (state.showCurveEditor && state.activeCurves.Count > 0) ? state.activeCurves : state.allCurves;
+
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+        }
+
+        public void GoToNextKeyframe(SerializedProperty property)
+        {
+            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return;
+
+            List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
+            for (int i = 0; i < state.allCurves.Count; ++i)
+            {
+                AnimationWindowCurve curve = state.allCurves[i];
+                if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
+                    curves.Add(curve);
+            }
+
+            float newTime = AnimationWindowUtility.GetNextKeyframeTime(curves.ToArray(), time.time, state.clipFrameRate);
+            SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
+
+            state.Repaint();
+        }
+
+        public override void GoToFirstKeyframe()
+        {
+            if (state.activeAnimationClip)
+                SetCurrentTime(state.activeAnimationClip.startTime);
+        }
+
+        public override void GoToLastKeyframe()
+        {
+            if (state.activeAnimationClip)
+                SetCurrentTime(state.activeAnimationClip.stopTime);
+        }
+
+        private void SnapTimeToFrame()
+        {
+            float newTime = state.FrameToTime(time.frame);
+            SetCurrentTime(newTime);
+        }
+
+        private void SetCurrentTime(float value)
+        {
+            if (!Mathf.Approximately(value, time.time))
+            {
+                m_Time = AnimationKeyTime.Time(value, state.frameRate);
+                StartPreview();
+                ClearCandidates();
+                ResampleAnimation();
+            }
+        }
+
+        private void SetCurrentFrame(int value)
+        {
+            if (value != time.frame)
+            {
+                m_Time = AnimationKeyTime.Frame(value, state.frameRate);
+                StartPreview();
+                ClearCandidates();
+                ResampleAnimation();
+            }
+        }
+
+        public override bool canPlay
+        {
+            get
+            {
+                return canPreview;
+            }
+        }
+
+        public override bool playing
+        {
+            get
+            {
+                return AnimationMode.InAnimationPlaybackMode() && previewing;
+            }
+        }
+
+        public override bool StartPlayback()
+        {
+            if (!canPlay)
+                return false;
+
+            if (!AnimationMode.InAnimationPlaybackMode())
+            {
+                AnimationMode.StartAnimationPlaybackMode();
+
+                m_PreviousUpdateTime = Time.realtimeSinceStartup;
+
+                // Auto-Preview when start playing
+                StartPreview();
+                ClearCandidates();
+            }
+
+            return true;
+        }
+
+        public override void StopPlayback()
+        {
+            if (AnimationMode.InAnimationPlaybackMode())
+            {
+                AnimationMode.StopAnimationPlaybackMode();
+
+                // Snap to frame when playing stops
+                SnapTimeToFrame();
+            }
+        }
+
+        public override bool PlaybackUpdate()
+        {
+            if (!playing)
+                return false;
+
+            float deltaTime = Time.realtimeSinceStartup - m_PreviousUpdateTime;
+            m_PreviousUpdateTime = Time.realtimeSinceStartup;
+
+            float newTime = time.time + deltaTime;
+
+            // looping
+            if (newTime > state.maxTime)
+                newTime = state.minTime;
+
+            m_Time = AnimationKeyTime.Time(Mathf.Clamp(newTime, state.minTime, state.maxTime), state.frameRate);
+
+            ResampleAnimation();
+
+            return true;
+        }
+
+        public override bool canPreview
+        {
+            get
+            {
+                if (!state.selection.canPreview)
+                    return false;
+
+                return AnimationMode.InAnimationMode(GetAnimationModeDriver()) || !AnimationMode.InAnimationMode();
+            }
+        }
+
+        public override bool previewing
+        {
+            get
+            {
+                return AnimationMode.InAnimationMode(GetAnimationModeDriver());
+            }
+        }
+
+        public override bool StartPreview()
+        {
+            if (!canPreview)
+                return false;
+
+            if (previewing)
+                return true;
+
+            AnimationMode.StartAnimationMode(GetAnimationModeDriver());
+            Undo.postprocessModifications += PostprocessAnimationRecordingModifications;
+            return true;
+        }
+
+        public override void StopPreview()
+        {
+            StopPlayback();
+            StopRecording();
+            ClearCandidates();
+
+            AnimationMode.StopAnimationMode(GetAnimationModeDriver());
+            Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
+        }
+
+        public override bool canRecord
+        {
+            get
+            {
+                if (!state.selection.canRecord)
+                    return false;
+
+                return canPreview;
+            }
+        }
+
+        public override bool recording
+        {
+            get
+            {
+                if (previewing)
+                    return AnimationMode.InAnimationRecording();
+                return false;
+            }
+        }
+
+        public override bool StartRecording(Object targetObject)
+        {
+            return StartRecording();
+        }
+
+        private bool StartRecording()
+        {
+            if (!canRecord)
+                return false;
+
+            if (recording)
+                return true;
+
+            if (StartPreview())
+            {
+                AnimationMode.StartAnimationRecording();
+                ClearCandidates();
+                return true;
+            }
+
+            return false;
+        }
+
+        public override void StopRecording()
+        {
+            if (recording)
+            {
+                AnimationMode.StopAnimationRecording();
+            }
+        }
+
+        private void StartCandidateRecording()
+        {
+            AnimationMode.StartCandidateRecording(GetCandidateDriver());
+        }
+
+        private void StopCandidateRecording()
+        {
+            AnimationMode.StopCandidateRecording();
+        }
+
+        public override void ResampleAnimation()
+        {
+            if (state.disabled)
+                return;
+
+            if (previewing == false)
+                return;
+            if (canPreview == false)
+                return;
+
+            bool changed = false;
+
+            AnimationMode.BeginSampling();
+
+            AnimationWindowSelectionItem[] selectedItems = state.selection.ToArray();
+            for (int i = 0; i < selectedItems.Length; ++i)
+            {
+                AnimationWindowSelectionItem selectedItem = selectedItems[i];
+                if (selectedItem.animationClip != null)
+                {
+                    Undo.FlushUndoRecordObjects();
+
+                    AnimationMode.SampleAnimationClip(selectedItem.rootGameObject, selectedItem.animationClip, time.time - selectedItem.timeOffset);
+                    if (m_CandidateClip != null)
+                        AnimationMode.SampleCandidateClip(selectedItem.rootGameObject, m_CandidateClip, 0f);
+
+                    changed = true;
+                }
+            }
+
+            AnimationMode.EndSampling();
+
+            if (changed)
+            {
+                SceneView.RepaintAll();
+                InspectorWindow.RepaintAllInspectors();
+
+                // Particle editor needs to be manually repainted to refresh the animated properties
+                var particleSystemWindow = ParticleSystemWindow.GetInstance();
+                if (particleSystemWindow)
+                    particleSystemWindow.Repaint();
+            }
+        }
+
+        private AnimationModeDriver GetAnimationModeDriver()
+        {
+            if (m_Driver == null)
+            {
+                m_Driver = CreateInstance<AnimationModeDriver>();
+                m_Driver.name = "AnimationWindowDriver";
+                m_Driver.isKeyCallback += (Object target, string propertyPath) =>
+                    {
+                        if (AnimationMode.IsPropertyAnimated(target, propertyPath))
+                        {
+                            var serializedObject = new SerializedObject(target);
+                            var serializedProperty = serializedObject.FindProperty(propertyPath);
+                            if (serializedProperty != null)
+                            {
+                                return KeyExists(serializedProperty);
+                            }
+                        }
+
+                        return false;
+                    };
+            }
+
+            return m_Driver;
+        }
+
+        private AnimationModeDriver GetCandidateDriver()
+        {
+            if (m_CandidateDriver == null)
+            {
+                m_CandidateDriver = CreateInstance<AnimationModeDriver>();
+                m_CandidateDriver.name = "AnimationWindowCandidateDriver";
+            }
+
+            return m_CandidateDriver;
+        }
+
+        private UndoPropertyModification[] PostprocessAnimationRecordingModifications(UndoPropertyModification[] modifications)
+        {
+            //Fix for case 751009: The animationMode can be changed outside the AnimationWindow, and this callback needs to be unregistered.
+            if (!AnimationMode.InAnimationMode(GetAnimationModeDriver()))
+            {
+                Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
+                return modifications;
+            }
+
+            if (recording)
+                return ProcessAutoKey(modifications);
+            else if (previewing)
+                return RegisterCandidates(modifications);
+
+            return modifications;
+        }
+
+        private UndoPropertyModification[] ProcessAutoKey(UndoPropertyModification[] modifications)
+        {
+            RecordingState recordingState = new RecordingState(state);
+            return AnimationRecording.Process(recordingState, modifications);
+        }
+
+        private UndoPropertyModification[] RegisterCandidates(UndoPropertyModification[] modifications)
+        {
+            bool createNewClip = (m_CandidateClip == null);
+            if (createNewClip)
+            {
+                m_CandidateClip = new AnimationClip();
+                m_CandidateClip.legacy = state.activeAnimationClip.legacy;
+
+                StartCandidateRecording();
+            }
+
+            CandidateRecordingState recordingState = new CandidateRecordingState(state, m_CandidateClip);
+            UndoPropertyModification[] discardedModifications = AnimationRecording.Process(recordingState, modifications);
+
+            // No modifications were added to the candidate clip, discard.
+            if (createNewClip && discardedModifications.Length == modifications.Length)
+            {
+                ClearCandidates();
+            }
+
+            // Make sure inspector is repainted after adding new candidates to get appropriate feedback.
+            InspectorWindow.RepaintAllInspectors();
+
+            return discardedModifications;
+        }
+
+        private void RemoveFromCandidates(SerializedProperty property)
+        {
+            if (m_CandidateClip == null)
+                return;
+
+            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
+            if (modifications != null)
+                RemoveFromCandidates(modifications);
+        }
+
+        private void RemoveFromCandidates(PropertyModification[] modifications)
+        {
+            if (m_CandidateClip == null)
+                return;
+
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, m_CandidateClip);
+            if (bindings.Length == 0)
+                return;
+
+            // Remove entry from candidate clip.
+            Undo.RegisterCompleteObjectUndo(m_CandidateClip, "Edit Candidate Curve");
+
+            for (int i = 0; i < bindings.Length; ++i)
+            {
+                EditorCurveBinding binding = bindings[i];
+                if (binding.isPPtrCurve)
+                    AnimationUtility.SetObjectReferenceCurve(m_CandidateClip, binding, null);
+                else
+                    AnimationUtility.SetEditorCurve(m_CandidateClip, binding, null);
+            }
+
+            // Clear out candidate clip if it's empty.
+            if (AnimationUtility.GetCurveBindings(m_CandidateClip).Length == 0)
+                m_CandidateClip = null;
+        }
+
+        private void ClearCandidates()
+        {
+            m_CandidateClip = null;
+            StopCandidateRecording();
+        }
+
+        private void ProcessCandidates()
+        {
+            if (m_CandidateClip == null)
+                return;
+
+            EditorCurveBinding[] bindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
+            UndoPropertyModification[] undoModifications = new UndoPropertyModification[bindings.Length];
+            for (int i = 0; i < bindings.Length; ++i)
+            {
+                EditorCurveBinding binding = bindings[i];
+                PropertyModification modification = AnimationUtility.EditorCurveBindingToPropertyModification(binding, state.activeRootGameObject);
+
+                if (binding.isPPtrCurve)
+                {
+                    ObjectReferenceKeyframe[] curve = AnimationUtility.GetObjectReferenceCurve(m_CandidateClip, binding);
+                    modification.value = string.Empty;
+                    modification.objectReference = curve[0].value;
+                }
+                else
+                {
+                    AnimationCurve curve = AnimationUtility.GetEditorCurve(m_CandidateClip, binding);
+                    modification.value = curve[0].value.ToString();
+                }
+
+                undoModifications[i].previousValue = modification;
+                undoModifications[i].currentValue = modification;
+            }
+
+            RecordingState recordingState = new RecordingState(state);
+            AnimationRecording.Process(recordingState, undoModifications);
+
+            ClearCandidates();
+        }
+
+        private List<AnimationWindowKeyframe> GetKeys(SerializedProperty property)
+        {
+            var keys = new List<AnimationWindowKeyframe>();
+
+            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return keys;
+
+            for (int i = 0; i < state.allCurves.Count; ++i)
+            {
+                AnimationWindowCurve curve = state.allCurves[i];
+                if (Array.Exists(bindings, binding => curve.binding.Equals(binding)))
+                {
+                    int keyIndex = curve.GetKeyframeIndex(state.time);
+                    if (keyIndex >= 0)
+                    {
+                        keys.Add(curve.m_Keyframes[keyIndex]);
+                    }
+                }
+            }
+
+            return keys;
+        }
+
+        public bool IsAnimatable(SerializedProperty property)
+        {
+            return AnimationWindowUtility.PropertyIsAnimatable(property, state.activeRootGameObject);
+        }
+
+        public bool IsEditable(SerializedProperty property)
+        {
+            if (state.selection.disabled)
+                return false;
+
+            if (previewing == false)
+                return false;
+
+            var selectedItem = state.selectedItem;
+            if (selectedItem != null)
+            {
+                var serializedObject = property.serializedObject;
+
+                GameObject gameObject = null;
+                if (serializedObject.targetObject is Component)
+                    gameObject = ((Component)serializedObject.targetObject).gameObject;
+                else if (serializedObject.targetObject is GameObject)
+                    gameObject = (GameObject)serializedObject.targetObject;
+
+                if (gameObject != null)
+                {
+                    Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(gameObject.transform);
+                    if (selectedItem.animationPlayer == animationPlayer)
+                    {
+                        return selectedItem.animationIsEditable;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public bool KeyExists(SerializedProperty property)
+        {
+            return (GetKeys(property).Count > 0);
+        }
+
+        public bool CandidateExists(SerializedProperty property)
+        {
+            if (m_CandidateClip == null)
+                return false;
+
+            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return false;
+
+            EditorCurveBinding[] candidateBindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
+            if (candidateBindings.Length == 0)
+                return false;
+
+            return Array.Exists(bindings, binding => Array.Exists(candidateBindings, candidateBinding => candidateBinding.Equals(binding)));
+        }
+
+        public bool CurveExists(SerializedProperty property)
+        {
+            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return false;
+
+            EditorCurveBinding[] clipBindings = AnimationUtility.GetCurveBindings(state.activeAnimationClip);
+            if (clipBindings.Length == 0)
+                return false;
+
+            return Array.Exists(bindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding)));
+        }
+
+        public bool HasAnyCandidates()
+        {
+            return (m_CandidateClip != null);
+        }
+
+        public bool HasAnyCurves()
+        {
+            return (state.allCurves.Count > 0);
+        }
+
+        public void AddKey(SerializedProperty property)
+        {
+            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
+            if (modifications != null)
+            {
+                var undoModifications = new UndoPropertyModification[modifications.Length];
+                for (int i = 0; i < modifications.Length; ++i)
+                {
+                    var modification = modifications[i];
+                    undoModifications[i].previousValue = modification;
+                    undoModifications[i].currentValue = modification;
+                }
+
+                var recordingState = new RecordingState(state);
+                AnimationRecording.Process(recordingState, undoModifications);
+
+                RemoveFromCandidates(modifications);
+
+                ResampleAnimation();
+                state.Repaint();
+            }
+        }
+
+        public void RemoveKey(SerializedProperty property)
+        {
+            List<AnimationWindowKeyframe> keys = GetKeys(property);
+            state.DeleteKeys(keys);
+
+            RemoveFromCandidates(property);
+
+            ResampleAnimation();
+            state.Repaint();
+        }
+
+        public void RemoveCurve(SerializedProperty property)
+        {
+            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
+            if (modifications == null)
+                return;
+
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
+            if (bindings.Length == 0)
+                return;
+
+            Undo.RegisterCompleteObjectUndo(state.activeAnimationClip, "Remove Curve");
+
+            for (int i = 0; i < bindings.Length; ++i)
+            {
+                EditorCurveBinding binding = bindings[i];
+                if (binding.isPPtrCurve)
+                    AnimationUtility.SetObjectReferenceCurve(state.activeAnimationClip, binding, null);
+                else
+                    AnimationUtility.SetEditorCurve(state.activeAnimationClip, binding, null);
+            }
+
+            RemoveFromCandidates(modifications);
+
+            ResampleAnimation();
+            state.Repaint();
+        }
+
+        public void AddCandidateKeys()
+        {
+            ProcessCandidates();
+        }
+
+        public void AddAnimatedKeys()
+        {
+            AnimationWindowUtility.AddKeyframes(state, state.allCurves.ToArray(), time);
+            ClearCandidates();
+        }
+    }
+}
