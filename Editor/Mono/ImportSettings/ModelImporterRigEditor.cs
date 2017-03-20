@@ -12,7 +12,7 @@ using System.IO;
 
 namespace UnityEditor
 {
-    internal class ModelImporterRigEditor : AssetImporterInspector
+    internal class ModelImporterRigEditor : BaseAssetImporterTabUI
     {
         const float kDeleteWidth = 17;
 
@@ -57,6 +57,9 @@ namespace UnityEditor
 
         bool m_IsBiped = false;
         List<string> m_BipedMappingReport = null;
+
+        private MappingRelevantSettings[] oldModelSettings = null;
+        private MappingRelevantSettings[] newModelSettings = null;
 
         private class Styles
         {
@@ -111,7 +114,11 @@ namespace UnityEditor
         }
         static Styles styles;
 
-        public void OnEnable()
+        public ModelImporterRigEditor(AssetImporterInspector panelContainer)
+            : base(panelContainer)
+        {}
+
+        internal override void OnEnable()
         {
             m_AnimationType = serializedObject.FindProperty("m_AnimationType");
             m_AvatarSource = serializedObject.FindProperty("m_LastHumanDescriptionAvatarSource");
@@ -159,6 +166,11 @@ namespace UnityEditor
             {
                 GameObject go = AssetDatabase.LoadMainAssetAtPath(singleImporter.assetPath) as GameObject;
                 m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
+
+                if (m_Avatar == null)
+                {
+                    ResetAvatar();
+                }
             }
         }
 
@@ -190,9 +202,19 @@ namespace UnityEditor
             m_AvatarCopyIsUpToDate = DoesHumanDescriptionMatch(singleImporter, sourceImporter);
         }
 
+        internal override void OnDestroy()
+        {
+            m_Avatar = null;
+        }
+
         internal override void ResetValues()
         {
             base.ResetValues();
+            ResetAvatar();
+        }
+
+        void ResetAvatar()
+        {
             m_Avatar = AssetDatabase.LoadAssetAtPath((target as ModelImporter).assetPath, typeof(Avatar)) as Avatar;
         }
 
@@ -525,8 +547,6 @@ With this option, this model will not create any avatar but only import animatio
                         EditorGUILayout.HelpBox(warnings, MessageType.None);
                 }
             }
-
-            ApplyRevertGUI();
         }
 
         static SerializedObject GetModelImporterSerializedObject(string assetPath)
@@ -597,7 +617,8 @@ With this option, this model will not create any avatar but only import animatio
                     ActiveEditorTracker activeEditor = i.tracker;
                     foreach (Editor e in activeEditor.activeEditors)
                     {
-                        if (e == this)
+                        // the tab is no longer an editor, so we must always refer to the panel container
+                        if (e is ModelImporterEditor && ((ModelImporterEditor)e).activeTab == this)
                         {
                             return i.isLocked;
                         }
@@ -615,11 +636,11 @@ With this option, this model will not create any avatar but only import animatio
             public bool usesOwnAvatar { get { return humanoid && !copyAvatar; } }
         }
 
-        internal override void Apply()
+        internal override void PreApply()
         {
             // Store the old mapping relevant settings for each model
             // Note that we need to do this *before* applying the pending modified properties.
-            MappingRelevantSettings[] oldModelSettings = new MappingRelevantSettings[targets.Length];
+            oldModelSettings = new MappingRelevantSettings[targets.Length];
             for (int i = 0; i < targets.Length; i++)
             {
                 // Find settings of individual model (doesn't include unapplied settings, so we get the "old" settings)
@@ -632,7 +653,7 @@ With this option, this model will not create any avatar but only import animatio
             }
 
             // Store the new mapping relevant settings for each model
-            MappingRelevantSettings[] newModelSettings = new MappingRelevantSettings[targets.Length];
+            newModelSettings = new MappingRelevantSettings[targets.Length];
             Array.Copy(oldModelSettings, newModelSettings, targets.Length);
             for (int i = 0; i < targets.Length; i++)
             {
@@ -643,10 +664,10 @@ With this option, this model will not create any avatar but only import animatio
                 if (!m_CopyAvatar.hasMultipleDifferentValues)
                     newModelSettings[i].copyAvatar = m_CopyAvatar.boolValue;
             }
+        }
 
-            // Now that we have stored the old and new settings, we can apply all modified properties.
-            base.Apply();
-
+        internal override void PostApply()
+        {
             // But we might not be done yet!
             // For all models which did not have own humanoid before but should have it now,
             // we need to perform auto-mapping. (For the opposite case we also need to clear the mapping.)
@@ -728,6 +749,9 @@ With this option, this model will not create any avatar but only import animatio
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
             }
+
+            oldModelSettings = null;
+            newModelSettings = null;
         }
     }
 }

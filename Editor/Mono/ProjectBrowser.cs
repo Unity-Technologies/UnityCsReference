@@ -73,10 +73,6 @@ namespace UnityEditor
             public GUIContent m_EmptyFolderText = new GUIContent("This folder is empty");
             public GUIContent m_SearchIn = new GUIContent("Search:");
 
-            public Styles()
-            {
-            }
-
             static GUIStyle GetStyle(string styleName)
             {
                 return styleName; // Implicit construction of GUIStyle

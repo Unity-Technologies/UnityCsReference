@@ -308,16 +308,9 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
                     {
                         EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
-
-                        if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
-                            EditorGUILayout.HelpBox(Styles.NoTransparencyAndLODInProgressive.text, MessageType.Warning);
-                    }
-
-                    using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
-                    {
                         if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
                         {
-                            EditorGUILayout.Space();
+                            EditorGUI.indentLevel++;
 
                             EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
 
@@ -378,6 +371,9 @@ namespace UnityEditor
 
                                 EditorGUI.indentLevel--;
                             }
+                            EditorGUILayout.HelpBox(Styles.NoTransparencyAndLODInProgressive.text, MessageType.Warning);
+
+                            EditorGUI.indentLevel--;
                             EditorGUILayout.Space();
                         }
                     }
@@ -518,8 +514,8 @@ namespace UnityEditor
             public static readonly GUIContent MixedLightsLabel = EditorGUIUtility.TextContent("Mixed Lighting|Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
             public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TextContent("Lightmapping Settings|Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent NoDirectionalInSM2AndGLES2 = EditorGUIUtility.TextContent("Directional lightmaps cannot be decoded on SM2.0 hardware nor when using GLES2.0. They will fallback to Non-Directional lightmaps.");
-            public static readonly GUIContent NoTransparencyAndLODInProgressive = EditorGUIUtility.TextContent("Baked LODs are not yet available when baking with the Progressive lightmapping backend. This will be added soon.");
-            public static readonly GUIContent NoShadowMaskInProgressive = EditorGUIUtility.TextContent("Experimental: Shadow mask and probe occlusion are not yet available when baking with the Progressive lightmapping backend. This will be added soon.");
+            public static readonly GUIContent NoTransparencyAndLODInProgressive = EditorGUIUtility.TextContent("Baked LOD's are not supported in this preview version of the Progressive Lightmapper.");
+            public static readonly GUIContent NoShadowMaskInProgressive = EditorGUIUtility.TextContent("'Shadowmask' and 'Distance Shadowmask' modes are not supported in this preview version of the Progressive Lightmapper.");
             public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TextContent("Concurrent Jobs|The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TextContent("Force White Albedo|Force white albedo during lighting calculations.");
             public static readonly GUIContent ForceUpdates = EditorGUIUtility.TextContent("Force Updates|Force continuous updates of runtime indirect lighting calculations.");
@@ -540,7 +536,7 @@ namespace UnityEditor
             public static readonly GUIContent MixedLightMode = EditorGUIUtility.TextContent("Lighting Mode|Specifies which Scene lighting mode will be used for all Mixed lights in the Scene. Options are Baked Indirect, Distance Shadowmask, Shadowmask and Subtractive.");
             public static readonly GUIContent UseRealtimeGI = EditorGUIUtility.TextContent("Realtime Global Illumination|Controls whether Realtime lights in the Scene contribute indirect light. If enabled, Realtime lights contribute both direct and indirect light. If disabled, Realtime lights only contribute direct light. This can be disabled on a per-light basis in the light component Inspector by setting Indirect Multiplier to 0.");
             public static readonly GUIContent BakedGIDisabledInfo = EditorGUIUtility.TextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
-            public static readonly GUIContent BakeBackend = EditorGUIUtility.TextContent("Lightmapper");
+            public static readonly GUIContent BakeBackend = EditorGUIUtility.TextContent("Lightmapper|Specifies which baking system will be used to generate baked lightmaps.");
             //public static readonly GUIContent PVRSampling = EditorGUIUtility.TextContent("Sampling|How to sample the lightmaps. Auto and adaptive automatically tests for convergence. Auto uses a maximum of 16K samples. Adaptive uses a configurable maximum number of samples. Fixed always uses the set number of samples and does not test for convergence.");
             //public static readonly GUIContent PVRDirectSampleCountAdaptive = EditorGUIUtility.TextContent("Max Direct Samples|Maximum number of samples to use for direct lighting.");
             public static readonly GUIContent PVRDirectSampleCount = EditorGUIUtility.TextContent("Direct Samples|Controls the number of samples the lightmapper will use for direct lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");

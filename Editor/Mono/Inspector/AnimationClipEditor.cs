@@ -333,7 +333,7 @@ namespace UnityEditor
             }
         }
 
-        void OnEnable()
+        internal void OnEnable()
         {
             m_Clip = target as AnimationClip;
 
@@ -385,7 +385,10 @@ namespace UnityEditor
 
         public override bool HasPreviewGUI()
         {
-            Init();
+            if (Event.current.type == EventType.Layout)
+            {
+                Init();
+            }
             return m_AvatarPreview != null;
         }
 

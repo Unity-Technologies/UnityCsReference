@@ -89,10 +89,6 @@ namespace UnityEditor
 
         private bool isDragging { get { return m_IsDragging || m_DopeSheetEditor.isDragging; } }
 
-        public DopeSheetEditorRectangleTool()
-        {
-        }
-
         public override void Initialize(TimeArea timeArea)
         {
             base.Initialize(timeArea);

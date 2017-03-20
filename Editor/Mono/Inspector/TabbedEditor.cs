@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 
 namespace UnityEditor
 {
@@ -67,40 +66,53 @@ namespace UnityEditor
     // Version for AssetImporterInspector derived editors
     internal abstract class AssetImporterTabbedEditor : AssetImporterInspector
     {
-        protected System.Type[] m_SubEditorTypes = null;
-        protected string[] m_SubEditorNames = null;
+        protected string[] m_TabNames = null;
         private int m_ActiveEditorIndex = 0;
-        private AssetImporterInspector m_ActiveEditor;
-        public AssetImporterInspector activeEditor { get { return m_ActiveEditor; } }
 
-        internal override Editor assetEditor
-        {
-            get
-            {
-                return base.assetEditor;
-            }
-            set
-            {
-                base.assetEditor = value;
-                if (activeEditor)
-                    activeEditor.assetEditor = assetEditor;
-            }
-        }
+        /// <summary>
+        /// The list of child inspectors.
+        /// </summary>
+        private BaseAssetImporterTabUI[] m_Tabs = null;
+        public BaseAssetImporterTabUI activeTab { get; private set; }
+        protected BaseAssetImporterTabUI[] tabs { get { return m_Tabs; } set { m_Tabs = value; } }
 
         internal virtual void OnEnable()
         {
+            foreach (var tab in m_Tabs)
+            {
+                tab.OnEnable();
+            }
+
             m_ActiveEditorIndex = EditorPrefs.GetInt(this.GetType().Name + "ActiveEditorIndex", 0);
-            if (m_ActiveEditor == null)
-                m_ActiveEditor = Editor.CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]) as AssetImporterInspector;
+            if (activeTab == null)
+                activeTab = m_Tabs[m_ActiveEditorIndex];
         }
 
         void OnDestroy()
         {
-            var currentActiveEditor = activeEditor;
-            if (currentActiveEditor != null)
+            if (m_Tabs != null)
             {
-                m_ActiveEditor = null;
-                DestroyImmediate(currentActiveEditor);
+                foreach (var tab in m_Tabs)
+                {
+                    tab.OnDestroy();
+                }
+
+                // destroy all the child tabs
+                m_Tabs = null;
+                activeTab = null;
+            }
+        }
+
+        internal override void ResetValues()
+        {
+            base.ResetValues();
+
+            if (m_Tabs != null)
+            {
+                foreach (var tab in m_Tabs)
+                {
+                    tab.ResetValues();
+                }
             }
         }
 
@@ -114,38 +126,78 @@ namespace UnityEditor
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 EditorGUI.BeginChangeCheck();
-                m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_SubEditorNames);
+                m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_TabNames);
                 if (EditorGUI.EndChangeCheck())
                 {
                     EditorPrefs.SetInt(this.GetType().Name + "ActiveEditorIndex", m_ActiveEditorIndex);
-                    var oldEditor = activeEditor;
-                    m_ActiveEditor = null;
-                    DestroyImmediate(oldEditor);
-                    m_ActiveEditor = Editor.CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]) as AssetImporterInspector;
-                    m_ActiveEditor.assetEditor = assetEditor;
+                    activeTab = m_Tabs[m_ActiveEditorIndex];
+
+                    activeTab.OnInspectorGUI();
                 }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
 
-            activeEditor.OnInspectorGUI();
+            // the activeTab can get destroyed when opening particular sub-editors (such as the Avatar configuration editor on the Rig tab)
+            if (activeTab != null)
+            {
+                activeTab.OnInspectorGUI();
+            }
+
+            // show a single Apply/Revert set of buttons for all the tabs
+            ApplyRevertGUI();
         }
 
         public override void OnPreviewSettings()
         {
-            activeEditor.OnPreviewSettings();
+            if (activeTab != null)
+            {
+                activeTab.OnPreviewSettings();
+            }
         }
 
         public override void OnInteractivePreviewGUI(Rect r, GUIStyle background)
         {
-            activeEditor.OnInteractivePreviewGUI(r, background);
+            if (activeTab != null)
+            {
+                activeTab.OnInteractivePreviewGUI(r, background);
+            }
         }
 
         public override bool HasPreviewGUI()
         {
-            if (activeEditor == null)
+            if (activeTab == null)
                 return false;
-            return activeEditor.HasPreviewGUI();
+            return activeTab.HasPreviewGUI();
+        }
+
+        internal override void Apply()
+        {
+            if (m_Tabs != null)
+            {
+                // tabs can do work before or after the application of changes in the serialization object
+                foreach (var tab in m_Tabs)
+                {
+                    tab.PreApply();
+                }
+
+                base.Apply();
+
+                foreach (var tab in m_Tabs)
+                {
+                    tab.PostApply();
+                }
+            }
+        }
+
+        protected override bool ApplyRevertGUIButtons()
+        {
+            // have a single set of Apply/Revert buttons for all the tabs of the asset inspector panel
+            using (new EditorGUI.DisabledScope(!HasModified()))
+            {
+                RevertButton();
+                return ApplyButton();
+            }
         }
     }
 }

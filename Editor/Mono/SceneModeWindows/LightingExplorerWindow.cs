@@ -40,7 +40,8 @@ namespace UnityEditor
         static void CreateLightingExplorerWindow()
         {
             LightingExplorerWindow window = EditorWindow.GetWindow<LightingExplorerWindow>();
-            window.minSize = new Vector2(300, 250);
+            window.minSize = new Vector2(500, 250);
+            window.Show();
         }
 
         private float toolbarPadding

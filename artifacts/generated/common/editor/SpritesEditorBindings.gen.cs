@@ -84,4 +84,13 @@ public sealed partial class InternalSpriteUtility
     private extern static Rect[] INTERNAL_CALL_GenerateGridSpriteRectangles (Texture2D texture, ref Vector2 offset, ref Vector2 size, ref Vector2 padding);
 }
 
+internal static partial class SpriteExtensions
+{
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Texture GetTextureForPlayMode (this Sprite sprite) ;
+
+}
+
+
 }

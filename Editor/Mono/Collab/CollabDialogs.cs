@@ -112,10 +112,6 @@ namespace UnityEditor.Collaboration
         static GUIContent IssuesText = EditorGUIUtility.TextContent("Issues:");
         static GUIContent AcceptText = EditorGUIUtility.TextContent("Accept");
 
-        public CollabCannotPublishDialog()
-        {
-        }
-
         public Vector2 scrollPosition;
         public string InfoMessage;
 

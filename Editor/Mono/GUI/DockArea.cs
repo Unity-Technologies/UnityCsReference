@@ -7,6 +7,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
+using UnityEngine.Experimental.RMGUI;
+using UnityEngine.Experimental.RMGUI.StyleEnums;
 
 namespace UnityEditor
 {
@@ -46,6 +48,7 @@ namespace UnityEditor
 
         bool m_IsBeingDestroyed;
 
+        IMGUIContainer m_DAOnGUIContainer;
 
         public int selected
         {
@@ -108,6 +111,28 @@ namespace UnityEditor
 
             base.OnEnable();
 
+            m_DAOnGUIContainer = new IMGUIContainer(OldOnGUI)
+            {
+                name = VisualElementUtils.GetUniqueName("Dockarea")
+            };
+            m_DAOnGUIContainer.StretchToParentSize();
+            visualTree.InsertChild(0, m_DAOnGUIContainer);
+        }
+
+        protected override void UpdateViewMargins(EditorWindow view)
+        {
+            base.UpdateViewMargins(view);
+
+            if (view == null)
+                return;
+
+            RectOffset margins = GetBorderSize();
+
+            view.rootVisualContainer.positionTop = margins.top;
+            view.rootVisualContainer.positionBottom = margins.bottom;
+            view.rootVisualContainer.positionLeft = margins.left;
+            view.rootVisualContainer.positionRight = margins.right;
+            view.rootVisualContainer.positionType = PositionType.Absolute;
         }
 
 
@@ -115,6 +140,12 @@ namespace UnityEditor
         {
             base.OnDisable();
 
+            if (m_DAOnGUIContainer.HasCapture())
+            {
+                m_DAOnGUIContainer.RemoveCapture();
+            }
+
+            visualTree.RemoveChild(m_DAOnGUIContainer);
         }
 
         public void AddTab(EditorWindow pane)
@@ -239,6 +270,11 @@ namespace UnityEditor
         }
 
         void OnGUI()
+        {
+            // declare empty to mask HostView.OnGUI()
+        }
+
+        public void OldOnGUI()
         {
             ClearBackground();
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.

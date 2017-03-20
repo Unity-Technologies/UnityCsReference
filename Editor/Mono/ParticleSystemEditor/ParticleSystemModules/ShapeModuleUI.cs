@@ -29,70 +29,25 @@ namespace UnityEditor
                 return result;
             }
 
-            private class ModeCallbackData
-            {
-                public ModeCallbackData(ValueMode state, SerializedProperty p)
-                {
-                    modeProp = p;
-                    selectedState = state;
-                }
-
-                public SerializedProperty modeProp;
-                public ValueMode selectedState;
-            }
-
-            private static void SelectModeCallback(object obj)
-            {
-                ModeCallbackData data = (ModeCallbackData)obj;
-                data.modeProp.intValue = (int)data.selectedState;
-            }
-
-            private static void GUIMMModePopUp(Rect rect, SerializedProperty modeProp)
-            {
-                if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
-                {
-                    GUIContent[] texts = { new GUIContent("Random"), new GUIContent("Loop"), new GUIContent("Ping-Pong"), new GUIContent("Burst Spread")};
-                    ValueMode[] states = { ValueMode.Random, ValueMode.Loop, ValueMode.PingPong, ValueMode.BurstSpread };
-
-                    GenericMenu menu = new GenericMenu();
-                    for (int i = 0; i < texts.Length; ++i)
-                    {
-                        menu.AddItem(texts[i], (modeProp.intValue == (int)states[i]), SelectModeCallback, new ModeCallbackData(states[i], modeProp));
-                    }
-
-                    menu.ShowAsContext();
-                    Event.current.Use();
-                }
-            }
-
             public void OnInspectorGUI(MultiModeTexts text)
             {
-                GUIContent[] labels = new GUIContent[] { text.modeRandom, text.modeLoop, text.modePingPong, text.modeDistributed };
+                GUIFloat(text.value, m_Value);
 
-                Rect rect = GUILayoutUtility.GetRect(0, kSingleLineHeight);
-                Rect popupRect = GetPopupRect(rect);
-                rect = SubtractPopupWidth(rect);
-                PrefixLabel(rect, labels[m_Mode.intValue]);
+                EditorGUI.indentLevel++;
 
-                float fullWidth = rect.width;
-                rect.width /= 1.5f;
+                GUIPopup(text.mode, m_Mode, new string[] { "Random", "Loop", "Ping-Pong", "Burst Spread" });
+                GUIFloat(text.spread, m_Spread);
 
-                FloatDraggable(rect, m_Value, 1.0f, EditorGUIUtility.labelWidth, kFormatString);
+                if (!m_Mode.hasMultipleDifferentValues)
+                {
+                    ValueMode mode = (ValueMode)m_Mode.intValue;
+                    if (mode == ValueMode.Loop || mode == ValueMode.PingPong)
+                    {
+                        GUIMinMaxCurve(text.speed, m_Speed);
+                    }
+                }
 
-                float oldLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 38;
-
-                rect.x += rect.width + kSpacingSubLabel;
-                rect.width = fullWidth - rect.width - kSpacingSubLabel;
-                PrefixLabel(rect, text.spread);
-                FloatDraggable(rect, m_Spread, 1.0f, EditorGUIUtility.labelWidth, kFormatString);
-
-                EditorGUIUtility.labelWidth = oldLabelWidth;
-
-                GUIMMModePopUp(popupRect, m_Mode);
-
-                if (m_Mode.intValue == (int)ValueMode.Loop || m_Mode.intValue == (int)ValueMode.PingPong)
-                    GUIMinMaxCurve(text.speed, m_Speed);
+                EditorGUI.indentLevel--;
             }
         };
 
@@ -163,39 +118,31 @@ namespace UnityEditor
 
         class MultiModeTexts
         {
-            public MultiModeTexts(string _modeRandom, string _modeLoop, string _modePingPong, string _modeDistributed, string _spread, string _speed)
+            public MultiModeTexts(string _value, string _mode, string _spread, string _speed)
             {
-                modeRandom = EditorGUIUtility.TextContent(_modeRandom);
-                modeLoop = EditorGUIUtility.TextContent(_modeLoop);
-                modePingPong = EditorGUIUtility.TextContent(_modePingPong);
-                modeDistributed = EditorGUIUtility.TextContent(_modeDistributed);
+                value = EditorGUIUtility.TextContent(_value);
+                mode = EditorGUIUtility.TextContent(_mode);
                 spread = EditorGUIUtility.TextContent(_spread);
                 speed = EditorGUIUtility.TextContent(_speed);
             }
 
-            public GUIContent modeRandom;
-            public GUIContent modeLoop;
-            public GUIContent modePingPong;
-            public GUIContent modeDistributed;
+            public GUIContent value;
+            public GUIContent mode;
             public GUIContent spread;
             public GUIContent speed;
         }
 
         static MultiModeTexts s_RadiusTexts = new MultiModeTexts(
-                /*_modeRandom:*/ "Randomized Radius|New particles are spawned randomly along the radius.",
-                /*_modeLoop:*/ "Looping Radius|New particles are spawned sequentially along the radius.",
-                /*_modePingPong:*/ "Ping-Pong Radius|New particles are spawned sequentially along the radius, and alternate between clockwise and counter-clockwise.",
-                /*_modeDistributed:*/ "Distributed Radius|New particles are distributed evenly along the radius. (Use with Burst emission).",
+                /*_value:*/ "Radius|New particles are spawned along the radius.",
+                /*_mode:*/ "Mode|Control how particles are spawned along the radius.",
                 /*_spread:*/ "Spread|Spawn particles only at specific positions along the radius (0 to disable).",
-                /*_speed:*/ "Radius Speed|Control the speed that the emission position moves along the radius.");
+                /*_speed:*/ "Speed|Control the speed that the emission position moves along the radius.");
 
         static MultiModeTexts s_ArcTexts = new MultiModeTexts(
-                /*_modeRandom:*/ "Randomized Arc|New particles are spawned randomly around the arc.",
-                /*_modeLoop:*/ "Looping Arc|New particles are spawned sequentially around the arc.",
-                /*_modePingPong:*/ "Ping-Pong Arc|New particles are spawned sequentially around the arc, and alternate between clockwise and counter-clockwise.",
-                /*_modeDistributed:*/ "Distributed Arc|New particles are distributed evenly around the arc. (Use with Burst emission).",
+                /*_value:*/ "Arc|New particles are spawned around the arc.",
+                /*_mode:*/ "Mode|Control how particles are spawned around the arc.",
                 /*_spread:*/ "Spread|Spawn particles only at specific angles around the arc (0 to disable).",
-                /*_speed:*/ "Arc Speed|Control the speed that the emission position moves around the arc.");
+                /*_speed:*/ "Speed|Control the speed that the emission position moves around the arc.");
 
         public ShapeModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "ShapeModule", displayName, VisibilityState.VisibleAndFolded)

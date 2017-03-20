@@ -282,6 +282,7 @@ namespace UnityEditor
                 return;
             m_ActualView.m_Parent = this;
 
+            visualTree.AddChild(m_ActualView.rootVisualContainer);
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
@@ -315,6 +316,8 @@ namespace UnityEditor
             if (!m_ActualView)
                 return;
 
+            if (m_ActualView.rootVisualContainer.parent == visualTree)
+                visualTree.RemoveChild(m_ActualView.rootVisualContainer);
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;
 

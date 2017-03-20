@@ -305,4 +305,81 @@ public static partial class InputTracking
 
 }
 
+namespace UnityEngine.Experimental.VR
+{
+
+
+public static partial class Boundary
+{
+    public enum Type    
+    {
+        PlayArea,
+        TrackedArea
+    }
+
+    [uei.ExcludeFromDocs]
+public static bool TryGetDimensions (out Vector3 dimensionsOut) {
+    Type boundaryType = Type.PlayArea;
+    return TryGetDimensions ( out dimensionsOut, boundaryType );
+}
+
+public static bool TryGetDimensions(out Vector3 dimensionsOut, [uei.DefaultValue("Type.PlayArea")]  Type boundaryType )
+        {
+            return TryGetDimensionsInternal(out dimensionsOut, (int)boundaryType);
+        }
+
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool TryGetDimensionsInternal (out Vector3 dimensionsOut, int boundaryType) ;
+
+    
+    
+    [uei.ExcludeFromDocs]
+public static bool TryGetGeometry (List<Vector3> geometry) {
+    Type boundaryType = Type.PlayArea;
+    return TryGetGeometry ( geometry, boundaryType );
+}
+
+public static bool TryGetGeometry(List<Vector3> geometry, [uei.DefaultValue("Type.PlayArea")]  Type boundaryType )
+        {
+            if (geometry == null)
+            {
+                throw new ArgumentNullException("geometry");
+            }
+
+            geometry.Clear();
+
+            return TryGetGeometryInternal(geometry, (int)boundaryType);
+        }
+
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool TryGetGeometryInternal (object geometryOut, int boundaryType) ;
+
+    public extern static bool visible
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static bool configured
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+}
+
+
+}
+
 

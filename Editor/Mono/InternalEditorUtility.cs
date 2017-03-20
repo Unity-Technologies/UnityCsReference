@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEditor.Utils;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditorInternal
 {
@@ -465,7 +466,18 @@ namespace UnityEditorInternal
 
         internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslands()
         {
-            return UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface.GetAllMonoIslands();
+            return EditorCompilationInterface.GetAllMonoIslands();
+        }
+
+        internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslandsForPlayer()
+        {
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+
+            PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
+            PrecompiledAssembly[] precompiledAssemblies = GetPrecompiledAssemblies(false, group, target);
+
+            return EditorCompilationInterface.GetAllMonoIslandsExt(unityAssemblies, precompiledAssemblies, BuildFlags.None);
         }
     }
 }

@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal class ModelImporterClipEditor : AssetImporterInspector
+    internal class ModelImporterClipEditor : BaseAssetImporterTabUI
     {
         AnimationClipEditor m_AnimationClipEditor;
         ModelImporter singleImporter { get { return targets[0] as ModelImporter; } }
@@ -141,7 +141,11 @@ namespace UnityEditor
         }
         static Styles styles;
 
-        public void OnEnable()
+        public ModelImporterClipEditor(AssetImporterInspector panelContainer)
+            : base(panelContainer)
+        {}
+
+        internal override void OnEnable()
         {
             m_ClipAnimations = serializedObject.FindProperty("m_ClipAnimations");
 
@@ -276,7 +280,7 @@ namespace UnityEditor
             }
         }
 
-        public void OnDestroy()
+        internal override void OnDestroy()
         {
             DestroyEditorsAndData();
         }
@@ -409,8 +413,6 @@ namespace UnityEditor
                         AnimationClipGUI();
                 }
             }
-
-            ApplyRevertGUI();
         }
 
         void AnimationSettings()

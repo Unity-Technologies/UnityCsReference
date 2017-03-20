@@ -127,7 +127,7 @@ public partial class DownloadHandler : IDisposable
                 throw new System.NullReferenceException("Cannot get content from a null UnityWebRequest object");
             if (!www.isDone)
                 throw new System.InvalidOperationException("Cannot get content from an unfinished UnityWebRequest object");
-            if (www.isError)
+            if (www.isNetworkError)
                 throw new System.InvalidOperationException(www.error);
             return (T)www.downloadHandler;
         }

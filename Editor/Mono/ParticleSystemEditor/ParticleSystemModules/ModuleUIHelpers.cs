@@ -267,11 +267,16 @@ namespace UnityEditor
 
         public static void GUIObject(GUIContent label, SerializedProperty objectProp, params GUILayoutOption[] layoutOptions)
         {
+            GUIObject(label, objectProp, null, layoutOptions);
+        }
+
+        public static void GUIObject(GUIContent label, SerializedProperty objectProp, System.Type objType, params GUILayoutOption[] layoutOptions)
+        {
             EditorGUI.showMixedValue = objectProp.hasMultipleDifferentValues;
 
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             rect = PrefixLabel(rect, label);
-            EditorGUI.ObjectField(rect, objectProp, null, GUIContent.none, ParticleSystemStyles.Get().objectField);
+            EditorGUI.ObjectField(rect, objectProp, objType, GUIContent.none, ParticleSystemStyles.Get().objectField);
 
             EditorGUI.showMixedValue = false;
         }
@@ -541,7 +546,7 @@ namespace UnityEditor
             rect = PrefixLabel(rect, label);
 
             EditorGUI.BeginChangeCheck();
-            int newValue = EditorGUI.Popup(rect, intProp.intValue, options, ParticleSystemStyles.Get().popup);
+            int newValue = EditorGUI.Popup(rect, null, intProp.intValue, EditorGUIUtility.TempContent(options), ParticleSystemStyles.Get().popup);
             if (EditorGUI.EndChangeCheck())
                 intProp.intValue = newValue;
 

@@ -718,9 +718,17 @@ namespace UnityEditor
                 GUILayout.Label("Select a MeshRenderer or a Terrain from the scene.", EditorStyles.helpBox);
         }
 
+        private static void ComponentBasedWorkflowButton()
+        {
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Learn about the component-based workflow."))
+                Help.BrowseURL("https://github.com/Unity-Technologies/NavMeshComponents");
+            GUILayout.EndHorizontal();
+        }
+
         private static void ObjectSettings(Object[] components, GameObject[] gos)
         {
-            EditorGUILayout.HelpBox("Legacy Feature - Applies only to statically baked per-scene NavMesh", MessageType.Warning);
+            ComponentBasedWorkflowButton();
 
             EditorGUILayout.MultiSelectionObjectTitleBar(components);
 
@@ -772,7 +780,7 @@ namespace UnityEditor
 
         private void SceneBakeSettings()
         {
-            EditorGUILayout.HelpBox("Legacy Feature - Applies only to statically baked per-scene NavMesh", MessageType.Warning);
+            ComponentBasedWorkflowButton();
 
             if (m_SettingsObject == null || m_SettingsObject.targetObject == null)
                 InitSceneBakeSettings();

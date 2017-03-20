@@ -3304,6 +3304,13 @@ public partial struct JointSuspension2D
 [RequireComponent(typeof(Transform), typeof(Rigidbody2D))]
 public partial class Joint2D : Behaviour
 {
+    public extern Rigidbody2D attachedRigidbody
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
     public extern Rigidbody2D connectedBody
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

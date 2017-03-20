@@ -172,10 +172,10 @@ namespace UnityEditor
             {
                 GUI.enabled = !collabEnabled;
                 GUILayout.Label("Version Control", EditorStyles.boldLabel);
-                GUI.enabled = editorEnabled && !collabEnabled;
 
                 ExternalVersionControl selvc = EditorSettings.externalVersionControl;
                 CreatePopupMenuVersionControl("Mode", vcPopupList, selvc, SetVersionControlSystem);
+                GUI.enabled = editorEnabled && !collabEnabled;
             }
             if (collabEnabled)
             {

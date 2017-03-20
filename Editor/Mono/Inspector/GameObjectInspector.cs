@@ -405,13 +405,14 @@ namespace UnityEditor
 
         private void RegisterNewComponents(List<Object> newHierarchy, List<Object> hierarchy)
         {
-            for (var i = 0; i < newHierarchy.Count; i++)
+            var danglingComponents = new List<Component>();
+
+            foreach (var i in newHierarchy)
             {
                 var found = false;
-                var obj = newHierarchy[i];
-                for (var j = 0; j < hierarchy.Count; j++)
+                foreach (var j in hierarchy)
                 {
-                    if (hierarchy[j].GetInstanceID() == obj.GetInstanceID())
+                    if (j.GetInstanceID() == i.GetInstanceID())
                     {
                         found = true;
                         break;
@@ -419,8 +420,47 @@ namespace UnityEditor
                 }
                 if (!found)
                 {
-                    Undo.RegisterCreatedObjectUndo(newHierarchy[i], "Dangly component");
+                    danglingComponents.Add(i as Component);
                 }
+            }
+
+            // We need to ensure that dangling components are registered in an acceptable order regarding dependencies. For example, if we're adding RigidBody and ConfigurableJoint, the RigidBody will need to be added first (as the ConfigurableJoint depends upon it existing)
+            var addedTypes = new HashSet<Type>()
+            {
+                typeof(Transform)
+            };
+            var emptyPass = false;
+            while (danglingComponents.Count > 0 && !emptyPass)
+            {
+                emptyPass = true;
+                for (var i = 0; i < danglingComponents.Count; i++)
+                {
+                    var component = danglingComponents[i];
+                    var reqs = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
+                    var requiredComponentsExist = true;
+                    foreach (RequireComponent req in reqs)
+                    {
+                        if ((req.m_Type0 != null && !addedTypes.Contains(req.m_Type0)) || (req.m_Type1 != null && !addedTypes.Contains(req.m_Type1)) || (req.m_Type2 != null && !addedTypes.Contains(req.m_Type2)))
+                        {
+                            requiredComponentsExist = false;
+                            break;
+                        }
+                    }
+                    if (requiredComponentsExist)
+                    {
+                        Undo.RegisterCreatedObjectUndo(component, "Dangling component");
+                        addedTypes.Add(component.GetType());
+                        danglingComponents.RemoveAt(i);
+                        i--;
+                        emptyPass = false;
+                    }
+                }
+            }
+
+            Debug.Assert(danglingComponents.Count == 0, "Dangling components have unfulfilled dependencies");
+            foreach (var component in danglingComponents)
+            {
+                Undo.RegisterCreatedObjectUndo(component, "Dangling component");
             }
         }
 

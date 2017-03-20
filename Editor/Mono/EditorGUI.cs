@@ -2544,7 +2544,9 @@ namespace UnityEditor
         private static int PopupInternal(Rect position, GUIContent label, int selectedIndex, GUIContent[] displayedOptions, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_PopupHash, FocusType.Keyboard, position);
-            return DoPopup(PrefixLabel(position, id, label), id, selectedIndex, displayedOptions, style);
+            if (label != null)
+                position = PrefixLabel(position, id, label);
+            return DoPopup(position, id, selectedIndex, displayedOptions, style);
         }
 
         // Called from PropertyField
@@ -3126,7 +3128,7 @@ namespace UnityEditor
                     allowSceneObjects = true;
                 }
             }
-            DoObjectField(position, position, id, null, null, property, null, allowSceneObjects, style);
+            DoObjectField(position, position, id, null, objType, property, null, allowSceneObjects, style);
         }
 
         /// *listonly*
@@ -3247,7 +3249,20 @@ namespace UnityEditor
                         if (EditorSceneManager.preventCrossSceneReferences && CheckForCrossSceneReferencing(references[0], property.serializedObject.targetObject))
                             return null;
 
-                        return references[0];
+                        if (objType != null)
+                        {
+                            foreach (Object i in references)
+                            {
+                                if (i != null && objType.IsAssignableFrom(i.GetType()))
+                                {
+                                    return i;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return references[0];
+                        }
                     }
 
                     // If array, test against the target arrayElementType, if not test against the target Type.

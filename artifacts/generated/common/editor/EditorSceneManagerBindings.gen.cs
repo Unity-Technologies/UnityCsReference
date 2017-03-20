@@ -64,9 +64,18 @@ public sealed partial class EditorSceneManager : SceneManager
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_NewScene (NewSceneSetup setup, NewSceneMode mode, out Scene value);
+    static internal bool CreateSceneAsset(string scenePath, bool createDefaultGameObjects)
+        {
+            if (!Utils.Paths.IsValidAssetPathWithErrorLogging(scenePath, ".unity"))
+                return false;
+
+            return Internal_CreateSceneAsset(scenePath, createDefaultGameObjects);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  bool CreateSceneAsset (string scenePath, bool createDefaultGameObjects) ;
+    extern internal static  bool Internal_CreateSceneAsset (string scenePath, bool createDefaultGameObjects) ;
 
     public static bool CloseScene (Scene scene, bool removeScene) {
         return INTERNAL_CALL_CloseScene ( ref scene, removeScene );

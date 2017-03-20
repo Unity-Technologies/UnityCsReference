@@ -45,7 +45,7 @@ public sealed partial class UnityWebRequest : IDisposable
         CannotResolveHost,
         CannotConnectToHost,
         AccessDenied,
-        GenericHTTPError,
+        GenericHttpError,
         WriteError,
         ReadError,
         OutOfMemory,
@@ -325,7 +325,14 @@ public sealed partial class UnityWebRequest : IDisposable
         get;
     }
 
-    public extern  bool isError
+    public extern  bool isNetworkError
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern  bool isHttpError
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -555,7 +562,7 @@ public sealed partial class UnityWebRequest : IDisposable
                     return "Unable to connect to host specified in URL";
                 case UnityWebRequestError.AccessDenied:
                     return "Remote server denied access to the specified URL";
-                case UnityWebRequestError.GenericHTTPError:
+                case UnityWebRequestError.GenericHttpError:
                     return "Unknown/Generic HTTP Error - Check HTTP Error code";
                 case UnityWebRequestError.WriteError:
                     return "Error when transmitting request to remote server - transmission terminated prematurely";

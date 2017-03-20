@@ -255,7 +255,11 @@ namespace UnityEditor
 
             // Determine the class for filtering based on our information
             string requiredClassName = "";
-            if (property != null)
+            if (requiredType != null)
+            {
+                requiredClassName = requiredType.Name;
+            }
+            else if (property != null)
             {
                 requiredClassName = property.objectReferenceTypeString;
 
@@ -265,10 +269,6 @@ namespace UnityEditor
                 // Do not allow to show scene objects if the object being edited is persistent
                 if (m_ObjectBeingEdited != null && EditorUtility.IsPersistent(m_ObjectBeingEdited))
                     m_AllowSceneObjects = false;
-            }
-            else if (requiredType != null)
-            {
-                requiredClassName = requiredType.Name;
             }
 
             // Set which tab should be visible at startup

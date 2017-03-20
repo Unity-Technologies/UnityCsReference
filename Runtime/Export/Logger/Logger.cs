@@ -30,7 +30,13 @@ namespace UnityEngine
         public bool IsLogTypeAllowed(LogType logType)
         {
             if (logEnabled)
-                return (logType <= filterLogType) || (logType == LogType.Exception);
+            {
+                if (logType == LogType.Exception)
+                    return true;
+
+                if (filterLogType != LogType.Exception)
+                    return (logType <= filterLogType);
+            }
             return false;
         }
 

@@ -13,6 +13,8 @@ namespace UnityEditor
     internal class NavMeshAgentInspector : Editor
     {
         private SerializedProperty m_AgentTypeID;
+        private SerializedProperty m_Radius;
+        private SerializedProperty m_Height;
         private SerializedProperty m_WalkableMask;
         private SerializedProperty m_Speed;
         private SerializedProperty m_Acceleration;
@@ -37,6 +39,8 @@ namespace UnityEditor
         void OnEnable()
         {
             m_AgentTypeID = serializedObject.FindProperty("m_AgentTypeID");
+            m_Radius = serializedObject.FindProperty("m_Radius");
+            m_Height = serializedObject.FindProperty("m_Height");
             m_WalkableMask = serializedObject.FindProperty("m_WalkableMask");
             m_Speed = serializedObject.FindProperty("m_Speed");
             m_Acceleration = serializedObject.FindProperty("m_Acceleration");
@@ -58,7 +62,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             AgentTypePopupInternal("Agent Type", m_AgentTypeID);
-
             EditorGUILayout.PropertyField(m_BaseOffset);
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(s_Styles.m_AgentSteeringHeader, EditorStyles.boldLabel);
@@ -70,6 +73,8 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(s_Styles.m_AgentAvoidanceHeader, EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(m_Radius);
+            EditorGUILayout.PropertyField(m_Height);
             EditorGUILayout.PropertyField(m_ObstacleAvoidanceType, GUIContent.Temp("Quality"));
             EditorGUILayout.PropertyField(m_AvoidancePriority, GUIContent.Temp("Priority"));
 

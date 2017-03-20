@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Linq;
 using System;
+using UnityEngine.Experimental.RMGUI;
 using UnityEngine.CSSLayout;
 
 namespace UnityEditor
@@ -37,6 +38,23 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 240);
 
+        VisualContainer m_RootVisualContainer;
+
+        public VisualContainer rootVisualContainer
+        {
+            get
+            {
+                if (m_RootVisualContainer == null)
+                {
+                    m_RootVisualContainer = new VisualContainer()
+                    {
+                        name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
+                        pickingMode = PickingMode.Ignore // do not eat events so IMGUI gets them
+                    };
+                }
+                return m_RootVisualContainer;
+            }
+        }
 
 
         // The GameView rect is in GUI space of the view

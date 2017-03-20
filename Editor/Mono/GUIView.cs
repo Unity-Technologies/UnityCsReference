@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
+using UnityEngine.Experimental.RMGUI;
 
 namespace UnityEditor
 {
@@ -20,6 +21,38 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal partial class GUIView : View
     {
+
+        DataWatchService s_DataWatch = new DataWatchService();
+
+        Panel panel
+        {
+            get
+            {
+                return RMGUIUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
+            }
+        }
+
+        static UnityEngine.Object LoadResourceWrapper(string pathName, System.Type type)
+        {
+            var resource = EditorGUIUtility.Load(pathName);
+            if (resource == null)
+            {
+                resource = Resources.Load(pathName, type);
+            }
+            if (resource != null)
+            {
+                Debug.Assert(type.IsAssignableFrom(resource.GetType()), "Resource type mismatch");
+            }
+            return resource;
+        }
+
+        public VisualContainer visualTree
+        {
+            get
+            {
+                return panel.visualTree;
+            }
+        }
 
         int m_DepthBufferBits = 0;
         bool m_WantsMouseMove = false;
@@ -56,6 +89,7 @@ namespace UnityEditor
             Internal_SetWantsMouseMove(m_WantsMouseMove);
             Internal_SetWantsMouseEnterLeaveWindow(m_WantsMouseEnterLeaveWindow);
 
+            panel.SetSize(windowPosition.size);
 
             m_BackgroundValid = false;
         }
@@ -118,6 +152,7 @@ namespace UnityEditor
 
             m_BackgroundValid = false;
 
+            panel.SetSize(windowPosition.size);
             Repaint();
         }
 

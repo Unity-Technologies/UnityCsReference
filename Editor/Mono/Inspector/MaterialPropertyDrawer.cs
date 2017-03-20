@@ -385,8 +385,6 @@ namespace UnityEditor
 
     internal class MaterialIntRangeDrawer : MaterialPropertyDrawer
     {
-        public MaterialIntRangeDrawer() {}
-
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
             if (prop.type != MaterialProperty.PropType.Range)

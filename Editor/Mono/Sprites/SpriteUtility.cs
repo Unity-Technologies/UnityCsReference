@@ -20,12 +20,13 @@ namespace UnityEditor
         static DragType s_DragType;
         enum DragType { NotInitialized, SpriteAnimation, CreateMultiple }
 
+        public delegate string ShowFileDialogDelegate(string title, string defaultName, string extension, string message, string defaultPath);
         public static void OnSceneDrag(SceneView sceneView)
         {
-            HandleSpriteSceneDrag(sceneView, new UnityEngine.U2D.Interface.Event(), DragAndDrop.objectReferences, DragAndDrop.paths);
+            HandleSpriteSceneDrag(sceneView, new UnityEngine.U2D.Interface.Event(), DragAndDrop.objectReferences, DragAndDrop.paths, EditorUtility.SaveFilePanelInProject);
         }
 
-        public static void HandleSpriteSceneDrag(SceneView sceneView, IEvent evt, Object[] objectReferences, string[] paths)
+        public static void HandleSpriteSceneDrag(SceneView sceneView, IEvent evt, Object[] objectReferences, string[] paths, ShowFileDialogDelegate saveFileDialog)
         {
             if (evt.type != EventType.DragUpdated && evt.type != EventType.DragPerform && evt.type != EventType.DragExited)
                 return;
@@ -34,14 +35,18 @@ namespace UnityEditor
             if (objectReferences.Length == 1 && objectReferences[0] as UnityTexture2D != null)
             {
                 GameObject go = HandleUtility.PickGameObject(evt.mousePosition, true);
-                if (go != null && go.GetComponent<Renderer>() != null)
+                if (go != null)
                 {
-                    // There is an object where the cursor is
-                    // and we are dragging a texture. Most likely user wants to
-                    // assign texture to the GO
-                    // Case 730444: Proceed only if the go has a renderer
-                    CleanUp(true);
-                    return;
+                    var renderer = go.GetComponent<Renderer>();
+                    if (renderer != null && !(renderer is SpriteRenderer))
+                    {
+                        // There is an object where the cursor is
+                        // and we are dragging a texture. Most likely user wants to
+                        // assign texture to the GO
+                        // Case 730444: Proceed only if the go has a renderer
+                        CleanUp(true);
+                        return;
+                    }
                 }
             }
 
@@ -91,17 +96,27 @@ namespace UnityEditor
                             PositionSceneDragObjects(s_SceneDragObjects, sceneView, evt.mousePosition);
                         }
 
-                        if (s_DragType == DragType.SpriteAnimation)
-                            AddAnimationToGO((GameObject)s_SceneDragObjects[0], sprites.ToArray());
-
-                        foreach (GameObject dragGO in s_SceneDragObjects)
+                        bool createGameObject = true;
+                        if (s_DragType == DragType.SpriteAnimation && sprites.Count > 1)
                         {
-                            Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
-                            dragGO.hideFlags = HideFlags.None;
+                            UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop multiple sprites to scene", "null", 1);
+                            createGameObject = AddAnimationToGO((GameObject)s_SceneDragObjects[0], sprites.ToArray(), saveFileDialog);
+                        }
+                        else
+                            UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop single sprite to scene", "null", 1);
+
+                        if (createGameObject)
+                        {
+                            foreach (GameObject dragGO in s_SceneDragObjects)
+                            {
+                                Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
+                                dragGO.hideFlags = HideFlags.None;
+                            }
+
+                            Selection.objects = s_SceneDragObjects.ToArray();
                         }
 
-                        Selection.objects = s_SceneDragObjects.ToArray();
-                        CleanUp(false);
+                        CleanUp(!createGameObject);
                         evt.Use();
                     }
                     break;
@@ -183,28 +198,46 @@ namespace UnityEditor
             s_DragType = DragType.NotInitialized;
         }
 
-        static bool CreateAnimation(GameObject gameObject, Object[] frames)
+        static bool CreateAnimation(GameObject gameObject, Object[] frames, ShowFileDialogDelegate saveFileDialog)
         {
+            saveFileDialog = saveFileDialog ?? EditorUtility.SaveFilePanelInProject;
+
             // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
             System.Array.Sort(frames, (a, b) => EditorUtility.NaturalCompare(a.name, b.name));
 
-            if (!AnimationWindowUtility.EnsureActiveAnimationPlayer(gameObject))
-                return false;
+            Animator animator = AnimationWindowUtility.EnsureActiveAnimationPlayer(gameObject)
+                ? AnimationWindowUtility.GetClosestAnimatorInParents(gameObject.transform)
+                : null;
 
-            Animator animator = AnimationWindowUtility.GetClosestAnimatorInParents(gameObject.transform);
-            if (animator == null)
-                return false;
+            bool createSuccess = animator != null;
 
-            // At this point we know that we can create a clip
-            AnimationClip newClip = AnimationWindowUtility.CreateNewClip(gameObject.name);
+            if (animator != null)
+            {
+                // Go forward with presenting user a save clip dialog
+                string message = string.Format("Create a new animation for the game object '{0}':", gameObject.name);
+                string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
+                string newClipPath = saveFileDialog("Create New Animation", "New Animation", "anim", message, newClipDirectory);
 
-            if (newClip == null)
-                return false;
+                if (string.IsNullOrEmpty(newClipPath))
+                {
+                    Object.DestroyImmediate(animator);
+                    return false;
+                }
+                else
+                {
+                    AnimationClip newClip = AnimationWindowUtility.CreateNewClipAtPath(newClipPath);
+                    if (newClip != null)
+                    {
+                        AddSpriteAnimationToClip(newClip, frames);
+                        createSuccess = AnimationWindowUtility.AddClipToAnimatorComponent(animator, newClip);
+                    }
+                }
+            }
 
-            AddSpriteAnimationToClip(newClip, frames);
+            if (createSuccess == false)
+                Debug.LogError("Failed to create animation for dragged object");
 
-            // Add clip to animator
-            return AnimationWindowUtility.AddClipToAnimatorComponent(animator, newClip);
+            return createSuccess;
         }
 
         static void AddSpriteAnimationToClip(AnimationClip newClip, Object[] frames)
@@ -360,29 +393,21 @@ namespace UnityEditor
             return go;
         }
 
-        public static void AddAnimationToGO(GameObject go, Sprite[] frames)
+        public static bool AddAnimationToGO(GameObject go, Sprite[] frames, ShowFileDialogDelegate saveFileDialog)
         {
-            if (frames != null && frames.Length > 0)
+            SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
             {
-                SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
+                Debug.LogWarning("There should be a SpriteRenderer in dragged object");
+                spriteRenderer = go.AddComponent<SpriteRenderer>();
                 if (spriteRenderer == null)
                 {
-                    Debug.LogWarning("There should be a SpriteRenderer in dragged object");
-                    spriteRenderer = go.AddComponent<SpriteRenderer>();
-                }
-                spriteRenderer.sprite = frames[0];
-                // Create animation
-                if (frames.Length > 1)
-                {
-                    UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop multiple sprites to scene", "null", 1);
-                    if (!CreateAnimation(go, frames))
-                        Debug.LogError("Failed to create animation for dragged object");
-                }
-                else
-                {
-                    UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop single sprite to scene", "null", 1);
+                    Debug.LogWarning("Unable to add SpriteRenderer into Gameobject.");
+                    return false;
                 }
             }
+            spriteRenderer.sprite = frames[0];
+            return CreateAnimation(go, frames, saveFileDialog);
         }
 
         public static GameObject DropSpriteToSceneToCreateGO(Sprite sprite, Vector3 position)

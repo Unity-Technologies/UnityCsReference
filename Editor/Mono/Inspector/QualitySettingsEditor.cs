@@ -495,6 +495,7 @@ namespace UnityEditor
             var particleRaycastBudgetProperty = currentSettings.FindPropertyRelative("particleRaycastBudget");
             var asyncUploadTimeSliceProperty = currentSettings.FindPropertyRelative("asyncUploadTimeSlice");
             var asyncUploadBufferSizeProperty = currentSettings.FindPropertyRelative("asyncUploadBufferSize");
+            var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
 
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
@@ -512,6 +513,7 @@ namespace UnityEditor
                 SoftParticlesHintGUI();
             EditorGUILayout.PropertyField(realtimeReflectionProbes);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Styles.kBillboardsFaceCameraPos);
+            EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
             GUILayout.Space(10);
 
             GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);

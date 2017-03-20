@@ -118,11 +118,6 @@ namespace UnityEditor.Collaboration
             }
         }
 
-        public Collab()
-        {
-            // Nothing to do
-        }
-
         static Collab()
         {
             s_Instance = new Collab();

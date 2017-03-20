@@ -1153,6 +1153,10 @@ public void Play(string stateName, [uei.DefaultValue("-1")]  int layer , [uei.De
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal void ClearInternalControllerPlayable () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool HasState (int layerIndex, int stateID) ;
 
     [ThreadAndSerializationSafe ()]

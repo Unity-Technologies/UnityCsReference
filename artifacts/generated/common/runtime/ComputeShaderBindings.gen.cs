@@ -259,31 +259,65 @@ public sealed partial class ComputeBuffer : IDisposable
             [System.Security.SecuritySafeCritical] 
     public void SetData(System.Array data)
         {
-            InternalSetData(data, Marshal.SizeOf(data.GetType().GetElementType()));
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            InternalSetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+    
+    
+    
+            [System.Security.SecuritySafeCritical] 
+    public void SetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalSetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
         }
     
     
     [System.Security.SecurityCritical] 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void InternalSetData (System.Array data, int elemSize) ;
+    extern private void InternalSetData (System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize) ;
+
+    
+            [System.Security.SecurityCritical] 
+    public void GetData(System.Array data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            InternalGetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+    
+    
+    
+            [System.Security.SecurityCritical] 
+    public void GetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count argument (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalGetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+    
+    
+    [System.Security.SecurityCritical] 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void InternalGetData (System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count, int elemSize) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SetCounterValue (uint counterValue) ;
-
-    
-            [System.Security.SecuritySafeCritical] 
-    public void GetData(System.Array data)
-        {
-            InternalGetData(data, Marshal.SizeOf(data.GetType().GetElementType()));
-        }
-    
-    
-    [System.Security.SecurityCritical] 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void InternalGetData (System.Array data, int elemSize) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

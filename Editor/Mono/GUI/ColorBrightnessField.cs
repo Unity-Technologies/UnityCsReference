@@ -36,6 +36,7 @@ namespace UnityEditor
         {
             int dragID = GUIUtility.GetControlID(18975602, FocusType.Keyboard);
 
+
             Event evt = Event.current;
             switch (evt.GetTypeForControl(dragID))
             {
@@ -78,7 +79,8 @@ namespace UnityEditor
                         float deltaValue = HandleUtility.niceMouseDelta * dragSensitity;
                         float brightness = Mathf.Clamp(stateObject.m_Brightness + deltaValue, minBrightness, maxBrightness);
                         stateObject.m_Brightness = (float)System.Math.Round(brightness, 3); // We do not need more than 3 decimals for color channel values: 1/255 = 0.004
-                        col = Color.HSVToRGB(stateObject.m_Hue, stateObject.m_Saturation, stateObject.m_Brightness, maxBrightness > 1f);
+                        Color c = Color.HSVToRGB(stateObject.m_Hue, stateObject.m_Saturation, stateObject.m_Brightness, maxBrightness > 1f);
+                        col = new Color(c.r, c.g, c.b, col.a);
 
                         GUIUtility.keyboardControl = 0; // remove keyboard focus when dragging
                         GUI.changed = true;
@@ -104,7 +106,8 @@ namespace UnityEditor
                 float hue, saturation, dummy;
                 Color.RGBToHSV(col, out hue, out saturation, out dummy);
                 float brightness = Mathf.Clamp(newValue, minBrightness, maxBrightness);
-                col = Color.HSVToRGB(hue, saturation, brightness, maxBrightness > 1f);
+                Color c = Color.HSVToRGB(hue, saturation, brightness, maxBrightness > 1f);
+                col = new Color(c.r, c.g, c.b, col.a);
             }
 
             return col;

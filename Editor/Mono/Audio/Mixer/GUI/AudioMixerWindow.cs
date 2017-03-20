@@ -175,10 +175,6 @@ namespace UnityEditor
             AudioMixerUtility.RepaintAudioMixerAndInspectors();
         }
 
-        public AudioMixerWindow()
-        {
-        }
-
         public static void Create()
         {
             var win = GetWindow<AudioMixerWindow>(typeof(ProjectBrowser));  // From usability tests we decided to auto dock together with project browser to prevent the mixer window keep going behind the main window on OSX

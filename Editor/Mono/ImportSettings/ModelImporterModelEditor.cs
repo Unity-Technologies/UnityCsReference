@@ -9,7 +9,7 @@ using System.Collections;
 
 namespace UnityEditor
 {
-    internal class ModelImporterModelEditor : AssetImporterInspector
+    internal class ModelImporterModelEditor : BaseAssetImporterTabUI
     {
         bool m_SecondaryUVAdvancedOptions = false;
         bool m_ShowAllMaterialNameOptions = true;
@@ -35,11 +35,17 @@ namespace UnityEditor
         SerializedProperty m_NormalSmoothAngle;
         SerializedProperty m_SplitTangentsAcrossSeams;
         SerializedProperty m_NormalImportMode;
+        SerializedProperty m_NormalCalculationMode;
         SerializedProperty m_TangentImportMode;
         SerializedProperty m_OptimizeMeshForGPU;
         SerializedProperty m_IsReadable;
         SerializedProperty m_KeepQuads;
         SerializedProperty m_WeldVertices;
+
+        public ModelImporterModelEditor(AssetImporterInspector panelContainer)
+            : base(panelContainer)
+        {
+        }
 
         private void UpdateShowAllMaterialNameOptions()
         {
@@ -50,7 +56,7 @@ namespace UnityEditor
 #pragma warning restore 618
         }
 
-        internal virtual void OnEnable()
+        internal override void OnEnable()
         {
             // Material
             m_ImportMaterials = serializedObject.FindProperty("m_ImportMaterials");
@@ -72,6 +78,7 @@ namespace UnityEditor
             m_SecondaryUVPackMargin = serializedObject.FindProperty("secondaryUVPackMargin");
             m_NormalSmoothAngle = serializedObject.FindProperty("normalSmoothAngle");
             m_NormalImportMode = serializedObject.FindProperty("normalImportMode");
+            m_NormalCalculationMode = serializedObject.FindProperty("normalCalculationMode");
             m_TangentImportMode = serializedObject.FindProperty("tangentImportMode");
             m_OptimizeMeshForGPU = serializedObject.FindProperty("optimizeMeshForGPU");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
@@ -87,10 +94,13 @@ namespace UnityEditor
             UpdateShowAllMaterialNameOptions();
         }
 
-        internal override void Apply()
+        internal override void PreApply()
         {
             ScaleAvatar();
-            base.Apply();
+        }
+
+        internal override void PostApply()
+        {
             UpdateShowAllMaterialNameOptions();
         }
 
@@ -127,6 +137,16 @@ namespace UnityEditor
             public GUIContent NormalOptionImport = EditorGUIUtility.TextContent("Import");
             public GUIContent NormalOptionCalculate = EditorGUIUtility.TextContent("Calculate");
             public GUIContent NormalOptionNone = EditorGUIUtility.TextContent("None");
+
+            public GUIContent RecalculateNormalsLabel = EditorGUIUtility.TextContent("Normals Mode");
+            public GUIContent[] RecalculateNormalsOpt =
+            {
+                EditorGUIUtility.TextContent("Unweighted Legacy"),
+                EditorGUIUtility.TextContent("Unweighted"),
+                EditorGUIUtility.TextContent("Area Weighted"),
+                EditorGUIUtility.TextContent("Angle Weighted"),
+                EditorGUIUtility.TextContent("Area and Angle Weighted")
+            };
 
             public GUIContent[] TangentSpaceModeOptLabelsAll;
             public GUIContent[] TangentSpaceModeOptLabelsCalculate;
@@ -222,8 +242,6 @@ namespace UnityEditor
             MeshesGUI();
             NormalsAndTangentsGUI();
             MaterialsGUI();
-
-            ApplyRevertGUI();
         }
 
         void MeshesGUI()
@@ -345,6 +363,9 @@ namespace UnityEditor
             // Normal split angle
             using (new EditorGUI.DisabledScope(m_NormalImportMode.intValue != (int)ModelImporterNormals.Calculate))
             {
+                // Normal calculation mode
+                EditorGUILayout.Popup(m_NormalCalculationMode, styles.RecalculateNormalsOpt, styles.RecalculateNormalsLabel);
+
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.Slider(m_NormalSmoothAngle, 0, 180, styles.SmoothingAngle);
                 // Property is serialized as float but we want to show it as an int so we round the value when changed

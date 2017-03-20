@@ -25,10 +25,6 @@ namespace UnityEditorInternal
         public Rect rect { get { return m_Rect; } }
         public Rect contentRect { get { return m_ContentRect; } }
 
-        public AnimEditorOverlay()
-        {
-        }
-
         public void Initialize()
         {
             if (m_PlayHeadCursor == null)

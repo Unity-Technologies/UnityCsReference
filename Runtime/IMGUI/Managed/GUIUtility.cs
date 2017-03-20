@@ -3,10 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine.Scripting;
 // Use this define to debug who grabs and releases hotcontrol
 //#define DEBUG_HOTCONTROL
@@ -33,7 +30,12 @@ namespace UnityEngine
         internal static int s_OriginalID;
 
 
-
+        // IoC callbacks for RMGUI
+        internal static Action takeCapture;
+        internal static Action releaseCapture;
+        internal static Func<int, IntPtr, bool> processEvent;
+        internal static Action cleanupRoots;
+        internal static Func<Exception, bool> endContainerGUIFromException;
 
         /// The current UI scaling factor for high-DPI displays. For instance, 2.0 on a retina display
         internal static float pixelsPerPoint
@@ -94,11 +96,15 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void TakeCapture()
         {
+            if (takeCapture != null)
+                takeCapture();
         }
 
         [RequiredByNativeCode]
         internal static void RemoveCapture()
         {
+            if (releaseCapture != null)
+                releaseCapture();
         }
 
         // The controlID of the control that has keyboard focus.
@@ -121,6 +127,11 @@ namespace UnityEngine
             throw new ExitGUIException();
         }
 
+        internal static GUISkin GetDefaultSkin(int skinMode)
+        {
+            return Internal_GetDefaultSkin(skinMode);
+        }
+
         internal static GUISkin GetDefaultSkin()
         {
             return Internal_GetDefaultSkin(s_SkinMode);
@@ -135,14 +146,26 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
         {
+            if (processEvent != null)
+                return processEvent(instanceID, nativeEventPtr);
             return false;
         }
 
+        internal static void BeginContainer(int instanceID)
+        {
+            Internal_BeginContainer(instanceID);
+        }
+
+        internal static void EndContainer()
+        {
+            Internal_EndContainer();
+        }
 
 
         internal static void CleanupRoots()
         {
-            // see GUI.CleanupRoots
+            if (cleanupRoots != null)
+                cleanupRoots();
         }
 
         [RequiredByNativeCode]
@@ -163,14 +186,12 @@ namespace UnityEngine
             GUI.changed = false;
         }
 
-
         [RequiredByNativeCode]
         internal static void SetSkin(int skinMode)
         {
             s_SkinMode = skinMode;
             GUI.DoSetSkin(null);
         }
-
 
 
         [RequiredByNativeCode]
@@ -213,7 +234,9 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static bool EndContainerGUIFromException(Exception exception)
         {
-            return ShouldRethrowException(exception);
+            if (endContainerGUIFromException != null)
+                return endContainerGUIFromException(exception);
+            return false;
         }
 
         internal static bool ShouldRethrowException(Exception exception)

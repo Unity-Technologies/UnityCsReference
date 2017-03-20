@@ -366,11 +366,6 @@ namespace UnityEditor
             return !string.IsNullOrEmpty(m_SearchString) && m_SearchString.Length > 0;
         }
 
-        // Constructor
-        public ProfilerWindow()
-        {
-        }
-
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();

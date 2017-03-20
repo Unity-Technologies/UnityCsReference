@@ -161,5 +161,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             return editorCompilation.GetAllMonoIslands();
         }
+
+        [RequiredByNativeCode]
+        public static MonoIsland[] GetAllMonoIslandsExt(PrecompiledAssembly[] unityAssemblies, PrecompiledAssembly[] precompiledAssemblies, BuildFlags buildFlags)
+        {
+            return editorCompilation.GetAllMonoIslands(unityAssemblies, precompiledAssemblies, buildFlags);
+        }
     }
 }

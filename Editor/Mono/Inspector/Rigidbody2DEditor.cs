@@ -87,7 +87,12 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_BodyType);
             EditorGUILayout.PropertyField(m_Material);
+
+            // Provide the user some information when simulation is turned off.
             EditorGUILayout.PropertyField(m_Simulated);
+            if (!m_Simulated.boolValue && !m_Simulated.hasMultipleDifferentValues)
+                EditorGUILayout.HelpBox("The body has now been taken out of the simulation along with any attached colliders, joints or effectors.", MessageType.Info);
+
 
             // Can only multi-edit if we have the same body-type.
             if (m_BodyType.hasMultipleDifferentValues)

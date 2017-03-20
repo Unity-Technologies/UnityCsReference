@@ -610,10 +610,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         ScriptAssembly[] GetAllScriptAssemblies(BuildFlags buildFlags, EditorScriptCompilationOptions options)
         {
+            return GetAllScriptAssemblies(buildFlags, options, unityAssemblies, precompiledAssemblies);
+        }
+
+        ScriptAssembly[] GetAllScriptAssemblies(BuildFlags buildFlags, EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
+        {
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
-                UnityAssemblies = unityAssemblies,
-                PrecompiledAssemblies = precompiledAssemblies,
+                UnityAssemblies = unityAssembliesArg,
+                PrecompiledAssemblies = precompiledAssembliesArg,
                 CustomTargetAssemblies = customTargetAssemblies,
                 EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
             };
@@ -624,7 +629,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public MonoIsland[] GetAllMonoIslands()
         {
-            var scriptAssemblies = GetAllScriptAssemblies(BuildFlags.BuildingForEditor, EditorScriptCompilationOptions.BuildingEmpty);
+            return GetAllMonoIslands(unityAssemblies, precompiledAssemblies, BuildFlags.BuildingForEditor);
+        }
+
+        public MonoIsland[] GetAllMonoIslands(PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg, BuildFlags buildFlags)
+        {
+            var compilationOptions = (buildFlags & BuildFlags.BuildingForEditor) != 0 ? EditorScriptCompilationOptions.BuildingForEditor : EditorScriptCompilationOptions.BuildingEmpty;
+            var scriptAssemblies = GetAllScriptAssemblies(buildFlags, compilationOptions, unityAssembliesArg, precompiledAssembliesArg);
             var monoIslands = new MonoIsland[scriptAssemblies.Length];
 
             for (int i = 0; i < scriptAssemblies.Length; ++i)

@@ -447,10 +447,6 @@ namespace UnityEditor
 
         protected AvatarSetupTool.BoneWrapper[] m_Bones;
 
-        public AvatarMuscleEditor()
-        {
-        }
-
         internal void ResetValuesFromProperties()
         {
             m_ArmTwistFactor = m_ArmTwistProperty.floatValue;

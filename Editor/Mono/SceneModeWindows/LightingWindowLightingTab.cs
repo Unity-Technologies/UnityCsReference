@@ -157,14 +157,14 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
-                EditorGUI.BeginChangeCheck();
-                bool updateStatistics = EditorGUILayout.Toggle(Styles.UpdateStatistics, m_ShouldUpdateStatistics);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SessionState.SetBool(kUpdateStatistics, updateStatistics);
-                    m_ShouldUpdateStatistics = updateStatistics;
-                }
+//                EditorGUI.BeginChangeCheck();
+//                bool updateStatistics = EditorGUILayout.Toggle(Styles.UpdateStatistics, m_ShouldUpdateStatistics);
+//
+//                if (EditorGUI.EndChangeCheck())
+//                {
+//                    SessionState.SetBool(kUpdateStatistics, updateStatistics);
+//                    m_ShouldUpdateStatistics = updateStatistics;
+//                }
 
                 m_ShowProbeDebugSettings = EditorGUILayout.Foldout(m_ShowProbeDebugSettings, Styles.LightProbeVisualization);
 

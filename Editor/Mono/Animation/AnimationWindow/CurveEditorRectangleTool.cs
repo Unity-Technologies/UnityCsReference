@@ -147,10 +147,6 @@ namespace UnityEditor
             }
         }
 
-        public CurveEditorRectangleTool()
-        {
-        }
-
         public override void Initialize(TimeArea timeArea)
         {
             base.Initialize(timeArea);

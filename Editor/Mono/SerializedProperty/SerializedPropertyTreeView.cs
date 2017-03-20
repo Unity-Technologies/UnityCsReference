@@ -489,13 +489,15 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             float fullWidth = r.width;
+            float toggleWidth = 16;
 
-            r.width = 16;
+            r.width = toggleWidth;
             m_bFilterSelection = EditorGUI.Toggle(r, m_bFilterSelection);
-            r.x += r.width;
+            r.x += toggleWidth;
             r.width = GUI.skin.label.CalcSize(SerializedPropertyTreeView.Styles.filterSelection).x;
             EditorGUI.LabelField(r, SerializedPropertyTreeView.Styles.filterSelection);
-            r.width = 300;
+
+            r.width = Mathf.Min(fullWidth - (r.x + r.width), 300);
             r.x = fullWidth - r.width + 10;
 
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)

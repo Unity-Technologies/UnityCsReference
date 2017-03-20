@@ -67,10 +67,6 @@ namespace UnityEditor
                 return m_ToolbarPadding;
             }
         }
-        void OnInspectorUpdate()
-        {
-            Repaint();
-        }
 
         void OnEnable()
         {
@@ -198,23 +194,18 @@ namespace UnityEditor
 
         void PreviewSection()
         {
-            EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.ToolbarStyle, GUILayout.Height(17));
+            if (m_Mode != Mode.LightingSettings)
             {
-                GUILayout.FlexibleSpace();
-                GUI.Label(GUILayoutUtility.GetLastRect(), (m_Mode == Mode.LightingSettings ? "Statistics" : "Preview"), Styles.ToolbarTitleStyle);
+                EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.ToolbarStyle, GUILayout.Height(17));
+                {
+                    GUILayout.FlexibleSpace();
+                    GUI.Label(GUILayoutUtility.GetLastRect(), "Preview", Styles.ToolbarTitleStyle);
+                }
+                EditorGUILayout.EndHorizontal();
             }
-            EditorGUILayout.EndHorizontal();
 
             switch (m_Mode)
             {
-                case Mode.LightingSettings:
-                {
-                    float previewSize = m_PreviewResizer.ResizeHandle(position, 195, 240, 17);
-                    Rect previewRect = new Rect(0, position.height - previewSize, position.width, previewSize);
-
-                    if (previewSize > 0)
-                        m_LightingTab.StatisticsPreview(previewRect);
-                } break;
                 case Mode.OutputMaps:
                 {
                     float previewSize = m_PreviewResizer.ResizeHandle(position, 100, 250, 17);
@@ -511,7 +502,7 @@ namespace UnityEditor
         static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
-            window.minSize = new Vector2(320, 390);
+            window.minSize = new Vector2(360, 390);
             window.Show();
         }
 

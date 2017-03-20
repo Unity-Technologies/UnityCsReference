@@ -14,10 +14,6 @@ namespace UnityEditorInternal
         private TreeViewState m_TreeViewState;
         private AddCurvesPopupHierarchyDataSource m_TreeViewDataSource;
 
-        public AddCurvesPopupHierarchy()
-        {
-        }
-
         public void OnGUI(Rect position, EditorWindow owner)
         {
             InitIfNeeded(owner, position);

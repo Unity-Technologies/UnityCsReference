@@ -392,7 +392,7 @@ public sealed partial class HandleUtility
     
     
     [RequiredByNativeCode]
-    static private void BeginHandles()
+    static internal void BeginHandles()
         {
             Handles.Init();
             switch (Event.current.type)
@@ -419,7 +419,7 @@ public sealed partial class HandleUtility
     
     
     [RequiredByNativeCode]
-    static private void EndHandles()
+    static internal void EndHandles()
         {
             EditorGUI.s_DelayedTextEditor.EndGUI(Event.current.type);
         }

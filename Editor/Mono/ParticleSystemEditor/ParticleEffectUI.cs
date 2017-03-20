@@ -58,8 +58,6 @@ namespace UnityEditor
             public GUIContent bounds = new GUIContent("Bounds", "Show world space bounding boxes");
             public GUIContent resimulation = new GUIContent("Resimulate", "If resimulate is enabled the particle system will show changes made to the system immediately (including changes made to the particle system transform)");
             public string secondsFloatFieldFormatString = "f2";
-
-            public Texts() {}
         }
         private static Texts s_Texts;
         internal static Texts texts

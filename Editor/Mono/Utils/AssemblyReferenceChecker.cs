@@ -193,9 +193,16 @@ namespace UnityEditor
             if (type.Namespace == "UnityEngine" && type.Name == "MonoBehaviour")
                 return true;
 
-            var typeDefinition = type.Resolve();
-            if (typeDefinition.BaseType != null)
-                return InheritsFromMonoBehaviour(typeDefinition.BaseType);
+            try
+            {
+                var typeDefinition = type.Resolve();
+                if (typeDefinition.BaseType != null)
+                    return InheritsFromMonoBehaviour(typeDefinition.BaseType);
+            }
+            catch (AssemblyResolutionException)
+            {
+                // We weren't able to resolve the base type - let's assume it's not a monobehaviour
+            }
 
             return false;
         }

@@ -7,10 +7,6 @@ namespace UnityEditor.Web
 {
     internal abstract class CloudServiceAccess
     {
-        public CloudServiceAccess()
-        {
-        }
-
         public abstract string GetServiceName();
 
         protected WebView GetWebView()

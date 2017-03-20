@@ -66,10 +66,6 @@ namespace UnityEditor
             }
         }
 
-        public RectangleTool()
-        {
-        }
-
         public virtual void Initialize(TimeArea timeArea)
         {
             m_TimeArea = timeArea;

@@ -13,10 +13,10 @@ namespace UnityEditor
     {
         internal override void OnEnable()
         {
-            if (m_SubEditorTypes == null)
+            if (tabs == null)
             {
-                m_SubEditorTypes = new System.Type[3] { typeof(ModelImporterModelEditor), typeof(ModelImporterRigEditor), typeof(ModelImporterClipEditor) };
-                m_SubEditorNames = new string[3] {"Model", "Rig", "Animations"};
+                tabs = new BaseAssetImporterTabUI[3] { new ModelImporterModelEditor(this), new ModelImporterRigEditor(this), new ModelImporterClipEditor(this) };
+                m_TabNames = new string[3] {"Model", "Rig", "Animations"};
             }
             base.OnEnable();
         }
@@ -28,7 +28,6 @@ namespace UnityEditor
         }
 
         // Only show the imported GameObject when the Model tab is active; not when the Animation tab is active
-        internal override bool showImportedObject { get { return activeEditor is ModelImporterModelEditor; } }
-        protected override bool useAssetDrawPreview { get { return false; } }
+        internal override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
     }
 }

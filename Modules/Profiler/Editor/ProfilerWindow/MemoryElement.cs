@@ -176,9 +176,6 @@ namespace UnityEditor
     class MemoryElementSelection
     {
         private MemoryElement m_Selected = null;
-        public MemoryElementSelection()
-        {
-        }
 
         public void SetSelection(MemoryElement node)
         {

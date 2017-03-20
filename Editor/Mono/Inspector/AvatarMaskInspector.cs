@@ -275,6 +275,15 @@ namespace UnityEditor
 
         private void OnEnable()
         {
+            // The AvatarMaskInspector is instantiated in the ModelImporterClipEditor, which does not derive from the Editor class anymore.
+            // All editors are added to a list so that OnEnable() and other methods can be called on them at certain times.
+            // When going in game while having settings pending to be applied, at some point the target (ModelImporterClipEditor.m_Mask) becomes null,
+            // since the parent becomes updated before this class.
+            if (target == null)
+            {
+                return;
+            }
+
             InitializeSerializedProperties();
         }
 
