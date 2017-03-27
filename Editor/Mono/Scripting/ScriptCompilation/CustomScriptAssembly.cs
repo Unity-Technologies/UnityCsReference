@@ -9,13 +9,11 @@ using System.IO;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
-    // Necessary because JsonUtility cannot deserialize into an array of objects.
     [System.Serializable]
     class CustomScriptAssemblyData
     {
         public string name;
         public string[] references;
-        public string language;
         public string[] includePlatforms;
         public string[] excludePlatforms;
 
@@ -32,9 +30,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if ((assemblyData.excludePlatforms != null && assemblyData.excludePlatforms.Length > 0) &&
                 (assemblyData.includePlatforms != null && assemblyData.includePlatforms.Length > 0))
                 throw new System.Exception("Both 'excludePlatforms' and 'includePlatforms' are set.");
-
-            if (string.IsNullOrEmpty(assemblyData.language))
-                assemblyData.language = "CSharp";
 
             return assemblyData;
         }
@@ -58,7 +53,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string PathPrefix { get; set; }
         public string Name { get; set; }
         public string[] References { get; set; }
-        public SupportedLanguage Language { get; set; }
         public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
@@ -151,7 +145,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.References = customScriptAssemblyData.references;
             customScriptAssembly.FilePath = path;
             customScriptAssembly.PathPrefix = pathPrefix;
-            customScriptAssembly.Language = ScriptCompilers.GetLanguageFromName(customScriptAssemblyData.language);
 
             if (customScriptAssemblyData.includePlatforms != null && customScriptAssemblyData.includePlatforms.Length > 0)
                 customScriptAssembly.IncludePlatforms = customScriptAssemblyData.includePlatforms.Select(name => GetPlatformFromName(name)).ToArray();

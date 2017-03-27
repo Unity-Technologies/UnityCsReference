@@ -105,6 +105,8 @@ namespace UnityEngine.Experimental.RMGUI
 
             m_OnGUIHandler(); // native will catch exceptions thrown here
 
+            GUIUtility.CheckForTabEvent(evt);
+
             // The Event will probably be nuked with the next function call, so we get its type now.
             EventType eventType = Event.current.type;
 

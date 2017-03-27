@@ -120,7 +120,6 @@ namespace UnityEditor
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TextContent("Divide By Zero Checks");
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
-            public GUIContent forceOptimizeScriptCompilation = EditorGUIUtility.TextContent("Build Optimized Scripts|Compile IL2CPP using full compiler optimizations. Note this will obfuscate callstack output.");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
 
             public Styles()
@@ -245,9 +244,6 @@ namespace UnityEditor
                 options |= BuildOptions.ConnectWithProfiler;
             if (EditorUserBuildSettings.buildScriptsOnly)
                 options |= BuildOptions.BuildScriptsOnly;
-
-            if (EditorUserBuildSettings.forceOptimizeScriptCompilation)
-                options |= BuildOptions.ForceOptimizeScriptCompilation;
 
             if (installInBuildFolder)
                 options |= BuildOptions.InstallInBuildFolder;
@@ -1045,16 +1041,6 @@ namespace UnityEditor
                 GUI.enabled = developmentBuild;
                 if (shouldDrawDebuggingToggle)
                     EditorUserBuildSettings.allowDebugging = EditorGUILayout.Toggle(styles.allowDebugging, EditorUserBuildSettings.allowDebugging);
-
-                // Get current il2cpp setting. Used to decide if optimized checkbox should be drawn.
-                // It doesn't make any sense for optimization to be available with anything other than il2cpp.
-                bool useIl2cpp = PlayerSettings.GetScriptingBackend(platform.targetGroup) == ScriptingImplementation.IL2CPP;
-
-                // Only show when optimize checkbox when development build is active and il2cpp player setting is used.
-                bool shouldDrawForceOptimizeScriptsCheckbox = buildWindowExtension != null && developmentBuild == true && useIl2cpp == true ? buildWindowExtension.ShouldDrawForceOptimizeScriptsCheckbox() : false;
-
-                if (shouldDrawForceOptimizeScriptsCheckbox)
-                    EditorUserBuildSettings.forceOptimizeScriptCompilation = EditorGUILayout.Toggle(styles.forceOptimizeScriptCompilation, EditorUserBuildSettings.forceOptimizeScriptCompilation);
 
                 if (shouldDrawExplicitNullChecksToggle)
                 {

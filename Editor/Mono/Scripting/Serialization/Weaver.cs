@@ -105,8 +105,10 @@ namespace UnityEditor.Scripting.Serialization
             }
             if (dependencies == null) // No matching project found
             {
-                UnityEngine.Debug.LogError("Weaver failure: unable to locate assemblies (no matching project) for: " + destPath);
-                return false;
+                // no project found should be considered a "valid" state and we
+                // should returned that the weaver was successfull, we did "weave" currently
+                // Just there was nothing to weave.
+                return true;
             }
 
             var dependencyPaths = new List<string>();

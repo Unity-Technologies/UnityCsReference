@@ -4,9 +4,7 @@
 
 namespace UnityEngine.Experimental.RMGUI
 {
-    // TODO Make public. It's currently internal because it clashes in a doc tool with another class in another namespace.
-    // Once the tool is fixed, this becomes public.
-    internal class Image : VisualElement
+    public class Image : VisualElement
     {
         public Texture image { get; set; }
         public ScaleMode scaleMode { get; set; }

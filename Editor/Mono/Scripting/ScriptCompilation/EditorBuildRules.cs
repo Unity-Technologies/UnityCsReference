@@ -23,7 +23,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal class TargetAssembly
         {
             public string Filename { get; private set; }
-            public SupportedLanguage Language { get; private set; }
+            public SupportedLanguage Language { get; set; }
             public AssemblyFlags Flags { get; private set; }
             public Func<string, int> PathFilter { get; private set; }
             public List<TargetAssembly> References { get; private set; }
@@ -72,11 +72,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public ScriptAssemblySettings Settings { get; set; }
             public CompilationAssemblies Assemblies { get; set; }
             public HashSet<string> RunUpdaterAssemblies { get; set; }
-            public HashSet<string> NotCompiledSourceFiles { get; set; }
+            public HashSet<TargetAssembly> NotCompiledTargetAssemblies { get; set; }
 
             public GenerateChangedScriptAssembliesArgs()
             {
-                NotCompiledSourceFiles = new HashSet<string>();
+                NotCompiledTargetAssemblies = new HashSet<TargetAssembly>();
             }
         }
 
@@ -94,9 +94,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (customTargetAssemblies == null)
                 return predefined;
 
-            var custom = customTargetAssemblies.Where(a => a.Language.GetLanguageName() == language.GetLanguageName());
-
-            return predefined.Concat(custom);
+            // TODO: Figure out what to do here. We do not know the script language for a custom script assembly
+            // because it depends on extensions of the scripts inside the folder. So we just return them all for now.
+            return predefined.Concat(customTargetAssemblies);
         }
 
         public static TargetAssembly[] GetPredefinedTargetAssemblies()
@@ -141,7 +141,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var pathPrefixLowerCase = customAssembly.PathPrefix.ToLower();
 
-                var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll", customAssembly.Language, customAssembly.AssemblyFlags,
+                var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll", null, customAssembly.AssemblyFlags,
                         TargetAssemblyType.Custom, path => path.StartsWith(pathPrefixLowerCase) ? pathPrefixLowerCase.Length : -1);
 
                 targetAssemblies.Add(targetAssembly);
@@ -230,25 +230,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var targetAssembly = GetTargetAssembly(dirtySourceFile, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
 
-                if (targetAssembly == null)
-                {
-                    args.NotCompiledSourceFiles.Add(dirtySourceFile);
-                    continue;
-                }
-
                 // Do not mark editor assembly as dirty if we are not building for editor.
                 if (!buildingForEditor && targetAssembly.EditorOnly)
                     continue;
 
                 HashSet<string> assemblySourceFiles;
 
+                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(dirtySourceFile);
+                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+
                 if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out assemblySourceFiles))
                 {
                     assemblySourceFiles = new HashSet<string>();
                     dirtyTargetAssemblies[targetAssembly] = assemblySourceFiles;
+
+                    if (targetAssembly.Type == TargetAssemblyType.Custom)
+                        targetAssembly.Language = scriptLanguage;
                 }
 
                 assemblySourceFiles.Add(Path.Combine(args.ProjectDirectory, dirtySourceFile));
+
+                // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
+                if (scriptLanguage != targetAssembly.Language)
+                    args.NotCompiledTargetAssemblies.Add(targetAssembly);
             }
 
             bool isAnyCustomScriptAssemblyDirty = dirtyTargetAssemblies.Any(entry => entry.Key.Type == TargetAssemblyType.Custom);
@@ -301,17 +305,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var targetAssembly = GetTargetAssembly(sourceFile, args.ProjectDirectory, args.Assemblies.CustomTargetAssemblies);
 
-                if (targetAssembly == null)
-                {
-                    args.NotCompiledSourceFiles.Add(sourceFile);
-                    continue;
-                }
-
                 // Do not mark editor assembly as dirty if we are not building for editor.
                 if (!buildingForEditor && targetAssembly.EditorOnly)
                     continue;
 
                 HashSet<string> assemblySourceFiles;
+
+                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(sourceFile);
+                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+
+                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
+                    targetAssembly.Language = scriptLanguage;
+
+                // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
+                if (scriptLanguage != targetAssembly.Language)
+                    args.NotCompiledTargetAssemblies.Add(targetAssembly);
 
                 if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out assemblySourceFiles))
                     assemblySourceFiles.Add(Path.Combine(args.ProjectDirectory, sourceFile));
@@ -319,6 +327,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // Remove any target assemblies which have no source files associated with them.
             dirtyTargetAssemblies = dirtyTargetAssemblies.Where(e => e.Value.Count > 0).ToDictionary(e => e.Key, e => e.Value);
+
+            // Remove any target assemblies which have been marked as do not compile.
+            foreach (var removeAssembly in args.NotCompiledTargetAssemblies)
+                dirtyTargetAssemblies.Remove(removeAssembly);
+
 
             // Convert TargetAssemblies to ScriptAssembiles
             var scriptAssemblies = ToScriptAssemblies(dirtyTargetAssemblies, args.Settings, args.BuildFlags, args.Assemblies, args.RunUpdaterAssemblies);
@@ -541,17 +554,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static TargetAssembly GetTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
         {
-            TargetAssembly candidateAssembly = null;
-            TargetAssembly resultAssembly = GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies, ref candidateAssembly);
+            TargetAssembly resultAssembly = GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
 
             if (resultAssembly != null)
                 return resultAssembly;
-
-            // Script belongs to a CustomScriptAssembly folder but there is no
-            // matching scripting language. Return null to tell the caller
-            // that this script should not be be included in the compilation.
-            if (candidateAssembly != null)
-                return null;
 
             return GetPredefinedTargetAssembly(scriptPath);
         }
@@ -587,13 +593,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return resultAssembly;
         }
 
-        internal static TargetAssembly GetCustomTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies,
-            ref TargetAssembly candidateAssembly)
+        internal static TargetAssembly GetCustomTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
         {
             if (customTargetAssemblies == null)
                 return null;
 
-            var extension = Path.GetExtension(scriptPath).Substring(1).ToLower();
             int highestPathDepth = -1;
             TargetAssembly resultAssembly = null;
 
@@ -608,24 +612,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (pathDepth <= highestPathDepth)
                     continue;
 
-                bool canCompile = extension == assembly.Language.GetExtensionICanCompile();
-
-                if (canCompile)
-                {
-                    resultAssembly = assembly;
-                    highestPathDepth = pathDepth;
-                }
-                else
-                {
-                    // We have a matching CustomScriptAssembly for the path, but
-                    // not for the scripting language. Set candidate assembly.
-                    candidateAssembly = assembly;
-                }
+                resultAssembly = assembly;
+                highestPathDepth = pathDepth;
             }
-
-            // resultAssembly might be null if the script belongs to a
-            // CustomScriptAssembly folder but there is no matching scripting language.
-            // In that case the candidateAssembly will be set.
 
             return resultAssembly;
         }

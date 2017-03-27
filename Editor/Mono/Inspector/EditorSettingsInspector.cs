@@ -63,6 +63,8 @@ namespace UnityEditor
         private PopupElement[] spritePackerPopupList =
         {
             new PopupElement("Disabled"),
+            new PopupElement("Enabled For Builds(Legacy)"),
+            new PopupElement("Always Enabled(Legacy)"),
             new PopupElement("Enabled For Builds"),
             new PopupElement("Always Enabled"),
         };

@@ -247,6 +247,13 @@ namespace Unity.UNetWeaver
             serializeFunc.Parameters.Add(new ParameterDefinition("item", ParameterAttributes.None, m_ItemType));
             ILProcessor serWorker = serializeFunc.Body.GetILProcessor();
 
+            if (m_ItemType.IsGenericInstance)
+            {
+                Weaver.fail = true;
+                Log.Error("GenerateSerialization for " + Helpers.PrettyPrintType(m_ItemType) + " failed. Struct passed into SyncListStruct<T> can't have generic parameters");
+                return null;
+            }
+
             foreach (var field in m_ItemType.Resolve().Fields)
             {
                 if (field.IsStatic || field.IsPrivate || field.IsSpecialName)

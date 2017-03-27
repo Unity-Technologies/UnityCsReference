@@ -5,9 +5,7 @@
 namespace UnityEngine.Experimental.RMGUI
 {
     [GUISkinStyle("toggle")]
-    // TODO Make public. It's currently internal because it clashes in a doc tool with another class in another namespace.
-    // Once the tool is fixed, this becomes public.
-    internal class Toggle : Button
+    public class Toggle : Button
     {
         public bool on
         {

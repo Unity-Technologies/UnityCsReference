@@ -55,7 +55,7 @@ namespace UnityEditor
 
     internal static class ShaderGUIUtility
     {
-        internal static Type ExtractCustomEditorType(string customEditorName)
+        private static Type ExtractCustomEditorType(string customEditorName)
         {
             if (string.IsNullOrEmpty(customEditorName)) return null;
 
@@ -77,14 +77,10 @@ namespace UnityEditor
             return null;
         }
 
-        internal static ShaderGUI CreateShaderGUI(Type customEditorType)
-        {
-            return customEditorType != null ? (Activator.CreateInstance(customEditorType) as ShaderGUI) : null;
-        }
-
         internal static ShaderGUI CreateShaderGUI(string customEditorName)
         {
-            return CreateShaderGUI(ExtractCustomEditorType(customEditorName));
+            Type customEditorType = ExtractCustomEditorType(customEditorName);
+            return customEditorType != null ? (Activator.CreateInstance(customEditorType) as ShaderGUI) : null;
         }
     }
 } // namespace UnityEditor

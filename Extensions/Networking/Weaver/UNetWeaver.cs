@@ -60,7 +60,10 @@ namespace Unity.UNetWeaver
         public static TypeReference NetworkBehaviourType;
         public static TypeReference NetworkBehaviourType2;
         public static TypeReference MonoBehaviourType;
+        public static TypeReference ScriptableObjectType;
         public static TypeReference NetworkConnectionType;
+        public static TypeReference ULocalConnectionToServerType;
+        public static TypeReference ULocalConnectionToClientType;
 
         public static TypeReference MessageBaseType;
         public static TypeReference SyncListStructType;
@@ -171,6 +174,7 @@ namespace Unity.UNetWeaver
         public static TypeReference sbyteType;
         public static TypeReference charType;
         public static TypeReference objectType;
+        public static TypeReference valueTypeType;
         public static TypeReference vector2Type;
         public static TypeReference vector3Type;
         public static TypeReference vector4Type;
@@ -269,11 +273,6 @@ namespace Unity.UNetWeaver
                 }
             }
 
-            if (variable.Resolve().IsEnum)
-            {
-                return NetworkWriterWriteInt32;
-            }
-
             if (variable.IsByReference)
             {
                 // error??
@@ -295,6 +294,11 @@ namespace Unity.UNetWeaver
             }
             else
             {
+                if (variable.Resolve().IsEnum)
+                {
+                    return NetworkWriterWriteInt32;
+                }
+
                 newWriterFunc = GenerateWriterFunction(variable);
             }
 
@@ -343,11 +347,6 @@ namespace Unity.UNetWeaver
                 return null;
             }
 
-            if (td.IsEnum)
-            {
-                return NetworkReaderReadInt32;
-            }
-
             if (variable.IsByReference)
             {
                 // error??
@@ -369,6 +368,11 @@ namespace Unity.UNetWeaver
             }
             else
             {
+                if (td.IsEnum)
+                {
+                    return NetworkReaderReadInt32;
+                }
+
                 newReaderFunc = GenerateReadFunction(variable);
             }
 
@@ -1282,6 +1286,7 @@ namespace Unity.UNetWeaver
             sbyteType = ImportCorLibType("System.SByte");
             charType = ImportCorLibType("System.Char");
             objectType = ImportCorLibType("System.Object");
+            valueTypeType = ImportCorLibType("System.ValueType");
             typeType = ImportCorLibType("System.Type");
             IEnumeratorType = ImportCorLibType("System.Collections.IEnumerator");
             MemoryStreamType = ImportCorLibType("System.IO.MemoryStream");
@@ -1358,8 +1363,16 @@ namespace Unity.UNetWeaver
             NetworkConnectionType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.NetworkConnection");
 
             MonoBehaviourType = m_UnityAssemblyDefinition.MainModule.GetType("UnityEngine.MonoBehaviour");
+            ScriptableObjectType = m_UnityAssemblyDefinition.MainModule.GetType("UnityEngine.ScriptableObject");
+
             NetworkConnectionType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.NetworkConnection");
             NetworkConnectionType = scriptDef.MainModule.ImportReference(NetworkConnectionType);
+
+            ULocalConnectionToServerType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.ULocalConnectionToServer");
+            ULocalConnectionToServerType = scriptDef.MainModule.ImportReference(ULocalConnectionToServerType);
+
+            ULocalConnectionToClientType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.ULocalConnectionToClient");
+            ULocalConnectionToClientType = scriptDef.MainModule.ImportReference(ULocalConnectionToClientType);
 
             MessageBaseType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.MessageBase");
             SyncListStructType = m_UNetAssemblyDefinition.MainModule.GetType("UnityEngine.Networking.SyncListStruct`1");

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Playables
 {
@@ -25,9 +26,12 @@ namespace UnityEngine.Playables
     {
         PlayableHandle CreatePlayable(PlayableGraph graph, GameObject owner);
         double duration { get; }
+        IEnumerable<PlayableBinding> outputs { get; }
     }
 
-    public abstract partial class PlayableAsset : ScriptableObject, IPlayableAsset
+    [System.Serializable]
+    [RequiredByNativeCode]
+    public abstract class PlayableAsset : ScriptableObject, IPlayableAsset
     {
         public abstract PlayableHandle CreatePlayable(PlayableGraph graph, GameObject owner);
 
@@ -36,10 +40,32 @@ namespace UnityEngine.Playables
             get { return PlayableBinding.DefaultDuration; }
         }
 
-        // workaround for not being able to Invoke<double> on iOS
-        internal void InternalGetDuration(IntPtr ptrToDouble)
+        public virtual IEnumerable<PlayableBinding> outputs
         {
-            double d = duration;
+            get { return PlayableBinding.None; }
+        }
+
+        // Called by playable director to instantiate a playable asset
+        //  Uses an IntPtr because XBoxOne doesn't support marshalling the struct as a return value properly
+        //  and UAP doesn't support out parameters
+        [RequiredByNativeCode]
+        unsafe static internal void Internal_CreatePlayable(PlayableAsset asset, PlayableGraph graph, GameObject go, IntPtr ptr)
+        {
+            PlayableHandle result;
+            if (asset == null)
+                result = PlayableHandle.Null;
+            else
+                result = asset.CreatePlayable(graph, go);
+
+            PlayableHandle* handle = (PlayableHandle*)ptr.ToPointer();
+            *handle = result;
+        }
+
+        // workaround for not being able to Invoke<double> on iOS
+        [RequiredByNativeCode]
+        static internal void Internal_GetPlayableAssetDuration(PlayableAsset asset, IntPtr ptrToDouble)
+        {
+            double d = asset.duration;
             unsafe
             {
                 double* ptr = (double*)ptrToDouble.ToPointer();

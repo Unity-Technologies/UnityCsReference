@@ -33,8 +33,14 @@ namespace UnityEditorInternal
             ShowAsDropDown(buttonRect, windowSize, new[] { PopupLocationHelper.PopupLocation.Right });
         }
 
+        void OnEnable()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload += Close;
+        }
+
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= Close;
             s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
             s_AddCurvesPopup = null;
             s_Hierarchy = null;

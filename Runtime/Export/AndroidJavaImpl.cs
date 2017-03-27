@@ -228,17 +228,17 @@ namespace UnityEngine
                 else if (typeof(ReturnType) == typeof(AndroidJavaClass))
                 {
                     IntPtr jclass = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
                 }
                 else if (typeof(ReturnType) == typeof(AndroidJavaObject))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
                 }
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
                 }
                 else
                 {
@@ -391,17 +391,17 @@ namespace UnityEngine
                 else if (typeof(ReturnType) == typeof(AndroidJavaClass))
                 {
                     IntPtr jclass = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                    return (jclass == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaClassDeleteLocalRef(jclass);
                 }
                 else if (typeof(ReturnType) == typeof(AndroidJavaObject))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
                 }
                 else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
-                    return (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
+                    return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)AndroidJNIHelper.ConvertFromJNIArray<ReturnType>(jobject);
                 }
                 else
                 {

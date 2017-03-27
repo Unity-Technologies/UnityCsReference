@@ -321,7 +321,7 @@ public sealed partial class ComputeBuffer : IDisposable
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void CopyCount (ComputeBuffer src, ComputeBuffer dst, int dstOffset) ;
+    extern public static  void CopyCount (ComputeBuffer src, ComputeBuffer dst, int dstOffsetBytes) ;
 
     public IntPtr GetNativeBufferPtr () {
         IntPtr result;

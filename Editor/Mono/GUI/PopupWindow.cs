@@ -109,8 +109,20 @@ namespace UnityEditor
             }
         }
 
+        void CloseWindow()
+        {
+            Close();
+        }
+
+        void OnEnable()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload += CloseWindow;
+        }
+
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= CloseWindow;
+
             s_LastClosedTime = EditorApplication.timeSinceStartup;
             if (m_WindowContent != null)
                 m_WindowContent.OnClose();

@@ -13,7 +13,7 @@ namespace UnityEditor
     internal class TransitionPreview
     {
         private AvatarPreview m_AvatarPreview;
-        private Timeline m_Timeline;
+        private TimelineControl m_Timeline;
 
         private AnimatorController m_Controller;
         private AnimatorStateMachine m_StateMachine;
@@ -152,8 +152,8 @@ namespace UnityEditor
         float m_RightStateTimeA = 0;
         float m_RightStateTimeB = 1;
 
-        List<Timeline.PivotSample> m_SrcPivotList = new List<Timeline.PivotSample>();
-        List<Timeline.PivotSample> m_DstPivotList = new List<Timeline.PivotSample>();
+        List<TimelineControl.PivotSample> m_SrcPivotList = new List<TimelineControl.PivotSample>();
+        List<TimelineControl.PivotSample> m_DstPivotList = new List<TimelineControl.PivotSample>();
 
         private bool MustResample(TransitionInfo info)
         {
@@ -351,7 +351,7 @@ namespace UnityEditor
                 currentTime = 0.0f;
                 while (currentTime <= rightDuration)
                 {
-                    Timeline.PivotSample sample = new Timeline.PivotSample();
+                    TimelineControl.PivotSample sample = new TimelineControl.PivotSample();
                     sample.m_Time = currentTime;
                     sample.m_Weight = m_AvatarPreview.Animator.pivotWeight;
                     m_DstPivotList.Add(sample);
@@ -369,7 +369,7 @@ namespace UnityEditor
                 currentTime = 0.0f;
                 while (currentTime <= leftDuration)
                 {
-                    Timeline.PivotSample sample = new Timeline.PivotSample();
+                    TimelineControl.PivotSample sample = new TimelineControl.PivotSample();
                     sample.m_Time = currentTime;
                     sample.m_Weight = m_AvatarPreview.Animator.pivotWeight;
                     m_SrcPivotList.Add(sample);
@@ -589,7 +589,7 @@ namespace UnityEditor
 
             if (m_Timeline == null)
             {
-                m_Timeline = new Timeline();
+                m_Timeline = new TimelineControl();
                 m_MustSampleMotions = true;
             }
 

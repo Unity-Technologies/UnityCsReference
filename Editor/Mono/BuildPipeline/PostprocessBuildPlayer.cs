@@ -129,6 +129,13 @@ namespace UnityEditor
             }
         }
 
+        static public void UpdateBootConfig(BuildTargetGroup targetGroup, BuildTarget target, BootConfigData config, BuildOptions options)
+        {
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            if (postprocessor != null)
+                postprocessor.UpdateBootConfig(target, config, options);
+        }
+
         static public void Launch(BuildTargetGroup targetGroup, BuildTarget target, string path, string productName, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);

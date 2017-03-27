@@ -137,11 +137,13 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload += Close;
             hideFlags = HideFlags.DontSave;
         }
 
         void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= Close;
             // When window closes we copy all changes to monoimporters (reimport monoScripts)
             foreach (MonoScript monoScript in m_MonoScriptIconsChanged)
                 MonoImporter.CopyMonoScriptIconToImporters(monoScript);

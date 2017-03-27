@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEditor.Scripting.Serialization;
+using UnityEngine;
 
 internal abstract class DesktopStandalonePostProcessor
 {
@@ -27,6 +28,12 @@ internal abstract class DesktopStandalonePostProcessor
         SetupStagingArea();
 
         CopyStagingAreaIntoDestination();
+    }
+
+    public void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
+    {
+        if (PlayerSettings.forceSingleInstance)
+            config.AddKey("single-instance");
     }
 
     private void CopyNativePlugins()

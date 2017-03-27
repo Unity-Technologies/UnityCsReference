@@ -116,6 +116,17 @@ namespace UnityEditor.Scripting
             throw new ApplicationException(string.Format("Script language '{0}' is not supported", name));
         }
 
+        internal static SupportedLanguage GetLanguageFromExtension(string extension)
+        {
+            foreach (var lang in SupportedLanguages)
+            {
+                if (String.Equals(extension, lang.GetExtensionICanCompile(), StringComparison.OrdinalIgnoreCase))
+                    return lang;
+            }
+
+            throw new ApplicationException(string.Format("Script file extension '{0}' is not supported", extension));
+        }
+
         internal static ScriptCompilerBase CreateCompilerInstance(MonoIsland island, bool buildingForEditor, BuildTarget targetPlatform, bool runUpdater)
         {
             if (island._files.Length == 0) throw new ArgumentException("Cannot compile MonoIsland with no files");

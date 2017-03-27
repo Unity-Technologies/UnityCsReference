@@ -12,7 +12,7 @@ namespace UnityEngine.Assertions
     internal class AssertionMessageUtil
     {
         const string k_Expected = "Expected:";
-        const string k_AssertionFailed = "Assertion failed.";
+        const string k_AssertionFailed = "Assertion failure.";
 
         public static string GetMessage(string failureMessage)
         {

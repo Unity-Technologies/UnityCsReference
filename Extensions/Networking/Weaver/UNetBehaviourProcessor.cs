@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -225,6 +226,39 @@ namespace Unity.UNetWeaver
                         Weaver.voidType);
             }
 
+            // find instance constructor
+            MethodDefinition ctor = null;
+
+            foreach (MethodDefinition md in m_td.Methods)
+            {
+                if (md.Name == ".ctor")
+                {
+                    ctor = md;
+
+                    var ret = ctor.Body.Instructions[ctor.Body.Instructions.Count - 1];
+                    if (ret.OpCode == OpCodes.Ret)
+                    {
+                        ctor.Body.Instructions.RemoveAt(ctor.Body.Instructions.Count - 1);
+                    }
+                    else
+                    {
+                        Weaver.fail = true;
+                        Log.Error("No ctor for " + m_td.Name);
+                        return;
+                    }
+
+                    break;
+                }
+            }
+
+            if (ctor == null)
+            {
+                Weaver.fail = true;
+                Log.Error("No ctor for " + m_td.Name);
+                return;
+            }
+
+            ILProcessor ctorWorker = ctor.Body.GetILProcessor();
             ILProcessor cctorWorker = cctor.Body.GetILProcessor();
 
             int cmdIndex = 0;
@@ -293,6 +327,9 @@ namespace Unity.UNetWeaver
                 cctorWorker.Append(cctorWorker.Create(OpCodes.Stsfld, listConstant));
                 //Weaver.DLog(m_td, "    Constant " + m_td.Name + ":List:" + fd.Name);
 
+
+                GenerateSyncListInstanceInitializer(ctorWorker, fd);
+
                 GenerateCommandDelegate(cctorWorker, Weaver.registerSyncListDelegateReference, m_SyncListInvocationFuncs[syncListIndex], listConstant);
                 syncListIndex += 1;
             }
@@ -309,6 +346,9 @@ namespace Unity.UNetWeaver
                 m_td.Methods.Add(cctor);
             }
 
+            // finish ctor
+            ctorWorker.Append(ctorWorker.Create(OpCodes.Ret));
+
             // in case class had no cctor, it might have BeforeFieldInit, so injected cctor would be called too late
             m_td.Attributes = m_td.Attributes & ~TypeAttributes.BeforeFieldInit;
 
@@ -316,29 +356,29 @@ namespace Unity.UNetWeaver
                 return;
 
             // find  constructor
-            MethodDefinition ctor = null;
-            bool ctorFound = false;
+            MethodDefinition awake = null;
+            bool awakeFound = false;
             foreach (MethodDefinition md in m_td.Methods)
             {
                 if (md.Name == "Awake")
                 {
-                    ctor = md;
-                    ctorFound = true;
+                    awake = md;
+                    awakeFound = true;
                 }
             }
-            if (ctor != null)
+            if (awake != null)
             {
                 // remove the return opcode from end of function. will add our own later.
-                if (ctor.Body.Instructions.Count != 0)
+                if (awake.Body.Instructions.Count != 0)
                 {
-                    Instruction ret = ctor.Body.Instructions[ctor.Body.Instructions.Count - 1];
+                    Instruction ret = awake.Body.Instructions[awake.Body.Instructions.Count - 1];
                     if (ret.OpCode == OpCodes.Ret)
                     {
-                        ctor.Body.Instructions.RemoveAt(ctor.Body.Instructions.Count - 1);
+                        awake.Body.Instructions.RemoveAt(awake.Body.Instructions.Count - 1);
                     }
                     else
                     {
-                        Log.Error("No ctor for " + m_td.Name);
+                        Log.Error("No awake for " + m_td.Name);
                         Weaver.fail = true;
                         return;
                     }
@@ -346,21 +386,75 @@ namespace Unity.UNetWeaver
             }
             else
             {
-                ctor = new MethodDefinition("Awake", MethodAttributes.Private, Weaver.voidType);
+                awake = new MethodDefinition("Awake", MethodAttributes.Private, Weaver.voidType);
             }
 
-            ILProcessor ctorWorker = ctor.Body.GetILProcessor();
+            ILProcessor awakeWorker = awake.Body.GetILProcessor();
+
+            if (!awakeFound)
+            {
+                // if we're not directly inheriting from NetworkBehaviour, we have to
+                // go up the inheritance chain and check for awake calls that we are overriding by "mistake"
+                CheckForCustomBaseClassAwakeMethod(awakeWorker);
+            }
+
             int syncListFieldOffset = 0;
             foreach (FieldDefinition fd in m_SyncLists)
             {
-                GenerateSyncListInitializer(ctorWorker, fd, syncListFieldOffset);
+                GenerateSyncListInitializer(awakeWorker, fd, syncListFieldOffset);
                 syncListFieldOffset += 1;
             }
-            ctorWorker.Append(ctorWorker.Create(OpCodes.Ret));
-            if (!ctorFound)
+            awakeWorker.Append(awakeWorker.Create(OpCodes.Ret));
+            if (!awakeFound)
             {
-                m_td.Methods.Add(ctor);
+                m_td.Methods.Add(awake);
             }
+        }
+
+        void CheckForCustomBaseClassAwakeMethod(ILProcessor awakeWorker)
+        {
+            // start from base type
+            var t = m_td.BaseType;
+
+            // as long as basetype is not NetworkBehaviour
+            while (t.FullName != Weaver.NetworkBehaviourType.FullName)
+            {
+                // check for the first Awake() method in the hierarchy
+                var awake = t.Resolve().Methods.FirstOrDefault<MethodDefinition>(x => x.Name == "Awake" && !x.HasParameters);
+                if (awake != null)
+                {
+                    // if found, invoke it so we don't loose the behaviour by implicitly overriding Awake
+                    awakeWorker.Append(awakeWorker.Create(OpCodes.Ldarg_0));
+                    awakeWorker.Append(awakeWorker.Create(OpCodes.Call, awake));
+                    return;
+                }
+            }
+        }
+
+        void GenerateSyncListInstanceInitializer(ILProcessor ctorWorker, FieldDefinition fd)
+        {
+            // check the ctor's instructions for an Stfld op-code for this specific sync list field.
+            foreach (var ins in ctorWorker.Body.Instructions)
+            {
+                if (ins.OpCode.Code == Code.Stfld)
+                {
+                    var field = (FieldDefinition)ins.Operand;
+                    if (field.DeclaringType == fd.DeclaringType && field.Name == fd.Name)
+                    {
+                        // Already initialized by the user in the field definition, e.g:
+                        // public SyncListInt Foo = new SyncListInt();
+                        return;
+                    }
+                }
+            }
+
+            // Not initialized by the user in the field definition, e.g:
+            // public SyncListInt Foo;
+            var listCtor = Weaver.scriptDef.MainModule.ImportReference(fd.FieldType.Resolve().Methods.First<MethodDefinition>(x => x.Name == ".ctor" && !x.HasParameters));
+
+            ctorWorker.Append(ctorWorker.Create(OpCodes.Ldarg_0));
+            ctorWorker.Append(ctorWorker.Create(OpCodes.Newobj, listCtor));
+            ctorWorker.Append(ctorWorker.Create(OpCodes.Stfld, fd));
         }
 
         /*
@@ -1233,6 +1327,18 @@ namespace Unity.UNetWeaver
 
             WriteServerActiveCheck(rpcWorker, md.Name, label, "TargetRPC Function");
 
+            Instruction labelConnectionCheck = rpcWorker.Create(OpCodes.Nop);
+
+            // check specifically for ULocalConnectionToServer so a host is not trying to send
+            // an TargetRPC to the "server" from it's local client.
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Ldarg_1));
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Isinst, Weaver.ULocalConnectionToServerType));
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Brfalse, labelConnectionCheck));
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Ldstr, string.Format("TargetRPC Function {0} called on connection to server", md.Name)));
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Call, Weaver.logErrorReference));
+            rpcWorker.Append(rpcWorker.Create(OpCodes.Ret));
+            rpcWorker.Append(labelConnectionCheck);
+
             WriteCreateWriter(rpcWorker);
 
             WriteMessageSize(rpcWorker);
@@ -2069,7 +2175,14 @@ namespace Unity.UNetWeaver
 
                         if (Weaver.IsDerivedFrom(resolvedField, Weaver.NetworkBehaviourType))
                         {
-                            Log.Error("SyncVar [" + fd.FullName + "] cannot be derived from NetworkBehaviour. Use a GameObject or NetworkInstanceId.");
+                            Log.Error("SyncVar [" + fd.FullName + "] cannot be derived from NetworkBehaviour.");
+                            Weaver.fail = true;
+                            return;
+                        }
+
+                        if (Weaver.IsDerivedFrom(resolvedField, Weaver.ScriptableObjectType))
+                        {
+                            Log.Error("SyncVar [" + fd.FullName + "] cannot be derived from ScriptableObject.");
                             Weaver.fail = true;
                             return;
                         }
@@ -2113,6 +2226,12 @@ namespace Unity.UNetWeaver
                             Log.Error("SyncVar [" + fd.FullName + "] cannot be an array. Use a SyncList instead.");
                             Weaver.fail = true;
                             return;
+                        }
+
+                        if (Helpers.InheritsFromSyncList(fd.FieldType))
+                        {
+                            Log.Warning(string.Format("Script class [{0}] has [SyncVar] attribute on SyncList field {1}, SyncLists should not be marked with SyncVar.", m_td.FullName, fd.Name));
+                            break;
                         }
 
                         m_SyncVars.Add(fd);

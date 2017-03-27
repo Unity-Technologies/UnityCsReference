@@ -140,7 +140,7 @@ public sealed partial class CommandBuffer : IDisposable
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CopyCounterValue (ComputeBuffer src, ComputeBuffer dst, uint dstOffset) ;
+    extern public void CopyCounterValue (ComputeBuffer src, ComputeBuffer dst, uint dstOffsetBytes) ;
 
     public extern  string name
     {

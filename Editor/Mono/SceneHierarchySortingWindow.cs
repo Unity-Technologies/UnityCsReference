@@ -56,12 +56,14 @@ namespace UnityEditor
 
         private void OnEnable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload += Close;
             hideFlags = HideFlags.DontSave;
             wantsMouseMove = true;
         }
 
         private void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= Close;
             s_LastClosedTime = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
         }
 

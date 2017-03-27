@@ -34,6 +34,7 @@ namespace UnityEditor
         // You can drag to black and drag up again while preserving hue and saturation.
         internal static Color DoColorBrightnessField(Rect rect, Rect dragRect, Color col, float minBrightness, float maxBrightness, GUIStyle style)
         {
+            float alpha = col.a;
             int dragID = GUIUtility.GetControlID(18975602, FocusType.Keyboard);
 
 
@@ -110,7 +111,7 @@ namespace UnityEditor
                 col = new Color(c.r, c.g, c.b, col.a);
             }
 
-            return col;
+            return new Color(col.r, col.g, col.b, alpha);
         }
 
         class ColorBrightnessFieldStateObject

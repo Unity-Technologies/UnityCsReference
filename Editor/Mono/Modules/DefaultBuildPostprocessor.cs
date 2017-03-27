@@ -4,6 +4,8 @@
 
 using System;
 
+using UnityEngine;
+
 namespace UnityEditor.Modules
 {
     internal abstract class DefaultBuildPostprocessor
@@ -37,6 +39,10 @@ namespace UnityEditor.Modules
         public virtual string PrepareForBuild(BuildOptions options, BuildTarget target)
         {
             return null;
+        }
+
+        public virtual void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
+        {
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

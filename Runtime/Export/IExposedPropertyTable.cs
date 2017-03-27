@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace UnityEngine
 {
-    interface IExposedPropertyTable
+    public interface IExposedPropertyTable
     {
         void SetReferenceValue(PropertyName id, UnityEngine.Object value);
         UnityEngine.Object GetReferenceValue(PropertyName id, out bool idValid);

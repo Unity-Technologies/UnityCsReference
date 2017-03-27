@@ -114,8 +114,14 @@ namespace UnityEditorInternal
             Repaint();
         }
 
+        void OnEnable()
+        {
+            AssemblyReloadEvents.beforeAssemblyReload += Close;
+        }
+
         private void OnDisable()
         {
+            AssemblyReloadEvents.beforeAssemblyReload -= Close;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
             s_LastClosedTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
         }

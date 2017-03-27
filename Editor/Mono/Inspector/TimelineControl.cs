@@ -9,7 +9,7 @@ using System;
 
 namespace UnityEditor
 {
-    internal class Timeline
+    internal class TimelineControl
     {
         private TimeArea m_TimeArea;
 
@@ -50,16 +50,16 @@ namespace UnityEditor
         private Vector3[] m_SrcPivotVectors;
         private Vector3[] m_DstPivotVectors;
 
-        private List<Timeline.PivotSample> m_SrcPivotList = new List<Timeline.PivotSample>();
-        private List<Timeline.PivotSample> m_DstPivotList = new List<Timeline.PivotSample>();
+        private List<TimelineControl.PivotSample> m_SrcPivotList = new List<TimelineControl.PivotSample>();
+        private List<TimelineControl.PivotSample> m_DstPivotList = new List<TimelineControl.PivotSample>();
 
-        public List<Timeline.PivotSample> SrcPivotList
+        public List<TimelineControl.PivotSample> SrcPivotList
         {
             get { return m_SrcPivotList; }
             set { m_SrcPivotList = value; m_SrcPivotVectors = null; }
         }
 
-        public List<Timeline.PivotSample> DstPivotList
+        public List<TimelineControl.PivotSample> DstPivotList
         {
             get { return m_DstPivotList; }
             set { m_DstPivotList = value; m_DstPivotVectors = null; }
@@ -241,7 +241,7 @@ namespace UnityEditor
                 styles = new Styles();
         }
 
-        public Timeline()
+        public TimelineControl()
         {
             Init();
         }

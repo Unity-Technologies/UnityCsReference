@@ -70,6 +70,7 @@ namespace UnityEditor
         public SerializedProperty m_ForceToMono;
         public SerializedProperty m_Normalize;
         public SerializedProperty m_PreloadAudioData;
+        public SerializedProperty m_Ambisonic;
         public SerializedProperty m_OrigSize;
         public SerializedProperty m_CompSize;
 
@@ -278,6 +279,7 @@ namespace UnityEditor
             m_ForceToMono = serializedObject.FindProperty("m_ForceToMono");
             m_Normalize = serializedObject.FindProperty("m_Normalize");
             m_PreloadAudioData = serializedObject.FindProperty("m_PreloadAudioData");
+            m_Ambisonic = serializedObject.FindProperty("m_Ambisonic");
             m_OrigSize = serializedObject.FindProperty("m_PreviewData.m_OrigSize");
             m_CompSize = serializedObject.FindProperty("m_PreviewData.m_CompSize");
 
@@ -573,6 +575,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_Normalize);
                 }
                 EditorGUI.indentLevel--;
+                EditorGUILayout.PropertyField(m_Ambisonic);
             }
 
             BuildPlatform[] validPlatforms = BuildPlatforms.instance.GetValidPlatforms().ToArray();

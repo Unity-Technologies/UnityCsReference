@@ -199,11 +199,19 @@ namespace UnityEditor
             EditorApplication.playmodeStateChanged += OnPlayModeStateChanged;
             EditorApplication.assetLabelsChanged += OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged += OnAssetBundleNameChanged;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             Collab.instance.StateChanged += OnCollabStateChanged;
             s_LastInteractedProjectBrowser = this;
 
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
+        }
+
+        void OnAfterAssemblyReload()
+        {
+            // Repaint to ensure ProjectBrowser UI is initialized. This fixes the issue where a new script is created from the application menu
+            // bar while the project browser ui was not initialized.
+            Repaint();
         }
 
         void OnDisable()
@@ -212,6 +220,7 @@ namespace UnityEditor
             EditorApplication.projectWindowChanged -= OnProjectChanged;
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
+            AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
             Collab.instance.StateChanged -= OnCollabStateChanged;
             s_ProjectBrowsers.Remove(this);
         }

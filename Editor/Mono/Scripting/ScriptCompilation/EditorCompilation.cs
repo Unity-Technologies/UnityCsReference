@@ -290,11 +290,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CustomScriptAssembly FindCustomScriptAssembly(string scriptPath)
         {
-            EditorBuildRules.TargetAssembly candidateAssembly = null;
-            var customTargetAssembly = EditorBuildRules.GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies, ref candidateAssembly);
-
-            var assembly = customTargetAssembly != null ? customTargetAssembly : candidateAssembly;
-            var customScriptAssembly = customScriptAssemblies.Single(a => a.Name == Path.GetFileNameWithoutExtension(assembly.Filename));
+            var customTargetAssembly = EditorBuildRules.GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
+            var customScriptAssembly = customScriptAssemblies.Single(a => a.Name == Path.GetFileNameWithoutExtension(customTargetAssembly.Filename));
 
             return customScriptAssembly;
         }
@@ -311,26 +308,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if ((definesOptions & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild)
                 buildFlags |= BuildFlags.BuildingDevelopmentBuild;
 
-            string[] notCompiledSourceFiles = null;
-            bool result = CompileScripts(scriptAssemblySettings, EditorTempPath, buildFlags, ref notCompiledSourceFiles);
+            EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies = null;
+            bool result = CompileScripts(scriptAssemblySettings, EditorTempPath, buildFlags, ref notCompiledTargetAssemblies);
 
-            if (notCompiledSourceFiles != null)
-                foreach (var sourceFile in notCompiledSourceFiles)
+            if (notCompiledTargetAssemblies != null)
+                foreach (var targetAssembly in notCompiledTargetAssemblies)
                 {
-                    var customScriptAssembly = FindCustomScriptAssembly(sourceFile);
+                    var customScriptAssembly = customScriptAssemblies.Single(a => a.Name == Path.GetFileNameWithoutExtension(targetAssembly.Filename));
 
                     var filePath = customScriptAssembly.FilePath;
 
                     if (filePath.StartsWith(projectDirectory))
                         filePath = filePath.Substring(projectDirectory.Length);
 
-                    UnityEngine.Debug.LogWarning(string.Format("Script file '{0}' not included in compilation. Assembly definition file '{1}' language does not match the script file extension.", sourceFile, filePath));
+                    UnityEngine.Debug.LogWarning(string.Format("Script assembly '{0}' has not been compiled. Folder containing assembly definition file '{1}' contains script files for different script languages. Folder must only contain script files for one script language.", targetAssembly.Filename, filePath));
                 }
 
             return result;
         }
 
-        internal bool CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, BuildFlags buildflags, ref string[] notCompiledSourceFiles)
+        internal bool CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, BuildFlags buildflags, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies)
         {
             DeleteUnusedAssemblies();
             allScripts.RemoveWhere(path => !File.Exists(Path.Combine(projectDirectory, path)));
@@ -374,7 +371,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var scriptAssemblies = EditorBuildRules.GenerateChangedScriptAssemblies(args);
 
-            notCompiledSourceFiles = args.NotCompiledSourceFiles.ToArray();
+            notCompiledTargetAssemblies = args.NotCompiledTargetAssemblies.ToArray();
 
             if (!scriptAssemblies.Any())
                 return false;

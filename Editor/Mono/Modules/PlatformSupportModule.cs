@@ -144,6 +144,8 @@ namespace UnityEditor.Modules
         // Return non-empty string indicating error message to stop the build.
         string PrepareForBuild(BuildOptions options, BuildTarget target);
 
+        void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options);
+
         // Return string.Empty if targeting a folder.
         string GetExtension(BuildTarget target, BuildOptions options);
     }

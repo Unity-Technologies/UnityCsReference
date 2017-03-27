@@ -454,11 +454,5 @@ public partial class Playable : IPlayable
             PlayableHandle IPlayable.playableHandle { get { return handle; } set { handle = value; } }
 }
 
-[System.Serializable]
-[RequiredByNativeCode]
-public partial class PlayableAsset : ScriptableObject, IPlayableAsset
-{
-}
-
 
 }

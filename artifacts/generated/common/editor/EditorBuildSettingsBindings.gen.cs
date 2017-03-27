@@ -192,6 +192,16 @@ public enum AndroidBuildType
     Release = 2,
 }
 
+public enum AppleBuildAndRunType
+{
+    
+    Xcode = 0,
+    
+    Xcodebuild = 1,
+    
+    iOSDeploy = 2,
+}
+
 public enum AndroidMinification
 {
     None = 0,
@@ -263,6 +273,9 @@ public sealed partial class EditorBuildSettings
 
 public sealed partial class EditorUserBuildSettings
 {
+    internal static AppleBuildAndRunType appleBuildAndRunType = AppleBuildAndRunType.Xcode;
+    
+    
     public extern static BuildTargetGroup selectedBuildTargetGroup
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -874,6 +887,7 @@ public static bool SwitchActiveBuildTarget(BuildTarget target)
         set;
     }
 
+    [System.Obsolete ("forceOptimizeScriptCompilation is obsolete - will always return false. Control script optimization using the 'IL2CPP optimization level' configuration in Player Settings / Other.")]
     public extern static bool forceOptimizeScriptCompilation
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

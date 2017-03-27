@@ -494,6 +494,7 @@ namespace UnityEditor
                 return null;
 
             RenderTexture save = RenderTexture.active;
+            var savedViewport = ShaderUtil.rawViewportRect;
 
             bool sRGB = !TextureUtil.GetLinearSampled(original);
             RenderTexture tmp = RenderTexture.GetTemporary(
@@ -518,6 +519,7 @@ namespace UnityEditor
             RenderTexture.ReleaseTemporary(tmp);
 
             EditorGUIUtility.SetRenderTextureNoViewport(save);
+            ShaderUtil.rawViewportRect = savedViewport;
 
             copy.alphaIsTransparency = original.alphaIsTransparency;
             return copy;

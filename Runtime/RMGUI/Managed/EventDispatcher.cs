@@ -381,10 +381,9 @@ namespace UnityEngine.Experimental.RMGUI
                     return EventPropagation.Stop;
             }
 
+            // Fallback on IMGUI propagation if we don't recognize this event
             if (!invokedHandleEvent)
             {
-                Debug.LogWarning("Fall back on IMGUI propagation for " + e);
-
                 if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
                     return EventPropagation.Stop;
             }

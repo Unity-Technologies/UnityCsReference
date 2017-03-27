@@ -129,14 +129,11 @@ namespace UnityEditor
             bool disableFlipping = false;
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
             {
-                if (ps.trails.enabled)
+                ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
+                if ((renderer != null) && (renderer.renderMode == ParticleSystemRenderMode.Mesh))
                 {
-                    ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
-                    if ((renderer != null) && (renderer.renderMode == ParticleSystemRenderMode.Mesh))
-                    {
-                        disableFlipping = true;
-                        break;
-                    }
+                    disableFlipping = true;
+                    break;
                 }
             }
             using (new EditorGUI.DisabledScope(disableFlipping))

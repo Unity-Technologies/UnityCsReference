@@ -580,7 +580,7 @@ namespace UnityEditor
             foreach (Object asset in selectedAnimations)
             {
                 AnimationClip clip = asset as AnimationClip;
-                if (clip == null || (clip.hideFlags & HideFlags.NotEditable) == 0 || !AssetDatabase.Contains(clip))
+                if (clip == null || !AssetDatabase.Contains(clip))
                     duplicateClip = false;
             }
 
@@ -592,7 +592,7 @@ namespace UnityEditor
                 foreach (Object asset in selectedAnimations)
                 {
                     AnimationClip sourceClip = asset as AnimationClip;
-                    if (sourceClip != null && (sourceClip.hideFlags & HideFlags.NotEditable) != 0)
+                    if (sourceClip != null)
                     {
                         string path = AssetDatabase.GetAssetPath(asset);
                         path = Path.Combine(Path.GetDirectoryName(path), sourceClip.name) + ".anim";

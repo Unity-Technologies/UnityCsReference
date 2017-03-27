@@ -68,8 +68,8 @@ public enum BuildOptions
     
     CompressWithLz4 = 1 << 18,
     
-    
-    ForceOptimizeScriptCompilation = 1 << 19,
+    [System.Obsolete ("Specify IL2CPP optimization level in Player Settings.")]
+    ForceOptimizeScriptCompilation = 0,
     
     ComputeCRC = 1 << 20,
     

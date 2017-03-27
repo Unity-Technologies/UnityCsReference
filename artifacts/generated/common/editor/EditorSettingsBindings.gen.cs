@@ -31,7 +31,9 @@ public enum SpritePackerMode
 {
     Disabled = 0,
     BuildTimeOnly = 1,
-    AlwaysOn = 2
+    AlwaysOn = 2,
+    BuildTimeOnlyAtlas = 3,
+    AlwaysOnAtlas = 4,
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]

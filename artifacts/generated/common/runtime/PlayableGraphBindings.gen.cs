@@ -63,6 +63,17 @@ public partial struct PlayableGraph
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool InternalIsDone (ref PlayableGraph graph) ;
 
+    public IExposedPropertyTable resolver { get {return InternalGetResolver(ref this); }  set {InternalSetResolver(ref this, value); }}
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  IExposedPropertyTable InternalGetResolver (ref PlayableGraph graph) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void InternalSetResolver (ref PlayableGraph graph, IExposedPropertyTable resolver) ;
+
     public void Play()
         {
             InternalPlay(ref this);

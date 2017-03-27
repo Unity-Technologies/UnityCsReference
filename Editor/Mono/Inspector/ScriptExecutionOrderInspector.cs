@@ -21,7 +21,24 @@ namespace UnityEditor
             get { return "Script Execution Order"; }
         }
 
-        public class SortMonoScriptExecutionOrder : IComparer<MonoScript>
+        public class SortMonoScriptNameOrder : IComparer<MonoScript>
+        {
+            public virtual int Compare(MonoScript x, MonoScript y)
+            {
+                if (x != null && y != null)
+                {
+                    var xClass = x.GetClass();
+                    var yClass = y.GetClass();
+                    if (xClass != null && yClass != null)
+                        return xClass.FullName.CompareTo(yClass.FullName);
+
+                    return x.name.CompareTo(y.name);
+                }
+                return -1;
+            }
+        }
+
+        public class SortMonoScriptExecutionOrder : SortMonoScriptNameOrder
         {
             ScriptExecutionOrderInspector inspector;
 
@@ -30,27 +47,17 @@ namespace UnityEditor
                 this.inspector = inspector;
             }
 
-            public int Compare(MonoScript x, MonoScript y)
+            public override int Compare(MonoScript x, MonoScript y)
             {
                 if (x != null && y != null)
                 {
                     int orderX = inspector.GetExecutionOrder(x);
                     int orderY = inspector.GetExecutionOrder(y);
                     if (orderX == orderY)
-                        return x.name.CompareTo(y.name);
+                        return base.Compare(x, y);
 
                     return orderX.CompareTo(orderY);
                 }
-                return -1;
-            }
-        }
-
-        public class SortMonoScriptNameOrder : IComparer<MonoScript>
-        {
-            public int Compare(MonoScript x, MonoScript y)
-            {
-                if (x != null && y != null)
-                    return x.name.CompareTo(y.name);
                 return -1;
             }
         }

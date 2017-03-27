@@ -27,7 +27,7 @@ namespace UnityEngine
             conflictIndex = other.conflictIndex;
         }
 
-        private PropertyName(int id)
+        public PropertyName(int id)
         {
             this.id = id;
             this.conflictIndex = 0;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using Mono.Cecil;
 
 namespace Unity.UNetWeaver
@@ -34,6 +35,12 @@ namespace Unity.UNetWeaver
                         Log.Error("Script " + m_td.FullName + " uses [SyncVar] " + fd.Name + " but is not a NetworkBehaviour.");
                         Weaver.fail = true;
                     }
+                }
+
+                if (Helpers.InheritsFromSyncList(fd.FieldType))
+                {
+                    Log.Error(string.Format("Script {0} defines field {1} with type {2}, but it's not a NetworkBehaviour", m_td.FullName, fd.Name, Helpers.PrettyPrintType(fd.FieldType)));
+                    Weaver.fail = true;
                 }
             }
         }

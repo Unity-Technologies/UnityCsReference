@@ -21,6 +21,12 @@ namespace UnityEngine.Networking
 [StructLayout(LayoutKind.Sequential)]
 public sealed partial class DownloadHandlerTexture : DownloadHandler
 {
+    
+            private Texture2D mTexture;
+            private bool mHasTexture;
+            private bool mNonReadable;
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void InternalCreateTexture (bool readable) ;
@@ -35,6 +41,7 @@ public sealed partial class DownloadHandlerTexture : DownloadHandler
     public DownloadHandlerTexture(bool readable)
         {
             InternalCreateTexture(readable);
+            mNonReadable = !readable;
         }
     
     
@@ -50,9 +57,29 @@ public sealed partial class DownloadHandlerTexture : DownloadHandler
         }
     
     
+    private Texture2D InternalGetTexture()
+        {
+            if (mHasTexture)
+            {
+                if (mTexture == null)
+                {
+                    mTexture = new Texture2D(2, 2);
+                    mTexture.LoadImage(GetData(), mNonReadable);
+                }
+            }
+            else if (mTexture == null)
+            {
+                mTexture = InternalGetTextureNative();
+                mHasTexture = true;
+            }
+
+            return mTexture;
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private Texture2D InternalGetTexture () ;
+    extern private Texture2D InternalGetTextureNative () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

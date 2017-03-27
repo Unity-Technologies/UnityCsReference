@@ -94,8 +94,8 @@ namespace UnityEditorInternal.VR
 
     internal class VRCustomOptionsDaydream : VRCustomOptionsGoogleVR
     {
-        static GUIContent s_ForegroundIconLabel = new GUIContent("Foreground Icon|Icon should be Textures with dimensions of 512px by 512px and a 1:1 aspect ratio.");
-        static GUIContent s_BackgroundIconLabel = new GUIContent("Background Icon|Icon should be Textures with dimensions of 512px by 512px and a 1:1 aspect ratio.");
+        static GUIContent s_ForegroundIconLabel = EditorGUIUtility.TextContent("Foreground Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
+        static GUIContent s_BackgroundIconLabel = EditorGUIUtility.TextContent("Background Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
         static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TextContent("Use Sustained Performance Mode|Sustained Performance Mode is intended to provide a consistent level of performance for a prolonged amount of time");
 
         SerializedProperty m_DaydreamOnly;

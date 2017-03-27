@@ -18,6 +18,7 @@ namespace UnityEditor
         // BaseRenderer and Renderer
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
+        SerializedProperty m_MotionVectors;
         SerializedProperty m_Material;
         SerializedProperty m_TrailMaterial;
         SerializedProperty m_SortingOrder;
@@ -78,6 +79,7 @@ namespace UnityEditor
             public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Set whether the rotation of the particles is defined in Screen or World space.");
             public GUIContent castShadows = EditorGUIUtility.TextContent("Cast Shadows|Only opaque materials cast shadows");
             public GUIContent receiveShadows = EditorGUIUtility.TextContent("Receive Shadows|Only opaque materials receive shadows");
+            public GUIContent motionVectors = EditorGUIUtility.TextContent("Motion Vectors|Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TextContent("Normal Direction|Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
 
             public GUIContent sortingLayer = EditorGUIUtility.TextContent("Sorting Layer");
@@ -90,6 +92,7 @@ namespace UnityEditor
             public string[] particleTypes = new string[] { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard", "Mesh", "None" }; // Keep in sync with enum in ParticleSystemRenderer.h
             public string[] sortTypes = new string[] { "None", "By Distance", "Oldest in Front", "Youngest in Front" };
             public string[] spaces = { "View", "World", "Local", "Facing" };
+            public string[] motionVectorOptions = new string[] { "Camera Motion Only", "Per Object Motion", "Force No Motion" };
 
             public string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw" };
             public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystem.bindings
@@ -112,6 +115,7 @@ namespace UnityEditor
 
             m_CastShadows = GetProperty0("m_CastShadows");
             m_ReceiveShadows = GetProperty0("m_ReceiveShadows");
+            m_MotionVectors = GetProperty0("m_MotionVectors");
             m_Material = GetProperty0("m_Materials.Array.data[0]");
             m_TrailMaterial = GetProperty0("m_Materials.Array.data[1]");
             m_SortingOrder = GetProperty0("m_SortingOrder");
@@ -254,6 +258,8 @@ namespace UnityEditor
                     {
                         GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
                     }
+
+                    GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
 
                     EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
                     GUIInt(s_Texts.sortingOrder, m_SortingOrder);

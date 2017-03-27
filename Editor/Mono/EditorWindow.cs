@@ -40,7 +40,7 @@ namespace UnityEditor
 
         VisualContainer m_RootVisualContainer;
 
-        public VisualContainer rootVisualContainer
+        internal VisualContainer rootVisualContainer
         {
             get
             {
@@ -913,5 +913,17 @@ namespace UnityEditor
         public string title { get; set; }
         public string icon { get; set; }
         public bool useTypeNameAsIconName { get; set; }
+    }
+
+    // makes RMGUI opt-in while it's experimental, as a using statement is necessary to call this method
+    namespace Experimental.RMGUI
+    {
+        public static class RMGUIEntryPoint
+        {
+            public static VisualContainer GetRootVisualContainer(this EditorWindow window)
+            {
+                return window.rootVisualContainer;
+            }
+        }
     }
 } //namespace

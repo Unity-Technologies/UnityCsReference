@@ -5,9 +5,7 @@
 namespace UnityEngine.Experimental.RMGUI
 {
     [GUISkinStyle("button")]
-    // TODO Make public. It's currently internal because it clashes in a doc tool with another class in another namespace.
-    // Once the tool is fixed, this becomes public.
-    internal class Button : VisualElement
+    public class Button : VisualElement
     {
         public Clickable clickable;
 

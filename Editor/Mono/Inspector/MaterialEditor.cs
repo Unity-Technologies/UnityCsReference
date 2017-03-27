@@ -109,7 +109,9 @@ namespace UnityEditor
         private static readonly GUIContent  s_TilingText = new GUIContent("Tiling");
         private static readonly GUIContent  s_OffsetText = new GUIContent("Offset");
 
-        ShaderGUI                           m_CustomShaderGUI;
+        ShaderGUI   m_CustomShaderGUI;
+        string      m_CustomEditorClassName;
+
         [NonSerialized] bool                m_TriedCreatingCustomGUI;
         bool                                m_InsidePropertiesGUI;
         Renderer                            m_RendererForAnimationMode;
@@ -159,8 +161,7 @@ namespace UnityEditor
         {
             bool updateMaterialEditors = false;
             ShaderGUI customEditor = m_CustomShaderGUI;
-            string oldCustomEditorName = m_Shader != null ? m_Shader.customEditor : string.Empty;
-            CreateCustomShaderEditorIfNeeded(newShader, oldCustomEditorName);
+            CreateCustomShaderEditorIfNeeded(newShader);
             m_Shader = newShader;
             if (customEditor != m_CustomShaderGUI)
             {
@@ -264,19 +265,16 @@ namespace UnityEditor
         private void DetectShaderEditorNeedsUpdate()
         {
             var material = target as Material;
-            if (material && material.shader != m_Shader)
+            bool shaderChanged = material && material.shader != m_Shader;
+            bool customEditorChanged = material && material.shader && m_CustomEditorClassName != material.shader.customEditor;
+            if (shaderChanged || customEditorChanged)
             {
-                CreateCustomShaderEditorIfNeeded(material.shader, m_Shader != null ? m_Shader.customEditor : string.Empty);
-                m_Shader = material.shader;
-                OnShaderChanged();
-                InspectorWindow.RepaintAllInspectors(); // Repaint to let other inspectors detect if their shader has changed
-            }
-
-            Type oldType = m_CustomShaderGUI != null ? m_CustomShaderGUI.GetType() : null;
-            Type newType = ShaderGUIUtility.ExtractCustomEditorType(material.shader.customEditor);
-            if (oldType != newType)
-            {
-                m_CustomShaderGUI = newType != null ? ShaderGUIUtility.CreateShaderGUI(newType) : null;
+                CreateCustomShaderEditorIfNeeded(material.shader);
+                if (shaderChanged)
+                {
+                    m_Shader = material.shader;
+                    OnShaderChanged();
+                }
                 InspectorWindow.RepaintAllInspectors(); // Repaint to let other inspectors detect if their shader has changed
             }
         }
@@ -1380,17 +1378,18 @@ namespace UnityEditor
             return false;
         }
 
-        void CreateCustomShaderEditorIfNeeded(Shader shader, string oldEditorName)
+        void CreateCustomShaderEditorIfNeeded(Shader shader)
         {
             if (shader == null || string.IsNullOrEmpty(shader.customEditor))
             {
                 m_CustomShaderGUI = null;
                 return;
             }
-            if (oldEditorName == shader.customEditor)
+            if (m_CustomEditorClassName == shader.customEditor)
                 return;
 
-            m_CustomShaderGUI = ShaderGUIUtility.CreateShaderGUI(shader.customEditor);
+            m_CustomEditorClassName = shader.customEditor;
+            m_CustomShaderGUI = ShaderGUIUtility.CreateShaderGUI(m_CustomEditorClassName);
             // We need to delay checking setup because we need all loaded editor assemblies which is not ready
             // during package import. During package import we create an Editor to generate a asset preview. (case 707328)
             m_CheckSetup = true;
@@ -1776,7 +1775,8 @@ namespace UnityEditor
         public virtual void OnEnable()
         {
             m_Shader = serializedObject.FindProperty("m_Shader").objectReferenceValue as Shader;
-            CreateCustomShaderEditorIfNeeded(m_Shader, "");
+            m_CustomEditorClassName = "";
+            CreateCustomShaderEditorIfNeeded(m_Shader);
 
             m_EnableInstancing = serializedObject.FindProperty("m_EnableInstancingVariants");
 

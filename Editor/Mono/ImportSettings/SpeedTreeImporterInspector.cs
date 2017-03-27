@@ -341,6 +341,9 @@ namespace UnityEditor
                         evt.Use();
                         GUIUtility.hotControl = sliderId;
 
+                        // Check for button click
+                        var clickedButton = false;
+
                         // case:464019 have to re-sort the LOD array for these buttons to get the overlaps in the right order...
                         var lodsLeft = lods.Where(lod => lod.ScreenPercent > 0.5f).OrderByDescending(x => x.LODLevel);
                         var lodsRight = lods.Where(lod => lod.ScreenPercent <= 0.5f).OrderBy(x => x.LODLevel);
@@ -355,13 +358,22 @@ namespace UnityEditor
                             {
                                 m_SelectedLODSlider = lod.LODLevel;
                                 m_SelectedLODRange = lod.LODLevel;
+                                clickedButton = true;
                                 break;
                             }
-                            else if (lod.m_RangePosition.Contains(evt.mousePosition))
+                        }
+
+                        if (!clickedButton)
+                        {
+                            // Check for range click
+                            foreach (var lod in lodButtonOrder)
                             {
-                                m_SelectedLODSlider = -1;
-                                m_SelectedLODRange = lod.LODLevel;
-                                break;
+                                if (lod.m_RangePosition.Contains(evt.mousePosition))
+                                {
+                                    m_SelectedLODSlider = -1;
+                                    m_SelectedLODRange = lod.LODLevel;
+                                    break;
+                                }
                             }
                         }
                     }

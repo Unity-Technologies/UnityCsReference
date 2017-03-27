@@ -156,6 +156,27 @@ public sealed partial class AudioImporter : AssetImporter
         set;
     }
 
+    public bool ambisonic
+        {
+            get
+            {
+                return Internal_GetAmbisonic();
+            }
+            set
+            {
+                Internal_SetAmbisonic(value);
+            }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_SetAmbisonic (bool flag) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private bool Internal_GetAmbisonic () ;
+
     [System.Obsolete ("loadInBackground is not used anymore. AudioClips will now always be loaded in separate threads.")]
     public bool loadInBackground
         {

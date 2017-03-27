@@ -23,6 +23,7 @@ namespace Unity.UNetWeaver
             Weaver.DLog(m_td, "MessageClassProcessor Start");
 
             Weaver.ResetRecursionCount();
+
             GenerateSerialization();
             if (Weaver.fail)
             {
@@ -47,6 +48,17 @@ namespace Unity.UNetWeaver
                 return;
             }
 
+            // check for self-referencing types
+            foreach (var field in m_td.Fields)
+            {
+                if (field.FieldType.FullName == m_td.FullName)
+                {
+                    Weaver.fail = true;
+                    Log.Error("GenerateSerialization for " + m_td.Name + " [" + field.FullName + "]. [MessageBase] member cannot be self referencing.");
+                    return;
+                }
+            }
+
             MethodDefinition serializeFunc = new MethodDefinition("Serialize", MethodAttributes.Public |
                     MethodAttributes.Virtual |
                     MethodAttributes.HideBySig,
@@ -63,14 +75,14 @@ namespace Unity.UNetWeaver
                 if (field.FieldType.Resolve().HasGenericParameters)
                 {
                     Weaver.fail = true;
-                    Log.Error("GenerateSerialization for " + m_td.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. UNet [MessageBase] member cannot have generic parameters.");
+                    Log.Error("GenerateSerialization for " + m_td.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. [MessageBase] member cannot have generic parameters.");
                     return;
                 }
 
                 if (field.FieldType.Resolve().IsInterface)
                 {
                     Weaver.fail = true;
-                    Log.Error("GenerateSerialization for " + m_td.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. UNet [MessageBase] member cannot be an interface.");
+                    Log.Error("GenerateSerialization for " + m_td.Name + " [" + field.FieldType + "/" + field.FieldType.FullName + "]. [MessageBase] member cannot be an interface.");
                     return;
                 }
 
@@ -85,7 +97,7 @@ namespace Unity.UNetWeaver
                 else
                 {
                     Weaver.fail = true;
-                    Log.Error("GenerateSerialization for " + m_td.Name + " unknown type [" + field.FieldType + "/" + field.FieldType.FullName + "]. UNet [MessageBase] member variables must be basic types.");
+                    Log.Error("GenerateSerialization for " + m_td.Name + " unknown type [" + field.FieldType + "/" + field.FieldType.FullName + "]. [MessageBase] member variables must be basic types.");
                     return;
                 }
             }
@@ -132,7 +144,7 @@ namespace Unity.UNetWeaver
                 else
                 {
                     Weaver.fail = true;
-                    Log.Error("GenerateDeSerialization for " + m_td.Name + " unknown type [" + field.FieldType + "]. UNet [SyncVar] member variables must be basic types.");
+                    Log.Error("GenerateDeSerialization for " + m_td.Name + " unknown type [" + field.FieldType + "]. [SyncVar] member variables must be basic types.");
                     return;
                 }
             }

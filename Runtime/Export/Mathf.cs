@@ -355,7 +355,7 @@ namespace UnityEngine
         // Loops the value t, so that it is never larger than length and never smaller than 0.
         public static float Repeat(float t, float length)
         {
-            return t - Mathf.Floor(t / length) * length;
+            return Clamp(t - Mathf.Floor(t / length) * length, 0.0f, length);
         }
 
         // PingPongs the value t, so that it is never larger than length and never smaller than 0.

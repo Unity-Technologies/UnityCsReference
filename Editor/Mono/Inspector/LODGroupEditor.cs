@@ -815,10 +815,11 @@ namespace UnityEditor
                         if (!clickedButton)
                         {
                             // Check for range click
-                            foreach (var lod in lods)
+                            foreach (var lod in lodButtonOrder)
                             {
                                 if (lod.m_RangePosition.Contains(evt.mousePosition))
                                 {
+                                    m_SelectedLODSlider = -1;
                                     m_SelectedLOD = lod.LODLevel;
                                     break;
                                 }

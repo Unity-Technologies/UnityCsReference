@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -61,12 +62,103 @@ namespace Unity.UNetWeaver
             return null;
         }
 
+        public static bool InheritsFromSyncList(TypeReference typeRef)
+        {
+            try
+            {
+                // value types cant inherit from SyncList<T>
+                if (typeRef.IsValueType)
+                {
+                    return false;
+                }
+
+                foreach (var type in ResolveInheritanceHierarchy(typeRef))
+                {
+                    // only need to check for generic instances, as we're looking for SyncList<T>
+                    if (type.IsGenericInstance)
+                    {
+                        // resolves the instance type to it's generic type definition, for example SyncList<Int> to SyncList<T>
+                        var typeDef = type.Resolve();
+                        if (typeDef.HasGenericParameters && typeDef.FullName == Weaver.SyncListType.FullName)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // sometimes this will fail if we reference a weird library that can't be resolved, so we just swallow that exception and return false
+            }
+
+            return false;
+        }
+
+        public static IEnumerable<TypeReference> ResolveInheritanceHierarchy(TypeReference type)
+        {
+            // for value types the hierarchy is pre-defined as "<Self> : System.ValueType : System.Object"
+            if (type.IsValueType)
+            {
+                yield return type;
+                yield return Weaver.valueTypeType;
+                yield return Weaver.objectType;
+                yield break;
+            }
+
+            // resolve entire hierarchy from <Self> to System.Object
+            while (type != null && type.FullName != Weaver.objectType.FullName)
+            {
+                yield return type;
+
+                try
+                {
+                    var typeDef = type.Resolve();
+                    if (typeDef == null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        type = typeDef.BaseType;
+                    }
+                }
+                catch
+                {
+                    // when calling type.Resolve() we can sometimes get an exception if some dependant library
+                    // could not be loaded (for whatever reason) so just swallow it and break out of the loop
+                    break;
+                }
+            }
+
+
+            yield return Weaver.objectType;
+        }
+
         public static string DestinationFileFor(string outputDir, string assemblyPath)
         {
             var fileName = Path.GetFileName(assemblyPath);
             Debug.Assert(fileName != null, "fileName != null");
 
             return Path.Combine(outputDir, fileName);
+        }
+
+        public static string PrettyPrintType(TypeReference type)
+        {
+            // generic instances, such as List<Int32>
+            if (type.IsGenericInstance)
+            {
+                var giType = (GenericInstanceType)type;
+                return giType.Name.Substring(0, giType.Name.Length - 2) + "<" + String.Join(", ", giType.GenericArguments.Select<TypeReference, String>(PrettyPrintType).ToArray()) + ">";
+            }
+
+            // generic types, such as List<T>
+            if (type.HasGenericParameters)
+            {
+                return type.Name.Substring(0, type.Name.Length - 2) + "<" + String.Join(", ", type.GenericParameters.Select<GenericParameter, String>(x => x.Name).ToArray()) + ">";
+            }
+
+            // non-generic type such as Int
+            return type.Name;
         }
 
         public static ReaderParameters ReaderParameters(string assemblyPath, IEnumerable<string> extraPaths, IAssemblyResolver assemblyResolver, string unityEngineDLLPath, string unityUNetDLLPath)
