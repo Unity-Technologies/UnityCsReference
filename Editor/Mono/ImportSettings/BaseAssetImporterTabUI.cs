@@ -12,9 +12,21 @@ namespace UnityEditor
     {
         AssetImporterInspector m_PanelContainer = null;
 
-        public SerializedObject serializedObject { get { return m_PanelContainer.serializedObject; } }
-        public Object[] targets { get { return m_PanelContainer.targets; } }
-        public Object target { get { return m_PanelContainer.target; } }
+        public SerializedObject serializedObject
+        {
+            get { return m_PanelContainer.serializedObject; }
+        }
+
+        public Object[] targets
+        {
+            get { return m_PanelContainer.targets; }
+        }
+
+        public Object target
+        {
+            get { return m_PanelContainer.target; }
+        }
+
         public int referenceTargetIndex
         {
             get { return m_PanelContainer.referenceTargetIndex; }
@@ -33,6 +45,7 @@ namespace UnityEditor
         }
 
         internal abstract void OnEnable();
+        internal virtual void OnDisable() {}
 
         internal virtual void PreApply() {}
 

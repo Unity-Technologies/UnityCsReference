@@ -28,7 +28,6 @@ namespace UnityEditor
             public static readonly GUIContent WrapModeContent = EditorGUIUtility.TextContent("Wrap Mode|Controls the behaviour of evaluating the Playable outside its duration");
             public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TextContent("This channel will not playback because it is not currently assigned");
             public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TextContent("Bindings");
-            public static GUIStyle DirectorChannelHeaderStyle;
         }
 
         private SerializedProperty m_PlayableAsset;
@@ -58,16 +57,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (Styles.DirectorChannelHeaderStyle == null)
-            {
-                Styles.DirectorChannelHeaderStyle = new GUIStyle(ParticleSystemStyles.Get().moduleHeaderStyle);
-                Styles.DirectorChannelHeaderStyle.fixedHeight = 26.0f;
-                Styles.DirectorChannelHeaderStyle.imagePosition = ImagePosition.ImageLeft;
-                Styles.DirectorChannelHeaderStyle.contentOffset = new Vector2(2.0f, Styles.DirectorChannelHeaderStyle.contentOffset.y);
-                Styles.DirectorChannelHeaderStyle.padding.top = 2;
-                Styles.DirectorChannelHeaderStyle.padding.bottom = 2;
-            }
-
             serializedObject.Update();
 
             PlayableAssetField(m_PlayableAsset, Styles.PlayableText);
@@ -198,6 +187,7 @@ namespace UnityEditor
             // and the selection filter in the dialog uses Object instead of PlayableAsset in that version
             EditorGUI.BeginChangeCheck();
             var prop = EditorGUI.ObjectField(rect, title, property.objectReferenceValue, typeof(PlayableAsset), false);
+
             if (EditorGUI.EndChangeCheck())
             {
                 property.objectReferenceValue = prop;

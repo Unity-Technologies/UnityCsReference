@@ -77,6 +77,7 @@ namespace UnityEditor
             public readonly GUIContent m_MinRegionAreaContent = EditorGUIUtility.TextContent("Min Region Area|Minimum area that a navmesh region can be.");
             public readonly GUIContent m_ManualCellSizeContent = EditorGUIUtility.TextContent("Manual Voxel Size|Enable to set voxel size manually.");
             public readonly GUIContent m_CellSizeContent = EditorGUIUtility.TextContent("Voxel Size|Specifies at the voxelization resolution at which the NavMesh is build.");
+            public readonly GUIContent m_LearnAboutComponent = EditorGUIUtility.TextContent("Learn instead about the component workflow.|Components available for building and using navmesh data for different agent types.");
 
             public readonly GUIContent m_AgentSizeHeader = new GUIContent("Baked Agent Size");
             public readonly GUIContent m_OffmeshHeader = new GUIContent("Generated Off Mesh Links");
@@ -721,7 +722,7 @@ namespace UnityEditor
         private static void ComponentBasedWorkflowButton()
         {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Learn about the component-based workflow."))
+            if (EditorGUILayout.LinkLabel(s_Styles.m_LearnAboutComponent))
                 Help.BrowseURL("https://github.com/Unity-Technologies/NavMeshComponents");
             GUILayout.EndHorizontal();
         }

@@ -86,7 +86,7 @@ public sealed partial class NavMeshData : Object
     extern private void INTERNAL_get_sourceBounds (out Bounds value) ;
 
 
-    internal  Vector3 position
+    public  Vector3 position
     {
         get { Vector3 tmp; INTERNAL_get_position(out tmp); return tmp;  }
         set { INTERNAL_set_position(ref value); }
@@ -100,7 +100,7 @@ public sealed partial class NavMeshData : Object
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private  void INTERNAL_set_position (ref Vector3 value) ;
 
-    internal  Quaternion rotation
+    public  Quaternion rotation
     {
         get { Quaternion tmp; INTERNAL_get_rotation(out tmp); return tmp;  }
         set { INTERNAL_set_rotation(ref value); }

@@ -844,7 +844,7 @@ namespace UnityEditor
             t.localScale = source.localScale;
             foreach (Transform child in t)
             {
-                Transform sourceChild = source.FindChild(child.name);
+                Transform sourceChild = source.Find(child.name);
                 if (sourceChild)
                     CopyPose(child, sourceChild);
             }

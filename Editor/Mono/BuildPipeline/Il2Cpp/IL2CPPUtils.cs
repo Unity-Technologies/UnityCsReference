@@ -182,6 +182,9 @@ namespace UnityEditorInternal
 
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
+                var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
+                if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
+                    arguments.Add("--dotnetprofile=\"net45\"");
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
                 var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
@@ -264,9 +267,7 @@ namespace UnityEditorInternal
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-            {
                 arguments.Add("--dotnetprofile=\"net45\"");
-            }
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)

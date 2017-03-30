@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_LINUX_API;PLATFORM_METRO_API;UNITY_STANDALONE_OSX_API;PLATFORM_STV_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;UNITY_STANDALONE_WIN_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_LINUX_API;PLATFORM_METRO_API;UNITY_STANDALONE_OSX_API;PLATFORM_STV_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;UNITY_STANDALONE_WIN_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_LINUX_API;PLATFORM_METRO_API;UNITY_STANDALONE_OSX_API;PLATFORM_STV_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;UNITY_STANDALONE_WIN_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_LINUX_API;PLATFORM_METRO_API;UNITY_STANDALONE_OSX_API;PLATFORM_STV_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;UNITY_STANDALONE_WIN_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -254,6 +254,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnityString.cs" >
 <Link>Runtime\Export\UnityString.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\UnitySynchronizationContext.cs" >
+<Link>Runtime\Export\UnitySynchronizationContext.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Vector2.cs" >
 <Link>Runtime\Export\Vector2.cs</Link>
@@ -1204,131 +1207,131 @@
 <Compile Include="..\..\artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Button.cs" >
-<Link>Runtime\RMGUI\Managed\Button.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Button.cs" >
+<Link>Runtime\UIElements\Managed\Button.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Clickable.cs" >
-<Link>Runtime\RMGUI\Managed\Clickable.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Clickable.cs" >
+<Link>Runtime\UIElements\Managed\Clickable.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\EventArgs.cs" >
-<Link>Runtime\RMGUI\Managed\EventArgs.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\EventArgs.cs" >
+<Link>Runtime\UIElements\Managed\EventArgs.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\EventDispatcher.cs" >
-<Link>Runtime\RMGUI\Managed\EventDispatcher.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\EventDispatcher.cs" >
+<Link>Runtime\UIElements\Managed\EventDispatcher.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IDataWatchService.cs" >
-<Link>Runtime\RMGUI\Managed\IDataWatchService.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IDataWatchService.cs" >
+<Link>Runtime\UIElements\Managed\IDataWatchService.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Image.cs" >
-<Link>Runtime\RMGUI\Managed\Image.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Image.cs" >
+<Link>Runtime\UIElements\Managed\Image.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMBox.cs" >
-<Link>Runtime\RMGUI\Managed\IMBox.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMBox.cs" >
+<Link>Runtime\UIElements\Managed\IMBox.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMButton.cs" >
-<Link>Runtime\RMGUI\Managed\IMButton.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMButton.cs" >
+<Link>Runtime\UIElements\Managed\IMButton.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMButtonGrid.cs" >
-<Link>Runtime\RMGUI\Managed\IMButtonGrid.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMButtonGrid.cs" >
+<Link>Runtime\UIElements\Managed\IMButtonGrid.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMContainer.cs" >
-<Link>Runtime\RMGUI\Managed\IMContainer.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMContainer.cs" >
+<Link>Runtime\UIElements\Managed\IMContainer.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMGUIContainer.cs" >
-<Link>Runtime\RMGUI\Managed\IMGUIContainer.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMGUIContainer.cs" >
+<Link>Runtime\UIElements\Managed\IMGUIContainer.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMElement.cs" >
-<Link>Runtime\RMGUI\Managed\IMElement.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMElement.cs" >
+<Link>Runtime\UIElements\Managed\IMElement.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMGroup.cs" >
-<Link>Runtime\RMGUI\Managed\IMGroup.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMGroup.cs" >
+<Link>Runtime\UIElements\Managed\IMGroup.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMImage.cs" >
-<Link>Runtime\RMGUI\Managed\IMImage.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMImage.cs" >
+<Link>Runtime\UIElements\Managed\IMImage.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMLabel.cs" >
-<Link>Runtime\RMGUI\Managed\IMLabel.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMLabel.cs" >
+<Link>Runtime\UIElements\Managed\IMLabel.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMRepeatButton.cs" >
-<Link>Runtime\RMGUI\Managed\IMRepeatButton.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMRepeatButton.cs" >
+<Link>Runtime\UIElements\Managed\IMRepeatButton.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMScroller.cs" >
-<Link>Runtime\RMGUI\Managed\IMScroller.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMScroller.cs" >
+<Link>Runtime\UIElements\Managed\IMScroller.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMScrollView.cs" >
-<Link>Runtime\RMGUI\Managed\IMScrollView.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMScrollView.cs" >
+<Link>Runtime\UIElements\Managed\IMScrollView.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMSlider.cs" >
-<Link>Runtime\RMGUI\Managed\IMSlider.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMSlider.cs" >
+<Link>Runtime\UIElements\Managed\IMSlider.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMTextField.cs" >
-<Link>Runtime\RMGUI\Managed\IMTextField.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMTextField.cs" >
+<Link>Runtime\UIElements\Managed\IMTextField.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\IMToggle.cs" >
-<Link>Runtime\RMGUI\Managed\IMToggle.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\IMToggle.cs" >
+<Link>Runtime\UIElements\Managed\IMToggle.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Label.cs" >
-<Link>Runtime\RMGUI\Managed\Label.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Label.cs" >
+<Link>Runtime\UIElements\Managed\Label.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Manipulators.cs" >
-<Link>Runtime\RMGUI\Managed\Manipulators.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Manipulators.cs" >
+<Link>Runtime\UIElements\Managed\Manipulators.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Panel.cs" >
-<Link>Runtime\RMGUI\Managed\Panel.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Panel.cs" >
+<Link>Runtime\UIElements\Managed\Panel.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Recycler.cs" >
-<Link>Runtime\RMGUI\Managed\Recycler.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Recycler.cs" >
+<Link>Runtime\UIElements\Managed\Recycler.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\RepeatButton.cs" >
-<Link>Runtime\RMGUI\Managed\RepeatButton.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\RepeatButton.cs" >
+<Link>Runtime\UIElements\Managed\RepeatButton.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\RMGUIUtility.cs" >
-<Link>Runtime\RMGUI\Managed\RMGUIUtility.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\UIElementsUtility.cs" >
+<Link>Runtime\UIElements\Managed\UIElementsUtility.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Scheduler.cs" >
-<Link>Runtime\RMGUI\Managed\Scheduler.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Scheduler.cs" >
+<Link>Runtime\UIElements\Managed\Scheduler.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Scroller.cs" >
-<Link>Runtime\RMGUI\Managed\Scroller.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Scroller.cs" >
+<Link>Runtime\UIElements\Managed\Scroller.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Slider.cs" >
-<Link>Runtime\RMGUI\Managed\Slider.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Slider.cs" >
+<Link>Runtime\UIElements\Managed\Slider.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Spacing.cs" >
-<Link>Runtime\RMGUI\Managed\Spacing.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Spacing.cs" >
+<Link>Runtime\UIElements\Managed\Spacing.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\StyleEnums.cs" >
-<Link>Runtime\RMGUI\Managed\StyleEnums.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleEnums.cs" >
+<Link>Runtime\UIElements\Managed\StyleEnums.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\Toggle.cs" >
-<Link>Runtime\RMGUI\Managed\Toggle.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\Toggle.cs" >
+<Link>Runtime\UIElements\Managed\Toggle.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\VisualContainer.cs" >
-<Link>Runtime\RMGUI\Managed\VisualContainer.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualContainer.cs" >
+<Link>Runtime\UIElements\Managed\VisualContainer.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\VisualElement.cs" >
-<Link>Runtime\RMGUI\Managed\VisualElement.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualElement.cs" >
+<Link>Runtime\UIElements\Managed\VisualElement.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\VisualElementUtils.cs" >
-<Link>Runtime\RMGUI\Managed\VisualElementUtils.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementUtils.cs" >
+<Link>Runtime\UIElements\Managed\VisualElementUtils.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\VisualTreeBuilder.cs" >
-<Link>Runtime\RMGUI\Managed\VisualTreeBuilder.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualTreeBuilder.cs" >
+<Link>Runtime\UIElements\Managed\VisualTreeBuilder.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\VisualTreeBuilderExtensions.cs" >
-<Link>Runtime\RMGUI\Managed\VisualTreeBuilderExtensions.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualTreeBuilderExtensions.cs" >
+<Link>Runtime\UIElements\Managed\VisualTreeBuilderExtensions.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\StyleSheets\StyleContext.cs" >
-<Link>Runtime\RMGUI\Managed\StyleSheets\StyleContext.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleContext.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\StyleContext.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\StyleSheets\Style.cs" >
-<Link>Runtime\RMGUI\Managed\StyleSheets\Style.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\Style.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\Style.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\StyleSheets\StyleSheetCache.cs" >
-<Link>Runtime\RMGUI\Managed\StyleSheets\StyleSheetCache.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\RMGUI\Managed\StyleSheets\VisualElementStyles.cs" >
-<Link>Runtime\RMGUI\Managed\StyleSheets\VisualElementStyles.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\VisualElementStyles.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\VisualElementStyles.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs" >
 <Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
@@ -1389,6 +1392,9 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs" >
 <Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs</Link>

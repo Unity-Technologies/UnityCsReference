@@ -199,7 +199,7 @@ namespace UnityEditor
 
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             rect = PrefixLabel(rect, guiContent);
-            EditorGUI.LayerMaskField(rect, boolProp, GUIContent.none, ParticleSystemStyles.Get().popup);
+            EditorGUI.LayerMaskField(rect, boolProp, null, ParticleSystemStyles.Get().popup);
 
             EditorGUI.showMixedValue = false;
         }

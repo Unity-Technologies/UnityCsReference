@@ -30,7 +30,7 @@ namespace UnityEditor
             public static readonly GUIContent widthLabel = EditorGUIUtility.TextContent("Width|The width dimension value for the sprite");
             public static readonly GUIContent heightLabel = EditorGUIUtility.TextContent("Height|The height dimension value for the sprite");
             public static readonly GUIContent sizeLabel = EditorGUIUtility.TextContent("Size|The rendering dimension for the sprite");
-            public static readonly GUIContent notFullRectWarningLabel = EditorGUIUtility.TextContent("Sprite Tiling might not appear correctly because the Sprite used is not generated with Full Rect. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect");
+            public static readonly GUIContent notFullRectWarningLabel = EditorGUIUtility.TextContent("Sprite Tiling might not appear correctly because the Sprite used is not generated with Full Rect or Sprite Mode is set to Polygon mode. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect and Sprite Mode is either Single or Multiple");
             public static readonly GUIContent notFullRectMultiEditWarningLabel = EditorGUIUtility.TextContent("Sprite Tiling might not appear correctly because some of the Sprites used are not generated with Full Rect. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect");
             public static readonly int sizeFieldHash = "SpriteRendererSizeField".GetHashCode();
             public static readonly GUIContent materialLabel = EditorGUIUtility.TextContent("Material|Material to be used by SpriteRenderer");
@@ -49,6 +49,8 @@ namespace UnityEditor
         private AnimBool m_ShowDrawMode;
         private AnimBool m_ShowTileMode;
         private AnimBool m_ShowAdaptiveThreshold;
+
+        private SerializedProperty m_MaskInteraction;
 
         public override void OnEnable()
         {
@@ -70,6 +72,8 @@ namespace UnityEditor
             m_ShowDrawMode.valueChanged.AddListener(Repaint);
             m_ShowTileMode.valueChanged.AddListener(Repaint);
             m_ShowAdaptiveThreshold.valueChanged.AddListener(Repaint);
+
+            m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
         }
 
         public override void OnInspectorGUI()
@@ -135,6 +139,8 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             RenderSortingLayerFields();
+
+            EditorGUILayout.PropertyField(m_MaskInteraction);
 
             CheckForErrors();
 

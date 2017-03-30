@@ -5,6 +5,7 @@
 using System;
 using UnityEditorInternal;
 using UnityEditor.Web;
+using UnityEditor;
 using System.Text;
 
 namespace UnityEditor.Connect
@@ -12,6 +13,74 @@ namespace UnityEditor.Connect
     internal delegate void StateChangedDelegate(ConnectInfo state);
     internal delegate void ProjectStateChangedDelegate(ProjectInfo state);
     internal delegate void UserStateChangedDelegate(UserInfo state);
+
+    public static class UnityOAuth
+    {
+        public struct AuthCodeResponse
+        {
+            public string AuthCode { get; set; }
+            public Exception Exception { get; set; }
+        }
+
+        public static void GetAuthorizationCodeAsync(string clientId, Action<AuthCodeResponse> callback)
+        {
+            if (string.IsNullOrEmpty(clientId))
+            {
+                throw new ArgumentException("clientId is null or empty.", "clientId");
+            }
+
+            if (callback == null)
+            {
+                throw new ArgumentNullException("callback");
+            }
+
+            if (string.IsNullOrEmpty(UnityConnect.instance.GetAccessToken()))
+            {
+                throw new InvalidOperationException("User is not logged in or user status invalid.");
+            }
+
+            string url = string.Format("{0}/v1/oauth2/authorize", UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity));
+
+
+            AsyncHTTPClient client = new AsyncHTTPClient(url);
+            client.postData = string.Format("client_id={0}&response_type=code&format=json&access_token={1}&prompt=none",
+                    clientId,
+                    UnityConnect.instance.GetAccessToken());
+            client.doneCallback = delegate(AsyncHTTPClient c) {
+                    AuthCodeResponse response = new AuthCodeResponse();
+                    if (!c.IsSuccess())
+                    {
+                        response.Exception = new InvalidOperationException("Failed to call Unity ID to get auth code.");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var json = new JSONParser(c.text).Parse();
+                            if (json.ContainsKey("code") && !json["code"].IsNull())
+                            {
+                                response.AuthCode = json["code"].AsString();
+                            }
+                            else if (json.ContainsKey("message"))
+                            {
+                                response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", json["message"].AsString()));
+                            }
+                            else
+                            {
+                                response.Exception = new InvalidOperationException("Unexpected response from server.");
+                            }
+                        }
+                        catch (JSONParseException)
+                        {
+                            response.Exception = new InvalidOperationException("Unexpected response from server: Failed to parse JSON.");
+                        }
+                    }
+
+                    callback(response);
+                };
+            client.Begin();
+        }
+    }
 
     [InitializeOnLoad]
     internal partial class UnityConnect

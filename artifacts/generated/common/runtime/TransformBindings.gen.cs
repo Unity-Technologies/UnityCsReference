@@ -478,6 +478,7 @@ public void LookAt(Transform target, [uei.DefaultValue("Vector3.up")]  Vector3 w
         set;
     }
 
+    [Obsolete("FindChild has been deprecated. Use Find instead (UnityUpgradable) -> Find([mscorlib] System.String)", false)]
     public Transform FindChild(string name) { return Find(name); }
     
     

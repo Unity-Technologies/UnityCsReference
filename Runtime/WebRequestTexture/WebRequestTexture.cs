@@ -13,7 +13,7 @@ namespace UnityEngine.Networking
 
         public static UnityWebRequest GetTexture(string uri, bool nonReadable)
         {
-            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerTexture(nonReadable), null);
+            return new UnityWebRequest(uri, UnityWebRequest.kHttpVerbGET, new DownloadHandlerTexture(!nonReadable), null);
         }
 
     }

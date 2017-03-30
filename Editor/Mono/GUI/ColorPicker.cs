@@ -1572,7 +1572,7 @@ namespace UnityEditor
     internal class EyeDropper : GUIView
     {
         const int kPixelSize = 10;
-        const int kDummyWindowSize = 10000;
+        const int kDummyWindowSize = 8192;
         static internal Color s_LastPickedColor;
         GUIView m_DelegateView;
         Texture2D m_Preview;

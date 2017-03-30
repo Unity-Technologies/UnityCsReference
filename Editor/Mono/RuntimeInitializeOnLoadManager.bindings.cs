@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -35,13 +35,16 @@ namespace UnityEngine
         internal RuntimeInitializeLoadType[] loadTypes { get { return m_LoadTypes; } set { m_LoadTypes = value; } }
     }
 
-    [NativeType(Header = "Editor/Mono/RuntimeInitializeOnLoadManager.bindings.h", Name = "RuntimeInitializeOnLoadManagerBindings")]
+    [NativeHeader("Runtime/Misc/RuntimeInitializeOnLoadManager.h")]
+    [StaticAccessorAttribute("GetRuntimeInitializeOnLoadManager()")]
     internal sealed partial class RuntimeInitializeOnLoadManager
     {
         extern internal static string[] dontStripClassNames { get; }
 
+        [NativeProperty("RuntimeInitializeClassMethodInfos")]
         extern internal static RuntimeInitializeMethodInfo[] methodInfos { get; }
 
+        [NativeMethod("UpdateExecutionOrderNumber")]
         extern internal static  void UpdateMethodExecutionOrders(int[] changedIndices, int[] changedOrder);
     }
 }

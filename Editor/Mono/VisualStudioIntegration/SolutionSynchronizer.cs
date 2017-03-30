@@ -360,11 +360,16 @@ namespace UnityEditor.VisualStudioIntegration
 
         private string ProjectHeader(MonoIsland island)
         {
+            string targetframeworkversion = "v3.5";
             string toolsversion = "4.0";
             string productversion = "10.0.20506";
             ScriptingLanguage language = ScriptingLanguageFor(island);
 
-            if (_settings.VisualStudioVersion == 9)
+            if (island._api_compatibility_level == ApiCompatibilityLevel.NET_4_6)
+            {
+                targetframeworkversion = "v4.6";
+            }
+            else if (_settings.VisualStudioVersion == 9)
             {
                 toolsversion = "3.5";
                 productversion = "9.0.21022";
@@ -378,7 +383,8 @@ namespace UnityEditor.VisualStudioIntegration
                 string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(island._output),
-                EditorSettings.projectGenerationRootNamespace
+                EditorSettings.projectGenerationRootNamespace,
+                targetframeworkversion
             };
 
             try

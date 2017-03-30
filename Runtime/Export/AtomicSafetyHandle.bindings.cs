@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -21,7 +21,7 @@ namespace UnityEngine
     }
 
     [UsedByNativeCode]
-    [NativeStruct(Header = "Runtime/Jobs/AtomicSafetyHandle.h")]
+    [NativeHeader("Runtime/Jobs/AtomicSafetyHandle.h")]
     internal struct AtomicSafetyHandle
     {
         internal IntPtr                         versionNode;
@@ -31,26 +31,26 @@ namespace UnityEngine
 
         internal static extern void Release(AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void PrepareUndisposable(ref AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void UseSecondaryVersion(ref AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void BumpSecondaryVersion(ref AtomicSafetyHandle handle);
 
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void EnforceAllBufferJobsHaveCompletedAndRelease(AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void CheckReadAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void CheckWriteAndThrowNoEarlyOut(AtomicSafetyHandle handle);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         internal static extern void CheckDeallocateAndThrow(AtomicSafetyHandle handle);
 
         internal static unsafe void CheckReadAndThrow(AtomicSafetyHandle handle)

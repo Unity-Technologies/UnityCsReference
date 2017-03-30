@@ -845,6 +845,29 @@ public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material mate
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void EndSample (string name) ;
 
+    public void IssuePluginEventAndData(IntPtr callback, int eventID, IntPtr data)
+        {
+            if (callback == IntPtr.Zero)
+                throw new ArgumentException("Null callback specified.");
+
+            IssuePluginEventAndDataInternal(callback, eventID, data);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void IssuePluginEventAndDataInternal (IntPtr callback, int eventID, IntPtr data) ;
+
+    public void IssuePluginCustomBlit(IntPtr callback, uint command, UnityEngine.Rendering.RenderTargetIdentifier source, UnityEngine.Rendering.RenderTargetIdentifier dest, uint commandParam, uint commandFlags)
+        {
+            IssuePluginCustomBlitInternal(callback, command, ref source, ref dest, commandParam, commandFlags);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void IssuePluginCustomBlitInternal (IntPtr callback, uint command, ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, uint commandParam, uint commandFlags) ;
+
 }
 
 

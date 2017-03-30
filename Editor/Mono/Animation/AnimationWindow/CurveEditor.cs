@@ -692,18 +692,6 @@ namespace UnityEditor
             */
         }
 
-        void UpdateTangentsFromSelection()
-        {
-            foreach (CurveSelection cs in selectedCurves)
-            {
-                AnimationCurve curve = GetCurveFromSelection(cs);
-                if (curve == null)
-                    continue;
-
-                AnimationUtility.UpdateTangentsFromModeSurrounding(curve, cs.key);
-            }
-        }
-
         Dictionary<int, int> m_CurveIDToIndexMap;
         private Dictionary<int, int> curveIDToIndexMap
         {
@@ -1614,12 +1602,11 @@ namespace UnityEditor
 
                 // We now have the list of keys to assign - let's get them back into the animation clip
                 cw.curve.keys = keysToAssign;
+                AnimationUtility.UpdateTangentsFromMode(cw.curve);
                 cw.changed = true;
             }
 
             selectedCurves = dragSelection;
-
-            UpdateTangentsFromSelection();
         }
 
         float SnapTime(float t)
@@ -3168,6 +3155,9 @@ namespace UnityEditor
                 if (curve == null)
                     continue;
 
+                if (curve.length == 0)
+                    continue;
+
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {
                     Vector2 leftTangent = GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.InTangent));
@@ -3198,6 +3188,11 @@ namespace UnityEditor
                     continue;
 
                 AnimationCurve curve = curveWrapper.curve;
+                if (curve == null)
+                    continue;
+
+                if (curve.length == 0)
+                    continue;
 
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {

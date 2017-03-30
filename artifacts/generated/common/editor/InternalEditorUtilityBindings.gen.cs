@@ -474,10 +474,6 @@ public enum HierarchyDropMode
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void OpenPlayerConsole () ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  Resolution GetDesktopResolution () ;
-
     public static string TextifyEvent(Event evt)
         {
             if (evt == null)
@@ -721,6 +717,10 @@ public enum HierarchyDropMode
             if (renderer is SpriteRenderer)
             {
                 return ((SpriteRenderer)renderer).GetSpriteBounds();
+            }
+            if (renderer is SpriteMask)
+            {
+                return ((SpriteMask)renderer).GetSpriteBounds();
             }
             return new Bounds(Vector3.zero, Vector3.zero);
         }

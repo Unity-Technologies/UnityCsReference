@@ -44,6 +44,8 @@ namespace UnityEditor
         SerializedProperty m_UseCustomVertexStreams;
         SerializedProperty m_VertexStreams;
 
+        SerializedProperty m_MaskInteraction;
+
         ReorderableList m_VertexStreamsList;
         int m_NumTexCoords;
         int m_TexCoordChannelIndex;
@@ -91,8 +93,11 @@ namespace UnityEditor
 
             public string[] particleTypes = new string[] { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard", "Mesh", "None" }; // Keep in sync with enum in ParticleSystemRenderer.h
             public string[] sortTypes = new string[] { "None", "By Distance", "Oldest in Front", "Youngest in Front" };
-            public string[] spaces = { "View", "World", "Local", "Facing" };
+            public string[] spaces = { "View", "World", "Local", "Facing", "Velocity" };
             public string[] motionVectorOptions = new string[] { "Camera Motion Only", "Per Object Motion", "Force No Motion" };
+
+            public GUIContent maskingMode = EditorGUIUtility.TextContent("Masking|Defines the masking behaviour of the particle renderer.");
+            public string[] maskInteraction = { "No Masking", "Visible inside Mask", "Visible outside Mask"};
 
             public string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw" };
             public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystem.bindings
@@ -150,9 +155,10 @@ namespace UnityEditor
             }
             m_ShownMeshes = shownMeshes.ToArray();
 
+            m_MaskInteraction = GetProperty0("m_MaskInteraction");
+
             m_UseCustomVertexStreams = GetProperty0("m_UseCustomVertexStreams");
             m_VertexStreams = GetProperty0("m_VertexStreams");
-
             m_VertexStreamsList = new ReorderableList(serializedObject, m_VertexStreams, true, true, true, true);
             m_VertexStreamsList.elementHeight = kReorderableListElementHeight;
             m_VertexStreamsList.headerHeight = 0;
@@ -205,9 +211,9 @@ namespace UnityEditor
             if (m_TrailMaterial != null) // The renderer's material list could be empty
                 GUIObject(s_Texts.trailMaterial, m_TrailMaterial);
 
-            if (!m_RenderMode.hasMultipleDifferentValues)
+            if (renderMode != RenderMode.None)
             {
-                if (renderMode != RenderMode.None)
+                if (!m_RenderMode.hasMultipleDifferentValues)
                 {
                     GUIPopup(s_Texts.sortMode, m_SortMode, s_Texts.sortTypes);
                     GUIFloat(s_Texts.sortingFudge, m_SortingFudge);
@@ -245,7 +251,12 @@ namespace UnityEditor
                     {
                         EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
                     }
+                }
 
+                GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteraction);
+
+                if (!m_RenderMode.hasMultipleDifferentValues)
+                {
                     if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
                         DoVertexStreamsGUI(renderMode);
 

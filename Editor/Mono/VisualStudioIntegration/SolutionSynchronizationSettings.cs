@@ -100,7 +100,7 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <OutputType>Library</OutputType>",
                 @"    <AppDesignerFolder>Properties</AppDesignerFolder>",
                 @"    <AssemblyName>{7}</AssemblyName>",
-                @"    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>",
+                @"    <TargetFrameworkVersion>{9}</TargetFrameworkVersion>",
                 @"    <FileAlignment>512</FileAlignment>",
                 @"    <BaseDirectory>Assets</BaseDirectory>",
                 @"  </PropertyGroup>",

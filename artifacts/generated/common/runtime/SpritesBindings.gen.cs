@@ -61,6 +61,13 @@ public enum SpriteTileMode
     Adaptive
 }
 
+public enum SpriteMaskInteraction
+{
+    None = 0,
+    VisibleInsideMask = 1,
+    VisibleOutsideMask = 2
+}
+
 public sealed partial class Sprite : Object
 {
     public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, [uei.DefaultValue("100.0f")]  float pixelsPerUnit , [uei.DefaultValue("0")]  uint extrude , [uei.DefaultValue("SpriteMeshType.Tight")]  SpriteMeshType meshType , [uei.DefaultValue("Vector4.zero")]  Vector4 border ) {
@@ -340,6 +347,16 @@ public sealed partial class SpriteRenderer : Renderer
     }
 
     public extern bool flipY
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern SpriteMaskInteraction maskInteraction
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

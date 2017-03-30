@@ -2,16 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using Unity.Bindings;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.Animations
 {
-    [NativeInclude(Header = "Runtime/Animation/EditorCurveBinding.bindings.h")]
-    [NativeInclude(Header = "Runtime/Animation/AnimationClip.h")]
-    [NativeInclude(Header = "Editor/Src/Animation/GameObjectRecorder.h")]
+    [NativeHeader("Runtime/Animation/EditorCurveBinding.bindings.h")]
+    [NativeHeader("Runtime/Animation/AnimationClip.h")]
+    [NativeHeader("Editor/Src/Animation/GameObjectRecorder.h")]
     [NativeType]
     public class GameObjectRecorder : Object
     {

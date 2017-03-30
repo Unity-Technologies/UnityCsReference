@@ -2307,7 +2307,7 @@ namespace UnityEditor
             return Frame(bounds);
         }
 
-        internal bool Frame(Bounds bounds)
+        public bool Frame(Bounds bounds)
         {
             float newSize = bounds.extents.magnitude * 1.5f;
             if (newSize == Mathf.Infinity)

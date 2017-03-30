@@ -264,12 +264,18 @@ namespace UnityEditor
             bool hasTransitioned = false;
             bool hasFinished = false;
 
+            //For transitions with exit time == 0, skip to end of clip so transition happens on first frame
+            if (m_RefTransition.exitTime == 0)
+            {
+                m_AvatarPreview.Animator.CrossFade(0, 0f, 0, 0.9999f);
+            }
             m_AvatarPreview.Animator.StartRecording(-1);
 
             m_LeftStateWeightA = 0;
             m_LeftStateTimeA = 0;
 
             m_AvatarPreview.Animator.Update(0.0f);
+
 
             while (!hasFinished && currentTime < maxDuration)
             {

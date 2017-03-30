@@ -28,6 +28,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Analytics")]
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
+[assembly: InternalsVisibleTo("UnityEngine.Timeline")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]

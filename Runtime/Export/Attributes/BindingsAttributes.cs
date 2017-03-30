@@ -4,64 +4,41 @@
 
 using System;
 
-namespace Unity.Bindings
+namespace UnityEngine.Bindings
 {
-    internal interface IBindingsAttribute
+    interface IBindingsAttribute
     {
     }
 
-    internal interface IBindingsNameProviderAttribute : IBindingsAttribute
+    interface IBindingsNameProviderAttribute : IBindingsAttribute
     {
         string Name { get; set; }
     }
 
-    internal interface IBindingsHeaderProviderAttribute : IBindingsAttribute
+    interface IBindingsHeaderProviderAttribute : IBindingsAttribute
     {
         string Header { get; set; }
     }
 
-    internal interface IBindingsIsThreadSafeProviderAttribute : IBindingsAttribute
+    interface IBindingsIsThreadSafeProviderAttribute : IBindingsAttribute
     {
         bool IsThreadSafe { get; set; }
     }
 
-    internal interface IBindingsIsFreeFunctionProviderAttribute : IBindingsAttribute
+    interface IBindingsIsFreeFunctionProviderAttribute : IBindingsAttribute
     {
         bool IsFreeFunction { get; set; }
+        bool HasExplicitThis { get; set; }
     }
 
-    internal interface IBindingsGenerateMarshallingTypeAttribute : IBindingsNameProviderAttribute
+    interface IBindingsThrowsProviderAttribute : IBindingsAttribute
     {
-        NativeStructGenerateOption GenerateMarshallingType { get; set; }
+        bool ThrowsException { get; set; }
     }
 
-    internal abstract class NativeMemberAttribute : Attribute, IBindingsHeaderProviderAttribute, IBindingsNameProviderAttribute
+    interface IBindingsGenerateMarshallingTypeAttribute : IBindingsAttribute
     {
-        public string Name { get; set; }
-        public string Header { get; set; }
-
-        protected NativeMemberAttribute()
-        {
-        }
-
-        protected NativeMemberAttribute(string name)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
-
-            Name = name;
-        }
-
-        protected NativeMemberAttribute(string name, string header)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
-            if (header == null) throw new ArgumentNullException("header");
-            if (header == "") throw new ArgumentException("header cannot be empty", "header");
-
-            Name = name;
-            Header = header;
-        }
+        CodegenOptions CodegenOptions { get; set; }
     }
 
     // This is a set of attributes used to override conventional behaviour in the bindings generator.
@@ -69,7 +46,7 @@ namespace Unity.Bindings
 
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]
-    internal class NativeConditionalAttribute : Attribute, IBindingsAttribute
+    class NativeConditionalAttribute : Attribute, IBindingsAttribute
     {
         public string Condition { get; set; }
         public bool Enabled { get; set; }
@@ -96,72 +73,16 @@ namespace Unity.Bindings
     }
 
 
-    [AttributeUsage(AttributeTargets.Enum)]
-    internal class NativeEnumAttribute : NativeMemberAttribute
-    {
-        public bool GenerateNativeType { get; set; }
-
-        public NativeEnumAttribute()
-        {
-            GenerateNativeType = false;
-        }
-
-        public NativeEnumAttribute(string name) : base(name)
-        {
-            GenerateNativeType = false;
-        }
-
-        public NativeEnumAttribute(string name, string header) : base(name, header)
-        {
-            GenerateNativeType = false;
-        }
-
-        public NativeEnumAttribute(bool generateNativeType)
-        {
-            GenerateNativeType = generateNativeType;
-        }
-
-        public NativeEnumAttribute(string name, bool generateNativeType) : base(name)
-        {
-            GenerateNativeType = generateNativeType;
-        }
-
-        public NativeEnumAttribute(string name, string header, bool generateNativeType) : base(name, header)
-        {
-            GenerateNativeType = generateNativeType;
-        }
-    }
-
-
-    [AttributeUsage(AttributeTargets.Method)]
-    internal class NativeGetterAttribute : Attribute, IBindingsNameProviderAttribute
-    {
-        public string Name { get; set; }
-
-        public NativeGetterAttribute()
-        {
-        }
-
-        public NativeGetterAttribute(string name)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
-
-            Name = name;
-        }
-    }
-
-
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = true)]
-    internal class NativeIncludeAttribute : Attribute, IBindingsHeaderProviderAttribute
+    class NativeHeaderAttribute : Attribute, IBindingsHeaderProviderAttribute
     {
         public string Header { get; set; }
 
-        public NativeIncludeAttribute()
+        public NativeHeaderAttribute()
         {
         }
 
-        public NativeIncludeAttribute(string header)
+        public NativeHeaderAttribute(string header)
         {
             if (header == null) throw new ArgumentNullException("header");
             if (header == "") throw new ArgumentException("header cannot be empty", "header");
@@ -170,13 +91,32 @@ namespace Unity.Bindings
         }
     }
 
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    class NativeNameAttribute : Attribute, IBindingsNameProviderAttribute
+    {
+        public string Name { get; set; }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    internal class NativeMethodAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute, IBindingsIsFreeFunctionProviderAttribute
+        public NativeNameAttribute()
+        {
+        }
+
+        public NativeNameAttribute(string name)
+        {
+            if (name == null) throw new ArgumentNullException("name");
+            if (name == "") throw new ArgumentException("name cannot be empty", "name");
+
+            Name = name;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    class NativeMethodAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute, IBindingsIsFreeFunctionProviderAttribute, IBindingsThrowsProviderAttribute
     {
         public string Name { get; set; }
         public bool IsThreadSafe { get; set; }
         public bool IsFreeFunction { get; set; }
+        public bool ThrowsException { get; set; }
+        public bool HasExplicitThis { get; set; }
 
         public NativeMethodAttribute()
         {
@@ -199,248 +139,166 @@ namespace Unity.Bindings
         {
             IsThreadSafe = isThreadSafe;
         }
+
+        public NativeMethodAttribute(string name, bool isFreeFunction, bool isThreadSafe, bool throws) : this(name, isFreeFunction, isThreadSafe)
+        {
+            ThrowsException = throws;
+        }
     }
 
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Field)]
-    internal class NativeNameAttribute : Attribute, IBindingsNameProviderAttribute
+    [AttributeUsage(AttributeTargets.Property)]
+    class NativePropertyAttribute : NativeMethodAttribute
     {
-        public string Name { get; set; }
-
-        public NativeNameAttribute()
+        public NativePropertyAttribute()
         {
         }
 
-        public NativeNameAttribute(string name)
+        public NativePropertyAttribute(string name) : base(name)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
+        }
 
-            Name = name;
+        public NativePropertyAttribute(string name, bool isFreeFunction) : base(name, isFreeFunction)
+        {
+        }
+
+        public NativePropertyAttribute(string name, bool isFreeFunction, bool isThreadSafe) : base(name, isFreeFunction, isThreadSafe)
+        {
+        }
+    }
+
+    enum CodegenOptions
+    {
+        Auto,
+        Custom,
+        Force
+    }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
+    class NativeTypeAttribute : Attribute, IBindingsHeaderProviderAttribute, IBindingsGenerateMarshallingTypeAttribute
+    {
+        public string Header { get; set; }
+
+        public string IntermediateScriptingStructName { get; set; }
+
+        public CodegenOptions CodegenOptions { get; set; }
+
+        public NativeTypeAttribute()
+        {
+            CodegenOptions = CodegenOptions.Auto;
+        }
+
+        public NativeTypeAttribute(CodegenOptions codegenOptions)
+        {
+            CodegenOptions = codegenOptions;
+        }
+
+        public NativeTypeAttribute(string header)
+        {
+            if (header == null) throw new ArgumentNullException("header");
+            if (header == "") throw new ArgumentException("header cannot be empty", "header");
+
+            CodegenOptions = CodegenOptions.Auto;
+            Header = header;
+        }
+
+        public NativeTypeAttribute(string header, CodegenOptions codegenOptions) : this(header)
+        {
+            CodegenOptions = codegenOptions;
+        }
+
+        public NativeTypeAttribute(CodegenOptions codegenOptions, string intermediateStructName) : this(codegenOptions)
+        {
+            IntermediateScriptingStructName = intermediateStructName;
         }
     }
 
     [AttributeUsage(AttributeTargets.Parameter)]
-    internal class NativeParameterAttribute : Attribute, IBindingsAttribute
-    {
-        public bool Unmarshalled { get; set; }
-
-        public NativeParameterAttribute()
-        {
-        }
-
-        public NativeParameterAttribute(bool unmarshalled)
-        {
-            Unmarshalled = unmarshalled;
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
-    internal class NotNullAttribute : Attribute, IBindingsAttribute
+    class NotNullAttribute : Attribute, IBindingsAttribute
     {
         public NotNullAttribute()
         {
         }
     }
 
-    [AttributeUsage(AttributeTargets.Property)]
-    internal class NativePropertyAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute
-    {
-        public string Name { get; set; }
-        public bool IsThreadSafe { get; set; }
-
-        public NativePropertyAttribute()
-        {
-        }
-
-        public NativePropertyAttribute(string name)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
-
-            Name = name;
-        }
-
-        public NativePropertyAttribute(bool isThreadSafe)
-        {
-            IsThreadSafe = isThreadSafe;
-        }
-
-        public NativePropertyAttribute(string name, bool isThreadSafe) : this(name)
-        {
-            IsThreadSafe = isThreadSafe;
-        }
-    }
-
-
-    [AttributeUsage(AttributeTargets.Method)]
-    internal class NativeSetterAttribute : Attribute, IBindingsNameProviderAttribute
-    {
-        public string Name { get; set; }
-
-        public NativeSetterAttribute()
-        {
-        }
-
-        public NativeSetterAttribute(string name)
-        {
-            if (name == null) throw new ArgumentNullException("name");
-            if (name == "") throw new ArgumentException("name cannot be empty", "name");
-
-            Name = name;
-        }
-    }
-
-
-    internal enum NativeStructGenerateOption
-    {
-        Default,
-        UseCustomStruct,
-        ForceGenerate
-    }
-
-    [AttributeUsage(AttributeTargets.Struct)]
-    internal class NativeStructAttribute : NativeMemberAttribute, IBindingsGenerateMarshallingTypeAttribute
-    {
-        public NativeStructGenerateOption GenerateMarshallingType { get; set; }
-
-        public NativeStructAttribute()
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.Default;
-        }
-
-        public NativeStructAttribute(NativeStructGenerateOption generateMarshallingType)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-
-        public NativeStructAttribute(string name) : base(name)
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.Default;
-        }
-
-        public NativeStructAttribute(string name, string header) : base(name, header)
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.Default;
-        }
-
-        public NativeStructAttribute(string name, NativeStructGenerateOption generateMarshallingType) : base(name)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-
-        public NativeStructAttribute(string name, string header, NativeStructGenerateOption generateMarshallingType) : base(name, header)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-
-        public string IntermediateScriptingStructName { get; set; }
-    }
-
-
-    [AttributeUsage(AttributeTargets.Class)]
-    internal class NativeTypeAttribute : NativeMemberAttribute, IBindingsGenerateMarshallingTypeAttribute
-    {
-        public NativeStructGenerateOption GenerateMarshallingType { get; set; }
-
-        public NativeTypeAttribute()
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.UseCustomStruct;
-        }
-
-        public NativeTypeAttribute(NativeStructGenerateOption generateMarshallingType)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-
-        public NativeTypeAttribute(string name) : base(name)
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.UseCustomStruct;
-        }
-
-        public NativeTypeAttribute(string name, string header) : base(name, header)
-        {
-            GenerateMarshallingType = NativeStructGenerateOption.UseCustomStruct;
-        }
-
-        public NativeTypeAttribute(string name, NativeStructGenerateOption generateMarshallingType) : base(name)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-
-        public NativeTypeAttribute(string name, string header, NativeStructGenerateOption generateMarshallingType) : base(name, header)
-        {
-            GenerateMarshallingType = generateMarshallingType;
-        }
-    }
-
     [AttributeUsage(AttributeTargets.Parameter)]
-    internal class Unmarshalled : NativeParameterAttribute
+    class UnmarshalledAttribute : Attribute, IBindingsAttribute
     {
-        public Unmarshalled()
+        public UnmarshalledAttribute()
         {
-            Unmarshalled = true;
-        }
-    }
-
-    internal enum InvocationTargetKind
-    {
-        Pointer,
-        NonPointer
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method)]
-    internal class NativeInstanceAttribute : Attribute, IBindingsAttribute
-    {
-        public string Accessor { get; set; }
-
-        public InvocationTargetKind InvocationTargetKind { get; set; }
-
-        public NativeInstanceAttribute()
-        {
-            InvocationTargetKind = InvocationTargetKind.NonPointer;
-        }
-
-        internal NativeInstanceAttribute(string accessor)
-        {
-            Accessor = accessor;
-            InvocationTargetKind = InvocationTargetKind.NonPointer;
-        }
-
-        public NativeInstanceAttribute(InvocationTargetKind kind)
-        {
-            InvocationTargetKind = kind;
-        }
-
-        public NativeInstanceAttribute(string accessor, InvocationTargetKind kind)
-        {
-            Accessor = accessor;
-            InvocationTargetKind = kind;
         }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
-    internal class FreeFunction : NativeMethodAttribute
+    class FreeFunctionAttribute : NativeMethodAttribute
     {
-        public FreeFunction()
+        public FreeFunctionAttribute()
         {
             IsFreeFunction = true;
         }
 
-        public FreeFunction(string name) : base(name, true)
+        public FreeFunctionAttribute(string name) : base(name, true)
         {
         }
 
-        public FreeFunction(string name, bool isThreadSafe) : base(name, true, isThreadSafe)
+        public FreeFunctionAttribute(string name, bool isThreadSafe) : base(name, true, isThreadSafe)
         {
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
-    internal class ThrowsAttribute : Attribute, IBindingsAttribute
+    [AttributeUsage(AttributeTargets.Method)]
+    class ThreadSafeAttribute : NativeMethodAttribute
     {
-        public ThrowsAttribute()
+        public ThreadSafeAttribute()
+        {
+            IsThreadSafe = true;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]
+    class StaticAccessorAttribute : Attribute, IBindingsAttribute
+    {
+        public string Name { get; set; }
+        public bool Pointer { get; set; }
+
+        public StaticAccessorAttribute()
         {
         }
+
+        internal StaticAccessorAttribute(string name)
+        {
+            Name = name;
+        }
+
+        public StaticAccessorAttribute(bool pointer)
+        {
+            Pointer = pointer;
+        }
+
+        public StaticAccessorAttribute(string name, bool pointer)
+        {
+            Name = name;
+            Pointer = pointer;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    class NativeThrowsAttribute : Attribute, IBindingsThrowsProviderAttribute
+    {
+        public bool ThrowsException { get; set; }
+
+        public NativeThrowsAttribute()
+        {
+            ThrowsException = true;
+        }
+
+        public NativeThrowsAttribute(bool throwsException)
+        {
+            ThrowsException = throwsException;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    class IgnoreAttribute : Attribute, IBindingsAttribute
+    {
     }
 }

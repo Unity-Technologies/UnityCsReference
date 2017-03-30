@@ -11,11 +11,11 @@ using System;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.CSSLayout
 {
-	[NativeType(Header = "External/CSSLayout/CSSLayout/CSSLayout.h")]
+	[NativeHeader("External/CSSLayout/CSSLayout/Native.bindings.h")]
     internal static partial class Native
     {
         private const string DllName = "CSSLayout";
@@ -28,10 +28,10 @@ namespace UnityEngine.CSSLayout
 //         public static extern void CSSInteropSetLogger(
 //             [MarshalAs(UnmanagedType.FunctionPtr)] CSSLogger.Func func);
 // END_UNITY
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern IntPtr CSSNodeNew();
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeInit(IntPtr cssNode);
 
         public static void CSSNodeFree(IntPtr cssNode)
@@ -41,7 +41,7 @@ namespace UnityEngine.CSSLayout
             CSSNodeFreeInternal(cssNode);
         }
 
-        [NativeMethod(IsFreeFunction = true, IsThreadSafe=true, Name="CSSNodeFree")]
+        [NativeMethod(Name = "CSSNodeFree", IsFreeFunction = true, IsThreadSafe = true)]
         static extern void CSSNodeFreeInternal(IntPtr cssNode);
 
         public static void CSSNodeReset(IntPtr cssNode)
@@ -50,60 +50,60 @@ namespace UnityEngine.CSSLayout
             CSSNodeResetInternal(cssNode);
         }
 
-        [NativeMethod(IsFreeFunction = true, Name="CSSNodeReset")]
+        [NativeMethod(Name = "CSSNodeReset", IsFreeFunction = true)]
         static extern void CSSNodeResetInternal(IntPtr cssNode);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern int CSSNodeGetInstanceCount();
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSLayoutSetExperimentalFeatureEnabled(
             CSSExperimentalFeature feature,
             bool enabled);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern bool CSSLayoutIsExperimentalFeatureEnabled(
             CSSExperimentalFeature feature);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeInsertChild(IntPtr node, IntPtr child, uint index);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeRemoveChild(IntPtr node, IntPtr child);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern IntPtr CSSNodeGetChild(IntPtr node, uint index);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern uint CSSNodeChildCount(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeCalculateLayout(IntPtr node,
                             float availableWidth,
                             float availableHeight,
                             CSSDirection parentDirection);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeMarkDirty(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern bool CSSNodeIsDirty(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodePrint(IntPtr node, CSSPrintOptions options);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern bool CSSValueIsUndefined(float value);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeCopyStyle(IntPtr dstNode, IntPtr srcNode);
 
         #region CSS_NODE_PROPERTY
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeSetContext(IntPtr node, IntPtr context);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern IntPtr CSSNodeGetContext(IntPtr node);
 
         public static void CSSNodeSetMeasureFunc(IntPtr node, CSSMeasureFunc measureFunc)
@@ -143,184 +143,184 @@ namespace UnityEngine.CSSLayout
             }
         }
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeSetHasNewLayout(IntPtr node, bool hasNewLayout);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern bool CSSNodeGetHasNewLayout(IntPtr node);
 
         #endregion
 
         #region CSS_NODE_STYLE_PROPERTY
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetDirection(IntPtr node, CSSDirection direction);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSDirection CSSNodeStyleGetDirection(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlexDirection(IntPtr node, CSSFlexDirection flexDirection);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSFlexDirection CSSNodeStyleGetFlexDirection(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetJustifyContent(IntPtr node, CSSJustify justifyContent);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSJustify CSSNodeStyleGetJustifyContent(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetAlignContent(IntPtr node, CSSAlign alignContent);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSAlign CSSNodeStyleGetAlignContent(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetAlignItems(IntPtr node, CSSAlign alignItems);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSAlign CSSNodeStyleGetAlignItems(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetAlignSelf(IntPtr node, CSSAlign alignSelf);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSAlign CSSNodeStyleGetAlignSelf(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetPositionType(IntPtr node, CSSPositionType positionType);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSPositionType CSSNodeStyleGetPositionType(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlexWrap(IntPtr node, CSSWrap flexWrap);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSWrap CSSNodeStyleGetFlexWrap(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetOverflow(IntPtr node, CSSOverflow flexWrap);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSOverflow CSSNodeStyleGetOverflow(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlex(IntPtr node, float flex);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlexGrow(IntPtr node, float flexGrow);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetFlexGrow(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlexShrink(IntPtr node, float flexShrink);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetFlexShrink(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetFlexBasis(IntPtr node, float flexBasis);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetFlexBasis(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetWidth(IntPtr node, float width);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetWidth(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetHeight(IntPtr node, float height);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetHeight(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetMinWidth(IntPtr node, float minWidth);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetMinWidth(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetMinHeight(IntPtr node, float minHeight);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetMinHeight(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetMaxWidth(IntPtr node, float maxWidth);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetMaxWidth(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetMaxHeight(IntPtr node, float maxHeight);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetMaxHeight(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetAspectRatio(IntPtr node, float aspectRatio);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetAspectRatio(IntPtr node);
 
         #endregion
 
         #region CSS_NODE_STYLE_EDGE_PROPERTY
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetPosition(IntPtr node, CSSEdge edge, float position);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetPosition(IntPtr node, CSSEdge edge);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetMargin(IntPtr node, CSSEdge edge, float margin);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetMargin(IntPtr node, CSSEdge edge);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetPadding(IntPtr node, CSSEdge edge, float padding);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetPadding(IntPtr node, CSSEdge edge);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern void CSSNodeStyleSetBorder(IntPtr node, CSSEdge edge, float border);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeStyleGetBorder(IntPtr node, CSSEdge edge);
 
         #endregion
 
         #region CSS_NODE_LAYOUT_PROPERTY
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetLeft(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetTop(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetRight(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetBottom(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetWidth(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern float CSSNodeLayoutGetHeight(IntPtr node);
 
-        [NativeMethod(IsFreeFunction = true)]
+        [FreeFunction]
         public static extern CSSDirection CSSNodeLayoutGetDirection(IntPtr node);
 
         #endregion

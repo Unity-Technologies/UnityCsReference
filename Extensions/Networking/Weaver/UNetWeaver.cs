@@ -231,6 +231,41 @@ namespace Unity.UNetWeaver
             s_RecursionCount = 0;
         }
 
+        public static bool CanBeResolved(TypeReference parent)
+        {
+            while (parent != null)
+            {
+                if (parent.Scope.Name == "Windows")
+                {
+                    return false;
+                }
+
+                if (parent.Scope.Name == "mscorlib")
+                {
+                    var resolved = parent.Resolve();
+                    return resolved != null;
+                }
+
+                try
+                {
+                    parent = parent.Resolve().BaseType;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool IsArrayType(TypeReference variable)
+        {
+            if ((variable.IsArray && ((ArrayType)variable).ElementType.IsArray) || // jagged array
+                (variable.IsArray && ((ArrayType)variable).Rank > 1)) // multidimensional array
+                return false;
+            return true;
+        }
+
         public static void DLog(TypeDefinition td, string fmt, params object[] args)
         {
             if (!m_DebugFlag)
@@ -405,6 +440,11 @@ namespace Unity.UNetWeaver
 
         static MethodDefinition GenerateArrayReadFunc(TypeReference variable, MethodReference elementReadFunc)
         {
+            if (!IsArrayType(variable))
+            {
+                Log.Error(variable.FullName + " is an unsupported array type. Jagged and multidimensional arrays are not supported");
+                return null;
+            }
             var functionName = "_ReadArray" + variable.GetElementType().Name + "_";
             if (variable.DeclaringType != null)
             {
@@ -483,6 +523,11 @@ namespace Unity.UNetWeaver
 
         static MethodDefinition GenerateArrayWriteFunc(TypeReference variable, MethodReference elementWriteFunc)
         {
+            if (!IsArrayType(variable))
+            {
+                Log.Error(variable.FullName + " is an unsupported array type. Jagged and multidimensional arrays are not supported");
+                return null;
+            }
             var functionName = "_WriteArray" + variable.GetElementType().Name + "_";
             if (variable.DeclaringType != null)
             {
@@ -870,6 +915,7 @@ namespace Unity.UNetWeaver
         // this is required to early-out from a function with "ref" or "out" parameters
         static void InjectGuardParameters(MethodDefinition md, ILProcessor worker, Instruction top)
         {
+            int offset = md.Resolve().IsStatic ? 0 : 1;
             for (int index = 0; index < md.Parameters.Count; index++)
             {
                 var param = md.Parameters[index];
@@ -878,7 +924,7 @@ namespace Unity.UNetWeaver
                     var elementType = param.ParameterType.GetElementType();
                     if (elementType.IsPrimitive)
                     {
-                        worker.InsertBefore(top, worker.Create(OpCodes.Ldarg, index + 1));
+                        worker.InsertBefore(top, worker.Create(OpCodes.Ldarg, index + offset));
                         worker.InsertBefore(top, worker.Create(OpCodes.Ldc_I4_0));
                         worker.InsertBefore(top, worker.Create(OpCodes.Stind_I4));
                     }
@@ -887,7 +933,7 @@ namespace Unity.UNetWeaver
                         md.Body.Variables.Add(new VariableDefinition("__out" + index, elementType));
                         md.Body.InitLocals = true;
 
-                        worker.InsertBefore(top, worker.Create(OpCodes.Ldarg, index + 1));
+                        worker.InsertBefore(top, worker.Create(OpCodes.Ldarg, index + offset));
                         worker.InsertBefore(top, worker.Create(OpCodes.Ldloca_S, (byte)(md.Body.Variables.Count - 1)));
                         worker.InsertBefore(top, worker.Create(OpCodes.Initobj, elementType));
                         worker.InsertBefore(top, worker.Create(OpCodes.Ldloc, md.Body.Variables.Count - 1));
@@ -1749,7 +1795,7 @@ namespace Unity.UNetWeaver
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 foreach (TypeDefinition td in moduleDefinition.Types)
                 {
-                    if (td.IsClass)
+                    if (td.IsClass && CanBeResolved(td.BaseType))
                     {
                         try
                         {

@@ -285,6 +285,13 @@ namespace UnityEditor
             DestroyEditorsAndData();
         }
 
+        internal override void OnDisable()
+        {
+            DestroyEditorsAndData();
+
+            base.OnDisable();
+        }
+
         internal override void ResetValues()
         {
             base.ResetValues();
@@ -836,7 +843,7 @@ namespace UnityEditor
 
         void AddClip(TakeInfo takeInfo)
         {
-            string uniqueName = MakeUniqueClipName(takeInfo.name);
+            string uniqueName = MakeUniqueClipName(takeInfo.defaultClipName);
 
             m_ClipAnimations.InsertArrayElementAtIndex(m_ClipAnimations.arraySize);
             AnimationClipInfoProperties info = GetAnimationClipInfoAtIndex(m_ClipAnimations.arraySize - 1);
@@ -861,7 +868,7 @@ namespace UnityEditor
             info.maskType = ClipAnimationMaskType.None;
 
             SetBodyMaskDefaultValues(info);
-            SetTransformMaskFromReference(info);
+
 
             info.ClearEvents();
             info.ClearCurves();

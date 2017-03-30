@@ -527,7 +527,6 @@ namespace UnityEditor
 
             m_CurveEditor.OnGUI();
 
-
             // Draw current listener position
             if (targets.Length == 1)
             {
@@ -544,23 +543,25 @@ namespace UnityEditor
             // Draw legend
             DrawLegend();
 
-
-            // Check if any of the curves changed
-            foreach (AudioCurveWrapper audioCurve in m_AudioCurves)
+            if (!m_CurveEditor.InLiveEdit())
             {
-                if ((m_CurveEditor.GetCurveWrapperFromID(audioCurve.id) != null) && (m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).changed))
+                // Check if any of the curves changed
+                foreach (AudioCurveWrapper audioCurve in m_AudioCurves)
                 {
-                    AnimationCurve changedCurve = m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).curve;
-
-                    // Never save a curve with no keys
-                    if (changedCurve.length > 0)
+                    if ((m_CurveEditor.GetCurveWrapperFromID(audioCurve.id) != null) && (m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).changed))
                     {
-                        audioCurve.curveProp.animationCurveValue = changedCurve;
-                        m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).changed = false;
+                        AnimationCurve changedCurve = m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).curve;
 
-                        // Volume curve special handling
-                        if (audioCurve.type == AudioCurveType.Volume)
-                            m_RolloffMode.enumValueIndex = (int)AudioRolloffMode.Custom;
+                        // Never save a curve with no keys
+                        if (changedCurve.length > 0)
+                        {
+                            audioCurve.curveProp.animationCurveValue = changedCurve;
+                            m_CurveEditor.GetCurveWrapperFromID(audioCurve.id).changed = false;
+
+                            // Volume curve special handling
+                            if (audioCurve.type == AudioCurveType.Volume)
+                                m_RolloffMode.enumValueIndex = (int)AudioRolloffMode.Custom;
+                        }
                     }
                 }
             }
@@ -568,6 +569,9 @@ namespace UnityEditor
 
         void UpdateWrappersAndLegend()
         {
+            if (m_CurveEditor.InLiveEdit())
+                return;
+
             if (m_RefreshCurveEditor)
             {
                 m_CurveEditor.animationCurves = GetCurveWrapperArray();

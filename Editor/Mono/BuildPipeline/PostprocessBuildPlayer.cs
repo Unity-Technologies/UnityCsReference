@@ -154,7 +154,7 @@ namespace UnityEditor
         }
 
         static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, string installPath, string companyName, string productName,
-            int width, int height, string downloadWebplayerUrl, string manualDownloadWebplayerUrl, BuildOptions options,
+            int width, int height, BuildOptions options,
             RuntimeClassRegistry usedClassRegistry, BuildReporting.BuildReport report)
         {
             string stagingArea = "Temp/StagingArea";

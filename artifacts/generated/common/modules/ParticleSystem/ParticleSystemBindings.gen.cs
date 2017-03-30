@@ -61,7 +61,9 @@ public enum ParticleSystemRenderSpace
     
     Local = 2,
     
-    Facing = 3
+    Facing = 3,
+    
+    Velocity = 4
 }
 
 [System.Obsolete ("ParticleSystemEmissionType no longer does anything. Time and Distance based emission are now both always active.")]
@@ -2271,12 +2273,20 @@ public sealed partial class ParticleSystem : Component
                     public float maxKillSpeed { get { return GetMaxKillSpeed(m_ParticleSystem); } set { SetMaxKillSpeed(m_ParticleSystem, value); } }
                     public LayerMask collidesWith { get { return GetCollidesWith(m_ParticleSystem); } set { SetCollidesWith(m_ParticleSystem, value); } }
                     public bool enableDynamicColliders { get { return GetEnableDynamicColliders(m_ParticleSystem); } set { SetEnableDynamicColliders(m_ParticleSystem, value); } }
+        
+        
+        [System.Obsolete ("enableInteriorCollisions property is deprecated and is no longer required and has no effect on the particle system.")]
                     public bool enableInteriorCollisions { get { return GetEnableInteriorCollisions(m_ParticleSystem); } set { SetEnableInteriorCollisions(m_ParticleSystem, value); } }
+        
                     public int maxCollisionShapes { get { return GetMaxCollisionShapes(m_ParticleSystem); } set { SetMaxCollisionShapes(m_ParticleSystem, value); } }
                     public ParticleSystemCollisionQuality quality { set { SetQuality(m_ParticleSystem, (int)value); } get { return (ParticleSystemCollisionQuality)GetQuality(m_ParticleSystem); } }
                     public float voxelSize { get { return GetVoxelSize(m_ParticleSystem); } set { SetVoxelSize(m_ParticleSystem, value); } }
                     public float radiusScale { get { return GetRadiusScale(m_ParticleSystem); } set { SetRadiusScale(m_ParticleSystem, value); } }
                     public bool sendCollisionMessages { get { return GetUsesCollisionMessages(m_ParticleSystem); } set { SetUsesCollisionMessages(m_ParticleSystem, value); } }
+                    public float colliderForce { get { return GetColliderForce(m_ParticleSystem); } set { SetColliderForce(m_ParticleSystem, value); } }
+                    public bool multiplyColliderForceByCollisionAngle { get { return GetMultiplyColliderForceByCollisionAngle(m_ParticleSystem); } set { SetMultiplyColliderForceByCollisionAngle(m_ParticleSystem, value); } }
+                    public bool multiplyColliderForceByParticleSpeed { get { return GetMultiplyColliderForceByParticleSpeed(m_ParticleSystem); } set { SetMultiplyColliderForceByParticleSpeed(m_ParticleSystem, value); } }
+                    public bool multiplyColliderForceByParticleSize { get { return GetMultiplyColliderForceByParticleSize(m_ParticleSystem); } set { SetMultiplyColliderForceByParticleSize(m_ParticleSystem, value); } }
         
         public void SetPlane(int index, Transform transform) { SetPlane(m_ParticleSystem, index, transform); }
         public Transform GetPlane(int index) { return GetPlane(m_ParticleSystem, index); }
@@ -2434,6 +2444,38 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  bool GetUsesCollisionMessages (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetColliderForce (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetColliderForce (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMultiplyColliderForceByCollisionAngle (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetMultiplyColliderForceByCollisionAngle (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMultiplyColliderForceByParticleSpeed (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetMultiplyColliderForceByParticleSpeed (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMultiplyColliderForceByParticleSize (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetMultiplyColliderForceByParticleSize (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

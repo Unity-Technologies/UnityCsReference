@@ -377,7 +377,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
 
             // Compile to tempBuildDirectory
-            compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, buildflags);
+            compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, buildflags, UnityEngine.SystemInfo.processorCount);
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
                 {

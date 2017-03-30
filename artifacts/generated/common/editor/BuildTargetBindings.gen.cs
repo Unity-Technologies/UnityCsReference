@@ -7,13 +7,13 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
 
 
-[NativeEnum(Name = "BuildTargetPlatform", Header = "Runtime/Serialize/SerializationMetaFlags.h")]
+[NativeType("Runtime/Serialize/SerializationMetaFlags.h")]
 public enum BuildTarget
 {
     

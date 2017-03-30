@@ -5,12 +5,12 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeType(Header = "Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
+    [NativeHeader("Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
     internal static class UnsafeUtility
     {
         // Copies sizeof(T) bytes from ptr to output
@@ -60,20 +60,20 @@ namespace UnityEngine
             return 4;
         }
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         public static extern IntPtr Malloc(int size, int alignment, UnityEngine.Collections.Allocator label);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         public static extern void Free(IntPtr memory, UnityEngine.Collections.Allocator label);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         public static extern void MemCpy(IntPtr destination, IntPtr source, int size);
 
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         public static extern int SizeOfStruct(Type type);
 
         // @TODO : This is probably not the ideal place to have this?
-        [NativeMethod(IsThreadSafe = true)]
+        [ThreadSafe]
         public static extern void LogError(string msg, string filename, int linenumber);
     }
 }

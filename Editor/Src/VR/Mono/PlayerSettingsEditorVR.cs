@@ -23,11 +23,17 @@ namespace UnityEditorInternal.VR
             public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi-pass stereo rendering will be used on Android devices that don't support single-pass stereo rendering.");
             public static readonly GUIContent singlePassStereoRendering = EditorGUIUtility.TextContent("Single-Pass Stereo Rendering");
 
-            public static readonly GUIContent[] kStereoRenderingMethodsAll =
+            public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
                 new GUIContent("Multi Pass"),
                 new GUIContent("Single Pass"),
                 new GUIContent("Single Pass Instanced")
+            };
+
+            public static readonly GUIContent[] kAndroidStereoRenderingPaths =
+            {
+                new GUIContent("Multi Pass"),
+                new GUIContent("Single Pass (Preview)"),
             };
         }
 
@@ -134,53 +140,61 @@ namespace UnityEditorInternal.VR
             }
         }
 
+        private static GUIContent[] GetStereoRenderingPaths(BuildTargetGroup targetGroup)
+        {
+            return (targetGroup == BuildTargetGroup.Android) ? Styles.kAndroidStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
+        }
+
         internal void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
         {
+            if (!PlayerSettings.virtualRealitySupported)
+                return;
+
             bool supportsSinglePass = TargetSupportsSinglePassStereoRendering(targetGroup);
             bool supportsSinglePassInstanced = TargetSupportsStereoInstancingRendering(targetGroup);
-            if (PlayerSettings.virtualRealitySupported)
+
+            // populate the dropdown with the valid options based on target platform.
+            int validStereoRenderingOptionsCount = 1 + (supportsSinglePass ? 1 : 0) + (supportsSinglePassInstanced ? 1 : 0);
+            var validStereoRenderingPaths = new GUIContent[validStereoRenderingOptionsCount];
+            var validStereoRenderingValues = new int[validStereoRenderingOptionsCount];
+
+            GUIContent[] stereoRenderingPaths = GetStereoRenderingPaths(targetGroup);
+
+            int addedStereoRenderingOptionsCount = 0;
+            validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.MultiPass];
+            validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.MultiPass;
+
+            if (supportsSinglePass)
             {
-                // populate the dropdown with the valid options based on target platform.
-                int validStereoRenderingOptionsCount = 1 + (supportsSinglePass ? 1 : 0) + (supportsSinglePassInstanced ? 1 : 0);
-                var validStereoRenderingPaths = new GUIContent[validStereoRenderingOptionsCount];
-                var validStereoRenderingValues = new int[validStereoRenderingOptionsCount];
-                int[] kStereoRenderingMethodValues = { 0, 1, 2 };
+                validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.SinglePass];
+                validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.SinglePass;
+            }
 
-                int addedStereoRenderingOptionsCount = 0;
-                validStereoRenderingPaths[addedStereoRenderingOptionsCount] = Styles.kStereoRenderingMethodsAll[(int)StereoRenderingPath.MultiPass];
-                validStereoRenderingValues[addedStereoRenderingOptionsCount++] = kStereoRenderingMethodValues[(int)StereoRenderingPath.MultiPass];
+            if (supportsSinglePassInstanced)
+            {
+                validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.Instancing];
+                validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.Instancing;
+            }
 
-                if (supportsSinglePass)
+            // setup fallbacks
+            if (!supportsSinglePassInstanced && (stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing))
+                stereoRenderingPath.intValue = (int)StereoRenderingPath.SinglePass;
+
+            if (!supportsSinglePass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass))
+                stereoRenderingPath.intValue = (int)StereoRenderingPath.MultiPass;
+
+            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TextContent("Stereo Rendering Method*"));
+
+            if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass) && (targetGroup == BuildTargetGroup.Android))
+            {
+                var apisAndroid = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+                if ((apisAndroid.Length > 0) && (apisAndroid[0] == GraphicsDeviceType.OpenGLES3))
                 {
-                    validStereoRenderingPaths[addedStereoRenderingOptionsCount] = Styles.kStereoRenderingMethodsAll[(int)StereoRenderingPath.SinglePass];
-                    validStereoRenderingValues[addedStereoRenderingOptionsCount++] = kStereoRenderingMethodValues[(int)StereoRenderingPath.SinglePass];
+                    EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning2.text, MessageType.Info);
                 }
-                if (supportsSinglePassInstanced)
+                else
                 {
-                    validStereoRenderingPaths[addedStereoRenderingOptionsCount] = Styles.kStereoRenderingMethodsAll[(int)StereoRenderingPath.Instancing];
-                    validStereoRenderingValues[addedStereoRenderingOptionsCount++] = kStereoRenderingMethodValues[(int)StereoRenderingPath.Instancing];
-                }
-
-                // setup fallbacks
-                if (!supportsSinglePassInstanced && (stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing))
-                    stereoRenderingPath.intValue = (int)StereoRenderingPath.SinglePass;
-
-                if (!supportsSinglePass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass))
-                    stereoRenderingPath.intValue = (int)StereoRenderingPath.MultiPass;
-
-                EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TextContent("Stereo Rendering Method*"));
-
-                if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass) && (targetGroup == BuildTargetGroup.Android))
-                {
-                    var apisAndroid = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                    if ((apisAndroid.Length > 0) && (apisAndroid[0] == GraphicsDeviceType.OpenGLES3))
-                    {
-                        EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning2.text, MessageType.Info);
-                    }
-                    else
-                    {
-                        EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning.text, MessageType.Warning);
-                    }
+                    EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning.text, MessageType.Warning);
                 }
             }
         }

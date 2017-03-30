@@ -110,22 +110,37 @@ namespace UnityEditorInternal
             target.SetPropertyBlock(block);
         }
 
+        static public void TearDownMaterialPropertyBlock(Renderer target)
+        {
+            target.SetPropertyBlock(null);
+        }
+
         static public bool ApplyMaterialModificationToAnimationRecording(MaterialProperty materialProp, int changedMask, Renderer target, object oldValue)
         {
+            bool applied = false;
             switch (materialProp.type)
             {
                 case MaterialProperty.PropType.Color:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    return ApplyMaterialModificationToAnimationRecording(materialProp, target, (Color)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (Color)oldValue);
+                    if (!applied)
+                        TearDownMaterialPropertyBlock(target);
+                    return applied;
 
                 case MaterialProperty.PropType.Vector:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    return ApplyMaterialModificationToAnimationRecording(materialProp, target, (Vector4)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (Vector4)oldValue);
+                    if (!applied)
+                        TearDownMaterialPropertyBlock(target);
+                    return applied;
 
                 case MaterialProperty.PropType.Float:
                 case MaterialProperty.PropType.Range:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    return ApplyMaterialModificationToAnimationRecording(materialProp, target, (float)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (float)oldValue);
+                    if (!applied)
+                        TearDownMaterialPropertyBlock(target);
+                    return applied;
 
                 case MaterialProperty.PropType.Texture:
                 {
@@ -133,7 +148,10 @@ namespace UnityEditorInternal
                     {
                         string name = materialProp.name + "_ST";
                         SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                        return ApplyMaterialModificationToAnimationRecording(name, target, (Vector4)oldValue);
+                        applied = ApplyMaterialModificationToAnimationRecording(name, target, (Vector4)oldValue);
+                        if (!applied)
+                            TearDownMaterialPropertyBlock(target);
+                        return applied;
                     }
                     else
                         return false;

@@ -12,11 +12,11 @@ using UnityEditorInternal;
 using UnityEditor.Callbacks;
 using UnityEditor.Modules;
 using Object = UnityEngine.Object;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Src/AssetPipeline/PluginImporter.h")]
+    [NativeHeader("Editor/Src/AssetPipeline/PluginImporter.h")]
     public sealed partial class PluginImporter : AssetImporter
     {
         private static bool IsCompatible(PluginImporter imp, string platformName)
@@ -125,7 +125,7 @@ namespace UnityEditor
             }
         }
 
-        [NativeMethod(Name = "ClearPlatformData")]
+        [NativeMethod("ClearPlatformData")]
         extern public void ClearSettings();
 
         extern public void SetCompatibleWithAnyPlatform(bool enable);
@@ -152,7 +152,7 @@ namespace UnityEditor
 
         extern public void SetCompatibleWithEditor(bool enable);
 
-        [NativeMethod(Name = "SetCompatibleWithEditor")]
+        [NativeMethod("SetCompatibleWithEditor")]
         extern internal void SetCompatibleWithEditorWithBuildTargetsInternal(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, bool enable);
 
         internal void SetCompatibleWithEditor(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, bool enable)
@@ -229,7 +229,7 @@ namespace UnityEditor
 
         public extern  bool isNativePlugin
         {
-            [NativeGetter(Name = "IsNativePlugin")]
+            [NativeMethod("IsNativePlugin")]
             get;
         }
 

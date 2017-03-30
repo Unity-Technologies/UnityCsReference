@@ -368,6 +368,7 @@ namespace UnityEditor
         readonly AnimBool m_ShowCubeMapSettings = new AnimBool();
         readonly AnimBool m_ShowGenericSpriteSettings = new AnimBool();
         readonly AnimBool m_ShowMipMapSettings = new AnimBool();
+        readonly AnimBool m_ShowSpriteMeshTypeOption = new AnimBool();
         readonly GUIContent m_EmptyContent = new GUIContent(" ");
 
         readonly int[] m_FilterModeOptions = (int[])(Enum.GetValues(typeof(FilterMode)));
@@ -693,7 +694,7 @@ namespace UnityEditor
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                     shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
-                    TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
+                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
                     TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
@@ -753,6 +754,8 @@ namespace UnityEditor
             //@TODO change to use spriteMode enum when available
             m_ShowGenericSpriteSettings.valueChanged.AddListener(Repaint);
             m_ShowGenericSpriteSettings.value = m_SpriteMode.intValue != 0;
+            m_ShowSpriteMeshTypeOption.valueChanged.AddListener(Repaint);
+            m_ShowSpriteMeshTypeOption.value = ShouldShowSpriteMeshTypeOption();
             m_ShowMipMapSettings.valueChanged.AddListener(Repaint);
             m_ShowMipMapSettings.value = m_EnableMipMap.boolValue;
 
@@ -1026,6 +1029,11 @@ namespace UnityEditor
             }
         }
 
+        private bool ShouldShowSpriteMeshTypeOption()
+        {
+            return m_SpriteMode.intValue != (int)SpriteImportMode.Polygon && !m_SpriteMode.hasMultipleDifferentValues;
+        }
+
         private void SpriteGUI(TextureInspectorGUIElement guiElements)
         {
             // Sprite mode selection
@@ -1048,7 +1056,13 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_SpritePackingTag, s_Styles.spritePackingTag);
                 EditorGUILayout.PropertyField(m_SpritePixelsToUnits, s_Styles.spritePixelsPerUnit);
 
-                EditorGUILayout.IntPopup(m_SpriteMeshType, s_Styles.spriteMeshTypeOptions, new[] { 0, 1 }, s_Styles.spriteMeshType);
+                m_ShowSpriteMeshTypeOption.target = ShouldShowSpriteMeshTypeOption();
+                if (EditorGUILayout.BeginFadeGroup(m_ShowSpriteMeshTypeOption.faded))
+                {
+                    EditorGUILayout.IntPopup(m_SpriteMeshType, s_Styles.spriteMeshTypeOptions, new[] { 0, 1 }, s_Styles.spriteMeshType);
+                }
+                EditorGUILayout.EndFadeGroup();
+
                 EditorGUILayout.IntSlider(m_SpriteExtrude, 0, 32, s_Styles.spriteExtrude);
 
                 if (m_SpriteMode.intValue == 1)

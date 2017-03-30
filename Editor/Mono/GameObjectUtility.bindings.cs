@@ -5,11 +5,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeType(Header = "Editor/Mono/GameObjectUtility.bindings.h")]
+    [NativeHeader("Editor/Mono/GameObjectUtility.bindings.h")]
     public sealed partial class GameObjectUtility
     {
         public static extern StaticEditorFlags GetStaticEditorFlags(GameObject go);

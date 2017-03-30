@@ -572,7 +572,7 @@ namespace UnityEditor
             // Once Mono loads a native plugin, it never releases a handle, thus plugin is never unloaded.
             if (importer.isNativePlugin)
                 EditorGUILayout.HelpBox("Once a native plugin is loaded from script, it's never unloaded. If you deselect a native plugin and it's already loaded, please restart Unity.", MessageType.Warning);
-            if (importer.dllType == DllType.ManagedNET40 && m_CompatibleWithEditor == Compatibility.Compatible)
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy && importer.dllType == DllType.ManagedNET40 && m_CompatibleWithEditor == Compatibility.Compatible)
                 EditorGUILayout.HelpBox("Plugin targets .NET 4.x and is marked as compatible with Editor, Editor can only use assemblies targeting .NET 3.5 or lower, please unselect Editor as compatible platform.", MessageType.Error);
         }
     }

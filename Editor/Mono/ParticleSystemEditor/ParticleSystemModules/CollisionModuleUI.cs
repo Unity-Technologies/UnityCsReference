@@ -14,6 +14,7 @@ namespace UnityEditor
         const int k_MaxNumPlanes = 6;
         enum CollisionTypes { Plane = 0, World = 1 };
         enum CollisionModes { Mode3D = 0, Mode2D = 1 };
+        enum ForceModes { None = 0, Constant = 1, SizeBased = 2 };
 
         enum PlaneVizType { Grid, Solid };
         string[] m_PlaneVizTypeNames = {"Grid", "Solid"};
@@ -28,12 +29,15 @@ namespace UnityEditor
         SerializedProperty m_RadiusScale;
         SerializedProperty m_CollidesWith;
         SerializedProperty m_CollidesWithDynamic;
-        SerializedProperty m_InteriorCollisions;
         SerializedProperty m_MaxCollisionShapes;
         SerializedProperty m_Quality;
         SerializedProperty m_VoxelSize;
         SerializedProperty m_CollisionMessages;
         SerializedProperty m_CollisionMode;
+        SerializedProperty m_ColliderForce;
+        SerializedProperty m_MultiplyColliderForceByCollisionAngle;
+        SerializedProperty m_MultiplyColliderForceByParticleSpeed;
+        SerializedProperty m_MultiplyColliderForceByParticleSize;
 
         SerializedProperty[] m_ShownPlanes;
 
@@ -58,13 +62,17 @@ namespace UnityEditor
             public GUIContent visualizeBounds = EditorGUIUtility.TextContent("Visualize Bounds|Render the collision bounds of the particles.");
             public GUIContent collidesWith = EditorGUIUtility.TextContent("Collides With|Collides the particles with colliders included in the layermask.");
             public GUIContent collidesWithDynamic = EditorGUIUtility.TextContent("Enable Dynamic Colliders|Should particles collide with dynamic objects?");
-            public GUIContent interiorCollisions = EditorGUIUtility.TextContent("Interior Collisions|Should particles collide with the insides of objects?");
             public GUIContent maxCollisionShapes = EditorGUIUtility.TextContent("Max Collision Shapes|How many collision shapes can be considered for particle collisions. Excess shapes will be ignored. Terrains take priority.");
             public GUIContent quality = EditorGUIUtility.TextContent("Collision Quality|Quality of world collisions. Medium and low quality are approximate and may leak particles.");
             public string[] qualitySettings = { "High", "Medium (Static Colliders)", "Low (Static Colliders)" };
             public GUIContent voxelSize = EditorGUIUtility.TextContent("Voxel Size|Size of voxels in the collision cache. Smaller values improve accuracy, but require higher memory usage and are less efficient.");
             public GUIContent collisionMessages = EditorGUIUtility.TextContent("Send Collision Messages|Send collision callback messages.");
-            public GUIContent collisionMode = EditorGUIUtility.TextContent("Collision Mode|Use 3D Physics or 2D Physics.");
+            public GUIContent collisionType = EditorGUIUtility.TextContent("Type|Collide with a list of Planes, or the Physics World.");
+            public GUIContent collisionMode = EditorGUIUtility.TextContent("Mode|Use 3D Physics or 2D Physics.");
+            public GUIContent colliderForce = EditorGUIUtility.TextContent("Collider Force|Control the strength of particle forces on colliders.");
+            public GUIContent multiplyColliderForceByCollisionAngle = EditorGUIUtility.TextContent("Multiply by Collision Angle|Should the force be proportional to the angle of the particle collision?  A particle collision directly along the collision normal produces all the specified force whilst collisions away from the collision normal produce less force.");
+            public GUIContent multiplyColliderForceByParticleSpeed = EditorGUIUtility.TextContent("Multiply by Particle Speed|Should the force be proportional to the particle speed?");
+            public GUIContent multiplyColliderForceByParticleSize = EditorGUIUtility.TextContent("Multiply by Particle Size|Should the force be proportional to the particle size?");
 
             public GUIContent[] toolContents =
             {
@@ -144,7 +152,6 @@ namespace UnityEditor
 
             m_CollidesWith = GetProperty("collidesWith");
             m_CollidesWithDynamic = GetProperty("collidesWithDynamic");
-            m_InteriorCollisions = GetProperty("interiorCollisions");
             m_MaxCollisionShapes = GetProperty("maxCollisionShapes");
 
             m_Quality = GetProperty("quality");
@@ -153,6 +160,11 @@ namespace UnityEditor
 
             m_CollisionMessages = GetProperty("collisionMessages");
             m_CollisionMode = GetProperty("collisionMode");
+
+            m_ColliderForce = GetProperty("colliderForce");
+            m_MultiplyColliderForceByCollisionAngle = GetProperty("multiplyColliderForceByCollisionAngle");
+            m_MultiplyColliderForceByParticleSpeed = GetProperty("multiplyColliderForceByParticleSpeed");
+            m_MultiplyColliderForceByParticleSize = GetProperty("multiplyColliderForceByParticleSize");
 
             SyncVisualization();
         }
@@ -196,11 +208,10 @@ namespace UnityEditor
         {
             string[] types = new string[] {"Planes", "World"};
             EditorGUI.BeginChangeCheck();
-            CollisionTypes type = (CollisionTypes)GUIPopup("", m_Type, types);
+            CollisionTypes type = (CollisionTypes)GUIPopup(s_Texts.collisionType, m_Type, types);
             if (EditorGUI.EndChangeCheck())
                 SyncVisualization();
 
-            CollisionModes mode = CollisionModes.Mode3D;
             if (type == CollisionTypes.Plane)
             {
                 DoListOfPlanesGUI();
@@ -224,14 +235,7 @@ namespace UnityEditor
             }
             else
             {
-                mode = (CollisionModes)GUIPopup(s_Texts.collisionMode, m_CollisionMode, new string[] { "3D", "2D" });
-            }
-
-            EditorGUI.BeginChangeCheck();
-            s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorPrefs.SetBool("VisualizeBounds", s_VisualizeBounds);
+                GUIPopup(s_Texts.collisionMode, m_CollisionMode, new string[] { "3D", "2D" });
             }
 
             GUIMinMaxCurve(s_Texts.dampen, m_Dampen);
@@ -243,18 +247,34 @@ namespace UnityEditor
 
             if (type == CollisionTypes.World)
             {
-                GUILayerMask(s_Texts.collidesWith, m_CollidesWith);
-                if (mode == CollisionModes.Mode3D)
-                    GUIToggle(s_Texts.interiorCollisions, m_InteriorCollisions);
-                GUIInt(s_Texts.maxCollisionShapes, m_MaxCollisionShapes);
                 GUIPopup(s_Texts.quality, m_Quality, s_Texts.qualitySettings);
+                EditorGUI.indentLevel++;
+                GUILayerMask(s_Texts.collidesWith, m_CollidesWith);
+                GUIInt(s_Texts.maxCollisionShapes, m_MaxCollisionShapes);
+
                 if (m_Quality.intValue == 0)
                     GUIToggle(s_Texts.collidesWithDynamic, m_CollidesWithDynamic);
                 else
                     GUIFloat(s_Texts.voxelSize, m_VoxelSize);
+
+                EditorGUI.indentLevel--;
+
+                GUIFloat(s_Texts.colliderForce, m_ColliderForce);
+                EditorGUI.indentLevel++;
+                GUIToggle(s_Texts.multiplyColliderForceByCollisionAngle, m_MultiplyColliderForceByCollisionAngle);
+                GUIToggle(s_Texts.multiplyColliderForceByParticleSpeed, m_MultiplyColliderForceByParticleSpeed);
+                GUIToggle(s_Texts.multiplyColliderForceByParticleSize, m_MultiplyColliderForceByParticleSize);
+                EditorGUI.indentLevel--;
             }
 
             GUIToggle(s_Texts.collisionMessages, m_CollisionMessages);
+
+            EditorGUI.BeginChangeCheck();
+            s_VisualizeBounds = GUIToggle(s_Texts.visualizeBounds, s_VisualizeBounds);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool("VisualizeBounds", s_VisualizeBounds);
+            }
         }
 
         protected override void OnModuleEnable()

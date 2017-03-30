@@ -30,7 +30,7 @@ namespace UnityEngine
         internal static int s_OriginalID;
 
 
-        // IoC callbacks for RMGUI
+        // IoC callbacks for UIElements
         internal static Action takeCapture;
         internal static Action releaseCapture;
         internal static Func<int, IntPtr, bool> processEvent;

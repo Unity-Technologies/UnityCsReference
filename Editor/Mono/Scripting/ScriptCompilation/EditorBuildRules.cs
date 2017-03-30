@@ -361,7 +361,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.BuildTarget = settings.BuildTarget;
 
                 if (targetAssembly.EditorOnly || (buildingForEditor && settings.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6))
-                    scriptAssembly.ApiCompatibilityLevel = ApiCompatibilityLevel.NET_2_0;
+                    scriptAssembly.ApiCompatibilityLevel = (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
                 else
                     scriptAssembly.ApiCompatibilityLevel = settings.ApiCompatibilityLevel;
 

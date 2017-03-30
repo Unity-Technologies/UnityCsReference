@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
-using UnityEngine.Experimental.RMGUI;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor
 {
@@ -28,7 +28,7 @@ namespace UnityEditor
         {
             get
             {
-                return RMGUIUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
+                return UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
             }
         }
 

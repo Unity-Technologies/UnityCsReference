@@ -385,6 +385,15 @@ public Component[] GetComponentsInParent(Type type, [uei.DefaultValue("false")] 
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  GameObject Find (string name) ;
 
+    public Bounds CalculateBounds () {
+        Bounds result;
+        INTERNAL_CALL_CalculateBounds ( this, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_CalculateBounds (GameObject self, out Bounds value);
     public  Scene scene
     {
         get { Scene tmp; INTERNAL_get_scene(out tmp); return tmp;  }

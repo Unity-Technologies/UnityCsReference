@@ -6,8 +6,8 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.RMGUI;
-using UnityEngine.Experimental.RMGUI.StyleSheets;
+using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -16,8 +16,8 @@ namespace UnityEditor
     {
         static RetainedMode()
         {
-            RMGUIUtility.s_BeginContainerCallback = OnBeginContainer;
-            RMGUIUtility.s_EndContainerCallback = OnEndContainer;
+            UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
+            UIElementsUtility.s_EndContainerCallback = OnEndContainer;
         }
 
         static void OnBeginContainer(IMGUIContainer c)
@@ -33,7 +33,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
-            var iterator = RMGUIUtility.GetPanelsIterator();
+            var iterator = UIElementsUtility.GetPanelsIterator();
             while (iterator.MoveNext())
             {
                 var panel = iterator.Current.Value;
@@ -79,7 +79,7 @@ namespace UnityEditor
             StyleSheetCache.ClearCaches();
 
             // for now we don't bother tracking which panel depends on which style sheet
-            var iterator = RMGUIUtility.GetPanelsIterator();
+            var iterator = UIElementsUtility.GetPanelsIterator();
             while (iterator.MoveNext())
             {
                 var panel = iterator.Current.Value;

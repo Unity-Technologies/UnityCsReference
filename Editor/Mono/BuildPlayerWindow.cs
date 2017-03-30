@@ -20,16 +20,8 @@ using UnityEditor.Connect;
 
 namespace UnityEditor
 {
-    internal class BuildPlayerWindow : EditorWindow
+    public partial class BuildPlayerWindow : EditorWindow
     {
-        public class SceneSorter : IComparer
-        {
-            // Calls CaseInsensitiveComparer.Compare with the parameters reversed.
-            int IComparer.Compare(System.Object x, System.Object y)
-            {
-                return ((new CaseInsensitiveComparer()).Compare(y, x));
-            }
-        }
         class Styles
         {
             public static readonly GUIContent invalidColorSpaceMessage = EditorGUIUtility.TextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.");
@@ -146,26 +138,10 @@ namespace UnityEditor
 
         static Styles styles = null;
 
-        static void ShowBuildPlayerWindow()
+        public static void ShowBuildPlayerWindow()
         {
             EditorUserBuildSettings.selectedBuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
             EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
-        }
-
-        static void BuildPlayerAndRun()
-        {
-            if (!BuildPlayerWithDefaultSettings(false, BuildOptions.AutoRunPlayer))
-            {
-                ShowBuildPlayerWindow();
-            }
-        }
-
-        static void BuildPlayerAndSelect()
-        {
-            if (!BuildPlayerWithDefaultSettings(false, BuildOptions.ShowBuiltPlayer))
-            {
-                ShowBuildPlayerWindow();
-            }
         }
 
         public BuildPlayerWindow()
@@ -173,156 +149,6 @@ namespace UnityEditor
             position = new Rect(50, 50, 540, 530);
             minSize = new Vector2(630, 580);
             titleContent = new GUIContent("Build Settings");
-        }
-
-        static bool BuildPlayerWithDefaultSettings(bool askForBuildLocation, BuildOptions forceOptions)
-        {
-            return BuildPlayerWithDefaultSettings(askForBuildLocation, forceOptions, true);
-        }
-
-        static bool IsMetroPlayer(BuildTarget target)
-        {
-            return target == BuildTarget.WSAPlayer;
-        }
-
-        static bool BuildPlayerWithDefaultSettings(bool askForBuildLocation, BuildOptions forceOptions, bool first)
-        {
-            bool updateExistingBuild = false;
-
-            if (!UnityConnect.instance.canBuildWithUPID)
-            {
-                if (!EditorUtility.DisplayDialog("Missing Project ID", "Because you are not a member of this project this build will not access Unity services.\nDo you want to continue?", "Yes", "No"))
-                    return false;
-            }
-            BuildTarget buildTarget = CalculateSelectedBuildTarget();
-            BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if (!BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget))
-                return false;
-            string module = ModuleManager.GetTargetStringFrom(EditorUserBuildSettings.selectedBuildTargetGroup, buildTarget);
-            IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
-            if (buildWindowExtension != null && (forceOptions & BuildOptions.AutoRunPlayer) != 0 && !buildWindowExtension.EnabledBuildAndRunButton())
-                return false;
-
-            if (Unsupported.IsBleedingEdgeBuild())
-            {
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("This version of Unity is a BleedingEdge build that has not seen any manual testing.");
-                sb.AppendLine("You should consider this build unstable.");
-                sb.AppendLine("We strongly recommend that you use a normal version of Unity instead.");
-
-                if (EditorUtility.DisplayDialog("BleedingEdge Build", sb.ToString(), "Cancel", "OK"))
-                    return false;
-            }
-
-            // Pick location for the build
-            string newLocation = "";
-            bool installInBuildFolder = EditorUserBuildSettings.installInBuildFolder && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) && (Unsupported.IsDeveloperBuild()
-                                                                                                                                                                               || IsMetroPlayer(buildTarget));
-
-            BuildOptions options = forceOptions;
-            // Android build compresses data with lz4 by default when building from a Build Window.
-            if (buildTarget == BuildTarget.Android)
-                options |= BuildOptions.CompressWithLz4;
-
-            bool developmentBuild = EditorUserBuildSettings.development;
-            if (developmentBuild)
-                options |= BuildOptions.Development;
-            if (EditorUserBuildSettings.allowDebugging && developmentBuild)
-                options |= BuildOptions.AllowDebugging;
-            if (EditorUserBuildSettings.symlinkLibraries)
-                options |= BuildOptions.SymlinkLibraries;
-
-            if (buildTarget == BuildTarget.Android)
-            {
-                if (EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                    options |= BuildOptions.AcceptExternalModificationsToPlayer;
-            }
-
-            if (EditorUserBuildSettings.enableHeadlessMode)
-                options |= BuildOptions.EnableHeadlessMode;
-            if (EditorUserBuildSettings.connectProfiler && (developmentBuild || buildTarget == BuildTarget.WSAPlayer))
-                options |= BuildOptions.ConnectWithProfiler;
-            if (EditorUserBuildSettings.buildScriptsOnly)
-                options |= BuildOptions.BuildScriptsOnly;
-
-            if (installInBuildFolder)
-                options |= BuildOptions.InstallInBuildFolder;
-
-            if (!installInBuildFolder)
-            {
-                if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, options, out updateExistingBuild))
-                    return false;
-                newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-
-                if (newLocation.Length == 0)
-                {
-                    return false;
-                }
-
-                if (!askForBuildLocation)
-                {
-                    switch (UnityEditorInternal.InternalEditorUtility.BuildCanBeAppended(buildTarget, newLocation))
-                    {
-                        case CanAppendBuild.Unsupported:
-                            break;
-                        case CanAppendBuild.Yes:
-                            updateExistingBuild = true;
-                            break;
-                        case CanAppendBuild.No:
-                            if (!PickBuildLocation(buildTargetGroup, buildTarget, options, out updateExistingBuild))
-                                return false;
-
-                            newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-                            if (newLocation.Length == 0 || !System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(newLocation)))
-                                return false;
-
-                            break;
-                    }
-                }
-            }
-            if (updateExistingBuild)
-                options |= BuildOptions.AcceptExternalModificationsToPlayer;
-
-            // Build a list of scenes that are enabled
-            ArrayList scenesList = new ArrayList();
-            EditorBuildSettingsScene[] editorScenes = EditorBuildSettings.scenes;
-            foreach (EditorBuildSettingsScene scene in editorScenes)
-            {
-                if (scene.enabled)
-                    scenesList.Add(scene.path);
-            }
-
-            string[] scenes = scenesList.ToArray(typeof(string)) as string[];
-
-            // See if we need to switch platforms and delay the build.  We do this whenever
-            // we're trying to build for a target different from the active one so as to ensure
-            // that the compiled script code we have loaded is built for the same platform we
-            // are building for.  As we can't reload while our editor stuff is still executing,
-            // we need to defer to after the next script reload then.
-            bool delayToAfterScriptReload = false;
-            if (EditorUserBuildSettings.activeBuildTarget != buildTarget ||
-                EditorUserBuildSettings.activeBuildTargetGroup != buildTargetGroup)
-            {
-                if (!EditorUserBuildSettings.SwitchActiveBuildTargetAsync(buildTargetGroup, buildTarget))
-                {
-                    // Switching the build target failed.  No point in trying to continue
-                    // with a build.
-                    Debug.LogErrorFormat("Could not switch to build target '{0}', '{1}'.",
-                        BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup),
-                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTarget));
-                    return false;
-                }
-
-                if (EditorApplication.isCompiling)
-                    delayToAfterScriptReload = true;
-            }
-
-            // Trigger build.
-            // Note: report will be null, if delayToAfterScriptReload = true
-            var report = BuildPipeline.BuildPlayerInternalNoCheck(scenes, newLocation, null, buildTargetGroup, buildTarget, options, delayToAfterScriptReload);
-
-
-            return report == null || report.totalErrors == 0;
         }
 
         void ActiveScenesGUI()
@@ -806,7 +632,7 @@ namespace UnityEditor
             }
         }
 
-        static public string GetPlaybackEngineDownloadURL(string moduleName)
+        public static string GetPlaybackEngineDownloadURL(string moduleName)
         {
             string fullVersion = InternalEditorUtility.GetUnityVersionFull();
             string revision = "";
@@ -1169,91 +995,18 @@ namespace UnityEditor
             GUI.enabled = enableBuildButton;
             if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                BuildPlayerWithDefaultSettings(true, BuildOptions.ShowBuiltPlayer);
+                CallBuildMethods(BuildOptions.ShowBuiltPlayer);
                 GUIUtility.ExitGUI();
             }
             // Build and Run button
             GUI.enabled = enableBuildAndRunButton;
             if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
             {
-                BuildPlayerWithDefaultSettings(true, BuildOptions.AutoRunPlayer);
+                CallBuildMethods(BuildOptions.AutoRunPlayer);
                 GUIUtility.ExitGUI();
             }
 
             GUILayout.EndHorizontal();
-        }
-
-        private static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
-        {
-            updateExistingBuild = false;
-            var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
-
-            // When exporting Eclipse project, we're saving a folder, not file,
-            // deal with it separately:
-            if (target == BuildTarget.Android
-                && EditorUserBuildSettings.exportAsGoogleAndroidProject)
-            {
-                var exportProjectTitle  = "Export Google Android Project";
-                var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
-
-                EditorUserBuildSettings.SetBuildLocation(target, exportProjectFolder);
-                return true;
-            }
-
-            string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
-
-            string defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
-            string defaultName = FileUtil.GetLastPathNameComponent(previousPath);
-            string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
-
-            string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
-
-            if (path == string.Empty)
-                return false;
-
-            // Enforce extension if needed
-            if (extension != string.Empty && FileUtil.GetPathExtension(path).ToLower() != extension)
-                path += '.' + extension;
-
-            // A path may not be empty initially, but it could contain, e.g., a drive letter (as in Windows),
-            // so even appending an extention will work fine, but in reality the name will be, for example,
-            // G:/
-            //Debug.Log(path);
-
-            string currentlyChosenName = FileUtil.GetLastPathNameComponent(path);
-            if (currentlyChosenName == string.Empty)
-                return false; // No nameless projects, please
-
-            // We don't want to re-create a directory that already exists, this may
-            // result in access-denials that will make users unhappy.
-            string check_dir = extension != string.Empty ? FileUtil.DeleteLastPathNameComponent(path) : path;
-            if (!Directory.Exists(check_dir))
-                Directory.CreateDirectory(check_dir);
-
-            // On OSX we've got replace/update dialog, for other platforms warn about deleting
-            // files in target folder.
-            if ((target == BuildTarget.iOS) && (Application.platform != RuntimePlatform.OSXEditor && Application.platform != RuntimePlatform.WindowsEditor))
-                if (!FolderIsEmpty(path) && !UserWantsToDeleteFiles(path))
-                    return false;
-
-            EditorUserBuildSettings.SetBuildLocation(target, path);
-            return true;
-        }
-
-        static bool FolderIsEmpty(string path)
-        {
-            if (!Directory.Exists(path))
-                return true;
-
-            return (Directory.GetDirectories(path).Length == 0)
-                && (Directory.GetFiles(path).Length == 0);
-        }
-
-        static bool UserWantsToDeleteFiles(string path)
-        {
-            string text =
-                "WARNING: all files and folders located in target folder: '" + path + "' will be deleted by build process.";
-            return EditorUtility.DisplayDialog("Deleting existing files", text, "OK", "Cancel");
         }
     }
 }

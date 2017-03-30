@@ -7,13 +7,13 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
 
 
-[NativeEnum(GenerateNativeType = false, Name = "BuildTargetPlatformGroup", Header = "Editor/Src/BuildPipeline/BuildTargetPlatformSpecific.h")]
+[NativeType(Header = "Editor/Src/BuildPipeline/BuildTargetPlatformSpecific.h")]
 public enum BuildTargetGroup
 {
     

@@ -122,6 +122,14 @@ public enum UIOrientation
     AutoRotation = 4
 }
 
+public enum ScriptingRuntimeVersion
+{
+    
+    Legacy = 0,
+    
+    Latest = 1
+}
+
 public enum ApiCompatibilityLevel
 {
     
@@ -900,6 +908,16 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetAdditionalIl2CppArgs (string additionalArgs) ;
+
+    public extern static ScriptingRuntimeVersion scriptingRuntimeVersion
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
 
     public extern static string keystorePass
     {

@@ -425,7 +425,7 @@ With this option, this model will not create any avatar but only import animatio
 
         void ShowUpdateReferenceClip()
         {
-            if (targets.Length > 1 || animationType != ModelImporterAnimationType.Human || m_CopyAvatar.boolValue)
+            if (targets.Length > 1 || m_CopyAvatar.boolValue || !m_Avatar || !m_Avatar.isValid)
                 return;
 
             string[] paths = new string[0];
@@ -506,8 +506,7 @@ With this option, this model will not create any avatar but only import animatio
                     LegacyGUI();
             }
 
-            if (m_Avatar && m_Avatar.isValid && m_Avatar.isHuman)
-                ShowUpdateReferenceClip();
+            ShowUpdateReferenceClip();
 
             bool canOptimizeGameObjects = true;
             if (animationType != ModelImporterAnimationType.Human && animationType != ModelImporterAnimationType.Generic)

@@ -1007,6 +1007,12 @@ public static void DrawPreviewTexture(Rect position, Texture image, [uei.Default
 
     
     
+    public static float GetPropertyHeight(SerializedProperty property, bool includeChildren)
+        {
+            return GetPropertyHeightInternal(property, null, includeChildren);
+        }
+    
+    
     [uei.ExcludeFromDocs]
 public static float GetPropertyHeight (SerializedProperty property, GUIContent label ) {
     bool includeChildren = true;

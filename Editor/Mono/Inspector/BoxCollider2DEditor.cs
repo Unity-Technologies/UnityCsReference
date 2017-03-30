@@ -86,12 +86,18 @@ namespace UnityEditor
             handleMatrix.SetRow(0, Vector4.Scale(handleMatrix.GetRow(0), new Vector4(1f, 1f, 0f, 1f)));
             handleMatrix.SetRow(1, Vector4.Scale(handleMatrix.GetRow(1), new Vector4(1f, 1f, 0f, 1f)));
             handleMatrix.SetRow(2, new Vector4(0f, 0f, 1f, collider.transform.position.z));
+            if (collider.usedByComposite && collider.composite != null)
+            {
+                // composite offset ignores lossy scale of composite's transform
+                Matrix4x4 compositeMatrix =
+                    Matrix4x4.TRS(collider.composite.transform.position, collider.composite.transform.rotation, Vector3.one);
+                Vector3 compositeOffset = compositeMatrix.MultiplyPoint3x4(collider.composite.offset);
+                compositeOffset.z = 0f;
+                handleMatrix = Matrix4x4.TRS(compositeOffset, Quaternion.identity, Vector3.one) * handleMatrix;
+            }
             using (new Handles.DrawingScope(handleMatrix))
             {
                 m_BoundsHandle.center = collider.offset;
-                bool usingComposite = collider.usedByComposite && collider.composite != null;
-                if (usingComposite)
-                    m_BoundsHandle.center += (Vector3)collider.composite.offset;
                 m_BoundsHandle.size = collider.size;
 
                 m_BoundsHandle.SetColor(collider.enabled ? Handles.s_ColliderHandleColor : Handles.s_ColliderHandleColorDisabled);
@@ -110,8 +116,6 @@ namespace UnityEditor
                     if (collider.size != oldSize)
                     {
                         collider.offset = m_BoundsHandle.center;
-                        if (usingComposite)
-                            collider.offset -= collider.composite.offset;
                     }
                 }
             }

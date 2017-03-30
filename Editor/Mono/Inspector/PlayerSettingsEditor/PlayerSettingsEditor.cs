@@ -129,6 +129,7 @@ namespace UnityEditor
             public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TextContent("Microphone Usage Description*");
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TextContent("Prepare iOS for Recording");
+            public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TextContent("Force iOS Speakers when Recording");
             public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TextContent("Requires Persistent WiFi*");
             public static readonly GUIContent iOSAllowHTTPDownload = EditorGUIUtility.TextContent("Allow downloads over HTTP (nonsecure)*");
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TextContent("Supported URL schemes*");
@@ -139,8 +140,11 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TextContent("Compute Skinning*|Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TextContent("Disable HW Statistics*|Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TextContent("Scripting Define Symbols*");
+            public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TextContent("Scripting Runtime Version*|The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TextContent("Stable (.NET 3.5 Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TextContent("Experimental (.NET 4.6 Equivalent)");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TextContent("Scripting Backend");
-            public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TextContent("Mono2x");
+            public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TextContent("Mono");
             public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TextContent("Default");
@@ -239,6 +243,7 @@ namespace UnityEditor
         SerializedProperty m_useOnDemandResources;
         SerializedProperty m_MuteOtherAudioSources;
         SerializedProperty m_PrepareIOSForRecording;
+        SerializedProperty m_ForceIOSSpeakersWhenRecording;
 
         SerializedProperty m_EnableInternalProfiler;
         SerializedProperty m_ActionOnDotNetUnhandledException;
@@ -384,6 +389,7 @@ namespace UnityEditor
 
             m_MuteOtherAudioSources         = FindPropertyAssert("muteOtherAudioSources");
             m_PrepareIOSForRecording        = FindPropertyAssert("Prepare IOS For Recording");
+            m_ForceIOSSpeakersWhenRecording     = FindPropertyAssert("Force IOS Speakers When Recording");
             m_UIRequiresPersistentWiFi      = FindPropertyAssert("uIRequiresPersistentWiFi");
             m_IOSAllowHTTPDownload          = FindPropertyAssert("iosAllowHTTPDownload");
             m_SubmitAnalytics               = FindPropertyAssert("submitAnalytics");
@@ -1559,6 +1565,16 @@ namespace UnityEditor
             // Configuration
             GUILayout.Label(Styles.configurationTitle, EditorStyles.boldLabel);
 
+            // Scripting Runtime Version
+            var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
+            var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
+            var newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
+                PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+
+            if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
+                GUILayout.Label("Changing this setting requires a restart of the Editor to take effect.", EditorStyles.helpBox);
+
             // Scripting back-end
             IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
 
@@ -1658,7 +1674,10 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                 {
                     if (targetGroup == BuildTargetGroup.iOS)
+                    {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, Styles.prepareIOSForRecording);
+                        EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, Styles.forceIOSSpeakersWhenRecording);
+                    }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, Styles.UIRequiresPersistentWiFi);
                     EditorGUILayout.PropertyField(m_IOSAllowHTTPDownload, Styles.iOSAllowHTTPDownload);
                     EditorGUILayout.PropertyField(m_IOSURLSchemes, Styles.iOSURLSchemes, true);
@@ -1781,11 +1800,15 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
+        static ApiCompatibilityLevel[] only_4_x_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6 };
         static ApiCompatibilityLevel[] only_2_0_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset };
         static ApiCompatibilityLevel[] allProfiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6 };
 
         private ApiCompatibilityLevel[] GetAvailableApiCompatibilityLevels(BuildTargetGroup activeBuildTargetGroup)
         {
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                return only_4_x_profiles;
+
             if (activeBuildTargetGroup == BuildTargetGroup.WSA || activeBuildTargetGroup == BuildTargetGroup.XboxOne)
                 return allProfiles;
 

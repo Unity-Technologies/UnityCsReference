@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -52,7 +51,7 @@ namespace UnityEditor
             main.SetMinMaxSizes(kMinSize, kMaxSize);
             cw.rootView = main;
 
-            Resolution res = InternalEditorUtility.GetDesktopResolution();
+            Resolution res = Screen.currentResolution;
             int width = Mathf.Clamp(res.width * 3 / 4, 800, 1400);
             int height = Mathf.Clamp(res.height * 3 / 4, 600, 950);
             cw.position = new Rect(60, 20, width, height);

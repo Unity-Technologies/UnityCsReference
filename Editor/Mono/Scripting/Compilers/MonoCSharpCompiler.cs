@@ -24,7 +24,7 @@ namespace UnityEditor.Scripting.Compilers
                 "-debug",
                 "-target:library",
                 "-nowarn:0169",
-                "-langversion:4",
+                "-langversion:" + ((EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? "6" : "4"),
                 "-out:" + PrepareFileName(_island._output),
                 "-unsafe"
             };

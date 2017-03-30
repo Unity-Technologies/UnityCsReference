@@ -4,11 +4,9 @@
 
 using System;
 using UnityEngine.Scripting;
-using Unity.Bindings;
 
 namespace UnityEngine.Collections
 {
-    [NativeEnum(Name = "NativeCollection::Allocator")]
     [UsedByNativeCode]
     public enum Allocator
     {

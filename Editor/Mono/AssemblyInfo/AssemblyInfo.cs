@@ -40,6 +40,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEditor.TreeEditor")]
+[assembly: InternalsVisibleTo("UnityEditor.Timeline")]
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("UnityEditor.Facebook.Extensions")]

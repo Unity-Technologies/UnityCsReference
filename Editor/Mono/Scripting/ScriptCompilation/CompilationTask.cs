@@ -21,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         string buildOutputDirectory;
         int compilePhase = 0;
         BuildFlags buildFlags;
+        int maxConcurrentCompilers;
 
         public delegate void OnCompilationStartedDelegate(ScriptAssembly assembly, int phase);
         public delegate void OnCompilationFinishedDelegate(ScriptAssembly assembly, CompilerMessage[] messages);
@@ -31,12 +32,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
 
-        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, BuildFlags buildFlags)
+        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, BuildFlags buildFlags, int maxConcurrentCompilers)
         {
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
             this.buildFlags = buildFlags;
+            this.maxConcurrentCompilers = maxConcurrentCompilers;
         }
 
         ~CompilationTask()
@@ -194,6 +196,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 if (OnCompilationStarted != null)
                     OnCompilationStarted(assembly, compilePhase);
+
+                if (compilerTasks.Count == maxConcurrentCompilers)
+                    break;
             }
 
             compilePhase++;

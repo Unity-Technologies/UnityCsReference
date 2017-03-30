@@ -21,6 +21,15 @@ namespace UnityEditor
             base.OnEnable();
         }
 
+        public override void OnDisable()
+        {
+            foreach (var tab in tabs)
+            {
+                tab.OnDisable();
+            }
+            base.OnDisable();
+        }
+
         //None of the ModelImporter sub editors support multi preview
         public override bool HasPreviewGUI()
         {

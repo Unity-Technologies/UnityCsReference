@@ -9,6 +9,7 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using UnityEngine;
+using UnityEngine.Playables;
 
 using Object = UnityEngine.Object;
 
@@ -139,23 +140,6 @@ public static PlayableHandle CreateAnimationMixerPlayable(this PlayableGraph gra
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static bool INTERNAL_CALL_InternalCreateAnimatorControllerPlayable (ref PlayableGraph graph, RuntimeAnimatorController controller, ref PlayableHandle handle);
-    static internal PlayableHandle CreateAnimationOffsetPlayable(this PlayableGraph graph, Vector3 position, Quaternion rotation, int inputCount)
-        {
-            PlayableHandle handle = PlayableHandle.Null;
-            if (!InternalCreateAnimationOffsetPlayable(ref graph, position, rotation, ref handle))
-                return PlayableHandle.Null;
-            handle.inputCount = inputCount;
-            return handle;
-        }
-    
-    
-    private static bool InternalCreateAnimationOffsetPlayable (ref PlayableGraph graph, Vector3 position, Quaternion rotation, ref PlayableHandle handle) {
-        return INTERNAL_CALL_InternalCreateAnimationOffsetPlayable ( ref graph, ref position, ref rotation, ref handle );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_InternalCreateAnimationOffsetPlayable (ref PlayableGraph graph, ref Vector3 position, ref Quaternion rotation, ref PlayableHandle handle);
     static internal PlayableHandle CreateAnimationMotionXToDeltaPlayable(this PlayableGraph graph)
         {
             PlayableHandle handle = PlayableHandle.Null;
@@ -301,6 +285,33 @@ public partial struct AnimationPlayableOutput
         }
     
     
+}
+
+}
+
+namespace UnityEngineInternal.Playables
+{
+
+
+public static partial class AnimationPlayableGraphUtility
+{
+    static public PlayableHandle CreateAnimationOffsetPlayable(PlayableGraph graph, Vector3 position, Quaternion rotation, int inputCount)
+        {
+            PlayableHandle handle = PlayableHandle.Null;
+            if (!InternalCreateAnimationOffsetPlayable(ref graph, position, rotation, ref handle))
+                return PlayableHandle.Null;
+            handle.inputCount = inputCount;
+            return handle;
+        }
+    
+    
+    private static bool InternalCreateAnimationOffsetPlayable (ref PlayableGraph graph, Vector3 position, Quaternion rotation, ref PlayableHandle handle) {
+        return INTERNAL_CALL_InternalCreateAnimationOffsetPlayable ( ref graph, ref position, ref rotation, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_InternalCreateAnimationOffsetPlayable (ref PlayableGraph graph, ref Vector3 position, ref Quaternion rotation, ref PlayableHandle handle);
 }
 
 }

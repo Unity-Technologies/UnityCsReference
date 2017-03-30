@@ -528,6 +528,7 @@ public sealed partial class EditorUserBuildSettings
 
     
             public static string xboxOneAdditionalDebugPorts { get; set; }
+            public static bool xboxOneRebootIfDeployFailsAndRetry { get; set; }
     
     
     public extern static MobileTextureSubtarget androidBuildSubtarget

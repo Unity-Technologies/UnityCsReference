@@ -4,14 +4,14 @@
 
 using UnityEditor;
 using System.Runtime.InteropServices;
-using Unity.Bindings;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditorInternal.VR
 {
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeStruct(GenerateMarshallingType = NativeStructGenerateOption.UseCustomStruct)]
+    [NativeType(CodegenOptions = CodegenOptions.Custom)]
     public partial struct VRDeviceInfoEditor
     {
         public string deviceNameKey;
@@ -21,7 +21,7 @@ namespace UnityEditorInternal.VR
         public bool inListByDefault;
     }
 
-    [NativeType(Header = "./Editor/Src/VR/VREditor.bindings.h")]
+    [NativeHeader("Editor/Src/VR/VREditor.bindings.h")]
     public sealed partial class VREditor
     {
         extern public static  VRDeviceInfoEditor[] GetAllVRDeviceInfo(BuildTargetGroup targetGroup);

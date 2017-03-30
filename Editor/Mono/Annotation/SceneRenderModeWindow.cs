@@ -63,6 +63,8 @@ namespace UnityEditor
         BakedTexelValidity = 28,
         BakedIndices = 29,
         BakedCharting = 30,
+
+        SpriteMask = 31,
     }
 
     internal class SceneRenderModeWindow : PopupWindowContent
@@ -96,6 +98,7 @@ namespace UnityEditor
                 DrawCameraMode.AlphaChannel,
                 DrawCameraMode.Overdraw,
                 DrawCameraMode.Mipmaps,
+                DrawCameraMode.SpriteMask,
 
                 // Deferred
                 DrawCameraMode.DeferredDiffuse,
@@ -166,6 +169,7 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Texel Validity"),
                 EditorGUIUtility.TextContent("Lightmap Indices"),
                 EditorGUIUtility.TextContent("UV Charts"),
+                EditorGUIUtility.TextContent("Sprite Mask"),
             };
         }
 

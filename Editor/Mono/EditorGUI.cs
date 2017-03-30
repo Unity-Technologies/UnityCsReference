@@ -117,7 +117,6 @@ namespace UnityEditor
 
         private static int s_ColorPickID;
 
-        private static int s_CurveID;
         internal static Color kCurveColor = Color.green;
         internal static Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
         internal static EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
@@ -2534,6 +2533,23 @@ namespace UnityEditor
             get { return indentLevel * kIndentPerLevel; }
         }
 
+        public class IndentLevelScope : GUI.Scope
+        {
+            int m_IndentOffset;
+            public IndentLevelScope() : this(1) {}
+
+            public IndentLevelScope(int increment)
+            {
+                m_IndentOffset = increment;
+                EditorGUI.indentLevel += m_IndentOffset;
+            }
+
+            protected override void CloseScope()
+            {
+                EditorGUI.indentLevel -= m_IndentOffset;
+            }
+        }
+
         /// *listonly*
         private static int PopupInternal(Rect position, string label, int selectedIndex, string[] displayedOptions, GUIStyle style)
         {
@@ -4039,7 +4055,7 @@ namespace UnityEditor
         {
             if (property != null)
             {
-                CurveEditorWindow.curve = property.hasMultipleDifferentValues ? new AnimationCurve() : property.animationCurveValue;
+                CurveEditorWindow.property = property;
             }
             else
             {
@@ -4056,24 +4072,12 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
+            if (MatchesCurvePopup(value, property))
             {
-                if (s_CurveID != id)
+                if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
                 {
-                    s_CurveID = id;
-                    if (CurveEditorWindow.visible)
-                    {
-                        SetCurveEditorWindowCurve(value, property, color);
-                        ShowCurvePopup(GUIView.current, ranges);
-                    }
-                }
-                else
-                {
-                    if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
-                    {
-                        SetCurveEditorWindowCurve(value, property, color);
-                        CurveEditorWindow.instance.Repaint();
-                    }
+                    SetCurveEditorWindowCurve(value, property, color);
+                    CurveEditorWindow.instance.Repaint();
                 }
             }
 
@@ -4082,8 +4086,6 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition))
                     {
-                        s_CurveID = id;
-                        GUIUtility.keyboardControl = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4105,7 +4107,8 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-                    if (s_CurveID == id)
+
+                    if (MatchesCurvePopup(value, property))
                     {
                         switch (evt.commandName)
                         {
@@ -4128,7 +4131,6 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(id))
                     {
-                        s_CurveID = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4151,6 +4153,20 @@ namespace UnityEditor
                 settings.vRangeMax = ranges.yMax;
             }
             CurveEditorWindow.instance.Show(GUIView.current, settings);
+        }
+
+        private static bool MatchesCurvePopup(AnimationCurve curve, SerializedProperty property)
+        {
+            if (curve != null)
+                return curve == CurveEditorWindow.curve;
+
+            if (CurveEditorWindow.property == null)
+                return false;
+
+            if (CurveEditorWindow.property.serializedObject == null)
+                return false;
+
+            return SerializedProperty.EqualContents(property, CurveEditorWindow.property);
         }
 
         private static bool ValidTargetForIconSelection(Object[] targets)
@@ -4941,7 +4957,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_LayerMaskField, FocusType.Keyboard, position);
-            position = PrefixLabel(position, id, label);
+            if (label != null)
+            {
+                position = PrefixLabel(position, id, label);
+            }
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
             {

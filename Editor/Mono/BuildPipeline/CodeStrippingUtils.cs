@@ -195,6 +195,8 @@ namespace UnityEditor
             "Texture2DArray",
             "RenderTexture",
             "Mesh", // Used by IMGUI (even on empty projects, it draws development console & watermarks)
+            "MeshFilter", // Used in the VR Splash screen.
+            "MeshRenderer", // Used in the VR Splash screen.
             "Sprite", // Used by Unity splash screen.
             "LowerResBlitTexture",
         };

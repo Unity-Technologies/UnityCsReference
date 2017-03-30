@@ -7,7 +7,7 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-using Unity.Bindings;
+using UnityEngine.Bindings;
 
 
 
@@ -61,7 +61,7 @@ public partial struct ObjectReferenceKeyframe
     public UnityEngine.Object value;
 }
 
-[NativeStruct(GenerateMarshallingType = NativeStructGenerateOption.UseCustomStruct, IntermediateScriptingStructName = "MonoEditorCurveBinding")]
+[NativeType(CodegenOptions.Custom, "MonoEditorCurveBinding")]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct EditorCurveBinding
 {

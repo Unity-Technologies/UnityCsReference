@@ -382,6 +382,19 @@ public partial struct PlayableHandle
         }
     
     
+    private static void SetInputWeightInternal (ref PlayableHandle playable, ref PlayableHandle input, float weight) {
+        INTERNAL_CALL_SetInputWeightInternal ( ref playable, ref input, weight );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetInputWeightInternal (ref PlayableHandle playable, ref PlayableHandle input, float weight);
+    public void SetInputWeight(PlayableHandle input, float weight)
+        {
+            SetInputWeightInternal(ref this, ref input, weight);
+        }
+    
+    
     public void Destroy()
         {
             graph.DestroyPlayable(this);
