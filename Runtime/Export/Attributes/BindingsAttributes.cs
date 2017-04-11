@@ -91,7 +91,7 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
     class NativeNameAttribute : Attribute, IBindingsNameProviderAttribute
     {
         public string Name { get; set; }

@@ -13,6 +13,13 @@ namespace UnityEngine.Experimental.UIElements.StyleEnums
         Manual
     }
 
+    public enum Overflow
+    {
+        Visible = CSSOverflow.Visible,
+        Scroll = CSSOverflow.Scroll,
+        Hidden = CSSOverflow.Hidden
+    }
+
     public enum FlexDirection
     {
         Column = CSSFlexDirection.Column,

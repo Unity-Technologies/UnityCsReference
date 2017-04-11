@@ -12,54 +12,61 @@ namespace UnityEditorInternal
 {
     static internal class MaterialAnimationUtility
     {
-        static UndoPropertyModification[] CreateUndoPropertyModifications(int count, Object target)
+        const string kMaterialPrefix = "material.";
+
+        static PropertyModification[] CreatePropertyModifications(int count, Object target)
         {
-            UndoPropertyModification[] modifications = new UndoPropertyModification[count];
+            PropertyModification[] modifications = new PropertyModification[count];
             for (int i = 0; i < modifications.Length; i++)
             {
-                modifications[i].previousValue = new PropertyModification();
-                modifications[i].previousValue.target = target;
+                modifications[i] = new PropertyModification();
+                modifications[i].target = target;
             }
             return modifications;
         }
 
-        const string kMaterialPrefix = "material.";
-        static void SetupPropertyModification(string name, float value, UndoPropertyModification prop)
+        static void SetupPropertyModification(string name, float value, PropertyModification prop)
         {
-            prop.previousValue.propertyPath = kMaterialPrefix + name;
-            prop.previousValue.value = value.ToString();
+            prop.propertyPath = kMaterialPrefix + name;
+            prop.value = value.ToString();
         }
 
-        static bool ApplyMaterialModificationToAnimationRecording(MaterialProperty materialProp, Object target, float value)
+        static PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Object target, float value)
         {
-            UndoPropertyModification[] modifications = CreateUndoPropertyModifications(1, target);
+            PropertyModification[] modifications = CreatePropertyModifications(1, target);
             SetupPropertyModification(materialProp.name, value, modifications[0]);
-
-            UndoPropertyModification[] ret = Undo.postprocessModifications(modifications);
-            return (ret.Length != modifications.Length);
+            return modifications;
         }
 
-        static bool ApplyMaterialModificationToAnimationRecording(MaterialProperty materialProp, Object target, Color color)
+        static PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Object target, Color color)
         {
-            UndoPropertyModification[] modifications = CreateUndoPropertyModifications(4, target);
+            PropertyModification[] modifications = CreatePropertyModifications(4, target);
             SetupPropertyModification(materialProp.name + ".r", color.r, modifications[0]);
             SetupPropertyModification(materialProp.name + ".g", color.g, modifications[1]);
             SetupPropertyModification(materialProp.name + ".b", color.b, modifications[2]);
             SetupPropertyModification(materialProp.name + ".a", color.a, modifications[3]);
-
-            UndoPropertyModification[] ret = Undo.postprocessModifications(modifications);
-            return (ret.Length != modifications.Length);
+            return modifications;
         }
 
-        static bool ApplyMaterialModificationToAnimationRecording(string name, Object target, Vector4 vec)
+        static PropertyModification[] MaterialPropertyToPropertyModifications(string name, Object target, Vector4 vec)
         {
-            UndoPropertyModification[] modifications = CreateUndoPropertyModifications(4, target);
+            PropertyModification[] modifications = CreatePropertyModifications(4, target);
             SetupPropertyModification(name + ".x", vec.x, modifications[0]);
             SetupPropertyModification(name + ".y", vec.y, modifications[1]);
             SetupPropertyModification(name + ".z", vec.z, modifications[2]);
             SetupPropertyModification(name + ".w", vec.w, modifications[3]);
+            return modifications;
+        }
 
-            UndoPropertyModification[] ret = Undo.postprocessModifications(modifications);
+        static bool ApplyMaterialModificationToAnimationRecording(PropertyModification[] modifications)
+        {
+            UndoPropertyModification[] undoModifications = new UndoPropertyModification[modifications.Length];
+            for (int i = 0; i < undoModifications.Length; ++i)
+            {
+                undoModifications[i].previousValue = modifications[i];
+            }
+
+            UndoPropertyModification[] ret = Undo.postprocessModifications(undoModifications);
             return (ret.Length != modifications.Length);
         }
 
@@ -122,14 +129,14 @@ namespace UnityEditorInternal
             {
                 case MaterialProperty.PropType.Color:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (Color)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Color)oldValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
 
                 case MaterialProperty.PropType.Vector:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (Vector4)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Vector4)oldValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
@@ -137,7 +144,7 @@ namespace UnityEditorInternal
                 case MaterialProperty.PropType.Float:
                 case MaterialProperty.PropType.Range:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                    applied = ApplyMaterialModificationToAnimationRecording(materialProp, target, (float)oldValue);
+                    applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (float)oldValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
@@ -148,7 +155,7 @@ namespace UnityEditorInternal
                     {
                         string name = materialProp.name + "_ST";
                         SetupMaterialPropertyBlock(materialProp, changedMask, target);
-                        applied = ApplyMaterialModificationToAnimationRecording(name, target, (Vector4)oldValue);
+                        applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(name, target, (Vector4)oldValue));
                         if (!applied)
                             TearDownMaterialPropertyBlock(target);
                         return applied;
@@ -159,6 +166,28 @@ namespace UnityEditorInternal
             }
 
             return false;
+        }
+
+        static public PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Renderer target)
+        {
+            switch (materialProp.type)
+            {
+                case MaterialProperty.PropType.Color:
+                    return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.colorValue);
+                case MaterialProperty.PropType.Vector:
+                    return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.vectorValue);
+                case MaterialProperty.PropType.Float:
+                case MaterialProperty.PropType.Range:
+                    return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.floatValue);
+
+                case MaterialProperty.PropType.Texture:
+                {
+                    string name = materialProp.name + "_ST";
+                    return MaterialPropertyToPropertyModifications(name, target, materialProp.vectorValue);
+                }
+            }
+
+            return null;
         }
     }
 }

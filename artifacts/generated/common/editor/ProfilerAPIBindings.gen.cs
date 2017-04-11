@@ -64,9 +64,9 @@ public enum ProfilerColumn
 public enum ProfilerMemoryRecordMode
 {
     None = 0,
-    SampleOnly,
-    CallstackFast,
-    CallstackFull
+    ManagedAllocations,
+    AllAllocationsFast,
+    AllAllocationsFull
 }
 
 public enum ProfilerArea
@@ -788,11 +788,11 @@ public sealed partial class ProfilerFrameDataIterator
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool GetIsNativeAllocation () ;
+    extern internal bool GetIsSampleAllocation () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool GetAllocationCallstack (ref string resolvedStack) ;
+    extern internal bool GetSampleCallstack (ref string resolvedStack) ;
 
     [System.Obsolete ("Use instanceId instead (UnityUpgradable) -> instanceId")]
     public int id { get { return instanceId; } }
@@ -804,7 +804,8 @@ public sealed partial class ProfilerFrameDataIterator
 public partial struct NativeProfilerTimeline_InitializeArgs
 {
     public Color[]    profilerColors;
-    public Color      nativeAllocationColor;
+    public Color      allocationSampleColor;
+    public Color      internalSampleColor;
     public float      ghostAlpha;
     public float      nonSelectedAlpha;
     public IntPtr     guiStyle;
@@ -816,7 +817,8 @@ public partial struct NativeProfilerTimeline_InitializeArgs
     public void Reset()
         {
             profilerColors = null;
-            nativeAllocationColor = Color.clear;
+            allocationSampleColor = Color.clear;
+            internalSampleColor = Color.clear;
             ghostAlpha = 0;
             nonSelectedAlpha = 0;
             guiStyle = (IntPtr)0;
@@ -897,7 +899,7 @@ public partial struct NativeProfilerTimeline_GetEntryInstanceInfoArgs
     
     public int        out_Id;
     public string     out_Path;
-    public string     out_AllocationInfo;
+    public string     out_CallstackInfo;
     public string     out_MetaData;
     
     
@@ -909,7 +911,7 @@ public partial struct NativeProfilerTimeline_GetEntryInstanceInfoArgs
 
             out_Id = 0;
             out_Path = string.Empty;
-            out_AllocationInfo = string.Empty;
+            out_CallstackInfo = string.Empty;
             out_MetaData = string.Empty;
         }
     

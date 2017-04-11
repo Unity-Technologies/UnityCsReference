@@ -61,9 +61,12 @@ namespace UnityEditor
                     if (m_CacheQueue[m_CacheQueueFront] != -1)
                     {
                         long removeKey = m_CacheQueue[m_CacheQueueFront];
-                        Texture2D tex = m_Cache[removeKey];
-                        m_Cache.Remove(removeKey);
-                        ProfilerProperty.ReleaseUISystemProfilerRender(tex);
+                        Texture2D tex;
+                        if (m_Cache.TryGetValue(removeKey, out tex))
+                        {
+                            m_Cache.Remove(removeKey);
+                            ProfilerProperty.ReleaseUISystemProfilerRender(tex);
+                        }
                     }
 
                     m_CacheQueue[m_CacheQueueFront] = key;

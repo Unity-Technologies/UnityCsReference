@@ -13,13 +13,13 @@ namespace UnityEngine.Experimental.UIElements
             // There is another in unity\Runtime\IMGUI\GUIStyle.cpp, GUIStyle::Draw.
 
             // Ideally, in C#, we'd try to avoid null string as much as possible. Null breaks stuff left and right.
-            if (!string.IsNullOrEmpty(content.tooltip))
+            if (!string.IsNullOrEmpty(tooltip))
             {
                 // Needs distinction between old style (Event.current.mousePosition) and new style (Event.current.touch.pos) way to get pos.
                 // This is done everywhere throughout the c++ code. Ideally, this would be abstracted at this level.
                 if (position.Contains(tooltipPos))
                 {
-                    GUIStyle.SetMouseTooltip(content.tooltip, position);
+                    GUIStyle.SetMouseTooltip(tooltip, position);
                 }
             }
         }
@@ -33,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
         public override void DoRepaint(IStylePainter args)
         {
             // Same as box but for tooltip
-            style.Draw(position, content,
+            style.Draw(position, GUIContent.Temp(text),
                 // We need to do something about these values. Can we get them from C# of something?
                 false, // IsHover
                 false, // IsActive

@@ -50,10 +50,7 @@ namespace UnityEditor
                 return;
 
             m_Time = new SerializedMinMaxCurve(this, s_Texts.rateOverTime, "rateOverTime");
-            m_Time.m_AllowRandom = false;
-
             m_Distance = new SerializedMinMaxCurve(this, s_Texts.rateOverDistance, "rateOverDistance");
-            m_Distance.m_AllowRandom = false;
 
             m_BurstCount = GetProperty("m_BurstCount");
             m_Bursts = GetProperty("m_Bursts");

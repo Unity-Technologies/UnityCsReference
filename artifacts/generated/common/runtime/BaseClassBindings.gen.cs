@@ -499,4 +499,11 @@ public partial class ScriptableObject : Object
     
 }
 
+[StructLayout(LayoutKind.Sequential)]
+[RequiredByNativeCode]
+    class FailedToLoadScriptObject : Object
+    {
+    }
+
+
 }

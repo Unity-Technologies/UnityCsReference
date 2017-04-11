@@ -2,127 +2,120 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Experimental.UIElements.StyleEnums;
+
 namespace UnityEngine.Experimental.UIElements
 {
-    class Scroller : VisualContainer
+    // TODO: Using ScrollerButton class for now, as Button class uses Skin styles by default because of the GUISkinStyle attribute
+    // ScrollerButton is a repeat button without any skin styles
+    public class ScrollerButton : VisualElement
     {
-        public delegate void OnScrollerValueChanged(float newValue);
+        public Clickable clickable;
 
-        // TODO: Don't we want to be able to adjust this value?
-        private const float ScrollStepSize = 10f;
-
-        public Slider slider
+        public ScrollerButton(System.Action clickEvent, long delay, long interval)
         {
-            get { return this.m_Slider; }
+            clickable = new Clickable(clickEvent, delay, interval);
+            AddManipulator(clickable);
+        }
+    }
+
+    public class Scroller : VisualContainer
+    {
+        // Usually set by the owner of the scroller
+        public event System.Action<float> valueChanged;
+
+        public Slider slider { get; private set; }
+        public ScrollerButton lowButton { get; private set; }
+        public ScrollerButton highButton { get; private set; }
+
+        public float value
+        {
+            get { return slider.value; }
+            set
+            {
+                slider.value = value;
+
+                if (valueChanged != null)
+                    valueChanged(slider.value);
+                this.Dirty(ChangeType.Repaint);
+            }
         }
 
-        public RepeatButton leftButton
+        public float lowValue { get { return slider.lowValue; } }
+        public float highValue { get { return slider.highValue; } }
+
+        public Slider.Direction direction
         {
-            get { return this.m_LeftButton; }
+            get { return flexDirection == FlexDirection.Row ? Slider.Direction.Horizontal : Slider.Direction.Vertical; }
+            set
+            {
+                if (value == Slider.Direction.Horizontal)
+                {
+                    flexDirection = FlexDirection.Row;
+                    AddToClassList("horizontal");
+                }
+                else
+                {
+                    flexDirection = FlexDirection.Column;
+                    AddToClassList("vertical");
+                }
+            }
         }
 
-        public RepeatButton rightButton
+        public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, Slider.Direction direction = Slider.Direction.Vertical)
         {
-            get { return this.m_RightButton; }
+            phaseInterest = EventPhase.BubbleUp;
+
+            this.direction = direction;
+            this.valueChanged = valueChanged;
+
+            // Add children in correct order
+            lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
+            AddChild(lowButton);
+            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider"};
+            AddChild(slider);
+            highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
+            AddChild(highButton);
         }
 
-        private readonly Slider m_Slider;
-        private readonly RepeatButton m_LeftButton;
-        private readonly RepeatButton m_RightButton;
-
-        private float m_PageSize;
-        private float m_LeftValue;
-        private float m_RightValue;
-
-        public float value { get; private set; }
-
-        public event OnScrollerValueChanged onChange;
-
-        public Scroller()
+        public override bool enabled
         {
-            m_Slider = new Slider(OnSliderValueChange);
-            AddChild(m_Slider);
-            m_LeftButton = new RepeatButton(OnClickLeftButton, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait);
-            AddChild(m_LeftButton);
-            m_RightButton = new RepeatButton(OnClickRightButton, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait);
-            AddChild(m_RightButton);
+            get { return base.enabled; }
+            set { base.enabled = value; PropagateEnabled(this, value); }
         }
 
-        void OnSliderValueChange(float value)
+        public void PropagateEnabled(VisualContainer c, bool enabled)
         {
-            ValidateSliderValue(value);
-            if (onChange != null)
-                onChange(value);
+            if (c != null)
+            {
+                foreach (var child in c)
+                {
+                    child.enabled = enabled;
+                    PropagateEnabled(child as VisualContainer, enabled);
+                }
+            }
         }
 
-        void OnClickLeftButton()
+        public void Adjust(float factor)
         {
-            ValidateSliderValue(value - (ScrollStepSize * (m_LeftValue < m_RightValue ? 1f : -1f)));
-            if (onChange != null)
-                onChange(value);
-            // sync slider value
-            m_Slider.value = value;
+            // Any factor smaller than 1f will enable the scroller (and its children)
+            enabled = (factor < 1f);
+            slider.AdjustDragElement(factor);
         }
 
-        void OnClickRightButton()
-        {
-            ValidateSliderValue(value + (ScrollStepSize * (m_LeftValue < m_RightValue ? 1f : -1f)));
-            if (onChange != null)
-                onChange(value);
-            // sync slider value
-            m_Slider.value = value;
-        }
-
-        public void SetProperties(Rect pos, float val, float size, float leftValue, float rightValue, bool horiz)
-        {
-            position = pos;
-
-            m_PageSize = size;
-            m_LeftValue = leftValue;
-            m_RightValue = rightValue;
-
-            value = val;
-
-            Rect sliderRect, minRect, maxRect;
-
-            GetRects(horiz, position, m_LeftButton.style, m_RightButton.style, out sliderRect, out minRect, out maxRect);
-            m_Slider.SetProperties(sliderRect, value, size, leftValue, rightValue, horiz);
-
-            // TODO default style settings should do flexbox layout
-            // Or we need a hook into the layout system
-            m_LeftButton.position = minRect;
-            m_RightButton.position = maxRect;
-        }
-
-        public void ValidateSliderValue(float newValue)
+        void OnSliderValueChange(float newValue)
         {
             value = newValue;
-            if (m_LeftValue < m_RightValue)
-                value = Mathf.Clamp(value, m_LeftValue, m_RightValue - m_PageSize);
-            else
-                value = Mathf.Clamp(value, m_RightValue, m_LeftValue - m_PageSize);
         }
 
-        private void GetRects(bool horiz, Rect pos, GUIStyle leftButton, GUIStyle rightButton, out Rect sliderRect, out Rect minRect, out Rect maxRect)
+        public void ScrollPageUp()
         {
-            if (horiz)
-            {
-                sliderRect = new Rect(
-                        leftButton.fixedWidth, 0,
-                        pos.width - leftButton.fixedWidth - rightButton.fixedWidth, pos.height
-                        );
-                minRect = new Rect(0, 0, leftButton.fixedWidth, pos.height);
-                maxRect = new Rect(pos.width - rightButton.fixedWidth, 0, rightButton.fixedWidth, pos.height);
-            }
-            else
-            {
-                sliderRect = new Rect(
-                        0, leftButton.fixedHeight,
-                        pos.width, pos.height - leftButton.fixedHeight - rightButton.fixedHeight
-                        );
-                minRect = new Rect(0, 0, pos.width, leftButton.fixedHeight);
-                maxRect = new Rect(0, pos.height - rightButton.fixedHeight, pos.width, rightButton.fixedHeight);
-            }
+            value -= (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
+        }
+
+        public void ScrollPageDown()
+        {
+            value += (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
         }
     }
 }

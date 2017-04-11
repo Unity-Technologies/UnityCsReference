@@ -335,6 +335,7 @@ public partial struct NetworkViewID
     
 }
 
+[System.Obsolete ("Unity Multiplayer and NetworkIdentity component instead.")]
 public sealed partial class NetworkView : Behaviour
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -595,7 +596,9 @@ public static NetworkConnectionError Connect(HostData hostData, [uei.DefaultValu
         {
             if (gameObject != null)
             {
+                #pragma warning disable 0618
                 NetworkView view = gameObject.GetComponent<NetworkView>();
+                #pragma warning restore 0618
                 if (view != null)
                     Destroy(view.viewID);
                 else
@@ -1096,11 +1099,12 @@ public partial struct NetworkMessageInfo
                     Debug.LogError("No NetworkView is assigned to this NetworkMessageInfo object. Note that this is expected in OnNetworkInstantiate().");
                     return NullNetworkView();
                 }
+                #pragma warning disable 0618
                 return NetworkView.Find(m_ViewID);
+                #pragma warning restore 0618
             }
         }
-    
-    
+            #pragma warning disable 0618
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal NetworkView NullNetworkView () ;

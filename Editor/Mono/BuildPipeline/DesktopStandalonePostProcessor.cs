@@ -34,6 +34,8 @@ internal abstract class DesktopStandalonePostProcessor
     {
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
+        if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            config.Set("force-mono", "latest");
     }
 
     private void CopyNativePlugins()

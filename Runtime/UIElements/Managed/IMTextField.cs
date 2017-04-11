@@ -7,7 +7,7 @@ namespace UnityEngine.Experimental.UIElements
     // TODO: Sync up with EditorGUI::DoTextField
     abstract class IMTextField : IMElement
     {
-        protected TextEditor m_Editor;
+        public UnityEngine.TextEditor editor { get; protected set; }
 
         public int maxLength { get; set; }
         public bool multiline { get; set; }
@@ -20,17 +20,17 @@ namespace UnityEngine.Experimental.UIElements
         protected void SyncTextEditor()
         {
             //Pre-cull input string to maxLength.
-            if (maxLength >= 0 && content.text != null && content.text.Length > maxLength)
-                content.text = content.text.Substring(0, maxLength);
+            if (maxLength >= 0 && text != null && text.Length > maxLength)
+                text = text.Substring(0, maxLength);
 
-            m_Editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), id);
-            m_Editor.text = content.text;
-            m_Editor.SaveBackup();
-            m_Editor.position = position;
-            m_Editor.style = style;
-            m_Editor.multiline = multiline;
-            m_Editor.controlID = id;
-            m_Editor.DetectFocusChange();
+            editor = (UnityEngine.TextEditor)GUIUtility.GetStateObject(typeof(UnityEngine.TextEditor), id);
+            editor.text = text;
+            editor.SaveBackup();
+            editor.position = position;
+            editor.style = style;
+            editor.multiline = multiline;
+            editor.controlID = id;
+            editor.DetectFocusChange();
         }
     }
 
@@ -79,14 +79,14 @@ namespace UnityEngine.Experimental.UIElements
             if (m_Changed)
             {
                 GUI.changed = true;
-                content.text = m_Editor.text;
-                if (maxLength >= 0 && content.text.Length > maxLength)
-                    content.text = content.text.Substring(0, maxLength);
+                text = editor.text;
+                if (maxLength >= 0 && text.Length > maxLength)
+                    text = text.Substring(0, maxLength);
                 evt.Use();
             }
 
             // Scroll offset might need to be updated
-            m_Editor.UpdateScrollOffsetIfNeeded(evt);
+            editor.UpdateScrollOffsetIfNeeded(evt);
 
             return used;
         }
@@ -97,11 +97,11 @@ namespace UnityEngine.Experimental.UIElements
             // TODO:    check if this OpenGL view has keyboard focus
             if (GUIUtility.keyboardControl != id)
             {
-                style.Draw(position, content, id, false);
+                style.Draw(position, GUIContent.Temp(text), id, false);
             }
             else
             {
-                m_Editor.DrawCursor(content.text);
+                editor.DrawCursor(text);
             }
         }
 
@@ -111,19 +111,19 @@ namespace UnityEngine.Experimental.UIElements
             {
                 GUIUtility.hotControl = id;
                 GUIUtility.keyboardControl = id;
-                m_Editor.m_HasFocus = true;
-                m_Editor.MoveCursorToPosition(args.mousePosition);
+                editor.m_HasFocus = true;
+                editor.MoveCursorToPosition(args.mousePosition);
                 if (args.clickCount == 2 && GUI.skin.settings.doubleClickSelectsWord)
                 {
-                    m_Editor.SelectCurrentWord();
-                    m_Editor.DblClickSnap(TextEditor.DblClickSnapping.WORDS);
-                    m_Editor.MouseDragSelectsWholeWords(true);
+                    editor.SelectCurrentWord();
+                    editor.DblClickSnap(UnityEngine.TextEditor.DblClickSnapping.WORDS);
+                    editor.MouseDragSelectsWholeWords(true);
                 }
-                if (args.clickCount == 3 && GUI.skin.settings.tripleClickSelectsLine)
+                else if (args.clickCount == 3 && GUI.skin.settings.tripleClickSelectsLine)
                 {
-                    m_Editor.SelectCurrentParagraph();
-                    m_Editor.MouseDragSelectsWholeWords(true);
-                    m_Editor.DblClickSnap(TextEditor.DblClickSnapping.PARAGRAPHS);
+                    editor.SelectCurrentParagraph();
+                    editor.MouseDragSelectsWholeWords(true);
+                    editor.DblClickSnap(UnityEngine.TextEditor.DblClickSnapping.PARAGRAPHS);
                 }
 
                 return true;
@@ -135,7 +135,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (GUIUtility.hotControl == id)
             {
-                m_Editor.MouseDragSelectsWholeWords(false);
+                editor.MouseDragSelectsWholeWords(false);
                 GUIUtility.hotControl = 0;
                 return true;
             }
@@ -147,9 +147,9 @@ namespace UnityEngine.Experimental.UIElements
             if (GUIUtility.hotControl == id)
             {
                 if (args.shift)
-                    m_Editor.MoveCursorToPosition(args.mousePosition);
+                    editor.MoveCursorToPosition(args.mousePosition);
                 else
-                    m_Editor.SelectToPosition(args.mousePosition);
+                    editor.SelectToPosition(args.mousePosition);
                 return true;
             }
             return false;
@@ -161,10 +161,10 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
 
             // TODO: we need to pull Event out of HandleKeyEvent... just not now.
-            if (m_Editor.HandleKeyEvent(args.ToEvent()))
+            if (editor.HandleKeyEvent(args.ToEvent()))
             {
                 m_Changed = true;
-                content.text = m_Editor.text;
+                text = editor.text;
                 return true;
             }
 
@@ -184,9 +184,9 @@ namespace UnityEngine.Experimental.UIElements
 
             if (font.HasCharacter(c) || c == '\n')
             {
-                m_Editor.Insert(c);
+                editor.Insert(c);
                 m_Changed = true;
-                return false;
+                return c == '\n';
             }
 
             // On windows, keypresses also send events with keycode but no character. Eat them up here.
@@ -195,7 +195,7 @@ namespace UnityEngine.Experimental.UIElements
                 // if we have a composition string, make sure we clear the previous selection.
                 if (Input.compositionString.Length > 0)
                 {
-                    m_Editor.ReplaceSelection("");
+                    editor.ReplaceSelection("");
                     m_Changed = true;
                 }
                 return true;
@@ -264,7 +264,7 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             // Scroll offset might need to be updated
-            m_Editor.UpdateScrollOffsetIfNeeded(evt);
+            editor.UpdateScrollOffsetIfNeeded(evt);
 
             return used;
         }
@@ -276,28 +276,28 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void DoRepaint(IStylePainter args)
         {
-            if (m_Editor.keyboardOnScreen != null)
+            if (editor.keyboardOnScreen != null)
             {
-                content.text = m_Editor.keyboardOnScreen.text;
-                if (maxLength >= 0 && content.text != null && content.text.Length > maxLength)
-                    content.text = content.text.Substring(0, maxLength);
+                text = editor.keyboardOnScreen.text;
+                if (maxLength >= 0 && text != null && text.Length > maxLength)
+                    text = text.Substring(0, maxLength);
 
-                if (m_Editor.keyboardOnScreen.done)
+                if (editor.keyboardOnScreen.done)
                 {
-                    m_Editor.keyboardOnScreen = null;
+                    editor.keyboardOnScreen = null;
                     GUI.changed = true;
                 }
             }
 
             // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
             // so before drawing make sure we hide them ourselves
-            string clearText = content.text;
+            string clearText = text;
 
             if (!string.IsNullOrEmpty(secureText))
-                content.text = GUI.PasswordFieldGetStrToShow(clearText, maskChar);
+                text = GUI.PasswordFieldGetStrToShow(clearText, maskChar);
 
-            style.Draw(position, content, id, false);
-            content.text = clearText;
+            style.Draw(position, GUIContent.Temp(text), id, false);
+            text = clearText;
         }
 
         protected override bool DoMouseDown(MouseEventArgs args)
@@ -309,7 +309,7 @@ namespace UnityEngine.Experimental.UIElements
                 // Disable keyboard for previously active text field, if any
                 if (s_HotTextField != -1 && s_HotTextField != id)
                 {
-                    TextEditor currentEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), s_HotTextField);
+                    UnityEngine.TextEditor currentEditor = (UnityEngine.TextEditor)GUIUtility.GetStateObject(typeof(UnityEngine.TextEditor), s_HotTextField);
                     currentEditor.keyboardOnScreen = null;
                 }
 
@@ -319,8 +319,8 @@ namespace UnityEngine.Experimental.UIElements
                 if (GUIUtility.keyboardControl != id)
                     GUIUtility.keyboardControl = id;
 
-                m_Editor.keyboardOnScreen = TouchScreenKeyboard.Open(
-                        !string.IsNullOrEmpty(secureText) ? secureText : content.text,
+                editor.keyboardOnScreen = TouchScreenKeyboard.Open(
+                        !string.IsNullOrEmpty(secureText) ? secureText : text,
                         TouchScreenKeyboardType.Default,
                         true, // autocorrection
                         multiline,

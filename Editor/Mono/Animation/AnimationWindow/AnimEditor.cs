@@ -90,7 +90,8 @@ namespace UnityEditor
         internal static PrefKey kAnimationNextKeyframe = new PrefKey("Animation/Next Keyframe", "&.");
         internal static PrefKey kAnimationFirstKey = new PrefKey("Animation/First Keyframe", "#,");
         internal static PrefKey kAnimationLastKey = new PrefKey("Animation/Last Keyframe", "#.");
-        internal static PrefKey kAnimationRecordKeyframe = new PrefKey("Animation/Record Keyframe", "k");
+        internal static PrefKey kAnimationRecordKeyframeSelected = new PrefKey("Animation/Key Selected", "k");
+        internal static PrefKey kAnimationRecordKeyframeModified = new PrefKey("Animation/Key Modified", "#k");
         internal static PrefKey kAnimationShowCurvesToggle = new PrefKey("Animation/Show Curves", "c");
 
         internal const int kSliderThickness = 15;
@@ -351,6 +352,8 @@ namespace UnityEditor
 
             m_CurveEditor.curvesUpdated += SaveChangedCurvesFromCurveEditor;
             m_CurveEditor.OnEnable();
+
+            EditorApplication.globalEventHandler += HandleGlobalHotkeys;
         }
 
         public void OnDisable()
@@ -367,6 +370,8 @@ namespace UnityEditor
                 m_DopeSheet.OnDisable();
 
             m_State.OnDisable();
+
+            EditorApplication.globalEventHandler -= HandleGlobalHotkeys;
         }
 
         public void OnDestroy()
@@ -792,11 +797,47 @@ namespace UnityEditor
                 Event.current.Use();
             }
 
-            if (kAnimationRecordKeyframe.activated)
+            if (kAnimationRecordKeyframeSelected.activated)
             {
                 SaveCurveEditorKeySelection();
-                var keyTime = AnimationKeyTime.Time(m_State.currentTime, m_State.frameRate);
-                AnimationWindowUtility.AddSelectedKeyframes(m_State, keyTime);
+                AnimationWindowUtility.AddSelectedKeyframes(m_State, controlInterface.time);
+                UpdateSelectedKeysToCurveEditor();
+
+                Event.current.Use();
+            }
+
+            if (kAnimationRecordKeyframeModified.activated)
+            {
+                SaveCurveEditorKeySelection();
+                controlInterface.ProcessCandidates();
+                UpdateSelectedKeysToCurveEditor();
+
+                Event.current.Use();
+            }
+        }
+
+        public void HandleGlobalHotkeys()
+        {
+            if (!m_State.previewing)
+                return;
+
+            if (!GUI.enabled || m_State.disabled)
+                return;
+
+            if (kAnimationRecordKeyframeSelected.activated)
+            {
+                SaveCurveEditorKeySelection();
+                AnimationWindowUtility.AddSelectedKeyframes(m_State, controlInterface.time);
+                controlInterface.ClearCandidates();
+                UpdateSelectedKeysToCurveEditor();
+
+                Event.current.Use();
+            }
+
+            if (kAnimationRecordKeyframeModified.activated)
+            {
+                SaveCurveEditorKeySelection();
+                controlInterface.ProcessCandidates();
                 UpdateSelectedKeysToCurveEditor();
 
                 Event.current.Use();
@@ -1049,8 +1090,25 @@ namespace UnityEditor
         private void SaveCurveEditorKeySelection()
         {
             // Synchronize current selection in curve editor and save selection snapshot in undo redo.
-            UpdateSelectedKeysToCurveEditor();
+            if (m_State.showCurveEditor)
+                UpdateSelectedKeysFromCurveEditor();
+            else
+                UpdateSelectedKeysToCurveEditor();
+
             m_CurveEditor.SaveKeySelection(AnimationWindowState.kEditCurveUndoLabel);
+        }
+
+        public void BeginKeyModification()
+        {
+            SaveCurveEditorKeySelection();
+
+            m_State.SaveKeySelection(AnimationWindowState.kEditCurveUndoLabel);
+            m_State.ClearKeySelections();
+        }
+
+        public void EndKeyModification()
+        {
+            UpdateSelectedKeysToCurveEditor();
         }
 
         private void HandleCopyPaste()

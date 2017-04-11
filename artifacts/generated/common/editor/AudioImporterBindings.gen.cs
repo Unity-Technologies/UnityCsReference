@@ -177,15 +177,15 @@ public sealed partial class AudioImporter : AssetImporter
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private bool Internal_GetAmbisonic () ;
 
-    [System.Obsolete ("loadInBackground is not used anymore. AudioClips will now always be loaded in separate threads.")]
     public bool loadInBackground
         {
             get
             {
-                return true;
+                return Internal_GetLoadInBackground();
             }
             set
             {
+                Internal_SetLoadInBackground(value);
             }
         }
     
@@ -203,6 +203,14 @@ public sealed partial class AudioImporter : AssetImporter
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_SetLoadInBackground (bool flag) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private bool Internal_GetLoadInBackground () ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_SetPreloadAudioData (bool flag) ;

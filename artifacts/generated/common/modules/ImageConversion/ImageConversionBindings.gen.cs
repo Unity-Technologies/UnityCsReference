@@ -54,26 +54,6 @@ public static partial class ImageConversion
         return LoadImage ( tex, data, markNonReadable );
     }
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  Texture2D GetTexture (this WWW _www, bool markNonReadable) ;
-
-    public static Texture2D GetTexture(this WWW www)
-        {
-            return www.GetTexture(false);
-        }
-    
-    
-    public static Texture2D GetTextureNonReadable(this WWW www)
-        {
-            return www.GetTexture(true);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void LoadImageIntoTexture (this WWW _www, Texture2D tex) ;
-
 }
 
 

@@ -39,7 +39,7 @@ namespace UnityEngine
             get { return m_Content.text; }
             set
             {
-                m_Content.text = value;
+                m_Content.text = value ?? string.Empty;
 
                 ClampTextIndex(ref m_CursorIndex);
                 ClampTextIndex(ref m_SelectIndex);
@@ -59,6 +59,8 @@ namespace UnityEngine
                 UpdateScrollOffset();
             }
         }
+
+        internal virtual Rect localPosition { get { return position; } }
 
         public int cursorIndex
         {
@@ -94,9 +96,11 @@ namespace UnityEngine
         bool m_MouseDragSelectsWholeWords = false;
         int m_DblClickInitPos = 0;
         DblClickSnapping m_DblClickSnap = DblClickSnapping.WORDS;
+        public DblClickSnapping doubleClickSnapping { get { return m_DblClickSnap; } set { m_DblClickSnap = value; } }
         bool m_bJustSelected = false;
 
         int m_iAltCursorPos = -1;
+        public int altCursorPosition { get { return m_iAltCursorPos; } set { m_iAltCursorPos = value; } }
 
         public enum DblClickSnapping : byte { WORDS, PARAGRAPHS };
 
@@ -124,8 +128,8 @@ namespace UnityEngine
         {
             if (!hasHorizontalCursorPos)
             {
-                graphicalCursorPos = style.GetCursorPixelPosition(position, m_Content, cursorIndex);
-                graphicalSelectCursorPos = style.GetCursorPixelPosition(position, m_Content, selectIndex);
+                graphicalCursorPos = style.GetCursorPixelPosition(localPosition, m_Content, cursorIndex);
+                graphicalSelectCursorPos = style.GetCursorPixelPosition(localPosition, m_Content, selectIndex);
                 hasHorizontalCursorPos = false;
             }
         }
@@ -385,7 +389,7 @@ namespace UnityEngine
                 cursorIndex = selectIndex;
             GrabGraphicalCursorPos();
             graphicalCursorPos.y -=  1;
-            cursorIndex = selectIndex = style.GetCursorStringIndex(position, m_Content, graphicalCursorPos);
+            cursorIndex = selectIndex = style.GetCursorStringIndex(localPosition, m_Content, graphicalCursorPos);
             if (cursorIndex <= 0)
                 ClearCursorPos();
         }
@@ -399,7 +403,7 @@ namespace UnityEngine
                 cursorIndex = selectIndex;
             GrabGraphicalCursorPos();
             graphicalCursorPos.y += style.lineHeight + 5;
-            cursorIndex = selectIndex = style.GetCursorStringIndex(position, m_Content, graphicalCursorPos);
+            cursorIndex = selectIndex = style.GetCursorStringIndex(localPosition, m_Content, graphicalCursorPos);
             if (cursorIndex == text.Length)
                 ClearCursorPos();
         }
@@ -497,9 +501,15 @@ namespace UnityEngine
         // Move the cursor to a graphical position. Used for moving the cursor on MouseDown events.
         public void MoveCursorToPosition(Vector2 cursorPosition)
         {
-            selectIndex = style.GetCursorStringIndex(position, m_Content, cursorPosition + scrollOffset);
+            MoveCursorToPosition_Internal(cursorPosition, Event.current.shift);
+        }
 
-            if (!Event.current.shift)
+        // Move the cursor to a graphical position. Used for moving the cursor on MouseDown events.
+        protected internal void MoveCursorToPosition_Internal(Vector2 cursorPosition, bool shift)
+        {
+            selectIndex = style.GetCursorStringIndex(localPosition, m_Content, cursorPosition + scrollOffset);
+
+            if (!shift)
             {
                 cursorIndex = selectIndex;
             }
@@ -509,14 +519,14 @@ namespace UnityEngine
 
         public void MoveAltCursorToPosition(Vector2 cursorPosition)
         {
-            int index = style.GetCursorStringIndex(position, m_Content, cursorPosition + scrollOffset);
+            int index = style.GetCursorStringIndex(localPosition, m_Content, cursorPosition + scrollOffset);
             m_iAltCursorPos = Mathf.Min(text.Length, index);
             DetectFocusChange(); // TODO: Is this necessary?
         }
 
         public bool IsOverSelection(Vector2 cursorPosition)
         {
-            int p = style.GetCursorStringIndex(position, m_Content, cursorPosition + scrollOffset);
+            int p = style.GetCursorStringIndex(localPosition, m_Content, cursorPosition + scrollOffset);
             return ((p < Mathf.Max(cursorIndex, selectIndex)) && (p > Mathf.Min(cursorIndex, selectIndex)));
         }
 
@@ -524,10 +534,10 @@ namespace UnityEngine
         public void SelectToPosition(Vector2 cursorPosition)
         {
             if (!m_MouseDragSelectsWholeWords)
-                cursorIndex = style.GetCursorStringIndex(position, m_Content, cursorPosition + scrollOffset);
+                cursorIndex = style.GetCursorStringIndex(localPosition, m_Content, cursorPosition + scrollOffset);
             else // snap to words/paragraphs
             {
-                int p = style.GetCursorStringIndex(position, m_Content, cursorPosition + scrollOffset);
+                int p = style.GetCursorStringIndex(localPosition, m_Content, cursorPosition + scrollOffset);
 
 
                 if (m_DblClickSnap == DblClickSnapping.WORDS)
@@ -604,14 +614,14 @@ namespace UnityEngine
         {
             GrabGraphicalCursorPos();
             graphicalCursorPos.y -= 1;
-            cursorIndex = style.GetCursorStringIndex(position, m_Content, graphicalCursorPos);
+            cursorIndex = style.GetCursorStringIndex(localPosition, m_Content, graphicalCursorPos);
         }
 
         public void SelectDown()
         {
             GrabGraphicalCursorPos();
             graphicalCursorPos.y += style.lineHeight + 5;
-            cursorIndex = style.GetCursorStringIndex(position, m_Content, graphicalCursorPos);
+            cursorIndex = style.GetCursorStringIndex(localPosition, m_Content, graphicalCursorPos);
         }
 
         /// Select to the end of the text
@@ -644,16 +654,16 @@ namespace UnityEngine
 
         int GetGraphicalLineStart(int p)
         {
-            Vector2 point = style.GetCursorPixelPosition(position, m_Content, p);
+            Vector2 point = style.GetCursorPixelPosition(localPosition, m_Content, p);
             point.x = 0;
-            return style.GetCursorStringIndex(position, m_Content, point);
+            return style.GetCursorStringIndex(localPosition, m_Content, point);
         }
 
         int GetGraphicalLineEnd(int p)
         {
-            Vector2 point = style.GetCursorPixelPosition(position, m_Content, p);
+            Vector2 point = style.GetCursorPixelPosition(localPosition, m_Content, p);
             point.x += 5000;
-            return style.GetCursorStringIndex(position, m_Content, point);
+            return style.GetCursorStringIndex(localPosition, m_Content, point);
         }
 
         int FindNextSeperator(int startPos)
@@ -994,7 +1004,7 @@ namespace UnityEngine
             }
         }
 
-        private void UpdateScrollOffset()
+        protected void UpdateScrollOffset()
         {
             int cursorPos = cursorIndex;
             graphicalCursorPos = style.GetCursorPixelPosition(new Rect(0, 0, position.width, position.height), m_Content, cursorPos);
@@ -1371,6 +1381,11 @@ namespace UnityEngine
         }
 
         public void DetectFocusChange()
+        {
+            OnDetectFocusChange();
+        }
+
+        internal virtual void OnDetectFocusChange()
         {
             if (m_HasFocus == true && controlID != GUIUtility.keyboardControl)
                 OnLostFocus();

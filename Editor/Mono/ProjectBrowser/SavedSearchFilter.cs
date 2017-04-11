@@ -84,6 +84,22 @@ namespace UnityEditor
             return null;
         }
 
+        public static int GetFilterInstanceID(string name, string searchFieldString)
+        {
+            if (instance.m_SavedFilters != null && instance.m_SavedFilters.Count > 0)
+            {
+                foreach (SavedFilter sf in instance.m_SavedFilters)
+                {
+                    if ((string.IsNullOrEmpty(name) || sf.m_Name == name) && sf.m_Filter.FilterToSearchFieldString() == searchFieldString)
+                    {
+                        return sf.m_ID;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
         public static float GetPreviewSize(int instanceID)
         {
             SavedFilter sf = instance.Find(instanceID);

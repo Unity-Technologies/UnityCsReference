@@ -6,7 +6,8 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class IMGUIContainer : VisualContainer
+    //TODO: rename to IMGUIAdapter or something, as it's NOT a VisualContainer
+    public class IMGUIContainer : VisualElement
     {
         // Set this delegate to have your IMGUI code execute inside the container
         private readonly Action m_OnGUIHandler;
@@ -33,10 +34,10 @@ namespace UnityEngine.Experimental.UIElements
             contextType = ContextType.Editor;
         }
 
-        public override void DoRepaint(IStylePainter args)
+        public override void DoRepaint(IStylePainter painter)
         {
-            lastWorldClip = args.currentWorldClip;
-            HandleEvent(new Event {type = EventType.Repaint, mousePosition = args.mousePosition}, this);
+            lastWorldClip = painter.currentWorldClip;
+            HandleEvent(painter.repaintEvent, this);
         }
 
         internal override void ChangePanel(IVisualElementPanel p)
@@ -115,8 +116,6 @@ namespace UnityEngine.Experimental.UIElements
 
             if (eventType == EventType.Used)
             {
-                if (originalEventType == EventType.MouseDown)
-                    this.TakeKeyboardFocus();
                 Dirty(ChangeType.Repaint);
                 return true;
             }
@@ -125,19 +124,23 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void OnLostKeyboardFocus()
         {
+            // nuke keyboard focus when losing focus ourselves
             GUIUtility.keyboardControl = 0;
         }
 
         public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
         {
-            if (m_OnGUIHandler == null || panel == null)
+            if (m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(evt.type) == false)
             {
                 return EventPropagation.Continue;
             }
 
+            EventType originalEventType = evt.type;
+            evt.type = EventType.Layout;
             // layout event
-            bool ret = DoOnGUI(new Event(evt) { type = EventType.Layout });
+            bool ret = DoOnGUI(evt);
             // the actual event
+            evt.type = originalEventType;
             ret |= DoOnGUI(evt);
 
             if (ret)
@@ -158,6 +161,40 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             return EventPropagation.Continue;
+        }
+
+        protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
+        {
+            float measuredWidth = float.NaN;
+            float measuredHeight = float.NaN;
+            if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
+            {
+                DoOnGUI(new Event { type = EventType.Layout });
+                measuredWidth = m_Cache.topLevel.minWidth;
+                measuredHeight = m_Cache.topLevel.minHeight;
+            }
+
+            switch (widthMode)
+            {
+                case MeasureMode.Exactly:
+                    measuredWidth = desiredWidth;
+                    break;
+                case MeasureMode.AtMost:
+                    measuredWidth = Mathf.Min(measuredWidth, desiredWidth);
+                    break;
+            }
+
+            switch (heightMode)
+            {
+                case MeasureMode.Exactly:
+                    measuredHeight = desiredHeight;
+                    break;
+                case MeasureMode.AtMost:
+                    measuredHeight = Mathf.Min(measuredHeight, desiredHeight);
+                    break;
+            }
+
+            return new Vector2(measuredWidth, measuredHeight);
         }
     }
 }

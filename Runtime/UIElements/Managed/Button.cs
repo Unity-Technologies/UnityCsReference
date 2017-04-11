@@ -7,9 +7,9 @@ namespace UnityEngine.Experimental.UIElements
     [GUISkinStyle("button")]
     public class Button : VisualElement
     {
-        public Clickable clickable;
+        Clickable clickable;
 
-        public Button(ClickEvent clickEvent)
+        public Button(System.Action clickEvent)
         {
             // Click-once behaviour
             clickable = new Clickable(clickEvent);

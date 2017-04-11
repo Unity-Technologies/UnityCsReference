@@ -57,6 +57,9 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         [StyleProperty("flex", StylePropertyID.Flex)]
         public Style<float> flex;
 
+        [StyleProperty("overflow", StylePropertyID.Overflow)]
+        public Style<int> overflow;
+
         [StyleProperty("position-left", StylePropertyID.PositionLeft)]
         public Style<float> positionLeft;
 
@@ -187,6 +190,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             minWidth.Apply(other.minWidth, mode);
             minHeight.Apply(other.minHeight, mode);
             flex.Apply(other.flex, mode);
+            overflow.Apply(other.overflow, mode);
             positionLeft.Apply(other.positionLeft, mode);
             positionTop.Apply(other.positionTop, mode);
             positionRight.Apply(other.positionRight, mode);
@@ -371,6 +375,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
                     case StylePropertyID.MinWidth:
                         registry.Apply(handle, specificity, ref minWidth);
+                        break;
+
+                    case StylePropertyID.Overflow:
+                        registry.Apply<Overflow>(handle, specificity, ref overflow);
                         break;
 
                     case StylePropertyID.PaddingLeft:

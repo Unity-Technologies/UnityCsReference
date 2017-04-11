@@ -133,6 +133,17 @@ namespace UnityEngine
             QualifiedNativeName = qualifiedCppName;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Assembly)]
+    [RequiredByNativeCode]
+    public class AssemblyIsEditorAssembly : Attribute
+    {
+    }
+
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    internal class WritableAttribute : Attribute
+    {
+    }
 }
 
 namespace UnityEngine.Scripting

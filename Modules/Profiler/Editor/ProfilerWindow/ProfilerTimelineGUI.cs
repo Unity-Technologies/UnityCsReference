@@ -74,7 +74,7 @@ namespace UnityEditorInternal
         {
             public int frameId = -1;
             public int threadId = -1;
-            public int nativeIndex = -1; // Uniquely identifies the sample for the thread and frame. Only used in detailed view.
+            public int nativeIndex = -1; // Uniquely identifies the sample for the thread and frame.
             public float relativeYPos = 0.0f;
             public float time = 0.0f;
             public float duration = 0.0f;
@@ -103,10 +103,9 @@ namespace UnityEditorInternal
             public int instanceId = -1;
             public string metaData = string.Empty;
 
-            // Only used in detailed view.
             public float totalDuration = -1.0f;
             public int instanceCount = -1;
-            public string allocationInfo = string.Empty;
+            public string callstackInfo = string.Empty;
 
             public override void Reset()
             {
@@ -117,7 +116,7 @@ namespace UnityEditorInternal
 
                 this.totalDuration = -1.0f;
                 this.instanceCount = -1;
-                this.allocationInfo = string.Empty;
+                this.callstackInfo = string.Empty;
             }
         }
 
@@ -325,192 +324,6 @@ namespace UnityEditorInternal
             }
         }
 
-        void DrawSmallGroup(float x1, float x2, float y, float height, int size)
-        {
-            if (x2 - x1 < 1)
-                return;
-            GUI.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
-            GUI.contentColor = Color.white;
-            GUIContent c = GUIContent.none;
-            if (x2 - x1 > kTextFadeOutWidth)
-                c = new GUIContent(size + " items");
-            GUI.Label(new Rect(x1, y, x2 - x1, height), c, styles.bar);
-        }
-
-        private static float TimeToPixelCached(float time, float rectWidthDivShownWidth, float shownX, float rectX)
-        {
-            return (time - shownX) * rectWidthDivShownWidth + rectX;
-        }
-
-        void DrawProfilingData(ProfilerFrameDataIterator iter, Rect r, int frameIndex, int threadIndex, float timeOffset, bool ghost, bool includeSubSamples)
-        {
-            float smallW = ghost ? kSmallWidth * 3.0f : kSmallWidth;
-            string selectedPath = ProfilerDriver.selectedPropertyPath;
-
-            var oldColor = GUI.color;
-            var oldContentColor = GUI.contentColor;
-
-            Color[] colors = ProfilerColors.colors;
-
-            bool hasSmallGroup = false;
-            float smallGroupX1 = -1.0f;
-            float smallGroupX2 = -1.0f;
-            float smallGroupY = -1.0f;
-            int smallGroupSize = 0;
-
-            //includeSubSamples = true;
-            float lineSpacing = includeSubSamples ? kLineHeight : r.height;
-            float yOffset = includeSubSamples ? 1 : 0;
-            float lineHeight = lineSpacing - 2 * yOffset;
-
-            r.height -= yOffset;
-            GUI.BeginGroup(r);
-            r.x = r.y = 0.0f;
-
-            bool singleClick = Event.current.clickCount == 1 && Event.current.type == EventType.MouseDown;
-            bool doubleClick = Event.current.clickCount == 2 && Event.current.type == EventType.MouseDown;
-
-            Rect cachedShownArea = m_TimeArea.shownArea;
-            float rectWidthDivShownWidth = r.width / cachedShownArea.width;
-            float rectX = r.x;
-            float shownX = cachedShownArea.x;
-
-            bool expanded = true;
-            while (iter.Next(expanded))
-            {
-                expanded = includeSubSamples;
-
-                float pt = iter.startTimeMS + timeOffset;
-                float dt = iter.durationMS;
-                float dtDisp = Mathf.Max(dt, 0.3e-3f); // some samples end up being exactly zero microseconds, ensure they have at least 0.3us width
-                float x1 = TimeToPixelCached(pt, rectWidthDivShownWidth, shownX, rectX);
-                float x2 = TimeToPixelCached(pt + dtDisp, rectWidthDivShownWidth, shownX, rectX) - 1.0f;
-                float dx = x2 - x1;
-                // out of view?
-                if (x1 > r.x + r.width || x2 < r.x)
-                {
-                    expanded = false;
-                    continue;
-                }
-                float depth = iter.depth - 1;
-                float y = r.y + depth * lineSpacing;
-
-                // we might need to end a streak of small blocks
-                if (hasSmallGroup)
-                {
-                    bool breakSmallGroup = false;
-                    // we're entering a big block?
-                    if (dx >= smallW)
-                        breakSmallGroup = true;
-                    // different depth?
-                    if (smallGroupY != y)
-                        breakSmallGroup = true;
-                    // had a non-tiny small group and have enough empty space?
-                    if (x1 - smallGroupX2 > 6)
-                        breakSmallGroup = true;
-                    if (breakSmallGroup)
-                    {
-                        DrawSmallGroup(smallGroupX1, smallGroupX2, smallGroupY, lineHeight, smallGroupSize);
-                        hasSmallGroup = false;
-                    }
-                }
-
-                // too narrow?
-                if (dx < smallW)
-                {
-                    expanded = false;
-                    if (!hasSmallGroup)
-                    {
-                        hasSmallGroup = true;
-                        smallGroupY = y;
-                        smallGroupX1 = x1;
-                        smallGroupSize = 0;
-                    }
-                    smallGroupX2 = x2;
-                    ++smallGroupSize;
-                    continue;
-                }
-
-                int instanceId = iter.instanceId;
-                string myPath = iter.path;
-                bool selected = (myPath == selectedPath) && !ghost;
-                if (m_SelectedEntry.instanceId >= 0)
-                    selected &= (instanceId == m_SelectedEntry.instanceId);
-                selected &= (threadIndex == m_SelectedEntry.threadId);
-
-                var textCol = Color.white;
-                var col = colors[iter.group % colors.Length];
-                col.a = selected ? 1.0f : 0.75f;
-
-                // Ghosted (next / previous frame) is dimmed
-                // to make it very visible what is the current frame and what is not
-                if (ghost)
-                {
-                    col.a = 0.4f;
-                    textCol.a = 0.5F;
-                }
-
-                string text = iter.name;
-                if (dx < kTextFadeOutWidth || !includeSubSamples)
-                    text = string.Empty;
-                else
-                {
-                    // fade out text when we're narrow
-                    if (dx < kTextFadeStartWidth && !selected)
-                    {
-                        textCol.a *= (dx - kTextFadeOutWidth) / (kTextFadeStartWidth - kTextFadeOutWidth);
-                    }
-                    // add time when we're wide
-                    if (dx > kTextLongWidth)
-                    {
-                        text += string.Format(" ({0:f2}ms)", dt);
-                    }
-                }
-
-                GUI.color = col;
-                GUI.contentColor = textCol;
-
-                Rect rect = new Rect(x1, y, dx, lineHeight);
-                GUI.Label(rect, text, styles.bar);
-                if ((singleClick || doubleClick) && rect.Contains(Event.current.mousePosition) && includeSubSamples)
-                {
-                    m_Window.SetSelectedPropertyPath(myPath);
-
-                    m_SelectedEntry.Reset();
-                    m_SelectedEntry.frameId = frameIndex;
-                    m_SelectedEntry.threadId = threadIndex;
-                    m_SelectedEntry.instanceId = instanceId;
-                    m_SelectedEntry.name = iter.name;
-                    if (iter.extraTooltipInfo != null)
-                        m_SelectedEntry.metaData = iter.extraTooltipInfo;
-                    m_SelectedEntry.time = pt;
-                    m_SelectedEntry.duration = dt;
-                    m_SelectedEntry.relativeYPos = y + lineSpacing;
-
-                    UpdateSelectedObject(singleClick, doubleClick);
-                    Event.current.Use();
-                }
-
-                hasSmallGroup = false;
-            }
-
-            // we might have last small group to draw
-            if (hasSmallGroup)
-                DrawSmallGroup(smallGroupX1, smallGroupX2, smallGroupY, lineHeight, smallGroupSize);
-
-            GUI.color = oldColor;
-            GUI.contentColor = oldContentColor;
-
-            // click on empty space deselects
-            if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
-            {
-                ClearSelection();
-                Event.current.Use();
-            }
-
-            GUI.EndGroup();
-        }
-
         void DoNativeProfilerTimeline(Rect r, int frameIndex, int threadIndex, float timeOffset, bool ghost)
         {
             // Add some margins to each thread view.
@@ -617,7 +430,7 @@ namespace UnityEditorInternal
                     m_SelectedEntry.instanceCount = timingInfoArgs.out_InstanceCountForFrame;
                     m_SelectedEntry.relativeYPos = posArgs.out_EntryYMaxPos + topMargin;
                     m_SelectedEntry.name = posArgs.out_EntryName;
-                    m_SelectedEntry.allocationInfo = instanceInfoArgs.out_AllocationInfo;
+                    m_SelectedEntry.callstackInfo = instanceInfoArgs.out_CallstackInfo;
                     m_SelectedEntry.metaData = instanceInfoArgs.out_MetaData;
                 }
 
@@ -690,7 +503,7 @@ namespace UnityEditorInternal
             }
         }
 
-        void DoProfilerFrame(int frameIndex, Rect fullRect, bool ghost, int threadCount, float offset, bool detailView)
+        void DoProfilerFrame(int frameIndex, Rect fullRect, bool ghost, int threadCount, float offset)
         {
             var iter = new ProfilerFrameDataIterator();
             int myThreadCount = iter.GetThreadCount(frameIndex);
@@ -720,10 +533,7 @@ namespace UnityEditorInternal
                     r.y = y;
                     r.height = expanded ? threadInfo.height : Math.Max(groupInfo.height / groupThreadCount - 1, 2);
 
-                    if (detailView)
-                        DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost);
-                    else
-                        DrawProfilingData(iter, r, frameIndex, threadInfo.threadIndex, offset, ghost, expanded);
+                    DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost);
 
                     // Save the y pos of the selected thread each time we draw, since it can change
                     bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
@@ -737,7 +547,7 @@ namespace UnityEditorInternal
             }
         }
 
-        void DoSelectionTooltip(int frameIndex, Rect fullRect, bool detailView)
+        void DoSelectionTooltip(int frameIndex, Rect fullRect)
         {
             // Draw selected tooltip
             if (m_SelectedEntry.IsValid() && m_SelectedEntry.frameId == frameIndex)
@@ -759,9 +569,9 @@ namespace UnityEditorInternal
                     text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
                 }
 
-                if (m_SelectedEntry.allocationInfo.Length > 0)
+                if (m_SelectedEntry.callstackInfo.Length > 0)
                 {
-                    text.Append(string.Format("\n{0}", m_SelectedEntry.allocationInfo));
+                    text.Append(string.Format("\n{0}", m_SelectedEntry.callstackInfo));
                 }
 
                 float selectedY = fullRect.y + m_SelectedThreadY + m_SelectedEntry.relativeYPos;
@@ -813,7 +623,7 @@ namespace UnityEditorInternal
             }
         }
 
-        public void DoGUI(int frameIndex, float width, float ypos, float height, bool detailView)
+        public void DoGUI(int frameIndex, float width, float ypos, float height)
         {
             Rect fullRect = new Rect(0, ypos - 1, width, height + 1);
             float sideWidth = Chart.kSideWidth - 1;
@@ -844,7 +654,8 @@ namespace UnityEditorInternal
                 NativeProfilerTimeline_InitializeArgs args = new NativeProfilerTimeline_InitializeArgs();
                 args.Reset();
                 args.profilerColors = ProfilerColors.colors;
-                args.nativeAllocationColor = ProfilerColors.nativeAllocation;
+                args.allocationSampleColor = ProfilerColors.allocationSample;
+                args.internalSampleColor = ProfilerColors.internalSample;
                 args.ghostAlpha = 0.3f;
                 args.nonSelectedAlpha = 0.75f;
                 args.guiStyle = styles.bar.m_Ptr;
@@ -884,25 +695,25 @@ namespace UnityEditorInternal
             if (prevFrame != -1)
             {
                 iter.SetRoot(prevFrame, 0);
-                DoProfilerFrame(prevFrame, fullRect, true, threadCount, -iter.frameTimeMS, detailView);
+                DoProfilerFrame(prevFrame, fullRect, true, threadCount, -iter.frameTimeMS);
             }
             int nextFrame = ProfilerDriver.GetNextFrameIndex(frameIndex);
             if (nextFrame != -1)
             {
                 iter.SetRoot(frameIndex, 0);
-                DoProfilerFrame(nextFrame, fullRect, true, threadCount, iter.frameTimeMS, detailView);
+                DoProfilerFrame(nextFrame, fullRect, true, threadCount, iter.frameTimeMS);
             }
 
             GUI.enabled = oldEnabled;
 
             // Draw center frame last to get on top
             threadCount = 0;
-            DoProfilerFrame(frameIndex, fullRect, false, threadCount, 0, detailView);
+            DoProfilerFrame(frameIndex, fullRect, false, threadCount, 0);
 
             GUI.EndClip();
 
             // Draw tooltips on top of clip to be able to extend outside of timeline area
-            DoSelectionTooltip(frameIndex, m_TimeArea.drawRect, detailView);
+            DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
         }
     }
 }

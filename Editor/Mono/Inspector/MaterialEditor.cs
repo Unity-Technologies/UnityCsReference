@@ -115,7 +115,24 @@ namespace UnityEditor
         [NonSerialized] bool                m_TriedCreatingCustomGUI;
         bool                                m_InsidePropertiesGUI;
         Renderer                            m_RendererForAnimationMode;
-        Color                               m_PreviousGUIColor;
+
+        private struct AnimatedCheckData
+        {
+            public MaterialProperty property;
+            public Rect totalPosition;
+            public Color color;
+            public AnimatedCheckData(MaterialProperty property, Rect totalPosition, Color color)
+            {
+                this.property = property;
+                this.totalPosition = totalPosition;
+                this.color = color;
+            }
+        }
+
+        private static Stack<AnimatedCheckData> s_AnimatedCheckStack = new Stack<AnimatedCheckData>();
+
+        internal delegate void MaterialPropertyCallbackFunction(GenericMenu menu, MaterialProperty property, Renderer target);
+        internal static MaterialPropertyCallbackFunction contextualPropertyMenu;
 
         internal class ReflectionProbePicker : PopupWindowContent
         {
@@ -670,7 +687,7 @@ namespace UnityEditor
         // Returns height used
         public float TextureScaleOffsetProperty(Rect position, MaterialProperty property, bool partOfTexturePropertyControl)
         {
-            BeginAnimatedCheck(property);
+            BeginAnimatedCheck(position, property);
 
             EditorGUI.BeginChangeCheck();
             // Mixed value mask is 4 bits for the uv offset & scale (First bit is for the texture itself)
@@ -761,7 +778,7 @@ namespace UnityEditor
 
         public Texture TexturePropertyMiniThumbnail(Rect position, MaterialProperty prop, string label, string tooltip)
         {
-            BeginAnimatedCheck(prop);
+            BeginAnimatedCheck(position, prop);
             Rect thumbRect, labelRect;
             EditorGUI.GetRectsForMiniThumbnailField(position, out thumbRect, out labelRect);
             EditorGUI.HandlePrefixLabel(position, labelRect, new GUIContent(label, tooltip), 0, EditorStyles.label);
@@ -930,12 +947,12 @@ namespace UnityEditor
             return EditorGUILayout.GetControlRect(true, handlerHeight + GetDefaultPropertyHeight(prop), EditorStyles.layerMaskField);
         }
 
-        public void BeginAnimatedCheck(MaterialProperty prop)
+        public void BeginAnimatedCheck(Rect totalPosition, MaterialProperty prop)
         {
             if (m_RendererForAnimationMode == null)
                 return;
 
-            m_PreviousGUIColor = GUI.backgroundColor;
+            s_AnimatedCheckStack.Push(new AnimatedCheckData(prop, totalPosition, GUI.backgroundColor));
 
             Color overrideColor;
             if (MaterialAnimationUtility.OverridePropertyColor(prop, m_RendererForAnimationMode, out overrideColor))
@@ -947,7 +964,25 @@ namespace UnityEditor
             if (m_RendererForAnimationMode == null)
                 return;
 
-            GUI.backgroundColor = m_PreviousGUIColor;
+            AnimatedCheckData data = s_AnimatedCheckStack.Pop();
+            if (Event.current.type == EventType.ContextClick && data.totalPosition.Contains(Event.current.mousePosition))
+            {
+                DoPropertyContextMenu(data.property);
+            }
+
+            GUI.backgroundColor = data.color;
+        }
+
+        private void DoPropertyContextMenu(MaterialProperty prop)
+        {
+            if (contextualPropertyMenu != null)
+            {
+                GenericMenu pm = new GenericMenu();
+                contextualPropertyMenu(pm, prop, m_RendererForAnimationMode);
+
+                if (pm.GetItemCount() > 0)
+                    pm.ShowAsContext();
+            }
         }
 
         public void ShaderProperty(MaterialProperty prop, string label)
@@ -988,7 +1023,7 @@ namespace UnityEditor
 
         public void ShaderProperty(Rect position, MaterialProperty prop, GUIContent label, int labelIndent)
         {
-            BeginAnimatedCheck(prop);
+            BeginAnimatedCheck(position, prop);
             EditorGUI.indentLevel += labelIndent;
 
             ShaderPropertyInternal(position, prop, label);

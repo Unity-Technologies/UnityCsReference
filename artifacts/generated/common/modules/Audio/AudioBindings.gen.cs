@@ -255,7 +255,6 @@ public sealed partial class AudioClip : Object
         get;
     }
 
-    [System.Obsolete ("loadInBackground is not used anymore. AudioClips will now always be loaded in separate threads.")]
     public extern  bool loadInBackground
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

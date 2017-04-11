@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            painter.DrawTexture(position, image, GUI.color, scaleMode);
+            painter.DrawTexture(contentRect, image, GUI.color, scaleMode);
         }
     }
 }

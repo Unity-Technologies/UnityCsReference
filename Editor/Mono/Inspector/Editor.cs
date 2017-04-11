@@ -285,6 +285,8 @@ namespace UnityEditor
         static Styles s_Styles;
 
         private const float kImageSectionWidth = 44;
+        internal delegate void OnEditorGUIDelegate(Editor editor);
+        internal static OnEditorGUIDelegate OnPostHeaderGUI = null;
 
         internal virtual IPreviewable preview
         {
@@ -472,7 +474,8 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            GUILayout.BeginHorizontal(s_Styles.inspectorBig);
+            GUILayout.BeginVertical(s_Styles.inspectorBig);
+            GUILayout.BeginHorizontal();
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
             GUILayout.Space(19);
@@ -484,8 +487,10 @@ namespace UnityEditor
             else
                 EditorGUILayout.GetControlRect();
             GUILayout.EndHorizontal();
+            editor.DrawPostHeaderContent();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
             Rect fullRect = GUILayoutUtility.GetLastRect();
 
             // Content rect
@@ -519,6 +524,12 @@ namespace UnityEditor
             }
 
             return fullRect;
+        }
+
+        internal void DrawPostHeaderContent()
+        {
+            if (OnPostHeaderGUI != null)
+                OnPostHeaderGUI(this);
         }
 
         public virtual void DrawPreview(Rect previewArea)

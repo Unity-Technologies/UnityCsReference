@@ -228,6 +228,18 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(prefabType == PrefabType.ModelPrefab))
                 DoPrefabButtons(prefabType, go);
 
+            if (OnPostHeaderGUI != null)
+            {
+                EditorGUILayout.BeginVertical();
+                GUILayout.Space(2f);
+                EditorGUILayout.BeginHorizontal();
+                const float kAestheticLeftMargin = 12f;
+                GUILayout.Space(kIconSize + kAestheticLeftMargin);
+                DrawPostHeaderContent();
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+            }
+
             serializedObject.ApplyModifiedProperties();
 
             return true;

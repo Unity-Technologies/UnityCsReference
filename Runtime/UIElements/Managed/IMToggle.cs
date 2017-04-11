@@ -27,7 +27,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void DoRepaint(IStylePainter args)
         {
-            style.Draw(position, content, id, value);
+            style.Draw(position, GUIContent.Temp(text), id, value);
         }
 
         protected override bool DoMouseDown(MouseEventArgs args)

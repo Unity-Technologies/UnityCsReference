@@ -1858,6 +1858,9 @@ namespace UnityEditor
         {
             if (m_PreviewBlendTree != null)
                 m_PreviewBlendTree.OnDisable();
+
+            if (m_VisBlendTree != null)
+                m_VisBlendTree.Reset();
         }
 
         public void OnDestroy()

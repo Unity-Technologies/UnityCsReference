@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.StyleSheets;
 
 namespace UnityEditor
 {
@@ -28,7 +29,14 @@ namespace UnityEditor
         {
             get
             {
-                return UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
+                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
+                if (p.defaultStyleSheets == null)
+                {
+                    p.defaultStyleSheets = new StyleSheet[] {
+                        EditorGUIUtility.LoadRequired("StyleSheets/DefaultCommon.uss") as StyleSheet
+                    };
+                }
+                return p;
             }
         }
 
@@ -55,8 +63,7 @@ namespace UnityEditor
         }
 
         int m_DepthBufferBits = 0;
-        bool m_WantsMouseMove = false;
-        bool m_WantsMouseEnterLeaveWindow = false;
+        EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
         private bool m_BackgroundValid = false;
 
@@ -86,8 +93,8 @@ namespace UnityEditor
                 Internal_SetWindow(win);
             Internal_SetAutoRepaint(m_AutoRepaintOnSceneChange);
             Internal_SetPosition(windowPosition);
-            Internal_SetWantsMouseMove(m_WantsMouseMove);
-            Internal_SetWantsMouseEnterLeaveWindow(m_WantsMouseEnterLeaveWindow);
+            Internal_SetWantsMouseMove(m_EventInterests.wantsMouseMove);
+            Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
             panel.SetSize(windowPosition.size);
 
@@ -100,16 +107,38 @@ namespace UnityEditor
             m_BackgroundValid = false;
         }
 
+        public EventInterests eventInterests
+        {
+            get { return m_EventInterests; }
+            set
+            {
+                m_EventInterests = value;
+                panel.IMGUIEventInterests = m_EventInterests;
+                Internal_SetWantsMouseMove(wantsMouseMove);
+                Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
+            }
+        }
+
         public bool wantsMouseMove
         {
-            get { return m_WantsMouseMove; }
-            set { m_WantsMouseMove = value; Internal_SetWantsMouseMove(m_WantsMouseMove); }
+            get { return m_EventInterests.wantsMouseMove; }
+            set
+            {
+                m_EventInterests.wantsMouseMove = value;
+                panel.IMGUIEventInterests = m_EventInterests;
+                Internal_SetWantsMouseMove(wantsMouseMove);
+            }
         }
 
         public bool wantsMouseEnterLeaveWindow
         {
-            get { return m_WantsMouseEnterLeaveWindow; }
-            set { m_WantsMouseEnterLeaveWindow = value; Internal_SetWantsMouseEnterLeaveWindow(m_WantsMouseEnterLeaveWindow); }
+            get { return m_EventInterests.wantsMouseEnterLeaveWindow; }
+            set
+            {
+                m_EventInterests.wantsMouseEnterLeaveWindow = value;
+                panel.IMGUIEventInterests = m_EventInterests;
+                Internal_SetWantsMouseEnterLeaveWindow(wantsMouseEnterLeaveWindow);
+            }
         }
 
         internal bool backgroundValid

@@ -85,6 +85,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             this.timerUpdateEvent = timerUpdateEvent;
             this.handler = handler;
+            this.start = (long)(Time.realtimeSinceStartup * 1000.0f); // current time
         }
 
         public bool IsUpdatable()

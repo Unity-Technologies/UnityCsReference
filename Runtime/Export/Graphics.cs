@@ -373,6 +373,8 @@ namespace UnityEngine
 
         public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex)
         {
+            if (mesh == null)
+                throw new ArgumentNullException("mesh");
             Internal_DrawMeshNow1(mesh, materialIndex, position, rotation);
         }
 
@@ -383,6 +385,8 @@ namespace UnityEngine
 
         public static void DrawMeshNow(Mesh mesh, Matrix4x4 matrix, int materialIndex)
         {
+            if (mesh == null)
+                throw new ArgumentNullException("mesh");
             Internal_DrawMeshNow2(mesh, materialIndex, matrix);
         }
 

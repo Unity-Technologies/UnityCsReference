@@ -60,7 +60,6 @@ namespace UnityEditorInternal
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject rootGameObject = state.activeRootGameObject;
-            EditorCurveBinding[] acceptedBindings = state.acceptedBindings;
 
             List<UndoPropertyModification> discardedModifications = new List<UndoPropertyModification>();
             List<UndoPropertyModification> outModifications = new List<UndoPropertyModification>();
@@ -69,36 +68,17 @@ namespace UnityEditorInternal
                 UndoPropertyModification modification = modifications[i];
                 PropertyModification prop = modification.previousValue;
 
-                var binding = new EditorCurveBinding();
-                if (AnimationUtility.PropertyModificationToEditorCurveBinding(prop, rootGameObject, out binding) != null)
-                {
-                    if (acceptedBindings != null)
-                    {
-                        EditorCurveBinding[] additionalBindings = RotationCurveInterpolation.RemapAnimationBindingForAddKey(binding, clip);
-                        if (additionalBindings != null)
-                        {
-                            if (Array.Exists(acceptedBindings, acceptedBinding => Array.Exists(additionalBindings, additionalBinding => acceptedBinding.Equals(additionalBinding))))
-                                outModifications.Add(modification);
-                            else
-                                discardedModifications.Add(modification);
-                        }
-                        else
-                        {
-                            if (Array.Exists(acceptedBindings, acceptedBinding => acceptedBinding.Equals(binding)))
-                                outModifications.Add(modification);
-                            else
-                                discardedModifications.Add(modification);
-                        }
-                    }
-                    else
-                    {
-                        outModifications.Add(modification);
-                    }
-                }
-                else
+                if (state.DiscardModification(prop))
                 {
                     discardedModifications.Add(modification);
+                    continue;
                 }
+
+                var binding = new EditorCurveBinding();
+                if (AnimationUtility.PropertyModificationToEditorCurveBinding(prop, rootGameObject, out binding) != null)
+                    outModifications.Add(modification);
+                else
+                    discardedModifications.Add(modification);
             }
 
             if (discardedModifications.Count > 0)
@@ -212,7 +192,6 @@ namespace UnityEditorInternal
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject rootGameObject = state.activeRootGameObject;
-            EditorCurveBinding[] acceptedBindings = state.acceptedBindings;
 
             List<object> itemsToRemove = new List<object>();
 
@@ -221,21 +200,16 @@ namespace UnityEditorInternal
             {
                 RotationModification m = item.Value;
 
+                if (state.DiscardModification(m.lastQuatModification.currentValue))
+                {
+                    DiscardRotationModification(m, ref discardedModifications);
+                    itemsToRemove.Add(item.Key);
+                    continue;
+                }
+
                 EditorCurveBinding binding = new EditorCurveBinding();
                 Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(m.lastQuatModification.currentValue, rootGameObject, out binding);
-                if (type != null)
-                {
-                    if (acceptedBindings != null)
-                    {
-                        EditorCurveBinding[] additionalBindings = RotationCurveInterpolation.RemapAnimationBindingForRotationAddKey(binding, clip);
-                        if (!Array.Exists(acceptedBindings, acceptedBinding => Array.Exists(additionalBindings, additionalBinding => acceptedBinding.Equals(additionalBinding))))
-                        {
-                            DiscardRotationModification(m, ref discardedModifications);
-                            itemsToRemove.Add(item.Key);
-                        }
-                    }
-                }
-                else
+                if (type == null)
                 {
                     DiscardRotationModification(m, ref discardedModifications);
                     itemsToRemove.Add(item.Key);

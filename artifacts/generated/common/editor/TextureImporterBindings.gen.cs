@@ -690,6 +690,26 @@ public void SetPlatformTextureSettings(string platform, int maxTextureSize, Text
         set;
     }
 
+    public extern bool mipMapsPreserveCoverage
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern float alphaTestReferenceValue
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern TextureImporterMipFilter mipmapFilter
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1045,6 +1065,10 @@ public sealed partial class TextureImporterSettings
     [SerializeField]
             int  m_BorderMipMap;
     [SerializeField]
+            int m_MipMapsPreserveCoverage;
+    [SerializeField]
+            float m_AlphaTestReferenceValue;
+    [SerializeField]
             int    m_MipMapFadeDistanceStart;
     [SerializeField]
             int    m_MipMapFadeDistanceEnd;
@@ -1189,6 +1213,16 @@ public sealed partial class TextureImporterSettings
         {
             get {return m_BorderMipMap != 0; }
             set { m_BorderMipMap = value ? 1 : 0; }
+        }
+            public bool mipMapsPreserveCoverage
+        {
+            get { return m_MipMapsPreserveCoverage != 0; }
+            set { m_MipMapsPreserveCoverage = value ? 1 : 0; }
+        }
+            public float alphaTestReferenceValue
+        {
+            get { return m_AlphaTestReferenceValue; }
+            set { m_AlphaTestReferenceValue = value; }
         }
             public int mipmapFadeDistanceStart
         {

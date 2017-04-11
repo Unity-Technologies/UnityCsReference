@@ -302,6 +302,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (sheetAsset != null)
                 {
+                    // Everytime we load a new style sheet, we cache some data on them
+                    for (int i = 0, count = sheetAsset.complexSelectors.Length; i < count; i++)
+                    {
+                        sheetAsset.complexSelectors[i].CachePseudoStateMasks();
+                    }
                     m_StyleSheets.Add(sheetAsset);
                 }
                 else

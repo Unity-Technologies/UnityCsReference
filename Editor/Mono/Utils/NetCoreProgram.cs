@@ -34,7 +34,11 @@ namespace UnityEditor.Scripting
             {
                 // .NET Core needs to be able to find the newer openssl libraries that it requires on OSX
                 var nativeDepsPath = Path.Combine(Path.Combine(Path.Combine(GetNetCoreRoot(), "NativeDeps"), "osx"), "lib");
-                startInfo.EnvironmentVariables.Add("DYLD_LIBRARY_PATH", nativeDepsPath);
+
+                if (startInfo.EnvironmentVariables.ContainsKey("DYLD_LIBRARY_PATH"))
+                    startInfo.EnvironmentVariables["DYLD_LIBRARY_PATH"] = string.Format("{0}:{1}", nativeDepsPath, startInfo.EnvironmentVariables["DYLD_LIBRARY_PATH"]);
+                else
+                    startInfo.EnvironmentVariables.Add("DYLD_LIBRARY_PATH", nativeDepsPath);
             }
 
             if (setupStartInfo != null)

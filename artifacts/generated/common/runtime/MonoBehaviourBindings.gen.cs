@@ -142,6 +142,10 @@ public partial class MonoBehaviour : Behaviour
 
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal string GetScriptClassName () ;
+
 }
 
 }

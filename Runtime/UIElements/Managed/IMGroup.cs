@@ -8,8 +8,8 @@ namespace UnityEngine.Experimental.UIElements
     {
         public override bool OnGUI(Event evt)
         {
-            if (content != GUIContent.none
-                || style != GUIStyle.none)
+            if (!string.IsNullOrEmpty(text) ||
+                style != GUIStyle.none)
             {
                 switch (evt.type)
                 {
@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
         public override void DoRepaint(IStylePainter args)
         {
             // TODO: Same as box. Should move in common base class?
-            style.Draw(position, content, id);
+            style.Draw(position, GUIContent.Temp(text), id);
         }
     }
 }

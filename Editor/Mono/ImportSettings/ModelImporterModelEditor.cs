@@ -41,6 +41,8 @@ namespace UnityEditor
         SerializedProperty m_IsReadable;
         SerializedProperty m_KeepQuads;
         SerializedProperty m_WeldVertices;
+        SerializedProperty m_ImportCameras;
+        SerializedProperty m_ImportLights;
 
         public ModelImporterModelEditor(AssetImporterInspector panelContainer)
             : base(panelContainer)
@@ -69,6 +71,8 @@ namespace UnityEditor
             m_FileScale = serializedObject.FindProperty("m_FileScale");
             m_MeshCompression = serializedObject.FindProperty("m_MeshCompression");
             m_ImportBlendShapes = serializedObject.FindProperty("m_ImportBlendShapes");
+            m_ImportCameras = serializedObject.FindProperty("m_ImportCameras");
+            m_ImportLights = serializedObject.FindProperty("m_ImportLights");
             m_AddColliders = serializedObject.FindProperty("m_AddColliders");
             m_SwapUVChannels = serializedObject.FindProperty("swapUVChannels");
             m_GenerateSecondaryUV = serializedObject.FindProperty("generateSecondaryUV");
@@ -173,6 +177,8 @@ namespace UnityEditor
             public GUIContent OptimizeMeshForGPU = EditorGUIUtility.TextContent("Optimize Mesh|The vertices and indices will be reordered for better GPU performance.");
             public GUIContent KeepQuads = EditorGUIUtility.TextContent("Keep Quads|If model contains quad faces, they are kept for DX11 tessellation.");
             public GUIContent WeldVertices = EditorGUIUtility.TextContent("Weld Vertices|Combine vertices that share the same position in space.");
+            public GUIContent ImportCameras = EditorGUIUtility.TextContent("Import Cameras");
+            public GUIContent ImportLights = EditorGUIUtility.TextContent("Import Lights");
             public GUIContent IsReadable = EditorGUIUtility.TextContent("Read/Write Enabled|Allow vertices and indices to be accessed from script.");
             public GUIContent Materials = EditorGUIUtility.TextContent("Materials");
             public GUIContent ImportMaterials = EditorGUIUtility.TextContent("Import Materials");
@@ -280,6 +286,12 @@ namespace UnityEditor
 
             // Weld Vertices
             EditorGUILayout.PropertyField(m_WeldVertices, styles.WeldVertices);
+
+            // Import Cameras
+            EditorGUILayout.PropertyField(m_ImportCameras, styles.ImportCameras);
+
+            // Import Lights
+            EditorGUILayout.PropertyField(m_ImportLights, styles.ImportLights);
 
             // Swap uv channel
             EditorGUILayout.PropertyField(m_SwapUVChannels, styles.SwapUVChannels);

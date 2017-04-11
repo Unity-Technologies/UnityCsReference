@@ -251,6 +251,10 @@ namespace UnityEditor
 
         const int kNarrowLabelWidth = 42;
         const int kToggleButtonWidth = 16;
+        const int kMinCustomWidth = 1;
+        const int kMaxCustomWidth = 16384;
+        const int kMinCustomHeight = 1;
+        const int kMaxCustomHeight = 16384;
 
         // Don't show the imported movie as a separate editor
         internal override bool showImportedObject { get { return false; } }
@@ -484,6 +488,7 @@ namespace UnityEditor
                     EditorGUI.showMixedValue = multiState.mixedCustomWidth;
                     EditorGUI.BeginChangeCheck();
                     int customWidth = EditorGUILayout.IntField(s_Styles.widthContent, multiState.firstCustomWidth);
+                    customWidth = Mathf.Clamp(customWidth, kMinCustomWidth, kMaxCustomWidth);
                     EditorGUI.showMixedValue = false;
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -500,6 +505,7 @@ namespace UnityEditor
                     EditorGUI.showMixedValue = multiState.mixedCustomHeight;
                     EditorGUI.BeginChangeCheck();
                     int customHeight = EditorGUILayout.IntField(s_Styles.heightContent, multiState.firstCustomHeight);
+                    customHeight = Mathf.Clamp(customHeight, kMinCustomHeight, kMaxCustomHeight);
                     EditorGUI.showMixedValue = false;
                     if (EditorGUI.EndChangeCheck())
                     {

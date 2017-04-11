@@ -16,6 +16,8 @@ namespace UnityEngine
         Rect currentWorldClip { get; set; }
         Vector2 mousePosition { get; set; }
 
+        Event repaintEvent { get; }
+
         float ComputeTextWidth(string text, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);
         float ComputeTextHeight(string text, float width, bool wordWrap, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);
     }
@@ -80,5 +82,6 @@ namespace UnityEngine
 
         public Vector2 mousePosition { get; set; }
         public Rect currentWorldClip { get; set; }
+        public Event repaintEvent { get; set; }
     }
 }

@@ -6,328 +6,220 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal class Slider : VisualElement
+    public class Slider : VisualContainer
     {
-        public delegate void ValueChanged(float value);
-
-        public event ValueChanged onValueChanged;
-
-        internal GUIStyle horizontalSlider = GUIStyle.none;
-
-        internal GUIStyle verticalSlider = GUIStyle.none;
-
-        internal GUIStyle horizontalSliderThumb = GUIStyle.none;
-
-        internal GUIStyle verticalSliderThumb = GUIStyle.none;
-
-        public float dragStartPos;
-        public float dragStartValue;
-        public bool isDragging;
-
-        public float value { get; set; }
-
-        // TODO refactor Slider to be UIElements-ish. Styles should be applied externally
-        public new GUIStyle style
+        public enum Direction
         {
-            get { return m_GUIStyle; }
+            Horizontal,
+            Vertical
+        }
+
+        public VisualElement dragElement { get; private set; }
+
+        public float lowValue { get; set; }
+        public float highValue { get; set; }
+        public float range { get { return highValue - lowValue; } }
+        public float pageSize { get; set; }
+
+        public event System.Action<float> valueChanged;
+        // TODO refactor Slider to be UIElements-ish. Styles should be applied externally
+        internal ClampedDragger clampedDragger { get; private set; }
+        Rect m_DragElementStartPos;
+
+        float m_Value;
+        public float value
+        {
+            get { return m_Value; }
             set
             {
-                m_GUIStyle = value;
+                var newValue = Mathf.Clamp(value, lowValue, highValue);
+
+                if (Mathf.Approximately(m_Value, newValue))
+                    return;
+
+                m_Value = newValue;
+
+                UpdateDragElementPosition();
+
+                if (valueChanged != null)
+                    valueChanged(m_Value);
+
+                this.Dirty(ChangeType.Repaint);
             }
         }
 
-        private float m_PageSize;
-        private float m_Start;
-        private float m_End;
-        private bool m_Horiz;
-
-        private GUIStyle m_ThumbStyle;
-
-        public DateTime nextScrollStepTime { get; set; }
-        int scrollTroughSide { get; set; }
-
-        public Slider(ValueChanged onValueChanged)
+        private Direction m_Direction;
+        public Direction direction
         {
-            this.onValueChanged = onValueChanged;
-            nextScrollStepTime = DateTime.Now; // whatever but null
-            scrollTroughSide = 0;
-        }
-
-        void ChangeValue(float value)
-        {
-            if (!Mathf.Approximately(this.value, value))
+            get { return m_Direction; }
+            set
             {
-                this.value = value;
-                if (onValueChanged != null)
+                m_Direction = value;
+                if (m_Direction == Direction.Horizontal)
                 {
-                    onValueChanged(value);
+                    RemoveFromClassList("vertical");
+                    AddToClassList("horizontal");
+                }
+                else
+                {
+                    RemoveFromClassList("horizontal");
+                    AddToClassList("vertical");
                 }
             }
         }
 
-        public void SetProperties(Rect pos, float val, float pageSize, float start, float end, bool horiz)
+        public Slider(float start, float end, System.Action<float> valueChanged,
+                      Direction direction = Direction.Horizontal, float pageSize = 10f)
         {
-            position = pos;
-            value = val;
-            m_PageSize = pageSize;
-            m_Start = start;
-            m_End = end;
-            m_Horiz = horiz;
+            this.valueChanged = valueChanged;
+            this.direction = direction;
+            this.pageSize = pageSize;
+            lowValue = start;
+            highValue = end;
 
-            if (m_Horiz)
+            // Explicitly set m_Value
+            m_Value = lowValue;
+
+            dragElement = new VisualElement() { name = "DragElement" };
+
+            AddChild(dragElement);
+
+            clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
+            AddManipulator(clampedDragger);
+        }
+
+        // Handles slider drags
+        void SetSliderValueFromDrag()
+        {
+            if (clampedDragger.dragDirection != ClampedDragger.DragDirection.Free)
+                return;
+
+            var delta = clampedDragger.delta;
+
+            if (direction == Direction.Horizontal)
+                ComputeValueAndDirectionFromDrag(position.width, dragElement.position.width, m_DragElementStartPos.x + delta.x);
+            else
+                ComputeValueAndDirectionFromDrag(position.height, dragElement.position.height, m_DragElementStartPos.y + delta.y);
+        }
+
+        void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
+        {
+            var totalRange = sliderLength - dragElementLength;
+            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
+                return;
+
+            value = (Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange * range) + lowValue;
+        }
+
+        // Handles slider clicks and page scrolls
+        void SetSliderValueFromClick()
+        {
+            if (clampedDragger.dragDirection == ClampedDragger.DragDirection.Free)
+                return;
+
+            if (clampedDragger.dragDirection == ClampedDragger.DragDirection.None)
             {
-                style = horizontalSlider;
-                m_ThumbStyle = horizontalSliderThumb;
+                if (pageSize == 0f)
+                {
+                    // Jump drag element to current mouse position when user clicks on slider and pageSize == 0
+                    var x = (direction == Direction.Horizontal) ?
+                        clampedDragger.startMousePosition.x - (dragElement.position.width / 2f) : dragElement.position.x;
+                    var y = (direction == Direction.Horizontal) ?
+                        dragElement.position.y : clampedDragger.startMousePosition.y - (dragElement.position.height / 2f);
+
+                    m_DragElementStartPos = dragElement.position = new Rect(x, y, dragElement.position.width, dragElement.position.height);
+
+                    // Manipulation becomes a free form drag
+                    clampedDragger.dragDirection = ClampedDragger.DragDirection.Free;
+                    if (direction == Direction.Horizontal)
+                        ComputeValueAndDirectionFromDrag(position.width, dragElement.position.width, m_DragElementStartPos.x);
+                    else
+                        ComputeValueAndDirectionFromDrag(position.height, dragElement.position.height, m_DragElementStartPos.y);
+                    return;
+                }
+
+                m_DragElementStartPos = dragElement.position;
+            }
+
+            if (direction == Direction.Horizontal)
+                ComputeValueAndDirectionFromClick(position.width, dragElement.position.width, dragElement.position.x, clampedDragger.lastMousePosition.x);
+            else
+                ComputeValueAndDirectionFromClick(position.height, dragElement.position.height, dragElement.position.y, clampedDragger.lastMousePosition.y);
+        }
+
+        void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
+        {
+            var totalRange = sliderLength - dragElementLength;
+            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
+                return;
+
+            if ((dragElementLastPos < dragElementPos) &&
+                (clampedDragger.dragDirection != ClampedDragger.DragDirection.LowToHigh))
+            {
+                clampedDragger.dragDirection = ClampedDragger.DragDirection.HighToLow;
+                value = (Mathf.Max(0f, Mathf.Min(dragElementPos - pageSize, totalRange)) / totalRange * range) + lowValue;
+            }
+            else if ((dragElementLastPos > (dragElementPos + dragElementLength)) &&
+                     (clampedDragger.dragDirection != ClampedDragger.DragDirection.HighToLow))
+            {
+                clampedDragger.dragDirection = ClampedDragger.DragDirection.LowToHigh;
+                value = (Mathf.Max(0f, Mathf.Min(dragElementPos + pageSize, totalRange)) / totalRange * range) + lowValue;
+            }
+        }
+
+        public void AdjustDragElement(float factor)
+        {
+            Rect newDragElementPos;
+
+            if (factor >= 1f)
+            {
+                // Any factor greater or equal to 1f eliminates the need for a drag element
+                // TODO: Make it invisible with pseudo-state when available
+                if (direction == Direction.Horizontal)
+                    newDragElementPos = new Rect(dragElement.position.x, dragElement.position.y, 0f, dragElement.height);
+                else
+                    newDragElementPos = new Rect(dragElement.position.x, dragElement.position.y, dragElement.width, 0f);
             }
             else
             {
-                style = verticalSlider;
-                m_ThumbStyle = verticalSliderThumb;
+                newDragElementPos = dragElement.position;
+
+                // Any factor smaller than 1f will necessitate a drag element
+                if (direction == Direction.Horizontal)
+                    newDragElementPos.width = position.width * factor;
+                else
+                    newDragElementPos.height = position.height * factor;
             }
+
+            dragElement.position = newDragElementPos;
         }
 
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        void UpdateDragElementPosition()
         {
-            if (style == GUIStyle.none || m_ThumbStyle == GUIStyle.none)
+            float pos = m_Value - lowValue;
+            float dragElementWidth = dragElement.position.width;
+            float dragElementHeight = dragElement.position.height;
+
+            if (direction == Direction.Horizontal)
             {
-                return EventPropagation.Continue;
+                float totalWidth = position.width - dragElementWidth;
+                dragElement.position = new Rect(((pos / range) * totalWidth), 0,
+                        dragElementWidth, dragElementHeight);
             }
-
-            var mouseEvtArgs = new MouseEventArgs(globalTransform.inverse.MultiplyPoint3x4(evt.mousePosition), evt.clickCount, evt.modifiers);
-
-            switch (evt.type)
-            {
-                case EventType.MouseDown:
-                    if (DoMouseDown(mouseEvtArgs))
-                        return EventPropagation.Stop;
-                    break;
-
-                case EventType.MouseDrag:
-                    if (DoMouseDrag(mouseEvtArgs))
-                        return EventPropagation.Stop;
-                    break;
-
-                case EventType.MouseUp:
-                    if (DoMouseUp(mouseEvtArgs))
-                        return EventPropagation.Stop;
-                    break;
-            }
-
-            return EventPropagation.Continue;
-        }
-
-        internal bool DoMouseDown(MouseEventArgs args)
-        {
-            // if the click is outside this control, just bail out...
-            if (!ContainsPoint(args.mousePosition) || IsEmptySlider())
-                return false;
-
-            scrollTroughSide = 0;
-
-            this.TakeCapture();
-
-            if (ThumbSelectionRect().Contains(args.mousePosition))
-            {
-                // We have a mousedown on the thumb
-                // Record where we're draging from, so the user can get back.
-                StartDraggingWithValue(Clampedvalue(), args.mousePosition);
-                return true;
-            }
-
-            // We're outside the thumb, but inside the trough.
-            // If we have a scrollSize, we do pgup/pgdn style movements
-            // if not, we just snap to the current position and begin tracking
-            if (SupportsPageMovements())
-            {
-                isDragging = false;
-                nextScrollStepTime = SystemClock.now.AddMilliseconds(ScrollWaitDefinitions.firstWait);
-                scrollTroughSide = CurrentScrollTroughSide(args.mousePosition);
-                ChangeValue(PageMovementValue(args.mousePosition));
-                return true;
-            }
-
-            float newValue = ValueForCurrentMousePosition(args.mousePosition);
-            StartDraggingWithValue(newValue, args.mousePosition);
-            ChangeValue(Clamp(newValue));
-            return true;
-        }
-
-        internal bool DoMouseDrag(MouseEventArgs args)
-        {
-            if (!this.HasCapture())
-                return false;
-
-            if (!isDragging)
-                return false;
-
-            // Recalculate the value from the mouse position. This has the side effect that values are relative to the
-            // click point - no matter where inside the trough the original value was. Also means user can get back original scrollerValue
-            // if he drags back to start position.
-            float deltaPos = MousePosition(args.mousePosition) - dragStartPos;
-            var newValue = dragStartValue + deltaPos / ValuesPerPixel();
-            ChangeValue(Clamp(newValue));
-            return true;
-        }
-
-        internal bool DoMouseUp(MouseEventArgs args)
-        {
-            if (this.HasCapture())
-            {
-                this.ReleaseCapture();
-                return true;
-            }
-            return false;
-        }
-
-        public override void DoRepaint(IStylePainter args)
-        {
-            style.Draw(position, enabled && ContainsPoint(args.mousePosition), isDragging, enabled, false);
-            if (!IsEmptySlider())
-                m_ThumbStyle.Draw(ThumbRect(), ContainsPoint(args.mousePosition), isDragging, enabled, false);
-        }
-
-        private int CurrentScrollTroughSide(Vector2 mousePosition)
-        {
-            float mousePos = m_Horiz ? mousePosition.x : mousePosition.y;
-            float thumbPos = m_Horiz ? ThumbRect().x : ThumbRect().y;
-
-            return mousePos > thumbPos ? 1 : -1;
-        }
-
-        private bool IsEmptySlider()
-        {
-            return m_Start == m_End;
-        }
-
-        private bool SupportsPageMovements()
-        {
-            return m_PageSize != 0 && GUI.usePageScrollbars;
-        }
-
-        private float PageMovementValue(Vector2 currentMousePos)
-        {
-            var newValue = value;
-            var sign = m_Start > m_End ? -1 : 1;
-            if (MousePosition(currentMousePos) > PageUpMovementBound())
-                newValue += m_PageSize * sign * .9f;
             else
-                newValue -= m_PageSize * sign * .9f;
-            return Clamp(newValue);
+            {
+                float totalHeight = position.height - dragElementHeight;
+                dragElement.position = new Rect(0, ((pos / range) * totalHeight),
+                        dragElementWidth, dragElementHeight);
+            }
         }
 
-        private float PageUpMovementBound()
+        protected internal override void OnPostLayout(bool hasNewLayout)
         {
-            if (m_Horiz)
-                return ThumbRect().xMax;
-            return ThumbRect().yMax;
-        }
+            if (!hasNewLayout)
+                return;
 
-        private float ValueForCurrentMousePosition(Vector2 currentMousePos)
-        {
-            var r = ThumbRect();
-            r.x -= position.x;
-            r.y -= position.y;
-
-            return (MousePosition(currentMousePos) - (m_Horiz ? r.width : r.height) * .5f) / ValuesPerPixel() + m_Start - m_PageSize * .5f;
-        }
-
-        private float Clamp(float val)
-        {
-            return Mathf.Clamp(val, MinValue(), MaxValue());
-        }
-
-        private Rect ThumbSelectionRect()
-        {
-            var selectionRect = ThumbRect();
-            return selectionRect;
-        }
-
-        private void StartDraggingWithValue(float dragStartValue, Vector2 currentMousePos)
-        {
-            this.dragStartPos = MousePosition(currentMousePos);
-            this.dragStartValue = dragStartValue;
-            this.isDragging = true;
-        }
-
-        private Rect ThumbRect()
-        {
-            var r = m_Horiz ? HorizontalThumbRect() : VerticalThumbRect();
-            r.x += position.x;
-            r.y += position.y;
-            return r;
-        }
-
-        private Rect VerticalThumbRect()
-        {
-            var valuesPerPixel = ValuesPerPixel();
-            if (m_Start < m_End)
-                return new Rect(
-                    style.padding.left,
-                    (Clampedvalue() - m_Start) * valuesPerPixel + style.padding.top,
-                    position.width - style.padding.horizontal,
-                    m_PageSize * valuesPerPixel + ThumbSize());
-
-            return new Rect(
-                style.padding.left,
-                (Clampedvalue() + m_PageSize - m_Start) * valuesPerPixel + style.padding.top,
-                position.width - style.padding.horizontal,
-                m_PageSize * -valuesPerPixel + ThumbSize());
-        }
-
-        private Rect HorizontalThumbRect()
-        {
-            var valuesPerPixel = ValuesPerPixel();
-            if (m_Start < m_End)
-                return new Rect(
-                    (Clampedvalue() - m_Start) * valuesPerPixel + style.padding.left,
-                    style.padding.top,
-                    m_PageSize * valuesPerPixel + ThumbSize(),
-                    position.height - style.padding.vertical);
-
-            return new Rect(
-                (Clampedvalue() + m_PageSize - m_Start) * valuesPerPixel + style.padding.left,
-                0,
-                m_PageSize * -valuesPerPixel + ThumbSize(),
-                position.height);
-        }
-
-        private float Clampedvalue()
-        {
-            return Clamp(value);
-        }
-
-        private float MousePosition(Vector2 currentMousePos)
-        {
-            var m = currentMousePos;
-            m.x -= position.x;
-            m.y -= position.y;
-            if (m_Horiz)
-                return m.x;
-            return m.y;
-        }
-
-        private float ValuesPerPixel()
-        {
-            if (m_Horiz)
-                return (position.width - style.padding.horizontal - ThumbSize()) / (m_End - m_Start);
-            return (position.height - style.padding.vertical - ThumbSize()) / (m_End - m_Start);
-        }
-
-        private float ThumbSize()
-        {
-            if (m_Horiz)
-                return m_ThumbStyle.fixedWidth != 0 ? m_ThumbStyle.fixedWidth : m_ThumbStyle.padding.horizontal;
-            return m_ThumbStyle.fixedHeight != 0 ? m_ThumbStyle.fixedHeight : m_ThumbStyle.padding.vertical;
-        }
-
-        private float MaxValue()
-        {
-            return Mathf.Max(m_Start, m_End) - m_PageSize;
-        }
-
-        private float MinValue()
-        {
-            return Mathf.Min(m_Start, m_End);
+            UpdateDragElementPosition();
         }
     }
 }

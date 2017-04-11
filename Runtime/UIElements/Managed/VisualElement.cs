@@ -5,7 +5,6 @@
 //#define ENABLE_CAPTURE_DEBUG
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.CSSLayout;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -14,14 +13,20 @@ namespace UnityEngine.Experimental.UIElements
 {
     internal delegate void OnStylesResolved(VisualElementStyles styles);
 
+    // pseudo states are used for common states of a widget
+    // they are addressable from CSS via the pseudo state syntax ":selected" for example
+    // while css class list can solve the same problem, pseudo states are a fast commonly agreed upon path for common cases.
     [Flags]
-    internal enum PaintFlags
+    internal enum PseudoStates
     {
-        Active    = 1 << 0,
-        Over      = 1 << 1,
-        Invisible = 1 << 2, // activate to skip render
-        On        = 1 << 3,
-        Selected  = 1 << 4
+        Active    = 1 << 0,     // control is currently pressed in the case of a button
+        Hover     = 1 << 1,     // mouse is over control, set and removed from dispatcher automatically
+        Checked   = 1 << 3,     // usually associated with toggles of some kind to change visible style
+        Selected  = 1 << 4,     // selected, used to denote the current selected state and associate a visual style from CSS
+        Disabled  = 1 << 5,     // control will not respond to user input
+        Focus     = 1 << 6,     // control has the keyboard focus. This is activated deactivated by the dispatcher automatically
+
+        Invisible = 1 << 31,    // special. not enabled via uss. activate to skip render
     }
 
     public enum PickingMode
@@ -97,6 +102,11 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     cssNode = new CSSNode();
                 }
+
+                // Same position value while type is already manual should not trigger any layout change, return early
+                if (positionType == PositionType.Manual && m_Position == value)
+                    return;
+
                 // set results so we can read straight back in get without waiting for a pass
                 m_Position = value;
 
@@ -119,6 +129,8 @@ namespace UnityEngine.Experimental.UIElements
                 m_Styles.positionBottom = Style<float>.Create(float.NaN);
                 m_Styles.width = Style<float>.Create(value.width);
                 m_Styles.height = Style<float>.Create(value.height);
+
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -193,16 +205,17 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private PaintFlags m_PaintFlags;
-        internal PaintFlags paintFlags
+        private PseudoStates m_PseudoStates;
+        internal PseudoStates pseudoStates
         {
-            get { return m_PaintFlags; }
+            get { return m_PseudoStates; }
             set
             {
-                if (m_PaintFlags == value)
-                    return;
-                m_PaintFlags = value;
-                Dirty(ChangeType.Repaint);
+                if (m_PseudoStates != value)
+                {
+                    m_PseudoStates = value;
+                    Dirty(ChangeType.Styles);
+                }
             }
         }
 
@@ -295,6 +308,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.width = Style<float>.Create(value);
                 cssNode.Width = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -309,6 +323,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.height = Style<float>.Create(value);
                 cssNode.Height = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -323,6 +338,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.maxWidth = Style<float>.Create(value);
                 cssNode.MaxWidth = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -337,6 +353,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.maxHeight = Style<float>.Create(value);
                 cssNode.MaxHeight = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -351,6 +368,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.minWidth = Style<float>.Create(value);
                 cssNode.MinWidth = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -365,6 +383,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.minHeight = Style<float>.Create(value);
                 cssNode.MinHeight = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -379,6 +398,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.flex = Style<float>.Create(value);
                 cssNode.Flex = value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -393,6 +413,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.positionLeft = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Left, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -407,6 +428,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.positionTop = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Top, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -421,6 +443,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.positionRight = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Right, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -435,6 +458,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.positionBottom = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Bottom, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -449,6 +473,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.marginLeft = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Left, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -463,6 +488,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.marginTop = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Top, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -477,6 +503,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.marginRight = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Right, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -491,6 +518,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.marginBottom = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Bottom, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -505,6 +533,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.borderLeft = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Left, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -519,6 +548,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.borderTop = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Top, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -533,6 +563,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.borderRight = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Right, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -547,6 +578,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.borderBottom = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Bottom, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -561,6 +593,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.paddingLeft = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Left, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -575,6 +608,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.paddingTop = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Top, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -589,6 +623,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.paddingRight = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Right, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -603,6 +638,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.paddingBottom = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Bottom, value);
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -617,6 +653,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.positionType = Style<int>.Create((int)value);
                 cssNode.PositionType = (CSSPositionType)value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -644,6 +681,7 @@ namespace UnityEngine.Experimental.UIElements
                 EnsureInlineStyles();
                 m_Styles.alignSelf = Style<int>.Create((int)value);
                 cssNode.AlignSelf = (CSSAlign)value;
+                Dirty(ChangeType.Layout);
             }
         }
 
@@ -803,17 +841,33 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        public Overflow overflow
+        {
+            get
+            {
+                return (Overflow)m_Styles.overflow.value;
+            }
+            set
+            {
+                EnsureInlineStyles();
+                m_Styles.overflow = Style<int>.Create((int)value);
+                cssNode.Overflow = (CSSOverflow)value;
+                Dirty(ChangeType.Layout);
+            }
+        }
+
         private List<IManipulator> m_Manipulators = new List<IManipulator>();
 
         public VisualElement()
         {
+            m_ClassList = new HashSet<string>();
+            m_FullTypeName = string.Empty;
+            m_TypeName = string.Empty;
             enabled = true;
             visible = true;
             // by default interested in event if children do not handle
             phaseInterest = EventPhase.BubbleUp;
             name = string.Empty;
-            m_FullTypeName = string.Empty;
-            m_TypeName = string.Empty;
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = 0; // not in a tree yet so not dirty, they will stack up as we get inserted somewhere.
@@ -871,7 +925,6 @@ namespace UnityEngine.Experimental.UIElements
 
         // in the case of a Topology change the target is the parent of the removed or added element
         // TODO write test suite for this method. in particular, any change type should implicitly
-        // trigger change types with lower values. e.g. Layout should Repaint
         private ChangeType changesNeeded;
 
         // helper when change impact are known and we need to propagate down into children
@@ -913,6 +966,10 @@ namespace UnityEngine.Experimental.UIElements
             {
                 parentChanges |= ChangeType.Repaint;
             }
+            if ((changesNeeded & ChangeType.Layout) > 0)
+            {
+                parentChanges |= ChangeType.Repaint;
+            }
             if ((changesNeeded & ChangeType.Repaint) > 0)
             {
                 // up to root.
@@ -936,6 +993,9 @@ namespace UnityEngine.Experimental.UIElements
             // this is a key point of the on demand dirty that keeps it from exploding.
             if ((type & changesNeeded) == type)
                 return;
+
+            if ((type & ChangeType.Layout) > 0 && cssNode != null && cssNode.IsMeasureDefined)
+                cssNode.MarkDirty();
 
             PropagateToChildren(type);
 
@@ -963,20 +1023,23 @@ namespace UnityEngine.Experimental.UIElements
         public event Action onEnter;
         public event Action onLeave;
 
-        // TODO will be removed in a later iteration
-        public virtual GUIContent content
+        [SerializeField]
+        private string m_Text;
+        public string text
         {
-            get { return m_Content; }
-            set
-            {
-                m_Content = value ?? GUIContent.none;
-            }
+            get { return m_Text ?? String.Empty; }
+            set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
         }
-        internal GUIContent m_Content = GUIContent.none;
+
+        [SerializeField]
+        private string m_Tooltip;
+        public string tooltip
+        {
+            get { return m_Tooltip ?? String.Empty; }
+            set { if (m_Tooltip != value) { m_Tooltip = value; Dirty(ChangeType.Layout); } }
+        }
 
         internal GUIStyle m_GUIStyle = GUIStyle.none;
-
-        // TODO will be remove in a later iteration
         internal GUIStyle style
         {
             get { return m_GUIStyle; }
@@ -995,26 +1058,41 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public bool enabled { get; set; }
+        public virtual bool enabled
+        {
+            get
+            {
+                return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled;
+            }
+            set
+            {
+                if (value)
+                    pseudoStates &= ~PseudoStates.Disabled;
+                else
+                    pseudoStates |= PseudoStates.Disabled;
+            }
+        }
+
+        protected internal virtual void OnPostLayout(bool hasNewLayout) {}
 
         public bool visible
         {
             get
             {
-                return (paintFlags & PaintFlags.Invisible) != PaintFlags.Invisible;
+                return (pseudoStates & PseudoStates.Invisible) != PseudoStates.Invisible;
             }
             set
             {
                 if (value)
-                    paintFlags &= ~PaintFlags.Invisible;
+                    pseudoStates &= ~PseudoStates.Invisible;
                 else
-                    paintFlags |= PaintFlags.Invisible;
+                    pseudoStates |= PseudoStates.Invisible;
             }
         }
 
         public virtual void DoRepaint(IStylePainter painter)
         {
-            if ((paintFlags & PaintFlags.Invisible) == PaintFlags.Invisible)
+            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
             {
                 return;
             }
@@ -1025,10 +1103,10 @@ namespace UnityEngine.Experimental.UIElements
                 // TODO: get rid of PaintFlags.Over or use it
                 bool over = ContainsPoint(painter.mousePosition);
 
-                style.Draw(contentRect, content, over,
-                    (paintFlags & PaintFlags.Active) == PaintFlags.Active,
-                    (paintFlags & PaintFlags.On) == PaintFlags.On,
-                    this.HasKeyboardFocus(this));
+                style.Draw(contentRect, GUIContent.Temp(text), over,
+                    (pseudoStates & PseudoStates.Active) == PseudoStates.Active,
+                    (pseudoStates & PseudoStates.Checked) == PseudoStates.Checked,
+                    (pseudoStates & PseudoStates.Focus) == PseudoStates.Focus);
             }
             else
             {
@@ -1054,15 +1132,10 @@ namespace UnityEngine.Experimental.UIElements
                 painter.DrawRect(position, borderColor, borderWidth, borderRadius);
             }
 
-            if (!string.IsNullOrEmpty(content.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+            if (!string.IsNullOrEmpty(text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
             {
                 Debug.Assert(font != null);
-                painter.DrawText(contentRect, content.text, font, fontSize, fontStyle, textColor, textAlignment, wordWrap, contentRect.width, false, textClipping);
-            }
-
-            if (content.image != null)
-            {
-                painter.DrawTexture(contentRect, content.image, Color.white, scaleMode, 0.0f, 0);
+                painter.DrawText(contentRect, text, font, fontSize, fontStyle, textColor, textAlignment, wordWrap, contentRect.width, false, textClipping);
             }
         }
 
@@ -1071,6 +1144,11 @@ namespace UnityEngine.Experimental.UIElements
         public virtual bool ContainsPoint(Vector2 localPoint)
         {
             return position.Contains(localPoint);
+        }
+
+        public virtual bool ContainsPointToLocal(Vector2 point)
+        {
+            return ContainsPoint(this.ChangeCoordinatesTo(parent, point));
         }
 
         public virtual bool Overlaps(Rect rectangle)
@@ -1087,6 +1165,7 @@ namespace UnityEngine.Experimental.UIElements
         {
         }
 
+        // TODO: replace
         public virtual void OnLostKeyboardFocus()
         {
         }
@@ -1103,9 +1182,8 @@ namespace UnityEngine.Experimental.UIElements
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
             var style = this.style;
-            var content = this.content;
 
-            if (string.IsNullOrEmpty(content.text) || font == null)
+            if (string.IsNullOrEmpty(text) || font == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
             if (widthMode == MeasureMode.Exactly)
@@ -1114,7 +1192,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                measuredWidth = elementPanel.stylePainter.ComputeTextWidth(content.text, font, fontSize, fontStyle, textAlignment, true);
+                measuredWidth = elementPanel.stylePainter.ComputeTextWidth(text, font, fontSize, fontStyle, textAlignment, true);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -1128,7 +1206,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                measuredHeight = elementPanel.stylePainter.ComputeTextHeight(content.text, measuredWidth, wordWrap, font, fontSize, fontStyle, textAlignment, true);
+                measuredHeight = elementPanel.stylePainter.ComputeTextHeight(text, measuredWidth, wordWrap, font, fontSize, fontStyle, textAlignment, true);
 
                 if (heightMode == MeasureMode.AtMost)
                 {
@@ -1190,6 +1268,7 @@ namespace UnityEngine.Experimental.UIElements
                     break;
             }
 
+            cssNode.Overflow = (CSSOverflow)(styles.overflow.value);
             cssNode.AlignSelf = (CSSAlign)(styles.alignSelf.value);
             cssNode.MaxWidth = styles.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
             cssNode.MaxHeight = styles.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
@@ -1203,6 +1282,8 @@ namespace UnityEngine.Experimental.UIElements
             cssNode.AlignItems = (CSSAlign)styles.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
             cssNode.JustifyContent = (CSSJustify)styles.justifyContent.value;
             cssNode.Wrap = (CSSWrap)styles.flexWrap.value;
+
+            Dirty(ChangeType.Layout);
         }
 
         internal event OnStylesResolved onStylesResolved;

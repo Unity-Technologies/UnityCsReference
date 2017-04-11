@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEditor.Connect;
 using UnityEditor.Collaboration;
+using UnityEngine;
 
 namespace UnityEditor.Web
 {
@@ -41,6 +42,15 @@ namespace UnityEditor.Web
             base.EnableService(enabled);
             Collab.instance.SendNotification();
             Collab.instance.SetCollabEnabledForCurrentProject(enabled);
+
+            AssetDatabase.Refresh();                    // If auto-refresh was off, make sure we refresh when setting it back on
+            UnityEngine.Object[] windows = Resources.FindObjectsOfTypeAll(typeof(PreferencesWindow));
+            if (windows.Length > 0)
+            {
+                PreferencesWindow w = EditorWindow.GetWindow<PreferencesWindow>(true, "Unity Preferences");
+                w.UpdateAutoRefresh();
+                w.ApplyChangesToPrefs(true);
+            }
         }
 
         static CollabAccess()

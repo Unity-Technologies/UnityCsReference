@@ -356,10 +356,7 @@ namespace UnityEditor
             var old = EditorSettings.Internal_UserGeneratedProjectSuffix;
             string newvalue = EditorGUILayout.DelayedTextField("Assembly suffix", old);
             if (newvalue != old)
-            {
                 EditorSettings.Internal_UserGeneratedProjectSuffix = newvalue;
-                EditorApplication.ExecuteMenuItem("Assets/Reimport All");
-            }
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)

@@ -491,6 +491,8 @@ namespace UnityEditor
             public readonly GUIContent generateMipMaps = EditorGUIUtility.TextContent("Generate Mip Maps");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TextContent("sRGB (Color Texture)|Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public readonly GUIContent borderMipMaps = EditorGUIUtility.TextContent("Border Mip Maps");
+            public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TextContent("Mip Maps Preserve Coverage|The alpha channel of generated Mip Maps will preserve coverage during the alpha test.");
+            public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TextContent("Alpha Cutoff Value|The reference value used during the alpha test. Controls Mip Map coverage.");
             public readonly GUIContent mipMapFilter = EditorGUIUtility.TextContent("Mip Map Filtering");
             public readonly GUIContent[] mipMapFilterOptions =
             {
@@ -600,6 +602,8 @@ namespace UnityEditor
         SerializedProperty m_CubemapConvolution;
         SerializedProperty m_SeamlessCubemap;
         SerializedProperty m_BorderMipMap;
+        SerializedProperty m_MipMapsPreserveCoverage;
+        SerializedProperty m_AlphaTestReferenceValue;
         SerializedProperty m_NPOTScale;
         SerializedProperty m_IsReadable;
         SerializedProperty m_sRGBTexture;
@@ -650,6 +654,8 @@ namespace UnityEditor
             m_GenerateCubemap = serializedObject.FindProperty("m_GenerateCubemap");
             m_SeamlessCubemap = serializedObject.FindProperty("m_SeamlessCubemap");
             m_BorderMipMap = serializedObject.FindProperty("m_BorderMipMap");
+            m_MipMapsPreserveCoverage = serializedObject.FindProperty("m_MipMapsPreserveCoverage");
+            m_AlphaTestReferenceValue = serializedObject.FindProperty("m_AlphaTestReferenceValue");
             m_NPOTScale = serializedObject.FindProperty("m_NPOTScale");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
             m_sRGBTexture = serializedObject.FindProperty("m_sRGBTexture");
@@ -798,6 +804,8 @@ namespace UnityEditor
             m_CubemapConvolution.intValue = (int)settings.cubemapConvolution;
             m_SeamlessCubemap.intValue = settings.seamlessCubemap ? 1 : 0;
             m_BorderMipMap.intValue = settings.borderMipmap ? 1 : 0;
+            m_MipMapsPreserveCoverage.intValue = settings.mipMapsPreserveCoverage ? 1 : 0;
+            m_AlphaTestReferenceValue.floatValue = settings.alphaTestReferenceValue;
             m_NPOTScale.intValue = (int)settings.npotScale;
             m_IsReadable.intValue = settings.readable ? 1 : 0;
             m_EnableMipMap.intValue = settings.mipmapEnabled ? 1 : 0;
@@ -853,6 +861,12 @@ namespace UnityEditor
 
             if (!m_BorderMipMap.hasMultipleDifferentValues)
                 settings.borderMipmap = m_BorderMipMap.intValue > 0;
+
+            if (!m_MipMapsPreserveCoverage.hasMultipleDifferentValues)
+                settings.mipMapsPreserveCoverage = m_MipMapsPreserveCoverage.intValue > 0;
+
+            if (!m_AlphaTestReferenceValue.hasMultipleDifferentValues)
+                settings.alphaTestReferenceValue = m_AlphaTestReferenceValue.floatValue;
 
             if (!m_NPOTScale.hasMultipleDifferentValues)
                 settings.npotScale = (TextureImporterNPOTScale)m_NPOTScale.intValue;
@@ -1122,6 +1136,14 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
                 ToggleFromInt(m_BorderMipMap, s_Styles.borderMipMaps);
                 EditorGUILayout.Popup(m_MipMapMode, s_Styles.mipMapFilterOptions, s_Styles.mipMapFilter);
+
+                ToggleFromInt(m_MipMapsPreserveCoverage, s_Styles.mipMapsPreserveCoverage);
+                if (m_MipMapsPreserveCoverage.intValue != 0 && !m_MipMapsPreserveCoverage.hasMultipleDifferentValues)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_AlphaTestReferenceValue, s_Styles.alphaTestReferenceValue);
+                    EditorGUI.indentLevel--;
+                }
 
                 // Mipmap fadeout
                 ToggleFromInt(m_FadeOut, s_Styles.mipmapFadeOutToggle);

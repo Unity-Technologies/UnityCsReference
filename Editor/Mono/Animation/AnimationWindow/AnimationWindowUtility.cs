@@ -401,39 +401,37 @@ namespace UnityEditorInternal
             return result;
         }
 
-        public static bool PropertyIsAnimatable(SerializedProperty property, Object rootObject)
+        public static bool PropertyIsAnimatable(Object targetObject, string propertyPath, Object rootObject)
         {
-            string propertyGroupName = GetPropertyGroupName(property.propertyPath);
-
-            var serializedObject = property.serializedObject;
-            if (serializedObject.targetObject is Component)
+            if (targetObject is ScriptableObject)
             {
-                GameObject gameObject = ((Component)serializedObject.targetObject).gameObject;
-                EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(gameObject, rootObject == null ? gameObject : (GameObject)rootObject);
-                return Array.Exists(allCurveBindings, binding => GetPropertyGroupName(binding.propertyName) == propertyGroupName);
-            }
-            else if (serializedObject.targetObject is GameObject)
-            {
-                GameObject gameObject = (GameObject)serializedObject.targetObject;
-                EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(gameObject, rootObject == null ? gameObject : (GameObject)rootObject);
-                return Array.Exists(allCurveBindings, binding => GetPropertyGroupName(binding.propertyName) == propertyGroupName);
-            }
-            else if (serializedObject.targetObject is ScriptableObject)
-            {
-                ScriptableObject scriptableObject = (ScriptableObject)serializedObject.targetObject;
+                ScriptableObject scriptableObject = (ScriptableObject)targetObject;
                 EditorCurveBinding[] allCurveBindings = AnimationUtility.GetScriptableObjectAnimatableBindings(scriptableObject);
-                return Array.Exists(allCurveBindings, binding => GetPropertyGroupName(binding.propertyName) == propertyGroupName);
+                return Array.Exists(allCurveBindings, binding => binding.propertyName == propertyPath);
+            }
+            else
+            {
+                GameObject gameObject = targetObject as GameObject;
+                if (targetObject is Component)
+                    gameObject = ((Component)targetObject).gameObject;
+
+                if (gameObject != null)
+                {
+                    var dummyModification = new PropertyModification();
+                    dummyModification.propertyPath = propertyPath;
+                    dummyModification.target = targetObject;
+
+                    EditorCurveBinding binding = new EditorCurveBinding();
+                    return AnimationUtility.PropertyModificationToEditorCurveBinding(dummyModification, rootObject == null ? gameObject : (GameObject)rootObject, out binding) != null;
+                }
             }
 
             return false;
         }
 
         // Given a serialized property, gathers all animateable properties
-        public static PropertyModification[] SerializedPropertyToPropertyModifications(SerializedProperty property, Object rootObject)
+        public static PropertyModification[] SerializedPropertyToPropertyModifications(SerializedProperty property)
         {
-            if (!PropertyIsAnimatable(property, rootObject))
-                return null;
-
             List<SerializedProperty> properties = new List<SerializedProperty>();
 
             properties.Add(property);
@@ -579,7 +577,7 @@ namespace UnityEditorInternal
 
         public static EditorCurveBinding[] SerializedPropertyToEditorCurveBindings(SerializedProperty property, GameObject rootGameObject, AnimationClip animationClip)
         {
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, rootGameObject);
+            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property);
             return PropertyModificationsToEditorCurveBindings(modifications, rootGameObject, animationClip);
         }
 

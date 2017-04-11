@@ -57,6 +57,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         TextColor,
         BackgroundColor,
         BorderColor,
+        Overflow,
         // Always leave as last value
         Custom
     }

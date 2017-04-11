@@ -229,7 +229,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 element.style = resolvedStyles.guiStyle;
             }
 
-            if (container != null && (!(container is IMGUIContainer)))
+            if (container != null)
             {
                 for (int i = 0; i < container.childrenCount; i++)
                 {
@@ -263,11 +263,12 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         match = (element.name == selector.parts[i].value);
                         break;
                     case StyleSelectorType.Type:
-                        match = element.typeName.EndsWith(selector.parts[i].value);
+                        match = (element.typeName == selector.parts[i].value);
                         break;
                     case StyleSelectorType.PseudoClass:
-                        // TODO use paint flags
-                        match = false;
+                        int pseudoStates = (int)element.pseudoStates;
+                        match = (selector.pseudoStateMask & pseudoStates) == selector.pseudoStateMask;
+                        match &= (selector.negatedPseudoStateMask & ~pseudoStates) == selector.negatedPseudoStateMask;
                         break;
                     default: // ignore, all errors should have been warned before hand
                         match = false;

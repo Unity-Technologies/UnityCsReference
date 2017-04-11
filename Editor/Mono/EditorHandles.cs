@@ -42,6 +42,56 @@ namespace UnityEditor
             }
         }
 
+        static Mesh cubeMesh
+        {
+            get
+            {
+                if (s_CubeMesh == null)
+                    Init();
+                return s_CubeMesh;
+            }
+        }
+
+        static Mesh coneMesh
+        {
+            get
+            {
+                if (s_ConeMesh == null)
+                    Init();
+                return s_ConeMesh;
+            }
+        }
+
+        static Mesh cylinderMesh
+        {
+            get
+            {
+                if (s_CylinderMesh == null)
+                    Init();
+                return s_CylinderMesh;
+            }
+        }
+
+        static Mesh quadMesh
+        {
+            get
+            {
+                if (s_QuadMesh == null)
+                    Init();
+                return s_QuadMesh;
+            }
+        }
+
+        static Mesh sphereMesh
+        {
+            get
+            {
+                if (s_SphereMesh == null)
+                    Init();
+                return s_SphereMesh;
+            }
+        }
+
         private static Color lineTransparency = new Color(1, 1, 1, 0.75f);
 
         // The function for calling AddControl in Layout event and draw the handle in Repaint event.
@@ -199,6 +249,11 @@ namespace UnityEditor
             return UnityEditorInternal.Slider1D.Do(id, position, direction, size, capFunction, snap);
         }
 
+        public static Vector3 Slider(int controlID, Vector3 position, Vector3 direction, float size, CapFunction capFunction, float snap)
+        {
+            return UnityEditorInternal.Slider1D.Do(controlID, position, direction, size, capFunction, snap);
+        }
+
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
         public static Vector3 Slider(Vector3 position, Vector3 direction, float size, DrawCapFunction drawFunc, float snap)
         {
@@ -269,7 +324,7 @@ namespace UnityEditor
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
                 case (EventType.Repaint):
-                    Graphics.DrawMeshNow(s_CubeMesh, StartCapDraw(position, rotation, size));
+                    Graphics.DrawMeshNow(cubeMesh, StartCapDraw(position, rotation, size));
                     break;
             }
         }
@@ -284,7 +339,7 @@ namespace UnityEditor
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
                 case (EventType.Repaint):
-                    Graphics.DrawMeshNow(s_SphereMesh, StartCapDraw(position, rotation, size));
+                    Graphics.DrawMeshNow(sphereMesh, StartCapDraw(position, rotation, size));
                     break;
             }
         }
@@ -299,7 +354,7 @@ namespace UnityEditor
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
                 case (EventType.Repaint):
-                    Graphics.DrawMeshNow(s_ConeMesh, StartCapDraw(position, rotation, size));
+                    Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
                     break;
             }
         }
@@ -314,7 +369,7 @@ namespace UnityEditor
                     HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size));
                     break;
                 case (EventType.Repaint):
-                    Graphics.DrawMeshNow(s_CylinderMesh, StartCapDraw(position, rotation, size));
+                    Graphics.DrawMeshNow(cylinderMesh, StartCapDraw(position, rotation, size));
                     break;
             }
         }

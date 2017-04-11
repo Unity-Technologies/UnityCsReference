@@ -1013,7 +1013,7 @@ namespace UnityEditor
             if (GUIUtility.keyboardControl == id)
             {
                 // TODO: remove the need for this with Optimized GUI blocks
-                EditorGUIUtility.textFieldInput = true;
+                EditorGUIUtility.textFieldInput = EditorGUIUtility.editingTextField;
             }
 
             // Scroll offset might need to be updated

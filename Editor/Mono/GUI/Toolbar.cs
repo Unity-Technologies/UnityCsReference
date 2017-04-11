@@ -67,11 +67,7 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("PlayButton On"),
                 EditorGUIUtility.IconContent("PauseButton On"),
                 EditorGUIUtility.IconContent("StepButton On"),
-                EditorGUIUtility.IconContent("PlayButtonProfile On"),
-                EditorGUIUtility.IconContent("PlayButton Anim"),
-                EditorGUIUtility.IconContent("PauseButton Anim"),
-                EditorGUIUtility.IconContent("StepButton Anim"),
-                EditorGUIUtility.IconContent("PlayButtonProfile Anim")
+                EditorGUIUtility.IconContent("PlayButtonProfile On")
             };
 
             s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");

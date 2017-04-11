@@ -17,14 +17,19 @@ namespace UnityEditor.Collaboration
         // GUI callback for each item visible in the project window
         public static void OnProjectWindowItemIconOverlay(string guid, Rect drawRect)
         {
-            bool collabEnable = CollabAccess.Instance.IsServiceEnabled();
-            if (collabEnable)
-            {
-                Collab collab = Collab.instance;
-                Collab.CollabStates assetState = collab.GetAssetState(guid);
-                Overlay.DrawOverlays(assetState, drawRect);
+            Collab.CollabStates assetState = GetAssetState(guid);
+            Overlay.DrawOverlays(assetState, drawRect);
+        }
 
+        public static Collab.CollabStates GetAssetState(String assetGuid)
+        {
+            if (!CollabAccess.Instance.IsServiceEnabled())
+            {
+                return Collab.CollabStates.kCollabNone;
             }
+
+            Collab.CollabStates assetState = Collab.instance.GetAssetState(assetGuid);
+            return assetState;
         }
     }
 
@@ -33,7 +38,6 @@ namespace UnityEditor.Collaboration
         private static double OverlaySizeOnSmallIcon = 0.6;
         private static double OverlaySizeOnLargeIcon = 0.35;
         private static readonly Dictionary<Collab.CollabStates, GUIContent> s_Overlays = new Dictionary<Collab.CollabStates, GUIContent>();
-
 
         protected static void LoadOverlays()
         {
@@ -122,7 +126,6 @@ namespace UnityEditor.Collaboration
             var state = GetOverlayStateForAsset(assetState);
             DrawOverlayElement(state, itemRect);
         }
-
     }
 
     internal static class TextureUtility
@@ -150,5 +153,4 @@ namespace UnityEditor.Collaboration
             return tex;
         }
     }
-
 }

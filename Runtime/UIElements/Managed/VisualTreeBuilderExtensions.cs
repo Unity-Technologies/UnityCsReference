@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.UIElements
             cache.NextElement(out box);
             box.GenerateControlID();
             box.position = position;
-            box.content = content;
+            box.text = content.text;
             box.style = style;
             return box;
         }
@@ -23,7 +23,7 @@ namespace UnityEngine.Experimental.UIElements
             cache.NextElement(out button);
             button.GenerateControlID();
             button.position = position;
-            button.content = content;
+            button.text = content.text;
             button.style = style;
             return button;
         }
@@ -62,7 +62,7 @@ namespace UnityEngine.Experimental.UIElements
             cache.NextView(out group);
             group.GenerateControlID();
             group.position = position;
-            group.content = content;
+            group.text = content.text;
             group.style = style;
             return group;
         }
@@ -72,7 +72,7 @@ namespace UnityEngine.Experimental.UIElements
             IMLabel label;
             cache.NextElement(out label);
             label.position = position;
-            label.content = content;
+            label.text = content.text;
             label.style = style;
             return label;
         }
@@ -95,7 +95,7 @@ namespace UnityEngine.Experimental.UIElements
             button.GenerateControlID();
             button.position = position;
             button.style = style;
-            button.content = content;
+            button.text = content.text;
             button.focusType = focusType;
             return button;
         }
@@ -145,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
                 else
                     textField.GenerateControlID();
                 textField.position = position;
-                textField.content = content;
+                textField.text = content.text;
                 textField.style = style;
                 textField.maxLength = maxLength;
                 textField.multiline = multiline;
@@ -162,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                 else
                     textField.GenerateControlID();
                 textField.position = position;
-                textField.content = content;
+                textField.text = content.text;
                 textField.style = style;
                 textField.maxLength = maxLength;
                 textField.multiline = multiline;
@@ -179,7 +179,7 @@ namespace UnityEngine.Experimental.UIElements
             else
                 toggle.GenerateControlID();
             toggle.position = position;
-            toggle.content = content;
+            toggle.text = content.text;
             toggle.style = style;
             toggle.value = value;
             return toggle;

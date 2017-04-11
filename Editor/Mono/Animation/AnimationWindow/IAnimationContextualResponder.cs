@@ -5,32 +5,33 @@
 using System;
 using UnityEngine;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
     // Required information for animation recording.
     internal interface IAnimationContextualResponder
     {
-        bool IsAnimatable(SerializedProperty property);
-        bool IsEditable(SerializedProperty property);
+        bool IsAnimatable(PropertyModification[] modifications);
+        bool IsEditable(Object targetObject);
 
-        bool KeyExists(SerializedProperty property);
-        bool CandidateExists(SerializedProperty property);
+        bool KeyExists(PropertyModification[] modifications);
+        bool CandidateExists(PropertyModification[] modifications);
 
-        bool CurveExists(SerializedProperty property);
+        bool CurveExists(PropertyModification[] modifications);
 
         bool HasAnyCandidates();
         bool HasAnyCurves();
 
-        void AddKey(SerializedProperty property);
-        void RemoveKey(SerializedProperty property);
+        void AddKey(PropertyModification[] modifications);
+        void RemoveKey(PropertyModification[] modifications);
 
-        void RemoveCurve(SerializedProperty property);
+        void RemoveCurve(PropertyModification[] modifications);
 
         void AddCandidateKeys();
         void AddAnimatedKeys();
 
-        void GoToNextKeyframe(SerializedProperty property);
-        void GoToPreviousKeyframe(SerializedProperty property);
+        void GoToNextKeyframe(PropertyModification[] modifications);
+        void GoToPreviousKeyframe(PropertyModification[] modifications);
     }
 }

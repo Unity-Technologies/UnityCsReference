@@ -5,7 +5,9 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditor.Web;
 using UnityEditorInternal;
@@ -15,6 +17,23 @@ using UnityEditor.SceneManagement;
 namespace UnityEditor.Collaboration
 {
     internal delegate void StateChangedDelegate(CollabInfo info);
+
+    [Flags]
+    internal enum CollabOperation : ulong
+    {
+        Noop    = 0,
+        Publish = 1 << 0,
+        Update  = 1 << 1,
+        Revert  = 1 << 2,
+        GoBack  = 1 << 3,
+        Restore = 1 << 4,
+        Diff    = 1 << 5,
+        Exclude = 1 << 6,
+        Include = 1 << 7,
+        ChooseMine    = 1 << 8,
+        ChooseTheirs  = 1 << 9,
+        ExternalMerge = 1 << 10,
+    };
 
     //*undocumented
     // We want to raise this exception from Cpp code but it fails
@@ -32,6 +51,9 @@ namespace UnityEditor.Collaboration
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;
+
+        [SerializeField]
+        private CollabFilters collabFilters = new CollabFilters();
 
         public String projectBrowserSingleSelectionPath { get; set; }
 
@@ -124,6 +146,8 @@ namespace UnityEditor.Collaboration
             s_Instance.projectBrowserSingleSelectionPath = string.Empty;
             s_Instance.projectBrowserSingleMetaSelectionPath = string.Empty;
             JSProxyMgr.GetInstance().AddGlobalObject("unity/collab", s_Instance);
+
+            SoftlockViewController.Instance.TurnOn();
         }
 
         public void CancelJobWithoutException(int jobType)
@@ -191,6 +215,11 @@ namespace UnityEditor.Collaboration
             }
         }
 
+        public void ShowInProjectBrowser(string filterString)
+        {
+            collabFilters.ShowInProjectBrowser(filterString);
+        }
+
         private static void OnStateChanged()
         {
             // register only once
@@ -227,6 +256,32 @@ namespace UnityEditor.Collaboration
         private static void OnUnityConnectStateChanged(ConnectInfo state)
         {
             instance.SendNotification();
+        }
+
+        internal void UpdateFavoriteSearchFilters()
+        {
+            if (IsCollabEnabledForCurrentProject())
+            {
+                collabFilters.AddFavoriteSearchFilters();
+            }
+            else
+            {
+                collabFilters.RemoveFavoriteSearchFilters();
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void OnCollabEnabledForCurrentProject(bool enabled)
+        {
+            if (enabled)
+            {
+                instance.collabFilters.AddFavoriteSearchFilters();
+            }
+            else
+            {
+                instance.collabFilters.RemoveFavoriteSearchFilters();
+                instance.collabFilters.ShowInProjectBrowser("");
+            }
         }
     };
 }

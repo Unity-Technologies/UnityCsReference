@@ -359,6 +359,15 @@ namespace UnityEngine
         sRGB = 2
     }
 
+    [Flags]
+    public enum RenderTextureMemoryless
+    {
+        None = 0,
+        Color = 1,
+        Depth = 2,
+        MSAA = 4
+    }
+
     public enum LightmapsMode
     {
         NonDirectional = 0,
@@ -746,7 +755,6 @@ namespace UnityEngine.Rendering
         Tier2 = 1,
         Tier3 = 2,
     }
-
 
     // Note: match layout of C++ MonoRenderTargetIdentifier!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]

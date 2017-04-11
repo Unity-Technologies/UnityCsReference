@@ -65,6 +65,8 @@ namespace UnityEditor
         public event System.Action scrollPositionChanged;
         public event System.Action scrollHeightChanged;
         public event System.Action mouseAndKeyboardInput;
+        internal delegate void OnHeaderGUIDelegate(Rect availableRect, string scenePath);
+        internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
 
         public GameObjectTreeViewGUI(TreeViewController treeView, bool useHorizontalScroll)
             : base(treeView, useHorizontalScroll)
@@ -308,6 +310,17 @@ namespace UnityEditor
                 // Ensure item is selected before using context menu (menu logic is based on selection)
                 m_TreeView.SelectionClick(goItem, true);
                 m_TreeView.contextClickItemCallback(goItem.id);
+            }
+
+            if (null != OnPostHeaderGUI)
+            {
+                float optionsWidth = (rect.width - buttonRect.x);
+                float width = (rect.width - optionsWidth - margin);
+                float x = 0;
+                float y = rect.y;
+                float height = rect.height;
+                Rect availableRect = new Rect(x, y, width, height);
+                OnPostHeaderGUI(availableRect, goItem.scene.path);
             }
         }
 

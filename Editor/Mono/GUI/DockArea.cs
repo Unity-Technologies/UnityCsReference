@@ -633,8 +633,10 @@ namespace UnityEditor
                             foreach (ContainerWindow w in windows)
                             {
                                 var rootSplitView = w.rootSplitView;
-                                if (rootSplitView != null)
-                                    di = rootSplitView.DragOverRootView(screenMousePos);
+                                if (rootSplitView == null)
+                                    continue;
+
+                                di = rootSplitView.DragOverRootView(screenMousePos);
 
                                 if (di == null)
                                 {

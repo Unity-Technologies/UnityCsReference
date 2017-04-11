@@ -5,35 +5,42 @@
 namespace UnityEngine.Experimental.UIElements
 {
     [GUISkinStyle("toggle")]
-    public class Toggle : Button
+    public class Toggle : VisualElement
     {
+        readonly System.Action clickEvent;
+
         public bool on
         {
             get
             {
-                return (paintFlags & PaintFlags.On) == PaintFlags.On;
+                return (pseudoStates & PseudoStates.Checked) == PseudoStates.Checked;
             }
             set
             {
                 if (value)
                 {
-                    paintFlags |= PaintFlags.On;
+                    pseudoStates |= PseudoStates.Checked;
                 }
                 else
                 {
-                    paintFlags &= ~PaintFlags.On;
+                    pseudoStates &= ~PseudoStates.Checked;
                 }
             }
         }
 
-        public Toggle(ClickEvent clickEvent)
-            : base(clickEvent)
+        public Toggle(System.Action clickEvent)
         {
-            // TODO: This is fragile and could break if someone fiddles around with clickable.OnClick later on.
-            clickable.OnClick += () =>
-                {
-                    on = !on;
-                };
+            this.clickEvent = clickEvent;
+
+            // Click-once behaviour
+            AddManipulator(new Clickable(OnClick));
+        }
+
+        private void OnClick()
+        {
+            on = !on;
+            if (clickEvent != null)
+                clickEvent();
         }
     }
 }

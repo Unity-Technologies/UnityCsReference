@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace UnityEngine
 {
@@ -87,6 +88,63 @@ namespace UnityEngine
             }
         }
 
+
+        public static string EscapeURL(string s)
+        {
+            return EscapeURL(s, System.Text.Encoding.UTF8);
+        }
+
+        public static string EscapeURL(string s, Encoding e)
+        {
+            if (s == null)
+                return null;
+
+            if (s == "")
+                return "";
+
+            if (e == null)
+                return null;
+
+            return WWWTranscoder.URLEncode(s, e);
+        }
+
+        public static string UnEscapeURL(string s)
+        {
+            return UnEscapeURL(s, System.Text.Encoding.UTF8);
+        }
+
+        public static string UnEscapeURL(string s, Encoding e)
+        {
+            if (null == s)
+                return null;
+
+            if (s.IndexOf('%') == -1 && s.IndexOf('+') == -1)
+                return s;
+
+            return WWWTranscoder.URLDecode(s, e);
+        }
+
+        public static WWW LoadFromCacheOrDownload(string url, int version)
+        {
+            return LoadFromCacheOrDownload(url, version, 0);
+        }
+
+        public static WWW LoadFromCacheOrDownload(string url, int version, uint crc)
+        {
+            Hash128 tempHash = new Hash128(0, 0, 0, (uint)version);
+            return LoadFromCacheOrDownload(url, tempHash, crc);
+        }
+
+        public static WWW LoadFromCacheOrDownload(string url, Hash128 hash)
+        {
+            return LoadFromCacheOrDownload(url, hash, 0);
+        }
+
+        public static WWW LoadFromCacheOrDownload(string url, Hash128 hash, uint crc)
+        {
+            return new WWW(url, hash, crc);
+        }
+
         private static string[] FlattenedHeadersFrom(Dictionary<string, string> headers)
         {
             if (headers == null) return null;
@@ -135,5 +193,17 @@ namespace UnityEngine
             }
             return result;
         }
+
+        // Returns a [[AudioClip]] generated from the downloaded data (RO).
+        [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWWAudioExtensions.GetAudioClip(UnityEngine.WWW)", true)]
+        public Object audioClip { get { return null; } }
+
+        // Returns a [[MovieTexture]] generated from the downloaded data (RO).
+        [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWWAudioExtensions.GetMovieTexture(UnityEngine.WWW)", true)]
+        public Object movie { get { return null; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWWAudioExtensions.GetAudioClip(UnityEngine.WWW)", true)]
+        public Object oggVorbis { get { return null; } }
     }
 }

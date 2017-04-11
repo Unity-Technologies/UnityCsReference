@@ -63,8 +63,7 @@ namespace UnityEditor
         Vector2 m_GameViewTargetSize;
 
         bool m_DontClearBackground;
-        bool m_WantsMouseMove;
-        bool m_WantsMouseEnterLeaveWindow;
+        EventInterests m_EventInterests;
 
         // Dockarea we're inside.
         [NonSerialized]
@@ -97,11 +96,11 @@ namespace UnityEditor
         {
             get
             {
-                return m_WantsMouseMove;
+                return m_EventInterests.wantsMouseMove;
             }
             set
             {
-                m_WantsMouseMove = value;
+                m_EventInterests.wantsMouseMove = value;
                 MakeParentsSettingsMatchMe();
             }
         }
@@ -111,11 +110,11 @@ namespace UnityEditor
         {
             get
             {
-                return m_WantsMouseEnterLeaveWindow;
+                return m_EventInterests.wantsMouseEnterLeaveWindow;
             }
             set
             {
-                m_WantsMouseEnterLeaveWindow = value;
+                m_EventInterests.wantsMouseEnterLeaveWindow = value;
                 MakeParentsSettingsMatchMe();
             }
         }
@@ -361,8 +360,7 @@ namespace UnityEditor
             bool parentChanged =  m_Parent.depthBufferBits != m_DepthBufferBits;
             m_Parent.depthBufferBits = m_DepthBufferBits;
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
-            m_Parent.wantsMouseMove = m_WantsMouseMove;
-            m_Parent.wantsMouseEnterLeaveWindow = m_WantsMouseEnterLeaveWindow;
+            m_Parent.eventInterests = m_EventInterests;
             Vector2 parentBorderSizes = new Vector2(m_Parent.borderSize.left + m_Parent.borderSize.right, m_Parent.borderSize.top + m_Parent.borderSize.bottom);
             m_Parent.SetMinMaxSizes(minSize + parentBorderSizes, maxSize + parentBorderSizes);
             if (parentChanged)
@@ -915,10 +913,10 @@ namespace UnityEditor
         public bool useTypeNameAsIconName { get; set; }
     }
 
-    // makes RMGUI opt-in while it's experimental, as a using statement is necessary to call this method
-    namespace Experimental.RMGUI
+    // makes UIElements opt-in while it's experimental, as a using statement is necessary to call this method
+    namespace Experimental.UIElements
     {
-        public static class RMGUIEntryPoint
+        public static class UIElementsEntryPoint
         {
             public static VisualContainer GetRootVisualContainer(this EditorWindow window)
             {

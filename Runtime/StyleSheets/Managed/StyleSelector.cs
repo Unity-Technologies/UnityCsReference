@@ -40,6 +40,11 @@ namespace UnityEngine.StyleSheets
             }
         }
 
+        // those two variables are initialized lazily by UIElements when it first sees the selector
+        // it's convenient to store them here to avoid using an associative container
+        internal int pseudoStateMask = -1;
+        internal int negatedPseudoStateMask = -1;
+
         public override string ToString()
         {
             return string.Join(", ", parts.Select(p => p.ToString()).ToArray());

@@ -78,8 +78,12 @@ namespace UnityEditor
 
         // internal
         private Material m_Material;
-        private static int s_BoxHandleControlIDHint = typeof(ShapeModuleUI).Name.GetHashCode();
-        private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle(s_BoxHandleControlIDHint);
+        private static int s_HandleControlIDHint = typeof(ShapeModuleUI).Name.GetHashCode();
+        Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(
+                Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one
+                );
+        private ArcHandle m_ArcHandle = new ArcHandle(s_HandleControlIDHint);
+        private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
         private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
 
         private readonly string[] m_GuiNames = new string[] { "Sphere", "Hemisphere", "Cone", "Box", "Mesh", "Mesh Renderer", "Skinned Mesh Renderer", "Circle", "Edge" };
@@ -418,15 +422,18 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
 
-                    float radiusValue = shapeModule.radius;
-                    float arcValue = shapeModule.arc;
-                    Handles.DoSimpleRadiusArcHandleXY(Quaternion.identity, Vector3.zero, ref radiusValue, ref arcValue);
+                    m_ArcHandle.radius = shapeModule.radius;
+                    m_ArcHandle.angle = shapeModule.arc;
+                    m_ArcHandle.SetColorWithRadiusHandle(Color.white, 0f);
+
+                    using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
+                        m_ArcHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, "Circle Handle Change");
-                        shapeModule.radius = radiusValue;
-                        shapeModule.arc = arcValue;
+                        shapeModule.radius = m_ArcHandle.radius;
+                        shapeModule.arc = m_ArcHandle.angle;
                     }
                 }
                 else if (type == ParticleSystemShapeType.Hemisphere || type == ParticleSystemShapeType.HemisphereShell)
@@ -475,7 +482,6 @@ namespace UnityEditor
 
                     m_BoxBoundsHandle.center = Vector3.zero;
                     m_BoxBoundsHandle.size = shapeModule.box;
-                    m_BoxBoundsHandle.SetColor(s_ShapeGizmoColor);
                     m_BoxBoundsHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())

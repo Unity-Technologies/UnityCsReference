@@ -28,7 +28,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void DoRepaint(IStylePainter args)
         {
-            style.Draw(position, content, id);
+            style.Draw(position, GUIContent.Temp(text), id);
             if (GUIUtility.hotControl == id)
             {
                 isPressed = position.Contains(args.mousePosition);

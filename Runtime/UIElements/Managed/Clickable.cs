@@ -4,44 +4,43 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public delegate void ClickEvent();
-
-    public class Clickable : Manipulator
+    public class Clickable : MouseManipulator
     {
-        public event ClickEvent OnClick;
+        public event System.Action clicked;
 
         private readonly long m_Delay; // in milliseconds
         private readonly long m_Interval; // in milliseconds
 
-        private Vector2 m_LastMousePos;
+        public Vector2 lastMousePosition { get; private set; }
 
         // delay is used to determine when the event begins.  Applies if delay > 0.
         // interval is used to determine the time delta between event repetitions.  Applies if interval > 0.
-        public Clickable(ClickEvent handler, long delay, long interval)
+        public Clickable(System.Action handler, long delay, long interval) : this(handler)
         {
-            OnClick += handler;
             m_Delay = delay;
             m_Interval = interval;
         }
 
         // Click-once type constructor
-        public Clickable(ClickEvent handler)
+        public Clickable(System.Action handler)
         {
-            OnClick += handler;
+            clicked = handler;
+
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
         }
 
         private void OnTimer(TimerState timerState)
         {
-            if (OnClick != null && IsRepeatable())
+            if (clicked != null && IsRepeatable())
             {
-                if (target.ContainsPoint(m_LastMousePos))
+                if (target.ContainsPointToLocal(lastMousePosition))
                 {
-                    OnClick();
-                    target.paintFlags |= PaintFlags.Active;
+                    clicked();
+                    target.pseudoStates |= PseudoStates.Active;
                 }
                 else
                 {
-                    target.paintFlags &= ~PaintFlags.Active;
+                    target.pseudoStates &= ~PseudoStates.Active;
                 }
             }
         }
@@ -56,32 +55,42 @@ namespace UnityEngine.Experimental.UIElements
             switch (evt.type)
             {
                 case EventType.MouseDown:
-                    this.TakeCapture();
-                    if (IsRepeatable())
+                    if (CanStartManipulation(evt))
                     {
-                        this.Schedule(OnTimer)
-                        .StartingIn(m_Delay)
-                        .Every(m_Interval);
-                    }
-                    target.paintFlags |= PaintFlags.Active;
-                    m_LastMousePos = evt.mousePosition;
-                    return EventPropagation.Stop;
-
-                case EventType.MouseUp:
-                    if (this.HasCapture())
-                    {
+                        this.TakeCapture();
+                        lastMousePosition = evt.mousePosition;
                         if (IsRepeatable())
                         {
-                            target.Unschedule(OnTimer);
+                            // Repeatable button clicks are performed on the MouseDown and at timer events
+                            if (clicked != null && target.ContainsPointToLocal(evt.mousePosition))
+                                clicked();
+
+                            this.Schedule(OnTimer)
+                            .StartingIn(m_Delay)
+                            .Every(m_Interval);
                         }
+                        target.pseudoStates |= PseudoStates.Active;
+                        return EventPropagation.Stop;
+                    }
+                    break;
+
+                case EventType.MouseUp:
+                    if (CanStopManipulation(evt))
+                    {
                         this.ReleaseCapture();
 
-                        // TODO: if repeatable and we have repeated we will do one last extra click...
-                        if (OnClick != null && target.ContainsPoint(target.ChangeCoordinatesTo(target.parent, evt.mousePosition)))
+                        if (IsRepeatable())
                         {
-                            OnClick();
+                            // Repeatable button clicks are performed on the MouseDown and at timer events only
+                            target.Unschedule(OnTimer);
                         }
-                        target.paintFlags &= ~PaintFlags.Active;
+                        else
+                        {
+                            // Non repeatable button clicks are performed on the MouseUp
+                            if (clicked != null && target.ContainsPointToLocal(evt.mousePosition))
+                                clicked();
+                        }
+                        target.pseudoStates &= ~PseudoStates.Active;
                         return EventPropagation.Stop;
                     }
                     break;
@@ -89,7 +98,7 @@ namespace UnityEngine.Experimental.UIElements
                 case EventType.MouseDrag:
                     if (this.HasCapture())
                     {
-                        m_LastMousePos = evt.mousePosition;
+                        lastMousePosition = evt.mousePosition;
                         return EventPropagation.Stop;
                     }
                     break;

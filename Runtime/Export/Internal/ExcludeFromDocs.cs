@@ -10,7 +10,6 @@ namespace UnityEngine.Internal
     /// Adds default value information for optional parameters
     /// </summary>
     [Serializable]
-    [AttributeUsage(AttributeTargets.Method)]
     public class ExcludeFromDocsAttribute : Attribute
     {
         public ExcludeFromDocsAttribute()

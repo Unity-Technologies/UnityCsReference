@@ -22,15 +22,16 @@ namespace UnityEditorInternal
 
             public bool addZeroFrame { get { return false; } }
 
-            public EditorCurveBinding[] acceptedBindings { get; private set; }
-
             public CandidateRecordingState(AnimationWindowState state, AnimationClip candidateClip)
             {
                 activeGameObject = state.activeGameObject;
                 activeRootGameObject = state.activeRootGameObject;
                 activeAnimationClip = candidateClip;
+            }
 
-                acceptedBindings = AnimationUtility.GetCurveBindings(state.activeAnimationClip);
+            public bool DiscardModification(PropertyModification modification)
+            {
+                return !AnimationMode.IsPropertyAnimated(modification.target, modification.propertyPath);
             }
 
             public void SaveCurve(AnimationWindowCurve curve)
@@ -45,23 +46,34 @@ namespace UnityEditorInternal
             }
         }
 
+        enum RecordingStateMode
+        {
+            ManualKey,
+            AutoKey
+        };
+
         class RecordingState : IAnimationRecordingState
         {
             private AnimationWindowState m_State;
+            private RecordingStateMode m_Mode;
 
             public GameObject activeGameObject { get { return m_State.activeGameObject; } }
             public GameObject activeRootGameObject { get { return m_State.activeRootGameObject; } }
             public AnimationClip activeAnimationClip { get { return m_State.activeAnimationClip; } }
             public int currentFrame { get { return m_State.currentFrame; } }
 
-            public bool addZeroFrame { get { return true; } }
+            public bool addZeroFrame { get { return (m_Mode == RecordingStateMode.AutoKey); } }
             public bool addPropertyModification { get { return m_State.previewing; } }
 
-            public EditorCurveBinding[] acceptedBindings { get { return null; } }
-
-            public RecordingState(AnimationWindowState state)
+            public RecordingState(AnimationWindowState state, RecordingStateMode mode)
             {
                 m_State = state;
+                m_Mode = mode;
+            }
+
+            public bool DiscardModification(PropertyModification modification)
+            {
+                return false;
             }
 
             public void SaveCurve(AnimationWindowCurve curve)
@@ -80,6 +92,7 @@ namespace UnityEditorInternal
         [NonSerialized] private float m_PreviousUpdateTime;
 
         [NonSerialized] public AnimationWindowState state;
+        public AnimEditor animEditor { get { return state.animEditor; } }
 
         [SerializeField] private AnimationClip m_CandidateClip;
         [NonSerialized] private List<UndoPropertyModification> m_Candidates;
@@ -90,8 +103,6 @@ namespace UnityEditorInternal
         public override void OnEnable()
         {
             base.OnEnable();
-
-            AnimationPropertyContextualMenu.Instance.AddResponder(this);
         }
 
         public void OnDisable()
@@ -101,8 +112,6 @@ namespace UnityEditorInternal
 
             if (AnimationMode.InAnimationMode(GetAnimationModeDriver()))
                 AnimationMode.StopAnimationMode(GetAnimationModeDriver());
-
-            AnimationPropertyContextualMenu.Instance.RemoveResponder(this);
         }
 
         public override void OnSelectionChanged()
@@ -166,9 +175,9 @@ namespace UnityEditorInternal
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
         }
 
-        public void GoToPreviousKeyframe(SerializedProperty property)
+        public void GoToPreviousKeyframe(PropertyModification[] modifications)
         {
-            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
             if (bindings.Length == 0)
                 return;
 
@@ -194,9 +203,9 @@ namespace UnityEditorInternal
             SetCurrentTime(state.SnapToFrame(newTime, AnimationWindowState.SnapMode.SnapToClipFrame));
         }
 
-        public void GoToNextKeyframe(SerializedProperty property)
+        public void GoToNextKeyframe(PropertyModification[] modifications)
         {
-            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
             if (bindings.Length == 0)
                 return;
 
@@ -342,13 +351,14 @@ namespace UnityEditorInternal
 
         public override bool StartPreview()
         {
-            if (!canPreview)
-                return false;
-
             if (previewing)
                 return true;
 
+            if (!canPreview)
+                return false;
+
             AnimationMode.StartAnimationMode(GetAnimationModeDriver());
+            AnimationPropertyContextualMenu.Instance.SetResponder(this);
             Undo.postprocessModifications += PostprocessAnimationRecordingModifications;
             return true;
         }
@@ -360,6 +370,7 @@ namespace UnityEditorInternal
             ClearCandidates();
 
             AnimationMode.StopAnimationMode(GetAnimationModeDriver());
+            AnimationPropertyContextualMenu.Instance.SetResponder(null);
             Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
         }
 
@@ -391,11 +402,11 @@ namespace UnityEditorInternal
 
         private bool StartRecording()
         {
-            if (!canRecord)
-                return false;
-
             if (recording)
                 return true;
+
+            if (!canRecord)
+                return false;
 
             if (StartPreview())
             {
@@ -479,12 +490,11 @@ namespace UnityEditorInternal
                     {
                         if (AnimationMode.IsPropertyAnimated(target, propertyPath))
                         {
-                            var serializedObject = new SerializedObject(target);
-                            var serializedProperty = serializedObject.FindProperty(propertyPath);
-                            if (serializedProperty != null)
-                            {
-                                return KeyExists(serializedProperty);
-                            }
+                            var modification = new PropertyModification();
+                            modification.target = target;
+                            modification.propertyPath = propertyPath;
+
+                            return KeyExists(new PropertyModification[] {modification});
                         }
 
                         return false;
@@ -524,8 +534,14 @@ namespace UnityEditorInternal
 
         private UndoPropertyModification[] ProcessAutoKey(UndoPropertyModification[] modifications)
         {
-            RecordingState recordingState = new RecordingState(state);
-            return AnimationRecording.Process(recordingState, modifications);
+            BeginKeyModification();
+
+            RecordingState recordingState = new RecordingState(state, RecordingStateMode.AutoKey);
+            UndoPropertyModification[] discardedModifications = AnimationRecording.Process(recordingState, modifications);
+
+            EndKeyModification();
+
+            return discardedModifications;
         }
 
         private UndoPropertyModification[] RegisterCandidates(UndoPropertyModification[] modifications)
@@ -535,6 +551,7 @@ namespace UnityEditorInternal
             {
                 m_CandidateClip = new AnimationClip();
                 m_CandidateClip.legacy = state.activeAnimationClip.legacy;
+                m_CandidateClip.name = "CandidateClip";
 
                 StartCandidateRecording();
             }
@@ -552,16 +569,6 @@ namespace UnityEditorInternal
             InspectorWindow.RepaintAllInspectors();
 
             return discardedModifications;
-        }
-
-        private void RemoveFromCandidates(SerializedProperty property)
-        {
-            if (m_CandidateClip == null)
-                return;
-
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
-            if (modifications != null)
-                RemoveFromCandidates(modifications);
         }
 
         private void RemoveFromCandidates(PropertyModification[] modifications)
@@ -586,55 +593,47 @@ namespace UnityEditorInternal
             }
 
             // Clear out candidate clip if it's empty.
-            if (AnimationUtility.GetCurveBindings(m_CandidateClip).Length == 0)
-                m_CandidateClip = null;
+            if (AnimationUtility.GetCurveBindings(m_CandidateClip).Length == 0 && AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip).Length == 0)
+                ClearCandidates();
         }
 
-        private void ClearCandidates()
+        public override void ClearCandidates()
         {
             m_CandidateClip = null;
             StopCandidateRecording();
         }
 
-        private void ProcessCandidates()
+        public override void ProcessCandidates()
         {
             if (m_CandidateClip == null)
                 return;
 
+            BeginKeyModification();
+
             EditorCurveBinding[] bindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
-            UndoPropertyModification[] undoModifications = new UndoPropertyModification[bindings.Length];
-            for (int i = 0; i < bindings.Length; ++i)
+            EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(m_CandidateClip);
+
+            List<AnimationWindowCurve> curves = new List<AnimationWindowCurve>();
+
+            for (int i = 0; i < state.allCurves.Count; ++i)
             {
-                EditorCurveBinding binding = bindings[i];
-                PropertyModification modification = AnimationUtility.EditorCurveBindingToPropertyModification(binding, state.activeRootGameObject);
-
-                if (binding.isPPtrCurve)
-                {
-                    ObjectReferenceKeyframe[] curve = AnimationUtility.GetObjectReferenceCurve(m_CandidateClip, binding);
-                    modification.value = string.Empty;
-                    modification.objectReference = curve[0].value;
-                }
-                else
-                {
-                    AnimationCurve curve = AnimationUtility.GetEditorCurve(m_CandidateClip, binding);
-                    modification.value = curve[0].value.ToString();
-                }
-
-                undoModifications[i].previousValue = modification;
-                undoModifications[i].currentValue = modification;
+                AnimationWindowCurve curve = state.allCurves[i];
+                if (Array.Exists(bindings, binding => curve.binding.Equals(binding)) || Array.Exists(objectCurveBindings, binding => curve.binding.Equals(binding)))
+                    curves.Add(curve);
             }
 
-            RecordingState recordingState = new RecordingState(state);
-            AnimationRecording.Process(recordingState, undoModifications);
+            AnimationWindowUtility.AddKeyframes(state, curves.ToArray(), time);
+
+            EndKeyModification();
 
             ClearCandidates();
         }
 
-        private List<AnimationWindowKeyframe> GetKeys(SerializedProperty property)
+        private List<AnimationWindowKeyframe> GetKeys(PropertyModification[] modifications)
         {
             var keys = new List<AnimationWindowKeyframe>();
 
-            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
             if (bindings.Length == 0)
                 return keys;
 
@@ -654,12 +653,19 @@ namespace UnityEditorInternal
             return keys;
         }
 
-        public bool IsAnimatable(SerializedProperty property)
+        public bool IsAnimatable(PropertyModification[] modifications)
         {
-            return AnimationWindowUtility.PropertyIsAnimatable(property, state.activeRootGameObject);
+            for (int i = 0; i < modifications.Length; ++i)
+            {
+                var modification = modifications[i];
+                if (AnimationWindowUtility.PropertyIsAnimatable(modification.target, modification.propertyPath, state.activeRootGameObject))
+                    return true;
+            }
+
+            return false;
         }
 
-        public bool IsEditable(SerializedProperty property)
+        public bool IsEditable(Object targetObject)
         {
             if (state.selection.disabled)
                 return false;
@@ -670,13 +676,11 @@ namespace UnityEditorInternal
             var selectedItem = state.selectedItem;
             if (selectedItem != null)
             {
-                var serializedObject = property.serializedObject;
-
                 GameObject gameObject = null;
-                if (serializedObject.targetObject is Component)
-                    gameObject = ((Component)serializedObject.targetObject).gameObject;
-                else if (serializedObject.targetObject is GameObject)
-                    gameObject = (GameObject)serializedObject.targetObject;
+                if (targetObject is Component)
+                    gameObject = ((Component)targetObject).gameObject;
+                else if (targetObject is GameObject)
+                    gameObject = (GameObject)targetObject;
 
                 if (gameObject != null)
                 {
@@ -691,30 +695,29 @@ namespace UnityEditorInternal
             return false;
         }
 
-        public bool KeyExists(SerializedProperty property)
+        public bool KeyExists(PropertyModification[] modifications)
         {
-            return (GetKeys(property).Count > 0);
+            return (GetKeys(modifications).Count > 0);
         }
 
-        public bool CandidateExists(SerializedProperty property)
+        public bool CandidateExists(PropertyModification[] modifications)
         {
-            if (m_CandidateClip == null)
+            if (!HasAnyCandidates())
                 return false;
 
-            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
-            if (bindings.Length == 0)
-                return false;
+            for (int i = 0; i < modifications.Length; ++i)
+            {
+                var modification = modifications[i];
+                if (AnimationMode.IsPropertyCandidate(modification.target, modification.propertyPath))
+                    return true;
+            }
 
-            EditorCurveBinding[] candidateBindings = AnimationUtility.GetCurveBindings(m_CandidateClip);
-            if (candidateBindings.Length == 0)
-                return false;
-
-            return Array.Exists(bindings, binding => Array.Exists(candidateBindings, candidateBinding => candidateBinding.Equals(binding)));
+            return false;
         }
 
-        public bool CurveExists(SerializedProperty property)
+        public bool CurveExists(PropertyModification[] modifications)
         {
-            EditorCurveBinding[] bindings = AnimationWindowUtility.SerializedPropertyToEditorCurveBindings(property, state.activeRootGameObject, state.activeAnimationClip);
+            EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
             if (bindings.Length == 0)
                 return false;
 
@@ -722,7 +725,14 @@ namespace UnityEditorInternal
             if (clipBindings.Length == 0)
                 return false;
 
-            return Array.Exists(bindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding)));
+            if (Array.Exists(bindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding))))
+                return true;
+
+            EditorCurveBinding[] objectCurveBindings = AnimationUtility.GetObjectReferenceCurveBindings(state.activeAnimationClip);
+            if (objectCurveBindings.Length == 0)
+                return false;
+
+            return Array.Exists(objectCurveBindings, binding => Array.Exists(clipBindings, clipBinding => clipBinding.Equals(binding)));
         }
 
         public bool HasAnyCandidates()
@@ -737,33 +747,47 @@ namespace UnityEditorInternal
 
         public void AddKey(SerializedProperty property)
         {
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
-            if (modifications != null)
+            AddKey(AnimationWindowUtility.SerializedPropertyToPropertyModifications(property));
+        }
+
+        public void AddKey(PropertyModification[] modifications)
+        {
+            var undoModifications = new UndoPropertyModification[modifications.Length];
+            for (int i = 0; i < modifications.Length; ++i)
             {
-                var undoModifications = new UndoPropertyModification[modifications.Length];
-                for (int i = 0; i < modifications.Length; ++i)
-                {
-                    var modification = modifications[i];
-                    undoModifications[i].previousValue = modification;
-                    undoModifications[i].currentValue = modification;
-                }
-
-                var recordingState = new RecordingState(state);
-                AnimationRecording.Process(recordingState, undoModifications);
-
-                RemoveFromCandidates(modifications);
-
-                ResampleAnimation();
-                state.Repaint();
+                var modification = modifications[i];
+                undoModifications[i].previousValue = modification;
+                undoModifications[i].currentValue = modification;
             }
+
+            BeginKeyModification();
+
+            var recordingState = new RecordingState(state, RecordingStateMode.ManualKey);
+            AnimationRecording.Process(recordingState, undoModifications);
+
+            EndKeyModification();
+
+            RemoveFromCandidates(modifications);
+
+            ResampleAnimation();
+            state.Repaint();
         }
 
         public void RemoveKey(SerializedProperty property)
         {
-            List<AnimationWindowKeyframe> keys = GetKeys(property);
+            RemoveKey(AnimationWindowUtility.SerializedPropertyToPropertyModifications(property));
+        }
+
+        public void RemoveKey(PropertyModification[] modifications)
+        {
+            BeginKeyModification();
+
+            List<AnimationWindowKeyframe> keys = GetKeys(modifications);
             state.DeleteKeys(keys);
 
-            RemoveFromCandidates(property);
+            RemoveFromCandidates(modifications);
+
+            EndKeyModification();
 
             ResampleAnimation();
             state.Repaint();
@@ -771,13 +795,16 @@ namespace UnityEditorInternal
 
         public void RemoveCurve(SerializedProperty property)
         {
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property, state.activeRootGameObject);
-            if (modifications == null)
-                return;
+            RemoveCurve(AnimationWindowUtility.SerializedPropertyToPropertyModifications(property));
+        }
 
+        public void RemoveCurve(PropertyModification[] modifications)
+        {
             EditorCurveBinding[] bindings = AnimationWindowUtility.PropertyModificationsToEditorCurveBindings(modifications, state.activeRootGameObject, state.activeAnimationClip);
             if (bindings.Length == 0)
                 return;
+
+            BeginKeyModification();
 
             Undo.RegisterCompleteObjectUndo(state.activeAnimationClip, "Remove Curve");
 
@@ -790,6 +817,8 @@ namespace UnityEditorInternal
                     AnimationUtility.SetEditorCurve(state.activeAnimationClip, binding, null);
             }
 
+            EndKeyModification();
+
             RemoveFromCandidates(modifications);
 
             ResampleAnimation();
@@ -799,12 +828,34 @@ namespace UnityEditorInternal
         public void AddCandidateKeys()
         {
             ProcessCandidates();
+
+            ResampleAnimation();
+            state.Repaint();
         }
 
         public void AddAnimatedKeys()
         {
+            BeginKeyModification();
+
             AnimationWindowUtility.AddKeyframes(state, state.allCurves.ToArray(), time);
             ClearCandidates();
+
+            EndKeyModification();
+
+            ResampleAnimation();
+            state.Repaint();
+        }
+
+        private void BeginKeyModification()
+        {
+            if (animEditor != null)
+                animEditor.BeginKeyModification();
+        }
+
+        private void EndKeyModification()
+        {
+            if (animEditor != null)
+                animEditor.EndKeyModification();
         }
     }
 }

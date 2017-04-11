@@ -21,8 +21,7 @@ namespace UnityEditorInternal
 
         bool addZeroFrame { get; }
 
-        EditorCurveBinding[] acceptedBindings { get; }
-
+        bool DiscardModification(PropertyModification modification);
         void SaveCurve(AnimationWindowCurve curve);
         void AddPropertyModification(EditorCurveBinding binding, PropertyModification propertyModification, bool keepPrefabOverride);
     }

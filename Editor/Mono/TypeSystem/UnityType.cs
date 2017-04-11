@@ -15,8 +15,7 @@ namespace UnityEditor
     {
         Abstract    = 1 << 0,
         Sealed      = 1 << 1,
-        EditorOnly  = 1 << 2,
-        Deprecated  = 1 << 4,
+        EditorOnly  = 1 << 2
     }
 
     sealed partial class UnityType
@@ -31,7 +30,6 @@ namespace UnityEditor
         public bool isAbstract { get { return (flags & UnityTypeFlags.Abstract) != 0; } }
         public bool isSealed { get { return (flags & UnityTypeFlags.Sealed) != 0; } }
         public bool isEditorOnly { get { return (flags & UnityTypeFlags.EditorOnly) != 0; } }
-        public bool isDeprecated { get { return (flags & UnityTypeFlags.Deprecated) != 0; } }
 
         uint runtimeTypeIndex;
         uint descendantCount;

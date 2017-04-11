@@ -124,10 +124,21 @@ namespace UnityEditor.Build
             {
                 var assembly = EditorAssemblies.loadedAssemblies[ai];
                 bool assemblyMayHaveAttributes = !excludedAssemblies.Contains(assembly.FullName.Substring(0, assembly.FullName.IndexOf(',')));
-                var types = assembly.GetTypes();
+                Type[] types = null;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException e)
+                {
+                    types = e.Types;
+                }
                 for (int ti = 0; ti < types.Length; ti++)
                 {
                     var t = types[ti];
+                    if (t == null)
+                        continue;
+
                     object instance = null;
                     bool isIOrderedCallback = false;
                     if (findBuildProcessors)

@@ -422,7 +422,7 @@ public static void CubeCap(int controlID, Vector3 position, Quaternion rotation,
         {
             if (Event.current.type != EventType.repaint)
                 return;
-            Graphics.DrawMeshNow(s_CubeMesh, StartCapDraw(position, rotation, size));
+            Graphics.DrawMeshNow(cubeMesh, StartCapDraw(position, rotation, size));
         }
     
     
@@ -431,7 +431,7 @@ public static void SphereCap(int controlID, Vector3 position, Quaternion rotatio
         {
             if (Event.current.type != EventType.repaint)
                 return;
-            Graphics.DrawMeshNow(s_SphereMesh, StartCapDraw(position, rotation, size));
+            Graphics.DrawMeshNow(sphereMesh, StartCapDraw(position, rotation, size));
         }
     
     
@@ -440,7 +440,7 @@ public static void ConeCap(int controlID, Vector3 position, Quaternion rotation,
         {
             if (Event.current.type != EventType.repaint)
                 return;
-            Graphics.DrawMeshNow(s_ConeMesh, StartCapDraw(position, rotation, size));
+            Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
         }
     
     
@@ -449,7 +449,7 @@ public static void CylinderCap(int controlID, Vector3 position, Quaternion rotat
         {
             if (Event.current.type != EventType.repaint)
                 return;
-            Graphics.DrawMeshNow(s_CylinderMesh, StartCapDraw(position, rotation, size));
+            Graphics.DrawMeshNow(cylinderMesh, StartCapDraw(position, rotation, size));
         }
     
             static Vector3[] s_RectangleCapPointsCache = new Vector3[5];
@@ -780,9 +780,11 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
                 GameObject handleGo = (GameObject)EditorGUIUtility.Load("SceneView/HandlesGO.fbx");
                 if (!handleGo)
                 {
-                    Debug.Log("ARGH - We couldn't find SceneView/HandlesGO.fbx");
+                    Debug.Log("Couldn't find SceneView/HandlesGO.fbx");
                 }
                 handleGo.SetActive(false);
+
+                const string k_AssertMessage = "mesh is null. A problem has occurred with `SceneView/HandlesGO.fbx`";
 
                 foreach (Transform t in handleGo.transform)
                 {
@@ -791,18 +793,23 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
                     {
                         case "Cube":
                             s_CubeMesh = meshFilter.sharedMesh;
+                            Debug.AssertFormat(s_CubeMesh != null, k_AssertMessage);
                             break;
                         case "Sphere":
                             s_SphereMesh = meshFilter.sharedMesh;
+                            Debug.AssertFormat(s_SphereMesh != null, k_AssertMessage);
                             break;
                         case "Cone":
                             s_ConeMesh = meshFilter.sharedMesh;
+                            Debug.AssertFormat(s_ConeMesh != null, k_AssertMessage);
                             break;
                         case "Cylinder":
                             s_CylinderMesh = meshFilter.sharedMesh;
+                            Debug.AssertFormat(s_CylinderMesh != null, k_AssertMessage);
                             break;
                         case "Quad":
                             s_QuadMesh = meshFilter.sharedMesh;
+                            Debug.AssertFormat(s_QuadMesh != null, k_AssertMessage);
                             break;
                     }
                 }

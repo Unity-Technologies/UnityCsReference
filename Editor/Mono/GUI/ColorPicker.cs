@@ -1744,6 +1744,8 @@ namespace UnityEditor
                 // Window closed before it was focused
                 SendEvent("EyeDropperCancelled", false);
             }
+
+            base.OnDestroy();
         }
 
         override protected bool OnFocus()

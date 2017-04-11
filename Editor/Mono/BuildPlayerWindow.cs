@@ -144,6 +144,11 @@ namespace UnityEditor
             EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
         }
 
+        static void BuildPlayerAndRun()
+        {
+            CallBuildMethods(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
+        }
+
         public BuildPlayerWindow()
         {
             position = new Rect(50, 50, 540, 530);
@@ -1002,7 +1007,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildAndRunButton;
             if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
             {
-                CallBuildMethods(BuildOptions.AutoRunPlayer);
+                BuildPlayerAndRun();
                 GUIUtility.ExitGUI();
             }
 

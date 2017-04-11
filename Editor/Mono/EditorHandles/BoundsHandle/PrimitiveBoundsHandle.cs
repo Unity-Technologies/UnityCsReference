@@ -96,11 +96,6 @@ namespace UnityEditor.IMGUI.Controls
                 m_ControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Keyboard);
             }
 
-            // skip editing box if view tool is active
-            // primary reason for keeping this here is that alt-clicking to rotate view still sends event to handles
-            if (Tools.viewToolActive)
-                return;
-
             // wireframe (before handles so handles are rendered top most)
             Color oldColor = Handles.color;
             Handles.color *= wireframeColor;
@@ -108,6 +103,10 @@ namespace UnityEditor.IMGUI.Controls
             {
                 DrawWireframe();
             }
+
+            // exit before drawing control handles if holding alt, since alt-click will rotate scene view
+            if (Event.current.alt)
+                return;
 
             // bounding box extents
             Vector3 minPos = m_Bounds.min;

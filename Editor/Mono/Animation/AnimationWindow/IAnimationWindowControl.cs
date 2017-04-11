@@ -49,5 +49,8 @@ namespace UnityEditorInternal
         public abstract bool StartRecording(Object targetObject);
         public abstract void StopRecording();
         public abstract void ResampleAnimation();
+
+        public abstract void ProcessCandidates();
+        public abstract void ClearCandidates();
     }
 }

@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void DoRepaint(IStylePainter args)
         {
-            style.Draw(position, content, id,
+            style.Draw(position, GUIContent.Temp(text), id,
                 false);          // on (???)
         }
 

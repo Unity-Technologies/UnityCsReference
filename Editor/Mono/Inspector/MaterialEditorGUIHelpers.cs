@@ -214,7 +214,7 @@ namespace UnityEditor
                 return r;
             }
 
-            BeginAnimatedCheck(colorProperty);
+            BeginAnimatedCheck(r, colorProperty);
 
             ColorPickerHDRConfig hdrConfiguration = hdrConfig ?? ColorPicker.defaultHDRConfig;
 

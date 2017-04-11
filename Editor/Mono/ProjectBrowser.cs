@@ -203,6 +203,7 @@ namespace UnityEditor
             Collab.instance.StateChanged += OnCollabStateChanged;
             s_LastInteractedProjectBrowser = this;
 
+            Collab.instance.UpdateFavoriteSearchFilters();
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -222,6 +223,7 @@ namespace UnityEditor
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
             Collab.instance.StateChanged -= OnCollabStateChanged;
+            Collab.instance.UpdateFavoriteSearchFilters();
             s_ProjectBrowsers.Remove(this);
         }
 
@@ -1146,7 +1148,7 @@ namespace UnityEditor
             }
         }
 
-        void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected)
+        internal void SetFolderSelection(int[] selectedInstanceIDs, bool revealSelectionAndFrameLastSelected)
         {
             m_FolderTree.SetSelection(selectedInstanceIDs, revealSelectionAndFrameLastSelected);
             SetFoldersInSearchFilter(selectedInstanceIDs);
@@ -1968,6 +1970,11 @@ namespace UnityEditor
         void SetTwoColumns()
         {
             SetViewMode(ViewMode.TwoColumns);
+        }
+
+        internal bool IsTwoColumns()
+        {
+            return m_ViewMode == ViewMode.TwoColumns;
         }
 
         void OpenTreeViewTestWindow()

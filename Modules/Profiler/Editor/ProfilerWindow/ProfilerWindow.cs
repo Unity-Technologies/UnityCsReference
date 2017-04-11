@@ -27,7 +27,6 @@ namespace UnityEditor
             public GUIContent noFrameDebugger = EditorGUIUtility.TextContent("Frame Debugger|Open Frame Debugger (Current frame needs to be selected)");
             public GUIContent gatherObjectReferences = EditorGUIUtility.TextContent("Gather object references|Collect reference information to see where objects are referenced from. Disable this to save memory");
 
-            public GUIContent timelineHighDetail = EditorGUIUtility.TextContent("High Detail|Guaranteed to show all samples and memory callstacks");
             public GUIContent memRecord = EditorGUIUtility.TextContent("Mem Record|Record activity in the native memory system");
             public GUIContent profilerRecord = EditorGUIUtility.TextContentWithIcon("Record|Record profiling information", "Profiler.Record");
             public GUIContent profilerInstrumentation = EditorGUIUtility.TextContent("Instrumentation|Add Profiler Instrumentation to selected functions");
@@ -178,8 +177,6 @@ namespace UnityEditor
         private ProfilerProperty m_CPUOrGPUProfilerProperty;
 
         [SerializeField]
-        private bool m_TimelineViewDetail = false;
-
         private UISystemProfiler m_UISystemProfiler;
 
         private MemoryTreeList m_ReferenceListView;
@@ -588,24 +585,30 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
-            // Timeline detail
-            m_TimelineViewDetail = GUILayout.Toggle(m_TimelineViewDetail, ms_Styles.timelineHighDetail, EditorStyles.toolbarButton);
-
             // Memory record
-            ms_Styles.memRecord.text = "Mem Record";
+            ms_Styles.memRecord.text = "Allocation Callstacks";
             if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
                 ms_Styles.memRecord.text += " [" + s_CheckMark + "]";
 
-            Rect popupRect = GUILayoutUtility.GetRect(ms_Styles.memRecord, EditorStyles.toolbarDropDown, GUILayout.Width(100));
+            Rect popupRect = GUILayoutUtility.GetRect(ms_Styles.memRecord, EditorStyles.toolbarDropDown, GUILayout.Width(170));
             if (EditorGUI.DropdownButton(popupRect, ms_Styles.memRecord, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 string[] names = new string[]
                 {
                     "None",
-                    "Sample only",
-                    "Callstack (fast)",
-                    "Callstack (full)"
+                    "Managed Allocations"
                 };
+                if (Unsupported.IsDeveloperBuild())
+                {
+                    names = new string[]
+                    {
+                        "None",
+                        "Managed Allocations",
+                        "All Allocations (fast)",
+                        "All Allocations (full)"
+                    };
+                }
+
                 var enabled = new bool[names.Length];
                 for (int c = 0; c < names.Length; ++c)
                     enabled[c] = true;
@@ -740,7 +743,7 @@ namespace UnityEditor
 
                 float lowerPaneSize = m_VertSplit.realSizes[1];
                 lowerPaneSize -= EditorStyles.toolbar.CalcHeight(GUIContent.none, 10.0f) + 2.0f;
-                timelinePane.DoGUI(GetActiveVisibleFrameIndex(), position.width, position.height - lowerPaneSize, lowerPaneSize, m_TimelineViewDetail);
+                timelinePane.DoGUI(GetActiveVisibleFrameIndex(), position.width, position.height - lowerPaneSize, lowerPaneSize);
             }
             else
             {

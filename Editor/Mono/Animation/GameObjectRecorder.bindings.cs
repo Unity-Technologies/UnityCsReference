@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor;
@@ -27,8 +28,14 @@ namespace UnityEditor.Experimental.Animations
 
         // Bindings.
         extern public void Bind(EditorCurveBinding binding);
-        extern public void BindAllProperties(GameObject target, bool recursive);
-        extern public void BindTransform(GameObject target, bool recursive);
+        extern public void BindAll(GameObject target, bool recursive);
+        extern public void BindComponent(GameObject target, Type componentType, bool recursive);
+
+        public void BindComponent<T>(GameObject target, bool recursive) where T : Component
+        {
+            BindComponent(target, typeof(T), recursive);
+        }
+
         extern public EditorCurveBinding[] GetBindings();
 
         // Recording.

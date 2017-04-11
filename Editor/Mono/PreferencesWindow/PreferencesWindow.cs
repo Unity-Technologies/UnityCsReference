@@ -448,10 +448,8 @@ namespace UnityEditor
             bool collabEnabled = CollabAccess.Instance.IsServiceEnabled();
             using (new EditorGUI.DisabledScope(collabEnabled))
             {
-                if (collabEnabled)
-                    m_AutoRefresh = EditorGUILayout.Toggle("Auto Refresh", true);
-                else
-                    m_AutoRefresh = EditorGUILayout.Toggle("Auto Refresh", m_AutoRefresh);
+                UpdateAutoRefresh(); // Make sure auto refresh is up to date in case collab switched
+                m_AutoRefresh = EditorGUILayout.Toggle("Auto Refresh", m_AutoRefresh);
             }
             if (collabEnabled)
                 EditorGUILayout.HelpBox("Auto Refresh must be set when using Collaboration feature.", MessageType.Warning);
@@ -551,9 +549,9 @@ namespace UnityEditor
             }
         }
 
-        private void ApplyChangesToPrefs()
+        public void ApplyChangesToPrefs(bool force = false)
         {
-            if (GUI.changed)
+            if (GUI.changed || force)
             {
                 WritePreferences();
                 ReadPreferences();
@@ -927,7 +925,9 @@ namespace UnityEditor
             WriteRecentAppsList(m_ScriptApps, m_ScriptEditorPath, kRecentScriptAppsKey);
             WriteRecentAppsList(m_ImageApps, m_ImageAppPath, kRecentImageAppsKey);
 
-            EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
+            // Don't save auto refresh if we forced it
+            if (!CollabAccess.Instance.IsServiceEnabled())
+                EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
 
             if (Unsupported.IsDeveloperBuild() || UnityConnect.preferencesEnabled)
                 UnityConnectPrefs.StorePanelPrefs();
@@ -967,6 +967,11 @@ namespace UnityEditor
             string result = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
             if (result != null) return result;
             return Environment.GetEnvironmentVariable("ProgramFiles");
+        }
+
+        public void UpdateAutoRefresh()
+        {
+            m_AutoRefresh = EditorUtility.IsAutoRefreshEnabled();
         }
 
         private void ReadPreferences()
@@ -1019,7 +1024,7 @@ namespace UnityEditor
             if (m_DiffToolIndex == -1)
                 m_DiffToolIndex = 0;
 
-            m_AutoRefresh = EditorPrefs.GetBool("kAutoRefresh");
+            UpdateAutoRefresh();
 
             m_ReopenLastUsedProjectOnStartup = EditorPrefs.GetBool("ReopenLastUsedProjectOnStartup");
 

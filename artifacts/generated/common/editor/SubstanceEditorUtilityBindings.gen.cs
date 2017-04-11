@@ -103,6 +103,10 @@ public sealed partial class SubstanceImporter : AssetImporter
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool IsSubstanceParented (ProceduralTexture texture, ProceduralMaterial material) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal MonoScript GetSubstanceArchive () ;
+
 }
 
 public sealed partial class SubstanceArchive : Object

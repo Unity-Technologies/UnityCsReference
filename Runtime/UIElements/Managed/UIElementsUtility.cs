@@ -145,17 +145,6 @@ namespace UnityEngine.Experimental.UIElements
             var clippedScreen = new Rect(x1, y1, x2 - x1, y2 - y1);
 
             var offset = new Vector2(Mathf.Round(screenRect.x - clippedScreen.x), Mathf.Round(screenRect.y - clippedScreen.y));
-
-            GUILayoutGroup group = GUILayoutUtility.BeginLayoutArea(container.style, typeof(GUILayoutGroup));
-            switch (Event.current.type)
-            {
-                case EventType.Layout:
-                    group.resetCoords = false;
-                    group.minWidth = group.maxWidth = screenRect.width;
-                    group.minHeight = group.maxHeight = screenRect.height;
-                    group.rect = Rect.MinMaxRect(0, 0, group.rect.xMax, group.rect.yMax);
-                    break;
-            }
             GUI.BeginGroup(clippedScreen, GUIContent.none, container.style, offset);
         }
 
@@ -165,7 +154,6 @@ namespace UnityEngine.Experimental.UIElements
             if (Event.current.type != EventType.Used)
             {
                 GUI.EndGroup();
-                GUILayoutUtility.EndLayoutGroup();
             }
 
 
@@ -178,6 +166,7 @@ namespace UnityEngine.Experimental.UIElements
             // restore cache
             GUILayoutUtility.SelectIDList(GUIUtility.s_OriginalID, false);
             GUIContent.ClearStaticCache();
+
             if (s_ContainerStack.Count > 0)
             {
                 IMGUIContainer container = s_ContainerStack.Peek();

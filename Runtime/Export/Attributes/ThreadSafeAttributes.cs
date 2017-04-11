@@ -10,13 +10,4 @@ namespace UnityEngine
         {
         }
     }
-
-    // TODO(rb): This class is temporary, and should be removed when we throw on all threading
-    //           errors in bindings.
-    internal class ThreadAndSerializationUnsafeThrowExceptionAttribute : System.Attribute
-    {
-        public ThreadAndSerializationUnsafeThrowExceptionAttribute()
-        {
-        }
-    }
 }

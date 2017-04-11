@@ -24,7 +24,7 @@ namespace UnityEngine.Experimental.UIElements
         Capture,
 
         // Target, The second phase is implicit, when the widget is the target it always gets the event.
-        // for key event, target is the keyboardFocus or panel root if none.
+        // for key event, target is the focusedElement or panel root if none.
 
         // after the target has gotten the chance to handle the event the event walks back up the parent hierarchy back to root
         BubbleUp
@@ -63,7 +63,6 @@ namespace UnityEngine.Experimental.UIElements
             if (handler.panel != null)
             {
                 handler.panel.dispatcher.TakeCapture(handler);
-                handler.panel.dispatcher.ReleaseKeyboardFocus();
             }
         }
 
@@ -95,64 +94,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public static void TakeKeyboardFocus(this IEventHandler handler, VisualElement element)
-        {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.TakeKeyboardFocus(element);
-            }
-        }
-
-        public static void TakeKeyboardFocus(this IEventHandler handler)
-        {
-            if (handler.panel != null)
-            {
-                var element = handler as VisualElement;
-                if (element != null)
-                {
-                    handler.panel.dispatcher.TakeKeyboardFocus(element);
-                }
-            }
-        }
-
-        public static bool HasKeyboardFocus(this IEventHandler handler, VisualElement element)
-        {
-            if (handler.panel != null)
-            {
-                return handler.panel.dispatcher.keyboardFocus == element;
-            }
-            return false;
-        }
-
-        public static bool HasKeyboardFocus(this IEventHandler handler)
-        {
-            if (handler.panel != null)
-            {
-                var element = handler as VisualElement;
-                if (element != null)
-                {
-                    return handler.panel.dispatcher.keyboardFocus == element;
-                }
-            }
-            return false;
-        }
-
-        public static void ReleaseKeyboardFocus(this IEventHandler handler)
-        {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.ReleaseKeyboardFocus();
-            }
-        }
-
-        public static void RemoveKeyboardFocus(this IEventHandler handler)
-        {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.RemoveKeyboardFocus();
-            }
-        }
-
         public static ScheduleBuilder Schedule(this IEventHandler handler, Action<TimerState> timerUpdateEvent)
         {
             if (handler.panel == null || handler.panel.scheduler == null)
@@ -180,9 +121,9 @@ namespace UnityEngine.Experimental.UIElements
     {
         IEventHandler capture { get; }
 
-        // TODO: FIX: IMGUI remembers keyboardFocus per GUIObjectState
+        // TODO: FIX: IMGUI remembers focusedElement per GUIObjectState
         // BUG: UIElements currently "forgets" when switching panel
-        VisualElement keyboardFocus { get; set; }
+        VisualElement focusedElement { get; }
 
         // used when the capture is done receiving events
         void ReleaseCapture(IEventHandler handler);
@@ -192,15 +133,6 @@ namespace UnityEngine.Experimental.UIElements
 
         // use to set a capture. if any capture is set, it will be removed
         void TakeCapture(IEventHandler handler);
-
-        // used when the keyboard focus is done receiving events
-        void ReleaseKeyboardFocus();
-
-        // removed a keyboard focus without it being done (will invoke OnLostCapture())
-        void RemoveKeyboardFocus();
-
-        // use to set keyboard focus. if any keyboard focus is set, it will be removed
-        void TakeKeyboardFocus(VisualElement element);
     }
 
     internal class EventDispatcher : IDispatcher
@@ -237,30 +169,60 @@ namespace UnityEngine.Experimental.UIElements
             capture = handler;
         }
 
-        // 1. keyboard capture
-        public VisualElement keyboardFocus { get; set; }
-
-        public void ReleaseKeyboardFocus()
+        // keyboard focus
+        private VisualElement m_FocusedElement;
+        public VisualElement focusedElement
         {
-            keyboardFocus = null;
-        }
-
-        public void RemoveKeyboardFocus()
-        {
-            if (keyboardFocus != null)
+            get { return m_FocusedElement; }
+            set
             {
-                keyboardFocus.OnLostKeyboardFocus();
+                if (m_FocusedElement == value)
+                    return;
+
+                if (m_FocusedElement != null)
+                {
+                    // let element know
+                    m_FocusedElement.pseudoStates = m_FocusedElement.pseudoStates & ~PseudoStates.Focus;
+                    // TODO send focus gain event
+                }
+
+                m_FocusedElement = value;
+
+                if (m_FocusedElement != null)
+                {
+                    // let element know
+                    m_FocusedElement.pseudoStates = m_FocusedElement.pseudoStates | PseudoStates.Focus;
+                    // TODO replace with focus lost event
+                    m_FocusedElement.OnLostKeyboardFocus();
+                }
             }
-            keyboardFocus = null;
         }
 
-        public void TakeKeyboardFocus(VisualElement element)
+        private VisualElement m_ElementUnderMouse;
+        private VisualElement elementUnderMouse
         {
-            if (keyboardFocus == element)
-                return;
+            get { return m_ElementUnderMouse; }
+            set
+            {
+                if (m_ElementUnderMouse == value)
+                    return;
 
-            RemoveKeyboardFocus();
-            keyboardFocus = element;
+                if (m_ElementUnderMouse != null)
+                {
+                    // let element know
+                    m_ElementUnderMouse.pseudoStates = m_ElementUnderMouse.pseudoStates & ~PseudoStates.Hover;
+                    // TODO send mouse enter event
+                }
+
+                m_ElementUnderMouse = value;
+
+                if (m_ElementUnderMouse != null)
+                {
+                    // let element know
+                    m_ElementUnderMouse.pseudoStates = m_ElementUnderMouse.pseudoStates | PseudoStates.Hover;
+                    // TODO send mouse leave event
+                }
+            }
         }
 
         public EventPropagation DispatchEvent(Event e, IVisualElementPanel panel)
@@ -306,9 +268,9 @@ namespace UnityEngine.Experimental.UIElements
             if (e.isKey)
             {
                 invokedHandleEvent = true;
-                if (keyboardFocus != null)
+                if (focusedElement != null)
                 {
-                    if (PropagateToKeyboardFocus(keyboardFocus, e, panel) == EventPropagation.Stop)
+                    if (PropagateEvent(focusedElement, e) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
                 else
@@ -317,6 +279,8 @@ namespace UnityEngine.Experimental.UIElements
                     if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
+
+                // if the event was not handled than we want to check for focus move, ie: tabbing.
             }
             else if (e.isMouse
                      || e.isScrollWheel
@@ -327,33 +291,39 @@ namespace UnityEngine.Experimental.UIElements
                 invokedHandleEvent = true;
 
                 // 3. General dispatch
-                EventPropagation result = EventPropagation.Continue;
 
-                var target = panel.Pick(e.mousePosition);
-
-                if (e.type == EventType.MouseDown &&
-                    keyboardFocus != null &&
-                    keyboardFocus != target)
+                // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
+                // this is a problem in itself but it could leave some elements as "hover"
+                if (e.type == EventType.MouseLeaveWindow)
                 {
-                    RemoveKeyboardFocus();
-                    if (target != null)
-                        result = EventPropagation.Stop;
+                    elementUnderMouse = null;
+                }
+                // update element under mouse and fire necessary events
+                else
+                {
+                    elementUnderMouse = panel.Pick(e.mousePosition);
                 }
 
-                if (target != null)
+                if (e.type == EventType.MouseDown
+                    && elementUnderMouse != null
+                    && elementUnderMouse.enabled)
                 {
-                    result = PropagateEvent(target, e);
+                    focusedElement = elementUnderMouse;
                 }
 
-                // TODO: Replace this by focus support
-                if (e.type == EventType.MouseDown)
+                if (elementUnderMouse != null)
                 {
-                    TakeKeyboardFocus(target);
-                    if (target == null)
-                        result = EventPropagation.Stop;
+                    if (PropagateEvent(elementUnderMouse, e) == EventPropagation.Stop)
+                        return EventPropagation.Stop;
                 }
 
-                return result;
+                if (e.type == EventType.MouseEnterWindow
+                    || e.type == EventType.MouseLeaveWindow)
+                {
+                    // do the old behavior here, propagate to all IMGUI Container widgets
+                    if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                        return EventPropagation.Stop;
+                }
             }
 
             if (e.type == EventType.ExecuteCommand
@@ -362,7 +332,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 invokedHandleEvent = true;
                 // first try to propagate to focused element
-                if (keyboardFocus != null && PropagateToKeyboardFocus(keyboardFocus, e, panel) == EventPropagation.Stop)
+                if (focusedElement != null && PropagateEvent(focusedElement, e) == EventPropagation.Stop)
                 {
                     return EventPropagation.Stop;
                 }

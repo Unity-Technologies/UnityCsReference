@@ -723,7 +723,10 @@ With this option, this model will not create any avatar but only import animatio
                         // We have to do an extra import first, before the automapping works.
                         // Because the model doesn't have any skinned meshes when it was last imported with
                         // Animation Mode: None. And the auro-mapping relies on information in the skinned meshes.
+                        var targetAnimationType = importer.animationType;
+                        importer.animationType = ModelImporterAnimationType.Generic; // we dont want to build humanoid here, since it will generate errors.
                         AssetDatabase.ImportAsset(importer.assetPath);
+                        importer.animationType = targetAnimationType;
                     }
 
                     // Perform auto-setup on this model.

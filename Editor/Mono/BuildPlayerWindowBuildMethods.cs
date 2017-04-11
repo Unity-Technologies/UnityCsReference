@@ -168,6 +168,9 @@ namespace UnityEditor
             {
                 var options = defaultBuildPlayerOptions;
 
+                // In the default implementation, AutoRunPlayer implies using the saved build location
+                var askForBuildLocation = (options.options & BuildOptions.AutoRunPlayer) != BuildOptions.AutoRunPlayer;
+
                 bool updateExistingBuild = false;
 
                 BuildTarget buildTarget = CalculateSelectedBuildTarget();
@@ -208,7 +211,7 @@ namespace UnityEditor
 
                 if (!installInBuildFolder)
                 {
-                    if (!PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
+                    if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
                         throw new BuildMethodException();
 
                     newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
@@ -217,7 +220,29 @@ namespace UnityEditor
                     {
                         throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
                     }
+
+                    if (!askForBuildLocation)
+                    {
+                        switch (UnityEditorInternal.InternalEditorUtility.BuildCanBeAppended(buildTarget, newLocation))
+                        {
+                            case CanAppendBuild.Unsupported:
+                                break;
+                            case CanAppendBuild.Yes:
+                                updateExistingBuild = true;
+                                break;
+                            case CanAppendBuild.No:
+                                if (!PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
+                                    throw new BuildMethodException();
+
+                                newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
+                                if (newLocation.Length == 0 || !System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(newLocation)))
+                                    throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
+
+                                break;
+                        }
+                    }
                 }
+
                 if (updateExistingBuild)
                     options.options |= BuildOptions.AcceptExternalModificationsToPlayer;
 

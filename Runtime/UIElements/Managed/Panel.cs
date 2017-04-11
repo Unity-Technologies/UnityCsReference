@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -21,6 +23,8 @@ namespace UnityEngine.Experimental.UIElements
     [Flags]
     public enum ChangeType
     {
+        // changes to layout
+        Layout = 1 << 4,
         // changes to styles, colors and other render properties
         Styles = 1 << 3,
         // transforms are invalid
@@ -47,6 +51,7 @@ namespace UnityEngine.Experimental.UIElements
     interface IVisualElementPanel : IPanel
     {
         IStylePainter stylePainter { get; }
+        EventInterests IMGUIEventInterests { get; set; }
         int instanceID { get; }
         LoadResourceFunction loadResourceFunc { get; }
         int IMGUIContainersCount { get; set; }
@@ -78,20 +83,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public IDataWatchService dataWatch { get; set; }
 
-        IStylePainter m_StylePainter;
+        StylePainter m_StylePainter;
         public IStylePainter stylePainter
         {
             get
             {
-                if (m_StylePainter == null)
-                {
-                    m_StylePainter = new StylePainter();
-                }
                 return m_StylePainter;
-            }
-            set
-            {
-                m_StylePainter = value;
             }
         }
 
@@ -118,7 +115,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public ContextType contextType { get; private set; }
 
+        public EventInterests IMGUIEventInterests { get; set; }
+
         public LoadResourceFunction loadResourceFunc { get; private set; }
+
+        public IEnumerable<StyleSheet> defaultStyleSheets { get; set; }
+        internal override IEnumerable<StyleSheet> styleSheets { get { return defaultStyleSheets; } }
 
         public int IMGUIContainersCount { get; set; }
 
@@ -127,7 +129,7 @@ namespace UnityEngine.Experimental.UIElements
             this.instanceID = instanceID;
             this.contextType = contextType;
             this.loadResourceFunc = loadResourceDelegate ?? Resources.Load;
-
+            m_StylePainter = new StylePainter();
             name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
             m_StyleContext = new StyleSheets.StyleContext(this, legacyGUISkin);
@@ -146,7 +148,7 @@ namespace UnityEngine.Experimental.UIElements
         VisualElement Pick(VisualElement root, Vector2 point)
         {
             // do not pick invisible
-            if ((root.paintFlags & PaintFlags.Invisible) == PaintFlags.Invisible)
+            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return null;
 
             var container = root as VisualContainer;
@@ -205,31 +207,39 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        const int kMaxValidateLayoutCount = 5;
+
         public void ValidateLayout()
         {
             ValidateStyling();
 
             // update flex once
-            if (visualTree.cssNode.IsDirty)
+            int validateLayoutCount = 0;
+            while (visualTree.cssNode.IsDirty)
             {
                 visualTree.cssNode.CalculateLayout();
                 ValidateSubTree(visualTree);
+
+                if (validateLayoutCount++ >= kMaxValidateLayoutCount)
+                {
+                    Debug.LogError("ValidateLayout is struggling to process current layout (consider simplifying to avoid recursive layout): " + visualTree);
+                    break;
+                }
             }
         }
 
-        void ValidateSubTree(VisualElement root)
+        bool ValidateSubTree(VisualElement root)
         {
             // if the last layout is different than this one we must dirty transform on children
             if (root.renderData.lastLayout != new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight))
             {
                 root.Dirty(ChangeType.Transform);
                 root.renderData.lastLayout = new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight);
-                // and if we do, no need to go and visit individually again, the change will bubble all the way down
-                return;
             }
 
             // ignore clean sub trees
-            if (root.cssNode.HasNewLayout)
+            bool hasNewLayout = root.cssNode.HasNewLayout;
+            if (hasNewLayout)
             {
                 var container = root as VisualContainer;
 
@@ -237,12 +247,18 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     foreach (var child in container)
                     {
-                        ValidateSubTree(child);
+                        hasNewLayout |= ValidateSubTree(child);
                     }
                 }
             }
+
+            root.OnPostLayout(hasNewLayout);
+
             // reset both flags at the end
+            root.ClearDirty(ChangeType.Layout);
             root.cssNode.MarkLayoutSeen();
+
+            return hasNewLayout;
         }
 
         // get the AA aligned bound
@@ -255,7 +271,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentClip, Matrix4x4 clipTransform, Rect currentGlobalClip)
         {
-            if ((root.paintFlags & PaintFlags.Invisible) == PaintFlags.Invisible)
+            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return;
 
             var container = root as VisualContainer;
@@ -391,6 +407,8 @@ namespace UnityEngine.Experimental.UIElements
         public void Repaint(Event e)
         {
             ValidateLayout();
+
+            m_StylePainter.repaintEvent = e;
 
             GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
             // paint

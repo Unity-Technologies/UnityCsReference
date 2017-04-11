@@ -1286,25 +1286,28 @@ namespace UnityEditorInternal
             //  Retrieve group property name.
             //  For example if we got "position.z" as our newCurve,
             //  the property will be "position" with three child child nodes x,y,z
-            string propertyName = AnimationWindowUtility.GetPropertyGroupName(newCurve.propertyName);
-
-            ClearHierarchySelection();
+            string propertyName = newCurve.propertyName;
+            string groupPropertyName = AnimationWindowUtility.GetPropertyGroupName(newCurve.propertyName);
 
             if (hierarchyData == null)
                 return;
 
-            foreach (AnimationWindowHierarchyNode node in hierarchyData.GetRows())
+            if (HasHierarchySelection())
             {
-                if (node.path != newCurve.path ||
-                    node.animatableObjectType != newCurve.type ||
-                    node.propertyName != propertyName)
-                    continue;
+                // Update hierarchy selection with newly created curve.
+                foreach (AnimationWindowHierarchyNode node in hierarchyData.GetRows())
+                {
+                    if (node.path != newCurve.path ||
+                        node.animatableObjectType != newCurve.type ||
+                        (node.propertyName != propertyName && node.propertyName != groupPropertyName))
+                        continue;
 
-                SelectHierarchyItem(node.id, true, false);
+                    SelectHierarchyItem(node.id, true, false);
 
-                // We want the pptr curves to be in tall mode by default
-                if (newCurve.isPPtrCurve)
-                    hierarchyState.AddTallInstance(node.id);
+                    // We want the pptr curves to be in tall mode by default
+                    if (newCurve.isPPtrCurve)
+                        hierarchyState.AddTallInstance(node.id);
+                }
             }
 
             //  Values do not change whenever a new curve is added, so we force an inspector update here.
@@ -1371,6 +1374,17 @@ namespace UnityEditorInternal
         public void UnSelectHierarchyItem(int hierarchyNodeID)
         {
             hierarchyState.selectedIDs.Remove(hierarchyNodeID);
+        }
+
+        public bool HasHierarchySelection()
+        {
+            if (hierarchyState.selectedIDs.Count == 0)
+                return false;
+
+            if (hierarchyState.selectedIDs.Count == 1)
+                return (hierarchyState.selectedIDs[0] != 0);
+
+            return true;
         }
 
         public List<int> GetAffectedHierarchyIDs(List<AnimationWindowKeyframe> keyframes)

@@ -27,51 +27,6 @@ namespace UnityEditor
             return radius;
         }
 
-        internal static void DoSimpleRadiusArcHandleXY(Quaternion rotation, Vector3 position, ref float radius, ref float arc)
-        {
-            Vector3 forward = rotation * Vector3.forward;
-            Vector3 up = rotation * Vector3.up;
-            Vector3 right = rotation * Vector3.right;
-            Vector3 arcVector = Quaternion.Euler(0.0f, 0.0f, arc) * right;
-
-            // Radius handles at disc
-            EditorGUI.BeginChangeCheck();
-            if (arc < 315)
-                radius = SizeSlider(position, right, radius);
-            if (arc > 135)
-                radius = SizeSlider(position, up, radius);
-            if (arc > 225)
-                radius = SizeSlider(position, -right, radius);
-            if (arc > 315)
-                radius = SizeSlider(position, -up, radius);
-            if (EditorGUI.EndChangeCheck())
-                radius = Mathf.Max(0.0f, radius);
-
-            // Draw gizmos
-            if (radius > 0)
-            {
-                DrawWireArc(position, forward, right, arc, radius);
-
-                if (arc < 360)
-                {
-                    DrawLine(position, right * radius);
-                    DrawLine(position, arcVector * radius);
-                }
-                else
-                {
-                    DrawDottedLine(position, right * radius, 5.0f);
-                }
-
-                // Circle handle
-                Vector3 angleHandlePos = arcVector * radius;
-                float size = HandleUtility.GetHandleSize(angleHandlePos);
-                EditorGUI.BeginChangeCheck();
-                Vector3 newAngleHandlePos = FreeMoveHandle(angleHandlePos, Quaternion.identity, size * 0.03f, SnapSettings.move, Handles.CircleHandleCap);
-                if (EditorGUI.EndChangeCheck())
-                    arc += Mathf.Atan2(Vector3.Dot(forward, Vector3.Cross(angleHandlePos, newAngleHandlePos)), Vector3.Dot(angleHandlePos, newAngleHandlePos)) * Mathf.Rad2Deg;
-            }
-        }
-
         internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere)
         {
             Vector3 forward = rotation * Vector3.forward;
