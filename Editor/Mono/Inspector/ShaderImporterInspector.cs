@@ -4,12 +4,12 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(ShaderImporter))]
-    internal class ShaderImporterInspector : AssetImporterInspector
+    internal class ShaderImporterInspector : AssetImporterEditor
     {
         private List<string> propertyNames = new List<string>();
         private List<string> displayNames = new List<string>();
@@ -28,7 +28,7 @@ namespace UnityEditor
             }
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             ResetValues();
         }
@@ -60,7 +60,7 @@ namespace UnityEditor
             }
         }
 
-        internal override bool HasModified()
+        public override bool HasModified()
         {
             if (base.HasModified())
                 return true;
@@ -86,7 +86,7 @@ namespace UnityEditor
             return false;
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
 
@@ -122,7 +122,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             base.Apply();
 

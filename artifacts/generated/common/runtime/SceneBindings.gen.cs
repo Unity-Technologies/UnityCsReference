@@ -61,7 +61,7 @@ public partial struct Scene
             if (!IsValid())
                 throw new System.ArgumentException("The scene is invalid.");
 
-            if (!isLoaded)
+            if (!Application.isPlaying && !isLoaded)
                 throw new System.ArgumentException("The scene is not loaded.");
 
             if (rootCount == 0)

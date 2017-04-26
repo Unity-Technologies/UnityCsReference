@@ -65,7 +65,7 @@ namespace UnityEditor
                 { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Wii U Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Windows Store Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover SamsungTV Publishing"), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
@@ -85,7 +85,7 @@ namespace UnityEditor
                 { EditorGUIUtility.TextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Wii U Player is not supported in this build.\nDownload a build that supports it."),  null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Windows Store Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("SamsungTV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
@@ -144,9 +144,16 @@ namespace UnityEditor
             EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
         }
 
+        // This overload is used by the Build & Run menu item & hot key - does not prompt for build location
         static void BuildPlayerAndRun()
         {
-            CallBuildMethods(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
+            BuildPlayerAndRun(false);
+        }
+
+        // This overload is used by the default player window, to always prompt for build location
+        static void BuildPlayerAndRun(bool askForBuildLocation)
+        {
+            CallBuildMethods(askForBuildLocation, BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
         }
 
         public BuildPlayerWindow()
@@ -1000,14 +1007,14 @@ namespace UnityEditor
             GUI.enabled = enableBuildButton;
             if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                CallBuildMethods(BuildOptions.ShowBuiltPlayer);
+                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
                 GUIUtility.ExitGUI();
             }
             // Build and Run button
             GUI.enabled = enableBuildAndRunButton;
             if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
             {
-                BuildPlayerAndRun();
+                BuildPlayerAndRun(true);
                 GUIUtility.ExitGUI();
             }
 

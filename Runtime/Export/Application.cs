@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -15,6 +17,16 @@ namespace UnityEngine
 
     partial class Application
     {
+        public static event UnityAction onBeforeRender;
+
+        [RequiredByNativeCode]
+        internal static void InvokeOnBeforeRender()
+        {
+            UnityAction callback = onBeforeRender;
+            if (callback != null)
+                callback();
+        }
+
         [System.Obsolete("Application.RegisterLogCallback is deprecated. Use Application.logMessageReceived instead.")]
         public static void RegisterLogCallback(LogCallback handler)
         {

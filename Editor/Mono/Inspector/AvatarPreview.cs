@@ -124,14 +124,33 @@ namespace UnityEditor
         }
         private static Styles s_Styles;
 
-        void SetPreviewCharacterEnabled(bool enabled, bool showReference)
+        void ShowHidePreviewProxies(bool enabled)
         {
             if (m_PreviewInstance != null)
                 GameObjectInspector.SetEnabledRecursive(m_PreviewInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_ReferenceInstance, showReference && enabled);
-            GameObjectInspector.SetEnabledRecursive(m_DirectionInstance, showReference && enabled);
-            GameObjectInspector.SetEnabledRecursive(m_PivotInstance, showReference && enabled);
-            GameObjectInspector.SetEnabledRecursive(m_RootInstance, showReference && enabled);
+
+            GameObjectInspector.SetEnabledRecursive(m_ReferenceInstance, enabled);
+            GameObjectInspector.SetEnabledRecursive(m_DirectionInstance, enabled);
+            GameObjectInspector.SetEnabledRecursive(m_PivotInstance, enabled);
+            GameObjectInspector.SetEnabledRecursive(m_RootInstance, enabled);
+        }
+
+        void AddPreviewProxiesForRender(bool showReference)
+        {
+            if (m_PreviewUtility == null)
+                return;
+
+
+            if (m_PreviewInstance != null)
+                m_PreviewUtility.AddSingleGO(m_PreviewInstance);
+
+            if (!showReference)
+                return;
+
+            m_PreviewUtility.AddSingleGO(m_ReferenceInstance);
+            m_PreviewUtility.AddSingleGO(m_DirectionInstance);
+            m_PreviewUtility.AddSingleGO(m_PivotInstance);
+            m_PreviewUtility.AddSingleGO(m_RootInstance);
         }
 
         static AnimationClip GetFirstAnimationClipFromMotion(Motion motion)
@@ -326,16 +345,20 @@ namespace UnityEditor
             m_ShowReference = EditorPrefs.GetBool(kReferencePref, true);
             timeControl.playbackSpeed = EditorPrefs.GetFloat(kSpeedPref, 1f);
 
-            SetPreviewCharacterEnabled(false, false);
+            ShowHidePreviewProxies(false);
         }
 
         private void Init()
         {
             if (m_PreviewUtility == null)
             {
-                m_PreviewUtility = new PreviewRenderUtility(true);
-                m_PreviewUtility.m_CameraFieldOfView = 30.0f;
-                m_PreviewUtility.m_Camera.cullingMask = 1 << Camera.PreviewCullingLayer;
+                m_PreviewUtility = new PreviewRenderUtility();
+                m_PreviewUtility.camera.fieldOfView = 30.0f;
+
+                m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
+                m_PreviewUtility.lights[0].intensity = 1.4f;
+                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
+                m_PreviewUtility.lights[1].intensity = 1.4f;
             }
 
             if (s_Styles == null)
@@ -462,7 +485,7 @@ namespace UnityEditor
             Assert.IsTrue(Event.current.type == EventType.Repaint);
 
             // Set ortho camera and position it
-            var cam = m_PreviewUtility.m_Camera;
+            var cam = m_PreviewUtility.camera;
             cam.orthographic = true;
             cam.orthographicSize = scale * 2.0f;
             cam.nearClipPlane = 1 * scale;
@@ -486,8 +509,8 @@ namespace UnityEditor
             cam.targetTexture = rt;
 
             // Enable character and render with camera into the shadowmap
-            SetPreviewCharacterEnabled(true, false);
-            m_PreviewUtility.m_Camera.Render();
+            AddPreviewProxiesForRender(false);
+            m_PreviewUtility.Render();
 
             // Draw a quad, with shader that will produce white color everywhere
             // where something was rendered (via inverted depth test)
@@ -570,8 +593,6 @@ namespace UnityEditor
                 pivotPos = Vector3.zero;
             }
 
-            bool oldFog = SetupPreviewLightingAndFx();
-
             Vector3 direction = bodyRot * Vector3.forward;
             direction[1] = 0;
             Quaternion directionRot = Quaternion.LookRotation(direction);
@@ -605,16 +626,16 @@ namespace UnityEditor
 
             // Render shadow map
             Matrix4x4 shadowMatrix;
-            RenderTexture shadowMap = RenderPreviewShadowmap(m_PreviewUtility.m_Light[0], m_BoundingVolumeScale / 2, bodyPos, floorPos, out shadowMatrix);
+            RenderTexture shadowMap = RenderPreviewShadowmap(m_PreviewUtility.lights[0], m_BoundingVolumeScale / 2, bodyPos, floorPos, out shadowMatrix);
 
             // Position camera
-            m_PreviewUtility.m_Camera.nearClipPlane = 0.5f * m_ZoomFactor;
-            m_PreviewUtility.m_Camera.farClipPlane = 100.0f * m_AvatarScale;
+            m_PreviewUtility.camera.nearClipPlane = 0.5f * m_ZoomFactor;
+            m_PreviewUtility.camera.farClipPlane = 100.0f * m_AvatarScale;
             Quaternion camRot = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
             // Add panning offset
             Vector3 camPos = camRot * (Vector3.forward * -5.5f * m_ZoomFactor) + bodyPos + m_PivotPositionOffset;
-            m_PreviewUtility.m_Camera.transform.position = camPos;
-            m_PreviewUtility.m_Camera.transform.rotation = camRot;
+            m_PreviewUtility.camera.transform.position = camPos;
+            m_PreviewUtility.camera.transform.rotation = camRot;
 
             // Render main floor
             {
@@ -628,7 +649,7 @@ namespace UnityEditor
                 mat.SetMatrix("_ShadowTextureMatrix", shadowMatrix);
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * mainFloorAlpha, kFloorShadowAlpha * mainFloorAlpha, 0, 0));
 
-                Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, m_PreviewUtility.m_Camera, 0);
+                m_PreviewUtility.DrawMesh(m_FloorPlane, matrix, mat, 0);
             }
 
             // Render small floor
@@ -646,34 +667,15 @@ namespace UnityEditor
                 mat.SetMatrix("_ShadowTextureMatrix", shadowMatrix);
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * floorAlpha, 0, 0, 0));
                 Matrix4x4 matrix = Matrix4x4.TRS(floorPos, floorRot, Vector3.one * kFloorScaleSmall * m_AvatarScale);
-                Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, m_PreviewUtility.m_Camera, 0);
+                m_PreviewUtility.DrawMesh(m_FloorPlane, matrix, mat, 0);
             }
 
-            SetPreviewCharacterEnabled(true, m_ShowReference);
-            m_PreviewUtility.m_Camera.Render();
-            SetPreviewCharacterEnabled(false, false);
+            ShowHidePreviewProxies(true);
+            AddPreviewProxiesForRender(m_ShowReference);
+            m_PreviewUtility.Render();
+            ShowHidePreviewProxies(false);
 
-            TeardownPreviewLightingAndFx(oldFog);
             RenderTexture.ReleaseTemporary(shadowMap);
-        }
-
-        private bool SetupPreviewLightingAndFx()
-        {
-            m_PreviewUtility.m_Light[0].intensity = 1.4f;
-            m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
-            m_PreviewUtility.m_Light[1].intensity = 1.4f;
-
-            Color amb = new Color(.1f, .1f, .1f, 0);
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
-            return oldFog;
-        }
-
-        private static void TeardownPreviewLightingAndFx(bool oldFog)
-        {
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
         }
 
         private float m_LastNormalizedTime = -1000;
@@ -873,7 +875,7 @@ namespace UnityEditor
 
         public void DoAvatarPreviewPan(Event evt)
         {
-            Camera cam = m_PreviewUtility.m_Camera;
+            Camera cam = m_PreviewUtility.camera;
             Vector3 screenPos = cam.WorldToScreenPoint(bodyPosition + m_PivotPositionOffset);
             Vector3 delta = new Vector3(-evt.delta.x, evt.delta.y, 0);
             // delta panning is scale with the zoom factor to allow fine tuning when user is zooming closely.
@@ -901,7 +903,7 @@ namespace UnityEditor
 
         protected Vector3 GetCurrentMouseWorldPosition(Event evt, Rect previewRect)
         {
-            Camera cam = m_PreviewUtility.m_Camera;
+            Camera cam = m_PreviewUtility.camera;
 
             float scaleFactor = m_PreviewUtility.GetScaleFactor(previewRect.width, previewRect.height);
             Vector3 mouseLocal = new Vector3((evt.mousePosition.x - previewRect.x) * scaleFactor, (previewRect.height - (evt.mousePosition.y - previewRect.y)) * scaleFactor, 0);

@@ -17,6 +17,7 @@ namespace UnityEditor
         public SerializedProperty m_SimulationSpace;
         public SerializedProperty m_CustomSimulationSpace;
         public SerializedProperty m_SimulationSpeed;
+        public SerializedProperty m_UseUnscaledTime;
         public SerializedProperty m_ScalingMode;
 
         public SerializedMinMaxCurve m_LifeTime;
@@ -57,8 +58,9 @@ namespace UnityEditor
             public GUIContent simulationSpace = EditorGUIUtility.TextContent("Simulation Space|Makes particle positions simulate in world, local or custom space. In local space they stay relative to their own Transform, and in custom space they are relative to the custom Transform.");
             public GUIContent customSimulationSpace = EditorGUIUtility.TextContent("Custom Simulation Space|Makes particle positions simulate relative to a custom Transform component.");
             public GUIContent simulationSpeed = EditorGUIUtility.TextContent("Simulation Speed|Scale the playback speed of the Particle System.");
+            public GUIContent deltaTime = EditorGUIUtility.TextContent("Delta Time|Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.");
             public GUIContent autoRandomSeed = EditorGUIUtility.TextContent("Auto Random Seed|Simulate differently each time the effect is played.");
-            public GUIContent randomSeed = EditorGUIUtility.TextContent("Random Seed|Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time.");
+            public GUIContent randomSeed = EditorGUIUtility.TextContent("Random Seed|Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
@@ -95,6 +97,7 @@ namespace UnityEditor
             m_SimulationSpace = GetProperty0("moveWithTransform");
             m_CustomSimulationSpace = GetProperty0("moveWithCustomTransform");
             m_SimulationSpeed = GetProperty0("simulationSpeed");
+            m_UseUnscaledTime = GetProperty0("useUnscaledTime");
             m_ScalingMode = GetProperty0("scalingMode");
             m_AutoRandomSeed = GetProperty0("autoRandomSeed");
             m_RandomSeed = GetProperty0("randomSeed");
@@ -234,6 +237,7 @@ namespace UnityEditor
             if (space == 2 && m_CustomSimulationSpace != null)
                 GUIObject(s_Texts.customSimulationSpace, m_CustomSimulationSpace);
             GUIFloat(s_Texts.simulationSpeed, m_SimulationSpeed);
+            GUIBoolAsPopup(s_Texts.deltaTime, m_UseUnscaledTime, new string[] { "Scaled", "Unscaled" });
 
             bool anyNonMesh = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.shapeType != ParticleSystemShapeType.SkinnedMeshRenderer && o.shape.shapeType != ParticleSystemShapeType.MeshRenderer) != null;
             if (anyNonMesh)

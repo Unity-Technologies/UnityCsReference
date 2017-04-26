@@ -35,18 +35,6 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
-    internal class GUISkinStyleAttribute : Attribute
-    {
-        // Name to look up a GUIStyle into a GUISkin
-        public readonly string name;
-
-        public GUISkinStyleAttribute(string name)
-        {
-            this.name = name;
-        }
-    }
-
     public class VisualElement : IEventHandler
     {
         string m_Name;
@@ -856,6 +844,21 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        // Opacity is not fully supported so it's hidden from public API for now
+        internal float opacity
+        {
+            get
+            {
+                return m_Styles.opacity.value;
+            }
+            set
+            {
+                EnsureInlineStyles();
+                m_Styles.opacity = Style<float>.Create(value);
+                Dirty(ChangeType.Repaint);
+            }
+        }
+
         private List<IManipulator> m_Manipulators = new List<IManipulator>();
 
         public VisualElement()
@@ -1039,25 +1042,6 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Tooltip != value) { m_Tooltip = value; Dirty(ChangeType.Layout); } }
         }
 
-        internal GUIStyle m_GUIStyle = GUIStyle.none;
-        internal GUIStyle style
-        {
-            get { return m_GUIStyle; }
-            set
-            {
-                if (!m_Styles.isShared && value != GUIStyle.none)
-                {
-                    m_GUIStyle = new GUIStyle(value);
-                    Debug.Assert(panel != null, "Internal state error");
-                    m_Styles.WriteToGUIStyle(style);
-                }
-                else
-                {
-                    m_GUIStyle = value;
-                }
-            }
-        }
-
         public virtual bool enabled
         {
             get
@@ -1096,22 +1080,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return;
             }
-
-            if (style != GUIStyle.none)
-            {
-                // TODO: make over change with the MOUSE_ENTER, MOUSE_LEAVE msg
-                // TODO: get rid of PaintFlags.Over or use it
-                bool over = ContainsPoint(painter.mousePosition);
-
-                style.Draw(contentRect, GUIContent.Temp(text), over,
-                    (pseudoStates & PseudoStates.Active) == PseudoStates.Active,
-                    (pseudoStates & PseudoStates.Checked) == PseudoStates.Checked,
-                    (pseudoStates & PseudoStates.Focus) == PseudoStates.Focus);
-            }
-            else
-            {
-                PaintStyle(painter);
-            }
+            PaintStyle(painter);
         }
 
         protected virtual void PaintStyle(IStylePainter painter)
@@ -1120,7 +1089,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (backgroundImage != null)
             {
-                painter.DrawTexture(position, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius);
+                painter.DrawTexture(position, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
             }
             else if (backgroundColor != Color.clear)
             {
@@ -1134,7 +1103,6 @@ namespace UnityEngine.Experimental.UIElements
 
             if (!string.IsNullOrEmpty(text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
             {
-                Debug.Assert(font != null);
                 painter.DrawText(contentRect, text, font, fontSize, fontStyle, textColor, textAlignment, wordWrap, contentRect.width, false, textClipping);
             }
         }
@@ -1181,8 +1149,6 @@ namespace UnityEngine.Experimental.UIElements
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
-            var style = this.style;
-
             if (string.IsNullOrEmpty(text) || font == null)
                 return new Vector2(measuredWidth, measuredHeight);
 

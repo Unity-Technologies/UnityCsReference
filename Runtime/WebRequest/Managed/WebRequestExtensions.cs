@@ -90,6 +90,18 @@ namespace UnityEngine.Networking
             return request;
         }
 
+        public static UnityWebRequest GetAssetBundle(string uri, CachedAssetBundle cachedAssetBundle, uint crc)
+        {
+            UnityWebRequest request = new UnityWebRequest(
+                    uri,
+                    kHttpVerbGET,
+                    new DownloadHandlerAssetBundle(uri, cachedAssetBundle.name, cachedAssetBundle.hash, crc),
+                    null
+                    );
+
+            return request;
+        }
+
         public static UnityWebRequest Put(string uri, byte[] bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(

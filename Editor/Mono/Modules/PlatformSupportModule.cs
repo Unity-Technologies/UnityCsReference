@@ -4,8 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using UnityEditor;
+using UnityEditor.DeploymentTargets;
 using UnityEngine;
 using Mono.Cecil;
 
@@ -48,6 +47,9 @@ namespace UnityEditor.Modules
         GUIContent[] GetDisplayNames();
 
         IBuildPostprocessor CreateBuildPostprocessor();
+
+        // Returns an instance of IDeploymentTargetsExtension or null if not supported
+        IDeploymentTargetsExtension CreateDeploymentTargetsExtension();
 
         // Returns an instance of IScriptingImplementations or null if only one scripting backend is supported
         IScriptingImplementations CreateScriptingImplementations();
@@ -182,6 +184,8 @@ namespace UnityEditor.Modules
 
         bool SupportsStaticBatching();
         bool SupportsDynamicBatching();
+        bool SupportsHighDynamicRangeDisplays();
+        bool SupportsGfxJobModes();
 
         bool CanShowUnitySplashScreen();
 

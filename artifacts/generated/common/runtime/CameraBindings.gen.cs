@@ -11,6 +11,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace UnityEngine
 {
@@ -32,8 +33,6 @@ public sealed partial class Camera : Behaviour
     public float near { get { return nearClipPlane; } set { nearClipPlane = value; } }
     [System.Obsolete ("use Camera.farClipPlane instead.")]
     public float far { get { return farClipPlane; } set { farClipPlane = value; } }
-    
-    
     public extern float fieldOfView
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -216,6 +215,20 @@ public sealed partial class Camera : Behaviour
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
     }
+
+    public  Scene scene
+    {
+        get { Scene tmp; INTERNAL_get_scene(out tmp); return tmp;  }
+        set { INTERNAL_set_scene(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_scene (out Scene value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_scene (ref Scene value) ;
 
     public extern int eventMask
     {
@@ -500,6 +513,13 @@ public sealed partial class Camera : Behaviour
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
+    }
+
+    public extern  bool areVRStereoViewMatricesWithinSingleCullTolerance
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
     }
 
     [System.Obsolete ("SetStereoViewMatrices is deprecated. Use SetStereoViewMatrix(StereoscopicEye eye) instead.")]

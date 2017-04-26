@@ -956,40 +956,82 @@ public partial class RenderTexture : Texture
         }
     
     
+    private void SetRenderTextureDescriptor (RenderTextureDescriptor desc) {
+        INTERNAL_CALL_SetRenderTextureDescriptor ( this, ref desc );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  RenderTexture GetTemporary (int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing ) ;
-
-    [uei.ExcludeFromDocs]
-    public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite ) {
-        int antiAliasing = 1;
-        return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing );
+    private extern static void INTERNAL_CALL_SetRenderTextureDescriptor (RenderTexture self, ref RenderTextureDescriptor desc);
+    private RenderTextureDescriptor GetDescriptor () {
+        RenderTextureDescriptor result;
+        INTERNAL_CALL_GetDescriptor ( this, out result );
+        return result;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetDescriptor (RenderTexture self, out RenderTextureDescriptor value);
     [uei.ExcludeFromDocs]
-    public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format ) {
-        int antiAliasing = 1;
-        RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing );
+public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing ) {
+    RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode );
+}
+
+[uei.ExcludeFromDocs]
+public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite ) {
+    RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
+    int antiAliasing = 1;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode );
+}
+
+[uei.ExcludeFromDocs]
+public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format ) {
+    RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
+    int antiAliasing = 1;
+    RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode );
+}
+
+[uei.ExcludeFromDocs]
+public static RenderTexture GetTemporary (int width, int height, int depthBuffer ) {
+    RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
+    int antiAliasing = 1;
+    RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
+    RenderTextureFormat format = RenderTextureFormat.Default;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode );
+}
+
+[uei.ExcludeFromDocs]
+public static RenderTexture GetTemporary (int width, int height) {
+    RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
+    int antiAliasing = 1;
+    RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
+    RenderTextureFormat format = RenderTextureFormat.Default;
+    int depthBuffer = 0;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode );
+}
+
+public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode )
+        {
+            var desc = new RenderTextureDescriptor(width, height);
+            desc.depthBufferBits = depthBuffer;
+            desc.vrUsage = VRTextureUsage.None;
+            desc.colorFormat = format;
+            desc.msaaSamples = antiAliasing;
+            desc.memoryless = memorylessMode;
+            return GetTemporary(desc);
+        }
+
+    
+    
+    private static RenderTexture GetTemporary_Internal (RenderTextureDescriptor desc) {
+        return INTERNAL_CALL_GetTemporary_Internal ( ref desc );
     }
 
-    [uei.ExcludeFromDocs]
-    public static RenderTexture GetTemporary (int width, int height, int depthBuffer ) {
-        int antiAliasing = 1;
-        RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        RenderTextureFormat format = RenderTextureFormat.Default;
-        return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing );
-    }
-
-    [uei.ExcludeFromDocs]
-    public static RenderTexture GetTemporary (int width, int height) {
-        int antiAliasing = 1;
-        RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        RenderTextureFormat format = RenderTextureFormat.Default;
-        int depthBuffer = 0;
-        return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing );
-    }
-
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static RenderTexture INTERNAL_CALL_GetTemporary_Internal (ref RenderTextureDescriptor desc);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ReleaseTemporary (RenderTexture temp) ;
@@ -1258,6 +1300,10 @@ public Vector2 GetTexelOffset()
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool SupportsStencil (RenderTexture rt) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  VRTextureUsage GetActiveVRUsage () ;
 
     [System.Obsolete ("SetBorderColor is no longer supported.", true)]
 public void SetBorderColor(Color color) {}

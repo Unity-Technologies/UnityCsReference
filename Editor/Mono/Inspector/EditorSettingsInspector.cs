@@ -141,7 +141,7 @@ namespace UnityEditor
 
             // TODO: move Android stuff to editor extension
             devices.Add(new DevDevice("Any Android Device", "Any Android Device",
-                    "Android", "Android", DevDeviceState.Connected,
+                    "virtual", "Android", DevDeviceState.Connected,
                     DevDeviceFeatures.RemoteConnection));
             popupList.Add(new PopupElement("Any Android Device"));
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
 using Object = UnityEngine.Object;
@@ -373,7 +374,7 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             bool showOpenButton = true;
-            if (!(this is AssetImporterInspector))
+            if (!(this is AssetImporterEditor))
             {
                 // Don't show open button if the target is not an asset
                 if (!AssetDatabase.IsMainAsset(targets[0]))
@@ -389,8 +390,8 @@ namespace UnityEditor
             {
                 if (GUILayout.Button("Open", EditorStyles.miniButton))
                 {
-                    if (this is AssetImporterInspector)
-                        AssetDatabase.OpenAsset((this as AssetImporterInspector).assetEditor.targets);
+                    if (this is AssetImporterEditor)
+                        AssetDatabase.OpenAsset((this as AssetImporterEditor).assetEditor.targets);
                     else
                         AssetDatabase.OpenAsset(targets);
                     GUIUtility.ExitGUI();

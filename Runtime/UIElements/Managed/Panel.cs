@@ -51,6 +51,8 @@ namespace UnityEngine.Experimental.UIElements
     interface IVisualElementPanel : IPanel
     {
         IStylePainter stylePainter { get; }
+        VisualElement focusedElement { get; set; }
+
         EventInterests IMGUIEventInterests { get; set; }
         int instanceID { get; }
         LoadResourceFunction loadResourceFunc { get; }
@@ -113,18 +115,17 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool allowPixelCaching { get; set; }
 
+        public VisualElement focusedElement { get; set; }
+
         public ContextType contextType { get; private set; }
 
         public EventInterests IMGUIEventInterests { get; set; }
 
         public LoadResourceFunction loadResourceFunc { get; private set; }
 
-        public IEnumerable<StyleSheet> defaultStyleSheets { get; set; }
-        internal override IEnumerable<StyleSheet> styleSheets { get { return defaultStyleSheets; } }
-
         public int IMGUIContainersCount { get; set; }
 
-        public Panel(int instanceID, ContextType contextType, GUISkin legacyGUISkin, LoadResourceFunction loadResourceDelegate = null)
+        public Panel(int instanceID, ContextType contextType, LoadResourceFunction loadResourceDelegate = null)
         {
             this.instanceID = instanceID;
             this.contextType = contextType;
@@ -132,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
             m_StylePainter = new StylePainter();
             name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
-            m_StyleContext = new StyleSheets.StyleContext(this, legacyGUISkin);
+            m_StyleContext = new StyleSheets.StyleContext(this);
             // this really should be an IMGUI container with the EditorWindow OnGUI on it.
             defaultIMRoot = new IMContainer()
             {
@@ -201,6 +202,13 @@ namespace UnityEngine.Experimental.UIElements
 
         void ValidateStyling()
         {
+            // if the surface DPI changes we need to invalidate styles
+            if (!Mathf.Approximately(m_StyleContext.currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
+            {
+                Dirty(ChangeType.Styles);
+                m_StyleContext.currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
+            }
+
             if (IsDirty(ChangeType.Styles | ChangeType.StylesPath))
             {
                 m_StyleContext.ApplyStyles();
@@ -312,7 +320,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            if (root.usePixelCaching && allowPixelCaching)
+            if (root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
@@ -332,6 +340,8 @@ namespace UnityEngine.Experimental.UIElements
                     Object.DestroyImmediate(cache);
                     root.renderData.pixelCache = null;
                 }
+
+                float oldOpacity = m_StylePainter.opacity;
 
                 // if the child node world transforms are not up to date due to changes below the pixel cache this is fine.
                 if (root.IsDirty(ChangeType.Repaint)
@@ -360,8 +370,8 @@ namespace UnityEngine.Experimental.UIElements
                     // reset clipping
                     var textureClip = new Rect(globalBound.x, globalBound.y, w, h);
                     GUIClip.SetTransform(offset * Matrix4x4.identity, offset * root.globalTransform, textureClip);
-                    // paint self
 
+                    // paint self
                     painter.currentWorldClip = textureClip;
                     root.DoRepaint(painter);
                     root.ClearDirty(ChangeType.Repaint);
@@ -381,25 +391,27 @@ namespace UnityEngine.Experimental.UIElements
                 painter.currentWorldClip = currentGlobalClip;
 
                 GUIClip.SetTransform(clipTransform, root.globalTransform, currentClip);
+
                 painter.DrawTexture(root.position, root.renderData.pixelCache, Color.white);
             }
             else
             {
                 GUIClip.SetTransform(offset * clipTransform, offset * root.globalTransform, currentClip);
 
-                IStylePainter painter = stylePainter;
-                painter.currentWorldClip = currentGlobalClip;
-                painter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
+                m_StylePainter.currentWorldClip = currentGlobalClip;
+                m_StylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
 
-                root.DoRepaint(painter);
+                m_StylePainter.opacity = root.styles.opacity.GetSpecifiedValueOrDefault(1.0f);
+                root.DoRepaint(m_StylePainter);
+                m_StylePainter.opacity = 1.0f;
                 root.ClearDirty(ChangeType.Repaint);
 
-                if (container == null)
-                    return;
-
-                foreach (var child in container)
+                if (container != null)
                 {
-                    PaintSubTree(e, child, offset, currentClip, clipTransform, currentGlobalClip);
+                    foreach (var child in container)
+                    {
+                        PaintSubTree(e, child, offset, currentClip, clipTransform, currentGlobalClip);
+                    }
                 }
             }
         }

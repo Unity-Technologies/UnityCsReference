@@ -19,6 +19,7 @@ namespace UnityEngine.Experimental.Rendering
         public int cullingPlaneCount;
 
         public int cullingMask;
+        private Int64 sceneMask;
 
         private fixed float _layerFarCullDistances[32];
         private int layerCull;

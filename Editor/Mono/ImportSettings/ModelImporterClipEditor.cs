@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditorInternal;
 using System.Collections.Generic;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 
@@ -141,7 +142,7 @@ namespace UnityEditor
         }
         static Styles styles;
 
-        public ModelImporterClipEditor(AssetImporterInspector panelContainer)
+        public ModelImporterClipEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {}
 

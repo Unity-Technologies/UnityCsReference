@@ -1140,8 +1140,8 @@ namespace UnityEditor
 
         protected void DoRenderPreview()
         {
-            if (m_PreviewUtility.m_RenderTexture.width <= 0
-                || m_PreviewUtility.m_RenderTexture.height <= 0
+            if (m_PreviewUtility.renderTexture.width <= 0
+                || m_PreviewUtility.renderTexture.height <= 0
                 || m_NumberOfLODs <= 0
                 || activeLOD < 0)
                 return;
@@ -1182,18 +1182,17 @@ namespace UnityEditor
 
             var viewDir = -(m_PreviewDir / 100.0f);
 
-            m_PreviewUtility.m_Camera.transform.position = bounds.center + (new Vector3(Mathf.Sin(viewDir.x) * Mathf.Cos(viewDir.y), Mathf.Sin(viewDir.y), Mathf.Cos(viewDir.x) * Mathf.Cos(viewDir.y)) * distance);
+            m_PreviewUtility.camera.transform.position = bounds.center + (new Vector3(Mathf.Sin(viewDir.x) * Mathf.Cos(viewDir.y), Mathf.Sin(viewDir.y), Mathf.Cos(viewDir.x) * Mathf.Cos(viewDir.y)) * distance);
 
-            m_PreviewUtility.m_Camera.transform.LookAt(bounds.center);
-            m_PreviewUtility.m_Camera.nearClipPlane = 0.05f;
-            m_PreviewUtility.m_Camera.farClipPlane = 1000.0f;
+            m_PreviewUtility.camera.transform.LookAt(bounds.center);
+            m_PreviewUtility.camera.nearClipPlane = 0.05f;
+            m_PreviewUtility.camera.farClipPlane = 1000.0f;
 
-            m_PreviewUtility.m_Light[0].intensity = 1.0f;
-            m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
-            m_PreviewUtility.m_Light[1].intensity = 1.0f;
-            var amb = new Color(.2f, .2f, .2f, 0);
+            m_PreviewUtility.lights[0].intensity = 1.0f;
+            m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
+            m_PreviewUtility.lights[1].intensity = 1.0f;
 
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
+            m_PreviewUtility.ambientColor = new Color(.2f, .2f, .2f, 0);
 
             foreach (var meshFilter in meshsToRender)
             {
@@ -1211,11 +1210,7 @@ namespace UnityEditor
                 }
             }
 
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
-            m_PreviewUtility.m_Camera.Render();
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
+            m_PreviewUtility.Render();
         }
 
         override public string GetInfoString()

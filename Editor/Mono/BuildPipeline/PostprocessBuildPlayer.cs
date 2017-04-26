@@ -14,6 +14,7 @@ using System;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using UnityEditor.Modules;
+using UnityEditor.DeploymentTargets;
 
 namespace UnityEditor
 {
@@ -129,28 +130,107 @@ namespace UnityEditor
             }
         }
 
+        private class NoTargetsFoundException : Exception
+        {
+            public NoTargetsFoundException() : base() {}
+            public NoTargetsFoundException(string message) : base(message) {}
+        }
+
+        static public void Launch(BuildTargetGroup targetGroup, BuildTarget buildTarget, string path, string productName, BuildOptions options, BuildReporting.BuildReport buildReport)
+        {
+            // For now, try the new interface and fall back on the old one
+            try
+            {
+                if (buildReport == null)
+                    throw new System.NotSupportedException();
+
+                ProgressHandler progressHandler = new ProgressHandler("Deploying Player", delegate(string title, string message, float globalProgress)
+                    {
+                        if (EditorUtility.DisplayCancelableProgressBar(title, message, globalProgress))
+                            throw new OperationAbortedException();
+                    },
+                        0.1f); // BuildPlayer.cpp starts off at 0.1f for some reason
+
+                var taskManager = new ProgressTaskManager(progressHandler);
+
+                List<DeploymentTargetId> validTargetIds = null;
+
+                // TODO: To minimize launch time, we should use the same device as detected early on in the build step
+                //  and commit to launching on that
+                // Find targets
+                taskManager.AddTask(() =>
+                    {
+                        taskManager.UpdateProgress("Finding valid devices for build");
+                        validTargetIds = DeploymentTargetManager.FindValidTargetsForLaunchBuild(targetGroup, buildReport);
+                        if (!validTargetIds.Any())
+                            throw new NoTargetsFoundException("Could not find any valid targets for build");
+                    });
+
+                // Attempt to launch on all valid targets
+                taskManager.AddTask(() =>
+                    {
+                        foreach (var targetId in validTargetIds)
+                        {
+                            bool lastTarget = (targetId == validTargetIds[validTargetIds.Count - 1]);
+                            try
+                            {
+                                DeploymentTargetManager.LaunchBuildOnTarget(targetGroup, buildReport, targetId, taskManager.SpawnProgressHandlerFromCurrentTask());
+                                return;
+                            }
+                            catch (OperationFailedException e)
+                            {
+                                UnityEngine.Debug.LogException(e);
+                                // Let user see exception if we cannot try any more targets
+                                if (lastTarget)
+                                    throw e;
+                            }
+                        }
+
+                        // TODO: Maybe more specifically no compatible targets?
+                        throw new NoTargetsFoundException("Could not find any target that managed to launch build");
+                    });
+
+                taskManager.Run();
+            }
+            catch (OperationFailedException e)
+            {
+                UnityEngine.Debug.LogException(e);
+                EditorUtility.DisplayDialog(e.title, e.Message, "Ok");
+            }
+            catch (OperationAbortedException)
+            {
+                System.Console.WriteLine("Deployment aborted");
+            }
+            catch (NoTargetsFoundException)
+            {
+                throw new UnityException(string.Format("Could not find any valid targets to launch on for {0}", buildTarget));
+            }
+            catch (System.NotSupportedException)
+            {
+                IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, buildTarget);
+                if (postprocessor != null)
+                {
+                    BuildLaunchPlayerArgs args;
+                    args.target = buildTarget;
+                    args.playerPackage = BuildPipeline.GetPlaybackEngineDirectory(buildTarget, options);
+                    args.installPath = path;
+                    args.productName = productName;
+                    args.options = options;
+
+                    postprocessor.LaunchPlayer(args);
+                }
+                else
+                {
+                    throw new UnityException(string.Format("Launching {0} build target via mono is not supported", buildTarget));
+                }
+            }
+        }
+
         static public void UpdateBootConfig(BuildTargetGroup targetGroup, BuildTarget target, BootConfigData config, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
             if (postprocessor != null)
                 postprocessor.UpdateBootConfig(target, config, options);
-        }
-
-        static public void Launch(BuildTargetGroup targetGroup, BuildTarget target, string path, string productName, BuildOptions options)
-        {
-            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
-            if (postprocessor != null)
-            {
-                BuildLaunchPlayerArgs args;
-                args.target = target;
-                args.playerPackage = BuildPipeline.GetPlaybackEngineDirectory(target, options);
-                args.installPath = path;
-                args.productName = productName;
-                args.options = options;
-                postprocessor.LaunchPlayer(args);
-            }
-            else
-                throw new UnityException(String.Format("Launching {0} build target via mono is not supported", target));
         }
 
         static public void Postprocess(BuildTargetGroup targetGroup, BuildTarget target, string installPath, string companyName, string productName,
@@ -183,6 +263,7 @@ namespace UnityEditor
                 args.options = options;
                 args.usedClassRegistry = usedClassRegistry;
                 args.report = report;
+
                 postprocessor.PostProcess(args);
                 return;
             }

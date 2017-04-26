@@ -9,12 +9,13 @@ using UnityEditor.Build;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(AudioImporter))]
     [CanEditMultipleObjects]
-    internal class AudioImporterInspector : AssetImporterInspector
+    internal class AudioImporterInspector : AssetImporterEditor
     {
         private static class Styles
         {
@@ -275,7 +276,7 @@ namespace UnityEditor
             return false;
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             m_ForceToMono = serializedObject.FindProperty("m_ForceToMono");
             m_Normalize = serializedObject.FindProperty("m_Normalize");
@@ -288,7 +289,7 @@ namespace UnityEditor
             ResetSettingsFromBackend();
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
             ResetSettingsFromBackend();
@@ -479,6 +480,7 @@ namespace UnityEditor
                 case AudioCompressionFormat.MP3:
                 case AudioCompressionFormat.XMA:
                 case AudioCompressionFormat.AAC:
+                case AudioCompressionFormat.ATRAC9:
                     return true;
                 default:
                     return false;
@@ -629,7 +631,7 @@ namespace UnityEditor
             EditorGUILayout.EndPlatformGrouping();
         }
 
-        internal override bool HasModified()
+        public override bool HasModified()
         {
             if (base.HasModified())
                 return true;
@@ -648,7 +650,7 @@ namespace UnityEditor
             return false;
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             base.Apply();
             SyncSettingsToBackend();

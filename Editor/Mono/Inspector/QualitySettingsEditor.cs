@@ -557,7 +557,5 @@ namespace UnityEditor
 
             m_QualitySettings.ApplyModifiedProperties();
         }
-
     }
 }
-

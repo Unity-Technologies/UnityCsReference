@@ -18,11 +18,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
     internal class StyleContext
     {
+        public float currentPixelsPerPoint { get; set; }
+
         List<RuleMatcher> m_Matchers;
         List<RuleRef> m_MatchedRules;
-        Dictionary<string, GUIStyle> m_GUISkinStyles;
         VisualContainer m_VisualTree;
-        GUISkin m_GUISkin;
 
         struct RuleRef
         {
@@ -35,11 +35,9 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         // resolving styles allows to skip the resolve part when an existing resolved style already exists
         private static Dictionary<Int64, VisualElementStyles> s_StyleCache = new Dictionary<Int64, VisualElementStyles>();
 
-        public StyleContext(VisualContainer tree, GUISkin skin)
+        public StyleContext(VisualContainer tree)
         {
             m_VisualTree = tree;
-            m_GUISkin = skin;
-            m_GUISkinStyles = new Dictionary<string, GUIStyle>();
             m_Matchers = new List<RuleMatcher>(capacity: 0);
             m_MatchedRules = new List<RuleRef>(capacity: 0);
         }
@@ -125,6 +123,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             string elementTypeName = element.fullTypeName;
 
             Int64 matchingRulesHash = elementTypeName.GetHashCode();
+            // Let current DPI contribute to the hash so cache is invalidated when this changes
+            matchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
             m_MatchedRules.Clear();
 
             int count = m_Matchers.Count; // changes while we iterate so save
@@ -172,37 +172,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {
                 // we should not new it in StyleTree
                 element.SetSharedStyles(resolvedStyles);
-                element.style = resolvedStyles.guiStyle;
             }
             else
             {
                 resolvedStyles = new VisualElementStyles(isShared: true);
-
-                // Always pass in a default font but can always be overridden by GUIStyle or USS
-                resolvedStyles.font = new Style<Font>(m_GUISkin.font, 0);
-
-                ////////  assign styles from default Skin
-                // Only do the attribute usage check once ever per type
-                // First check if we need to re-inject some default GUISkin values
-                GUIStyle guiStyleFromSkin = GUIStyle.none;
-                if (!m_GUISkinStyles.TryGetValue(elementTypeName, out guiStyleFromSkin))
-                {
-                    var attr = (GUISkinStyleAttribute)Attribute.GetCustomAttribute(element.GetType(), typeof(GUISkinStyleAttribute));
-                    if (attr != null)
-                    {
-                        guiStyleFromSkin = m_GUISkin.GetStyle(attr.name);
-                    }
-                    if (guiStyleFromSkin == null)
-                        guiStyleFromSkin = GUIStyle.none;
-                    m_GUISkinStyles.Add(elementTypeName, guiStyleFromSkin);
-                }
-
-                // Make sure to feed in some IMGUI layout properties into the new layout system
-                // Needs to be done before regular style application because the specificity will be zero
-                if (guiStyleFromSkin != GUIStyle.none)
-                {
-                    resolvedStyles.Apply(guiStyleFromSkin, 1, StylePropertyApplyMode.Copy);
-                }
 
                 for (int i = 0, ruleCount = m_MatchedRules.Count; i < ruleCount; i++)
                 {
@@ -213,20 +186,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
                 s_StyleCache[matchingRulesHash] = resolvedStyles;
 
-                if (guiStyleFromSkin != GUIStyle.none)
-                {
-                    resolvedStyles.guiStyle = new GUIStyle(guiStyleFromSkin);
-
-                    // Now that we're done resolving this style properties, we can create the matching VisualElementStyles instance
-                    Debug.Assert(m_VisualTree.panel != null, "Internal state error");
-                    resolvedStyles.WriteToGUIStyle(resolvedStyles.guiStyle);
-                }
-                else
-                {
-                    resolvedStyles.guiStyle = GUIStyle.none;
-                }
                 element.SetSharedStyles(resolvedStyles);
-                element.style = resolvedStyles.guiStyle;
             }
 
             if (container != null)

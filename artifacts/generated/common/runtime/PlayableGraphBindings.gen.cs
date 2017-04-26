@@ -14,6 +14,14 @@ using Object = UnityEngine.Object;
 
 namespace UnityEngine.Playables
 {
+public enum DirectorUpdateMode
+{
+    DSPClock = 0,
+    GameTime = 1,
+    UnscaledGameTime = 2,
+    Manual   = 3,
+}
+
 public enum DataStreamType
 {
     Animation = 0,
@@ -103,6 +111,21 @@ public partial struct PlayableGraph
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int InternalPlayableCount (ref PlayableGraph graph) ;
+
+    public DirectorUpdateMode timeUpdateMode
+        {
+            get { return InternalGetUpdateMode(ref this); }
+            set { InternalSetUpdateMode(ref this, value); }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  DirectorUpdateMode InternalGetUpdateMode (ref PlayableGraph graph) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void InternalSetUpdateMode (ref PlayableGraph graph, DirectorUpdateMode mode) ;
 
     public ScriptPlayableOutput CreateScriptOutput(string name)
         {

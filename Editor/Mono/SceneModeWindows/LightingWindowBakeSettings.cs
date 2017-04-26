@@ -444,7 +444,7 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            if (m_LightmapSettings == null)
+            if (m_LightmapSettings == null || m_LightmapSettings != LightmapEditorSettings.GetLightmapSettings())
             {
                 InitSettings();
             }

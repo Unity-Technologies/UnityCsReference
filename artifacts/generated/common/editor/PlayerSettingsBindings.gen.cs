@@ -1157,7 +1157,12 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     public static string applicationIdentifier
         {
             get { return GetApplicationIdentifier(EditorUserBuildSettings.selectedBuildTargetGroup); }
-            set { SetApplicationIdentifier(EditorUserBuildSettings.selectedBuildTargetGroup, value); }
+            set
+            {
+                Debug.LogWarning("PlayerSettings.applicationIdentifier only changes the identifier for the currently active platform. Please use SetApplicationIdentifier to set it for any platform");
+                SetApplicationIdentifier(EditorUserBuildSettings.selectedBuildTargetGroup, value);
+            }
+
         }
     
     

@@ -7,7 +7,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Rendering
 {
-    internal static class RenderPipelineManager
+    public static class RenderPipelineManager
     {
         private static IRenderPipelineAsset s_CurrentPipelineAsset;
 
@@ -23,18 +23,17 @@ namespace UnityEngine.Experimental.Rendering
         }
 
         [RequiredByNativeCode]
-        private static bool DoRenderLoop_Internal(IRenderPipelineAsset pipe, Camera[] cameras, IntPtr loopPtr)
+        private static void DoRenderLoop_Internal(IRenderPipelineAsset pipe, Camera[] cameras, IntPtr loopPtr)
         {
-            if (!PrepareRenderPipeline(pipe))
-                return false;
+            PrepareRenderPipeline(pipe);
+            if (currentPipeline == null)
+                return;
 
-            ScriptableRenderContext loop = new ScriptableRenderContext();
-            loop.Initialize(loopPtr);
+            ScriptableRenderContext loop = new ScriptableRenderContext(loopPtr);
             currentPipeline.Render(loop, cameras);
-            return true;
         }
 
-        private static bool PrepareRenderPipeline(IRenderPipelineAsset pipe)
+        private static void PrepareRenderPipeline(IRenderPipelineAsset pipe)
         {
             // UnityObject overloads operator == and treats destroyed objects and null as equals
             // However here is needed to differentiate them in other to bookkeep RenderPipeline lifecycle
@@ -54,8 +53,6 @@ namespace UnityEngine.Experimental.Rendering
             if (s_CurrentPipelineAsset != null
                 && (currentPipeline == null || currentPipeline.disposed))
                 currentPipeline = s_CurrentPipelineAsset.CreatePipeline();
-
-            return s_CurrentPipelineAsset != null;
         }
     }
 }

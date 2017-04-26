@@ -69,5 +69,8 @@ namespace UnityEditor.Modules
         {
             return true;
         }
+
+        public virtual bool SupportsHighDynamicRangeDisplays() { return false; }
+        public virtual bool SupportsGfxJobModes() { return false; }
     }
 }

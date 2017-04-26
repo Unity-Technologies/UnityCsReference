@@ -69,11 +69,6 @@ namespace UnityEditor
             GUIMinMaxCurve(s_Texts.rateOverDistance, m_Distance);
 
             DoBurstGUI(initial);
-
-            if (initial.m_SimulationSpace.intValue != (int)ParticleSystemSimulationSpace.World && m_Distance.scalar.floatValue > 0.0f)
-            {
-                EditorGUILayout.HelpBox("Distance-based emission only works when using World Space Simulation Space", MessageType.Warning, true);
-            }
         }
 
         private void DoBurstGUI(InitialModuleUI initial)

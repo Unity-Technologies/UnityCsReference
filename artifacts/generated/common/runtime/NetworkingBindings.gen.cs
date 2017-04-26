@@ -1089,7 +1089,7 @@ public partial struct NetworkMessageInfo
     
     public NetworkPlayer sender { get { return m_Sender; }  }
     
-    
+            #pragma warning disable 0618
     public NetworkView networkView
         {
             get
@@ -1099,12 +1099,12 @@ public partial struct NetworkMessageInfo
                     Debug.LogError("No NetworkView is assigned to this NetworkMessageInfo object. Note that this is expected in OnNetworkInstantiate().");
                     return NullNetworkView();
                 }
-                #pragma warning disable 0618
+
                 return NetworkView.Find(m_ViewID);
-                #pragma warning restore 0618
             }
         }
-            #pragma warning disable 0618
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal NetworkView NullNetworkView () ;

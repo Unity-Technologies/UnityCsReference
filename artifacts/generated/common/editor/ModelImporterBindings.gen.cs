@@ -408,7 +408,7 @@ public partial class ModelImporter : AssetImporter
         get;
     }
 
-    internal extern  bool importVisibility
+    public extern bool importVisibility
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

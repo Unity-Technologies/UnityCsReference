@@ -13,6 +13,9 @@ using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 
+using ShaderDefine = UnityEngine.Rendering.BuiltinShaderDefine;
+
+
 
 
 namespace UnityEngine.Rendering
@@ -108,6 +111,22 @@ public sealed partial class GraphicsSettings : Object
         set;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool HasShaderDefineImpl (GraphicsTier tier, ShaderDefine defineHash) ;
+
+    public static bool HasShaderDefine(GraphicsTier tier, BuiltinShaderDefine defineHash)
+        {
+            return HasShaderDefineImpl(tier, defineHash);
+        }
+    
+    
+    public static bool HasShaderDefine(BuiltinShaderDefine defineHash)
+        {
+            return HasShaderDefine(Graphics.activeTier, defineHash);
+        }
+    
+    
 }
 
 

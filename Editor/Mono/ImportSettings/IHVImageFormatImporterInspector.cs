@@ -2,15 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(IHVImageFormatImporter))]
     [CanEditMultipleObjects]
-    internal class IHVImageFormatImporterInspector : AssetImporterInspector
+    internal class IHVImageFormatImporterInspector : AssetImporterEditor
     {
-        internal override bool showImportedObject { get { return false; } }
+        public override bool showImportedObject { get { return false; } }
 
         SerializedProperty  m_IsReadable;
         SerializedProperty  m_FilterMode;
@@ -32,7 +33,7 @@ namespace UnityEditor
         }
 
 
-        public virtual void OnEnable()
+        public override void OnEnable()
         {
             m_IsReadable    = serializedObject.FindProperty("m_IsReadable");
             m_FilterMode    = serializedObject.FindProperty("m_TextureSettings.m_FilterMode");

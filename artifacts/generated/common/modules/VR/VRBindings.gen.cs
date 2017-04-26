@@ -213,6 +213,18 @@ public static partial class VRDevice
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetNativePtr (out IntPtr value);
+    public static void DisableAutoVRCameraTracking(Camera camera, bool disabled)
+        {
+            if (camera == null)
+                throw new ArgumentNullException("camera");
+            DisableAutoVRCameraTrackingInternal(camera, disabled);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void DisableAutoVRCameraTrackingInternal (Camera camera, bool disabled) ;
+
 }
 
 public static partial class VRStats

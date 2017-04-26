@@ -87,7 +87,7 @@ namespace UnityEditor
             {
                 for (int i = 0; i < (int)PreviewContextPass.kCount; ++i)
                 {
-                    m_PreviewUtility[i] = new PreviewRenderUtility(true);
+                    m_PreviewUtility[i] = new PreviewRenderUtility();
                     m_PreviewCB[i] = new PreviewContextCB();
                 }
             }
@@ -253,8 +253,8 @@ namespace UnityEditor
                     m_PreviewUtilityContexts[i] = new PreviewContext();
                     for (int contextIndex = 0; contextIndex < (int)PreviewContext.PreviewContextPass.kCount; ++contextIndex)
                     {
-                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].m_CameraFieldOfView = 30.0f;
-                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].m_Camera.cullingMask = 1 << Camera.PreviewCullingLayer;
+                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].camera.fieldOfView = 30.0f;
+                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].camera.cullingMask = 1 << Camera.PreviewCullingLayer;
                     }
                 }
 
@@ -427,18 +427,18 @@ namespace UnityEditor
 
             cameraState.rotation.value = Quaternion.Euler(angles + new Vector3(0.0f, envRotation, 0.0f)); // Add environment rotation to current camera orientation
             cameraState.pivot.value = new Vector3(0.0f, kDefaultSceneHeight, 0.0f); // Look at the center of the world
-            cameraState.UpdateCamera(previewUtility.m_Camera);
+            cameraState.UpdateCamera(previewUtility.camera);
 
-            previewUtility.m_Camera.renderingPath = RenderingPath.DeferredShading;
-            previewUtility.m_Camera.clearFlags = shadowPass ? CameraClearFlags.Color : CameraClearFlags.Skybox; // We need to clear to white for the shadow mask to work properly
-            previewUtility.m_Camera.backgroundColor = Color.white;
-            previewUtility.m_Camera.allowHDR = true;
+            previewUtility.camera.renderingPath = RenderingPath.DeferredShading;
+            previewUtility.camera.clearFlags = shadowPass ? CameraClearFlags.Color : CameraClearFlags.Skybox; // We need to clear to white for the shadow mask to work properly
+            previewUtility.camera.backgroundColor = Color.white;
+            previewUtility.camera.allowHDR = true;
 
             for (int lightIndex = 0; lightIndex < 2; lightIndex++)
             {
-                previewUtility.m_Light[lightIndex].enabled = false;
-                previewUtility.m_Light[lightIndex].intensity = 0.0f;
-                previewUtility.m_Light[lightIndex].shadows = LightShadows.None;
+                previewUtility.lights[lightIndex].enabled = false;
+                previewUtility.lights[lightIndex].intensity = 0.0f;
+                previewUtility.lights[lightIndex].shadows = LightShadows.None;
             }
 
             // If shadows are disable or if we are in a Debug view mode (albedo, normal, etc) we don't want to have shadows in the mask
@@ -456,12 +456,12 @@ namespace UnityEditor
 
                 ShadowInfo shadowInfo = m_LookDevEnvLibrary.hdriList[lookDevContext.currentHDRIIndex].shadowInfo;
                 // previewUtility.m_Light[0].enabled = true;  // Apparently doing this will add the light to the global manager, making it visible in the scene view... so don't do that.
-                previewUtility.m_Light[0].intensity = 1.0f;
-                previewUtility.m_Light[0].color = Color.white;
-                previewUtility.m_Light[0].shadows = LightShadows.Soft;
-                previewUtility.m_Light[0].shadowBias = m_DirBias;
-                previewUtility.m_Light[0].shadowNormalBias = m_DirNormalBias;
-                previewUtility.m_Light[0].transform.rotation = Quaternion.Euler(shadowInfo.latitude, shadowInfo.longitude, 0.0f);
+                previewUtility.lights[0].intensity = 1.0f;
+                previewUtility.lights[0].color = Color.white;
+                previewUtility.lights[0].shadows = LightShadows.Soft;
+                previewUtility.lights[0].shadowBias = m_DirBias;
+                previewUtility.lights[0].shadowNormalBias = m_DirNormalBias;
+                previewUtility.lights[0].transform.rotation = Quaternion.Euler(shadowInfo.latitude, shadowInfo.longitude, 0.0f);
 
                 // Can't pre-record the command buffer :( because to make MaterialPropertyBlock working, it need to be setup each frame with DrawMesh. Calling DrawMesh mean we need to call clear
                 // else DrawMesh accumulate each frame. Calling clear mean we can't pre-record command buffer.
@@ -474,7 +474,7 @@ namespace UnityEditor
                 contextCB.m_patchGBufferCB.DrawMesh(LookDevResources.m_ScreenQuadMesh, Matrix4x4.identity, LookDevResources.m_GBufferPatchMaterial);
 
                 // set this command buffer to be executed just before deferred lighting pass
-                previewUtility.m_Camera.AddCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_patchGBufferCB);
+                previewUtility.camera.AddCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_patchGBufferCB);
 
                 if (m_LookDevConfig.showBalls)
                 {
@@ -483,15 +483,15 @@ namespace UnityEditor
                     // Patch lighting buffer - This will write the shape of the screen space balls after the render of the shadow map to be sure we display only the normal view 0
                     RenderTargetIdentifier[] lightingBuffer = { BuiltinRenderTextureType.CameraTarget };
                     contextCB.m_drawBallCB.SetRenderTarget(lightingBuffer, BuiltinRenderTextureType.CameraTarget);
-                    contextCB.m_drawBallPB.SetVector("_WindowsSize", new Vector4(previewUtility.m_Camera.pixelWidth, previewUtility.m_Camera.pixelHeight, secondView ? 1.0f : 0.0f, 0));
+                    contextCB.m_drawBallPB.SetVector("_WindowsSize", new Vector4(previewUtility.camera.pixelWidth, previewUtility.camera.pixelHeight, secondView ? 1.0f : 0.0f, 0));
                     contextCB.m_drawBallCB.DrawMesh(LookDevResources.m_ScreenQuadMesh, Matrix4x4.identity, LookDevResources.m_DrawBallsMaterial, 0, 1, contextCB.m_drawBallPB);
 
                     // Draw ball in screen space by patching the GBuffer
-                    previewUtility.m_Camera.AddCommandBuffer(CameraEvent.AfterLighting, contextCB.m_drawBallCB);
+                    previewUtility.camera.AddCommandBuffer(CameraEvent.AfterLighting, contextCB.m_drawBallCB);
                 }
             }
 
-            Color amb = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+            previewUtility.ambientColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
 
             // Save several lighting panel parameter as they are not unique to our lookdev but share with the scene view :(
             UnityEngine.Rendering.DefaultReflectionMode oldReflectionMode   = RenderSettings.defaultReflectionMode;
@@ -557,16 +557,12 @@ namespace UnityEditor
                 contextCB.m_drawBallPB.SetVector("_SHBb", shaderConstants[5]);
                 contextCB.m_drawBallPB.SetVector("_SHC", shaderConstants[6]);
 
-                contextCB.m_drawBallPB.SetVector("_WindowsSize", new Vector4(previewUtility.m_Camera.pixelWidth, previewUtility.m_Camera.pixelHeight, secondView ? 1.0f : 0.0f, 0));
+                contextCB.m_drawBallPB.SetVector("_WindowsSize", new Vector4(previewUtility.camera.pixelWidth, previewUtility.camera.pixelHeight, secondView ? 1.0f : 0.0f, 0));
                 contextCB.m_drawBallCB.DrawMesh(LookDevResources.m_ScreenQuadMesh, Matrix4x4.identity, LookDevResources.m_DrawBallsMaterial, 0, 0, contextCB.m_drawBallPB);
 
                 // Draw ball in screen space by patching the GBuffer
-                previewUtility.m_Camera.AddCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_drawBallCB);
+                previewUtility.camera.AddCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_drawBallCB);
             }
-
-            InternalEditorUtility.SetCustomLighting(previewUtility.m_Light, amb);
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
 
             Vector3 oldAngles = Vector3.zero;
             Vector3 oldTranslation = Vector3.zero;
@@ -591,17 +587,19 @@ namespace UnityEditor
                 currentObject.transform.Rotate(0.0f, envRotation, 0.0f);
                 currentObject.transform.Translate(-originalCameraState.pivot.value);
                 currentObject.transform.Rotate(0.0f, m_CurrentObjRotationOffset, 0.0f);
+
+                previewUtility.AddSingleGO(currentObject);
             }
 
             // Specific drawing pass for TexturedWire
             if (shadingMode == DrawCameraMode.TexturedWire && !shadowPass)
             {
-                Handles.ClearCamera(previewRect, previewUtility.m_Camera);
-                Handles.DrawCamera(previewRect, previewUtility.m_Camera, shadingMode);
+                Handles.ClearCamera(previewRect, previewUtility.camera);
+                Handles.DrawCamera(previewRect, previewUtility.camera, shadingMode);
             }
             else
             {
-                previewUtility.m_Camera.Render();
+                previewUtility.Render(true);
             }
 
             if (currentObject != null)
@@ -624,16 +622,16 @@ namespace UnityEditor
 
             if (shadowPass)
             {
-                previewUtility.m_Camera.RemoveCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_patchGBufferCB);
+                previewUtility.camera.RemoveCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_patchGBufferCB);
                 if (m_LookDevConfig.showBalls)
                 {
-                    previewUtility.m_Camera.RemoveCommandBuffer(CameraEvent.AfterLighting, contextCB.m_drawBallCB);
+                    previewUtility.camera.RemoveCommandBuffer(CameraEvent.AfterLighting, contextCB.m_drawBallCB);
                 }
             }
             else if (contextPass == PreviewContext.PreviewContextPass.kView && m_LookDevConfig.showBalls)
             {
                 // Draw ball in screen space by patching the GBuffer
-                previewUtility.m_Camera.RemoveCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_drawBallCB);
+                previewUtility.camera.RemoveCommandBuffer(CameraEvent.AfterGBuffer, contextCB.m_drawBallCB);
             }
 
             QualitySettings.shadowCascade4Split = oldShadowCascade4Split;
@@ -647,9 +645,6 @@ namespace UnityEditor
             RenderSettings.ambientIntensity         = oldAmbientIntensity;
             RenderSettings.reflectionIntensity      = oldReflectionIntensity;
             RenderSettings.ambientProbe             = oldAmbientProbe;
-
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
 
             return previewUtility.EndPreview();
         }
@@ -1447,7 +1442,7 @@ namespace UnityEditor
                 int otherContextIndex = (currentContextIndex + 1) % 2;
 
                 // Camera controller updates Camera States according to inputs
-                m_CameraController.Update(m_LookDevConfig.cameraState[currentContextIndex], m_PreviewUtilityContexts[m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].m_Camera); // We can use m_PreviewUtility[0] because all of them should be always synchronized anyway
+                m_CameraController.Update(m_LookDevConfig.cameraState[currentContextIndex], m_PreviewUtilityContexts[m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].camera); // We can use m_PreviewUtility[0] because all of them should be always synchronized anyway
 
                 // If single or side by side mode and camera are linked we need to update both cameras
                 if ((m_LookDevConfig.lookDevMode == LookDevMode.Single1 || m_LookDevConfig.lookDevMode == LookDevMode.Single2 || m_LookDevConfig.lookDevMode == LookDevMode.SideBySide) && m_LookDevConfig.sideBySideCameraLinked)
@@ -1470,8 +1465,8 @@ namespace UnityEditor
                 // Update the actual Cameras with CameraState infos
                 for (int i = 0; i < (int)PreviewContext.PreviewContextPass.kCount; ++i)
                 {
-                    m_LookDevConfig.cameraState[0].UpdateCamera(m_PreviewUtilityContexts[0].m_PreviewUtility[i].m_Camera);
-                    m_LookDevConfig.cameraState[1].UpdateCamera(m_PreviewUtilityContexts[1].m_PreviewUtility[i].m_Camera);
+                    m_LookDevConfig.cameraState[0].UpdateCamera(m_PreviewUtilityContexts[0].m_PreviewUtility[i].camera);
+                    m_LookDevConfig.cameraState[1].UpdateCamera(m_PreviewUtilityContexts[1].m_PreviewUtility[i].camera);
                 }
             }
         }

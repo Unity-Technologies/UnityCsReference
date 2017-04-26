@@ -70,10 +70,10 @@ namespace UnityEngine.Experimental.UIElements
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
-            AddChild(lowButton);
             slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider"};
             AddChild(slider);
+            lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
+            AddChild(lowButton);
             highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
             AddChild(highButton);
         }

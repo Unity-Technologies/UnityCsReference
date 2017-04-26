@@ -19,7 +19,7 @@ namespace UnityEditor
 {
     [CustomEditor(typeof(PluginImporter))]
     [CanEditMultipleObjects]
-    internal class PluginImporterInspector : AssetImporterInspector
+    internal class PluginImporterInspector : Experimental.AssetImporters.AssetImporterEditor
     {
         private delegate Compatibility ValueSwitcher(Compatibility value);
         private bool m_HasModified;
@@ -58,7 +58,7 @@ namespace UnityEditor
         private EditorPluginImporterExtension m_EditorExtension = null;
         private DesktopPluginImporterExtension m_DesktopExtension = null;
 
-        internal override bool showImportedObject { get { return false; } }
+        public override bool showImportedObject { get { return false; } }
 
         internal EditorPluginImporterExtension editorExtension
         {
@@ -249,7 +249,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
 
@@ -295,7 +295,7 @@ namespace UnityEditor
             }
         }
 
-        internal override bool HasModified()
+        public override bool HasModified()
         {
             bool modified = m_HasModified || base.HasModified();
 
@@ -316,7 +316,7 @@ namespace UnityEditor
             return modified;
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             base.Apply();
             foreach (var imp in importers)
@@ -357,7 +357,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void Awake()
+        protected override void Awake()
         {
             m_EditorExtension = new EditorPluginImporterExtension();
             m_DesktopExtension = new DesktopPluginImporterExtension();
@@ -365,7 +365,7 @@ namespace UnityEditor
             base.Awake();
         }
 
-        void OnEnable()
+        public override void OnEnable()
         {
             if (!IsEditingPlatformSettingsSupported())
                 return;
@@ -561,7 +561,7 @@ namespace UnityEditor
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(prop.Key, GUILayout.Width(85));
-                GUILayout.TextField(prop.Value);
+                EditorGUILayout.SelectableLabel(prop.Value, GUILayout.Height(EditorGUI.kSingleLineHeight));
                 GUILayout.EndHorizontal();
             }
 

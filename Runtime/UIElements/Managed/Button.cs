@@ -4,7 +4,6 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    [GUISkinStyle("button")]
     public class Button : VisualElement
     {
         Clickable clickable;

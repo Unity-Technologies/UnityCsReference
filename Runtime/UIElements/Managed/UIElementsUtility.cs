@@ -145,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
             var clippedScreen = new Rect(x1, y1, x2 - x1, y2 - y1);
 
             var offset = new Vector2(Mathf.Round(screenRect.x - clippedScreen.x), Mathf.Round(screenRect.y - clippedScreen.y));
-            GUI.BeginGroup(clippedScreen, GUIContent.none, container.style, offset);
+            GUI.BeginGroup(clippedScreen, GUIContent.none, GUIStyle.none, offset);
         }
 
         // End the 2D GUI.
@@ -221,8 +221,7 @@ namespace UnityEngine.Experimental.UIElements
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
             {
-                GUISkin skin = GUIUtility.GetDefaultSkin((int)contextType);
-                panel = new Panel(instanceId, contextType, skin, loadResourceFunction)
+                panel = new Panel(instanceId, contextType, loadResourceFunction)
                 {
                     dataWatch = dataWatch,
                     dispatcher = eventDispatcher

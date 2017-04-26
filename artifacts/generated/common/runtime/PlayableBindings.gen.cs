@@ -32,7 +32,7 @@ public partial struct PlayableHandle
     internal Int32 m_Version;
     
     
-    public T GetObject<T>() where T : IPlayable
+    public T GetObject<T>() where T : class, IPlayable
         {
             if (!IsValid())
                 return default(T);

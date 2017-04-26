@@ -93,6 +93,26 @@ public partial class Physics2D
         set;
     }
 
+    public extern static bool callbacksOnDisable
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static bool autoSimulation
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern static float velocityThreshold
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -308,6 +328,10 @@ public partial class Physics2D
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static void INTERNAL_set_colliderAABBColor (ref Color value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool Simulate (float step) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1969,40 +1993,131 @@ public partial struct ContactFilter2D
 {
     public ContactFilter2D NoFilter()
         {
-            useTriggers = false;
+            useTriggers = true;
 
             useLayerMask = false;
             layerMask = Physics2D.AllLayers;
 
             useDepth = false;
+            useOutsideDepth = false;
             minDepth = -Mathf.Infinity;
             maxDepth = Mathf.Infinity;
 
             useNormalAngle = false;
-            minNormalAngle = -Mathf.Infinity;
-            maxNormalAngle = Mathf.Infinity;
+            useOutsideNormalAngle = false;
+            minNormalAngle = 0.0f;
+            maxNormalAngle = NormalAngleUpperLimit;
 
             return this;
         }
     
     
-    public void SetLayerMask(LayerMask layerMask) { this.layerMask = layerMask; useLayerMask = true; }
+    private void CheckConsistency()
+        {
+            minDepth = (minDepth == -Mathf.Infinity || minDepth == Mathf.Infinity || Single.IsNaN(minDepth)) ? Single.MinValue : minDepth;
+            maxDepth = (maxDepth == -Mathf.Infinity || maxDepth == Mathf.Infinity || Single.IsNaN(maxDepth)) ? Single.MaxValue : maxDepth;
+            if (minDepth > maxDepth)
+            {
+                var temp = minDepth; minDepth = maxDepth; maxDepth = temp;
+            }
+
+            minNormalAngle = Single.IsNaN(minNormalAngle) ? 0.0f : Mathf.Clamp(minNormalAngle, 0.0f, NormalAngleUpperLimit);
+            maxNormalAngle = Single.IsNaN(maxNormalAngle) ? NormalAngleUpperLimit : Mathf.Clamp(maxNormalAngle, 0.0f, NormalAngleUpperLimit);
+            if (minNormalAngle > maxNormalAngle)
+            {
+                var temp = minNormalAngle; minNormalAngle = maxNormalAngle; maxNormalAngle = temp;
+            }
+        }
+    
+    
     public void ClearLayerMask() { useLayerMask = false; }
-    public void SetDepth(float minDepth, float maxDepth) { this.minDepth = minDepth; this.maxDepth = maxDepth; useDepth = true; }
+    public void SetLayerMask(LayerMask layerMask) { this.layerMask = layerMask; useLayerMask = true; }
+    
+    
     public void ClearDepth() { useDepth = false; }
-    public void SetNormalAngle(float minNormalAngle, float maxNormalAngle) { this.minNormalAngle = minNormalAngle; this.maxNormalAngle = maxNormalAngle; useNormalAngle = true; }
+    public void SetDepth(float minDepth, float maxDepth)
+        {
+            this.minDepth = minDepth;
+            this.maxDepth = maxDepth;
+            useDepth = true;
+            CheckConsistency();
+        }
+    
+    
     public void ClearNormalAngle() { useNormalAngle = false; }
+    public void SetNormalAngle(float minNormalAngle, float maxNormalAngle)
+        {
+            this.minNormalAngle = minNormalAngle;
+            this.maxNormalAngle = maxNormalAngle;
+            useNormalAngle = true;
+            CheckConsistency();
+        }
+    
+    
+    public bool isFiltering { get { return !useTriggers || useLayerMask || useDepth || useNormalAngle; } }
+    public bool IsFilteringTrigger(Collider2D collider) { return !useTriggers && collider.isTrigger; }
+    public bool IsFilteringLayerMask(GameObject obj) { return useLayerMask && ((layerMask & (1 << obj.layer)) == 0); }
+    
+    
+    public bool IsFilteringDepth(GameObject obj)
+        {
+            if (!useDepth)
+                return false;
+
+            if (minDepth > maxDepth)
+            {
+                var temp = minDepth; minDepth = maxDepth; maxDepth = temp;
+            }
+
+            var depth = obj.transform.position.z;
+
+            var result = depth<minDepth || depth> maxDepth;
+            if (useOutsideDepth)
+                return !result;
+
+            return result;
+        }
+    
+    
+    public bool IsFilteringNormalAngle(Vector2 normal)
+        {
+            var angle = Mathf.Atan2(normal.y, normal.x) * Mathf.Rad2Deg;
+            return IsFilteringNormalAngle(angle);
+        }
+    
+    
+    public bool IsFilteringNormalAngle(float angle)
+        {
+            angle -= Mathf.Floor(angle / NormalAngleUpperLimit) * NormalAngleUpperLimit;
+            var minRange = Mathf.Clamp(minNormalAngle, 0.0f, NormalAngleUpperLimit);
+            var maxRange = Mathf.Clamp(maxNormalAngle, 0.0f, NormalAngleUpperLimit);
+            if (minRange > maxRange)
+            {
+                var temp = minRange; minRange = maxRange; maxRange = temp;
+            }
+
+            var result = angle<minRange || angle> maxRange;
+            if (useOutsideNormalAngle)
+                return !result;
+
+            return result;
+        }
     
     
     public bool useTriggers;
     public bool useLayerMask;
     public bool useDepth;
+    public bool useOutsideDepth;
     public bool useNormalAngle;
+    public bool useOutsideNormalAngle;
     public LayerMask layerMask;
     public float minDepth;
     public float maxDepth;
     public float minNormalAngle;
     public float maxNormalAngle;
+    
+    
+    public const float NormalAngleUpperLimit = 359.9999f;
     
     
     static internal ContactFilter2D CreateLegacyFilter(int layerMask, float minDepth, float maxDepth)

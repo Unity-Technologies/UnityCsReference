@@ -10,7 +10,7 @@ namespace UnityEngine
     public interface IStylePainter
     {
         void DrawRect(Rect screenRect, Color color, float borderWidth = 0.0f, float borderRadius = 0.0f);
-        void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f);
+        void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f, int leftBorder = 0, int rightBorder = 0, int topBorder = 0, int bottomBorder = 0);
         void DrawText(Rect screenRect, string text, Font font, int fontSize, FontStyle fontStyle, Color fontColor, TextAnchor anchor, bool wordWrap, float wordWrapWidth, bool richText, TextClipping clipping);
 
         Rect currentWorldClip { get; set; }
@@ -39,7 +39,7 @@ namespace UnityEngine
             mousePosition = pos;
         }
 
-        public void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f)
+        public void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f, int leftBorder = 0, int topBorder = 0, int rightBorder = 0, int bottomBorder = 0)
         {
             Rect textureRect = screenRect;
             Rect sourceRect = new Rect(0, 0, 1, 1);
@@ -77,11 +77,34 @@ namespace UnityEngine
                     break;
             }
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color, borderWidth, borderRadius);
+            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidth, borderRadius, leftBorder, topBorder, rightBorder, bottomBorder);
+        }
+
+        public void DrawRect(Rect screenRect, Color color, float borderWidth = 0.0f, float borderRadius = 0.0f)
+        {
+            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidth, borderRadius);
+        }
+
+        public void DrawText(Rect screenRect, string text, Font font, int fontSize, FontStyle fontStyle, Color fontColor, TextAnchor anchor, bool wordWrap, float wordWrapWidth, bool richText, TextClipping clipping)
+        {
+            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
         public Vector2 mousePosition { get; set; }
         public Rect currentWorldClip { get; set; }
         public Event repaintEvent { get; set; }
+
+        Color m_OpacityColor = Color.white;
+        public float opacity
+        {
+            get
+            {
+                return m_OpacityColor.a;
+            }
+            set
+            {
+                m_OpacityColor.a = value;
+            }
+        }
     }
 }

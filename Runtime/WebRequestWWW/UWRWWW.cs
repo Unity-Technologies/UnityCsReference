@@ -62,9 +62,9 @@ namespace UnityEngine
             _uwr.Send();
         }
 
-        internal WWW(string url, Hash128 hash, uint crc)
+        internal WWW(string url, string name, Hash128 hash, uint crc)
         {
-            _uwr = UnityWebRequest.GetAssetBundle(url, hash, crc);
+            _uwr = UnityWebRequest.GetAssetBundle(url, new CachedAssetBundle(name, hash), crc);
             _uwr.Send();
         }
 
@@ -195,6 +195,24 @@ namespace UnityEngine
         public Texture2D texture { get { return CreateTextureFromDownloadedData(false); } }
 
         public Texture2D textureNonReadable { get { return CreateTextureFromDownloadedData(true); } }
+
+        public void LoadImageIntoTexture(Texture2D texture)
+        {
+            if (!WaitUntilDoneIfPossible())
+                return;
+            if (_uwr.isNetworkError)
+            {
+                Debug.LogError("Cannot load image: download failed");
+                return;
+            }
+            var dh = _uwr.downloadHandler;
+            if (dh == null)
+            {
+                Debug.LogError("Cannot load image: internal error");
+                return;
+            }
+            texture.LoadImage(dh.data, false);
+        }
 
         public ThreadPriority threadPriority { get; set; }
 

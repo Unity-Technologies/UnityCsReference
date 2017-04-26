@@ -677,7 +677,7 @@ public void SetLookAtWeight(float weight, [uei.DefaultValue("0.00f")]  float bod
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal ScriptableObject[] GetBehaviours (Type type) ;
+    extern internal ScriptableObject[] InternalGetBehaviours (Type type) ;
 
     internal static T[] ConvertStateMachineBehaviour<T>(ScriptableObject[] rawObjects) where T : StateMachineBehaviour
         {
@@ -692,7 +692,18 @@ public void SetLookAtWeight(float weight, [uei.DefaultValue("0.00f")]  float bod
     
     public T[] GetBehaviours<T>() where T : StateMachineBehaviour
         {
-            return ConvertStateMachineBehaviour<T>(GetBehaviours(typeof(T)));
+            return ConvertStateMachineBehaviour<T>(InternalGetBehaviours(typeof(T)));
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal StateMachineBehaviour[] InternalGetBehavioursByKey (int fullPathHash, int layerIndex, Type type) ;
+
+    
+    public StateMachineBehaviour[] GetBehaviours(int fullPathHash, int layerIndex)
+        {
+            return InternalGetBehavioursByKey(fullPathHash, layerIndex, typeof(StateMachineBehaviour));
         }
     
     

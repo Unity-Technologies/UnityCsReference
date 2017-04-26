@@ -19,6 +19,7 @@ namespace UnityEditor
             public static GUIContent numCapVertices = EditorGUIUtility.TextContent("End Cap Vertices|How many vertices to add at each end.");
             public static GUIContent alignment = EditorGUIUtility.TextContent("Alignment|Lines can rotate to face their transform component or the camera.");
             public static GUIContent textureMode = EditorGUIUtility.TextContent("Texture Mode|Should the U coordinate be stretched or tiled?");
+            public static GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
         }
 
         private string[] m_ExcludedProperties;
@@ -29,6 +30,7 @@ namespace UnityEditor
         private SerializedProperty m_NumCapVertices;
         private SerializedProperty m_Alignment;
         private SerializedProperty m_TextureMode;
+        private SerializedProperty m_GenerateLightingData;
 
         public override void OnEnable()
         {
@@ -45,6 +47,7 @@ namespace UnityEditor
             m_NumCapVertices = serializedObject.FindProperty("m_Parameters.numCapVertices");
             m_Alignment = serializedObject.FindProperty("m_Parameters.alignment");
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
+            m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
 
             InitializeProbeFields();
         }
@@ -68,6 +71,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_NumCapVertices, Styles.numCapVertices);
             EditorGUILayout.PropertyField(m_Alignment, Styles.alignment);
             EditorGUILayout.PropertyField(m_TextureMode, Styles.textureMode);
+            EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
 
             m_Probes.OnGUI(targets, (Renderer)target, false);
 

@@ -29,6 +29,11 @@ namespace UnityEngine.Experimental.Rendering
 
         protected abstract IRenderPipeline InternalCreatePipeline();
 
+        protected IEnumerable<IRenderPipeline> CreatedInstances()
+        {
+            return m_CreatedPipelines;
+        }
+
         private void OnValidate()
         {
             DestroyCreatedInstances();

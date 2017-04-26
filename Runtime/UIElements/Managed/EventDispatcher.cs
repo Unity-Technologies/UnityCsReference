@@ -121,10 +121,6 @@ namespace UnityEngine.Experimental.UIElements
     {
         IEventHandler capture { get; }
 
-        // TODO: FIX: IMGUI remembers focusedElement per GUIObjectState
-        // BUG: UIElements currently "forgets" when switching panel
-        VisualElement focusedElement { get; }
-
         // used when the capture is done receiving events
         void ReleaseCapture(IEventHandler handler);
 
@@ -167,35 +163,6 @@ namespace UnityEngine.Experimental.UIElements
             // TODO: assign a reserved control id to hotControl so that repaint events in OnGUI() have their hotcontrol check behave normally
             RemoveCapture();
             capture = handler;
-        }
-
-        // keyboard focus
-        private VisualElement m_FocusedElement;
-        public VisualElement focusedElement
-        {
-            get { return m_FocusedElement; }
-            set
-            {
-                if (m_FocusedElement == value)
-                    return;
-
-                if (m_FocusedElement != null)
-                {
-                    // let element know
-                    m_FocusedElement.pseudoStates = m_FocusedElement.pseudoStates & ~PseudoStates.Focus;
-                    // TODO send focus gain event
-                }
-
-                m_FocusedElement = value;
-
-                if (m_FocusedElement != null)
-                {
-                    // let element know
-                    m_FocusedElement.pseudoStates = m_FocusedElement.pseudoStates | PseudoStates.Focus;
-                    // TODO replace with focus lost event
-                    m_FocusedElement.OnLostKeyboardFocus();
-                }
-            }
         }
 
         private VisualElement m_ElementUnderMouse;
@@ -268,9 +235,9 @@ namespace UnityEngine.Experimental.UIElements
             if (e.isKey)
             {
                 invokedHandleEvent = true;
-                if (focusedElement != null)
+                if (panel.focusedElement != null)
                 {
-                    if (PropagateEvent(focusedElement, e) == EventPropagation.Stop)
+                    if (PropagateEvent(panel.focusedElement, e) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
                 else
@@ -308,7 +275,7 @@ namespace UnityEngine.Experimental.UIElements
                     && elementUnderMouse != null
                     && elementUnderMouse.enabled)
                 {
-                    focusedElement = elementUnderMouse;
+                    SetFocusedElement(panel, elementUnderMouse);
                 }
 
                 if (elementUnderMouse != null)
@@ -332,7 +299,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 invokedHandleEvent = true;
                 // first try to propagate to focused element
-                if (focusedElement != null && PropagateEvent(focusedElement, e) == EventPropagation.Stop)
+                if (panel.focusedElement != null && PropagateEvent(panel.focusedElement, e) == EventPropagation.Stop)
                 {
                     return EventPropagation.Stop;
                 }
@@ -473,17 +440,27 @@ namespace UnityEngine.Experimental.UIElements
             return EventPropagation.Continue;
         }
 
-        private EventPropagation PropagateToKeyboardFocus(VisualElement element, Event e, IVisualElementPanel panel)
+        void SetFocusedElement(IVisualElementPanel panel, VisualElement element)
         {
-            // Skip this event if the currently focused element does belong to the panel we are workinbg with.
-            // This fixes some situation where command events are sent to all panel until handled
-            // but some global state isn't properly set up for the IMGUIContainer being focus
-            if (element is IMGUIContainer && element.panel != panel)
+            if (panel.focusedElement == element)
+                return;
+
+            if (panel.focusedElement != null)
             {
-                return EventPropagation.Continue;
+                // let element know
+                panel.focusedElement.pseudoStates = panel.focusedElement.pseudoStates & ~PseudoStates.Focus;
+                // TODO replace with focus lost event
+                panel.focusedElement.OnLostKeyboardFocus();
             }
 
-            return PropagateEvent(element, e);
+            panel.focusedElement = element;
+
+            if (element != null)
+            {
+                // let element know
+                element.pseudoStates = element.pseudoStates | PseudoStates.Focus;
+                // TODO send focus gain event
+            }
         }
 
         private List<VisualElement> BuildPropagationPath(VisualElement elem)

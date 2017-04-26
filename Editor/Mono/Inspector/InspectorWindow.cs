@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
@@ -310,7 +311,7 @@ namespace UnityEditor
                     object[] attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false);
                     foreach (CustomPreviewAttribute previewAttr in attrs)
                     {
-                        if (previewAttr.m_Type != editor.target.GetType())
+                        if (editor.target == null || previewAttr.m_Type != editor.target.GetType())
                             continue;
 
                         IPreviewable preview = Activator.CreateInstance(type) as IPreviewable;
@@ -351,6 +352,7 @@ namespace UnityEditor
 
                 s_CurrentInspectorWindow = this;
                 Editor[] editors = tracker.activeEditors;
+
                 AssignAssetEditor(editors);
                 Profiler.BeginSample("InspectorWindow.DrawEditors()");
                 DrawEditors(editors);
@@ -438,7 +440,7 @@ namespace UnityEditor
                     continue;
 
                 // If main editor is an asset importer editor and this is an editor of the imported object, ignore.
-                if (editors[0] is AssetImporterInspector && !(e is AssetImporterInspector))
+                if (editors[0] is AssetImporterEditor && !(e is AssetImporterEditor))
                     continue;
 
                 if (e.HasPreviewGUI())
@@ -490,7 +492,7 @@ namespace UnityEditor
                     continue;
 
                 // If main editor is an asset importer editor and this is an editor of the imported object, ignore.
-                if (editors[0] is AssetImporterInspector && !(e is AssetImporterInspector))
+                if (editors[0] is AssetImporterEditor && !(e is AssetImporterEditor))
                     continue;
 
                 if (e.HasPreviewGUI())
@@ -926,9 +928,9 @@ namespace UnityEditor
         protected void AssignAssetEditor(Editor[] editors)
         {
             // Assign asset editor to importer editor
-            if (editors.Length > 1 && editors[0] is AssetImporterInspector)
+            if (editors.Length > 1 && editors[0] is AssetImporterEditor)
             {
-                (editors[0] as AssetImporterInspector).assetEditor = editors[1];
+                (editors[0] as AssetImporterEditor).assetEditor = editors[1];
             }
         }
 
@@ -1293,13 +1295,13 @@ namespace UnityEditor
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)
-            if (currentTarget.GetType() == typeof(AssetImporter))
+            if (currentTarget != null && currentTarget.GetType() == typeof(AssetImporter))
                 return true;
 
             // Let asset importers decide if the imported object should be shown or not
             if (m_InspectorMode == InspectorMode.Normal && editorIndex != 0)
             {
-                AssetImporterInspector importerEditor = editors[0] as AssetImporterInspector;
+                AssetImporterEditor importerEditor = editors[0] as AssetImporterEditor;
                 if (importerEditor != null && !importerEditor.showImportedObject)
                     return true;
             }

@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngineInternal;
 
 namespace UnityEngine.Networking
@@ -37,13 +38,13 @@ public partial class DownloadHandler : IDisposable
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void InternalCreateAssetBundle (string url, uint crc) ;
 
-    internal void InternalCreateAssetBundle (string url, Hash128 hash, uint crc) {
-        INTERNAL_CALL_InternalCreateAssetBundle ( this, url, ref hash, crc );
+    internal void InternalCreateAssetBundleCached (string url, string name, Hash128 hash, uint crc) {
+        INTERNAL_CALL_InternalCreateAssetBundleCached ( this, url, name, ref hash, crc );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalCreateAssetBundle (DownloadHandler self, string url, ref Hash128 hash, uint crc);
+    private extern static void INTERNAL_CALL_InternalCreateAssetBundleCached (DownloadHandler self, string url, string name, ref Hash128 hash, uint crc);
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -96,13 +97,50 @@ public partial class DownloadHandler : IDisposable
             byte[] bytes = GetData();
             if (bytes != null && bytes.Length > 0)
             {
-                return System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+                return GetTextEncoder().GetString(bytes, 0, bytes.Length);
             }
             else
             {
                 return "";
             }
         }
+    
+    
+    private Encoding GetTextEncoder()
+        {
+            string contentType = GetContentType();
+            if (!string.IsNullOrEmpty(contentType))
+            {
+                int charsetKeyIndex = contentType.IndexOf("charset", StringComparison.OrdinalIgnoreCase);
+                if (charsetKeyIndex > -1)
+                {
+                    int charsetValueIndex = contentType.IndexOf('=', charsetKeyIndex);
+                    if (charsetValueIndex > -1)
+                    {
+                        string encoding = contentType.Substring(charsetValueIndex + 1).Trim().Trim(new[] {'\'', '"'}).Trim();
+                        int semicolonIndex = encoding.IndexOf(';');
+                        if (semicolonIndex > -1)
+                            encoding = encoding.Substring(0, semicolonIndex);
+                        try
+                        {
+                            return System.Text.Encoding.GetEncoding(encoding);
+                        }
+                        catch (ArgumentException e)
+                        {
+                            Debug.LogWarning(string.Format("Unsupported encoding '{0}': {1}", encoding, e.Message));
+                        }
+                    }
+                }
+            }
+
+            return System.Text.Encoding.UTF8;
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private string GetContentType () ;
+
     
     
     [UsedByNativeCode]
@@ -150,19 +188,9 @@ public sealed partial class DownloadHandlerBuffer : DownloadHandler
         }
     
     
-    protected override string GetText()
-        {
-            return InternalGetText();
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private byte[] InternalGetData () ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private string InternalGetText () ;
 
     public static string GetContent(UnityWebRequest www)
         {
@@ -210,14 +238,19 @@ public sealed partial class DownloadHandlerAssetBundle : DownloadHandler
     
     public DownloadHandlerAssetBundle(string url, uint version, uint crc)
         {
-            Hash128 tempHash = new Hash128(0, 0, 0, version);
-            InternalCreateAssetBundle(url, tempHash, crc);
+            InternalCreateAssetBundleCached(url, "", new Hash128(0, 0, 0, version), crc);
         }
     
     
     public DownloadHandlerAssetBundle(string url, Hash128 hash, uint crc)
         {
-            InternalCreateAssetBundle(url, hash, crc);
+            InternalCreateAssetBundleCached(url, "", hash, crc);
+        }
+    
+    
+    public DownloadHandlerAssetBundle(string url, string name, Hash128 hash, uint crc)
+        {
+            InternalCreateAssetBundleCached(url, name, hash, crc);
         }
     
     

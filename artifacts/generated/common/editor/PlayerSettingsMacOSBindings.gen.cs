@@ -18,8 +18,6 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-
-
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
     public sealed partial class macOS    
@@ -31,6 +29,16 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             }
         
         
+        internal extern static string applicationCategoryType
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
     }
 
 }

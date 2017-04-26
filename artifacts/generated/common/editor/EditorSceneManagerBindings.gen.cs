@@ -65,6 +65,15 @@ public sealed partial class EditorSceneManager : SceneManager
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_NewScene (NewSceneSetup setup, NewSceneMode mode, out Scene value);
+    public static Scene NewPreviewScene () {
+        Scene result;
+        INTERNAL_CALL_NewPreviewScene ( out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_NewPreviewScene (out Scene value);
     static internal bool CreateSceneAsset(string scenePath, bool createDefaultGameObjects)
         {
             if (!Utils.Paths.IsValidAssetPathWithErrorLogging(scenePath, ".unity"))
@@ -85,6 +94,13 @@ public sealed partial class EditorSceneManager : SceneManager
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static bool INTERNAL_CALL_CloseScene (ref Scene scene, bool removeScene);
+    public static bool ClosePreviewScene (Scene scene) {
+        return INTERNAL_CALL_ClosePreviewScene ( ref scene );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_ClosePreviewScene (ref Scene scene);
     internal static bool ReloadScene (Scene scene) {
         return INTERNAL_CALL_ReloadScene ( ref scene );
     }

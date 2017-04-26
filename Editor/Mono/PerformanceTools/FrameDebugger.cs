@@ -506,7 +506,7 @@ namespace UnityEditor
             if (m_PreviewUtility == null)
             {
                 m_PreviewUtility = new PreviewRenderUtility();
-                m_PreviewUtility.m_CameraFieldOfView = 30.0f;
+                m_PreviewUtility.camera.fieldOfView = 30.0f;
             }
             if (m_Material == null)
                 m_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;

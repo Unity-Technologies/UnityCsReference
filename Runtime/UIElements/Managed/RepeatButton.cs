@@ -4,7 +4,6 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    [GUISkinStyle("button")]
     public class RepeatButton : VisualElement
     {
         public RepeatButton(System.Action clickEvent, long delay, long interval)
