@@ -10,6 +10,7 @@ namespace UnityEngine.StyleSheets
         Auto,
         Unset,
         True,
-        False
+        False,
+        None
     }
 }

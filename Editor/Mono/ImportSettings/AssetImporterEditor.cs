@@ -6,15 +6,15 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 
-namespace UnityEditor
+namespace UnityEditor.Experimental.AssetImporters
 {
-    internal abstract class AssetImporterInspector : Editor
+    public abstract class AssetImporterEditor : Editor
     {
         ulong m_AssetTimeStamp = 0;
         bool m_MightHaveModified = false;
 
         private Editor m_AssetEditor;
-        internal virtual Editor assetEditor { get { return m_AssetEditor; } set { m_AssetEditor = value; } }
+        protected internal virtual Editor assetEditor { get { return m_AssetEditor; } internal set { m_AssetEditor = value; } }
 
         internal override string targetTitle
         {
@@ -59,7 +59,7 @@ namespace UnityEditor
         }
 
         // Let asset importers decide if the imported object should be shown as a separate editor or not
-        internal virtual bool showImportedObject { get { return true; } }
+        public virtual bool showImportedObject { get { return true; } }
 
         internal override SerializedObject GetSerializedObjectInternal()
         {
@@ -68,6 +68,11 @@ namespace UnityEditor
             if (m_SerializedObject == null)
                 m_SerializedObject = new SerializedObject(targets);
             return m_SerializedObject;
+        }
+
+        public virtual void OnEnable()
+        {
+            // warning: if you add anything here make sure every descent of this class calls this properly...
         }
 
         public virtual void OnDisable()
@@ -92,7 +97,7 @@ namespace UnityEditor
                 {
                     Apply();
                     m_MightHaveModified = false;
-                    AssetImporterInspector.ImportAssets(GetAssetPaths());
+                    ImportAssets(GetAssetPaths());
                 }
             }
 
@@ -106,13 +111,13 @@ namespace UnityEditor
             }
         }
 
-        internal virtual void Awake()
+        protected virtual void Awake()
         {
             ResetTimeStamp();
             ResetValues();
         }
 
-        string[] GetAssetPaths()
+        private string[] GetAssetPaths()
         {
             Object[] allTargets = targets;
             string[] paths = new string[allTargets.Length];
@@ -124,18 +129,18 @@ namespace UnityEditor
             return paths;
         }
 
-        internal virtual void ResetValues()
+        protected virtual void ResetValues()
         {
             serializedObject.SetIsDifferentCacheDirty();
             serializedObject.Update();
         }
 
-        internal virtual bool HasModified()
+        public virtual bool HasModified()
         {
             return serializedObject.hasModifiedProperties;
         }
 
-        internal virtual void Apply()
+        protected virtual void Apply()
         {
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -155,7 +160,7 @@ namespace UnityEditor
                 m_AssetTimeStamp = importer.assetTimeStamp;
         }
 
-        internal void ApplyAndImport()
+        protected internal void ApplyAndImport()
         {
             Apply();
             m_MightHaveModified = false;
@@ -163,7 +168,7 @@ namespace UnityEditor
             ResetValues();
         }
 
-        static void ImportAssets(string[] paths)
+        private void ImportAssets(string[] paths)
         {
             // When using the cache server we have to write all import settings to disk first.
             // Then perform the import (Otherwise the cache server will not be used for the import)
@@ -180,6 +185,13 @@ namespace UnityEditor
             {
                 AssetDatabase.StopAssetEditing();
             }
+
+            OnAssetImportDone();
+        }
+
+        internal virtual void OnAssetImportDone()
+        {
+            // Default, do nothing.
         }
 
         protected void RevertButton()
@@ -214,7 +226,7 @@ namespace UnityEditor
             return false;
         }
 
-        protected virtual bool ApplyRevertGUIButtons()
+        protected virtual bool OnApplyRevertGUI()
         {
             using (new EditorGUI.DisabledScope(!HasModified()))
             {
@@ -232,7 +244,7 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             var applied = false;
-            applied = ApplyRevertGUIButtons();
+            applied = OnApplyRevertGUI();
 
             // If the .meta file was modified on disk, reload UI
             if (AssetWasUpdated() && Event.current.type != EventType.Layout)

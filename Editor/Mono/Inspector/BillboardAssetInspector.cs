@@ -92,7 +92,7 @@ namespace UnityEditor
                 m_ShadedMaterialProperties = new MaterialPropertyBlock();
                 m_GeometryMaterial = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
                 m_WireframeMaterial = ModelInspector.CreateWireframeMaterial();
-                EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.m_Camera, true);
+                EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.camera, true);
             }
         }
 
@@ -240,21 +240,19 @@ namespace UnityEditor
             float distance = 8.0f * halfSize;
 
             var rotation = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
-            m_PreviewUtility.m_Camera.transform.rotation = rotation;
-            m_PreviewUtility.m_Camera.transform.position = rotation * (-Vector3.forward * distance);
-            m_PreviewUtility.m_Camera.nearClipPlane = distance - halfSize * 1.1f;
-            m_PreviewUtility.m_Camera.farClipPlane = distance + halfSize * 1.1f;
+            m_PreviewUtility.camera.transform.rotation = rotation;
+            m_PreviewUtility.camera.transform.position = rotation * (-Vector3.forward * distance);
+            m_PreviewUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
+            m_PreviewUtility.camera.farClipPlane = distance + halfSize * 1.1f;
 
-            m_PreviewUtility.m_Light[0].intensity = 1.4f;
-            m_PreviewUtility.m_Light[0].transform.rotation = rotation * Quaternion.Euler(40f, 40f, 0);
-            m_PreviewUtility.m_Light[1].intensity = 1.4f;
-            Color amb = new Color(.1f, .1f, .1f, 0);
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
-
+            m_PreviewUtility.lights[0].intensity = 1.4f;
+            m_PreviewUtility.lights[0].transform.rotation = rotation * Quaternion.Euler(40f, 40f, 0);
+            m_PreviewUtility.lights[1].intensity = 1.4f;
+            m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
             if (shaded)
             {
                 MakeRenderMesh(m_ShadedMesh, billboard);
-                billboard.MakeMaterialProperties(m_ShadedMaterialProperties, m_PreviewUtility.m_Camera);
+                billboard.MakeMaterialProperties(m_ShadedMaterialProperties, m_PreviewUtility.camera);
                 ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_ShadedMesh, bounds, m_PreviewUtility, billboard.material, null, m_ShadedMaterialProperties, new Vector2(0, 0), -1);
             }
             else
@@ -262,8 +260,6 @@ namespace UnityEditor
                 MakePreviewMesh(m_GeometryMesh, billboard);
                 ModelInspector.RenderMeshPreviewSkipCameraAndLighting(m_GeometryMesh, bounds, m_PreviewUtility, m_GeometryMaterial, m_WireframeMaterial, null, new Vector2(0, 0), -1);
             }
-
-            InternalEditorUtility.RemoveCustomLighting();
         }
     }
 }

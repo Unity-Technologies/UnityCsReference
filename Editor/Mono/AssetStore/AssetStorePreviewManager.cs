@@ -69,7 +69,6 @@ namespace UnityEditor
         int m_CacheRemove = 0;
         int m_ConvertedThisTick = 0;
         CachedAssetStoreImage m_DummyItem = new CachedAssetStoreImage();
-        private PreviewRenderUtility m_PreviewUtility;
 
         static bool s_NeedsRepaint = false;
 

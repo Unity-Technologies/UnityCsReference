@@ -115,6 +115,12 @@ namespace UnityEditor
                 EditorPrefs.SetBool("CollabCacheEnabled", s_CollabCacheEnabled);
             }
             LocalCacheServer.Setup();
+
+            if (changedDir)
+            {
+                //Call ExitGUI after bringing up a dialog to avoid an exception
+                EditorGUIUtility.ExitGUI();
+            }
         }
 
         [PreferenceItem("Cache Server")]

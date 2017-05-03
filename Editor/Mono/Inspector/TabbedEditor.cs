@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    // Version for editors not derived from AssetImporterInspector
+    // Version for editors not derived from AssetImporterEditor
     internal abstract class TabbedEditor : Editor
     {
         protected System.Type[] m_SubEditorTypes = null;
@@ -64,7 +65,7 @@ namespace UnityEditor
     }
 
     // Version for AssetImporterInspector derived editors
-    internal abstract class AssetImporterTabbedEditor : AssetImporterInspector
+    internal abstract class AssetImporterTabbedEditor : AssetImporterEditor
     {
         protected string[] m_TabNames = null;
         private int m_ActiveEditorIndex = 0;
@@ -76,7 +77,7 @@ namespace UnityEditor
         public BaseAssetImporterTabUI activeTab { get; private set; }
         protected BaseAssetImporterTabUI[] tabs { get { return m_Tabs; } set { m_Tabs = value; } }
 
-        internal virtual void OnEnable()
+        public override void OnEnable()
         {
             foreach (var tab in m_Tabs)
             {
@@ -103,7 +104,7 @@ namespace UnityEditor
             }
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
 
@@ -171,7 +172,7 @@ namespace UnityEditor
             return activeTab.HasPreviewGUI();
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             if (m_Tabs != null)
             {
@@ -187,16 +188,6 @@ namespace UnityEditor
                 {
                     tab.PostApply();
                 }
-            }
-        }
-
-        protected override bool ApplyRevertGUIButtons()
-        {
-            // have a single set of Apply/Revert buttons for all the tabs of the asset inspector panel
-            using (new EditorGUI.DisabledScope(!HasModified()))
-            {
-                RevertButton();
-                return ApplyButton();
             }
         }
     }

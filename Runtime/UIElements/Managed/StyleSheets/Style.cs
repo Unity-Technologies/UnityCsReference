@@ -58,6 +58,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         BackgroundColor,
         BorderColor,
         Overflow,
+        SliceLeft,
+        SliceTop,
+        SliceRight,
+        SliceBottom,
+        Opacity,
         // Always leave as last value
         Custom
     }

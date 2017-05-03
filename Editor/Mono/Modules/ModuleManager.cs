@@ -16,6 +16,7 @@ using UnityEngine;
 using Unity.DataContract;
 using UnityEditor.Callbacks;
 using UnityEditor.Utils;
+using UnityEditor.DeploymentTargets;
 
 namespace UnityEditor.Modules
 {
@@ -524,6 +525,25 @@ namespace UnityEditor.Modules
         internal static IBuildPostprocessor GetBuildPostProcessor(BuildTargetGroup targetGroup, BuildTarget target)
         {
             return GetBuildPostProcessor(GetTargetStringFrom(targetGroup, target));
+        }
+
+        internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(string target)
+        {
+            if (target == null)
+                return null;
+
+            foreach (var module in platformSupportModules)
+            {
+                if (module.TargetName == target)
+                    return module.CreateDeploymentTargetsExtension();
+            }
+
+            return null;
+        }
+
+        internal static IDeploymentTargetsExtension GetDeploymentTargetsExtension(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            return GetDeploymentTargetsExtension(GetTargetStringFrom(targetGroup, target));
         }
 
         internal static IBuildAnalyzer GetBuildAnalyzer(string target)

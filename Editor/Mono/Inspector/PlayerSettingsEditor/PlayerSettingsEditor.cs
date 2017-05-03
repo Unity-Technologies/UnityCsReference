@@ -97,6 +97,7 @@ namespace UnityEditor
             public static readonly GUIContent UIStatusBarHidden = EditorGUIUtility.TextContent("Status Bar Hidden");
             public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TextContent("Status Bar Style");
             public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TextContent("Mac App Store Validation");
+            public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TextContent("Category|'LSApplicationCategoryType'");
             public static readonly GUIContent D3D9FullscreenMode = EditorGUIUtility.TextContent("D3D9 Fullscreen Mode");
             public static readonly GUIContent D3D11FullscreenMode = EditorGUIUtility.TextContent("D3D11 Fullscreen Mode");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TextContent("Visible In Background");
@@ -138,6 +139,7 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TextContent("Require ES3.1+AEP");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TextContent("GPU Skinning*|Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TextContent("Compute Skinning*|Use Compute pipeline for Skinning");
+            public static readonly GUIContent skinOnGPUAndroidWarning = EditorGUIUtility.TextContent("GPU skinning on Android devices is only enabled in VR builds, and is experimental. Be sure to validate behavior and performance on your target devices.");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TextContent("Disable HW Statistics*|Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TextContent("Scripting Define Symbols*");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TextContent("Scripting Runtime Version*|The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
@@ -197,6 +199,7 @@ namespace UnityEditor
         // macOS
         SerializedProperty m_ApplicationBundleVersion;
         SerializedProperty m_UseMacAppStoreValidation;
+        SerializedProperty m_MacAppStoreCategory;
 
         // iOS, tvOS
         SerializedProperty m_IPhoneApplicationDisplayName;
@@ -436,6 +439,7 @@ namespace UnityEditor
             m_BakeCollisionMeshes           = FindPropertyAssert("bakeCollisionMeshes");
             m_ResizableWindow               = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
+            m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
             m_D3D9FullscreenMode            = FindPropertyAssert("d3d9FullscreenMode");
             m_D3D11FullscreenMode           = FindPropertyAssert("d3d11FullscreenMode");
             m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
@@ -750,11 +754,6 @@ namespace UnityEditor
             return targetGroup == BuildTargetGroup.Android;
         }
 
-        private static bool TargetSupportsHighDynamicRangeDisplays(BuildTargetGroup targetGroup)
-        {
-            return targetGroup == BuildTargetGroup.XboxOne;
-        }
-
         public void ResolutionSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             if (BeginSettingsBox(0, Styles.resolutionPresentationTitle))
@@ -838,10 +837,7 @@ namespace UnityEditor
                                 }
 
                                 EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
-                                // Windows Phone 8.1 does not support Portrait Upside Down, the rest of WSA does
-                                if (!(targetGroup == BuildTargetGroup.WSA && EditorUserBuildSettings.wsaSDK == WSASDK.PhoneSDK81))
-                                    EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
-
+                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
                                 EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
                                 EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
 
@@ -1005,7 +1001,7 @@ namespace UnityEditor
 
         private struct ChangeGraphicsApiAction
         {
-            public bool changeList, reloadGfx;
+            public readonly bool changeList, reloadGfx;
             public ChangeGraphicsApiAction(bool doChange, bool doReload) { changeList = doChange; reloadGfx = doReload; }
         }
         private ChangeGraphicsApiAction CheckApplyGraphicsAPIList(BuildTarget target, bool firstEntryChanged)
@@ -1373,24 +1369,12 @@ namespace UnityEditor
             }
 
             // Multithreaded rendering
-            if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.SamsungTV) //TODO:enable on desktops when decision is made
+            if (settingsExtension != null)
             {
-                if (IsMobileTarget(targetGroup))
+                if (IsMobileTarget(targetGroup) && settingsExtension.SupportsMultithreadedRendering())
                     m_MobileMTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MobileMTRendering.boolValue);
-                else
+                else if (settingsExtension.SupportsMultithreadedRendering())
                     m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-            }
-            else if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM)
-            {
-                if (Unsupported.IsDeveloperBuild())
-                {
-                    m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-                }
-                else
-                {
-                    // Force MT Rendering = true if not an internal developer build.
-                    m_MTRendering.boolValue = true;
-                }
             }
 
             // Batching section
@@ -1444,6 +1428,15 @@ namespace UnityEditor
                 }
             }
 
+
+            bool hdrSupported = false;
+            bool gfxJobModesSupported = false;
+            if (settingsExtension != null)
+            {
+                hdrSupported = settingsExtension.SupportsHighDynamicRangeDisplays();
+                gfxJobModesSupported = settingsExtension.SupportsGfxJobModes();
+            }
+
             // GPU Skinning toggle (only show on relevant platforms)
             if (targetGroup == BuildTargetGroup.WiiU ||
                 targetGroup == BuildTargetGroup.Standalone ||
@@ -1464,9 +1457,14 @@ namespace UnityEditor
                 }
             }
 
+            if ((targetGroup == BuildTargetGroup.Android) && PlayerSettings.gpuSkinning)
+            {
+                EditorGUILayout.HelpBox(Styles.skinOnGPUAndroidWarning.text, MessageType.Warning);
+            }
+
             EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
 
-            if (PlatformSupportsGfxJobModes(targetGroup))
+            if (gfxJobModesSupported)
             {
                 using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
                 {
@@ -1494,7 +1492,7 @@ namespace UnityEditor
                 PlayerSettings.protectGraphicsMemory = EditorGUILayout.Toggle(Styles.protectGraphicsMemory, PlayerSettings.protectGraphicsMemory);
             }
 
-            if (TargetSupportsHighDynamicRangeDisplays(targetGroup))
+            if (hdrSupported)
             {
                 PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Use display in HDR mode|Automatically switch the display to HDR output (on supported displays) at start of application."), PlayerSettings.useHDRDisplay);
             }
@@ -1518,11 +1516,13 @@ namespace UnityEditor
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(Styles.macAppStoreTitle, EditorStyles.boldLabel);
 
-                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", Styles.undoChangedBundleIdentifierString);
-                EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TextContent("Version*"));
-                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", Styles.undoChangedBuildNumberString);
+                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier|'CFBundleIdentifier'", Styles.undoChangedBundleIdentifierString);
+                EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TextContent("Version*|'CFBundleShortVersionString'"));
+                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build|'CFBundleVersion'", Styles.undoChangedBuildNumberString);
 
+                EditorGUILayout.PropertyField(m_MacAppStoreCategory, Styles.macAppStoreCategory);
                 EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, Styles.useMacAppStoreValidation);
+
                 EditorGUILayout.Space();
             }
         }
@@ -1596,7 +1596,17 @@ namespace UnityEditor
                 }
                 else
                 {
-                    newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
+                    // The latest runtime version for some platforms can only be supported when using IL2CPP
+                    if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest &&
+                        (targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.PSP2))
+                    {
+                        newBackend = ScriptingImplementation.IL2CPP;
+                        PlayerSettingsEditor.BuildDisabledEnumPopup(Styles.scriptingIL2CPP, Styles.scriptingBackend);
+                    }
+                    else
+                    {
+                        newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
+                    }
                 }
                 if (newBackend != currBackend)
                     PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
@@ -1863,18 +1873,6 @@ namespace UnityEditor
                     throw new NotImplementedException(string.Format("Missing name for {0}", values[i]));
             }
             return names;
-        }
-
-        bool PlatformSupportsGfxJobModes(BuildTargetGroup targetGroup)
-        {
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.PS4:
-                    return true;
-
-                default:
-                    return false;
-            }
         }
 
         private static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)

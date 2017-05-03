@@ -17,13 +17,7 @@ using UnityEngineInternal;
 
 namespace UnityEngine.Playables
 {
-public enum DirectorUpdateMode
-{
-    DSPClock = 0,
-    GameTime = 1,
-    UnscaledGameTime = 2,
-    Manual   = 3,
-}
+
 
 public enum DirectorWrapMode
 {
@@ -186,10 +180,13 @@ public partial class PlayableDirector : Behaviour, IExposedPropertyTable
         }
     
     
+    private void InternalGetCurrentGraph (ref PlayableGraph graph) {
+        INTERNAL_CALL_InternalGetCurrentGraph ( this, ref graph );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void InternalGetCurrentGraph (ref PlayableGraph graph) ;
-
+    private extern static void INTERNAL_CALL_InternalGetCurrentGraph (PlayableDirector self, ref PlayableGraph graph);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SetGenericBinding (Object key, Object value) ;

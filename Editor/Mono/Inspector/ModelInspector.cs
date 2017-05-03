@@ -40,7 +40,7 @@ namespace UnityEditor
             if (m_PreviewUtility == null)
             {
                 m_PreviewUtility = new PreviewRenderUtility();
-                m_PreviewUtility.m_CameraFieldOfView = 30.0f;
+                m_PreviewUtility.camera.fieldOfView = 30.0f;
                 m_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
                 m_WireMaterial = CreateWireframeMaterial();
             }
@@ -69,20 +69,17 @@ namespace UnityEditor
             float halfSize = bounds.extents.magnitude;
             float distance = 4.0f * halfSize;
 
-            previewUtility.m_Camera.transform.position = -Vector3.forward * distance;
-            previewUtility.m_Camera.transform.rotation = Quaternion.identity;
-            previewUtility.m_Camera.nearClipPlane = distance - halfSize * 1.1f;
-            previewUtility.m_Camera.farClipPlane = distance + halfSize * 1.1f;
+            previewUtility.camera.transform.position = -Vector3.forward * distance;
+            previewUtility.camera.transform.rotation = Quaternion.identity;
+            previewUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
+            previewUtility.camera.farClipPlane = distance + halfSize * 1.1f;
 
-            previewUtility.m_Light[0].intensity = 1.4f;
-            previewUtility.m_Light[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
-            previewUtility.m_Light[1].intensity = 1.4f;
-            Color amb = new Color(.1f, .1f, .1f, 0);
-            InternalEditorUtility.SetCustomLighting(previewUtility.m_Light, amb);
+            previewUtility.lights[0].intensity = 1.4f;
+            previewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
+            previewUtility.lights[1].intensity = 1.4f;
 
+            previewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
             RenderMeshPreviewSkipCameraAndLighting(mesh, bounds, previewUtility, litMaterial, wireMaterial, null, direction, meshSubset);
-
-            InternalEditorUtility.RemoveCustomLighting();
         }
 
         internal static void RenderMeshPreviewSkipCameraAndLighting(
@@ -107,7 +104,7 @@ namespace UnityEditor
             int submeshes = mesh.subMeshCount;
             if (litMaterial != null)
             {
-                previewUtility.m_Camera.clearFlags = CameraClearFlags.Nothing;
+                previewUtility.camera.clearFlags = CameraClearFlags.Nothing;
                 if (meshSubset < 0 || meshSubset >= submeshes)
                 {
                     for (int i = 0; i < submeshes; ++i)
@@ -115,12 +112,12 @@ namespace UnityEditor
                 }
                 else
                     previewUtility.DrawMesh(mesh, pos, rot, litMaterial, meshSubset, customProperties);
-                previewUtility.m_Camera.Render();
+                previewUtility.Render();
             }
 
             if (wireMaterial != null)
             {
-                previewUtility.m_Camera.clearFlags = CameraClearFlags.Nothing;
+                previewUtility.camera.clearFlags = CameraClearFlags.Nothing;
                 GL.wireframe = true;
                 if (meshSubset < 0 || meshSubset >= submeshes)
                 {
@@ -129,7 +126,7 @@ namespace UnityEditor
                 }
                 else
                     previewUtility.DrawMesh(mesh, pos, rot, wireMaterial, meshSubset, customProperties);
-                previewUtility.m_Camera.Render();
+                previewUtility.Render();
                 GL.wireframe = false;
             }
 

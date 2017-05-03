@@ -41,7 +41,8 @@ namespace UnityEngine
         Game = 1,
         SceneView = 2,
         Preview = 4,
-        VR = 8
+        VR = 8,
+        Reflection = 16
     }
 
     [Flags]
@@ -352,6 +353,27 @@ namespace UnityEngine
         RGBAUShort = 24
     }
 
+    public enum VRTextureUsage
+    {
+        None,
+        OneEye,
+        TwoEyes
+    }
+
+    // keep this in sync with the RenderTextureFlags enum in RenderTexture.h
+    [Flags]
+    public enum RenderTextureCreationFlags
+    {
+        MipMap = 1 << 0,
+        AutoGenerateMips = 1 << 1,
+        SRGB = 1 << 2,
+        EyeTexture = 1 << 3,
+        EnableRandomWrite = 1 << 4,
+        CreatedFromScript = 1 << 5, // always set by script.
+        // SampleOnlyDepth = 1 << 6, // this is only used internally.
+        AllowVerticalFlip = 1 << 7,
+    }
+
     public enum RenderTextureReadWrite
     {
         Default = 0,
@@ -625,7 +647,9 @@ namespace UnityEngine.Rendering
         AfterImageEffects,
         AfterEverything,
         BeforeReflections,
-        AfterReflections
+        AfterReflections,
+        BeforeHaloAndLensFlares,
+        AfterHaloAndLensFlares
     }
 
     // Keep in sync with RenderLightEventType in Runtime/Graphics/CommandBuffer/RenderingEvents.h
@@ -904,7 +928,8 @@ namespace UnityEngine.Rendering
     public enum ShadowSamplingMode
     {
         CompareDepths = 0,
-        RawDepth = 1
+        RawDepth = 1,
+        None = 2
     }
 
     // Match BaseRenderer::LightProbeUsage on C++ side
@@ -934,6 +959,35 @@ namespace UnityEngine.Rendering
         Disabled = 0,
         UseBuiltin = 1,
         UseCustom = 2,
+    }
+
+    // Match platform_caps_keywords enum on C++ side (Runtime/Graphics/PlatformCapsKeywords.h)
+    // with enum names being actual shader defines (from platform_caps_keywords::KeywordDefine)
+    public enum BuiltinShaderDefine
+    {
+        UNITY_NO_DXT5nm,
+        UNITY_NO_RGBM,
+        UNITY_USE_NATIVE_HDR,
+        UNITY_ENABLE_REFLECTION_BUFFERS,
+        UNITY_FRAMEBUFFER_FETCH_AVAILABLE,
+        UNITY_ENABLE_NATIVE_SHADOW_LOOKUPS,
+        UNITY_METAL_SHADOWS_USE_POINT_FILTERING,
+        UNITY_USE_PREMULTIPLIED_MATRICES,
+        UNITY_NO_SCREENSPACE_SHADOWS,
+        UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS,
+        UNITY_PBS_USE_BRDF1,
+        UNITY_PBS_USE_BRDF2,
+        UNITY_PBS_USE_BRDF3,
+        UNITY_NO_FULL_STANDARD_SHADER,
+        UNITY_SPECCUBE_BOX_PROJECTION,
+        UNITY_SPECCUBE_BLENDING,
+        UNITY_ENABLE_DETAIL_NORMALMAP,
+        SHADER_API_MOBILE,
+        SHADER_API_DESKTOP,
+        UNITY_HARDWARE_TIER1,
+        UNITY_HARDWARE_TIER2,
+        UNITY_HARDWARE_TIER3,
+        UNITY_COLORSPACE_GAMMA,
     }
 
     // Match TextureDimension on C++ side

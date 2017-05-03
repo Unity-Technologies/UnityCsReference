@@ -76,6 +76,15 @@ namespace UnityEditorInternal
         }
 
         /// <summary>
+        /// If this property returns true the argument "--libil2cpp-static" will be used when calling il2cpp.exe
+
+        /// </summary>
+        public virtual bool LinkLibIl2CppStatically
+        {
+            get { return true; }
+        }
+
+        /// <summary>
         /// Change the relative include paths into absolute paths that can be passed to the C++ compiler.
         /// By default this method returns its input with each path relative to the current directory.
         /// </summary>

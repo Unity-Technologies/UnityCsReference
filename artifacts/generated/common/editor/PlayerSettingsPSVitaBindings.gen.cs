@@ -149,6 +149,7 @@ public enum PSVitaTvBootMode
             set;
         }
 
+        [System.Obsolete ("UnityEditor.PSVita.useDebugIl2cppLibs no longer has any affect.")]
         internal extern static bool useDebugIl2cppLibs
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

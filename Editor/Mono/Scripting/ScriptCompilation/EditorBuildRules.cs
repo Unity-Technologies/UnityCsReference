@@ -178,6 +178,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static ScriptAssembly[] GetAllScriptAssemblies(IEnumerable<string> allSourceFiles, string projectDirectory, BuildFlags buildFlags, ScriptAssemblySettings settings, CompilationAssemblies assemblies)
         {
+            if (allSourceFiles == null || allSourceFiles.Count() == 0)
+                return new ScriptAssembly[0];
+
             bool buildingForEditor = (buildFlags & BuildFlags.BuildingForEditor) == BuildFlags.BuildingForEditor;
             var targetAssemblyFiles = new Dictionary<TargetAssembly, HashSet<string>>();
 

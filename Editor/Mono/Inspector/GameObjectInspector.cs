@@ -72,7 +72,6 @@ namespace UnityEditor
         Vector2 previewDir;
 
         PreviewRenderUtility m_PreviewUtility;
-        List<GameObject> m_PreviewInstances;
 
         bool m_HasInstance = false;
         bool m_AllOfSamePrefabType = true;
@@ -586,50 +585,17 @@ namespace UnityEditor
                 renderer.enabled = enabled;
         }
 
-        public override void ReloadPreviewInstances()
-        {
-            CreatePreviewInstances();
-        }
-
-        void CreatePreviewInstances()
-        {
-            DestroyPreviewInstances();
-
-            if (m_PreviewInstances == null)
-                m_PreviewInstances = new List<GameObject>(targets.Length);
-
-            for (int i = 0; i < targets.Length; ++i)
-            {
-                GameObject instance = EditorUtility.InstantiateForAnimatorPreview(targets[i]);
-                SetEnabledRecursive(instance, false);
-                m_PreviewInstances.Add(instance);
-            }
-        }
-
-        void DestroyPreviewInstances()
-        {
-            if (m_PreviewInstances == null || m_PreviewInstances.Count == 0)
-                return;
-
-            foreach (GameObject instance in m_PreviewInstances)
-                Object.DestroyImmediate(instance);
-            m_PreviewInstances.Clear();
-        }
-
         void InitPreview()
         {
             if (m_PreviewUtility == null)
             {
-                m_PreviewUtility = new PreviewRenderUtility(true);
-                m_PreviewUtility.m_CameraFieldOfView = 30.0f;
-                m_PreviewUtility.m_Camera.cullingMask = 1 << Camera.PreviewCullingLayer;
-                CreatePreviewInstances();
+                m_PreviewUtility = new PreviewRenderUtility();
+                m_PreviewUtility.camera.fieldOfView = 30.0f;
             }
         }
 
         public void OnDestroy()
         {
-            DestroyPreviewInstances();
             if (m_PreviewUtility != null)
             {
                 m_PreviewUtility.Cleanup();
@@ -822,37 +788,34 @@ namespace UnityEditor
 
         private void DoRenderPreview()
         {
-            GameObject go = m_PreviewInstances[referenceTargetIndex];
+            var toDraw = targets[referenceTargetIndex] as GameObject;
+            if (toDraw == null)
+                return;
 
-            Bounds bounds = new Bounds(go.transform.position, Vector3.zero);
-            GetRenderableBoundsRecurse(ref bounds, go);
+            Bounds bounds = new Bounds(toDraw.transform.position, Vector3.zero);
+            GetRenderableBoundsRecurse(ref bounds, toDraw);
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
             Quaternion rot = Quaternion.Euler(-previewDir.y, -previewDir.x, 0);
             Vector3 pos = bounds.center - rot * (Vector3.forward * distance);
 
-            m_PreviewUtility.m_Camera.transform.position = pos;
-            m_PreviewUtility.m_Camera.transform.rotation = rot;
-            m_PreviewUtility.m_Camera.nearClipPlane = distance - halfSize * 1.1f;
-            m_PreviewUtility.m_Camera.farClipPlane = distance + halfSize * 1.1f;
+            m_PreviewUtility.camera.transform.position = pos;
+            m_PreviewUtility.camera.transform.rotation = rot;
+            m_PreviewUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
+            m_PreviewUtility.camera.farClipPlane = distance + halfSize * 1.1f;
 
-            m_PreviewUtility.m_Light[0].intensity = .7f;
-            m_PreviewUtility.m_Light[0].transform.rotation = rot * Quaternion.Euler(40f, 40f, 0);
-            m_PreviewUtility.m_Light[1].intensity = .7f;
-            m_PreviewUtility.m_Light[1].transform.rotation = rot * Quaternion.Euler(340, 218, 177);
-            Color amb = new Color(.1f, .1f, .1f, 0);
+            m_PreviewUtility.lights[0].intensity = .7f;
+            m_PreviewUtility.lights[0].transform.rotation = rot * Quaternion.Euler(40f, 40f, 0);
+            m_PreviewUtility.lights[1].intensity = .7f;
+            m_PreviewUtility.lights[1].transform.rotation = rot * Quaternion.Euler(340, 218, 177);
 
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
+            m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
 
-            SetEnabledRecursive(go, true);
-            m_PreviewUtility.m_Camera.Render();
-            SetEnabledRecursive(go, false);
-
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
+            m_PreviewUtility.AddSingleGO(toDraw);
+            var prefabType = PrefabUtility.GetPrefabType(toDraw);
+            var allowSRP = !(prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.ModelPrefab);
+            m_PreviewUtility.Render(allowSRP);
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)

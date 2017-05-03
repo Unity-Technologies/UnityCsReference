@@ -104,7 +104,11 @@ public enum BuildAssetBundleOptions
     
     StrictMode = 512,
     
-    DryRunBuild = 1024
+    DryRunBuild = 1024,
+    
+    DisableLoadAssetByFileName = 4096,
+    
+    DisableLoadAssetByFileNameWithExtension = 8192
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -113,6 +117,7 @@ public partial struct AssetBundleBuild
     public string   assetBundleName;
     public string   assetBundleVariant;
     public string[] assetNames;
+    public string[] addressableNames;
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]

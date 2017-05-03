@@ -292,7 +292,7 @@ namespace UnityEditor
                     m_Shader = material.shader;
                     OnShaderChanged();
                 }
-                InspectorWindow.RepaintAllInspectors(); // Repaint to let other inspectors detect if their shader has changed
+                InspectorWindow.RepaintAllInspectors();
             }
         }
 
@@ -1575,7 +1575,7 @@ namespace UnityEditor
             if (m_PreviewUtility == null)
             {
                 m_PreviewUtility = new PreviewRenderUtility();
-                EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.m_Camera, true);
+                EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.camera, true);
             }
 
             if (s_Meshes[0] == null)
@@ -1686,31 +1686,28 @@ namespace UnityEditor
 
         private void DoRenderPreview()
         {
-            if (m_PreviewUtility.m_RenderTexture.width <= 0 || m_PreviewUtility.m_RenderTexture.height <= 0)
+            if (m_PreviewUtility.renderTexture.width <= 0 || m_PreviewUtility.renderTexture.height <= 0)
                 return;
 
             var mat = target as Material;
             var viewType = GetPreviewType(mat);
 
-            m_PreviewUtility.m_Camera.transform.position = -Vector3.forward * 5;
-            m_PreviewUtility.m_Camera.transform.rotation = Quaternion.identity;
-            Color amb;
+            m_PreviewUtility.camera.transform.position = -Vector3.forward * 5;
+            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
             if (m_LightMode == 0)
             {
-                m_PreviewUtility.m_Light[0].intensity = 1.0f;
-                m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
-                m_PreviewUtility.m_Light[1].intensity = 0;
-                amb = new Color(.2f, .2f, .2f, 0);
+                m_PreviewUtility.lights[0].intensity = 1.0f;
+                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
+                m_PreviewUtility.lights[1].intensity = 0;
             }
             else
             {
-                m_PreviewUtility.m_Light[0].intensity = 1.0f;
-                m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
-                m_PreviewUtility.m_Light[1].intensity = 1.0f;
-                amb = new Color(.2f, .2f, .2f, 0);
+                m_PreviewUtility.lights[0].intensity = 1.0f;
+                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
+                m_PreviewUtility.lights[1].intensity = 1.0f;
             }
 
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
+            m_PreviewUtility.ambientColor = new Color(.2f, .2f, .2f, 0);
 
             Quaternion rot = Quaternion.identity;
             if (DoesPreviewAllowRotation(viewType))
@@ -1725,14 +1722,14 @@ namespace UnityEditor
                 case PreviewType.Mesh:
                     // We need to rotate camera, so we can see different reflections from different angles
                     // If we would only rotate object, the reflections would stay the same
-                    m_PreviewUtility.m_Camera.transform.position = Quaternion.Inverse(rot) * m_PreviewUtility.m_Camera.transform.position;
-                    m_PreviewUtility.m_Camera.transform.LookAt(Vector3.zero);
+                    m_PreviewUtility.camera.transform.position = Quaternion.Inverse(rot) * m_PreviewUtility.camera.transform.position;
+                    m_PreviewUtility.camera.transform.LookAt(Vector3.zero);
                     rot = Quaternion.identity;
                     break;
                 case PreviewType.Skybox:
                     mesh = null;
-                    m_PreviewUtility.m_Camera.transform.rotation = Quaternion.Inverse(rot);
-                    m_PreviewUtility.m_Camera.fieldOfView = 120.0f;
+                    m_PreviewUtility.camera.transform.rotation = Quaternion.Inverse(rot);
+                    m_PreviewUtility.camera.fieldOfView = 120.0f;
                     break;
             }
 
@@ -1740,18 +1737,14 @@ namespace UnityEditor
             {
                 m_PreviewUtility.DrawMesh(mesh, Vector3.zero, rot, mat, 0, null, m_ReflectionProbePicker.Target, false);
             }
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
-            m_PreviewUtility.m_Camera.Render();
+
+            m_PreviewUtility.Render(true);
             if (viewType == PreviewType.Skybox)
             {
                 GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                InternalEditorUtility.DrawSkyboxMaterial(mat, m_PreviewUtility.m_Camera);
+                InternalEditorUtility.DrawSkyboxMaterial(mat, m_PreviewUtility.camera);
                 GL.sRGBWrite = false;
             }
-
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
         }
 
         public sealed override bool HasPreviewGUI()

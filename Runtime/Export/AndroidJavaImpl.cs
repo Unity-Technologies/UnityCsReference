@@ -31,6 +31,39 @@ namespace UnityEngine
         }
     }
 
+    internal class GlobalJavaObjectRef
+    {
+        public GlobalJavaObjectRef(IntPtr jobject)
+        {
+            m_jobject = (jobject == IntPtr.Zero) ? IntPtr.Zero : AndroidJNI.NewGlobalRef(jobject);
+        }
+
+        ~GlobalJavaObjectRef()
+        {
+            Dispose();
+        }
+
+        public static implicit operator IntPtr(GlobalJavaObjectRef obj)
+        {
+            return obj.m_jobject;
+        }
+
+        private bool m_disposed = false;
+        public void Dispose()
+        {
+            if (m_disposed)
+                return;
+
+            m_disposed = true;
+
+            if (m_jobject != IntPtr.Zero)
+            {
+                AndroidJNISafe.DeleteGlobalRef(m_jobject);
+            }
+        }
+
+        protected IntPtr m_jobject;
+    }
 
     internal class AndroidJavaRunnableProxy : AndroidJavaProxy
     {
@@ -88,6 +121,39 @@ namespace UnityEngine
                 args[i] = _AndroidJNIHelper.Unbox(javaArgs[i]);
             return Invoke(methodName, args);
         }
+
+        // implementing equals, hashCode and toString which should be implemented by all java objects
+        // these methods must be in camel case, because that's how they are defined in java.
+        public virtual bool equals(AndroidJavaObject obj)
+        {
+            IntPtr anotherObject = (obj == null) ? System.IntPtr.Zero : obj.GetRawObject();
+            return AndroidJNI.IsSameObject(GetProxy().GetRawObject(), anotherObject);
+        }
+
+        public virtual int hashCode()
+        {
+            jvalue[] jniArgs = new jvalue[1];
+            jniArgs[0].l = GetProxy().GetRawObject();
+            return (int)AndroidJNISafe.CallStaticIntMethod(s_JavaLangSystemClass, s_HashCodeMethodID, jniArgs);
+        }
+
+        public virtual string toString()
+        {
+            return this.ToString() + " <c# proxy java object>";
+        }
+
+        internal AndroidJavaObject proxyObject;
+        internal AndroidJavaObject GetProxy()
+        {
+            if (proxyObject == null)
+            {
+                proxyObject = AndroidJavaObject.AndroidJavaObjectDeleteLocalRef(AndroidJNIHelper.CreateJavaProxy(this));
+            }
+            return proxyObject;
+        }
+
+        private static readonly GlobalJavaObjectRef s_JavaLangSystemClass = new GlobalJavaObjectRef(AndroidJNISafe.FindClass("java/lang/System"));
+        private static readonly IntPtr s_HashCodeMethodID = AndroidJNIHelper.GetMethodID(s_JavaLangSystemClass, "identityHashCode", "(Ljava/lang/Object;)I", true);
     }
 
     public partial class AndroidJavaObject
@@ -124,13 +190,13 @@ namespace UnityEngine
             if (args == null) args = new object[] { null };
             using (var clazz = FindClass(className))
             {
-                m_jclass = AndroidJNI.NewGlobalRef(clazz.GetRawObject());
+                m_jclass = new GlobalJavaObjectRef(clazz.GetRawObject());
                 jvalue[] jniArgs = AndroidJNIHelper.CreateJNIArgArray(args);
                 try
                 {
                     IntPtr constructorID = AndroidJNIHelper.GetConstructorID(m_jclass, args);
                     IntPtr jobject = AndroidJNISafe.NewObject(m_jclass, constructorID, jniArgs);
-                    m_jobject = AndroidJNI.NewGlobalRef(jobject);
+                    m_jobject = new GlobalJavaObjectRef(jobject);
                     AndroidJNISafe.DeleteLocalRef(jobject);
                 }
                 finally
@@ -148,8 +214,8 @@ namespace UnityEngine
             }
 
             IntPtr jclass = AndroidJNISafe.GetObjectClass(jobject);
-            m_jobject = AndroidJNI.NewGlobalRef(jobject);
-            m_jclass = AndroidJNI.NewGlobalRef(jclass);
+            m_jobject = new GlobalJavaObjectRef(jobject);
+            m_jclass = new GlobalJavaObjectRef(jclass);
             AndroidJNISafe.DeleteLocalRef(jclass);
         }
 
@@ -162,16 +228,10 @@ namespace UnityEngine
             Dispose(true);
         }
 
-        private bool m_disposed = false;
         protected virtual void Dispose(bool disposing)
         {
-            if (m_disposed)
-                return;
-
-            m_disposed = true;
-
-            AndroidJNISafe.DeleteGlobalRef(m_jobject);
-            AndroidJNISafe.DeleteGlobalRef(m_jclass);
+            m_jobject.Dispose();
+            m_jclass.Dispose();
         }
 
         protected void _Dispose()
@@ -521,8 +581,8 @@ namespace UnityEngine
         protected IntPtr _GetRawObject() { return m_jobject; }
         protected IntPtr _GetRawClass() { return m_jclass; }
 
-        protected IntPtr m_jobject;
-        protected IntPtr m_jclass;          // use this for static lookups; reset in subclases
+        internal GlobalJavaObjectRef m_jobject;
+        internal GlobalJavaObjectRef m_jclass;          // use this for static lookups; reset in subclases
 
         protected static AndroidJavaObject FindClass(string name)
         {
@@ -548,8 +608,8 @@ namespace UnityEngine
             DebugPrint("Creating AndroidJavaClass from " + className);
             using (var clazz = FindClass(className))
             {
-                m_jclass = AndroidJNI.NewGlobalRef(clazz.GetRawObject());
-                m_jobject = IntPtr.Zero;
+                m_jclass = new GlobalJavaObjectRef(clazz.GetRawObject());
+                m_jobject = new GlobalJavaObjectRef(IntPtr.Zero);
             }
         }
 
@@ -560,8 +620,8 @@ namespace UnityEngine
                 throw new Exception("JNI: Init'd AndroidJavaClass with null ptr!");
             }
 
-            m_jclass = AndroidJNI.NewGlobalRef(jclass);
-            m_jobject = IntPtr.Zero;
+            m_jclass = new GlobalJavaObjectRef(jclass);
+            m_jobject = new GlobalJavaObjectRef(IntPtr.Zero);
         }
     }
 
@@ -591,11 +651,11 @@ namespace UnityEngine
         }
 
         private const string RELECTION_HELPER_CLASS_NAME = "com/unity3d/player/ReflectionHelper";
-        private static IntPtr s_ReflectionHelperClass               = AndroidJNI.NewGlobalRef(AndroidJNISafe.FindClass(RELECTION_HELPER_CLASS_NAME));
-        private static IntPtr s_ReflectionHelperGetConstructorID    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getConstructorID", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Constructor;");
-        private static IntPtr s_ReflectionHelperGetMethodID         = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
-        private static IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
-        private static IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(ILjava/lang/Class;)Ljava/lang/Object;");
+        private static readonly GlobalJavaObjectRef s_ReflectionHelperClass  = new GlobalJavaObjectRef(AndroidJNISafe.FindClass(RELECTION_HELPER_CLASS_NAME));
+        private static readonly IntPtr s_ReflectionHelperGetConstructorID    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getConstructorID", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/reflect/Constructor;");
+        private static readonly IntPtr s_ReflectionHelperGetMethodID         = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
+        private static readonly IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
+        private static readonly IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(ILjava/lang/Class;)Ljava/lang/Object;");
 
         public static IntPtr GetConstructorMember(IntPtr jclass, string signature)
         {
@@ -737,7 +797,7 @@ namespace UnityEngine
                 }
                 else if (obj is AndroidJavaProxy)
                 {
-                    ret[i].l = AndroidJNIHelper.CreateJavaProxy((AndroidJavaProxy)obj);
+                    ret[i].l = ((AndroidJavaProxy)obj).GetProxy().GetRawObject();
                 }
                 else if (obj is AndroidJavaRunnable)
                 {
@@ -874,7 +934,7 @@ namespace UnityEngine
             }
             else if (obj is AndroidJavaProxy)
             {
-                return AndroidJavaObject.AndroidJavaObjectDeleteLocalRef(AndroidJNIHelper.CreateJavaProxy((AndroidJavaProxy)obj));
+                return ((AndroidJavaProxy)obj).GetProxy();
             }
             else if (obj is AndroidJavaRunnable)
             {
@@ -891,7 +951,7 @@ namespace UnityEngine
             int i = 0;
             foreach (object obj in args)
             {
-                if (obj is System.String || obj is AndroidJavaRunnable || obj is AndroidJavaProxy || obj is System.Array)
+                if (obj is System.String || obj is AndroidJavaRunnable || obj is System.Array)
                     AndroidJNISafe.DeleteLocalRef(jniArgs[i].l);
 
                 ++i;

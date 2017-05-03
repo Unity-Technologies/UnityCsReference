@@ -67,7 +67,8 @@ namespace UnityEditor
             if (m_PreviewUtility != null)
                 return;
 
-            m_PreviewUtility = new PreviewRenderUtility {m_CameraFieldOfView = 15.0f};
+            m_PreviewUtility = new PreviewRenderUtility();
+            m_PreviewUtility.camera.fieldOfView = 15f;
             m_Mesh = PreviewRenderUtility.GetPreviewSphere();
         }
 
@@ -176,21 +177,17 @@ namespace UnityEditor
 
             // When rendering the cubemap preview we don't need lighting so we provide a custom list with no lights.
             // If we don't do this and we are generating the preview for a point light cookie, if a light uses this cookie it will try to bind it which result in internal assert in AssetDatabase due to using the texture while building it.
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, new Color(0.0f, 0.0f, 0.0f, 0.0f));
+            m_PreviewUtility.ambientColor = Color.black;
 
             RenderCubemap(t, previewDirection, previewDistance);
 
-            InternalEditorUtility.RemoveCustomLighting();
             return m_PreviewUtility.EndStaticPreview();
         }
 
         private void RenderCubemap(Texture t, Vector2 previewDir, float previewDistance)
         {
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
-
-            m_PreviewUtility.m_Camera.transform.position = -Vector3.forward * previewDistance;
-            m_PreviewUtility.m_Camera.transform.rotation = Quaternion.identity;
+            m_PreviewUtility.camera.transform.position = -Vector3.forward * previewDistance;
+            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
             Quaternion rot = Quaternion.Euler(previewDir.y, 0, 0) * Quaternion.Euler(0, previewDir.x, 0);
 
             var mat = EditorGUIUtility.LoadRequired("Previews/PreviewCubemapMaterial.mat") as Material;
@@ -205,9 +202,7 @@ namespace UnityEditor
             mat.SetFloat("_Intensity", m_Intensity);
 
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, mat, 0);
-            m_PreviewUtility.m_Camera.Render();
-
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
+            m_PreviewUtility.Render();
         }
     }
 }

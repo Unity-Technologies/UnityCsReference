@@ -4775,7 +4775,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
 
                 // If there are 2 columns we use the same column widths as if there had been 3 columns
-                // in order to make columns light up neatly.
+                // in order to make columns line up neatly.
                 if (columns == 2)
                 {
                     float columnWidth = (fieldPosition.width - (3 - 1) * kSpacingSubLabel) / 3f;
@@ -5221,6 +5221,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return ScriptAttributeUtility.GetHandler(property).OnGUI(position, property, label, includeChildren);
         }
 
+        const int kMaxArraySizeForMultiEditing = 64; //based on kMaxArraySizeForMultiEditing from SerializedProperty.h
+        static GUIContent s_ArrayMultiInfoText = EditorGUIUtility.TextContent("Arrays with more than " + kMaxArraySizeForMultiEditing + " elements cannot be displayed when multiple objects are selected.");
+        static GUIContent s_ArrayMultiInfoContent = new GUIContent(s_ArrayMultiInfoText.text, null, s_ArrayMultiInfoText.text);
+
         internal static bool DefaultPropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
             label = BeginProperty(position, label, property);
@@ -5396,6 +5400,15 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 {
                     GUIStyle foldoutStyle = (DragAndDrop.activeControlID == -10) ? EditorStyles.foldoutPreDrop : EditorStyles.foldout;
                     newChildrenAreExpanded = EditorGUI.Foldout(position, childrenAreExpanded, s_PropertyFieldTempContent, true, foldoutStyle);
+                }
+
+
+                if (childrenAreExpanded && property.isArray && property.arraySize > kMaxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
+                {
+                    Rect boxRect = position;
+                    boxRect.xMin += EditorGUIUtility.labelWidth - EditorGUI.indent;
+
+                    EditorGUI.LabelField(boxRect, GUIContent.none, s_ArrayMultiInfoContent, EditorStyles.helpBox);
                 }
 
                 if (newChildrenAreExpanded != childrenAreExpanded)

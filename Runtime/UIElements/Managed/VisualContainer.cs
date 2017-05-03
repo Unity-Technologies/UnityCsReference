@@ -53,7 +53,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal List<StyleSheet> m_StyleSheets;
 
-        internal virtual IEnumerable<StyleSheet> styleSheets
+        internal IEnumerable<StyleSheet> styleSheets
         {
             get
             {
@@ -290,7 +290,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal void LoadStyleSheetsFromPaths()
         {
-            if (m_StyleSheetPaths == null)
+            if (m_StyleSheetPaths == null || elementPanel == null)
             {
                 return;
             }
@@ -298,11 +298,11 @@ namespace UnityEngine.Experimental.UIElements
             m_StyleSheets = new List<StyleSheet>();
             foreach (var styleSheetPath in m_StyleSheetPaths)
             {
-                StyleSheet sheetAsset = Resources.Load(styleSheetPath, typeof(StyleSheet)) as StyleSheet;
+                StyleSheet sheetAsset = elementPanel.loadResourceFunc(styleSheetPath, typeof(StyleSheet)) as StyleSheet;
 
                 if (sheetAsset != null)
                 {
-                    // Everytime we load a new style sheet, we cache some data on them
+                    // Every time we load a new style sheet, we cache some data on them
                     for (int i = 0, count = sheetAsset.complexSelectors.Length; i < count; i++)
                     {
                         sheetAsset.complexSelectors[i].CachePseudoStateMasks();

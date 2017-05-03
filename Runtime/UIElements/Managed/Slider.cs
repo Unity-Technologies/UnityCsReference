@@ -77,6 +77,8 @@ namespace UnityEngine.Experimental.UIElements
             lowValue = start;
             highValue = end;
 
+            AddChild(new VisualElement() { name = "TrackElement" });
+
             // Explicitly set m_Value
             m_Value = lowValue;
 
@@ -182,13 +184,22 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
+                StyleSheets.VisualElementStyles elemStyles = dragElement.styles;
                 newDragElementPos = dragElement.position;
 
                 // Any factor smaller than 1f will necessitate a drag element
                 if (direction == Direction.Horizontal)
-                    newDragElementPos.width = position.width * factor;
+                {
+                    // Make sure the minimum width of drag element is honoured
+                    float elemMinWidth = elemStyles.minWidth.GetSpecifiedValueOrDefault(0.0f);
+                    newDragElementPos.width = Mathf.Max(position.width * factor, elemMinWidth);
+                }
                 else
-                    newDragElementPos.height = position.height * factor;
+                {
+                    // Make sure the minimum height of drag element is honoured
+                    float elemMinHeight = elemStyles.minHeight.GetSpecifiedValueOrDefault(0.0f);
+                    newDragElementPos.height = Mathf.Max(position.height * factor, elemMinHeight);
+                }
             }
 
             dragElement.position = newDragElementPos;
@@ -196,6 +207,11 @@ namespace UnityEngine.Experimental.UIElements
 
         void UpdateDragElementPosition()
         {
+            // UpdateDragElementPosition() might be called at times where we have no panel
+            // we must skip the position calculation and wait for a layout pass
+            if (panel == null)
+                return;
+
             float pos = m_Value - lowValue;
             float dragElementWidth = dragElement.position.width;
             float dragElementHeight = dragElement.position.height;
@@ -203,13 +219,13 @@ namespace UnityEngine.Experimental.UIElements
             if (direction == Direction.Horizontal)
             {
                 float totalWidth = position.width - dragElementWidth;
-                dragElement.position = new Rect(((pos / range) * totalWidth), 0,
+                dragElement.position = new Rect(((pos / range) * totalWidth), dragElement.position.y,
                         dragElementWidth, dragElementHeight);
             }
             else
             {
                 float totalHeight = position.height - dragElementHeight;
-                dragElement.position = new Rect(0, ((pos / range) * totalHeight),
+                dragElement.position = new Rect(dragElement.position.x, ((pos / range) * totalHeight),
                         dragElementWidth, dragElementHeight);
             }
         }

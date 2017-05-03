@@ -43,6 +43,13 @@ public enum VideoTimeSource
     GameTimeSource     = 1
 }
 
+public enum VideoTimeReference
+{
+    Freerun         = 0,
+    InternalTime    = 1,
+    ExternalTime    = 2
+}
+
 public enum VideoSource
 {
     VideoClip = 0,
@@ -310,6 +317,26 @@ public sealed partial class VideoPlayer : Behaviour
         set;
     }
 
+    public extern VideoTimeReference timeReference
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern double externalReferenceTime
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern bool canSetSkipOnDrop
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -449,6 +476,7 @@ public sealed partial class VideoPlayer : Behaviour
     public delegate void EventHandler(VideoPlayer source);
     public delegate void ErrorEventHandler(VideoPlayer source, string message);
     public delegate void FrameReadyEventHandler(VideoPlayer source, long frameIdx);
+    public delegate void TimeEventHandler(VideoPlayer source, double seconds);
     
     
     public event EventHandler prepareCompleted;
@@ -457,6 +485,7 @@ public sealed partial class VideoPlayer : Behaviour
     public event EventHandler frameDropped;
     public event ErrorEventHandler errorReceived;
     public event EventHandler seekCompleted;
+    public event TimeEventHandler clockResyncOccurred;
     
     
     public extern bool sendFrameReadyEvents
@@ -525,6 +554,14 @@ public sealed partial class VideoPlayer : Behaviour
         {
             if (source.seekCompleted != null)
                 source.seekCompleted(source);
+        }
+    
+    
+    [RequiredByNativeCode]
+    private static void InvokeClockResyncOccurredCallback_Internal(VideoPlayer source, double seconds)
+        {
+            if (source.clockResyncOccurred != null)
+                source.clockResyncOccurred(source, seconds);
         }
     
     

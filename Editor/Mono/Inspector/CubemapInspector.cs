@@ -106,6 +106,7 @@ namespace UnityEditor
             int mipMaps = TextureUtil.GetMipmapCount(c);
             bool useMipMap = EditorGUILayout.Toggle("MipMaps", mipMaps > 1);
 
+
             bool linear = TextureUtil.GetLinearSampled(c);
             linear = EditorGUILayout.Toggle("Linear", linear);
 

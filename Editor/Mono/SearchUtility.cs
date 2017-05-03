@@ -21,7 +21,8 @@ namespace UnityEditor
         // 't:type' syntax (e.g 't:Texture2D' will show Texture2D objects)
         // 'l:assetlabel' syntax (e.g 'l:architecture' will show assets with AssetLabel 'architecture')
         // 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
-        // 'v:versionState' syntax (e.g 'v:modifiedLocal' will show objects that are modified locally)
+        // 'v:versionState' syntax (e.g 'v:modified' will show objects that are modified locally)
+        // 's:softLockState' syntax (e.g 's:inprogress' will show objects that are modified by anyone (except you))
         internal static bool ParseSearchString(string searchText, SearchFilter filter)
         {
             if (string.IsNullOrEmpty(searchText))
@@ -109,6 +110,17 @@ namespace UnityEditor
                 List<string> tmp = new List<string>(filter.versionControlStates);
                 tmp.Add(versionStateString);
                 filter.versionControlStates = tmp.ToArray();
+                parsed = true;
+            }
+
+            // Support: 's:softLockState' syntax
+            index = searchString.IndexOf("s:");
+            if (index >= 0)
+            {
+                string softLockStateString = searchString.Substring(index + 2);
+                List<string> tmp = new List<string>(filter.softLockControlStates);
+                tmp.Add(softLockStateString);
+                filter.softLockControlStates = tmp.ToArray();
                 parsed = true;
             }
 

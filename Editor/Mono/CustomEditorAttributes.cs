@@ -90,6 +90,7 @@ namespace UnityEditor
             foreach (var type in types)
             {
                 object[] attrs = type.GetCustomAttributes(typeof(CustomEditor), false);
+
                 foreach (CustomEditor inspectAttr in  attrs)
                 {
                     var t = new MonoEditorType();
@@ -111,7 +112,6 @@ namespace UnityEditor
                         t.m_EditorForChildClasses = inspectAttr.m_EditorForChildClasses;
                         t.m_IsFallback = inspectAttr.isFallback;
                         kSCustomEditors.Add(t);
-
                         if (type.GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0)
                             kSCustomMultiEditors.Add(t);
                     }

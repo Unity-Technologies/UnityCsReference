@@ -10,7 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-
+using UnityEditor.Experimental.AssetImporters;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -37,7 +37,7 @@ namespace UnityEditor
 
     [CustomEditor(typeof(TextureImporter))]
     [CanEditMultipleObjects]
-    internal class TextureImporterInspector : AssetImporterInspector
+    internal class TextureImporterInspector : AssetImporterEditor
     {
         public static string s_DefaultPlatformName = "DefaultTexturePlatform";
 
@@ -99,7 +99,7 @@ namespace UnityEditor
         }
 
         // Don't show the imported texture as a separate editor
-        internal override bool showImportedObject { get { return false; } }
+        public override bool showImportedObject { get { return false; } }
 
         public static bool IsCompressedDXTTextureFormat(TextureImporterFormat format)
         {
@@ -694,11 +694,11 @@ namespace UnityEditor
             TextureImporterShape shapeCapsAll = TextureImporterShape.Texture2D | TextureImporterShape.TextureCube;
 
             m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    shapeCapsAll);
+                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    shapeCapsAll);
+                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
                     TextureImporterShape.Texture2D);
@@ -706,8 +706,8 @@ namespace UnityEditor
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                     TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
             m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    shapeCapsAll);
+                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
                     TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                     TextureImporterShape.Texture2D);
@@ -715,8 +715,8 @@ namespace UnityEditor
                     TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                     TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    TextureImporterShape.Texture2D);
+                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    , TextureImporterShape.Texture2D);
 
             m_GUIElementMethods.Clear();
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);
@@ -746,7 +746,7 @@ namespace UnityEditor
             UnityEngine.Debug.Assert(m_GUIElementsDisplayOrder.Count == (Enum.GetValues(typeof(TextureInspectorGUIElement)).Length - 1), "Some GUIElement are not present in the list."); // -1 because TextureInspectorGUIElement.None
         }
 
-        public virtual void OnEnable()
+        public override void OnEnable()
         {
             s_DefaultPlatformName = TextureImporter.defaultPlatformName; // Can't be called everywhere so we save it here for later use.
 
@@ -774,24 +774,7 @@ namespace UnityEditor
             importer.GetWidthAndHeight(ref m_TextureWidth, ref m_TextureHeight);
             m_IsPOT = IsPowerOfTwo(m_TextureWidth) && IsPowerOfTwo(m_TextureHeight);
 
-            if (s_TextureFormatStringsApplePVR == null)
-                s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
-            if (s_TextureFormatStringsAndroid == null)
-                s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
-            if (s_TextureFormatStringsTizen == null)
-                s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
-            if (s_TextureFormatStringsSTV == null)
-                s_TextureFormatStringsSTV = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSTV);
-            if (s_TextureFormatStringsWebGL == null)
-                s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
-            if (s_TextureFormatStringsWiiU == null)
-                s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
-            if (s_TextureFormatStringsDefault == null)
-                s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
-            if (s_NormalFormatStringsDefault == null)
-                s_NormalFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kNormalFormatsValueDefault);
-            if (s_TextureFormatStringsSingleChannel == null)
-                s_TextureFormatStringsSingleChannel = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSingleChannel);
+            InitializeTextureFormatStrings();
         }
 
         void SetSerializedPropertySettings(TextureImporterSettings settings)
@@ -873,6 +856,7 @@ namespace UnityEditor
 
             if (!m_IsReadable.hasMultipleDifferentValues)
                 settings.readable = m_IsReadable.intValue > 0;
+
 
             if (!m_sRGBTexture.hasMultipleDifferentValues)
                 settings.sRGBTexture = m_sRGBTexture.intValue > 0;
@@ -1017,6 +1001,7 @@ namespace UnityEditor
         {
             ToggleFromInt(m_IsReadable, s_Styles.readWrite);
         }
+
 
         void AlphaHandlingGUI(TextureInspectorGUIElement guiElements)
         {
@@ -1279,10 +1264,10 @@ namespace UnityEditor
             // Consequently the sprite will be reset to Single mode and looks very confusing to the user.
             if (EditorGUI.EndChangeCheck() && (m_TextureType.intValue != newTextureType))
             {
+                TextureImporterSettings settings = GetSerializedPropertySettings();
+                settings.ApplyTextureType((TextureImporterType)newTextureType);
                 m_TextureType.intValue = newTextureType;
 
-                TextureImporterSettings settings = GetSerializedPropertySettings();
-                settings.ApplyTextureType((TextureImporterType)m_TextureType.intValue);
                 SetSerializedPropertySettings(settings);
 
                 SyncPlatformSettings();
@@ -1463,6 +1448,33 @@ namespace UnityEditor
             return retval;
         }
 
+        internal static void InitializeTextureFormatStrings()
+        {
+            if (s_TextureFormatStringsApplePVR == null)
+                s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
+            if (s_TextureFormatStringsAndroid == null)
+                s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
+            if (s_TextureFormatStringsTizen == null)
+                s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
+            if (s_TextureFormatStringsSTV == null)
+                s_TextureFormatStringsSTV = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSTV);
+            if (s_TextureFormatStringsWebGL == null)
+                s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
+            if (s_TextureFormatStringsWiiU == null)
+                s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsDefault == null)
+                s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
+            if (s_NormalFormatStringsDefault == null)
+                s_NormalFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kNormalFormatsValueDefault);
+            if (s_TextureFormatStringsSingleChannel == null)
+                s_TextureFormatStringsSingleChannel = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSingleChannel);
+        }
+
+        internal static bool IsFormatRequireCompressionSetting(TextureImporterFormat format)
+        {
+            return ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, format);
+        }
+
         protected void ShowPlatformSpecificSettings()
         {
             BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms().ToArray();
@@ -1522,7 +1534,7 @@ namespace UnityEditor
                 m_PlatformSettings.Add(new TextureImportPlatformSettings(bp.name, bp.defaultTarget, this));
         }
 
-        internal override bool HasModified()
+        public override bool HasModified()
         {
             if (base.HasModified())
                 return true;
@@ -1550,7 +1562,7 @@ namespace UnityEditor
                 Selection.objects = newSelection.ToArray(typeof(Object)) as Object[];
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
 
@@ -1566,7 +1578,7 @@ namespace UnityEditor
             SelectMainAssets(targets);
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             // Get SpriteEditorWindow to apply changed property
             SpriteEditorWindow.TextureImporterApply(serializedObject);

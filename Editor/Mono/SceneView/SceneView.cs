@@ -223,7 +223,7 @@ namespace UnityEditor
                 s_MouseRects.Add(new CursorRect(rect, cursor));
         }
 
-        internal float cameraDistance
+        public float cameraDistance
         {
             get
             {

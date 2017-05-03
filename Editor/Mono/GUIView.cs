@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.StyleSheets;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
@@ -29,29 +29,22 @@ namespace UnityEditor
         {
             get
             {
-                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, LoadResourceWrapper);
-                if (p.defaultStyleSheets == null)
+                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, StyleSheetResourceUtil.LoadResource);
+                if (p.styleSheets == null)
                 {
-                    p.defaultStyleSheets = new StyleSheet[] {
-                        EditorGUIUtility.LoadRequired("StyleSheets/DefaultCommon.uss") as StyleSheet
-                    };
+                    p.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
+                    if (EditorGUIUtility.isProSkin)
+                    {
+                        p.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
+                    }
+                    else
+                    {
+                        p.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
+                    }
+                    p.LoadStyleSheetsFromPaths();
                 }
                 return p;
             }
-        }
-
-        static UnityEngine.Object LoadResourceWrapper(string pathName, System.Type type)
-        {
-            var resource = EditorGUIUtility.Load(pathName);
-            if (resource == null)
-            {
-                resource = Resources.Load(pathName, type);
-            }
-            if (resource != null)
-            {
-                Debug.Assert(type.IsAssignableFrom(resource.GetType()), "Resource type mismatch");
-            }
-            return resource;
         }
 
         public VisualContainer visualTree

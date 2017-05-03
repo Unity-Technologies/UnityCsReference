@@ -482,6 +482,7 @@ public enum PS4EnterButtonAssignment
             set;
         }
 
+        [System.Obsolete ("UnityEditor.PS4.useDebugIl2cppLibs no longer has any affect.")]
         internal extern static bool useDebugIl2cppLibs
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

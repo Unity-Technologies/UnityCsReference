@@ -30,8 +30,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     {
         public static VisualElementStyles none = new VisualElementStyles(isShared: true);
 
-        internal GUIStyle guiStyle = GUIStyle.none;
-
         internal readonly bool isShared;
 
         Dictionary<string, CustomProperty> m_CustomProperties;
@@ -168,6 +166,21 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         [StyleProperty("border-radius", StylePropertyID.BorderRadius)]
         public Style<float> borderRadius;
 
+        [StyleProperty("slice-left", StylePropertyID.SliceLeft)]
+        public Style<int> sliceLeft;
+
+        [StyleProperty("slice-top", StylePropertyID.SliceTop)]
+        public Style<int> sliceTop;
+
+        [StyleProperty("slice-right", StylePropertyID.SliceRight)]
+        public Style<int> sliceRight;
+
+        [StyleProperty("slice-bottom", StylePropertyID.SliceBottom)]
+        public Style<int> sliceBottom;
+
+        [StyleProperty("opacity", StylePropertyID.Opacity)]
+        public Style<float> opacity;
+
         internal VisualElementStyles(bool isShared)
         {
             this.isShared = isShared;
@@ -227,6 +240,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             flexWrap.Apply(other.flexWrap, mode);
             borderWidth.Apply(other.borderWidth, mode);
             borderRadius.Apply(other.borderRadius, mode);
+            sliceLeft.Apply(other.sliceLeft, mode);
+            sliceTop.Apply(other.sliceTop, mode);
+            sliceRight.Apply(other.sliceRight, mode);
+            sliceBottom.Apply(other.sliceBottom, mode);
+            opacity.Apply(other.opacity, mode);
         }
 
         public void WriteToGUIStyle(GUIStyle style)
@@ -243,6 +261,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
             AssignRect(style.margin, ref marginLeft, ref marginTop, ref marginRight, ref marginBottom);
             AssignRect(style.padding, ref paddingLeft, ref paddingTop, ref paddingRight, ref paddingBottom);
+            AssignRect(style.border, ref sliceLeft, ref sliceTop, ref sliceRight, ref sliceBottom);
             AssignState(style.normal);
             AssignState(style.focused);
             AssignState(style.hover);
@@ -259,7 +278,17 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             if (backgroundImage.value != null)
             {
                 state.background = backgroundImage.value;
+                if (state.scaledBackgrounds == null || state.scaledBackgrounds.Length < 1 || state.scaledBackgrounds[0] != backgroundImage.value)
+                    state.scaledBackgrounds = new Texture2D[1] { backgroundImage.value };
             }
+        }
+
+        void AssignRect(RectOffset rect, ref Style<int> left, ref Style<int> top, ref Style<int> right, ref Style<int> bottom)
+        {
+            rect.left = left.GetSpecifiedValueOrDefault(rect.left);
+            rect.top = top.GetSpecifiedValueOrDefault(rect.top);
+            rect.right = right.GetSpecifiedValueOrDefault(rect.right);
+            rect.bottom = bottom.GetSpecifiedValueOrDefault(rect.bottom);
         }
 
         void AssignRect(RectOffset rect, ref Style<float> left, ref Style<float> top, ref Style<float> right, ref Style<float> bottom)
@@ -457,6 +486,26 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handle, specificity, ref borderRadius);
                         break;
 
+                    case StylePropertyID.SliceLeft:
+                        registry.Apply(handle, specificity, ref sliceLeft);
+                        break;
+
+                    case StylePropertyID.SliceTop:
+                        registry.Apply(handle, specificity, ref sliceTop);
+                        break;
+
+                    case StylePropertyID.SliceRight:
+                        registry.Apply(handle, specificity, ref sliceRight);
+                        break;
+
+                    case StylePropertyID.SliceBottom:
+                        registry.Apply(handle, specificity, ref sliceBottom);
+                        break;
+
+                    case StylePropertyID.Opacity:
+                        registry.Apply(handle, specificity, ref opacity);
+                        break;
+
                     case StylePropertyID.Custom:
                         if (m_CustomProperties == null)
                         {
@@ -475,31 +524,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         throw new ArgumentException(string.Format("Non exhaustive switch statement (value={0})", propertyID));
                 }
             }
-        }
-
-        internal void Apply(GUIStyle guiStyle, int specificity, StylePropertyApplyMode mode)
-        {
-            RectOffset rectOffset = guiStyle.margin;
-            marginLeft.Apply(new Style<float>(rectOffset.left, specificity), mode);
-            marginTop.Apply(new Style<float>(rectOffset.top, specificity), mode);
-            marginRight.Apply(new Style<float>(rectOffset.right, specificity), mode);
-            marginBottom.Apply(new Style<float>(rectOffset.bottom, specificity), mode);
-            rectOffset = guiStyle.padding;
-            paddingLeft.Apply(new Style<float>(rectOffset.left, specificity), mode);
-            paddingTop.Apply(new Style<float>(rectOffset.top, specificity), mode);
-            paddingRight.Apply(new Style<float>(rectOffset.right, specificity), mode);
-            paddingBottom.Apply(new Style<float>(rectOffset.bottom, specificity), mode);
-
-            if (guiStyle.font != null)
-            {
-                font.Apply(new Style<Font>(guiStyle.font, specificity), mode);
-            }
-
-            textAlignment.Apply(new Style<int>((int)guiStyle.alignment, specificity), mode);
-            wordWrap.Apply(new Style<bool>(guiStyle.wordWrap, specificity), mode);
-            textClipping.Apply(new Style<int>((int)guiStyle.clipping, specificity), mode);
-            fontSize.Apply(new Style<int>(guiStyle.fontSize, specificity), mode);
-            fontStyle.Apply(new Style<int>((int)guiStyle.fontStyle, specificity), mode);
         }
 
         public void ApplyCustomProperty(string propertyName, ref Style<float> target)
@@ -616,41 +640,87 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     {
         public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<float> property)
         {
-            Apply(sheet.ReadFloat(handle), specificity, ref property);
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
+            {
+                Apply(default(float), specificity, ref property);
+            }
+            else
+            {
+                Apply(sheet.ReadFloat(handle), specificity, ref property);
+            }
         }
 
         public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<Color> property)
         {
-            Apply(sheet.ReadColor(handle), specificity, ref property);
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
+            {
+                Apply(default(Color), specificity, ref property);
+            }
+            else
+            {
+                Apply(sheet.ReadColor(handle), specificity, ref property);
+            }
         }
 
         public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<int> property)
         {
-            Apply((int)sheet.ReadFloat(handle), specificity, ref property);
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
+            {
+                Apply(default(int), specificity, ref property);
+            }
+            else
+            {
+                Apply((int)sheet.ReadFloat(handle), specificity, ref property);
+            }
         }
 
         public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<bool> property)
         {
             bool val = sheet.ReadKeyword(handle) == StyleValueKeyword.True;
-            Apply(val, specificity, ref property);
+
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
+            {
+                Apply(default(bool), specificity, ref property);
+            }
+            else
+            {
+                Apply(val, specificity, ref property);
+            }
         }
 
         public static void Apply<T>(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<int> property) where T : struct
         {
-            Apply(StyleSheetCache.GetEnumValue<T>(sheet, handle), specificity, ref property);
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
+            {
+                Apply(default(int), specificity, ref property);
+            }
+            else
+            {
+                Apply(StyleSheetCache.GetEnumValue<T>(sheet, handle), specificity, ref property);
+            }
         }
 
         public static void Apply<T>(this StyleSheet sheet, StyleValueHandle handle, int specificity, LoadResourceFunction loadResourceFunc, ref Style<T> property) where T : Object
         {
-            string path = sheet.ReadResourcePath(handle);
-            T resource = loadResourceFunc(path, typeof(T)) as T;
-            if (resource != null)
+            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.None)
             {
-                Apply(resource, specificity, ref property);
+                Apply((T)null, specificity, ref property);
+                return;
             }
-            else
+
+            string path = sheet.ReadResourcePath(handle);
+            if (!string.IsNullOrEmpty(path))
             {
-                Debug.LogWarning(string.Format("{0} resource not found for path: {1}", typeof(T).Name, path));
+                T resource = loadResourceFunc(path, typeof(T)) as T;
+
+                if (resource != null)
+                {
+                    Apply(resource, specificity, ref property);
+                }
+                else
+                {
+                    Debug.LogWarning(string.Format("{0} resource not found for path: {1}", typeof(T).Name, path));
+                }
             }
         }
 

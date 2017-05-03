@@ -106,10 +106,12 @@ public enum ParticleSystemShapeType
     
     Sphere = 0,
     
+    [System.Obsolete ("SphereShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
     SphereShell = 1,
     
     Hemisphere = 2,
     
+    [System.Obsolete ("HemisphereShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
     HemisphereShell = 3,
     
     Cone = 4,
@@ -118,14 +120,17 @@ public enum ParticleSystemShapeType
     
     Mesh = 6,
     
+    [System.Obsolete ("ConeShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
     ConeShell = 7,
     
     ConeVolume = 8,
     
+    [System.Obsolete ("ConeVolumeShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
     ConeVolumeShell = 9,
     
     Circle = 10,
     
+    [System.Obsolete ("CircleEdge is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
     CircleEdge = 11,
     
     SingleSidedEdge = 12,
@@ -136,7 +141,9 @@ public enum ParticleSystemShapeType
     
     BoxShell = 15,
     
-    BoxEdge = 16
+    BoxEdge = 16,
+    
+    Donut = 17
 }
 
 public enum ParticleSystemMeshShapeType
@@ -317,7 +324,13 @@ public enum ParticleSystemVertexStream
     Custom2X,
     Custom2XY,
     Custom2XYZ,
-    Custom2XYZW
+    Custom2XYZW,
+    NoiseSumX,
+    NoiseSumXY,
+    NoiseSumXYZ,
+    NoiseImpulseX,
+    NoiseImpulseXY,
+    NoiseImpulseXYZ
 }
 
 public enum ParticleSystemCustomData
@@ -373,7 +386,11 @@ public enum ParticleSystemTrailTextureMode
     
     Stretch = 0,
     
-    Tile = 1
+    Tile = 1,
+    
+    DistributePerSegment = 2,
+    
+    RepeatPerSegment = 3
 }
 
 public enum ParticleSystemShapeMultiModeValue
@@ -590,6 +607,7 @@ public sealed partial class ParticleSystem : Component
                     public ParticleSystemSimulationSpace simulationSpace { get { return GetSimulationSpace(m_ParticleSystem); } set { SetSimulationSpace(m_ParticleSystem, value); } }
                     public Transform customSimulationSpace { get { return GetCustomSimulationSpace(m_ParticleSystem); } set { SetCustomSimulationSpace(m_ParticleSystem, value); } }
                     public float simulationSpeed { get { return GetSimulationSpeed(m_ParticleSystem); } set { SetSimulationSpeed(m_ParticleSystem, value); } }
+                    public bool useUnscaledTime { get { return GetUseUnscaledTime(m_ParticleSystem); } set { SetUseUnscaledTime(m_ParticleSystem, value); } }
                     public ParticleSystemScalingMode scalingMode { get { return GetScalingMode(m_ParticleSystem); } set { SetScalingMode(m_ParticleSystem, value); } }
                     public bool playOnAwake { get { return GetPlayOnAwake(m_ParticleSystem); } set { SetPlayOnAwake(m_ParticleSystem, value); } }
                     public int maxParticles { get { return GetMaxParticles(m_ParticleSystem); } set { SetMaxParticles(m_ParticleSystem, value); } }
@@ -845,6 +863,14 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetUseUnscaledTime (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetUseUnscaledTime (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetScalingMode (ParticleSystem system, ParticleSystemScalingMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -961,15 +987,19 @@ public sealed partial class ParticleSystem : Component
                     public ParticleSystemShapeType shapeType { get { return (ParticleSystemShapeType)GetShapeType(m_ParticleSystem); } set { SetShapeType(m_ParticleSystem, (int)value); } }
                     public float randomDirectionAmount { get { return GetRandomDirectionAmount(m_ParticleSystem); } set { SetRandomDirectionAmount(m_ParticleSystem, value); } }
                     public float sphericalDirectionAmount { get { return GetSphericalDirectionAmount(m_ParticleSystem); } set { SetSphericalDirectionAmount(m_ParticleSystem, value); } }
+                    public float randomPositionAmount { get { return GetRandomPositionAmount(m_ParticleSystem); } set { SetRandomPositionAmount(m_ParticleSystem, value); } }
                     public bool alignToDirection { get { return GetAlignToDirection(m_ParticleSystem); } set { SetAlignToDirection(m_ParticleSystem, value); } }
                     public float radius { get { return GetRadius(m_ParticleSystem); } set { SetRadius(m_ParticleSystem, value); } }
                     public ParticleSystemShapeMultiModeValue radiusMode { get { return (ParticleSystemShapeMultiModeValue)GetRadiusMode(m_ParticleSystem); } set { SetRadiusMode(m_ParticleSystem, (int)value); } }
                     public float radiusSpread { get { return GetRadiusSpread(m_ParticleSystem); } set { SetRadiusSpread(m_ParticleSystem, value); } }
                     public MinMaxCurve radiusSpeed { set { SetRadiusSpeed(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetRadiusSpeed(m_ParticleSystem, ref r); return r; } }
                     public float radiusSpeedMultiplier { get { return GetRadiusSpeedMultiplier(m_ParticleSystem); } set { SetRadiusSpeedMultiplier(m_ParticleSystem, value); } }
+                    public float radiusThickness { get { return GetRadiusThickness(m_ParticleSystem); } set { SetRadiusThickness(m_ParticleSystem, value); } }
                     public float angle { get { return GetAngle(m_ParticleSystem); } set { SetAngle(m_ParticleSystem, value); } }
                     public float length { get { return GetLength(m_ParticleSystem); } set { SetLength(m_ParticleSystem, value); } }
-                    public Vector3 box { get { return GetBox(m_ParticleSystem); } set { SetBox(m_ParticleSystem, value); } }
+        [System.Obsolete ("Please use scale instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/ShapeModule.scale")]
+                    public Vector3 box { get { return GetScale(m_ParticleSystem); } set { SetScale(m_ParticleSystem, value); } }
+                    public Vector3 boxThickness { get { return GetBoxThickness(m_ParticleSystem); } set { SetBoxThickness(m_ParticleSystem, value); } }
                     public ParticleSystemMeshShapeType meshShapeType { get { return (ParticleSystemMeshShapeType)GetMeshShapeType(m_ParticleSystem); } set { SetMeshShapeType(m_ParticleSystem, (int)value); } }
                     public Mesh mesh { get { return GetMesh(m_ParticleSystem); } set { SetMesh(m_ParticleSystem, value); } }
                     public MeshRenderer meshRenderer { get { return GetMeshRenderer(m_ParticleSystem); } set { SetMeshRenderer(m_ParticleSystem, value); } }
@@ -978,12 +1008,17 @@ public sealed partial class ParticleSystem : Component
                     public int meshMaterialIndex { get { return GetMeshMaterialIndex(m_ParticleSystem); } set { SetMeshMaterialIndex(m_ParticleSystem, value); } }
                     public bool useMeshColors { get { return GetUseMeshColors(m_ParticleSystem); } set { SetUseMeshColors(m_ParticleSystem, value); } }
                     public float normalOffset { get { return GetNormalOffset(m_ParticleSystem); } set { SetNormalOffset(m_ParticleSystem, value); } }
-                    public float meshScale { get { return GetMeshScale(m_ParticleSystem); } set { SetMeshScale(m_ParticleSystem, value); } }
+        [System.Obsolete ("meshScale property is deprecated. Please use scale instead.")]
+                    public float meshScale { get { return GetScale(m_ParticleSystem).x; } set { SetScale(m_ParticleSystem, new Vector3(value, value, value)); } }
                     public float arc { get { return GetArc(m_ParticleSystem); } set { SetArc(m_ParticleSystem, value); } }
                     public ParticleSystemShapeMultiModeValue arcMode { get { return (ParticleSystemShapeMultiModeValue)GetArcMode(m_ParticleSystem); } set { SetArcMode(m_ParticleSystem, (int)value); } }
                     public float arcSpread { get { return GetArcSpread(m_ParticleSystem); } set { SetArcSpread(m_ParticleSystem, value); } }
                     public MinMaxCurve arcSpeed { set { SetArcSpeed(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetArcSpeed(m_ParticleSystem, ref r); return r; } }
                     public float arcSpeedMultiplier { get { return GetArcSpeedMultiplier(m_ParticleSystem); } set { SetArcSpeedMultiplier(m_ParticleSystem, value); } }
+                    public float donutRadius { get { return GetDonutRadius(m_ParticleSystem); } set { SetDonutRadius(m_ParticleSystem, value); } }
+                    public Vector3 position { get { return GetPosition(m_ParticleSystem); } set { SetPosition(m_ParticleSystem, value); } }
+                    public Vector3 rotation { get { return GetRotation(m_ParticleSystem); } set { SetRotation(m_ParticleSystem, value); } }
+                    public Vector3 scale { get { return GetScale(m_ParticleSystem); } set { SetScale(m_ParticleSystem, value); } }
         
         
         [System.Obsolete ("randomDirection property is deprecated. Use randomDirectionAmount instead.")]
@@ -1021,6 +1056,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetSphericalDirectionAmount (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetRandomPositionAmount (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetRandomPositionAmount (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1072,6 +1115,14 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetRadiusThickness (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetRadiusThickness (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetAngle (ParticleSystem system, float value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1086,22 +1137,22 @@ public sealed partial class ParticleSystem : Component
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetLength (ParticleSystem system) ;
 
-        private static void SetBox (ParticleSystem system, Vector3 value) {
-            INTERNAL_CALL_SetBox ( system, ref value );
+        private static void SetBoxThickness (ParticleSystem system, Vector3 value) {
+            INTERNAL_CALL_SetBoxThickness ( system, ref value );
         }
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        private extern static void INTERNAL_CALL_SetBox (ParticleSystem system, ref Vector3 value);
-        private static Vector3 GetBox (ParticleSystem system) {
+        private extern static void INTERNAL_CALL_SetBoxThickness (ParticleSystem system, ref Vector3 value);
+        private static Vector3 GetBoxThickness (ParticleSystem system) {
             Vector3 result;
-            INTERNAL_CALL_GetBox ( system, out result );
+            INTERNAL_CALL_GetBoxThickness ( system, out result );
             return result;
         }
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        private extern static void INTERNAL_CALL_GetBox (ParticleSystem system, out Vector3 value);
+        private extern static void INTERNAL_CALL_GetBoxThickness (ParticleSystem system, out Vector3 value);
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetMeshShapeType (ParticleSystem system, int value) ;
@@ -1168,14 +1219,6 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMeshScale (ParticleSystem system, float value) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  float GetMeshScale (ParticleSystem system) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetArc (ParticleSystem system, float value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1214,6 +1257,62 @@ public sealed partial class ParticleSystem : Component
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetArcSpeedMultiplier (ParticleSystem system) ;
 
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetDonutRadius (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetDonutRadius (ParticleSystem system) ;
+
+        private static void SetPosition (ParticleSystem system, Vector3 value) {
+            INTERNAL_CALL_SetPosition ( system, ref value );
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_SetPosition (ParticleSystem system, ref Vector3 value);
+        private static Vector3 GetPosition (ParticleSystem system) {
+            Vector3 result;
+            INTERNAL_CALL_GetPosition ( system, out result );
+            return result;
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_GetPosition (ParticleSystem system, out Vector3 value);
+        private static void SetRotation (ParticleSystem system, Vector3 value) {
+            INTERNAL_CALL_SetRotation ( system, ref value );
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_SetRotation (ParticleSystem system, ref Vector3 value);
+        private static Vector3 GetRotation (ParticleSystem system) {
+            Vector3 result;
+            INTERNAL_CALL_GetRotation ( system, out result );
+            return result;
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_GetRotation (ParticleSystem system, out Vector3 value);
+        private static void SetScale (ParticleSystem system, Vector3 value) {
+            INTERNAL_CALL_SetScale ( system, ref value );
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_SetScale (ParticleSystem system, ref Vector3 value);
+        private static Vector3 GetScale (ParticleSystem system) {
+            Vector3 result;
+            INTERNAL_CALL_GetScale ( system, out result );
+            return result;
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_GetScale (ParticleSystem system, out Vector3 value);
     }
 
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2065,6 +2164,9 @@ public sealed partial class ParticleSystem : Component
                     public float remapYMultiplier { get { return GetRemapYMultiplier(m_ParticleSystem); } set { SetRemapYMultiplier(m_ParticleSystem, value); } }
                     public MinMaxCurve remapZ { set { SetRemapZ(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetRemapZ(m_ParticleSystem, ref r); return r; } }
                     public float remapZMultiplier { get { return GetRemapZMultiplier(m_ParticleSystem); } set { SetRemapZMultiplier(m_ParticleSystem, value); } }
+                    public MinMaxCurve positionAmount { set { SetPositionAmount(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetPositionAmount(m_ParticleSystem, ref r); return r; } }
+                    public MinMaxCurve rotationAmount { set { SetRotationAmount(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetRotationAmount(m_ParticleSystem, ref r); return r; } }
+                    public MinMaxCurve sizeAmount { set { SetSizeAmount(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetSizeAmount(m_ParticleSystem, ref r); return r; } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -2250,6 +2352,30 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetRemapZMultiplier (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetPositionAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetPositionAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetRotationAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetRotationAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSizeAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetSizeAmount (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
 
     }
 
@@ -2989,6 +3115,7 @@ public sealed partial class ParticleSystem : Component
                     public MinMaxCurve widthOverTrail { set { SetWidthOverTrail(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetWidthOverTrail(m_ParticleSystem, ref r); return r; } }
                     public float widthOverTrailMultiplier { get { return GetWidthOverTrailMultiplier(m_ParticleSystem); } set { SetWidthOverTrailMultiplier(m_ParticleSystem, value); } }
                     public MinMaxGradient colorOverTrail { set { SetColorOverTrail(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxGradient(); GetColorOverTrail(m_ParticleSystem, ref r); return r; } }
+                    public bool generateLightingData { set { SetGenerateLightingData(m_ParticleSystem, value); } get { return GetGenerateLightingData(m_ParticleSystem); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3110,6 +3237,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void GetColorOverTrail (ParticleSystem system, ref ParticleSystem.MinMaxGradient gradient) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetGenerateLightingData (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetGenerateLightingData (ParticleSystem system) ;
 
     }
 
@@ -3643,128 +3778,86 @@ public sealed partial class ParticleSystem : Component
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Simulate (ParticleSystem self, float t, bool restart, bool fixedTimeStep) ;
+    extern public void Simulate (float t, [uei.DefaultValue("true")]  bool withChildren , [uei.DefaultValue("true")]  bool restart , [uei.DefaultValue("true")]  bool fixedTimeStep ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t, bool withChildren , bool restart ) {
+        bool fixedTimeStep = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t, bool withChildren ) {
+        bool fixedTimeStep = true;
+        bool restart = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t) {
+        bool fixedTimeStep = true;
+        bool restart = true;
+        bool withChildren = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Play (ParticleSystem self) ;
+    extern public void Play ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Play () {
+        bool withChildren = true;
+        Play ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Stop (ParticleSystem self, ParticleSystemStopBehavior stopBehavior) ;
+    extern public void Pause ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Pause () {
+        bool withChildren = true;
+        Pause ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Pause (ParticleSystem self) ;
+    extern public void Stop ( [uei.DefaultValue("true")] bool withChildren , [uei.DefaultValue("ParticleSystemStopBehavior.StopEmitting")]  ParticleSystemStopBehavior stopBehavior ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Stop (bool withChildren ) {
+        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
+        Stop ( withChildren, stopBehavior );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Stop () {
+        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
+        bool withChildren = true;
+        Stop ( withChildren, stopBehavior );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Clear (ParticleSystem self) ;
+    extern public void Clear ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Clear () {
+        bool withChildren = true;
+        Clear ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_IsAlive (ParticleSystem self) ;
+    extern public bool IsAlive ( [uei.DefaultValue("true")] bool withChildren ) ;
 
     [uei.ExcludeFromDocs]
-public void Simulate (float t, bool withChildren , bool restart ) {
-    bool fixedTimeStep = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
+    public bool IsAlive () {
+        bool withChildren = true;
+        return IsAlive ( withChildren );
+    }
 
-[uei.ExcludeFromDocs]
-public void Simulate (float t, bool withChildren ) {
-    bool fixedTimeStep = true;
-    bool restart = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
-
-[uei.ExcludeFromDocs]
-public void Simulate (float t) {
-    bool fixedTimeStep = true;
-    bool restart = true;
-    bool withChildren = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
-
-public void Simulate(float t, [uei.DefaultValue("true")]  bool withChildren , [uei.DefaultValue("true")]  bool restart , [uei.DefaultValue("true")]  bool fixedTimeStep )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Simulate(ps, t, restart, fixedTimeStep));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Play () {
-    bool withChildren = true;
-    Play ( withChildren );
-}
-
-public void Play( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Play(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Stop (bool withChildren ) {
-    ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-    Stop ( withChildren, stopBehavior );
-}
-
-[uei.ExcludeFromDocs]
-public void Stop () {
-    ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-    bool withChildren = true;
-    Stop ( withChildren, stopBehavior );
-}
-
-public void Stop( [uei.DefaultValue("true")] bool withChildren , [uei.DefaultValue("ParticleSystemStopBehavior.StopEmitting")]  ParticleSystemStopBehavior stopBehavior )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Stop(ps, stopBehavior));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Pause () {
-    bool withChildren = true;
-    Pause ( withChildren );
-}
-
-public void Pause( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Pause(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Clear () {
-    bool withChildren = true;
-    Clear ( withChildren );
-}
-
-public void Clear( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Clear(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public bool IsAlive () {
-    bool withChildren = true;
-    return IsAlive ( withChildren );
-}
-
-public bool IsAlive( [uei.DefaultValue("true")] bool withChildren )
-        {
-            return IterateParticleSystems(withChildren, (ps) => Internal_IsAlive(ps));
-        }
-
-    
-    
     public void Emit (int count) {
         INTERNAL_CALL_Emit ( this, count );
     }
@@ -3810,41 +3903,6 @@ public void Emit(ParticleSystem.Particle particle)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_Emit (ref ParticleSystem.EmitParams emitParams, int count) ;
 
-    internal delegate bool IteratorDelegate(ParticleSystem ps);
-    
-    
-    internal bool IterateParticleSystems(bool recurse, IteratorDelegate func)
-        {
-            bool result = func(this);
-            if (recurse)
-                result |= IterateParticleSystemsRecursive(transform, func);
-            return result;
-        }
-    
-    
-    static private bool IterateParticleSystemsRecursive(Transform transform, IteratorDelegate func)
-        {
-            bool earlyOut = false;
-
-            int childCount = transform.childCount;
-            for (int i = 0; i < childCount; i++)
-            {
-                Transform childTransform = transform.GetChild(i);
-                ParticleSystem ps = childTransform.gameObject.GetComponent<ParticleSystem>();
-                if (ps != null)
-                {
-                    earlyOut = func(ps);
-                    if (earlyOut)
-                        break;
-
-                    IterateParticleSystemsRecursive(childTransform, func);
-                }
-            }
-
-            return earlyOut;
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetupDefaultType (int type) ;
@@ -3864,7 +3922,11 @@ public void Emit(ParticleSystem.Particle particle)
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool CountSubEmitterParticles (ref int count) ;
+    extern internal void CalculateEffectUIData (ref int particleCount, ref float fastestParticle, ref float slowestParticle) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal bool CalculateEffectUISubEmitterData (ref int particleCount, ref float fastestParticle, ref float slowestParticle) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

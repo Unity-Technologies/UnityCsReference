@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections;
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
@@ -43,8 +44,9 @@ namespace UnityEditor
         SerializedProperty m_WeldVertices;
         SerializedProperty m_ImportCameras;
         SerializedProperty m_ImportLights;
+        SerializedProperty m_ImportVisibility;
 
-        public ModelImporterModelEditor(AssetImporterInspector panelContainer)
+        public ModelImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {
         }
@@ -88,6 +90,7 @@ namespace UnityEditor
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
             m_KeepQuads = serializedObject.FindProperty("keepQuads");
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
+            m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
 
             UpdateShowAllMaterialNameOptions();
         }
@@ -177,6 +180,7 @@ namespace UnityEditor
             public GUIContent OptimizeMeshForGPU = EditorGUIUtility.TextContent("Optimize Mesh|The vertices and indices will be reordered for better GPU performance.");
             public GUIContent KeepQuads = EditorGUIUtility.TextContent("Keep Quads|If model contains quad faces, they are kept for DX11 tessellation.");
             public GUIContent WeldVertices = EditorGUIUtility.TextContent("Weld Vertices|Combine vertices that share the same position in space.");
+            public GUIContent ImportVisibility = EditorGUIUtility.TextContent("Import Visibility|Use visibility properties to enable or disable MeshRenderer components.");
             public GUIContent ImportCameras = EditorGUIUtility.TextContent("Import Cameras");
             public GUIContent ImportLights = EditorGUIUtility.TextContent("Import Lights");
             public GUIContent IsReadable = EditorGUIUtility.TextContent("Read/Write Enabled|Allow vertices and indices to be accessed from script.");
@@ -286,6 +290,9 @@ namespace UnityEditor
 
             // Weld Vertices
             EditorGUILayout.PropertyField(m_WeldVertices, styles.WeldVertices);
+
+            // Import visibility
+            EditorGUILayout.PropertyField(m_ImportVisibility, styles.ImportVisibility);
 
             // Import Cameras
             EditorGUILayout.PropertyField(m_ImportCameras, styles.ImportCameras);

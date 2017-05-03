@@ -11,24 +11,25 @@ using UnityEngine.Scripting;
 
 namespace UnityEngineInternal.Input
 {
+    // C# doesn't support multi-character literals, so we do it by hand here...
     public enum NativeInputEventType
     {
-        DeviceConnected,
-        DeviceDisconnected,
+        DeviceConnected = 0x44434F4E,
+        DeviceDisconnected = 0x44444953,
 
-        Generic,
+        Generic = 0x47454E52,
 
-        KeyDown,
-        KeyUp,
-        KeyRepeat,
+        KeyDown = 0x4B455944,
+        KeyUp = 0x4B455955,
+        KeyRepeat = 0x4B455952,
 
-        PointerDown,
-        PointerMove,
-        PointerUp,
-        PointerCancelled,
+        PointerDown = 0x50545244,
+        PointerMove = 0x5054524D,
+        PointerUp = 0x50545255,
+        PointerCancelled = 0x50545243,
 
-        Text,
-        Tracking,
+        Text = 0x54455854,
+        Tracking = 0x5452434B,
     }
 
     public struct NativeInputEvent
@@ -105,20 +106,25 @@ namespace UnityEngineInternal.Input
         BeginFixed = 0,
         EndFixed = 1,
         BeginDynamic = 2,
-        EndDynamic = 3
+        EndDynamic = 3,
+        BeginBeforeRender = 4,
+        EndBeforeRender = 5,
+        BeginEditor = 6,
+        EndEditor = 7,
     }
 
     public delegate void NativeUpdateCallback(NativeInputUpdateType updateType);
     public delegate void NativeEventCallback(int eventCount, IntPtr eventData);
     public delegate void NativeDeviceDiscoveredCallback(NativeInputDeviceInfo deviceInfo);
 
-    ////REVIEW: have a notification where a device can tell the HLAPI that its configuration has changed? (like e.g. the surface of a pointer has changed dimensions)
 
+    ////REVIEW: have a notification where a device can tell the HLAPI that its configuration has changed? (like e.g. the surface of a pointer has changed dimensions)
     public partial class NativeInputSystem
     {
         public static NativeUpdateCallback onUpdate;
         public static NativeEventCallback onEvents;
         public static NativeDeviceDiscoveredCallback onDeviceDiscovered;
+
 
         ////TODO: output events
         [RequiredByNativeCode]

@@ -142,7 +142,12 @@ namespace UnityEngine
 
         public static WWW LoadFromCacheOrDownload(string url, Hash128 hash, uint crc)
         {
-            return new WWW(url, hash, crc);
+            return new WWW(url, "", hash, crc);
+        }
+
+        public static WWW LoadFromCacheOrDownload(string url, CachedAssetBundle cachedBundle, uint crc = 0)
+        {
+            return new WWW(url, cachedBundle.name, cachedBundle.hash, crc);
         }
 
         private static string[] FlattenedHeadersFrom(Dictionary<string, string> headers)

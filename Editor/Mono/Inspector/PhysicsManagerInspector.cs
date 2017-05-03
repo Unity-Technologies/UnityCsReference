@@ -17,13 +17,21 @@ namespace UnityEditor
         {
             const int kMaxLayers = 32;
             const int checkboxSize = 16;
-            const int labelSize = 100;
+            int labelSize = 100;
             const int indent = 30;
 
             int numLayers = 0;
             for (int i = 0; i < kMaxLayers; i++)
                 if (LayerMask.LayerToName(i) != "")
                     numLayers++;
+
+            // find the longest label
+            for (int i = 0; i < kMaxLayers; i++)
+            {
+                var textDimensions = GUI.skin.label.CalcSize(new GUIContent(LayerMask.LayerToName(i)));
+                if (labelSize < textDimensions.x)
+                    labelSize = (int)textDimensions.x;
+            }
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(0);

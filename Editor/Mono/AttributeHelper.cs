@@ -153,6 +153,17 @@ namespace UnityEditor
             return result.ToArray();
         }
 
+        internal static ArrayList FindEditorClassesWithAttribute(Type attribType)
+        {
+            var attributedTypes = new ArrayList();
+            foreach (var loadedType in EditorAssemblies.loadedTypes)
+            {
+                if (loadedType.GetCustomAttributes(attribType, false).Length != 0)
+                    attributedTypes.Add(loadedType);
+            }
+            return attributedTypes;
+        }
+
         static internal object InvokeMemberIfAvailable(object target, string methodName, object[] args)
         {
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);

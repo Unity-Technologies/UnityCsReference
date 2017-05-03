@@ -19,6 +19,7 @@ namespace UnityEngine
 {
 
 #pragma warning disable 414
+[UsedByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct Hash128
 {

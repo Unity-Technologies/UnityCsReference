@@ -7,6 +7,7 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
+using System;
 using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -24,6 +25,10 @@ internal sealed partial class UsabilityAnalytics
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Event (string category, string action, string label, int value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SendEvent (string subType, DateTime startTime, TimeSpan duration, bool isBlocking, object parameters) ;
 
 }
 

@@ -21,8 +21,9 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool isTrashed { get; set; }
 
+        private GUIStyle m_GUIStyle;
         // IMContainers have their GUIStyle set directly, and don't use UIElements Style Sheet at the moment
-        internal new GUIStyle style
+        internal GUIStyle style
         {
             get { return m_GUIStyle; }
             set
@@ -33,6 +34,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public IMContainer()
         {
+            style = GUIStyle.none;
             clipChildren = true; // unlike IMGUI, the IMContainer clips children by default
         }
 
@@ -42,6 +44,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void OnReuse()
         {
+            style = GUIStyle.none;
             translation = Vector2.zero;
             position = new Rect(0, 0, 0, 0);
         }

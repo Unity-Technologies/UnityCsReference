@@ -97,6 +97,16 @@ namespace UnityEditor.Web
             AdvertisementSettings.SetGameId(RuntimePlatform.Android, value);
         }
 
+        public string GetGameId(string platformName)
+        {
+            return AdvertisementSettings.GetPlatformGameId(platformName);
+        }
+
+        public void SetGameId(string platformName, string value)
+        {
+            AdvertisementSettings.SetPlatformGameId(platformName, value);
+        }
+
         public bool IsTestModeEnabled()
         {
             return AdvertisementSettings.testMode;

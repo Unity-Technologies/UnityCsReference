@@ -11,7 +11,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class ModelImporterEditor : AssetImporterTabbedEditor
     {
-        internal override void OnEnable()
+        public override void OnEnable()
         {
             if (tabs == null)
             {
@@ -37,6 +37,6 @@ namespace UnityEditor
         }
 
         // Only show the imported GameObject when the Model tab is active; not when the Animation tab is active
-        internal override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
+        public override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
     }
 }

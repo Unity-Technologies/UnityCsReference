@@ -54,15 +54,20 @@ namespace UnityEditor
         SerializedProperty m_Type;
         SerializedProperty m_RandomDirectionAmount;
         SerializedProperty m_SphericalDirectionAmount;
+        SerializedProperty m_RandomPositionAmount;
+
+        SerializedProperty m_Position;
+        SerializedProperty m_Scale;
+        SerializedProperty m_Rotation;
 
         // primitive properties
         MultiModeParameter m_Radius;
+        SerializedProperty m_RadiusThickness;
         SerializedProperty m_Angle;
         SerializedProperty m_Length;
-        SerializedProperty m_BoxX;
-        SerializedProperty m_BoxY;
-        SerializedProperty m_BoxZ;
+        SerializedProperty m_BoxThickness;
         MultiModeParameter m_Arc;
+        SerializedProperty m_DonutRadius;
 
         // mesh properties
         SerializedProperty m_PlacementMode;
@@ -73,7 +78,6 @@ namespace UnityEditor
         SerializedProperty m_UseMeshMaterialIndex;
         SerializedProperty m_UseMeshColors;
         SerializedProperty m_MeshNormalOffset;
-        SerializedProperty m_MeshScale;
         SerializedProperty m_AlignToDirection;
 
         // internal
@@ -84,38 +88,40 @@ namespace UnityEditor
                 );
         private ArcHandle m_ArcHandle = new ArcHandle(s_HandleControlIDHint);
         private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
+        private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle(s_HandleControlIDHint);
         private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
 
-        private readonly string[] m_GuiNames = new string[] { "Sphere", "Hemisphere", "Cone", "Box", "Mesh", "Mesh Renderer", "Skinned Mesh Renderer", "Circle", "Edge" };
-        private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge };
-        private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 3, 4, 2, 2, 2, 7, 7, 8, 5, 6, 3, 3 };
+        private readonly string[] m_GuiNames = new string[] { "Sphere", "Hemisphere", "Cone", "Donut", "Box", "Mesh", "Mesh Renderer", "Skinned Mesh Renderer", "Circle", "Edge" };
+        private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge };
+        private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 4, 5, 2, 2, 2, 8, 8, 9, 6, 7, 4, 4, 3 };
 
         private readonly ParticleSystemShapeType[] boxShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Box, ParticleSystemShapeType.BoxShell, ParticleSystemShapeType.BoxEdge };
-        private readonly ParticleSystemShapeType[] coneShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Cone, ParticleSystemShapeType.ConeShell, ParticleSystemShapeType.ConeVolume, ParticleSystemShapeType.ConeVolumeShell };
-        private readonly ParticleSystemShapeType[] shellShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.BoxShell, ParticleSystemShapeType.HemisphereShell, ParticleSystemShapeType.SphereShell, ParticleSystemShapeType.ConeShell, ParticleSystemShapeType.ConeVolumeShell, ParticleSystemShapeType.CircleEdge };
+        private readonly ParticleSystemShapeType[] coneShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Cone, ParticleSystemShapeType.ConeVolume };
 
         class Texts
         {
             public GUIContent shape = EditorGUIUtility.TextContent("Shape|Defines the shape of the volume from which particles can be emitted, and the direction of the start velocity.");
             public GUIContent radius = EditorGUIUtility.TextContent("Radius|Radius of the shape.");
+            public GUIContent radiusThickness = EditorGUIUtility.TextContent("Radius Thickness|Control the thickness of the spawn volume, from 0 to 1.");
             public GUIContent coneAngle = EditorGUIUtility.TextContent("Angle|Angle of the cone.");
             public GUIContent coneLength = EditorGUIUtility.TextContent("Length|Length of the cone.");
-            public GUIContent boxX = EditorGUIUtility.TextContent("Box X|Scale of the box in X Axis.");
-            public GUIContent boxY = EditorGUIUtility.TextContent("Box Y|Scale of the box in Y Axis.");
-            public GUIContent boxZ = EditorGUIUtility.TextContent("Box Z|Scale of the box in Z Axis.");
+            public GUIContent boxThickness = EditorGUIUtility.TextContent("Box Thickness|When using shell/edge modes, control the thickness of the spawn volume, from 0 to 1.");
+            public GUIContent meshType = EditorGUIUtility.TextContent("Type|Generate particles from vertices, edges or triangles.");
             public GUIContent mesh = EditorGUIUtility.TextContent("Mesh|Mesh that the particle system will emit from.");
             public GUIContent meshRenderer = EditorGUIUtility.TextContent("Mesh|MeshRenderer that the particle system will emit from.");
             public GUIContent skinnedMeshRenderer = EditorGUIUtility.TextContent("Mesh|SkinnedMeshRenderer that the particle system will emit from.");
             public GUIContent meshMaterialIndex = EditorGUIUtility.TextContent("Single Material|Only emit from a specific material of the mesh.");
             public GUIContent useMeshColors = EditorGUIUtility.TextContent("Use Mesh Colors|Modulate particle color with mesh vertex colors, or if they don't exist, use the shader color property \"_Color\" or \"_TintColor\" from the material. Does not read texture colors.");
             public GUIContent meshNormalOffset = EditorGUIUtility.TextContent("Normal Offset|Offset particle spawn positions along the mesh normal.");
-            public GUIContent meshScale = EditorGUIUtility.TextContent("Mesh Scale|Adjust the size of the source mesh.");
             public GUIContent alignToDirection = EditorGUIUtility.TextContent("Align To Direction|Automatically align particles based on their initial direction of travel.");
             public GUIContent randomDirectionAmount = EditorGUIUtility.TextContent("Randomize Direction|Randomize the emission direction.");
             public GUIContent sphericalDirectionAmount = EditorGUIUtility.TextContent("Spherize Direction|Spherize the emission direction.");
-            public GUIContent emitFromShell = EditorGUIUtility.TextContent("Emit from Shell|Emit from shell of the sphere. If disabled particles will be emitted from the volume of the shape.");
-            public GUIContent emitFromEdge = EditorGUIUtility.TextContent("Emit from Edge|Emit from edge of the shape. If disabled particles will be emitted from the volume of the shape.");
+            public GUIContent randomPositionAmount = EditorGUIUtility.TextContent("Randomize Position|Randomize the starting positions.");
             public GUIContent emitFrom = EditorGUIUtility.TextContent("Emit from:|Specifies from where particles are emitted.");
+            public GUIContent donutRadius = EditorGUIUtility.TextContent("Donut Radius|The radius of the donut. Used to control the thickness of the ring.");
+            public GUIContent position = EditorGUIUtility.TextContent("Position|Translate the emission shape.");
+            public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Rotate the emission shape.");
+            public GUIContent scale = EditorGUIUtility.TextContent("Scale|Scale the emission shape.");
         }
 
         static Texts s_Texts = new Texts();
@@ -164,12 +170,12 @@ namespace UnityEditor
 
             m_Type = GetProperty("type");
             m_Radius = MultiModeParameter.GetProperty(this, "radius", s_RadiusTexts.speed);
+            m_RadiusThickness = GetProperty("radiusThickness");
             m_Angle = GetProperty("angle");
             m_Length = GetProperty("length");
-            m_BoxX = GetProperty("boxX");
-            m_BoxY = GetProperty("boxY");
-            m_BoxZ = GetProperty("boxZ");
+            m_BoxThickness = GetProperty("boxThickness");
             m_Arc = MultiModeParameter.GetProperty(this, "arc", s_ArcTexts.speed);
+            m_DonutRadius = GetProperty("donutRadius");
 
             m_PlacementMode = GetProperty("placementMode");
             m_Mesh = GetProperty("m_Mesh");
@@ -179,10 +185,14 @@ namespace UnityEditor
             m_UseMeshMaterialIndex = GetProperty("m_UseMeshMaterialIndex");
             m_UseMeshColors = GetProperty("m_UseMeshColors");
             m_MeshNormalOffset = GetProperty("m_MeshNormalOffset");
-            m_MeshScale = GetProperty("m_MeshScale");
             m_RandomDirectionAmount = GetProperty("randomDirectionAmount");
             m_SphericalDirectionAmount = GetProperty("sphericalDirectionAmount");
+            m_RandomPositionAmount = GetProperty("randomPositionAmount");
             m_AlignToDirection = GetProperty("alignToDirection");
+
+            m_Position = GetProperty("m_Position");
+            m_Scale = GetProperty("m_Scale");
+            m_Rotation = GetProperty("m_Rotation");
 
             // @TODO: Use something that uses vertex color + alpha and is transparent (Particles/Alpha blended does this, but need builtin material for it)
             m_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
@@ -203,19 +213,14 @@ namespace UnityEditor
             return System.Array.IndexOf(coneShapes, shapeType);
         }
 
-        private ParticleSystemShapeType ConvertBoxEmitFromToConeType(int emitFrom)
+        private ParticleSystemShapeType ConvertBoxEmitFromToBoxType(int emitFrom)
         {
             return boxShapes[emitFrom];
         }
 
-        private int ConvertBoxTypeToConeEmitFrom(ParticleSystemShapeType shapeType)
+        private int ConvertBoxTypeToBoxEmitFrom(ParticleSystemShapeType shapeType)
         {
             return System.Array.IndexOf(boxShapes, shapeType);
-        }
-
-        private bool GetUsesShell(ParticleSystemShapeType shapeType)
-        {
-            return System.Array.IndexOf(shellShapes, shapeType) != -1;
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -224,9 +229,7 @@ namespace UnityEditor
                 s_Texts = new Texts();
 
             int type = m_Type.intValue;
-            int index = m_TypeToGuiTypeIndex[(int)type];
-
-            bool wasUsingShell = GetUsesShell((ParticleSystemShapeType)type);
+            int index = m_TypeToGuiTypeIndex[type];
 
             EditorGUI.BeginChangeCheck();
             int index2 = GUIPopup(s_Texts.shape, index, m_GuiNames);
@@ -242,15 +245,14 @@ namespace UnityEditor
             {
                 case ParticleSystemShapeType.Box:
                 {
-                    GUIFloat(s_Texts.boxX, m_BoxX);
-                    GUIFloat(s_Texts.boxY, m_BoxY);
-                    GUIFloat(s_Texts.boxZ, m_BoxZ);
-
                     string[] types = new string[] { "Volume", "Shell", "Edge" };
 
-                    int emitFrom = ConvertBoxTypeToConeEmitFrom((ParticleSystemShapeType)type);
+                    int emitFrom = ConvertBoxTypeToBoxEmitFrom((ParticleSystemShapeType)type);
                     emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, types);
-                    type = (int)ConvertBoxEmitFromToConeType(emitFrom);
+                    type = (int)ConvertBoxEmitFromToBoxType(emitFrom);
+
+                    if (type == (int)ParticleSystemShapeType.BoxShell || type == (int)ParticleSystemShapeType.BoxEdge)
+                        GUIVector3Field(s_Texts.boxThickness, m_BoxThickness);
                 }
                 break;
 
@@ -258,20 +260,31 @@ namespace UnityEditor
                 {
                     GUIFloat(s_Texts.coneAngle, m_Angle);
                     GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
 
                     m_Arc.OnInspectorGUI(s_ArcTexts);
 
-                    bool showLength = !((type == (int)ParticleSystemShapeType.ConeVolume) || (type == (int)ParticleSystemShapeType.ConeVolumeShell));
+                    bool showLength = (type != (int)ParticleSystemShapeType.ConeVolume);
                     using (new EditorGUI.DisabledScope(showLength))
                     {
                         GUIFloat(s_Texts.coneLength, m_Length);
                     }
 
-                    string[] types = new string[] { "Base", "Base Shell", "Volume", "Volume Shell" };
+                    string[] types = new string[] { "Base", "Volume" };
 
                     int emitFrom = ConvertConeTypeToConeEmitFrom((ParticleSystemShapeType)type);
                     emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, types);
                     type = (int)ConvertConeEmitFromToConeType(emitFrom);
+                }
+                break;
+
+                case ParticleSystemShapeType.Donut:
+                {
+                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                    GUIFloat(s_Texts.donutRadius, m_DonutRadius);
+                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
+
+                    m_Arc.OnInspectorGUI(s_ArcTexts);
                 }
                 break;
 
@@ -280,7 +293,7 @@ namespace UnityEditor
                 case ParticleSystemShapeType.SkinnedMeshRenderer:
                 {
                     string[] types = new string[] {"Vertex", "Edge", "Triangle"};
-                    GUIPopup("", m_PlacementMode, types);
+                    GUIPopup(s_Texts.meshType, m_PlacementMode, types);
 
                     Material material = null;
                     Mesh srcMesh = null;
@@ -327,7 +340,6 @@ namespace UnityEditor
                     }
 
                     GUIFloat(s_Texts.meshNormalOffset, m_MeshNormalOffset);
-                    GUIFloat(s_Texts.meshScale, m_MeshScale);
                 }
                 break;
 
@@ -335,8 +347,7 @@ namespace UnityEditor
                 {
                     // sphere
                     GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    bool useShellEmit = GUIToggle(s_Texts.emitFromShell, wasUsingShell);
-                    type = (int)(useShellEmit ? ParticleSystemShapeType.SphereShell : ParticleSystemShapeType.Sphere);
+                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
                 }
                 break;
 
@@ -344,19 +355,16 @@ namespace UnityEditor
                 {
                     // sphere
                     GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    bool useShellEmit = GUIToggle(s_Texts.emitFromShell, wasUsingShell);
-                    type = (int)(useShellEmit ? ParticleSystemShapeType.HemisphereShell : ParticleSystemShapeType.Hemisphere);
+                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
                 }
                 break;
 
                 case ParticleSystemShapeType.Circle:
                 {
                     GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
 
                     m_Arc.OnInspectorGUI(s_ArcTexts);
-
-                    bool useShellEmit = GUIToggle(s_Texts.emitFromEdge, wasUsingShell);
-                    type = (int)(useShellEmit ? ParticleSystemShapeType.CircleEdge : ParticleSystemShapeType.Circle);
                 }
                 break;
 
@@ -370,9 +378,18 @@ namespace UnityEditor
             if (shapeTypeChanged || !m_Type.hasMultipleDifferentValues)
                 m_Type.intValue = type;
 
+            EditorGUILayout.Space();
+
+            GUIVector3Field(s_Texts.position, m_Position);
+            GUIVector3Field(s_Texts.rotation, m_Rotation);
+            GUIVector3Field(s_Texts.scale, m_Scale);
+
+            EditorGUILayout.Space();
+
             GUIToggle(s_Texts.alignToDirection, m_AlignToDirection);
             GUIFloat(s_Texts.randomDirectionAmount, m_RandomDirectionAmount);
             GUIFloat(s_Texts.sphericalDirectionAmount, m_SphericalDirectionAmount);
+            GUIFloat(s_Texts.randomPositionAmount, m_RandomPositionAmount);
         }
 
         override public void OnSceneViewGUI()
@@ -391,24 +408,28 @@ namespace UnityEditor
 
                 ParticleSystemShapeType type = shapeModule.shapeType;
 
-                Matrix4x4 scaleMatrix = new Matrix4x4();
-                float extraScale = (type == ParticleSystemShapeType.Mesh) ? shapeModule.meshScale : 1.0f;
+                Matrix4x4 transformMatrix = new Matrix4x4();
                 if (mainModule.scalingMode == ParticleSystemScalingMode.Local)
                 {
-                    scaleMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.localScale * extraScale);
+                    transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.localScale);
                 }
                 else if (mainModule.scalingMode == ParticleSystemScalingMode.Hierarchy)
                 {
-                    scaleMatrix = ps.transform.localToWorldMatrix * Matrix4x4.Scale(new Vector3(extraScale, extraScale, extraScale));
+                    transformMatrix = ps.transform.localToWorldMatrix;
                 }
                 else
                 {
-                    scaleMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.lossyScale * extraScale);
+                    transformMatrix.SetTRS(ps.transform.position, ps.transform.rotation, ps.transform.lossyScale);
                 }
 
-                Handles.matrix = scaleMatrix;
+                bool isBox = (type == ParticleSystemShapeType.Box || type == ParticleSystemShapeType.BoxShell || type == ParticleSystemShapeType.BoxEdge);
 
-                if (type == ParticleSystemShapeType.Sphere || type == ParticleSystemShapeType.SphereShell)
+                Vector3 emitterScale = isBox ? Vector3.one : shapeModule.scale;
+                Matrix4x4 emitterMatrix = Matrix4x4.TRS(shapeModule.position, Quaternion.Euler(shapeModule.rotation), emitterScale);
+                transformMatrix *= emitterMatrix;
+                Handles.matrix = transformMatrix;
+
+                if (type == ParticleSystemShapeType.Sphere)
                 {
                     EditorGUI.BeginChangeCheck();
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, false);
@@ -418,7 +439,7 @@ namespace UnityEditor
                         shapeModule.radius = radius;
                     }
                 }
-                else if (type == ParticleSystemShapeType.Circle || type == ParticleSystemShapeType.CircleEdge)
+                else if (type == ParticleSystemShapeType.Circle)
                 {
                     EditorGUI.BeginChangeCheck();
 
@@ -436,7 +457,7 @@ namespace UnityEditor
                         shapeModule.arc = m_ArcHandle.angle;
                     }
                 }
-                else if (type == ParticleSystemShapeType.Hemisphere || type == ParticleSystemShapeType.HemisphereShell)
+                else if (type == ParticleSystemShapeType.Hemisphere)
                 {
                     EditorGUI.BeginChangeCheck();
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, true);
@@ -446,7 +467,7 @@ namespace UnityEditor
                         shapeModule.radius = radius;
                     }
                 }
-                else if ((type == ParticleSystemShapeType.Cone) || (type == ParticleSystemShapeType.ConeShell))
+                else if (type == ParticleSystemShapeType.Cone)
                 {
                     EditorGUI.BeginChangeCheck();
 
@@ -461,7 +482,7 @@ namespace UnityEditor
                         mainModule.startSpeedMultiplier = radiusAngleRange.z;
                     }
                 }
-                else if ((type == ParticleSystemShapeType.ConeVolume) || (type == ParticleSystemShapeType.ConeVolumeShell))
+                else if (type == ParticleSystemShapeType.ConeVolume)
                 {
                     EditorGUI.BeginChangeCheck();
 
@@ -481,13 +502,73 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
 
                     m_BoxBoundsHandle.center = Vector3.zero;
-                    m_BoxBoundsHandle.size = shapeModule.box;
+                    m_BoxBoundsHandle.size = shapeModule.scale;
                     m_BoxBoundsHandle.DrawHandle();
 
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(ps, "Box Handle Change");
-                        shapeModule.box = m_BoxBoundsHandle.size;
+                        shapeModule.scale = m_BoxBoundsHandle.size;
+                    }
+                }
+                else if (type == ParticleSystemShapeType.Donut)
+                {
+                    // radius
+                    EditorGUI.BeginChangeCheck();
+
+                    m_ArcHandle.radius = shapeModule.radius;
+                    m_ArcHandle.angle = shapeModule.arc;
+                    m_ArcHandle.SetColorWithRadiusHandle(Color.white, 0f);
+                    m_ArcHandle.wireframeColor = Color.clear;
+
+                    using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
+                        m_ArcHandle.DrawHandle();
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(ps, "Donut Handle Change");
+                        shapeModule.radius = m_ArcHandle.radius;
+                        shapeModule.arc = m_ArcHandle.angle;
+                    }
+
+                    // donut extents
+                    using (new Handles.DrawingScope(Handles.matrix * s_ArcHandleOffsetMatrix))
+                    {
+                        float excessAngle = shapeModule.arc % 360f;
+                        float angle = Mathf.Abs(shapeModule.arc) >= 360f ? 360f : excessAngle;
+
+                        Handles.DrawWireArc(new Vector3(0.0f, shapeModule.donutRadius, 0.0f), Vector3.up, Vector3.forward, angle, shapeModule.radius);
+                        Handles.DrawWireArc(new Vector3(0.0f, -shapeModule.donutRadius, 0.0f), Vector3.up, Vector3.forward, angle, shapeModule.radius);
+                        Handles.DrawWireArc(Vector3.zero, Vector3.up, Vector3.forward, angle, shapeModule.radius + shapeModule.donutRadius);
+                        Handles.DrawWireArc(Vector3.zero, Vector3.up, Vector3.forward, angle, shapeModule.radius - shapeModule.donutRadius);
+
+                        if (shapeModule.arc != 360.0f)
+                        {
+                            Quaternion arcRotation = Quaternion.AngleAxis(shapeModule.arc, Vector3.up);
+                            Vector3 capCenter = arcRotation * Vector3.forward * shapeModule.radius;
+                            Handles.DrawWireDisc(capCenter, arcRotation * Vector3.right, shapeModule.donutRadius);
+                        }
+                    }
+
+                    // donut radius
+                    m_SphereBoundsHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y;
+                    m_SphereBoundsHandle.radius = shapeModule.donutRadius;
+                    m_SphereBoundsHandle.center = Vector3.zero;
+                    m_SphereBoundsHandle.SetColor(Color.white);
+
+                    float handleInterval = 90.0f;
+                    int numOuterRadii = Mathf.Max(1, (int)Mathf.Ceil(shapeModule.arc / handleInterval));
+                    Matrix4x4 donutRadiusStartMatrix = Matrix4x4.TRS(new Vector3(shapeModule.radius, 0.0f, 0.0f), Quaternion.Euler(90.0f, 0.0f, 0.0f), Vector3.one);
+                    for (int i = 0; i < numOuterRadii; i++)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        using (new Handles.DrawingScope(Handles.matrix * (Matrix4x4.Rotate(Quaternion.Euler(0.0f, 0.0f, handleInterval * i)) * donutRadiusStartMatrix)))
+                            m_SphereBoundsHandle.DrawHandle();
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Undo.RecordObject(ps, "Donut Radius Handle Change");
+                            shapeModule.donutRadius = m_SphereBoundsHandle.radius;
+                        }
                     }
                 }
                 else if (type == ParticleSystemShapeType.SingleSidedEdge)
@@ -508,7 +589,7 @@ namespace UnityEditor
                         bool orgWireframeMode = GL.wireframe;
                         GL.wireframe = true;
                         m_Material.SetPass(0);
-                        Graphics.DrawMeshNow(mesh, scaleMatrix);
+                        Graphics.DrawMeshNow(mesh, transformMatrix);
                         GL.wireframe = orgWireframeMode;
                     }
                 }

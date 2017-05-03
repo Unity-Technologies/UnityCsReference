@@ -393,7 +393,7 @@ public static partial class PhysicsVisualizationSettings
     private extern static GameObject INTERNAL_CALL_Internal_PickClosestGameObject (Camera cam, int layers, ref Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void Internal_CollectCollidersForDebugDraw (object colliderList) ;
+    extern internal static  void Internal_CollectCollidersForDebugDraw (Camera cam, object colliderList) ;
 
 }
 

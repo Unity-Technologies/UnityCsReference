@@ -32,23 +32,17 @@ public partial struct PlayableHandle
     internal Int32 m_Version;
     
     
-    public T GetObject<T>() where T : IPlayable
+    internal T GetObject<T>()
+            where T : class, IPlayableBehaviour
         {
             if (!IsValid())
-                return default(T);
+                return null;
 
             var playable = GetScriptInstance(ref this);
-            if (playable != null) 
-                return (T)playable;
+            if (playable == null)
+                return null;
 
-            Type type = GetPlayableTypeOf(ref this);
-
-            T instance = (T)Activator.CreateInstance(type);
-            ((IPlayable)instance).playableHandle = this;
-
-            SetScriptInstance(ref this, instance);
-
-            return instance;
+            return (T)playable;
         }
     
     
@@ -59,6 +53,12 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static object INTERNAL_CALL_GetScriptInstance (ref PlayableHandle playable);
+    internal void SetScriptInstance(object scriptInstance)
+        {
+            SetScriptInstance(ref this, scriptInstance);
+        }
+    
+    
     private static void SetScriptInstance (ref PlayableHandle playable, object scriptInstance) {
         INTERNAL_CALL_SetScriptInstance ( ref playable, scriptInstance );
     }
@@ -66,7 +66,7 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetScriptInstance (ref PlayableHandle playable, object scriptInstance);
-    public bool IsValid()
+    internal bool IsValid()
         {
             return IsValidInternal(ref this);
         }
@@ -79,94 +79,138 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static bool INTERNAL_CALL_IsValidInternal (ref PlayableHandle playable);
-    internal static Type GetPlayableTypeOf (ref PlayableHandle playable) {
+    private static Type GetPlayableTypeOf (ref PlayableHandle playable) {
         return INTERNAL_CALL_GetPlayableTypeOf ( ref playable );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static Type INTERNAL_CALL_GetPlayableTypeOf (ref PlayableHandle playable);
+    internal Type GetPlayableType()
+        {
+            return GetPlayableTypeOf(ref this);
+        }
+    
+    
+    internal bool IsPlayableOfType<T>()
+        {
+            return GetPlayableTypeOf(ref this) == typeof(T);
+        }
+    
+    
     public static PlayableHandle Null
         {
             get { return new PlayableHandle() { m_Version = 10 }; }
         }
     
     
-    public PlayableGraph graph
+    internal PlayableGraph GetGraph()
         {
-            get
-            {
-                PlayableGraph g = new PlayableGraph();
-                GetGraphInternal(ref this, ref g);
-                return g;
-            }
+            PlayableGraph g = new PlayableGraph();
+            GetGraphInternal(ref this, ref g);
+            return g;
         }
     
     
-    public int inputCount
+    internal int GetInputCount()
         {
-            get { return GetInputCountInternal(ref this); }
-            set { SetInputCountInternal(ref this, value); }
+            return GetInputCountInternal(ref this);
         }
     
     
-    public int outputCount
+    internal void SetInputCount(int value)
         {
-            get { return GetOutputCountInternal(ref this); }
-            set { SetOutputCountInternal(ref this, value); }
+            SetInputCountInternal(ref this, value);
         }
     
     
-    public PlayState playState
+    internal int GetOutputCount()
         {
-            get { return GetPlayStateInternal(ref this);  }
-            set { SetPlayStateInternal(ref this, value);  }
+            return GetOutputCountInternal(ref this);
         }
     
     
-    public double speed
+    internal void SetOutputCount(int value)
         {
-            get { return GetSpeedInternal(ref this);  }
-            set { SetSpeedInternal(ref this, value);  }
+            SetOutputCountInternal(ref this, value);
         }
     
     
-    public double time
+    internal PlayState GetPlayState()
         {
-            get { return GetTimeInternal(ref this); }
-            set { SetTimeInternal(ref this, value); }
+            return GetPlayStateInternal(ref this);
         }
     
     
-    public bool isDone
+    internal void SetPlayState(PlayState value)
         {
-            get { return InternalGetDone(ref this); }
-            set { InternalSetDone(ref this, value); }
+            SetPlayStateInternal(ref this, value);
         }
     
     
-    public bool propagateSetTime
+    internal double GetSpeed()
         {
-            get { return InternalGetPropagateSetTime(ref this); }
-            set { InternalSetPropagateSetTime(ref this, value); }
+            return GetSpeedInternal(ref this);
         }
     
     
-    internal bool canChangeInputs
+    internal void SetSpeed(double value)
         {
-            get { return CanChangeInputsInternal(ref this); }
+            SetSpeedInternal(ref this, value);
         }
     
     
-    internal bool canSetWeights
+    internal double GetTime()
         {
-            get { return CanSetWeightsInternal(ref this); }
+            return GetTimeInternal(ref this);
         }
     
     
-    internal bool canDestroy
+    internal void SetTime(double value)
         {
-            get { return CanDestroyInternal(ref this); }
+            SetTimeInternal(ref this, value);
+        }
+    
+    
+    internal bool IsDone()
+        {
+            return IsDoneInternal(ref this);
+        }
+    
+    
+    internal void SetDone(bool value)
+        {
+            SetDoneInternal(ref this, value);
+        }
+    
+    
+    internal bool GetPropagateSetTime()
+        {
+            return GetPropagateSetTimeInternal(ref this);
+        }
+    
+    
+    internal void SetPropagateSetTime(bool value)
+        {
+            SetPropagateSetTimeInternal(ref this, value);
+        }
+    
+    
+    internal bool CanChangeInputs()
+        {
+            return CanChangeInputsInternal(ref this);
+        }
+    
+    
+    internal bool CanSetWeights()
+        {
+            return CanSetWeightsInternal(ref this);
+        }
+    
+    
+    internal bool CanDestroy()
+        {
+            return CanDestroyInternal(ref this);
         }
     
     
@@ -233,24 +277,29 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetTimeInternal (ref PlayableHandle playable, double time);
-    private static bool InternalGetDone (ref PlayableHandle playable) {
-        return INTERNAL_CALL_InternalGetDone ( ref playable );
+    private static bool IsDoneInternal (ref PlayableHandle playable) {
+        return INTERNAL_CALL_IsDoneInternal ( ref playable );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_InternalGetDone (ref PlayableHandle playable);
-    private static void InternalSetDone (ref PlayableHandle playable, bool isDone) {
-        INTERNAL_CALL_InternalSetDone ( ref playable, isDone );
+    private extern static bool INTERNAL_CALL_IsDoneInternal (ref PlayableHandle playable);
+    private static void SetDoneInternal (ref PlayableHandle playable, bool isDone) {
+        INTERNAL_CALL_SetDoneInternal ( ref playable, isDone );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetDone (ref PlayableHandle playable, bool isDone);
-    public double duration
+    private extern static void INTERNAL_CALL_SetDoneInternal (ref PlayableHandle playable, bool isDone);
+    internal double GetDuration()
         {
-            get { return GetDurationInternal(ref this); }
-            set { SetDurationInternal(ref this, value); }
+            return GetDurationInternal(ref this);
+        }
+    
+    
+    internal void SetDuration(double value)
+        {
+            SetDurationInternal(ref this, value);
         }
     
     
@@ -268,20 +317,20 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetDurationInternal (ref PlayableHandle playable, double duration);
-    private static bool InternalGetPropagateSetTime (ref PlayableHandle playable) {
-        return INTERNAL_CALL_InternalGetPropagateSetTime ( ref playable );
+    private static bool GetPropagateSetTimeInternal (ref PlayableHandle playable) {
+        return INTERNAL_CALL_GetPropagateSetTimeInternal ( ref playable );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_InternalGetPropagateSetTime (ref PlayableHandle playable);
-    private static void InternalSetPropagateSetTime (ref PlayableHandle playable, bool value) {
-        INTERNAL_CALL_InternalSetPropagateSetTime ( ref playable, value );
+    private extern static bool INTERNAL_CALL_GetPropagateSetTimeInternal (ref PlayableHandle playable);
+    private static void SetPropagateSetTimeInternal (ref PlayableHandle playable, bool value) {
+        INTERNAL_CALL_SetPropagateSetTimeInternal ( ref playable, value );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetPropagateSetTime (ref PlayableHandle playable, bool value);
+    private extern static void INTERNAL_CALL_SetPropagateSetTimeInternal (ref PlayableHandle playable, bool value);
     private static void GetGraphInternal (ref PlayableHandle playable, ref PlayableGraph graph) {
         INTERNAL_CALL_GetGraphInternal ( ref playable, ref graph );
     }
@@ -317,9 +366,9 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetOutputCountInternal (ref PlayableHandle playable, int count);
-    public PlayableHandle GetInput(int inputPort)
+    internal Playable GetInput(int inputPort)
         {
-            return GetInputInternal(ref this, inputPort);
+            return new Playable(GetInputInternal(ref this, inputPort));
         }
     
     
@@ -332,9 +381,9 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetInputInternal (ref PlayableHandle playable, int index, out PlayableHandle value);
-    public PlayableHandle GetOutput(int outputPort)
+    internal Playable GetOutput(int outputPort)
         {
-            return GetOutputInternal(ref this, outputPort);
+            return new Playable(GetOutputInternal(ref this, outputPort));
         }
     
     
@@ -354,7 +403,7 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetInputWeightFromIndexInternal (ref PlayableHandle playable, int index, float weight);
-    public bool SetInputWeight(int inputIndex, float weight)
+    internal bool SetInputWeight(int inputIndex, float weight)
         {
             if (CheckInputBounds(inputIndex))
             {
@@ -372,13 +421,9 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static float INTERNAL_CALL_GetInputWeightFromIndexInternal (ref PlayableHandle playable, int index);
-    public float GetInputWeight(int inputIndex)
+    internal void SetInputWeight(PlayableHandle input, float weight)
         {
-            if (CheckInputBounds(inputIndex))
-            {
-                return GetInputWeightFromIndexInternal(ref this, inputIndex);
-            }
-            return 0.0f;
+            SetInputWeightInternal(ref this, ref input, weight);
         }
     
     
@@ -389,15 +434,19 @@ public partial struct PlayableHandle
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetInputWeightInternal (ref PlayableHandle playable, ref PlayableHandle input, float weight);
-    public void SetInputWeight(PlayableHandle input, float weight)
+    internal float GetInputWeight(int inputIndex)
         {
-            SetInputWeightInternal(ref this, ref input, weight);
+            if (CheckInputBounds(inputIndex))
+            {
+                return GetInputWeightFromIndexInternal(ref this, inputIndex);
+            }
+            return 0.0f;
         }
     
     
-    public void Destroy()
+    internal void Destroy()
         {
-            graph.DestroyPlayable(this);
+            GetGraph().DestroyPlayable(new Playable(this));
         }
     
     
@@ -438,9 +487,9 @@ public partial struct PlayableHandle
                 throw new IndexOutOfRangeException("Index must be greater than 0");
             }
 
-            if (inputCount <= inputIndex)
+            if (GetInputCount() <= inputIndex)
             {
-                throw new IndexOutOfRangeException("inputIndex " + inputIndex +  " is greater than the number of available inputs (" + inputCount + ").");
+                throw new IndexOutOfRangeException("inputIndex " + inputIndex +  " is greater than the number of available inputs (" + GetInputCount() + ").");
             }
 
             return true;
@@ -449,22 +498,10 @@ public partial struct PlayableHandle
     
 }
 
-
-    public interface IPlayable
-    {
-        PlayableHandle playableHandle {get; set; }
-    }
-
-
 [RequiredByNativeCode]
-public partial class Playable : IPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct Playable
 {
-    
-            public PlayableHandle handle;
-    public static implicit operator PlayableHandle(Playable b)            { return b.handle; }
-    public bool IsValid() {return handle.IsValid(); }
-    
-            PlayableHandle IPlayable.playableHandle { get { return handle; } set { handle = value; } }
 }
 
 

@@ -2,69 +2,155 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    public class PreviewRenderUtility
+    class PreviewScene : IDisposable
     {
-        public Camera m_Camera;
-        public float m_CameraFieldOfView = 15.0f;
-        public Light[] m_Light = { null, null };
-        internal RenderTexture m_RenderTexture;
-        private Rect m_TargetRect;
-        private SavedRenderTargetState m_SavedState;
+        private readonly Scene m_Scene;
+        private readonly List<GameObject> m_GameObjects = new List<GameObject>();
+        private readonly Camera m_Camera;
 
-        public PreviewRenderUtility() : this(false)
+        public PreviewScene(string sceneName)
         {
-        }
-        public PreviewRenderUtility(bool renderFullScene)
-        {
-            GameObject cameraGO = EditorUtility.CreateGameObjectWithHideFlags("PreRenderCamera", HideFlags.HideAndDontSave, typeof(Camera));
-            m_Camera = cameraGO.GetComponent<Camera>();
-            m_Camera.cameraType = CameraType.Preview;
-            m_Camera.fieldOfView = m_CameraFieldOfView;
-            m_Camera.enabled = false;
-            m_Camera.clearFlags = CameraClearFlags.Depth;
-            m_Camera.farClipPlane = 10.0f;
-            m_Camera.nearClipPlane = 2.0f;
-            m_Camera.backgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
+            m_Scene = EditorSceneManager.NewPreviewScene();
+            m_Scene.name = sceneName;
+
+            var camGO = EditorUtility.CreateGameObjectWithHideFlags("Preview Scene Camera", HideFlags.HideAndDontSave, typeof(Camera));
+            AddGameObject(camGO);
+            m_Camera = camGO.GetComponent<Camera>();
+            camera.cameraType = CameraType.Preview;
+            camera.enabled = false;
+            camera.clearFlags = CameraClearFlags.Depth;
+            camera.fieldOfView = 15;
+            camera.farClipPlane = 10.0f;
+            camera.nearClipPlane = 2.0f;
+            camera.backgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
+
             // Explicitly use forward rendering for all previews
             // (deferred fails when generating some static previews at editor launch; and we never want
             // vertex lit previews if that is chosen in the player settings)
-            m_Camera.renderingPath = RenderingPath.Forward;
-            m_Camera.useOcclusionCulling = false;
+            camera.renderingPath = RenderingPath.Forward;
+            camera.useOcclusionCulling = false;
+            camera.scene = m_Scene;
+        }
 
-            if (!renderFullScene)
-                Handles.SetCameraOnlyDrawMesh(m_Camera);
-            for (int i = 0; i < 2; i++)
+        public Camera camera
+        {
+            get { return m_Camera; }
+        }
+
+        public Scene scene
+        {
+            get { return m_Scene; }
+        }
+
+        public void AddGameObject(GameObject go)
+        {
+            SceneManager.MoveGameObjectToScene(go, m_Scene);
+            m_GameObjects.Add(go);
+        }
+
+        public void DestroyGameObject(GameObject go)
+        {
+            m_GameObjects.Remove(go);
+            Object.DestroyImmediate(go);
+        }
+
+        public void Dispose()
+        {
+            EditorSceneManager.ClosePreviewScene(m_Scene);
+
+            foreach (var go in m_GameObjects)
+                Object.DestroyImmediate(go);
+
+            m_GameObjects.Clear();
+        }
+    }
+
+    public class PreviewRenderUtility
+    {
+        private readonly PreviewScene m_PreviewScene;
+
+        private RenderTexture m_RenderTexture;
+        private Rect m_TargetRect;
+        private SavedRenderTargetState m_SavedState;
+        private readonly List<GameObject> m_TempGameObjects = new List<GameObject>();
+
+        public PreviewRenderUtility(bool renderFullScene) : this()
+        {}
+
+        public PreviewRenderUtility()
+        {
+            m_PreviewScene = new PreviewScene("Preview Scene");
+
+            var l0 = CreateLight();
+            m_PreviewScene.AddGameObject(l0);
+            Light0 = l0.GetComponent<Light>();
+
+            var l1 = CreateLight();
+            m_PreviewScene.AddGameObject(l1);
+            Light1 = l1.GetComponent<Light>();
+
+            Light0.color = SceneView.kSceneViewFrontLight;
+            Light1.transform.rotation = Quaternion.Euler(340, 218, 177);
+            Light1.color = new Color(.4f, .4f, .45f, 0f) * .7f;
+        }
+
+        [Obsolete("Use the property camera instead (UnityUpgradable) -> camera", false)]
+        public Camera m_Camera;
+
+        public Camera camera
+        {
+            get { return m_PreviewScene.camera; }
+        }
+
+        [Obsolete("Use the property cameraFieldOfView (UnityUpgradable) -> cameraFieldOfView", false)]
+        public float m_CameraFieldOfView;
+
+        public float cameraFieldOfView
+        {
+            get { return camera.fieldOfView; }
+            set { camera.fieldOfView = value; }
+        }
+
+        public Color ambientColor { get; set; }
+
+        [Obsolete("Use the property lights (UnityUpgradable) -> lights", false)]
+        public Light[] m_Light;
+
+        public Light[] lights
+        {
+            get
             {
-                GameObject lightGO = EditorUtility.CreateGameObjectWithHideFlags("PreRenderLight", HideFlags.HideAndDontSave, typeof(Light));
-                m_Light[i] = lightGO.GetComponent<Light>();
-                m_Light[i].type = LightType.Directional;
-                m_Light[i].intensity = 1.0f;
-                m_Light[i].enabled = false;
+                return new[] {Light0, Light1};
             }
-            m_Light[0].color = SceneView.kSceneViewFrontLight;
-            m_Light[1].transform.rotation = Quaternion.Euler(340, 218, 177);
-            m_Light[1].color = new Color(.4f, .4f, .45f, 0f) * .7f;
+        }
+
+        private Light Light0 { get; set; }
+
+        private Light Light1 { get; set; }
+
+        internal RenderTexture renderTexture
+        {
+            get { return m_RenderTexture; }
         }
 
         public void Cleanup()
         {
-            if (m_Camera)
-                Object.DestroyImmediate(m_Camera.gameObject, true);
             if (m_RenderTexture)
             {
                 Object.DestroyImmediate(m_RenderTexture);
                 m_RenderTexture = null;
             }
-            foreach (Light l in m_Light)
-            {
-                if (l)
-                    Object.DestroyImmediate(l.gameObject, true);
-            }
+            m_PreviewScene.Dispose();
         }
 
         private void BeginPreview(Rect r, GUIStyle previewBackground, bool hdr)
@@ -117,12 +203,8 @@ namespace UnityEditor
                 m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
-                m_Camera.targetTexture = m_RenderTexture;
+                camera.targetTexture = m_RenderTexture;
             }
-            // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
-            float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
-            // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
-            m_Camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(m_CameraFieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
 
             m_SavedState = new SavedRenderTargetState();
             EditorGUIUtility.SetRenderTextureNoViewport(m_RenderTexture);
@@ -163,7 +245,16 @@ namespace UnityEditor
         public Texture EndPreview()
         {
             m_SavedState.Restore();
+            FinishFrame();
             return m_RenderTexture;
+        }
+
+        private void FinishFrame()
+        {
+            foreach (var go in m_TempGameObjects)
+                m_PreviewScene.DestroyGameObject(go);
+
+            m_TempGameObjects.Clear();
         }
 
         public void EndAndDrawPreview(Rect r)
@@ -188,40 +279,87 @@ namespace UnityEditor
             copy.Apply();
             RenderTexture.ReleaseTemporary(tmp);
             m_SavedState.Restore();
+            FinishFrame();
             return copy;
         }
 
-        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex)
+        public void AddSingleGO(GameObject go, bool instantiateAtZero = false)
         {
-            DrawMesh(mesh, pos, rot, mat, subMeshIndex, null);
+            var copy = instantiateAtZero ? Object.Instantiate(go, Vector3.zero, Quaternion.identity) : Object.Instantiate(go);
+            m_PreviewScene.AddGameObject(copy);
+            m_TempGameObjects.Add(copy);
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex)
         {
-            DrawMesh(mesh, matrix, mat, subMeshIndex, null);
-        }
-
-        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties)
-        {
-            Graphics.DrawMesh(mesh, pos, rot, mat, 1, m_Camera, subMeshIndex, customProperties);
-        }
-
-        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor)
-        {
-            Graphics.DrawMesh(mesh, pos, rot, mat, 1, m_Camera, subMeshIndex, customProperties, UnityEngine.Rendering.ShadowCastingMode.Off, false, probeAnchor);
-        }
-
-        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
-        {
-            Graphics.DrawMesh(mesh, pos, rot, mat, 1, m_Camera, subMeshIndex, customProperties, UnityEngine.Rendering.ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
+            DrawMesh(mesh, matrix, mat, subMeshIndex, null, null, false);
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties)
         {
-            Graphics.DrawMesh(mesh, matrix, mat, 1, m_Camera, subMeshIndex, customProperties);
+            DrawMesh(mesh, matrix, mat, subMeshIndex, customProperties, null, false);
         }
 
-        static internal Mesh GetPreviewSphere()
+        public void DrawMesh(Mesh mesh, Matrix4x4 m, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
+        {
+            var quat = Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
+            var pos = m.GetColumn(3);
+
+            DrawMesh(mesh, pos, quat, mat, subMeshIndex, customProperties, probeAnchor, useLightProbe);
+        }
+
+        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex)
+        {
+            DrawMesh(mesh, pos, rot, mat, subMeshIndex, null, null, false);
+        }
+
+        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties)
+        {
+            DrawMesh(mesh, pos, rot, mat, subMeshIndex, customProperties, null, false);
+        }
+
+        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor)
+        {
+            DrawMesh(mesh, pos, rot, mat, subMeshIndex, customProperties, probeAnchor, false);
+        }
+
+        public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
+        {
+            var meshGo = EditorUtility.CreateGameObjectWithHideFlags("Mesh", HideFlags.HideAndDontSave, typeof(MeshFilter), typeof(MeshRenderer));
+            meshGo.transform.position = pos;
+            meshGo.transform.rotation = rot;
+
+            var filter = meshGo.GetComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+
+            var renderer = meshGo.GetComponent<MeshRenderer>();
+
+            var materials = renderer.sharedMaterials;
+            if (subMeshIndex < materials.Length)
+                materials[subMeshIndex] = mat;
+            renderer.sharedMaterials = materials;
+
+            renderer.SetPropertyBlock(customProperties);
+            renderer.probeAnchor = probeAnchor;
+            renderer.lightProbeUsage = useLightProbe ? LightProbeUsage.BlendProbes : LightProbeUsage.Off;
+
+            m_PreviewScene.AddGameObject(meshGo);
+            m_TempGameObjects.Add(meshGo);
+
+            if (probeAnchor != null)
+            {
+                var probe = Object.Instantiate(probeAnchor.gameObject);
+                ReflectionProbe previewProbe = probe.GetComponent<ReflectionProbe>();
+                previewProbe.mode = ReflectionProbeMode.Custom;
+                previewProbe.customBakedTexture = probeAnchor.GetComponent<ReflectionProbe>().texture;
+                previewProbe.transform.position = Vector3.zero;
+
+                m_PreviewScene.AddGameObject(probe);
+                m_TempGameObjects.Add(probe);
+            }
+        }
+
+        internal static Mesh GetPreviewSphere()
         {
             var handleGo = (GameObject)EditorGUIUtility.LoadRequired("Previews/PreviewMaterials.fbx");
             // Temp workaround to make it not render in the scene
@@ -232,6 +370,36 @@ namespace UnityEditor
                     return t.GetComponent<MeshFilter>().sharedMesh;
             }
             return null;
+        }
+
+        protected static GameObject CreateLight()
+        {
+            GameObject lightGO = EditorUtility.CreateGameObjectWithHideFlags("PreRenderLight", HideFlags.HideAndDontSave, typeof(Light));
+            var light = lightGO.GetComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.0f;
+            return lightGO;
+        }
+
+        public void Render(bool allowScriptableRenderPipeline = false)
+        {
+            Unsupported.SetOverrideRenderSettings(m_PreviewScene.scene);
+            RenderSettings.ambientLight = ambientColor;
+            var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
+            Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
+
+            float saveFieldOfView = camera.fieldOfView;
+
+            // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
+            float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
+            // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
+            camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
+
+            camera.Render();
+
+            camera.fieldOfView = saveFieldOfView;
+            Unsupported.useScriptableRenderPipeline = oldAllowPipes;
+            Unsupported.RestoreOverrideRenderSettings();
         }
     }
 

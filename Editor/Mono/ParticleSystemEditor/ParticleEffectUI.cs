@@ -22,6 +22,7 @@ namespace UnityEditor
     {
         public ParticleEffectUIOwner m_Owner;               // Can be InspectorWindow or ParticleSystemWindow
         public ParticleSystemUI[] m_Emitters;               // Contains UI for all ParticleSystem children of the root ParticleSystem for this effect
+        bool m_EmittersActiveInHierarchy;
         ParticleSystemCurveEditor m_ParticleSystemCurveEditor; // The curve editor used by ParticleSystem modules
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         bool m_ShowOnlySelectedMode;
@@ -50,6 +51,7 @@ namespace UnityEditor
             public GUIContent previewTime = new GUIContent("Playback Time");
             public GUIContent particleCount = new GUIContent("Particles");
             public GUIContent subEmitterParticleCount = new GUIContent("Sub Emitter Particles");
+            public GUIContent particleSpeeds = new GUIContent("Speed Range");
             public GUIContent play = new GUIContent("Simulate");
             public GUIContent stop = new GUIContent("Stop");
             public GUIContent pause = new GUIContent("Pause");
@@ -58,6 +60,7 @@ namespace UnityEditor
             public GUIContent bounds = new GUIContent("Bounds", "Show world space bounding boxes");
             public GUIContent resimulation = new GUIContent("Resimulate", "If resimulate is enabled the particle system will show changes made to the system immediately (including changes made to the particle system transform)");
             public string secondsFloatFieldFormatString = "f2";
+            public string speedFloatFieldFormatString = "f1";
         }
         private static Texts s_Texts;
         internal static Texts texts
@@ -148,7 +151,7 @@ namespace UnityEditor
                     {
                         if (root == ParticleSystemEditorUtils.GetRoot(m_SelectedParticleSystems[0]))
                         {
-                            if (m_ParticleSystemCurveEditor != null && m_Emitters != null && shurikens.Length == m_Emitters.Length)
+                            if (m_ParticleSystemCurveEditor != null && m_Emitters != null && shurikens.Length == m_Emitters.Length && shuriken.gameObject.activeInHierarchy == m_EmittersActiveInHierarchy)
                             {
                                 m_SelectedParticleSystems = new List<ParticleSystem>();
                                 m_SelectedParticleSystems.Add(shuriken);
@@ -196,6 +199,8 @@ namespace UnityEditor
                             m_Emitters[i] = new ParticleSystemUI();
                             m_Emitters[i].Init(this, new ParticleSystem[] { shurikens[i] });
                         }
+
+                        m_EmittersActiveInHierarchy = shuriken.gameObject.activeInHierarchy;
                     }
                 }
             }
@@ -215,6 +220,7 @@ namespace UnityEditor
                         m_Emitters = new ParticleSystemUI[1];
                         m_Emitters[0] = new ParticleSystemUI();
                         m_Emitters[0].Init(this, m_SelectedParticleSystems.ToArray());
+                        m_EmittersActiveInHierarchy = m_SelectedParticleSystems[0].gameObject.activeInHierarchy;
                     }
                 }
 
@@ -426,9 +432,16 @@ namespace UnityEditor
             int oldHotControl = GUIUtility.hotControl;
             string oldFormat = EditorGUI.kFloatFieldFormatString;
 
+            EditorGUIUtility.labelWidth = 110.0f;
+
+            EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
+            ParticleSystemEditorUtils.editorSimulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.editorSimulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
+            EditorGUI.kFloatFieldFormatString = oldFormat;
+
+
             EditorGUI.BeginChangeCheck();
             EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-            float editorPlaybackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.editorPlaybackTime /*, ParticleSystemStyles.Get().numberField*/);
+            float editorPlaybackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.editorPlaybackTime);
             EditorGUI.kFloatFieldFormatString = oldFormat;
             if (EditorGUI.EndChangeCheck())
             {
@@ -471,24 +484,35 @@ namespace UnityEditor
                 ParticleSystemEditorUtils.editorIsScrubbing = false;
             }
 
-            float particleCount = 0;
+            int particleCount = 0;
+            float fastestParticle = 0.0f;
+            float slowestParticle = Mathf.Infinity;
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
-                particleCount += ps.particleCount;
-            EditorGUILayout.FloatField(s_Texts.particleCount, particleCount);
+            {
+                ps.CalculateEffectUIData(ref particleCount, ref fastestParticle, ref slowestParticle);
+            }
+            EditorGUILayout.LabelField(s_Texts.particleCount, GUIContent.Temp(particleCount.ToString()));
 
             bool hasSubEmitters = false;
             int subEmitterParticles = 0;
             foreach (ParticleSystem ps in m_SelectedParticleSystems)
             {
                 int subEmitterParticlesCurrent = 0;
-                if (ps.CountSubEmitterParticles(ref subEmitterParticlesCurrent))
+                if (ps.CalculateEffectUISubEmitterData(ref subEmitterParticlesCurrent, ref fastestParticle, ref slowestParticle))
                 {
                     hasSubEmitters = true;
                     subEmitterParticles += subEmitterParticlesCurrent;
                 }
             }
             if (hasSubEmitters)
-                EditorGUILayout.FloatField(s_Texts.subEmitterParticleCount, subEmitterParticles);
+                EditorGUILayout.LabelField(s_Texts.subEmitterParticleCount, GUIContent.Temp(subEmitterParticles.ToString()));
+
+            if (fastestParticle >= slowestParticle)
+                EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp(slowestParticle.ToString(s_Texts.speedFloatFieldFormatString) + " - " + fastestParticle.ToString(s_Texts.speedFloatFieldFormatString)));
+            else
+                EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
+
+            EditorGUIUtility.labelWidth = 0.0f;
         }
 
         private void HandleKeyboardShortcuts()
@@ -634,7 +658,7 @@ namespace UnityEditor
             if (!EditorApplication.isPlaying)
             {
                 // Edit Mode: Play/Stop buttons
-                GUILayout.BeginHorizontal();
+                GUILayout.BeginHorizontal(GUILayout.Width(200.0f));
                 {
                     bool isPlaying = ParticleSystemEditorUtils.editorIsPlaying && !ParticleSystemEditorUtils.editorIsPaused;
                     if (GUILayout.Button(isPlaying ? s_Texts.pause : s_Texts.play, "ButtonLeft"))
@@ -651,12 +675,6 @@ namespace UnityEditor
                     }
                 }
                 GUILayout.EndHorizontal();
-
-                // Playback speed
-                string oldFormat = EditorGUI.kFloatFieldFormatString;
-                EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-                ParticleSystemEditorUtils.editorSimulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.editorSimulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
-                EditorGUI.kFloatFieldFormatString = oldFormat;
 
                 // Playback time
                 PlayBackTimeGUI();

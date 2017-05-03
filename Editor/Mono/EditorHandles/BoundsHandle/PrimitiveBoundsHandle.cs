@@ -104,9 +104,21 @@ namespace UnityEditor.IMGUI.Controls
                 DrawWireframe();
             }
 
-            // exit before drawing control handles if holding alt, since alt-click will rotate scene view
+            // unless holding alt to pin center, exit before drawing control handles when holding alt, since alt-click will rotate scene view
             if (Event.current.alt)
-                return;
+            {
+                bool exit = true;
+                foreach (var id in m_ControlIDs)
+                {
+                    if (id == GUIUtility.hotControl)
+                    {
+                        exit = false;
+                        break;
+                    }
+                }
+                if (exit)
+                    return;
+            }
 
             // bounding box extents
             Vector3 minPos = m_Bounds.min;

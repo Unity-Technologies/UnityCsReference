@@ -23,8 +23,9 @@ namespace UnityEditor
             public GUIContent colorOverLifetime = EditorGUIUtility.TextContent("Color over Lifetime|The color of the trails during the lifetime of the particle they are attached to.");
             public GUIContent widthOverTrail = EditorGUIUtility.TextContent("Width over Trail|Select a width for the trail from its start to end vertex.");
             public GUIContent colorOverTrail = EditorGUIUtility.TextContent("Color over Trail|Select a color for the trail from its start to end vertex.");
+            public GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
 
-            public string[] textureModeOptions = { "Stretch", "Tile" };
+            public string[] textureModeOptions = { "Stretch", "Tile", "DistributePerSegment", "RepeatPerSegment" };
         }
         private static Texts s_Texts;
 
@@ -40,6 +41,7 @@ namespace UnityEditor
         SerializedMinMaxGradient m_ColorOverLifetime;
         SerializedMinMaxCurve m_WidthOverTrail;
         SerializedMinMaxGradient m_ColorOverTrail;
+        SerializedProperty m_GenerateLightingData;
 
         public TrailModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "TrailModule", displayName)
@@ -68,6 +70,7 @@ namespace UnityEditor
             m_ColorOverLifetime = new SerializedMinMaxGradient(this, "colorOverLifetime");
             m_WidthOverTrail = new SerializedMinMaxCurve(this, s_Texts.widthOverTrail, "widthOverTrail");
             m_ColorOverTrail = new SerializedMinMaxGradient(this, "colorOverTrail");
+            m_GenerateLightingData = GetProperty("generateLightingData");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -87,6 +90,7 @@ namespace UnityEditor
             GUIMinMaxGradient(s_Texts.colorOverLifetime, m_ColorOverLifetime, false);
             GUIMinMaxCurve(s_Texts.widthOverTrail, m_WidthOverTrail);
             GUIMinMaxGradient(s_Texts.colorOverTrail, m_ColorOverTrail, false);
+            GUIToggle(s_Texts.generateLightingData, m_GenerateLightingData);
 
             // Add a warning message when no trail material is assigned, telling users where to find it
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)

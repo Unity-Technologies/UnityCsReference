@@ -67,7 +67,7 @@ namespace UnityEditor
         /// Method called by the UI when the "Build" or "Build and Run" buttons are pressed.
         /// </summary>
         /// <param name="defaultBuildOptions"></param>
-        public static void CallBuildMethods(BuildOptions defaultBuildOptions)
+        static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
         {
             try
             {
@@ -77,7 +77,7 @@ namespace UnityEditor
                 if (getBuildPlayerOptionsHandler != null)
                     options = getBuildPlayerOptionsHandler(options);
                 else
-                    options = DefaultBuildMethods.GetBuildPlayerOptions(options);
+                    options = DefaultBuildMethods.GetBuildPlayerOptionsInternal(askForBuildLocation, options);
 
                 if (buildPlayerHandler != null)
                     buildPlayerHandler(options);
@@ -166,10 +166,12 @@ namespace UnityEditor
             /// <returns></returns>
             public static BuildPlayerOptions GetBuildPlayerOptions(BuildPlayerOptions defaultBuildPlayerOptions)
             {
-                var options = defaultBuildPlayerOptions;
+                return GetBuildPlayerOptionsInternal(true, defaultBuildPlayerOptions);
+            }
 
-                // In the default implementation, AutoRunPlayer implies using the saved build location
-                var askForBuildLocation = (options.options & BuildOptions.AutoRunPlayer) != BuildOptions.AutoRunPlayer;
+            internal static BuildPlayerOptions GetBuildPlayerOptionsInternal(bool askForBuildLocation, BuildPlayerOptions defaultBuildPlayerOptions)
+            {
+                var options = defaultBuildPlayerOptions;
 
                 bool updateExistingBuild = false;
 

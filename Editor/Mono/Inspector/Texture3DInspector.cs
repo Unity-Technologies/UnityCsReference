@@ -72,11 +72,11 @@ namespace UnityEditor
             bool oldFog = RenderSettings.fog;
             Unsupported.SetRenderSettingsUseFogNoDirty(false);
 
-            m_PreviewUtility.m_Camera.transform.position = -Vector3.forward * 3.0f;
-            m_PreviewUtility.m_Camera.transform.rotation = Quaternion.identity;
+            m_PreviewUtility.camera.transform.position = -Vector3.forward * 3.0f;
+            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
             Quaternion rot = Quaternion.Euler(m_PreviewDir.y, 0, 0) * Quaternion.Euler(0, m_PreviewDir.x, 0);
             m_PreviewUtility.DrawMesh(m_Mesh, Vector3.zero, rot, m_Material, 0);
-            m_PreviewUtility.m_Camera.Render();
+            m_PreviewUtility.Render();
 
             Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
             m_PreviewUtility.EndAndDrawPreview(r);
@@ -87,7 +87,7 @@ namespace UnityEditor
             if (m_PreviewUtility == null)
             {
                 m_PreviewUtility = new PreviewRenderUtility();
-                m_PreviewUtility.m_CameraFieldOfView = 30.0f;
+                m_PreviewUtility.camera.fieldOfView = 30.0f;
             }
 
             if (m_Mesh == null)

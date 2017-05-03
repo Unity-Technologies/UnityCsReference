@@ -192,13 +192,10 @@ public enum AndroidBuildType
     Release = 2,
 }
 
-public enum AppleBuildAndRunType
+internal enum AppleBuildAndRunType
 {
-    
     Xcode = 0,
-    
     Xcodebuild = 1,
-    
     iOSDeploy = 2,
 }
 
@@ -591,6 +588,7 @@ public sealed partial class EditorUserBuildSettings
         set;
     }
 
+    [System.Obsolete ("EditorUserBuildSettings.wsaSDK is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public extern static WSASDK wsaSDK
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -869,6 +867,16 @@ public static bool SwitchActiveBuildTarget(BuildTarget target)
     }
 
     public extern static bool switchNVNGraphicsDebugger
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static bool switchEnableDebugPad
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

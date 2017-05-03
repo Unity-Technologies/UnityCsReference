@@ -43,7 +43,13 @@ namespace UnityEngine.Experimental.UIElements
 
         bool touchScreenTextField { get { return TouchScreenKeyboard.isSupported; } }
 
-        public bool hasFocus { get { return panel != null && panel.dispatcher.focusedElement == this; } }
+        GUIStyle m_DrawGUIStyle;
+        internal GUIStyle style
+        {
+            get { return m_DrawGUIStyle ?? (m_DrawGUIStyle = new GUIStyle()); }
+        }
+
+        public bool hasFocus { get { return elementPanel != null && elementPanel.focusedElement == this; } }
 
         public TextEditor editor { get; protected set; }
 

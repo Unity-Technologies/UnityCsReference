@@ -37,7 +37,6 @@ namespace UnityEditor
         private SerializedProperty m_UpdateMethod;
 
         private GUIContent m_AnimatorContent;
-        private GUIContent m_AudioContent;
         private GUIContent m_ScriptContent;
         private Texture    m_DefaultScriptContentTexture;
 
@@ -50,7 +49,6 @@ namespace UnityEditor
             m_InitialTime = serializedObject.FindProperty("m_InitialTime");
 
             m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
-            m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioMixerGroup)));
             m_ScriptContent = new GUIContent(EditorGUIUtility.LoadIcon("ScriptableObject Icon"));
             m_DefaultScriptContentTexture = m_ScriptContent.image;
         }
@@ -101,15 +99,6 @@ namespace UnityEditor
 
             if (binding.streamType == DataStreamType.Audio)
             {
-                AudioMixerGroup group = director.GetGenericBinding(binding.sourceObject) as AudioMixerGroup;
-                m_AudioContent.text = binding.streamName;
-                m_AudioContent.tooltip = (group == null) ? Styles.NoBindingsContent.text : string.Empty;
-                EditorGUI.BeginChangeCheck();
-                group = EditorGUILayout.ObjectField(m_AudioContent, group, typeof(AudioMixerGroup), false) as AudioMixerGroup;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SetBinding(director, binding.sourceObject, group);
-                }
             }
             else if (binding.streamType == DataStreamType.Animation)
             {

@@ -25,6 +25,9 @@ namespace UnityEditor
         SerializedMinMaxCurve m_RemapY;
         SerializedMinMaxCurve m_RemapZ;
         SerializedProperty m_RemapEnabled;
+        SerializedMinMaxCurve m_PositionAmount;
+        SerializedMinMaxCurve m_RotationAmount;
+        SerializedMinMaxCurve m_SizeAmount;
 
         const int k_PreviewSize = 96;
         static Texture2D s_PreviewTexture;
@@ -45,6 +48,9 @@ namespace UnityEditor
             public GUIContent scrollSpeed = EditorGUIUtility.TextContent("Scroll Speed|Scroll the noise map over the particle system.");
             public GUIContent remap = EditorGUIUtility.TextContent("Remap|Remap the final noise values into a new range.");
             public GUIContent remapCurve = EditorGUIUtility.TextContent("Remap Curve");
+            public GUIContent positionAmount = EditorGUIUtility.TextContent("Position Amount|What proportion of the noise is applied to the particle positions.");
+            public GUIContent rotationAmount = EditorGUIUtility.TextContent("Rotation Amount|What proportion of the noise is applied to the particle rotations, in degrees per second.");
+            public GUIContent sizeAmount = EditorGUIUtility.TextContent("Size Amount|Multiply the size of the particle by a proportion of the noise.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
@@ -90,6 +96,9 @@ namespace UnityEditor
             m_RemapY.m_AllowConstant = false;
             m_RemapZ.m_AllowConstant = false;
             m_RemapEnabled = GetProperty("remapEnabled");
+            m_PositionAmount = new SerializedMinMaxCurve(this, s_Texts.positionAmount, "positionAmount", kUseSignedRange);
+            m_RotationAmount = new SerializedMinMaxCurve(this, s_Texts.rotationAmount, "rotationAmount", kUseSignedRange);
+            m_SizeAmount = new SerializedMinMaxCurve(this, s_Texts.sizeAmount, "sizeAmount", kUseSignedRange);
 
             if (s_PreviewTexture == null)
             {
@@ -211,6 +220,10 @@ namespace UnityEditor
                     GUIMinMaxCurve(s_Texts.remapCurve, m_RemapX);
                 }
             }
+
+            GUIMinMaxCurve(s_Texts.positionAmount, m_PositionAmount);
+            GUIMinMaxCurve(s_Texts.rotationAmount, m_RotationAmount);
+            GUIMinMaxCurve(s_Texts.sizeAmount, m_SizeAmount);
 
             if (!isWindowView)
                 GUILayout.EndVertical();

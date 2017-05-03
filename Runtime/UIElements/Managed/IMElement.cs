@@ -22,8 +22,9 @@ namespace UnityEngine.Experimental.UIElements
         // This value can be NonInteractiveControlID for non-interactive UIElements.
         public int id { get; protected set; }
 
+        private GUIStyle m_GUIStyle;
         // IMElements have their GUIStyle set directly, and don't use UIElements Style Sheet at the moment
-        public new GUIStyle style
+        public GUIStyle style
         {
             get { return m_GUIStyle; }
             set
@@ -39,6 +40,7 @@ namespace UnityEngine.Experimental.UIElements
         protected IMElement() :
             base()
         {
+            this.style = GUIStyle.none;
             this.focusType = FocusType.Passive;
             this.id = NonInteractiveControlID;
         }
@@ -52,6 +54,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void OnReuse()
         {
+            style = GUIStyle.none;
             position = new Rect(0, 0, 0, 0);
             enabled = true;
             id = NonInteractiveControlID;

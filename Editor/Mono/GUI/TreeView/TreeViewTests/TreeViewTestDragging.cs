@@ -35,7 +35,6 @@ namespace UnityEditor.TreeViewExamples
         {
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData(k_GenericDragID, new FooDragData(GetItemsFromIDs(draggedItemIDs)));
-            DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this IS required for dragging to work
             string title = draggedItemIDs.Count + " Foo" + (draggedItemIDs.Count > 1 ? "s" : ""); // title is only shown on OSX (at the cursor)
             DragAndDrop.StartDrag(title);
         }

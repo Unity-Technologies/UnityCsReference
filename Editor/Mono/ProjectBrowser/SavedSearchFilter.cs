@@ -10,6 +10,7 @@ using System.IO;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Collaboration;
 using Object = UnityEngine.Object;
 
 
@@ -43,6 +44,8 @@ namespace UnityEditor
 
         // Callback when saved filters have changed
         System.Action m_SavedFiltersChanged;
+        // Callback when saved filters have been initialized
+        System.Action m_SavedFiltersInitialized;
         bool m_AllowHierarchy = false;
 
         // --------------------
@@ -140,10 +143,26 @@ namespace UnityEditor
             return instance.BuildTreeView();
         }
 
+        public static void RefreshSavedFilters()
+        {
+            instance.Changed();
+        }
+
         public static void AddChangeListener(System.Action callback)
         {
             instance.m_SavedFiltersChanged -= callback; // ensures its not added twice
             instance.m_SavedFiltersChanged += callback;
+        }
+
+        internal static void AddInitializedListener(System.Action callback)
+        {
+            instance.m_SavedFiltersInitialized -= callback; // ensures its not added twice
+            instance.m_SavedFiltersInitialized += callback;
+        }
+
+        internal static void RemoveInitializedListener(System.Action callback)
+        {
+            instance.m_SavedFiltersInitialized -= callback;
         }
 
         public static void MoveSavedFilter(int instanceID, int parentInstanceID, int targetInstanceID, bool after)
@@ -405,6 +424,11 @@ namespace UnityEditor
             if (!m_AllowHierarchy)
                 for (int i = 1; i < m_SavedFilters.Count; ++i)
                     m_SavedFilters[i].m_Depth = 1;
+
+            if (m_SavedFiltersInitialized != null && m_SavedFilters.Count > 1)
+            {
+                m_SavedFiltersInitialized();
+            }
         }
 
         int GetRoot()
@@ -439,7 +463,25 @@ namespace UnityEditor
                 if (i == 0)
                     root = item;
                 else
+                {
+                    if (Collab.instance.collabFilters.ContainsSearchFilter(savedFilter.m_Name, savedFilter.m_Filter.FilterToSearchFieldString()))
+                    {
+                        if (!Collab.instance.IsCollabEnabledForCurrentProject())
+                            continue;
+                    }
+
+                    if (SoftlockViewController.Instance.softLockFilters.ContainsSearchFilter(savedFilter.m_Name, savedFilter.m_Filter.FilterToSearchFieldString()))
+                    {
+                        if (CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
+                        {
+                            if (!CollabSettingsManager.inProgressEnabled)
+                                continue;
+                        }
+                        else
+                            continue;
+                    }
                     items.Add(item);
+                }
             }
 
             // Fix child/parent references

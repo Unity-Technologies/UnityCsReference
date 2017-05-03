@@ -4,7 +4,6 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    [GUISkinStyle("toggle")]
     public class Toggle : VisualElement
     {
         readonly System.Action clickEvent;

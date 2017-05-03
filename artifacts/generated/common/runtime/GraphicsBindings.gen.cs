@@ -1278,7 +1278,11 @@ public enum LineTextureMode
     
     Stretch = 0,
     
-    Tile = 1
+    Tile = 1,
+    
+    DistributePerSegment = 2,
+    
+    RepeatPerSegment = 3
 }
 
 public enum LineAlignment
@@ -1430,6 +1434,16 @@ public sealed partial class TrailRenderer : Renderer
     }
 
     public extern LineAlignment alignment
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern bool generateLightingData
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1598,6 +1612,10 @@ public sealed partial class LineRenderer : Renderer
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public int GetPositions (Vector3[] positions) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void Simplify (float tolerance) ;
+
     public extern bool useWorldSpace
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1649,6 +1667,16 @@ public sealed partial class LineRenderer : Renderer
     }
 
     public extern LineAlignment alignment
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern bool generateLightingData
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2312,6 +2340,13 @@ public static void DrawTexture(Rect screenRect, Texture texture, Rect sourceRect
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Blit (Texture source, RenderTexture dest) ;
 
+    public static void Blit (Texture source, RenderTexture dest, Vector2 scale, Vector2 offset) {
+        INTERNAL_CALL_Blit ( source, dest, ref scale, ref offset );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Blit (Texture source, RenderTexture dest, ref Vector2 scale, ref Vector2 offset);
     [uei.ExcludeFromDocs]
 public static void Blit (Texture source, RenderTexture dest, Material mat) {
     int pass = -1;
@@ -2320,7 +2355,7 @@ public static void Blit (Texture source, RenderTexture dest, Material mat) {
 
 public static void Blit(Texture source, RenderTexture dest, Material mat, [uei.DefaultValue("-1")]  int pass )
         {
-            Internal_BlitMaterial(source, dest, mat, pass, true);
+            Internal_BlitMaterial(source, dest, mat, pass, true, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
     
@@ -2333,15 +2368,18 @@ public static void Blit (Texture source, Material mat) {
 
 public static void Blit(Texture source, Material mat, [uei.DefaultValue("-1")]  int pass )
         {
-            Internal_BlitMaterial(source, null, mat, pass, false);
+            Internal_BlitMaterial(source, null, mat, pass, false, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
     
     
+    private static void Internal_BlitMaterial (Texture source, RenderTexture dest, Material mat, int pass, bool setRT, Vector2 scale, Vector2 offset) {
+        INTERNAL_CALL_Internal_BlitMaterial ( source, dest, mat, pass, setRT, ref scale, ref offset );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void Internal_BlitMaterial (Texture source, RenderTexture dest, Material mat, int pass, bool setRT) ;
-
+    private extern static void INTERNAL_CALL_Internal_BlitMaterial (Texture source, RenderTexture dest, Material mat, int pass, bool setRT, ref Vector2 scale, ref Vector2 offset);
     public static void BlitMultiTap(Texture source, RenderTexture dest, Material mat, params Vector2[] offsets)
         {
             Internal_BlitMultiTap(source, dest, mat, offsets);

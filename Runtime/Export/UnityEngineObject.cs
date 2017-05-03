@@ -17,7 +17,6 @@ namespace UnityEngine
         private int m_InstanceID;
         private string m_UnityRuntimeErrorString;
 
-
         internal static int OffsetOfInstanceIDInCPlusPlusObject = -1;
 
         [System.Security.SecuritySafeCritical]

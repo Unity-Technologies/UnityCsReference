@@ -10,25 +10,21 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System;
 using UnityEngine;
 using UnityEngine.Audio;
-
 using Object = UnityEngine.Object;
 
 namespace UnityEngine.Playables
 {
+
+
 public static partial class AudioPlayableGraphExtensions
 {
-    
-    
+    internal static bool InternalCreateAudioOutput (ref PlayableGraph graph, string name, out PlayableOutputHandle handle) {
+        return INTERNAL_CALL_InternalCreateAudioOutput ( ref graph, name, out handle );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  int internalAudioOutputCount (ref PlayableGraph graph) ;
-
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool InternalGetAudioOutput (ref PlayableGraph graph, int index, out PlayableOutput output) ;
-
+    private extern static bool INTERNAL_CALL_InternalCreateAudioOutput (ref PlayableGraph graph, string name, out PlayableOutputHandle handle);
 }
 
 

@@ -9,12 +9,13 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditor.AnimatedValues;
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(SpeedTreeImporter))]
     [CanEditMultipleObjects]
-    internal class SpeedTreeImporterInspector : AssetImporterInspector
+    internal class SpeedTreeImporterInspector : AssetImporterEditor
     {
         private class Styles
         {
@@ -64,7 +65,7 @@ namespace UnityEditor
         private readonly AnimBool m_ShowSmoothLODOptions = new AnimBool();
         private readonly AnimBool m_ShowCrossFadeWidthOptions = new AnimBool();
 
-        private void OnEnable()
+        public override void OnEnable()
         {
             m_LODSettings = serializedObject.FindProperty("m_LODSettings");
             m_EnableSmoothLOD = serializedObject.FindProperty("m_EnableSmoothLODTransition");
@@ -100,7 +101,7 @@ namespace UnityEditor
             get { return importers.Any(i => i.materialsShouldBeRegenerated); }
         }
 
-        protected override bool ApplyRevertGUIButtons()
+        protected override bool OnApplyRevertGUI()
         {
             bool applied;
             using (new EditorGUI.DisabledScope(!HasModified()))

@@ -6,7 +6,6 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    [GUISkinStyle("label")]
     public class Label : VisualElement
     {
         public Label() : this(String.Empty) {}

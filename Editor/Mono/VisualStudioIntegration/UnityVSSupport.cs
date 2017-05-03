@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using UnityEditorInternal;
 using UnityEngine;
@@ -26,18 +27,126 @@ namespace UnityEditor.VisualStudioIntegration
 
         public static void Initialize(string editorPath)
         {
-            if (Application.platform != RuntimePlatform.WindowsEditor)
+            var externalEditor = editorPath ?? InternalEditorUtility.GetExternalScriptEditor();
+
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                InitializeVSForMac(externalEditor);
+                return;
+            }
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                InitializeVisualStudio(externalEditor);
+        }
+
+        private static void InitializeVSForMac(string externalEditor)
+        {
+            Version vsfmVersion;
+            if (!IsVSForMac(externalEditor, out vsfmVersion))
                 return;
 
-            const string kscriptsdefaultapp = "kScriptsDefaultApp";
+            m_ShouldUnityVSBeActive = true;
 
-            var externalEditor = editorPath ?? EditorPrefs.GetString(kscriptsdefaultapp);
+            var bridgeFile = GetVSForMacBridgeAssembly(externalEditor, vsfmVersion);
+            if (string.IsNullOrEmpty(bridgeFile) || !File.Exists(bridgeFile))
+            {
+                Console.WriteLine("Unable to find Tools for Unity bridge dll for Visual Studio for Mac " + externalEditor);
+                return;
+            }
 
+            s_UnityVSBridgeToLoad = bridgeFile;
+            InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileNameWithoutExtension(bridgeFile), bridgeFile);
+        }
+
+        private static bool IsVSForMac(string externalEditor, out Version vsfmVersion)
+        {
+            vsfmVersion = null;
+
+            if (!externalEditor.ToLower().EndsWith("visual studio.app"))
+                return false;
+
+            // We need to extract the version used by VS for Mac
+            // to lookup its addin registry
+            try
+            {
+                return GetVSForMacVersion(externalEditor, out vsfmVersion);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to read Visual Studio for Mac information: {0}", e);
+                return false;
+            }
+        }
+
+        private static bool GetVSForMacVersion(string externalEditor, out Version vsfmVersion)
+        {
+            vsfmVersion = null;
+
+            // Read the full VS for Mac version from the plist, it will look like this:
+            //
+            // <key>CFBundleShortVersionString</key>
+            // <string>X.X.X.X</string>
+
+            var plist = Path.Combine(externalEditor, "Contents/Info.plist");
+            if (!File.Exists(plist))
+                return false;
+
+            const string versionStringRegex = @"\<key\>CFBundleShortVersionString\</key\>\s+\<string\>(?<version>\d+\.\d+\.\d+\.\d+?)\</string\>";
+
+            var file = File.ReadAllText(plist);
+            var match = Regex.Match(file, versionStringRegex);
+            var versionGroup = match.Groups["version"];
+            if (!versionGroup.Success)
+                return false;
+
+            vsfmVersion = new Version(versionGroup.Value);
+            return true;
+        }
+
+        private static string GetVSForMacBridgeAssembly(string externalEditor, Version vsfmVersion)
+        {
+            // Check first if we're overriden
+            // Useful when developing UnityVS for Mac
+            var bridge = Environment.GetEnvironmentVariable("VSTUM_BRIDGE");
+            if (!string.IsNullOrEmpty(bridge) && File.Exists(bridge))
+                return bridge;
+
+            // Look for installed addin
+            const string addinBridge = "Editor/SyntaxTree.VisualStudio.Unity.Bridge.dll";
+            const string addinName = "MonoDevelop.Unity";
+
+            // Check if we're installed in the user addins repository
+            // ~/Library/Application Support/VisualStudio/X.0/LocalInstall/Addins
+            var localAddins = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                    "Library/Application Support/VisualStudio/" + vsfmVersion.Major + ".0" + "/LocalInstall/Addins");
+
+            // In the user addins repository, the addins are suffixed by their versions, like `MonoDevelop.Unity.1.0`
+            // When installing another local user addin, MD will remove files inside the folder
+            // So we browse all VSTUM addins, and return the one with a bridge, which is the one MD will load
+            foreach (var folder in Directory.GetDirectories(localAddins, addinName + "*", SearchOption.TopDirectoryOnly))
+            {
+                bridge = Path.Combine(folder, addinBridge);
+                if (File.Exists(bridge))
+                    return bridge;
+            }
+
+            // Check in Visual Studio.app/
+            // In that case the name of the addin is used
+            bridge = Path.Combine(externalEditor, "Contents/Resources/lib/monodevelop/AddIns/" + addinName + "/" + addinBridge);
+            if (File.Exists(bridge))
+                return bridge;
+
+            return null;
+        }
+
+        private static void InitializeVisualStudio(string externalEditor)
+        {
             if (externalEditor.EndsWith("UnityVS.OpenFile.exe"))
             {
                 externalEditor = SyncVS.FindBestVisualStudio();
                 if (externalEditor != null)
-                    EditorPrefs.SetString(kscriptsdefaultapp, externalEditor);
+                    InternalEditorUtility.SetExternalScriptEditor(externalEditor);
             }
 
             VisualStudioVersion vsVersion;
@@ -204,10 +313,10 @@ namespace UnityEditor.VisualStudioIntegration
 
         public static void ScriptEditorChanged(string editorPath)
         {
-            //on windows, we reload the domain, because selecting a different editor, requires loading a different UnityVS.
-            if (Application.platform != RuntimePlatform.WindowsEditor)
+            if (Application.platform != RuntimePlatform.OSXEditor && Application.platform != RuntimePlatform.WindowsEditor)
                 return;
 
+            // We reload the domain because selecting a different editor requires loading a different UnityVS
             Initialize(editorPath);
 
             InternalEditorUtility.RequestScriptReload();

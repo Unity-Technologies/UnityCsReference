@@ -9,6 +9,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System.IO;
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
@@ -114,7 +115,7 @@ namespace UnityEditor
         }
         static Styles styles;
 
-        public ModelImporterRigEditor(AssetImporterInspector panelContainer)
+        public ModelImporterRigEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
         {}
 

@@ -1082,7 +1082,6 @@ public sealed partial class TextureImporterSettings
             int     m_NormalMapFilter;
     [SerializeField]
             int  m_IsReadable;
-    [SerializeField]
             int    m_NPOTScale;
     [SerializeField]
             int  m_sRGBTexture;

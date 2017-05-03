@@ -10,7 +10,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Build;
 using System;
-
+using UnityEditor.Experimental.AssetImporters;
 using Math = System.Math;
 using Path = System.IO.Path;
 
@@ -131,7 +131,7 @@ namespace UnityEditor
 
     [CustomEditor(typeof(VideoClipImporter))]
     [CanEditMultipleObjects]
-    internal class VideoClipImporterInspector : AssetImporterInspector
+    internal class VideoClipImporterInspector : AssetImporterEditor
     {
         internal struct MultiTargetSettingState
         {
@@ -257,7 +257,7 @@ namespace UnityEditor
         const int kMaxCustomHeight = 16384;
 
         // Don't show the imported movie as a separate editor
-        internal override bool showImportedObject { get { return false; } }
+        public override bool showImportedObject { get { return false; } }
 
         private void ResetSettingsFromBackend()
         {
@@ -316,7 +316,7 @@ namespace UnityEditor
             m_ModifiedTargetSettings = false;
         }
 
-        public void OnEnable()
+        public override void OnEnable()
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -758,7 +758,7 @@ namespace UnityEditor
             ApplyRevertGUI();
         }
 
-        internal override bool HasModified()
+        public override bool HasModified()
         {
             if (base.HasModified())
                 return true;
@@ -766,7 +766,7 @@ namespace UnityEditor
             return m_ModifiedTargetSettings;
         }
 
-        internal override void Apply()
+        protected override void Apply()
         {
             base.Apply();
             WriteSettingsToBackend();
@@ -802,7 +802,7 @@ namespace UnityEditor
             return m_PreviewTitle;
         }
 
-        internal override void ResetValues()
+        protected override void ResetValues()
         {
             base.ResetValues();
             OnEnable();

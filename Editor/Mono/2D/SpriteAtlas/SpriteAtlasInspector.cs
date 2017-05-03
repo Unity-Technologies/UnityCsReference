@@ -2,9 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.U2D;
-using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.U2D.Common;
+using UnityEditor.U2D.Interface;
 using UnityEditorInternal;
 
 namespace UnityEditor.U2D
@@ -13,6 +16,25 @@ namespace UnityEditor.U2D
     [CanEditMultipleObjects]
     internal class SpriteAtlasInspector : Editor
     {
+        class SpriteAtlasInspectorPlatformSettingView : TexturePlatformSettingsView
+        {
+            private bool m_HideMaxSizeOption;
+
+            public SpriteAtlasInspectorPlatformSettingView(bool hideMaxSizeOption)
+            {
+                m_HideMaxSizeOption = hideMaxSizeOption;
+            }
+
+            public override int DrawMaxSize(int defaultValue, bool isMixedValue, out bool changed)
+            {
+                if (!m_HideMaxSizeOption)
+                    return base.DrawMaxSize(defaultValue, isMixedValue, out changed);
+                else
+                    changed = false;
+                return defaultValue;
+            }
+        }
+
         class Styles
         {
             public readonly GUIStyle dropzoneStyle = new GUIStyle("BoldLabel");
@@ -25,17 +47,20 @@ namespace UnityEditor.U2D
             public readonly GUIContent textureSettingLabel = EditorGUIUtility.TextContent("Texture");
             public readonly GUIContent variantSettingLabel = EditorGUIUtility.TextContent("Variant");
             public readonly GUIContent packingParametersLabel = EditorGUIUtility.TextContent("Packing");
+            public readonly GUIContent atlasTypeLabel = EditorGUIUtility.TextContent("Type");
+            public readonly GUIContent defaultPlatformLabel = EditorGUIUtility.TextContent("Default");
             public readonly GUIContent masterAtlasLabel = EditorGUIUtility.TextContent("Master Atlas|Assigning another Sprite Atlas asset will make this atlas a variant of it.");
-            public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TextContent("Include in build|Packed textures will be included in the build by default.");
-            public readonly GUIContent enableRotationLabel = EditorGUIUtility.TextContent("Allow Rotation|Try rotate the sprite to fit better during packing.");
+            public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TextContent("Include in Build|Packed textures will be included in the build by default.");
+            public readonly GUIContent enableRotationLabel = EditorGUIUtility.TextContent("Allow Rotation|Try rotating the sprite to fit better during packing.");
             public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TextContent("Tight Packing|Use the mesh outline to fit instead of the whole texture rect during packing.");
-            public readonly GUIContent maxTextureSizeLabel = EditorGUIUtility.TextContent("Max Texture Size|Maximum size of the packed texture.");
-            public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TextContent("Generate Mip Maps.");
+
+            public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TextContent("Generate Mip Maps");
             public readonly GUIContent readWrite = EditorGUIUtility.TextContent("Read/Write Enabled|Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TextContent("Scale|Down scale ratio.");
+            public readonly GUIContent copyMasterButton = EditorGUIUtility.TextContent("Copy Master's Settings|Copy all master's settings into this variant.");
             public readonly GUIContent packButton = EditorGUIUtility.TextContent("Pack Preview|Pack this atlas.");
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.");
-            public readonly GUIContent packableListLabel = EditorGUIUtility.TextContent("Objects For Packing|Only accept Folder, Sprite Sheet(Texture) and Sprite.");
+            public readonly GUIContent packableListLabel = EditorGUIUtility.TextContent("Objects for Packing|Only accept Folder, Sprite Sheet(Texture) and Sprite.");
 
             public readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
@@ -45,25 +70,30 @@ namespace UnityEditor.U2D
             public readonly int packableElementHash = "PackableElement".GetHashCode();
             public readonly int packableSelectorHash = "PackableSelector".GetHashCode();
 
-            public readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
-            public readonly GUIContent[] kMaxTextureSizeStrings;
+            public readonly int[] atlasTypeValues = { 0, 1 };
+            public readonly GUIContent[] atlasTypeOptions =
+            {
+                EditorGUIUtility.TextContent("Master"),
+                EditorGUIUtility.TextContent("Variant"),
+            };
 
             public Styles()
             {
                 dropzoneStyle.alignment = TextAnchor.MiddleCenter;
                 dropzoneStyle.border = new RectOffset(10, 10, 10, 10);
-
-                kMaxTextureSizeStrings = new GUIContent[kMaxTextureSizeValues.Length];
-                for (var i = 0; i < kMaxTextureSizeValues.Length; ++i)
-                    kMaxTextureSizeStrings[i] = EditorGUIUtility.TextContent(string.Format("{0}", kMaxTextureSizeValues[i]));
             }
         }
 
-        static Styles s_Styles;
+        private static Styles s_Styles;
+
+        private readonly string kDefaultPlatformName = "default";
+
+        private enum AtlasType { Undefined = -1, Master = 0, Variant = 1 }
 
         private SerializedProperty m_MaxTextureSize;
         private SerializedProperty m_TextureCompression;
-        private SerializedProperty m_ColorSpace;
+        private SerializedProperty m_UseCrunchedCompression;
+        private SerializedProperty m_CompressionQuality;
         private SerializedProperty m_FilterMode;
         private SerializedProperty m_AnisoLevel;
         private SerializedProperty m_GenerateMipMaps;
@@ -89,6 +119,13 @@ namespace UnityEditor.U2D
         private float m_MipLevel = 0;
         private bool m_ShowAlpha;
 
+        private List<BuildPlatform> m_ValidPlatforms;
+        private Dictionary<string, List<TextureImporterPlatformSettings>> m_TempPlatformSettings;
+
+        private ITexturePlatformSettingsView m_TexturePlatformSettingsView;
+        private ITexturePlatformSettingsFormatHelper m_TexturePlatformSettingTextureHelper;
+        private ITexturePlatformSettingsController m_TexturePlatformSettingsController;
+
         private SpriteAtlas spriteAtlas { get { return target as SpriteAtlas; } }
 
         static bool IsPackable(Object o)
@@ -106,9 +143,8 @@ namespace UnityEditor.U2D
 
         bool AllTargetsAreVariant()
         {
-            foreach (var t in targets)
+            foreach (SpriteAtlas sa in targets)
             {
-                SpriteAtlas sa = t as SpriteAtlas;
                 if (!sa.isVariant)
                     return false;
             }
@@ -117,9 +153,8 @@ namespace UnityEditor.U2D
 
         bool AllTargetsAreMaster()
         {
-            foreach (var t in targets)
+            foreach (SpriteAtlas sa in targets)
             {
-                SpriteAtlas sa = t as SpriteAtlas;
                 if (sa.isVariant)
                     return false;
             }
@@ -130,7 +165,8 @@ namespace UnityEditor.U2D
         {
             m_MaxTextureSize = serializedObject.FindProperty("m_EditorData.textureSettings.maxTextureSize");
             m_TextureCompression = serializedObject.FindProperty("m_EditorData.textureSettings.textureCompression");
-            m_ColorSpace = serializedObject.FindProperty("m_EditorData.textureSettings.colorSpace");
+            m_UseCrunchedCompression = serializedObject.FindProperty("m_EditorData.textureSettings.crunchedCompression");
+            m_CompressionQuality = serializedObject.FindProperty("m_EditorData.textureSettings.compressionQuality");
             m_FilterMode = serializedObject.FindProperty("m_EditorData.textureSettings.filterMode");
             m_AnisoLevel = serializedObject.FindProperty("m_EditorData.textureSettings.anisoLevel");
             m_GenerateMipMaps = serializedObject.FindProperty("m_EditorData.textureSettings.generateMipMaps");
@@ -151,6 +187,53 @@ namespace UnityEditor.U2D
             m_PackableList.drawElementCallback = DrawPackableElement;
             m_PackableList.elementHeight = EditorGUIUtility.singleLineHeight;
             m_PackableList.headerHeight = 0f;
+
+            SyncPlatformSettings();
+
+            // Initialise texture importer's texture format strings
+            TextureImporterInspector.InitializeTextureFormatStrings();
+
+            m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(AllTargetsAreMaster());
+            m_TexturePlatformSettingTextureHelper = new TexturePlatformSettingsFormatHelper();
+            m_TexturePlatformSettingsController = new TexturePlatformSettingsViewController();
+        }
+
+        void SyncPlatformSettings()
+        {
+            m_TempPlatformSettings = new Dictionary<string, List<TextureImporterPlatformSettings>>();
+
+            // Default platform
+            var defaultSettings = new List<TextureImporterPlatformSettings>();
+            m_TempPlatformSettings.Add(kDefaultPlatformName, defaultSettings);
+            foreach (var t in targets)
+            {
+                TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
+                settings.name = kDefaultPlatformName;
+
+                SerializedObject targetSerializedObject = new SerializedObject(t);
+                settings.maxTextureSize = targetSerializedObject.FindProperty("m_EditorData.textureSettings.maxTextureSize").intValue;
+                settings.textureCompression = (TextureImporterCompression)targetSerializedObject.FindProperty("m_EditorData.textureSettings.textureCompression").enumValueIndex;
+                settings.crunchedCompression = targetSerializedObject.FindProperty("m_EditorData.textureSettings.crunchedCompression").boolValue;
+                settings.compressionQuality = targetSerializedObject.FindProperty("m_EditorData.textureSettings.compressionQuality").intValue;
+
+                defaultSettings.Add(settings);
+            }
+
+            m_ValidPlatforms = BuildPlatforms.instance.GetValidPlatforms();
+            foreach (var platform in m_ValidPlatforms)
+            {
+                var platformSettings = new List<TextureImporterPlatformSettings>();
+                m_TempPlatformSettings.Add(platform.name, platformSettings);
+                foreach (SpriteAtlas sa in targets)
+                {
+                    TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
+                    settings.name = platform.name;
+                    sa.CopyPlatformSettingsIfAvailable(platform.name, settings);
+
+                    // setting will be in default state if copy failed
+                    platformSettings.Add(settings);
+                }
+            }
         }
 
         void AddPackable(ReorderableList list)
@@ -179,7 +262,7 @@ namespace UnityEditor.U2D
                 // Always call Remove() on the previous object if we swapping the object field item.
                 // This ensure the Sprites was pack in this atlas will be refreshed of it unbound.
                 if (previousObject != null)
-                    spriteAtlas.Remove(new Object[] {previousObject});
+                    spriteAtlas.Remove(new Object[] { previousObject });
                 property.objectReferenceValue = changedObject;
             }
 
@@ -219,7 +302,16 @@ namespace UnityEditor.U2D
             if (spriteAtlasPackignEnabled)
             {
                 if (GUILayout.Button(s_Styles.packButton, GUILayout.ExpandWidth(false)))
-                    spriteAtlas.Pack(EditorUserBuildSettings.activeBuildTarget);
+                {
+                    SpriteAtlas[] spriteAtlases = new SpriteAtlas[targets.Length];
+                    for (int i = 0; i < spriteAtlases.Length; ++i)
+                        spriteAtlases[i] = (SpriteAtlas)targets[i];
+
+                    SpriteAtlasUtility.PackAtlases(spriteAtlases, EditorUserBuildSettings.activeBuildTarget);
+
+                    // Packing an atlas might change platform settings in the process, reinitialize
+                    SyncPlatformSettings();
+                }
             }
             else
             {
@@ -231,10 +323,39 @@ namespace UnityEditor.U2D
 
         private void HandleCommonSettingUI()
         {
+            var atlasType = AtlasType.Undefined;
+            if (AllTargetsAreMaster())
+                atlasType = AtlasType.Master;
+            else if (AllTargetsAreVariant())
+                atlasType = AtlasType.Variant;
+
             EditorGUI.BeginChangeCheck();
-            var masterAtlas = EditorGUILayout.ObjectField(s_Styles.masterAtlasLabel, m_MasterAtlas.objectReferenceValue, typeof(SpriteAtlas), false) as SpriteAtlas;
+            EditorGUI.showMixedValue = atlasType == AtlasType.Undefined;
+            atlasType = (AtlasType)EditorGUILayout.IntPopup(s_Styles.atlasTypeLabel, (int)atlasType, s_Styles.atlasTypeOptions, s_Styles.atlasTypeValues);
+            EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
-                spriteAtlas.SetMasterSpriteAtlas(masterAtlas);
+            {
+                bool setToVariant = atlasType == AtlasType.Variant;
+                foreach (SpriteAtlas sa in targets)
+                    sa.SetIsVariant(setToVariant);
+            }
+
+            if (atlasType == AtlasType.Variant)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_MasterAtlas, s_Styles.masterAtlasLabel);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    // Apply modified properties here to have latest master atlas reflected in native codes.
+                    serializedObject.ApplyModifiedProperties();
+
+                    foreach (SpriteAtlas sa in targets)
+                    {
+                        sa.CopyMasterAtlasSettings();
+                        SyncPlatformSettings();
+                    }
+                }
+            }
 
             EditorGUILayout.PropertyField(m_BindAsDefault, s_Styles.bindAsDefaultLabel);
         }
@@ -270,11 +391,6 @@ namespace UnityEditor.U2D
         {
             EditorGUILayout.LabelField(s_Styles.textureSettingLabel, EditorStyles.boldLabel);
 
-            if (AllTargetsAreMaster())
-                EditorGUILayout.IntPopup(m_MaxTextureSize, s_Styles.kMaxTextureSizeStrings, s_Styles.kMaxTextureSizeValues, s_Styles.maxTextureSizeLabel);
-
-            EditorGUILayout.PropertyField(m_TextureCompression);
-            EditorGUILayout.PropertyField(m_ColorSpace);
             HandleBoolToIntPropertyField(m_Readable, s_Styles.readWrite);
             HandleBoolToIntPropertyField(m_GenerateMipMaps, s_Styles.generateMipMapLabel);
             EditorGUILayout.PropertyField(m_FilterMode);
@@ -283,6 +399,71 @@ namespace UnityEditor.U2D
                 && (FilterMode)m_FilterMode.intValue != FilterMode.Point && m_GenerateMipMaps.boolValue;
             if (showAniso)
                 EditorGUILayout.IntSlider(m_AnisoLevel, 0, 16);
+
+            GUILayout.Space(EditorGUI.kSpacing);
+
+            HandlePlatformSettingUI();
+        }
+
+        private void HandlePlatformSettingUI()
+        {
+            int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), s_Styles.defaultPlatformLabel);
+            if (shownTextureFormatPage == -1)
+            {
+                List<TextureImporterPlatformSettings> platformSettings = m_TempPlatformSettings[kDefaultPlatformName];
+                List<TextureImporterPlatformSettings> newSettings = new List<TextureImporterPlatformSettings>(platformSettings.Count);
+                for (var i = 0; i < platformSettings.Count; ++i)
+                {
+                    TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
+                    platformSettings[i].CopyTo(settings);
+                    newSettings.Add(settings);
+                }
+
+                if (m_TexturePlatformSettingsController.HandleDefaultSettings(newSettings, m_TexturePlatformSettingsView))
+                {
+                    for (var i = 0; i < newSettings.Count; ++i)
+                    {
+                        if (platformSettings[i].maxTextureSize != newSettings[i].maxTextureSize)
+                            m_MaxTextureSize.intValue = newSettings[i].maxTextureSize;
+                        if (platformSettings[i].textureCompression != newSettings[i].textureCompression)
+                            m_TextureCompression.enumValueIndex = (int)newSettings[i].textureCompression;
+                        if (platformSettings[i].crunchedCompression != newSettings[i].crunchedCompression)
+                            m_UseCrunchedCompression.boolValue = newSettings[i].crunchedCompression;
+                        if (platformSettings[i].compressionQuality != newSettings[i].compressionQuality)
+                            m_CompressionQuality.intValue = newSettings[i].compressionQuality;
+
+                        newSettings[i].CopyTo(platformSettings[i]);
+                    }
+                }
+            }
+            else
+            {
+                BuildPlatform buildPlatform = m_ValidPlatforms[shownTextureFormatPage];
+                List<TextureImporterPlatformSettings> platformSettings = m_TempPlatformSettings[buildPlatform.name];
+
+                // Predetermine format if overridden is unchecked
+                for (var i = 0; i < platformSettings.Count; ++i)
+                {
+                    var settings = platformSettings[i];
+                    if (!settings.overridden)
+                    {
+                        SpriteAtlas sa = (SpriteAtlas)targets[i];
+                        settings.format = sa.FormatDetermineByAtlasSettings(buildPlatform.defaultTarget);
+                    }
+                }
+
+                m_TexturePlatformSettingsView.buildPlatformTitle = buildPlatform.title.text;
+                if (m_TexturePlatformSettingsController.HandlePlatformSettings(buildPlatform.defaultTarget, platformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
+                {
+                    for (var i = 0; i < platformSettings.Count; ++i)
+                    {
+                        SpriteAtlas sa = (SpriteAtlas)targets[i];
+                        sa.SetPlatformSettings(platformSettings[i]);
+                    }
+                }
+            }
+
+            EditorGUILayout.EndPlatformGrouping();
         }
 
         private void HandlePackableListUI()
@@ -381,6 +562,18 @@ namespace UnityEditor.U2D
             }
         }
 
+        public override string GetInfoString()
+        {
+            if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
+            {
+                Texture2D t = m_PreviewTextures[m_PreviewPage];
+                TextureFormat format = TextureUtil.GetTextureFormat(t);
+
+                return string.Format("{0}x{1} {2}\n{3}", t.width, t.height, TextureUtil.GetTextureFormatString(format), EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(t)));
+            }
+            return "";
+        }
+
         public override bool HasPreviewGUI()
         {
             CachePreviewTexture();
@@ -392,6 +585,8 @@ namespace UnityEditor.U2D
             // Do not allow changing of pages when multiple atlases is selected.
             if (targets.Length == 1 && m_OptionDisplays != null && m_OptionValues != null && m_TotalPages > 1)
                 m_PreviewPage = EditorGUILayout.IntPopup(m_PreviewPage, m_OptionDisplays, m_OptionValues, s_Styles.preDropDown, GUILayout.MaxWidth(50));
+            else
+                m_PreviewPage = 0;
 
             if (m_PreviewTextures != null)
             {
@@ -401,7 +596,7 @@ namespace UnityEditor.U2D
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
 
                 int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));
-                using (new EditorGUI.DisabledGroupScope(mipCount == 1))
+                if (mipCount > 1)
                 {
                     GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
                     m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
@@ -413,7 +608,7 @@ namespace UnityEditor.U2D
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
             CachePreviewTexture();
-            if (m_PreviewTextures != null)
+            if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 

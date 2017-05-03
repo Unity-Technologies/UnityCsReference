@@ -8,14 +8,15 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEditor.Experimental.AssetImporters;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-
 
 
 public partial class AssetImporter : Object
@@ -81,6 +82,10 @@ public partial class AssetImporter : Object
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int LocalFileIDToClassID (long fileId) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void RegisterImporter (Type importer, int importerVersion, int queuePos, string fileExt) ;
 
 }
 

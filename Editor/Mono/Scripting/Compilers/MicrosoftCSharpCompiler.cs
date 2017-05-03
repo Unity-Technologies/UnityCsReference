@@ -109,7 +109,7 @@ namespace UnityEditor.Scripting.Compilers
             if (BuildTarget != BuildTarget.WSAPlayer)
                 throw new InvalidOperationException(string.Format("MicrosoftCSharpCompiler cannot build for .NET Scripting backend for BuildTarget.{0}.", BuildTarget));
 
-            var wsaSDK = EditorUserBuildSettings.wsaSDK;
+            var wsaSDK = WSASDK.UWP;
             if (wsaSDK != WSASDK.UWP)
                 return Directory.GetFiles(GetNETCoreFrameworkReferencesDirectory(wsaSDK), "*.dll");
 

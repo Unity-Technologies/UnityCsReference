@@ -63,8 +63,8 @@ namespace UnityEditor
         private PopupElement[] spritePackerPopupList =
         {
             new PopupElement("Disabled"),
-            new PopupElement("Enabled For Builds(Legacy)"),
-            new PopupElement("Always Enabled(Legacy)"),
+            new PopupElement("Enabled For Builds(Legacy Sprite Packer)"),
+            new PopupElement("Always Enabled(Legacy Sprite Packer)"),
             new PopupElement("Enabled For Builds"),
             new PopupElement("Always Enabled"),
         };
@@ -141,7 +141,7 @@ namespace UnityEditor
 
             // TODO: move Android stuff to editor extension
             devices.Add(new DevDevice("Any Android Device", "Any Android Device",
-                    "Android", "Android", DevDeviceState.Connected,
+                    "virtual", "Android", DevDeviceState.Connected,
                     DevDeviceFeatures.RemoteConnection));
             popupList.Add(new PopupElement("Any Android Device"));
 

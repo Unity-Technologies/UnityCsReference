@@ -107,7 +107,11 @@ namespace UnityEditor.Scripting.Compilers
             if (string.IsNullOrEmpty(windowsKit10Directory))
                 return new Version[0];
 
-            var filesUnderPlatformsUAP = Directory.GetFiles(CombinePaths(windowsKit10Directory, "Platforms", "UAP"), "*", SearchOption.AllDirectories);
+            var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
+            if (!Directory.Exists(platformsUAP))
+                return new Version[0];
+
+            var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
 
             var allVersions = new List<Version>();
@@ -164,11 +168,14 @@ namespace UnityEditor.Scripting.Compilers
 
         private static string[] GetPlatform(string folder, string version)
         {
-            var platform = CombinePaths(folder, @"Platforms\UAP", version, "Platform.xml");
-            var document = XDocument.Load(platform);
+            var platformXml = CombinePaths(folder, @"Platforms\UAP", version, "Platform.xml");
+            if (!File.Exists(platformXml))
+                return new string[0];
+
+            var document = XDocument.Load(platformXml);
             var applicationPlatformElement = document.Element("ApplicationPlatform");
             if (applicationPlatformElement.Attribute("name").Value != "UAP")
-                throw new Exception(string.Format("Invalid platform manifest at \"{0}\".", platform));
+                throw new Exception(string.Format("Invalid platform manifest at \"{0}\".", platformXml));
             var containedApiContractsElement = applicationPlatformElement.Element("ContainedApiContracts");
             return GetReferences(folder, version, containedApiContractsElement);
         }

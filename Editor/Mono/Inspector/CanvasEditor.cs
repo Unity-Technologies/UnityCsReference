@@ -38,9 +38,9 @@ namespace UnityEditor
             public static GUIContent renderCamera = new GUIContent("Render Camera", "The Camera which will render the canvas. This is also the camera used to send events.");
             public static GUIContent sortingOrder = new GUIContent("Sort Order", "The order in which Screen Space - Overlay canvas will render");
             public static string s_RootAndNestedMessage = "Cannot multi-edit root Canvas together with nested Canvas.";
-            public static GUIContent m_SortingLayerStyle = EditorGUIUtility.TextContent("Sorting Layer");
+            public static GUIContent m_SortingLayerStyle = EditorGUIUtility.TextContent("Sorting Layer|Name of the Renderer's sorting layer");
             public static GUIContent targetDisplay = new GUIContent("Target Display", "Display on which to render the canvas when in overlay mode");
-            public static GUIContent m_SortingOrderStyle = EditorGUIUtility.TextContent("Order in Layer");
+            public static GUIContent m_SortingOrderStyle = EditorGUIUtility.TextContent("Order in Layer|Renderer's order within a sorting layer");
             public static GUIContent m_ShaderChannel = EditorGUIUtility.TextContent("Additional Shader Channels");
         }
 

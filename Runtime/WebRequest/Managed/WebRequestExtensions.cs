@@ -90,6 +90,18 @@ namespace UnityEngine.Networking
             return request;
         }
 
+        public static UnityWebRequest GetAssetBundle(string uri, CachedAssetBundle cachedAssetBundle, uint crc)
+        {
+            UnityWebRequest request = new UnityWebRequest(
+                    uri,
+                    kHttpVerbGET,
+                    new DownloadHandlerAssetBundle(uri, cachedAssetBundle.name, cachedAssetBundle.hash, crc),
+                    null
+                    );
+
+            return request;
+        }
+
         public static UnityWebRequest Put(string uri, byte[] bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
@@ -205,6 +217,7 @@ namespace UnityEngine.Networking
         public static byte[] SerializeFormSections(List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {
             byte[] crlf = System.Text.Encoding.UTF8.GetBytes("\r\n");
+            byte[] dDash = WWWForm.DefaultEncoding.GetBytes("--");
 
             int estimatedSize = 0;
             foreach (IMultipartFormSection section in multipartFormSections)
@@ -245,6 +258,8 @@ namespace UnityEngine.Networking
                     header += "Content-Type: " + contentType + "\r\n";
                 }
 
+                formData.AddRange(crlf);
+                formData.AddRange(dDash);
                 formData.AddRange(boundary);
                 formData.AddRange(crlf);
                 formData.AddRange(System.Text.Encoding.UTF8.GetBytes(header));

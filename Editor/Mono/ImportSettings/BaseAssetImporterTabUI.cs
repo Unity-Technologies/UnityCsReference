@@ -5,12 +5,12 @@
 using System;
 using UnityEngine;
 using Object = UnityEngine.Object;
-
+using UnityEditor.Experimental.AssetImporters;
 namespace UnityEditor
 {
     internal abstract class BaseAssetImporterTabUI
     {
-        AssetImporterInspector m_PanelContainer = null;
+        AssetImporterEditor m_PanelContainer = null;
 
         public SerializedObject serializedObject
         {
@@ -36,12 +36,12 @@ namespace UnityEditor
         protected Func<Object, Object> Instantiate;
         protected Action<Object> DestroyImmediate;
 
-        internal BaseAssetImporterTabUI(AssetImporterInspector panelContainer)
+        internal BaseAssetImporterTabUI(AssetImporterEditor panelContainer)
         {
             m_PanelContainer = panelContainer;
 
-            Instantiate = obj => AssetImporterInspector.Instantiate(obj);
-            DestroyImmediate = obj => AssetImporterInspector.DestroyImmediate(obj);
+            Instantiate = obj => AssetImporterEditor.Instantiate(obj);
+            DestroyImmediate = obj => AssetImporterEditor.DestroyImmediate(obj);
         }
 
         internal abstract void OnEnable();

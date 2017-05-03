@@ -486,7 +486,7 @@ namespace UnityEditor
         // Used for static preview only. See note above.
         protected void DoRenderPreview(Object[] subAssets)
         {
-            if (m_PreviewUtility.m_RenderTexture.width <= 0 || m_PreviewUtility.m_RenderTexture.height <= 0)
+            if (m_PreviewUtility.renderTexture.width <= 0 || m_PreviewUtility.renderTexture.height <= 0)
                 return;
 
             List<ProceduralMaterial> materials = new List<ProceduralMaterial>();
@@ -500,41 +500,33 @@ namespace UnityEditor
                 cols++;
             rows = Mathf.CeilToInt(materials.Count / (float)cols);
 
-            m_PreviewUtility.m_Camera.transform.position = -Vector3.forward * 5 * cols;
-            m_PreviewUtility.m_Camera.transform.rotation = Quaternion.identity;
-            m_PreviewUtility.m_Camera.farClipPlane = 5 * cols + 5.0f;
-            m_PreviewUtility.m_Camera.nearClipPlane = 5 * cols - 3.0f;
-            Color amb;
+            m_PreviewUtility.camera.transform.position = -Vector3.forward * 5 * cols;
+            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
+            m_PreviewUtility.camera.farClipPlane = 5 * cols + 5.0f;
+            m_PreviewUtility.camera.nearClipPlane = 5 * cols - 3.0f;
+            m_PreviewUtility.ambientColor = new Color(.2f, .2f, .2f, 0);
             if (lightMode == 0)
             {
-                m_PreviewUtility.m_Light[0].intensity = 1.0f;
-                m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
-                m_PreviewUtility.m_Light[1].intensity = 0;
-                amb = new Color(.2f, .2f, .2f, 0);
+                m_PreviewUtility.lights[0].intensity = 1.0f;
+                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(30f, 30f, 0);
+                m_PreviewUtility.lights[1].intensity = 0;
             }
             else
             {
-                m_PreviewUtility.m_Light[0].intensity = 1.0f;
-                m_PreviewUtility.m_Light[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
-                m_PreviewUtility.m_Light[1].intensity = 1.0f;
-                amb = new Color(.2f, .2f, .2f, 0);
+                m_PreviewUtility.lights[0].intensity = 1.0f;
+                m_PreviewUtility.lights[0].transform.rotation = Quaternion.Euler(50f, 50f, 0);
+                m_PreviewUtility.lights[1].intensity = 1.0f;
             }
-
-            InternalEditorUtility.SetCustomLighting(m_PreviewUtility.m_Light, amb);
 
             for (int i = 0; i < materials.Count; i++)
             {
                 ProceduralMaterial mat = materials[i];
                 Vector3 pos = new Vector3(i % cols - (cols - 1) * 0.5f, -i / cols + (rows - 1) * 0.5f, 0);
-                pos *= Mathf.Tan(m_PreviewUtility.m_Camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 5 * 2;
+                pos *= Mathf.Tan(m_PreviewUtility.camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 5 * 2;
                 m_PreviewUtility.DrawMesh(s_Meshes[selectedMesh], pos, Quaternion.Euler(previewDir.y, 0, 0) * Quaternion.Euler(0, previewDir.x, 0), mat, 0);
             }
 
-            bool oldFog = RenderSettings.fog;
-            Unsupported.SetRenderSettingsUseFogNoDirty(false);
-            m_PreviewUtility.m_Camera.Render();
-            Unsupported.SetRenderSettingsUseFogNoDirty(oldFog);
-            InternalEditorUtility.RemoveCustomLighting();
+            m_PreviewUtility.Render();
         }
     }
 }

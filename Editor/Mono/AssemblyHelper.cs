@@ -195,7 +195,7 @@ namespace UnityEditor
             return FindAssembliesReferencedBy(tmp, foldersToSearch, target);
         }
 
-        static bool IsTypeMonoBehaviourOrScriptableObject(AssemblyDefinition assembly, TypeReference type)
+        private static bool IsTypeAUserExtendedScript(AssemblyDefinition assembly, TypeReference type)
         {
             if (type == null)
                 return false;
@@ -219,9 +219,13 @@ namespace UnityEditor
                 // includes generic arguments we can't use to get type from assembly.
                 var typeName = type.IsGenericInstance ? (type.Namespace + "." + type.Name) : type.FullName;
                 var engineType = builtinAssembly.GetType(typeName);
+
+                // TODO: this "list of classes" should get dynamically filled by the classes them self, thus removing dependency of this class on those classes.
                 if (engineType == typeof(MonoBehaviour) || engineType.IsSubclassOf(typeof(MonoBehaviour)))
                     return true;
                 if (engineType == typeof(ScriptableObject) || engineType.IsSubclassOf(typeof(ScriptableObject)))
+                    return true;
+                if (engineType == typeof(Experimental.AssetImporters.ScriptedImporter) || engineType.IsSubclassOf(typeof(Experimental.AssetImporters.ScriptedImporter)))
                     return true;
             }
 
@@ -236,21 +240,32 @@ namespace UnityEditor
                 // failure should be handled better in other places.
             }
             if (typeDefinition != null)
-                return IsTypeMonoBehaviourOrScriptableObject(assembly, typeDefinition.BaseType);
+                return IsTypeAUserExtendedScript(assembly, typeDefinition.BaseType);
 
             return false;
         }
 
-        static public void ExtractAllClassesThatInheritMonoBehaviourAndScriptableObject(string path, out string[] classNamesArray, out string[] classNameSpacesArray)
+        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray)
         {
             List<string> classNames = new List<string>();
             List<string> nameSpaces = new List<string>();
             var readerParameters = new ReaderParameters();
 
             // this will resolve any types in assemblies within the same directory as the type's assembly
-            // not sure what other (all) directories we should look in under the project directory
+            // or any folder which contains a currently available precompiled dll
             var assemblyResolver = new DefaultAssemblyResolver();
             assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(path));
+
+            // Add the path to all available precompiled assemblies
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            var precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+            HashSet<string> searchPaths = new HashSet<string>();
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+            foreach (var asmpath in searchPaths)
+                assemblyResolver.AddSearchDirectory(asmpath);
+
             readerParameters.AssemblyResolver = assemblyResolver;
 
             AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(path, readerParameters);
@@ -262,7 +277,7 @@ namespace UnityEditor
 
                     try
                     {
-                        if (IsTypeMonoBehaviourOrScriptableObject(assembly, baseType))
+                        if (IsTypeAUserExtendedScript(assembly, baseType))
                         {
                             classNames.Add(type.Name);
                             nameSpaces.Add(type.Namespace);
