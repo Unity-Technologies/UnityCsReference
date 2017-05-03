@@ -12,9 +12,9 @@ using UnityEditorInternal.VR;
 using UnityEngine;
 using UnityEngine.VR;
 
-namespace UnityEditor.HolographicEmulation
+namespace UnityEditorInternal.VR
 {
-    internal class HolographicEmulationWindow : EditorWindow
+    public class HolographicEmulationWindow : EditorWindow
     {
         private bool m_InPlayMode = false;
         private bool m_OperatingSystemChecked = false;
@@ -65,6 +65,7 @@ namespace UnityEditor.HolographicEmulation
 
         private static GUIContent[] s_RoomStrings = new GUIContent[]
         {
+            new GUIContent("None"),
             new GUIContent("DefaultRoom"),
             new GUIContent("Bedroom1"),
             new GUIContent("Bedroom2"),
@@ -78,16 +79,22 @@ namespace UnityEditor.HolographicEmulation
             new GUIContent("Right Hand"),
         };
 
-        public static void Init()
+        public EmulationMode emulationMode
         {
-            var activeWindow = EditorWindow.GetWindow<HolographicEmulationWindow>(false);
-            activeWindow.titleContent = new GUIContent("Holographic");
+            get { return m_Mode; }
+            set { m_Mode = value; Repaint(); }
+        }
+
+        internal static void Init()
+        {
+            EditorWindow.GetWindow<HolographicEmulationWindow>(false);
         }
 
         private bool RemoteMachineNameSpecified { get { return !String.IsNullOrEmpty(m_RemoteMachineAddress); } }
 
         private void OnEnable()
         {
+            titleContent = new GUIContent("Holographic");
             EditorApplication.playmodeStateChanged += OnPlayModeChanged;
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 
@@ -101,6 +108,9 @@ namespace UnityEditor.HolographicEmulation
 
         private void LoadCurrentRoom()
         {
+            if (m_RoomIndex == 0)
+                return;
+
             string roomPath = EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/VR/HolographicSimulation/Rooms/";
             HolographicEmulation.LoadRoom(roomPath + s_RoomStrings[m_RoomIndex].text + ".xef");
         }

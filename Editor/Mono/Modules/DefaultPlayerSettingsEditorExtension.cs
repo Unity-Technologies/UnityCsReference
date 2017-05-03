@@ -71,6 +71,12 @@ namespace UnityEditor.Modules
         }
 
         public virtual bool SupportsHighDynamicRangeDisplays() { return false; }
+
         public virtual bool SupportsGfxJobModes() { return false; }
+
+        public virtual bool SupportsMultithreadedRendering()
+        {
+            return false;
+        }
     }
 }

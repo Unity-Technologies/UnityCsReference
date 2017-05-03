@@ -386,7 +386,11 @@ public enum ParticleSystemTrailTextureMode
     
     Stretch = 0,
     
-    Tile = 1
+    Tile = 1,
+    
+    DistributePerSegment = 2,
+    
+    RepeatPerSegment = 3
 }
 
 public enum ParticleSystemShapeMultiModeValue
@@ -3774,128 +3778,86 @@ public sealed partial class ParticleSystem : Component
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Simulate (ParticleSystem self, float t, bool restart, bool fixedTimeStep) ;
+    extern public void Simulate (float t, [uei.DefaultValue("true")]  bool withChildren , [uei.DefaultValue("true")]  bool restart , [uei.DefaultValue("true")]  bool fixedTimeStep ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t, bool withChildren , bool restart ) {
+        bool fixedTimeStep = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t, bool withChildren ) {
+        bool fixedTimeStep = true;
+        bool restart = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Simulate (float t) {
+        bool fixedTimeStep = true;
+        bool restart = true;
+        bool withChildren = true;
+        Simulate ( t, withChildren, restart, fixedTimeStep );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Play (ParticleSystem self) ;
+    extern public void Play ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Play () {
+        bool withChildren = true;
+        Play ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Stop (ParticleSystem self, ParticleSystemStopBehavior stopBehavior) ;
+    extern public void Pause ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Pause () {
+        bool withChildren = true;
+        Pause ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Pause (ParticleSystem self) ;
+    extern public void Stop ( [uei.DefaultValue("true")] bool withChildren , [uei.DefaultValue("ParticleSystemStopBehavior.StopEmitting")]  ParticleSystemStopBehavior stopBehavior ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Stop (bool withChildren ) {
+        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
+        Stop ( withChildren, stopBehavior );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void Stop () {
+        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
+        bool withChildren = true;
+        Stop ( withChildren, stopBehavior );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_Clear (ParticleSystem self) ;
+    extern public void Clear ( [uei.DefaultValue("true")] bool withChildren ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Clear () {
+        bool withChildren = true;
+        Clear ( withChildren );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool Internal_IsAlive (ParticleSystem self) ;
+    extern public bool IsAlive ( [uei.DefaultValue("true")] bool withChildren ) ;
 
     [uei.ExcludeFromDocs]
-public void Simulate (float t, bool withChildren , bool restart ) {
-    bool fixedTimeStep = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
+    public bool IsAlive () {
+        bool withChildren = true;
+        return IsAlive ( withChildren );
+    }
 
-[uei.ExcludeFromDocs]
-public void Simulate (float t, bool withChildren ) {
-    bool fixedTimeStep = true;
-    bool restart = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
-
-[uei.ExcludeFromDocs]
-public void Simulate (float t) {
-    bool fixedTimeStep = true;
-    bool restart = true;
-    bool withChildren = true;
-    Simulate ( t, withChildren, restart, fixedTimeStep );
-}
-
-public void Simulate(float t, [uei.DefaultValue("true")]  bool withChildren , [uei.DefaultValue("true")]  bool restart , [uei.DefaultValue("true")]  bool fixedTimeStep )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Simulate(ps, t, restart, fixedTimeStep));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Play () {
-    bool withChildren = true;
-    Play ( withChildren );
-}
-
-public void Play( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Play(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Stop (bool withChildren ) {
-    ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-    Stop ( withChildren, stopBehavior );
-}
-
-[uei.ExcludeFromDocs]
-public void Stop () {
-    ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-    bool withChildren = true;
-    Stop ( withChildren, stopBehavior );
-}
-
-public void Stop( [uei.DefaultValue("true")] bool withChildren , [uei.DefaultValue("ParticleSystemStopBehavior.StopEmitting")]  ParticleSystemStopBehavior stopBehavior )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Stop(ps, stopBehavior));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Pause () {
-    bool withChildren = true;
-    Pause ( withChildren );
-}
-
-public void Pause( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Pause(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public void Clear () {
-    bool withChildren = true;
-    Clear ( withChildren );
-}
-
-public void Clear( [uei.DefaultValue("true")] bool withChildren )
-        {
-            IterateParticleSystems(withChildren, (ps) => Internal_Clear(ps));
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public bool IsAlive () {
-    bool withChildren = true;
-    return IsAlive ( withChildren );
-}
-
-public bool IsAlive( [uei.DefaultValue("true")] bool withChildren )
-        {
-            return IterateParticleSystems(withChildren, (ps) => Internal_IsAlive(ps));
-        }
-
-    
-    
     public void Emit (int count) {
         INTERNAL_CALL_Emit ( this, count );
     }
@@ -3941,41 +3903,6 @@ public void Emit(ParticleSystem.Particle particle)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_Emit (ref ParticleSystem.EmitParams emitParams, int count) ;
 
-    internal delegate bool IteratorDelegate(ParticleSystem ps);
-    
-    
-    internal bool IterateParticleSystems(bool recurse, IteratorDelegate func)
-        {
-            bool result = func(this);
-            if (recurse)
-                result |= IterateParticleSystemsRecursive(transform, func);
-            return result;
-        }
-    
-    
-    static private bool IterateParticleSystemsRecursive(Transform transform, IteratorDelegate func)
-        {
-            bool earlyOut = false;
-
-            int childCount = transform.childCount;
-            for (int i = 0; i < childCount; i++)
-            {
-                Transform childTransform = transform.GetChild(i);
-                ParticleSystem ps = childTransform.gameObject.GetComponent<ParticleSystem>();
-                if (ps != null)
-                {
-                    earlyOut = func(ps);
-                    if (earlyOut)
-                        break;
-
-                    IterateParticleSystemsRecursive(childTransform, func);
-                }
-            }
-
-            return earlyOut;
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetupDefaultType (int type) ;

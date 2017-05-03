@@ -14,6 +14,7 @@ namespace UnityEngine.VR
         LeftHand,
         RightHand,
         GameController,
-        TrackingReference
+        TrackingReference,
+        HardwareTracker
     }
 }

@@ -8,18 +8,21 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
-using UnityEngine;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using Object = UnityEngine.Object;
+using UnityEngine.Playables;
 
-namespace UnityEngine.Playables
+namespace UnityEngine.Animations
 {
 [RequiredByNativeCode]
-public partial class AnimationMixerPlayable : AnimationPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct AnimationMixerPlayable
 {
+    private static bool CreateHandleInternal (PlayableGraph graph, int inputCount, bool normalizeWeights, ref PlayableHandle handle) {
+        return INTERNAL_CALL_CreateHandleInternal ( ref graph, inputCount, normalizeWeights, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_CreateHandleInternal (ref PlayableGraph graph, int inputCount, bool normalizeWeights, ref PlayableHandle handle);
 }
 
 }

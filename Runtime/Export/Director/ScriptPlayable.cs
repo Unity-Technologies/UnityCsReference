@@ -5,33 +5,139 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using UnityEngineInternal;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine.Playables
 {
-    [Serializable]
-    [RequiredByNativeCode]
-    public abstract partial class ScriptPlayable : IPlayable, IScriptPlayable, ICloneable
+    public struct ScriptPlayable<T> : IPlayable, IEquatable<ScriptPlayable<T>>
+        where T : class, IPlayableBehaviour, new()
     {
-        public PlayableHandle handle;
-        PlayableHandle IPlayable.playableHandle { get { return handle; } set { handle = value; } }
+        private PlayableHandle m_Handle;
 
-        public static implicit operator PlayableHandle(ScriptPlayable b) { return b.handle; }
-        public bool IsValid() { return handle.IsValid(); }
+        static readonly ScriptPlayable<T> m_NullPlayable = new ScriptPlayable<T>(PlayableHandle.Null);
+        public static ScriptPlayable<T> Null { get { return m_NullPlayable; } }
 
-        public virtual void OnGraphStart() {}
-        public virtual void OnGraphStop()  {}
-
-        public virtual void OnDestroy() {}
-        public virtual void PrepareFrame(FrameData info) {}
-        public virtual void ProcessFrame(FrameData info, object playerData) {}
-        public virtual void OnPlayStateChanged(FrameData info, PlayState newState) {}
-
-        public virtual object Clone()
+        public static ScriptPlayable<T> Create(PlayableGraph graph, int inputCount = 0)
         {
-            ScriptPlayable clone = (ScriptPlayable)MemberwiseClone();
-            clone.handle = PlayableHandle.Null;
-            return clone;
+            var handle = CreateHandle(graph, null, inputCount);
+            return new ScriptPlayable<T>(handle);
+        }
+
+        public static ScriptPlayable<T> Create(PlayableGraph graph, T template, int inputCount = 0)
+        {
+            var handle = CreateHandle(graph, template, inputCount);
+            return new ScriptPlayable<T>(handle);
+        }
+
+        private static PlayableHandle CreateHandle(PlayableGraph graph, T template, int inputCount)
+        {
+            object scriptInstance = null;
+
+            if (template == null)
+            {
+                // We are creating a new script instance.
+                scriptInstance = CreateScriptInstance();
+            }
+            else
+            {
+                // We are not creating from scratch, we are creating from a template.
+                scriptInstance = CloneScriptInstance(template);
+            }
+
+            if (scriptInstance == null)
+            {
+                Debug.LogError("Could not create a ScriptPlayable of Type " + typeof(T).ToString());
+                return PlayableHandle.Null;
+            }
+
+            PlayableHandle handle = graph.CreatePlayableHandle();
+            if (!handle.IsValid())
+                return PlayableHandle.Null;
+
+            handle.SetScriptInstance(scriptInstance);
+            handle.SetInputCount(inputCount);
+
+            return handle;
+        }
+
+        private static object CreateScriptInstance()
+        {
+            IPlayableBehaviour data = null;
+
+            if (typeof(UnityEngine.ScriptableObject).IsAssignableFrom(typeof(T)))
+                data = ScriptableObject.CreateInstance(typeof(T)) as T;
+            else
+                data = new T();
+
+            return data;
+        }
+
+        private static object CloneScriptInstance(IPlayableBehaviour source)
+        {
+            UnityEngine.Object engineObject = source as UnityEngine.Object;
+            if (engineObject != null)
+                return CloneScriptInstanceFromEngineObject(engineObject);
+
+            ICloneable cloneableObject = source as ICloneable;
+            if (cloneableObject != null)
+                return CloneScriptInstanceFromIClonable(cloneableObject);
+
+            return null;
+        }
+
+        private static object CloneScriptInstanceFromEngineObject(UnityEngine.Object source)
+        {
+            var scriptPlayable = Object.Instantiate(source);
+            if (scriptPlayable != null)
+            {
+                scriptPlayable.hideFlags |= HideFlags.DontSave;
+            }
+            return scriptPlayable;
+        }
+
+        private static object CloneScriptInstanceFromIClonable(ICloneable source)
+        {
+            return source.Clone();
+        }
+
+        internal ScriptPlayable(PlayableHandle handle)
+        {
+            if (handle.IsValid())
+            {
+                if (!typeof(T).IsAssignableFrom(handle.GetPlayableType()))
+                    throw new InvalidCastException(
+                        String.Format(
+                            "Incompatible handle: Trying to assign a playable data of type `{0}` that is not compatible with the PlayableBehaviour of type `{1}`.",
+                            handle.GetPlayableType(), typeof(T)));
+            }
+
+            m_Handle = handle;
+        }
+
+        public PlayableHandle GetHandle()
+        {
+            return m_Handle;
+        }
+
+        public T GetBehaviour()
+        {
+            return m_Handle.GetObject<T>();
+        }
+
+        public static implicit operator Playable(ScriptPlayable<T> playable)
+        {
+            return new Playable(playable.GetHandle());
+        }
+
+        public static explicit operator ScriptPlayable<T>(Playable playable)
+        {
+            return new ScriptPlayable<T>(playable.GetHandle());
+        }
+
+        public bool Equals(ScriptPlayable<T> other)
+        {
+            return GetHandle() == other.GetHandle();
         }
     }
 }

@@ -18,6 +18,7 @@ namespace UnityEditor
     {
         private static SoftlockViewController s_Instance;
         public GUIStyle k_Style = null;
+        public GUIStyle k_StyleEmpty = new GUIStyle(); // For tooltips only.
         public GUIContent k_Content = null;
 
         // Stores UI strings for reuse and Editor (inspector) references to trigger
@@ -29,6 +30,11 @@ namespace UnityEditor
 
         private SoftlockViewController() {}
         ~SoftlockViewController() {}
+
+        [SerializeField]
+        private SoftLockFilters m_SoftLockFilters = new SoftLockFilters();
+
+        public SoftLockFilters softLockFilters { get { return m_SoftLockFilters; } }
 
         public static SoftlockViewController Instance
         {
@@ -48,6 +54,7 @@ namespace UnityEditor
         {
             RegisterDataDelegate();
             RegisterDrawDelegates();
+            Repaint();
         }
 
         public void TurnOff()
@@ -69,6 +76,8 @@ namespace UnityEditor
 
         private void UnregisterDrawDelegates()
         {
+            ObjectListArea.postAssetIconDrawCallback -= Instance.DrawProjectBrowserGridUI;
+            ObjectListArea.postAssetLabelDrawCallback -= Instance.DrawProjectBrowserListUI;
             Editor.OnPostHeaderGUI -= Instance.DrawInspectorUI;
             GameObjectTreeViewGUI.OnPostHeaderGUI -= Instance.DrawSceneUI;
         }
@@ -77,13 +86,15 @@ namespace UnityEditor
         private void RegisterDrawDelegates()
         {
             UnregisterDrawDelegates();
+            ObjectListArea.postAssetIconDrawCallback += Instance.DrawProjectBrowserGridUI;
+            ObjectListArea.postAssetLabelDrawCallback += Instance.DrawProjectBrowserListUI;
             Editor.OnPostHeaderGUI += Instance.DrawInspectorUI;
             GameObjectTreeViewGUI.OnPostHeaderGUI += Instance.DrawSceneUI;
         }
 
         // Returns true when the 'editor' supports Softlock UI and the
         // user has Collaborate permissions.
-        private bool HasSoftLocksSupport(Editor editor)
+        private bool HasSoftlockSupport(Editor editor)
         {
             if (!CollabAccess.Instance.IsServiceEnabled() || editor == null || editor.targets.Length > 1)
             {
@@ -103,7 +114,20 @@ namespace UnityEditor
             {
                 hasSupport = false;
             }
+
             return hasSupport;
+        }
+
+        private bool HasSoftlocks(string assetGUID)
+        {
+            if (!CollabAccess.Instance.IsServiceEnabled())
+            {
+                return false;
+            }
+
+            bool hasSoftLocks;
+            bool isValid = (SoftLockData.TryHasSoftLocks(assetGUID, out hasSoftLocks) && hasSoftLocks);
+            return isValid;
         }
 
         // Redraws softlock UI associated with the given list of 'assetGUIDs'.
@@ -119,6 +143,7 @@ namespace UnityEditor
         {
             RepaintInspectors();
             RepaintSceneHierarchy();
+            RepaintProjectBrowsers();
         }
 
         private void RepaintSceneHierarchy()
@@ -140,7 +165,16 @@ namespace UnityEditor
             }
         }
 
-        // Draws over the headings in the Hierarchy area.
+        private void RepaintProjectBrowsers()
+        {
+            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
+            {
+                pb.RefreshSearchIfFilterContains("s:");
+                pb.Repaint();
+            }
+        }
+
+        // Draws in the Hierarchy header, left of the context menu.
         public void DrawSceneUI(Rect availableRect, string scenePath)
         {
             if (!CollabAccess.Instance.IsServiceEnabled())
@@ -148,18 +182,16 @@ namespace UnityEditor
                 return;
             }
 
-            string assetGuid = AssetDatabase.AssetPathToGUID(scenePath);
+            string assetGUID = AssetDatabase.AssetPathToGUID(scenePath);
             int lockCount;
-            SoftLockData.TryGetSoftlockCount(assetGuid, out lockCount);
+            SoftLockData.TryGetSoftlockCount(assetGUID, out lockCount);
 
             GUIContent content = GetGUIContent();
-            content.image = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.Scene, lockCount);
+            content.image = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.Scene);
             content.text = GetDisplayCount(lockCount);
-            content.tooltip = Instance.GetTooltip(assetGuid);
+            content.tooltip = Instance.GetTooltip(assetGUID);
 
-            GUIStyle style = GetStyle();
-            Vector2 contentSize = GetContentSize(content, style);
-
+            Vector2 contentSize = GetStyle().CalcSize(content);
             Rect drawRect = new Rect(availableRect.position, contentSize);
             const int kRightMargin = 4;
             drawRect.x = (availableRect.width - drawRect.width) - kRightMargin;
@@ -170,7 +202,7 @@ namespace UnityEditor
         // Draws the Scene Inspector (Editor.cs) as well as the Game Object Inspector (GameObjectInspector.cs)
         private void DrawInspectorUI(Editor editor)
         {
-            if (!HasSoftLocksSupport(editor))
+            if (!HasSoftlockSupport(editor))
             {
                 return;
             }
@@ -182,6 +214,57 @@ namespace UnityEditor
             const int kHorizontalMargins = 74;
             content.text = FitTextToWidth(content.text, EditorGUIUtility.currentViewWidth - kHorizontalMargins, GetStyle());
             GUILayout.Label(content);
+        }
+
+        // Assigned callback to ObjectListArea.OnPostAssetDrawDelegate.
+        // Draws either overtop of the project browser asset (when in grid view) or
+        // at the rightside when in list view.
+        private void DrawProjectBrowserGridUI(Rect iconRect, string assetGUID, bool isListMode)
+        {
+            if (isListMode || !HasSoftlocks(assetGUID))
+            {
+                return;
+            }
+
+            Rect drawRect = Rect.zero;
+            Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
+            if (null != icon)
+            {
+                drawRect = Overlay.GetRectForBottomRight(iconRect, Overlay.k_OverlaySizeOnLargeIcon);
+
+
+                GUI.DrawTexture(drawRect, icon, ScaleMode.ScaleToFit);
+                DrawTooltip(drawRect, GetTooltip(assetGUID));
+            }
+        }
+
+        private bool DrawProjectBrowserListUI(Rect drawRect, string assetGUID, bool isListMode)
+        {
+            if (!HasSoftlocks(assetGUID))
+            {
+                return false;
+            }
+
+            Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
+            bool didDraw = false;
+            if (null != icon)
+            {
+                // center icon.
+                Rect iconRect = drawRect;
+                iconRect.width = drawRect.height;
+                iconRect.x = (float)Math.Round(drawRect.center.x - (iconRect.width / 2F));
+                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+                DrawTooltip(iconRect, GetTooltip(assetGUID));
+                didDraw = true;
+            }
+            return didDraw;
+        }
+
+        private void DrawTooltip(Rect frame, string tooltip)
+        {
+            GUIContent content = GetGUIContent();
+            content.tooltip = tooltip;
+            GUI.Label(frame, content, k_StyleEmpty);
         }
 
         #region String Helpers
@@ -246,7 +329,7 @@ namespace UnityEditor
             string totalLocksText;
             if (!Instance.m_Cache.TryGetDisplayCount(count, out totalLocksText))
             {
-                totalLocksText = " (" + count.ToString() + ")";
+                totalLocksText = "(" + count.ToString() + ")";
                 Instance.m_Cache.StoreDisplayCount(count, totalLocksText);
             }
             return totalLocksText;
@@ -281,6 +364,11 @@ namespace UnityEditor
             {
                 k_Content = new GUIContent();
             }
+
+            k_Content.tooltip = string.Empty;
+            k_Content.text = null;
+            k_Content.image = null;
+
             return k_Content;
         }
 
@@ -289,7 +377,7 @@ namespace UnityEditor
             GUIContent content = GetGUIContent();
             int lockCount;
             SoftLockData.TryGetSoftlockCount(assetGUID, out lockCount);
-            content.image = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.Inspector, lockCount);
+            content.image = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.Inspector);
             content.text = GetInspectorText(assetGUID, lockCount);
             content.tooltip = GetTooltip(assetGUID);
             return content;
@@ -303,13 +391,6 @@ namespace UnityEditor
                 k_Style.normal.background = null;
             }
             return k_Style;
-        }
-
-        public static Vector2 GetContentSize(GUIContent content, GUIStyle style)
-        {
-            Vector2 sizeConstraints = new Vector2(0, 0);
-            Vector2 size = style.CalcSizeWithConstraints(content, sizeConstraints);
-            return size;
         }
 
         #endregion

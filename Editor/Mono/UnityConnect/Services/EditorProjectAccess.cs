@@ -138,7 +138,7 @@ namespace UnityEditor.Web
             CollabHistoryWindow.ShowHistoryWindow().Focus();
         }
 
-        public void ShowToolbarDropdown()
+        public static void ShowToolbarDropdown()
         {
             Toolbar.requestShowCollabToolbar = true;
             if (Toolbar.get)

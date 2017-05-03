@@ -9,6 +9,7 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using UnityEngine;
+using UnityEngine.Playables;
 using Object = UnityEngine.Object;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

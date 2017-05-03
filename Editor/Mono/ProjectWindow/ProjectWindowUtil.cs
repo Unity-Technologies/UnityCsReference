@@ -397,7 +397,6 @@ namespace UnityEditor
             if (IsFavoritesItem(draggedInstanceID))
             {
                 DragAndDrop.SetGenericData(k_DraggingFavoriteGenericData, draggedInstanceID);
-                DragAndDrop.objectReferences = new UnityEngine.Object[] {}; // this IS required for dragging to work
             }
             else
             {

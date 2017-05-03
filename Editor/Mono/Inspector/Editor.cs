@@ -488,7 +488,8 @@ namespace UnityEditor
             else
                 EditorGUILayout.GetControlRect();
             GUILayout.EndHorizontal();
-            editor.DrawPostHeaderContent();
+            if (editor)
+                editor.DrawPostHeaderContent();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();

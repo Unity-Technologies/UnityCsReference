@@ -1239,7 +1239,10 @@ namespace UnityEditor
                 var title = EditorGUIUtility.TextContent("Save Untitled Scene").text;
                 var subTitle = EditorGUIUtility.TextContent("Existing Untitled scene needs to be saved before creating a new scene. Only one untitled scene is supported at a time.").text;
                 if (EditorUtility.DisplayDialog(title, subTitle, "Save", "Cancel"))
-                    EditorSceneManager.SaveScene(untitledScene);
+                {
+                    if (!EditorSceneManager.SaveScene(untitledScene))
+                        return;
+                }
                 else
                     return;
             }

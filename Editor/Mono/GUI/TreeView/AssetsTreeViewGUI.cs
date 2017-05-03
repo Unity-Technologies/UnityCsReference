@@ -7,9 +7,6 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.VersionControl;
-using UnityEditor.Collaboration;
-using UnityEditor.Web;
-using UnityEditor.Connect;
 
 namespace UnityEditor
 {
@@ -17,6 +14,9 @@ namespace UnityEditor
     {
         static bool s_VCEnabled;
         const float k_IconOverlayPadding = 7f;
+
+        internal delegate void OnAssetIconDrawDelegate(Rect iconRect, string guid);
+        internal static event OnAssetIconDrawDelegate postAssetIconDrawCallback = null;
 
         public AssetsTreeViewGUI(TreeViewController treeView)
             : base(treeView)
@@ -129,17 +129,13 @@ namespace UnityEditor
 
         private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
         {
-            bool collabEnable = CollabAccess.Instance.IsServiceEnabled();
-            if (collabEnable)
+            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(item.id))
             {
-                // Draw Collab overlay icons
-                if (AssetDatabase.IsMainAsset(item.id))
-                {
-                    string path = AssetDatabase.GetAssetPath(item.id);
-                    string guid = AssetDatabase.AssetPathToGUID(path);
-                    CollabProjectHook.OnProjectWindowItemIconOverlay(guid, overlayRect);
-                }
+                string path = AssetDatabase.GetAssetPath(item.id);
+                string guid = AssetDatabase.AssetPathToGUID(path);
+                postAssetIconDrawCallback(overlayRect, guid);
             }
+
             // Draw vcs icons
             if (s_VCEnabled && AssetDatabase.IsMainAsset(item.id))
             {

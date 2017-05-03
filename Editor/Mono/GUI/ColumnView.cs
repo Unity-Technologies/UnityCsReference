@@ -288,7 +288,6 @@ namespace UnityEditor
 
                     DragAndDrop.PrepareStartDrag();
 
-                    DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this IS required for dragging to work
                     DragAndDrop.paths = null;
 
                     DragAndDrop.SetGenericData("CustomDragData", data);

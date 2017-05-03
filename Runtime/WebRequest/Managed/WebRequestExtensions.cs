@@ -217,6 +217,7 @@ namespace UnityEngine.Networking
         public static byte[] SerializeFormSections(List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {
             byte[] crlf = System.Text.Encoding.UTF8.GetBytes("\r\n");
+            byte[] dDash = WWWForm.DefaultEncoding.GetBytes("--");
 
             int estimatedSize = 0;
             foreach (IMultipartFormSection section in multipartFormSections)
@@ -257,6 +258,8 @@ namespace UnityEngine.Networking
                     header += "Content-Type: " + contentType + "\r\n";
                 }
 
+                formData.AddRange(crlf);
+                formData.AddRange(dDash);
                 formData.AddRange(boundary);
                 formData.AddRange(crlf);
                 formData.AddRange(System.Text.Encoding.UTF8.GetBytes(header));

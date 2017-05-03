@@ -72,7 +72,7 @@ namespace UnityEditor.Collaboration
             return success;
         }
 
-        private static bool TryHasSoftLocks(string assetGuid, out bool hasSoftLocks)
+        public static bool TryHasSoftLocks(string assetGuid, out bool hasSoftLocks)
         {
             hasSoftLocks = false;
             bool success = false;

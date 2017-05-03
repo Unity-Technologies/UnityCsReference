@@ -571,7 +571,7 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            GUILayout.BeginHorizontal(GUILayout.Height(301));
+            GUILayout.BeginHorizontal(GUILayout.Height(351));
             ActiveBuildTargetsGUI();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
@@ -942,6 +942,9 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
+            if (buildTarget == BuildTarget.Android)
+                AndroidPublishGUI();
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform);

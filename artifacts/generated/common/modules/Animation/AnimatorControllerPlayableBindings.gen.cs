@@ -9,15 +9,12 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
 using System;
-using UnityEngine;
 using UnityEngine.Playables;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
-using Object = UnityEngine.Object;
 
-namespace UnityEngine.Playables
+
+namespace UnityEngine.Animations
 {
 
 
@@ -48,7 +45,7 @@ namespace UnityEngine.Playables
         bool IsParameterControlledByCurve(string name);
         bool IsParameterControlledByCurve(int id);
 
-        int layerCount { get; }
+        int GetLayerCount();
         string GetLayerName(int layerIndex);
         int GetLayerIndex(string layerName);
         float GetLayerWeight(int layerIndex);
@@ -68,7 +65,7 @@ namespace UnityEngine.Playables
         void GetNextAnimatorClipInfo(int layerIndex, List<AnimatorClipInfo> clips);
 
         bool IsInTransition(int layerIndex);
-        int parameterCount {get; }
+        int GetParameterCount();
         AnimatorControllerParameter GetParameter(int index);
 
         void CrossFadeInFixedTime(string stateName, float transitionDuration, int layer, float fixedTime);
@@ -88,11 +85,16 @@ namespace UnityEngine.Playables
 
 
 [RequiredByNativeCode]
-public partial class AnimatorControllerPlayable : AnimationPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct AnimatorControllerPlayable
 {
-    public static implicit operator PlayableHandle(AnimatorControllerPlayable b)          { return b.handle; }
-    
-    
+    private static bool CreateHandleInternal (PlayableGraph graph, RuntimeAnimatorController controller, ref PlayableHandle handle) {
+        return INTERNAL_CALL_CreateHandleInternal ( ref graph, controller, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_CreateHandleInternal (ref PlayableGraph graph, RuntimeAnimatorController controller, ref PlayableHandle handle);
     private static RuntimeAnimatorController GetAnimatorControllerInternal (ref PlayableHandle handle) {
         return INTERNAL_CALL_GetAnimatorControllerInternal ( ref handle );
     }
@@ -102,118 +104,115 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static RuntimeAnimatorController INTERNAL_CALL_GetAnimatorControllerInternal (ref PlayableHandle handle);
     public float GetFloat(string name)
         {
-            return GetFloatString(ref handle, name);
+            return GetFloatString(ref m_Handle, name);
         }
     
     
     public float GetFloat(int id)
         {
-            return GetFloatID(ref handle, id);
+            return GetFloatID(ref m_Handle, id);
         }
     
     
     public void SetFloat(string name, float value)
         {
-            SetFloatString(ref handle, name, value);
+            SetFloatString(ref m_Handle, name, value);
         }
     
     
     public void SetFloat(int id, float value)
         {
-            SetFloatID(ref handle, id, value);
+            SetFloatID(ref m_Handle, id, value);
         }
     
     
     public bool GetBool(string name)
         {
-            return GetBoolString(ref handle, name);
+            return GetBoolString(ref m_Handle, name);
         }
     
     
     public bool GetBool(int id)
         {
-            return GetBoolID(ref handle, id);
+            return GetBoolID(ref m_Handle, id);
         }
     
     
     public void SetBool(string name, bool value)
         {
-            SetBoolString(ref handle, name, value);
+            SetBoolString(ref m_Handle, name, value);
         }
     
     
     public void SetBool(int id, bool value)
         {
-            SetBoolID(ref handle, id, value);
+            SetBoolID(ref m_Handle, id, value);
         }
     
     
     public int GetInteger(string name)
         {
-            return GetIntegerString(ref handle, name);
+            return GetIntegerString(ref m_Handle, name);
         }
     
     
     public int GetInteger(int id)
         {
-            return GetIntegerID(ref handle, id);
+            return GetIntegerID(ref m_Handle, id);
         }
     
     
     public void SetInteger(string name, int value)
         {
-            SetIntegerString(ref handle, name, value);
+            SetIntegerString(ref m_Handle, name, value);
         }
     
     
     public void SetInteger(int id, int value)
         {
-            SetIntegerID(ref handle, id, value);
+            SetIntegerID(ref m_Handle, id, value);
         }
     
     
     public void SetTrigger(string name)
         {
-            SetTriggerString(ref handle, name);
+            SetTriggerString(ref m_Handle, name);
         }
     
     
     public void SetTrigger(int id)
         {
-            SetTriggerID(ref handle, id);
+            SetTriggerID(ref m_Handle, id);
         }
     
     
     public void ResetTrigger(string name)
         {
-            ResetTriggerString(ref handle, name);
+            ResetTriggerString(ref m_Handle, name);
         }
     
     
     public void ResetTrigger(int id)
         {
-            ResetTriggerID(ref handle, id);
+            ResetTriggerID(ref m_Handle, id);
         }
     
     
     public bool IsParameterControlledByCurve(string name)
         {
-            return IsParameterControlledByCurveString(ref handle, name);
+            return IsParameterControlledByCurveString(ref m_Handle, name);
         }
     
     
     public bool IsParameterControlledByCurve(int id)
         {
-            return IsParameterControlledByCurveID(ref handle, id);
+            return IsParameterControlledByCurveID(ref m_Handle, id);
         }
     
     
-    public int layerCount
+    public int GetLayerCount()
         {
-            get
-            {
-                return GetLayerCountInternal(ref handle);
-            }
+            return GetLayerCountInternal(ref m_Handle);
         }
     
     
@@ -233,7 +232,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static string INTERNAL_CALL_GetLayerNameInternal (ref PlayableHandle handle, int layerIndex);
     public string GetLayerName(int layerIndex)
         {
-            return GetLayerNameInternal(ref handle, layerIndex);
+            return GetLayerNameInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -246,7 +245,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static int INTERNAL_CALL_GetLayerIndexInternal (ref PlayableHandle handle, string layerName);
     public int GetLayerIndex(string layerName)
         {
-            return GetLayerIndexInternal(ref handle, layerName);
+            return GetLayerIndexInternal(ref m_Handle, layerName);
         }
     
     
@@ -259,7 +258,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static float INTERNAL_CALL_GetLayerWeightInternal (ref PlayableHandle handle, int layerIndex);
     public float GetLayerWeight(int layerIndex)
         {
-            return GetLayerWeightInternal(ref handle, layerIndex);
+            return GetLayerWeightInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -272,7 +271,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static void INTERNAL_CALL_SetLayerWeightInternal (ref PlayableHandle handle, int layerIndex, float weight);
     public void SetLayerWeight(int layerIndex, float weight)
         {
-            SetLayerWeightInternal(ref handle, layerIndex, weight);
+            SetLayerWeightInternal(ref m_Handle, layerIndex, weight);
         }
     
     
@@ -285,7 +284,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorStateInfo INTERNAL_CALL_GetCurrentAnimatorStateInfoInternal (ref PlayableHandle handle, int layerIndex);
     public AnimatorStateInfo GetCurrentAnimatorStateInfo(int layerIndex)
         {
-            return GetCurrentAnimatorStateInfoInternal(ref handle, layerIndex);
+            return GetCurrentAnimatorStateInfoInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -298,7 +297,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorStateInfo INTERNAL_CALL_GetNextAnimatorStateInfoInternal (ref PlayableHandle handle, int layerIndex);
     public AnimatorStateInfo GetNextAnimatorStateInfo(int layerIndex)
         {
-            return GetNextAnimatorStateInfoInternal(ref handle, layerIndex);
+            return GetNextAnimatorStateInfoInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -311,7 +310,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorTransitionInfo INTERNAL_CALL_GetAnimatorTransitionInfoInternal (ref PlayableHandle handle, int layerIndex);
     public AnimatorTransitionInfo GetAnimatorTransitionInfo(int layerIndex)
         {
-            return GetAnimatorTransitionInfoInternal(ref handle, layerIndex);
+            return GetAnimatorTransitionInfoInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -324,7 +323,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorClipInfo[] INTERNAL_CALL_GetCurrentAnimatorClipInfoInternal (ref PlayableHandle handle, int layerIndex);
     public AnimatorClipInfo[] GetCurrentAnimatorClipInfo(int layerIndex)
         {
-            return GetCurrentAnimatorClipInfoInternal(ref handle, layerIndex);
+            return GetCurrentAnimatorClipInfoInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -332,7 +331,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
         {
             if (clips == null) throw new ArgumentNullException("clips");
 
-            GetAnimatorClipInfoInternal(ref handle, layerIndex, true, clips);
+            GetAnimatorClipInfoInternal(ref m_Handle, layerIndex, true, clips);
         }
     
     
@@ -340,17 +339,17 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
         {
             if (clips == null) throw new ArgumentNullException("clips");
 
-            GetAnimatorClipInfoInternal(ref handle, layerIndex, false, clips);
+            GetAnimatorClipInfoInternal(ref m_Handle, layerIndex, false, clips);
         }
     
     
-    private void GetAnimatorClipInfoInternal (ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips) {
-        INTERNAL_CALL_GetAnimatorClipInfoInternal ( this, ref handle, layerIndex, isCurrent, clips );
+    private static void GetAnimatorClipInfoInternal (ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips) {
+        INTERNAL_CALL_GetAnimatorClipInfoInternal ( ref handle, layerIndex, isCurrent, clips );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetAnimatorClipInfoInternal (AnimatorControllerPlayable self, ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips);
+    private extern static void INTERNAL_CALL_GetAnimatorClipInfoInternal (ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips);
     
     
     private static int GetAnimatorClipInfoCountInternal (ref PlayableHandle handle, int layerIndex, bool current) {
@@ -362,13 +361,13 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static int INTERNAL_CALL_GetAnimatorClipInfoCountInternal (ref PlayableHandle handle, int layerIndex, bool current);
     public int GetCurrentAnimatorClipInfoCount(int layerIndex)
         {
-            return GetAnimatorClipInfoCountInternal(ref handle, layerIndex, true);
+            return GetAnimatorClipInfoCountInternal(ref m_Handle, layerIndex, true);
         }
     
     
     public int GetNextAnimatorClipInfoCount(int layerIndex)
         {
-            return GetAnimatorClipInfoCountInternal(ref handle, layerIndex, false);
+            return GetAnimatorClipInfoCountInternal(ref m_Handle, layerIndex, false);
         }
     
     
@@ -381,13 +380,13 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorClipInfo[] INTERNAL_CALL_GetNextAnimatorClipInfoInternal (ref PlayableHandle handle, int layerIndex);
     public AnimatorClipInfo[] GetNextAnimatorClipInfo(int layerIndex)
         {
-            return GetNextAnimatorClipInfoInternal(ref handle, layerIndex);
+            return GetNextAnimatorClipInfoInternal(ref m_Handle, layerIndex);
         }
     
     
     internal string ResolveHash(int hash)
         {
-            return ResolveHashInternal(ref handle, hash);
+            return ResolveHashInternal(ref m_Handle, hash);
         }
     
     
@@ -407,7 +406,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static bool INTERNAL_CALL_IsInTransitionInternal (ref PlayableHandle handle, int layerIndex);
     public bool IsInTransition(int layerIndex)
         {
-            return IsInTransitionInternal(ref handle, layerIndex);
+            return IsInTransitionInternal(ref m_Handle, layerIndex);
         }
     
     
@@ -418,12 +417,9 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static int INTERNAL_CALL_GetParameterCountInternal (ref PlayableHandle handle);
-    public int parameterCount
+    public int GetParameterCount()
         {
-            get
-            {
-                return GetParameterCountInternal(ref handle);
-            }
+            return GetParameterCountInternal(ref m_Handle);
         }
     
     
@@ -436,7 +432,7 @@ public partial class AnimatorControllerPlayable : AnimationPlayable
     private extern static AnimatorControllerParameter[] INTERNAL_CALL_GetParametersArrayInternal (ref PlayableHandle handle);
     public AnimatorControllerParameter GetParameter(int index)
         {
-            AnimatorControllerParameter[] parameters = GetParametersArrayInternal(ref handle);
+            AnimatorControllerParameter[] parameters = GetParametersArrayInternal(ref m_Handle);
             if (index < 0 && index >= parameters.Length)
                 throw new IndexOutOfRangeException("index");
             return parameters[index];
@@ -464,7 +460,7 @@ public void CrossFadeInFixedTime (string stateName, float transitionDuration) {
 
 public void CrossFadeInFixedTime(string stateName, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTime )
         {
-            CrossFadeInFixedTimeInternal(ref handle, StringToHash(stateName), transitionDuration, layer, fixedTime);
+            CrossFadeInFixedTimeInternal(ref m_Handle, StringToHash(stateName), transitionDuration, layer, fixedTime);
         }
 
     
@@ -484,7 +480,7 @@ public void CrossFadeInFixedTime (int stateNameHash, float transitionDuration) {
 
 public void CrossFadeInFixedTime(int stateNameHash, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTime )
         {
-            CrossFadeInFixedTimeInternal(ref handle, stateNameHash, transitionDuration, layer, fixedTime);
+            CrossFadeInFixedTimeInternal(ref m_Handle, stateNameHash, transitionDuration, layer, fixedTime);
         }
 
     
@@ -524,7 +520,7 @@ public void CrossFade (string stateName, float transitionDuration) {
 
 public void CrossFade(string stateName, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime )
         {
-            CrossFadeInternal(ref handle, StringToHash(stateName), transitionDuration, layer, normalizedTime);
+            CrossFadeInternal(ref m_Handle, StringToHash(stateName), transitionDuration, layer, normalizedTime);
         }
 
     
@@ -544,7 +540,7 @@ public void CrossFade (int stateNameHash, float transitionDuration) {
 
 public void CrossFade(int stateNameHash, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime )
         {
-            CrossFadeInternal(ref handle, stateNameHash, transitionDuration, layer, normalizedTime);
+            CrossFadeInternal(ref m_Handle, stateNameHash, transitionDuration, layer, normalizedTime);
         }
 
     
@@ -584,7 +580,7 @@ public void PlayInFixedTime (string stateName) {
 
 public void PlayInFixedTime(string stateName, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float fixedTime )
         {
-            PlayInFixedTimeInternal(ref handle, StringToHash(stateName), layer, fixedTime);
+            PlayInFixedTimeInternal(ref m_Handle, StringToHash(stateName), layer, fixedTime);
         }
 
     
@@ -604,7 +600,7 @@ public void PlayInFixedTime (int stateNameHash) {
 
 public void PlayInFixedTime(int stateNameHash, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float fixedTime )
         {
-            PlayInFixedTimeInternal(ref handle, stateNameHash, layer, fixedTime);
+            PlayInFixedTimeInternal(ref m_Handle, stateNameHash, layer, fixedTime);
         }
 
     
@@ -644,7 +640,7 @@ public void Play (string stateName) {
 
 public void Play(string stateName, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime )
         {
-            PlayInternal(ref handle, StringToHash(stateName), layer, normalizedTime);
+            PlayInternal(ref m_Handle, StringToHash(stateName), layer, normalizedTime);
         }
 
     
@@ -664,7 +660,7 @@ public void Play (int stateNameHash) {
 
 public void Play(int stateNameHash, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime )
         {
-            PlayInternal(ref handle, stateNameHash, layer, normalizedTime);
+            PlayInternal(ref m_Handle, stateNameHash, layer, normalizedTime);
         }
 
     
@@ -691,7 +687,7 @@ public void Play(int stateNameHash, [uei.DefaultValue("-1")]  int layer , [uei.D
     private extern static void INTERNAL_CALL_PlayInternal (ref PlayableHandle handle, int stateNameHash, int layer, float normalizedTime);
     public bool HasState(int layerIndex, int stateID)
         {
-            return HasStateInternal(ref handle, layerIndex, stateID);
+            return HasStateInternal(ref m_Handle, layerIndex, stateID);
         }
     
     

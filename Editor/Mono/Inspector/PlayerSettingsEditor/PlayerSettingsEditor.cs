@@ -1369,24 +1369,12 @@ namespace UnityEditor
             }
 
             // Multithreaded rendering
-            if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.SamsungTV) //TODO:enable on desktops when decision is made
+            if (settingsExtension != null)
             {
-                if (IsMobileTarget(targetGroup))
+                if (IsMobileTarget(targetGroup) && settingsExtension.SupportsMultithreadedRendering())
                     m_MobileMTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MobileMTRendering.boolValue);
-                else
+                else if (settingsExtension.SupportsMultithreadedRendering())
                     m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-            }
-            else if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM)
-            {
-                if (Unsupported.IsDeveloperBuild())
-                {
-                    m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-                }
-                else
-                {
-                    // Force MT Rendering = true if not an internal developer build.
-                    m_MTRendering.boolValue = true;
-                }
             }
 
             // Batching section

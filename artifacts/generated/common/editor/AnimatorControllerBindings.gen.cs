@@ -9,14 +9,12 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.Playables;
 
 namespace UnityEditor.Animations
 {
@@ -185,9 +183,8 @@ public sealed partial class AnimatorController : RuntimeAnimatorController
             PlayableHandle handle = new PlayableHandle();
             FindAnimatorControllerPlayableInternal(ref handle, animator, controller);
             if (!handle.IsValid())
-                return null;
-            AnimatorControllerPlayable controllerPlayable = handle.GetObject<AnimatorControllerPlayable>();
-            return controllerPlayable;
+                return AnimatorControllerPlayable.Null;
+            return new AnimatorControllerPlayable(handle);
         }
     
     

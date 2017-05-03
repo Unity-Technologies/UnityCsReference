@@ -41,6 +41,8 @@ namespace UnityEditor
         [SerializeField]
         private string[] m_VersionControlStates = new string[0];
         [SerializeField]
+        private string[] m_SoftLockControlStates = new string[0];
+        [SerializeField]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
         private string[] m_ScenePaths;
@@ -58,6 +60,7 @@ namespace UnityEditor
         public string[] classNames { get {return m_ClassNames; } set {m_ClassNames = value; }}
         public string[] assetLabels {get {return m_AssetLabels; } set {m_AssetLabels = value; }}
         public string[] versionControlStates { get { return m_VersionControlStates; } set { m_VersionControlStates = value; } }
+        public string[] softLockControlStates { get { return m_SoftLockControlStates; } set { m_SoftLockControlStates = value; } }
         public string[] assetBundleNames {get {return m_AssetBundleNames; } set {m_AssetBundleNames = value; }}
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; } }
         public string[] scenePaths { get { return m_ScenePaths; } set { m_ScenePaths = value; } }
@@ -74,6 +77,7 @@ namespace UnityEditor
             m_ReferencingInstanceIDs = new int[0];
             m_ScenePaths = new string[0];
             m_VersionControlStates = new string[0];
+            m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
         }
 
@@ -91,6 +95,7 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_ReferencingInstanceIDs);
 
             isSearchActive = isSearchActive || !IsNullOrEmpty(m_VersionControlStates);
+            isSearchActive = isSearchActive || !IsNullOrEmpty(m_SoftLockControlStates);
 
 
             bool foldersActive = !IsNullOrEmpty(m_Folders);
@@ -145,6 +150,11 @@ namespace UnityEditor
                 m_VersionControlStates = newFilter.m_VersionControlStates;
                 changed = true;
             }
+            if (newFilter.m_SoftLockControlStates != m_SoftLockControlStates)
+            {
+                m_SoftLockControlStates = newFilter.m_SoftLockControlStates;
+                changed = true;
+            }
             if (newFilter.m_AssetLabels != m_AssetLabels)
             {
                 m_AssetLabels = newFilter.m_AssetLabels;
@@ -197,6 +207,9 @@ namespace UnityEditor
             if (m_VersionControlStates != null && m_VersionControlStates.Length > 0)
                 result += "[VersionStates: " + m_VersionControlStates[0] + "]";
 
+            if (m_SoftLockControlStates != null && m_SoftLockControlStates.Length > 0)
+                result += "[SoftLockStates: " + m_SoftLockControlStates[0] + "]";
+
             if (m_AssetBundleNames != null && m_AssetBundleNames.Length > 0)
                 result += "[AssetBundleNames: " + m_AssetBundleNames[0] + "]";
 
@@ -223,6 +236,7 @@ namespace UnityEditor
             AddToString("t:", m_ClassNames, ref result);
             AddToString("l:", m_AssetLabels, ref result);
             AddToString("v:", m_VersionControlStates, ref result);
+            AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
             return result;
         }

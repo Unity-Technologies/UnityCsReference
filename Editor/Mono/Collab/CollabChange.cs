@@ -58,4 +58,10 @@ namespace UnityEditor.Collaboration
         public string remoteStatus { get { return m_RemoteStatus; } }
         public string resolveStatus { get { return m_ResolveStatus; } }
     }
+
+    internal class PublishInfo
+    {
+        public Change[] changes;
+        public bool filter;
+    }
 }

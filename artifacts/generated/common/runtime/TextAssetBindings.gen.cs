@@ -34,6 +34,18 @@ public partial class TextAsset : Object
     }
 
     public override string ToString() { return text; }
+    
+    
+    public TextAsset()
+        {
+            Internal_CreateTextAsset(this);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Internal_CreateTextAsset ([Writable] TextAsset mono) ;
+
 }
 
 

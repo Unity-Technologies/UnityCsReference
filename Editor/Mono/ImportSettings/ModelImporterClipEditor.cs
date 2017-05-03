@@ -387,11 +387,11 @@ namespace UnityEditor
 
             if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
             {
-                bool HasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0;
+                bool hasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0 && singleImporter.animationType != ModelImporterAnimationType.None;
 
                 if (IsDeprecatedMultiAnimationRootImport())
                     EditorGUILayout.HelpBox("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info);
-                else if (HasNoValidAnimationData)
+                else if (hasNoValidAnimationData)
                 {
                     if (serializedObject.hasModifiedProperties)
                     {
@@ -412,9 +412,9 @@ namespace UnityEditor
                     }
                 }
                 else if (m_AnimationType.hasMultipleDifferentValues)
-                    EditorGUILayout.HelpBox("The rigs of the selected models have different animation types.", MessageType.Info);
+                    EditorGUILayout.HelpBox("The rigs of the selected models have different Animation Types.", MessageType.Info);
                 else if (animationType == ModelImporterAnimationType.None)
-                    EditorGUILayout.HelpBox("The rigs is not setup to handle animation. Edit the settings in the Rig tab.", MessageType.Info);
+                    EditorGUILayout.HelpBox("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
                 else
                 {
                     if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)

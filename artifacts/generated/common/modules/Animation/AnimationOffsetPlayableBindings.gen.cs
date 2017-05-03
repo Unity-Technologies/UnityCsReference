@@ -9,77 +9,77 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
 using System;
-using UnityEngine;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using Object = UnityEngine.Object;
+using UnityEngine.Playables;
 
-namespace UnityEngine.Playables
+namespace UnityEngine.Animations
 {
 [RequiredByNativeCode]
-internal sealed partial class AnimationOffsetPlayable : AnimationPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+internal partial struct AnimationOffsetPlayable
 {
-    public Vector3 position
+    private static bool CreateHandleInternal (PlayableGraph graph, Vector3 position, Quaternion rotation, ref PlayableHandle handle) {
+        return INTERNAL_CALL_CreateHandleInternal ( ref graph, ref position, ref rotation, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_CreateHandleInternal (ref PlayableGraph graph, ref Vector3 position, ref Quaternion rotation, ref PlayableHandle handle);
+    public Vector3 GetPosition()
         {
-            get
-            {
-                return GetPosition(ref handle);
-            }
-            set
-            {
-                SetPosition(ref handle, value);
-            }
+            return GetPositionInternal(ref m_Handle);
         }
     
     
-    public Quaternion rotation
+    public void SetPosition(Vector3 value)
         {
-            get
-            {
-                return GetRotation(ref handle);
-            }
-            set
-            {
-                SetRotation(ref handle, value);
-            }
+            SetPositionInternal(ref m_Handle, value);
         }
     
     
+    public Quaternion GetRotation()
+        {
+            return GetRotationInternal(ref m_Handle);
+        }
     
-    private static Vector3 GetPosition (ref PlayableHandle handle) {
+    
+    public void SetRotation(Quaternion value)
+        {
+            SetRotationInternal(ref m_Handle, value);
+        }
+    
+    
+    private static Vector3 GetPositionInternal (ref PlayableHandle handle) {
         Vector3 result;
-        INTERNAL_CALL_GetPosition ( ref handle, out result );
+        INTERNAL_CALL_GetPositionInternal ( ref handle, out result );
         return result;
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetPosition (ref PlayableHandle handle, out Vector3 value);
-    private static void SetPosition (ref PlayableHandle handle, Vector3 value) {
-        INTERNAL_CALL_SetPosition ( ref handle, ref value );
+    private extern static void INTERNAL_CALL_GetPositionInternal (ref PlayableHandle handle, out Vector3 value);
+    private static void SetPositionInternal (ref PlayableHandle handle, Vector3 value) {
+        INTERNAL_CALL_SetPositionInternal ( ref handle, ref value );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetPosition (ref PlayableHandle handle, ref Vector3 value);
-    private static Quaternion GetRotation (ref PlayableHandle handle) {
+    private extern static void INTERNAL_CALL_SetPositionInternal (ref PlayableHandle handle, ref Vector3 value);
+    private static Quaternion GetRotationInternal (ref PlayableHandle handle) {
         Quaternion result;
-        INTERNAL_CALL_GetRotation ( ref handle, out result );
+        INTERNAL_CALL_GetRotationInternal ( ref handle, out result );
         return result;
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetRotation (ref PlayableHandle handle, out Quaternion value);
-    private static void SetRotation (ref PlayableHandle handle, Quaternion value) {
-        INTERNAL_CALL_SetRotation ( ref handle, ref value );
+    private extern static void INTERNAL_CALL_GetRotationInternal (ref PlayableHandle handle, out Quaternion value);
+    private static void SetRotationInternal (ref PlayableHandle handle, Quaternion value) {
+        INTERNAL_CALL_SetRotationInternal ( ref handle, ref value );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetRotation (ref PlayableHandle handle, ref Quaternion value);
+    private extern static void INTERNAL_CALL_SetRotationInternal (ref PlayableHandle handle, ref Quaternion value);
 }
 
 }

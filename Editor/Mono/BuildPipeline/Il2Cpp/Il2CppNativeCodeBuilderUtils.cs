@@ -17,7 +17,8 @@ namespace UnityEditorInternal
             var arguments = new List<string>();
 
             arguments.Add("--compile-cpp");
-            arguments.Add("--libil2cpp-static");
+            if (builder.LinkLibIl2CppStatically)
+                arguments.Add("--libil2cpp-static");
             arguments.Add(FormatArgument("platform", builder.CompilerPlatform));
             arguments.Add(FormatArgument("architecture", builder.CompilerArchitecture));
 

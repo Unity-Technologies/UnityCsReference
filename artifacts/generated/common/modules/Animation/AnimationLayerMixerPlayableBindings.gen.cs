@@ -8,45 +8,48 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
-using UnityEngine;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using Object = UnityEngine.Object;
+using UnityEngine.Playables;
 
-namespace UnityEngine.Playables
+namespace UnityEngine.Animations
 {
 [RequiredByNativeCode]
-public partial class AnimationLayerMixerPlayable : AnimationPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct AnimationLayerMixerPlayable
 {
+    private static bool CreateHandleInternal (PlayableGraph graph, ref PlayableHandle handle) {
+        return INTERNAL_CALL_CreateHandleInternal ( ref graph, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_CreateHandleInternal (ref PlayableGraph graph, ref PlayableHandle handle);
     public bool IsLayerAdditive(uint layerIndex)
         {
-            if (layerIndex >= handle.inputCount)
-                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, handle.inputCount - 1));
+            if (layerIndex >= m_Handle.GetInputCount())
+                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, m_Handle.GetInputCount() - 1));
 
-            return IsLayerAdditiveInternal(ref handle, layerIndex);
+            return IsLayerAdditiveInternal(ref m_Handle, layerIndex);
         }
     
     
     public void SetLayerAdditive(uint layerIndex, bool value)
         {
-            if (layerIndex >= handle.inputCount)
-                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, handle.inputCount - 1));
+            if (layerIndex >= m_Handle.GetInputCount())
+                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, m_Handle.GetInputCount() - 1));
 
-            SetLayerAdditiveInternal(ref handle, layerIndex, value);
+            SetLayerAdditiveInternal(ref m_Handle, layerIndex, value);
         }
     
     
     public void SetLayerMaskFromAvatarMask(uint layerIndex, AvatarMask mask)
         {
-            if (layerIndex >= handle.inputCount)
-                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, handle.inputCount - 1));
+            if (layerIndex >= m_Handle.GetInputCount())
+                throw new ArgumentOutOfRangeException("layerIndex", String.Format("layerIndex {0} must be in the range of 0 to {1}.", layerIndex, m_Handle.GetInputCount() - 1));
 
             if (mask == null)
                 throw new System.ArgumentNullException("mask");
 
-            SetLayerMaskFromAvatarMaskInternal(ref handle, layerIndex, mask);
+            SetLayerMaskFromAvatarMaskInternal(ref m_Handle, layerIndex, mask);
         }
     
     

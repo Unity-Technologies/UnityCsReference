@@ -25,6 +25,14 @@ public sealed partial class PlayerSettings : UnityEngine.Object
 {
     public sealed partial class Switch    
     {
+        public enum ScreenResolutionBehavior        
+        {
+            Manual = 0,
+            OperationMode = 1,
+            PerformanceMode = 2,
+            Both = 3
+        }
+
         public enum Languages        
         {
             AmericanEnglish,
@@ -93,6 +101,15 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             OFLC = 11
         }
 
+        public enum SupportedNpadStyle        
+        {
+            FullKey,
+            Handheld,
+            JoyDual,
+            JoyLeft,
+            JoyRight,
+        }
+
         public extern static int socketMemoryPoolSize
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -124,6 +141,16 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         }
 
         public extern static bool useSwitchCPUProfiler
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static Switch.ScreenResolutionBehavior screenResolutionBehavior
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -388,6 +415,13 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         }
 
         public extern static bool isDataLossConfirmation
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+        }
+
+        public extern static Switch.SupportedNpadStyle supportedNpadStyles
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

@@ -8,11 +8,37 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Playables
 {
-    internal partial struct PlayableOutput
+    public partial struct PlayableOutput : IPlayableOutput, IEquatable<PlayableOutput>
     {
-        const int m_NullVersion = Int32.MaxValue;
-        static readonly PlayableOutput m_NullPlayableOutput = new PlayableOutput { m_Version = m_NullVersion };
+        PlayableOutputHandle m_Handle;
 
-        internal static PlayableOutput Null { get { return m_NullPlayableOutput; } }
+        static readonly PlayableOutput m_NullPlayableOutput = new PlayableOutput(PlayableOutputHandle.Null);
+        public static PlayableOutput Null { get { return m_NullPlayableOutput; } }
+
+        internal PlayableOutput(PlayableOutputHandle handle)
+        {
+            m_Handle = handle;
+        }
+
+        public PlayableOutputHandle GetHandle()
+        {
+            return m_Handle;
+        }
+
+        public bool IsPlayableOutputOfType<T>()
+            where T : struct, IPlayableOutput
+        {
+            return GetHandle().IsPlayableOutputOfType<T>();
+        }
+
+        public Type GetPlayableOutputType()
+        {
+            return PlayableOutputHandle.GetPlayableOutputTypeOf(ref m_Handle);
+        }
+
+        public bool Equals(PlayableOutput other)
+        {
+            return GetHandle() == other.GetHandle();
+        }
     }
 }

@@ -25,7 +25,7 @@ namespace UnityEditor
             public GUIContent colorOverTrail = EditorGUIUtility.TextContent("Color over Trail|Select a color for the trail from its start to end vertex.");
             public GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
 
-            public string[] textureModeOptions = { "Stretch", "Tile" };
+            public string[] textureModeOptions = { "Stretch", "Tile", "DistributePerSegment", "RepeatPerSegment" };
         }
         private static Texts s_Texts;
 

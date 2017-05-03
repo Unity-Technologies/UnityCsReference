@@ -96,7 +96,6 @@ namespace UnityEditor
 
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData(k_AudioMixerDraggingID, new DragData(draggedItems));
-            DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this IS required for dragging to work
             string title = draggedNodes.Count + " AudioMixer" + (draggedNodes.Count > 1 ? "s" : ""); // title is only shown on OSX (at the cursor)
             DragAndDrop.StartDrag(title);
         }

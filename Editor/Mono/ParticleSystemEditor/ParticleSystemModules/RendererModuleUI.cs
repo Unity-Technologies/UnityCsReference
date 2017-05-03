@@ -84,8 +84,8 @@ namespace UnityEditor
             public GUIContent motionVectors = EditorGUIUtility.TextContent("Motion Vectors|Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TextContent("Normal Direction|Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
 
-            public GUIContent sortingLayer = EditorGUIUtility.TextContent("Sorting Layer");
-            public GUIContent sortingOrder = EditorGUIUtility.TextContent("Order in Layer");
+            public GUIContent sortingLayer = EditorGUIUtility.TextContent("Sorting Layer|Name of the Renderer's sorting layer.");
+            public GUIContent sortingOrder = EditorGUIUtility.TextContent("Order in Layer|Renderer's order within a sorting layer");
             public GUIContent space = EditorGUIUtility.TextContent("Render Alignment|Specifies if the particles will face the camera, align to world axes, or stay local to the system's transform.");
             public GUIContent pivot = EditorGUIUtility.TextContent("Pivot|Applies an offset to the pivot of particles, as a multiplier of its size.");
             public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");

@@ -24,7 +24,7 @@ namespace UnityEngine.Playables
 
     public interface IPlayableAsset
     {
-        PlayableHandle CreatePlayable(PlayableGraph graph, GameObject owner);
+        Playable CreatePlayable(PlayableGraph graph, GameObject owner);
         double duration { get; }
         IEnumerable<PlayableBinding> outputs { get; }
     }
@@ -33,7 +33,7 @@ namespace UnityEngine.Playables
     [RequiredByNativeCode]
     public abstract class PlayableAsset : ScriptableObject, IPlayableAsset
     {
-        public abstract PlayableHandle CreatePlayable(PlayableGraph graph, GameObject owner);
+        public abstract Playable CreatePlayable(PlayableGraph graph, GameObject owner);
 
         public virtual double duration
         {
@@ -51,13 +51,13 @@ namespace UnityEngine.Playables
         [RequiredByNativeCode]
         unsafe static internal void Internal_CreatePlayable(PlayableAsset asset, PlayableGraph graph, GameObject go, IntPtr ptr)
         {
-            PlayableHandle result;
+            Playable result;
             if (asset == null)
-                result = PlayableHandle.Null;
+                result = Playable.Null;
             else
                 result = asset.CreatePlayable(graph, go);
 
-            PlayableHandle* handle = (PlayableHandle*)ptr.ToPointer();
+            Playable* handle = (Playable*)ptr.ToPointer();
             *handle = result;
         }
 

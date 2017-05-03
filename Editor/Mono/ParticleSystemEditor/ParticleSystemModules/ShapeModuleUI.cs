@@ -118,7 +118,7 @@ namespace UnityEditor
             public GUIContent sphericalDirectionAmount = EditorGUIUtility.TextContent("Spherize Direction|Spherize the emission direction.");
             public GUIContent randomPositionAmount = EditorGUIUtility.TextContent("Randomize Position|Randomize the starting positions.");
             public GUIContent emitFrom = EditorGUIUtility.TextContent("Emit from:|Specifies from where particles are emitted.");
-            public GUIContent donutRadius = EditorGUIUtility.TextContent("Donut Radius|The radius of the donut.");
+            public GUIContent donutRadius = EditorGUIUtility.TextContent("Donut Radius|The radius of the donut. Used to control the thickness of the ring.");
             public GUIContent position = EditorGUIUtility.TextContent("Position|Translate the emission shape.");
             public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Rotate the emission shape.");
             public GUIContent scale = EditorGUIUtility.TextContent("Scale|Scale the emission shape.");
