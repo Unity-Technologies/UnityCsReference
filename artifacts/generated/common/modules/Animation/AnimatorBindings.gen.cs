@@ -1200,10 +1200,13 @@ public void Play(string stateName, [uei.DefaultValue("-1")]  int layer , [uei.De
         }
     
     
+    private void InternalGetCurrentGraph (ref PlayableGraph graph) {
+        INTERNAL_CALL_InternalGetCurrentGraph ( this, ref graph );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void InternalGetCurrentGraph (ref PlayableGraph graph) ;
-
+    private extern static void INTERNAL_CALL_InternalGetCurrentGraph (Animator self, ref PlayableGraph graph);
     private void CheckIfInIKPass()
         {
             if (logWarnings && !CheckIfInIKPassInternal())

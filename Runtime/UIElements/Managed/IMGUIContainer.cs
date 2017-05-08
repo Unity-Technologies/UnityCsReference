@@ -94,7 +94,6 @@ namespace UnityEngine.Experimental.UIElements
             if (m_OnGUIHandler == null
                 || panel == null)
             {
-                Debug.LogWarning("Null panel");
                 return false;
             }
 
@@ -104,7 +103,27 @@ namespace UnityEngine.Experimental.UIElements
 
             EventType originalEventType = Event.current.type;
 
-            m_OnGUIHandler(); // native will catch exceptions thrown here
+            try
+            {
+                m_OnGUIHandler();
+            }
+            catch (Exception exception)
+            {
+                // only for layout events: we always intercept any exceptions to not interrupt event processing
+                if (originalEventType == EventType.Layout)
+                {
+                    // really this means: don't log ExitGUIException's
+                    if (!GUIUtility.ShouldRethrowException(exception))
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+                else
+                {
+                    // rethrow event if not in layout
+                    throw;
+                }
+            }
 
             GUIUtility.CheckForTabEvent(evt);
 
@@ -158,6 +177,13 @@ namespace UnityEngine.Experimental.UIElements
                 // used the event), but hot control might still belong to the IM text field at this point.
                 // We can safely release the hot control which will release the capture as the same time.
                 GUIUtility.hotControl = 0;
+            }
+
+            // If we detect that we were removed while processing this event, hi-jack the event loop to early exit
+            // In IMGUI/Editor this is actually possible just by calling EditorWindow.Close() for example
+            if (elementPanel == null)
+            {
+                GUIUtility.ExitGUI();
             }
 
             return EventPropagation.Continue;

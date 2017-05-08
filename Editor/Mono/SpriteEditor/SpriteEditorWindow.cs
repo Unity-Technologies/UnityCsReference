@@ -78,6 +78,14 @@ namespace UnityEditor
             EditorWindow.GetWindow<SpriteEditorWindow>();
         }
 
+        public SpriteEditorWindow()
+        {
+            m_EventSystem = new EventSystem();
+            m_UndoSystem = new UndoSystem();
+            m_AssetDatabase = new AssetDatabaseSystem();
+            m_GUIUtility = new GUIUtilitySystem();
+        }
+
         void ModifierKeysChanged()
         {
             if (EditorWindow.focusedWindow == this)
@@ -254,10 +262,6 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            m_EventSystem = new EventSystem();
-            m_UndoSystem = new UndoSystem();
-            m_AssetDatabase = new AssetDatabaseSystem();
-            m_GUIUtility = new GUIUtilitySystem();
             minSize = new Vector2(360, 200);
             titleContent = SpriteEditorWindowStyles.spriteEditorWindowTitle;
             s_Instance = this;
@@ -325,9 +329,6 @@ namespace UnityEditor
 
         void RefreshRects()
         {
-            if (m_TextureImporterSprites == null)
-                return;
-
             if (m_RectsCache)
             {
                 m_RectsCache.ClearAll();
@@ -335,6 +336,9 @@ namespace UnityEditor
                 DestroyImmediate(m_RectsCache);
             }
             m_RectsCache = CreateInstance<SpriteRectCache>();
+
+            if (m_TextureImporterSprites == null)
+                return;
 
             if (multipleSprites)
             {
@@ -376,7 +380,7 @@ namespace UnityEditor
         {
             InitStyles();
 
-            if (m_ResetOnNextRepaint || selectedTextureChanged)
+            if (m_ResetOnNextRepaint || selectedTextureChanged || m_RectsCache == null)
             {
                 ResetWindow();
                 RefreshPropertiesCache();

@@ -117,9 +117,14 @@ namespace UnityEditor
 
         public bool lowResolutionForAspectRatios
         {
-            get { return m_LowResolutionForAspectRatios[(int)currentSizeGroupType]; }
+            get
+            {
+                EnsureSelectedSizeAreValid();
+                return m_LowResolutionForAspectRatios[(int)currentSizeGroupType];
+            }
             set
             {
+                EnsureSelectedSizeAreValid();
                 if (value != m_LowResolutionForAspectRatios[(int)currentSizeGroupType])
                 {
                     m_LowResolutionForAspectRatios[(int)currentSizeGroupType] = value;
@@ -139,8 +144,16 @@ namespace UnityEditor
 
         int selectedSizeIndex
         {
-            get { return m_SelectedSizes[(int)currentSizeGroupType]; }
-            set { m_SelectedSizes[(int)currentSizeGroupType] = value; }
+            get
+            {
+                EnsureSelectedSizeAreValid();
+                return m_SelectedSizes[(int)currentSizeGroupType];
+            }
+            set
+            {
+                EnsureSelectedSizeAreValid();
+                m_SelectedSizes[(int)currentSizeGroupType] = value;
+            }
         }
 
         static GameViewSizeGroupType currentSizeGroupType
@@ -160,7 +173,7 @@ namespace UnityEditor
         {
             get
             {
-                var viewPixelRect = m_LowResolutionForAspectRatios[(int)currentSizeGroupType] ? viewInWindow : EditorGUIUtility.PointsToPixels(viewInWindow);
+                var viewPixelRect = lowResolutionForAspectRatios ? viewInWindow : EditorGUIUtility.PointsToPixels(viewInWindow);
                 return GameViewSizes.GetRenderTargetSize(viewPixelRect, currentSizeGroupType, selectedSizeIndex, out m_TargetClamped);
             }
         }
@@ -242,11 +255,6 @@ namespace UnityEditor
             return (windowMousePosition + gameMouseOffset) * gameMouseScale;
         }
 
-        public void OnValidate()
-        {
-            EnsureSelectedSizeAreValid();
-        }
-
         void InitializeZoomArea()
         {
             m_ZoomArea = new ZoomableArea(true, false);
@@ -257,7 +265,6 @@ namespace UnityEditor
         public void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
-            EnsureSelectedSizeAreValid();
             UpdateZoomAreaAndParent();
             dontClearBackground = true;
             s_GameViews.Add(this);
@@ -364,6 +371,12 @@ namespace UnityEditor
         // Call when number of available aspects can have changed (after deserialization or gui change)
         private void EnsureSelectedSizeAreValid()
         {
+            // Early out if no change was recorded
+            if (GameViewSizes.instance.GetChangeID() == m_SizeChangeID)
+                return;
+
+            m_SizeChangeID = GameViewSizes.instance.GetChangeID();
+
             var sizeGroupTypes = System.Enum.GetValues(typeof(GameViewSizeGroupType));
             // Ensure deserialized array is resized if needed
             if (m_SelectedSizes.Length != sizeGroupTypes.Length)
@@ -493,11 +506,6 @@ namespace UnityEditor
         private void DoToolbarGUI()
         {
             GameViewSizes.instance.RefreshStandaloneAndRemoteDefaultSizes();
-            if (GameViewSizes.instance.GetChangeID() != m_SizeChangeID)
-            {
-                EnsureSelectedSizeAreValid();
-                m_SizeChangeID = GameViewSizes.instance.GetChangeID();
-            }
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {

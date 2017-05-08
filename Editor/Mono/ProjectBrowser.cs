@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.Collaboration;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -200,10 +199,8 @@ namespace UnityEditor
             EditorApplication.assetLabelsChanged += OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged += OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-            Collab.instance.StateChanged += OnCollabStateChanged;
             s_LastInteractedProjectBrowser = this;
 
-            Collab.instance.UpdateFavoriteSearchFilters();
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -222,8 +219,6 @@ namespace UnityEditor
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
-            Collab.instance.StateChanged -= OnCollabStateChanged;
-            Collab.instance.UpdateFavoriteSearchFilters();
             s_ProjectBrowsers.Remove(this);
         }
 
@@ -247,21 +242,6 @@ namespace UnityEditor
             if (m_ListArea != null)
                 InitListArea();
         }
-
-        void OnCollabStateChanged(CollabInfo info)
-        {
-            if (!info.ready || info.inProgress || info.maintenance)
-                return;
-
-            if (Initialized())
-            {
-                if (m_SearchFilter.IsSearching())
-                {
-                    InitListArea();
-                }
-            }
-        }
-
 
         void Awake()
         {
@@ -456,6 +436,17 @@ namespace UnityEditor
             m_SearchFieldText = searchFilter.FilterToSearchFieldString();
 
             TopBarSearchSettingsChanged();
+        }
+
+        internal void RefreshSearchIfFilterContains(string searchString)
+        {
+            if (!Initialized() || !m_SearchFilter.IsSearching())
+                return;
+
+            if (m_SearchFieldText.IndexOf(searchString) >= 0)
+            {
+                InitListArea();
+            }
         }
 
         void SetSearchViewState(SearchViewState state)
@@ -1483,7 +1474,7 @@ namespace UnityEditor
                         {
                             Event.current.Use();
                             int[] copiedFolders = DuplicateFolders(instanceIDs);
-                            m_FolderTree.SetSelection(copiedFolders, true);
+                            SetFolderSelection(copiedFolders, true);
                             GUIUtility.ExitGUI();
                         }
                     }

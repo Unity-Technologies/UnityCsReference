@@ -252,9 +252,20 @@ namespace UnityEditor
             var readerParameters = new ReaderParameters();
 
             // this will resolve any types in assemblies within the same directory as the type's assembly
-            // not sure what other (all) directories we should look in under the project directory
+            // or any folder which contains a currently available precompiled dll
             var assemblyResolver = new DefaultAssemblyResolver();
             assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(path));
+
+            // Add the path to all available precompiled assemblies
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            var precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+            HashSet<string> searchPaths = new HashSet<string>();
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+            foreach (var asmpath in searchPaths)
+                assemblyResolver.AddSearchDirectory(asmpath);
+
             readerParameters.AssemblyResolver = assemblyResolver;
 
             AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(path, readerParameters);

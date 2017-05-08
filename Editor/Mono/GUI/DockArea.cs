@@ -771,16 +771,10 @@ namespace UnityEditor
                 m_BorderSize.right += (int)kSideBorders;
             }
 
-            m_BorderSize.top = (int)kTabHeight + 2;
-
-            // Aras: I don't really know why, but this makes GUI be actually correct.
-            bool touchesTop = windowPosition.y == 0;
-            bool touchesBottom = r.yMax == window.position.height;
-            m_BorderSize.bottom = 2;
-            if (touchesBottom)
-                m_BorderSize.bottom -= 2;
-            if (touchesTop)
-                m_BorderSize.bottom += 3;
+            const int mainWindowTopAdjustment = 2;
+            const int floatingWindowTopAdjustment = 5;
+            m_BorderSize.top = (int)kTabHeight + (window != null && window.showMode != ShowMode.MainWindow ? floatingWindowTopAdjustment : mainWindowTopAdjustment);
+            m_BorderSize.bottom = (window != null && window.showMode != ShowMode.MainWindow ? 0 : (int)kBottomBorders);
 
             return m_BorderSize;
         }

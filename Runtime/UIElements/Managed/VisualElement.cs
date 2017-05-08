@@ -37,6 +37,8 @@ namespace UnityEngine.Experimental.UIElements
 
     public class VisualElement : IEventHandler
     {
+        private static uint s_NextId;
+
         string m_Name;
         HashSet<string> m_ClassList;
         string m_TypeName;
@@ -861,8 +863,12 @@ namespace UnityEngine.Experimental.UIElements
 
         private List<IManipulator> m_Manipulators = new List<IManipulator>();
 
+        internal readonly uint controlid;
+
         public VisualElement()
         {
+            controlid = ++s_NextId;
+
             m_ClassList = new HashSet<string>();
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
@@ -1312,6 +1318,12 @@ namespace UnityEngine.Experimental.UIElements
         public override string ToString()
         {
             return name + " " + position + " global rect: " + globalBound;
+        }
+
+        // WARNING returning the HashSet means it could be modified, be careful
+        internal IEnumerable<string> GetClasses()
+        {
+            return m_ClassList;
         }
 
         public void ClearClassList()

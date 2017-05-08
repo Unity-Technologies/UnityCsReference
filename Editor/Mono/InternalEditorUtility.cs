@@ -17,6 +17,7 @@ namespace UnityEditorInternal
 {
     partial class InternalEditorUtility
     {
+        // Keep in sync with enum ScriptEditorType in ExternalEditor.h
         public enum ScriptEditor { Internal = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Other = 32 }
 
         public static ScriptEditor GetScriptEditorFromPath(string path)
@@ -36,6 +37,10 @@ namespace UnityEditorInternal
                 return ScriptEditor.VisualStudioExpress;
 
             string filename = Path.GetFileName(Paths.UnifyDirectorySeparator(lowerCasePath)).Replace(" ", "");
+
+            // Visual Studio for Mac is based on MonoDevelop
+            if (filename == "visualstudio.app")
+                return ScriptEditor.MonoDevelop;
 
             if (filename == "code.exe" || filename == "visualstudiocode.app" || filename == "vscode.app" || filename == "code.app" || filename == "code")
                 return ScriptEditor.VisualStudioCode;
@@ -478,6 +483,13 @@ namespace UnityEditorInternal
             PrecompiledAssembly[] precompiledAssemblies = GetPrecompiledAssemblies(false, group, target);
 
             return EditorCompilationInterface.GetAllMonoIslandsExt(unityAssemblies, precompiledAssemblies, BuildFlags.None);
+        }
+
+        internal static string[] GetCompilationDefinesForPlayer()
+        {
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            return GetCompilationDefines(EditorScriptCompilationOptions.BuildingEmpty, group, target);
         }
     }
 }

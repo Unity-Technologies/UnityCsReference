@@ -76,6 +76,10 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_TextureMode, Styles.textureMode);
             EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
 
+            EditorGUILayout.Space();
+
+            RenderSortingLayerFields();
+
             m_Probes.OnGUI(targets, (Renderer)target, false);
 
             serializedObject.ApplyModifiedProperties();

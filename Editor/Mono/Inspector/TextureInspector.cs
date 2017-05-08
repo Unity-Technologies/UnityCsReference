@@ -430,12 +430,13 @@ namespace UnityEditor
             if (showMode && tex != null && !IsNormalMap(tex))
                 m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
 
-            GUI.enabled = (mipCount != 1);
-            GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
-            GUI.changed = false;
-            m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
-            GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
-            GUI.enabled = true;
+            if (mipCount > 1)
+            {
+                GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
+                GUI.changed = false;
+                m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+                GUILayout.Box(s_Styles.largeZoom, s_Styles.previewLabel);
+            }
         }
 
         public override bool HasPreviewGUI()

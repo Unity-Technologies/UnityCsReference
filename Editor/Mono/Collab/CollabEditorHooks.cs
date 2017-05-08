@@ -14,11 +14,25 @@ namespace UnityEditor.Collaboration
     // Display hooks for the main project window.  Icons are overlayed to show the version control state.
     internal class CollabProjectHook
     {
-        // GUI callback for each item visible in the project window
-        public static void OnProjectWindowItemIconOverlay(string guid, Rect drawRect)
+        // GUI callback for each item visible in the project window/object list area
+        public static void OnProjectWindowIconOverlay(Rect iconRect, string guid, bool isListMode)
         {
-            Collab.CollabStates assetState = GetAssetState(guid);
-            Overlay.DrawOverlays(assetState, drawRect);
+            DrawProjectBrowserIconOverlay(iconRect, guid, isListMode);
+        }
+
+        // Draw icons in the Favorites/Asset Folder area of the project browser
+        public static void OnProjectBrowserNavPanelIconOverlay(Rect iconRect, string guid)
+        {
+            DrawProjectBrowserIconOverlay(iconRect, guid, true);
+        }
+
+        private static void DrawProjectBrowserIconOverlay(Rect iconRect, string guid, bool isListMode)
+        {
+            if (CollabAccess.Instance.IsServiceEnabled())
+            {
+                Collab.CollabStates assetState = GetAssetState(guid);
+                Overlay.DrawOverlays(assetState, iconRect, isListMode);
+            }
         }
 
         public static Collab.CollabStates GetAssetState(String assetGuid)
@@ -35,8 +49,9 @@ namespace UnityEditor.Collaboration
 
     internal class Overlay
     {
-        private static double OverlaySizeOnSmallIcon = 0.6;
-        private static double OverlaySizeOnLargeIcon = 0.35;
+        public const double k_OverlaySizeOnSmallIcon = 0.6;
+        public const double k_OverlaySizeOnLargeIcon = 0.35;
+
         private static readonly Dictionary<Collab.CollabStates, GUIContent> s_Overlays = new Dictionary<Collab.CollabStates, GUIContent>();
 
         protected static void LoadOverlays()
@@ -91,18 +106,7 @@ namespace UnityEditor.Collaboration
                 Texture overlay = content.image;
                 if (overlay != null)
                 {
-                    var rect = itemRect;        // Clone because we will modify it
-
-                    var scale = OverlaySizeOnLargeIcon;
-                    if (rect.width <= 24)
-                    {
-                        scale = OverlaySizeOnSmallIcon;
-                    }
-
-                    rect.width = Convert.ToInt32(Math.Ceiling(rect.width * scale));
-                    rect.height = Convert.ToInt32(Math.Ceiling(rect.height * scale));
-                    rect.x += itemRect.width - rect.width;
-                    GUI.DrawTexture(rect, overlay, ScaleMode.ScaleToFit);
+                    GUI.DrawTexture(itemRect, overlay, ScaleMode.ScaleToFit);
                 }
             }
         }
@@ -112,7 +116,7 @@ namespace UnityEditor.Collaboration
             return ((assetStates & includesState) == includesState);
         }
 
-        public static void DrawOverlays(Collab.CollabStates assetState, Rect itemRect)
+        public static void DrawOverlays(Collab.CollabStates assetState, Rect itemRect, bool isListMode)
         {
             if (assetState == Collab.CollabStates.kCollabInvalidState || assetState == Collab.CollabStates.kCollabNone)
                 return;
@@ -124,7 +128,41 @@ namespace UnityEditor.Collaboration
                 LoadOverlays();
 
             var state = GetOverlayStateForAsset(assetState);
-            DrawOverlayElement(state, itemRect);
+            DrawOverlayElement(state, GetRectForTopRight(itemRect, GetScale(itemRect, isListMode)));
+        }
+
+        // Return a new Rect with its width and height scaled, and converted to the ceiling.
+        public static Rect ScaleRect(Rect rect, double scale)
+        {
+            Rect scaledRect = new Rect(rect);
+            scaledRect.width = Convert.ToInt32(Math.Ceiling(rect.width * scale));
+            scaledRect.height = Convert.ToInt32(Math.Ceiling(rect.height * scale));
+            return scaledRect;
+        }
+
+        public static double GetScale(Rect rect, bool isListMode)
+        {
+            double scale = k_OverlaySizeOnLargeIcon;
+            if (isListMode)
+            {
+                scale = k_OverlaySizeOnSmallIcon;
+            }
+            return scale;
+        }
+
+        public static Rect GetRectForTopRight(Rect projectBrowserDrawRect, double scale)
+        {
+            Rect scaledRect = ScaleRect(projectBrowserDrawRect, scale);
+            scaledRect.x += (projectBrowserDrawRect.width - scaledRect.width);
+            return scaledRect;
+        }
+
+        public static Rect GetRectForBottomRight(Rect projectBrowserDrawRect, double scale)
+        {
+            Rect scaledRect = ScaleRect(projectBrowserDrawRect, scale);
+            scaledRect.x += (projectBrowserDrawRect.width - scaledRect.width);
+            scaledRect.y += (projectBrowserDrawRect.height - scaledRect.height);
+            return scaledRect;
         }
     }
 

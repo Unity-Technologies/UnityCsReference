@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;UNITY_STANDALONE_LINUX_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;PLATFORM_STV_API;PLATFORM_METRO_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;PLATFORM_WIIU_API;PLATFORM_PSVITA_API;PLATFORM_XBOXONE_API;PLATFORM_SWITCH_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;UNITY_STANDALONE_LINUX_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;PLATFORM_STV_API;PLATFORM_PS4_API;PLATFORM_METRO_API;PLATFORM_N3DS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;UNITY_STANDALONE_LINUX_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;PLATFORM_STV_API;PLATFORM_METRO_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;PLATFORM_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;PLATFORM_WIIU_API;PLATFORM_PSVITA_API;PLATFORM_XBOXONE_API;PLATFORM_SWITCH_API;PLATFORM_IPHONE_API;PLATFORM_TVOS_API;UNITY_STANDALONE_LINUX_API;PLATFORM_TIZEN_API;PLATFORM_WEBGL_API;PLATFORM_STV_API;PLATFORM_PS4_API;PLATFORM_METRO_API;PLATFORM_N3DS_API;COMBINED_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -351,23 +351,38 @@
 <Compile Include="..\..\Runtime\Export\Director\ScriptPlayable.cs" >
 <Link>Runtime\Export\Director\ScriptPlayable.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Director\IPlayableBehaviour.cs" >
+<Link>Runtime\Export\Director\IPlayableBehaviour.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Director\FrameData.cs" >
 <Link>Runtime\Export\Director\FrameData.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Director\PlayableAsset.cs" >
 <Link>Runtime\Export\Director\PlayableAsset.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\Director\Playables.cs" >
-<Link>Runtime\Export\Director\Playables.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\Export\Director\PlayableGraph.cs" >
 <Link>Runtime\Export\Director\PlayableGraph.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\Director\ScriptPlayableGraphOutput.cs" >
-<Link>Runtime\Export\Director\ScriptPlayableGraphOutput.cs</Link>
+<Compile Include="..\..\Runtime\Export\Director\IPlayableOutput.cs" >
+<Link>Runtime\Export\Director\IPlayableOutput.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\Director\IScriptPlayable.cs" >
-<Link>Runtime\Export\Director\IScriptPlayable.cs</Link>
+<Compile Include="..\..\Runtime\Export\Director\IPlayable.cs" >
+<Link>Runtime\Export\Director\IPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Director\PlayableOutputExtensions.cs" >
+<Link>Runtime\Export\Director\PlayableOutputExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Director\Playable.cs" >
+<Link>Runtime\Export\Director\Playable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Director\PlayableBehaviour.cs" >
+<Link>Runtime\Export\Director\PlayableBehaviour.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Director\PlayableExtensions.cs" >
+<Link>Runtime\Export\Director\PlayableExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Director\ScriptPlayableOutput.cs" >
+<Link>Runtime\Export\Director\ScriptPlayableOutput.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Director\PlayableOutput.cs" >
 <Link>Runtime\Export\Director\PlayableOutput.cs</Link>
@@ -856,6 +871,15 @@
 <Compile Include="..\..\Runtime\Audio\Managed\Audio.deprecated.cs" >
 <Link>Runtime\Audio\Managed\Audio.deprecated.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioPlayableOutput.cs" >
+<Link>Runtime\Audio\ScriptBindings\AudioPlayableOutput.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioClipPlayable.cs" >
+<Link>Runtime\Audio\ScriptBindings\AudioClipPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs" >
+<Link>Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Audio\AudioBindings.gen.cs</Link>
 </Compile>
@@ -877,6 +901,9 @@
 <Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs</Link>
 </Compile>
@@ -895,6 +922,27 @@
 <Compile Include="..\..\Runtime\Animation\Managed\StateMachineBehaviour.cs" >
 <Link>Runtime\Animation\Managed\StateMachineBehaviour.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationClipPlayable.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationClipPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMixerPlayable.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationMixerPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\HumanPoseHandlerBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\HumanPoseHandlerBindings.gen.cs</Link>
 </Compile>
@@ -910,6 +958,9 @@
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AnimatorUtilityBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationPlayableOutputBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Animation\AnimationPlayableOutputBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AvatarBindings.gen.cs</Link>
 </Compile>
@@ -924,9 +975,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationPlayableBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimationPlayableBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationLayerMixerPlayableBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AnimationLayerMixerPlayableBindings.gen.cs</Link>

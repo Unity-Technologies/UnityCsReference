@@ -286,8 +286,8 @@ namespace UnityEditor
         static Styles s_Styles;
 
         private const float kImageSectionWidth = 44;
-        internal delegate void OnEditorGUIDelegate(Editor editor);
-        internal static OnEditorGUIDelegate OnPostHeaderGUI = null;
+        internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
+        internal static OnEditorGUIDelegate OnPostIconGUI = null;
 
         internal virtual IPreviewable preview
         {
@@ -475,8 +475,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            GUILayout.BeginVertical(s_Styles.inspectorBig);
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(s_Styles.inspectorBig);
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
             GUILayout.Space(19);
@@ -488,10 +487,8 @@ namespace UnityEditor
             else
                 EditorGUILayout.GetControlRect();
             GUILayout.EndHorizontal();
-            editor.DrawPostHeaderContent();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
             Rect fullRect = GUILayoutUtility.GetLastRect();
 
             // Content rect
@@ -504,6 +501,9 @@ namespace UnityEditor
                 editor.OnHeaderIconGUI(iconRect);
             else
                 GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(Object)), s_Styles.centerStyle);
+
+            if (editor)
+                editor.DrawPostIconContent(iconRect);
 
             // Title
             Rect titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth - 38 - 4, 16);
@@ -527,10 +527,28 @@ namespace UnityEditor
             return fullRect;
         }
 
-        internal void DrawPostHeaderContent()
+        internal void DrawPostIconContent(Rect iconRect)
         {
-            if (OnPostHeaderGUI != null)
-                OnPostHeaderGUI(this);
+            if (OnPostIconGUI != null)
+            {
+                // Post icon draws 16 x 16 at bottom right corner
+                const float k_Size = 16;
+                Rect drawRect = iconRect;
+                drawRect.x = (drawRect.xMax - k_Size) + 4; // Move slightly outside bounds for overlap effect.
+                drawRect.y = (drawRect.yMax - k_Size) + 1;
+                drawRect.width = k_Size;
+                drawRect.height = k_Size;
+                OnPostIconGUI(this, drawRect);
+            }
+        }
+
+        internal void DrawPostIconContent()
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect iconRect = GUILayoutUtility.GetLastRect();
+                DrawPostIconContent(iconRect);
+            }
         }
 
         public virtual void DrawPreview(Rect previewArea)

@@ -9,116 +9,86 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
 using System;
-using UnityEngine;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using Object = UnityEngine.Object;
+using UnityEngine.Playables;
 
-namespace UnityEngine.Playables
+namespace UnityEngine.Animations
 {
 [RequiredByNativeCode]
-public sealed partial class AnimationClipPlayable : AnimationPlayable
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct AnimationClipPlayable
 {
-    public AnimationClip clip
+    private static bool CreateHandleInternal (PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle) {
+        return INTERNAL_CALL_CreateHandleInternal ( ref graph, clip, ref handle );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_CreateHandleInternal (ref PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle);
+    public AnimationClip GetAnimationClip()
         {
-            get
-            {
-                return GetAnimationClip(ref handle);
-            }
+            return GetAnimationClipInternal(ref m_Handle);
         }
     
     
-    public float speed
+    public bool GetApplyFootIK()
         {
-            get
-            {
-                return GetSpeed(ref handle);
-            }
-            set
-            {
-                SetSpeed(ref handle, value);
-            }
+            return GetApplyFootIKInternal(ref m_Handle);
         }
     
     
-    
-    public bool applyFootIK
+    public void SetApplyFootIK(bool value)
         {
-            get
-            {
-                return GetApplyFootIK(ref handle);
-            }
-            set
-            {
-                SetApplyFootIK(ref handle, value);
-            }
+            SetApplyFootIKInternal(ref m_Handle, value);
         }
     
     
-    internal bool removeStartOffset
+    internal bool GetRemoveStartOffset()
         {
-            get
-            {
-                return GetRemoveStartOffset(ref handle);
-            }
-            set
-            {
-                SetRemoveStartOffset(ref handle, value);
-            }
+            return GetRemoveStartOffsetInternal(ref m_Handle);
         }
     
     
-    private static AnimationClip GetAnimationClip (ref PlayableHandle handle) {
-        return INTERNAL_CALL_GetAnimationClip ( ref handle );
+    internal void SetRemoveStartOffset(bool value)
+        {
+            SetRemoveStartOffsetInternal(ref m_Handle, value);
+        }
+    
+    
+    private static AnimationClip GetAnimationClipInternal (ref PlayableHandle handle) {
+        return INTERNAL_CALL_GetAnimationClipInternal ( ref handle );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static AnimationClip INTERNAL_CALL_GetAnimationClip (ref PlayableHandle handle);
-    private static float GetSpeed (ref PlayableHandle handle) {
-        return INTERNAL_CALL_GetSpeed ( ref handle );
+    private extern static AnimationClip INTERNAL_CALL_GetAnimationClipInternal (ref PlayableHandle handle);
+    private static bool GetApplyFootIKInternal (ref PlayableHandle handle) {
+        return INTERNAL_CALL_GetApplyFootIKInternal ( ref handle );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static float INTERNAL_CALL_GetSpeed (ref PlayableHandle handle);
-    private static void SetSpeed (ref PlayableHandle handle, float value) {
-        INTERNAL_CALL_SetSpeed ( ref handle, value );
+    private extern static bool INTERNAL_CALL_GetApplyFootIKInternal (ref PlayableHandle handle);
+    private static void SetApplyFootIKInternal (ref PlayableHandle handle, bool value) {
+        INTERNAL_CALL_SetApplyFootIKInternal ( ref handle, value );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetSpeed (ref PlayableHandle handle, float value);
-    private static bool GetApplyFootIK (ref PlayableHandle handle) {
-        return INTERNAL_CALL_GetApplyFootIK ( ref handle );
+    private extern static void INTERNAL_CALL_SetApplyFootIKInternal (ref PlayableHandle handle, bool value);
+    private static bool GetRemoveStartOffsetInternal (ref PlayableHandle handle) {
+        return INTERNAL_CALL_GetRemoveStartOffsetInternal ( ref handle );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_GetApplyFootIK (ref PlayableHandle handle);
-    private static void SetApplyFootIK (ref PlayableHandle handle, bool value) {
-        INTERNAL_CALL_SetApplyFootIK ( ref handle, value );
+    private extern static bool INTERNAL_CALL_GetRemoveStartOffsetInternal (ref PlayableHandle handle);
+    private static void SetRemoveStartOffsetInternal (ref PlayableHandle handle, bool value) {
+        INTERNAL_CALL_SetRemoveStartOffsetInternal ( ref handle, value );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetApplyFootIK (ref PlayableHandle handle, bool value);
-    private static bool GetRemoveStartOffset (ref PlayableHandle handle) {
-        return INTERNAL_CALL_GetRemoveStartOffset ( ref handle );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_GetRemoveStartOffset (ref PlayableHandle handle);
-    private static void SetRemoveStartOffset (ref PlayableHandle handle, bool value) {
-        INTERNAL_CALL_SetRemoveStartOffset ( ref handle, value );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetRemoveStartOffset (ref PlayableHandle handle, bool value);
+    private extern static void INTERNAL_CALL_SetRemoveStartOffsetInternal (ref PlayableHandle handle, bool value);
 }
 
 }

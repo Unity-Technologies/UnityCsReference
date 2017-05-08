@@ -378,8 +378,6 @@ namespace UnityEditor
             internal string controlThatHadFocusValue = "";
             private GUIView viewThatHadFocus;
 
-            private int controlThatLostFocus = 0;
-            //      string controlThatLostFocusValue = "";
             private bool m_IgnoreBeginGUI = false;
 
             //*undocumented*
@@ -405,12 +403,6 @@ namespace UnityEditor
             public void EndGUI(EventType type)
             {
                 int sendID = 0;
-                if (controlThatLostFocus != 0)
-                {
-                    messageControl = controlThatLostFocus;
-                    controlThatLostFocus = 0;
-                }
-
                 if (controlThatHadFocus != 0 && controlThatHadFocus != GUIUtility.keyboardControl)
                 {
                     sendID = controlThatHadFocus;
@@ -3200,14 +3192,14 @@ namespace UnityEditor
         }
 
         // Make a object field with the preview to the left and the label on the right thats fits on a single line height
-        internal static Object MiniThumbnailObjectField(Rect position, GUIContent label, Object obj, System.Type objType, ObjectFieldValidator validator)
+        internal static Object MiniThumbnailObjectField(Rect position, GUIContent label, Object obj, System.Type objType)
         {
             int id = GUIUtility.GetControlID(s_ObjectFieldHash, FocusType.Keyboard, position);
 
             Rect thumbRect, labelRect;
             GetRectsForMiniThumbnailField(position, out thumbRect, out labelRect);
             HandlePrefixLabel(position, labelRect, label, id, EditorStyles.label);
-            return DoObjectField(thumbRect, thumbRect, id, obj, objType, null, validator, false);
+            return DoObjectField(thumbRect, thumbRect, id, obj, objType, null, null, false);
         }
 
         [System.Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]
@@ -3246,7 +3238,15 @@ namespace UnityEditor
             return go.scene != go2.scene;
         }
 
-        internal static Object ValidateObjectFieldAssignment(Object[] references, System.Type objType, SerializedProperty property)
+        private static bool ValidateObjectReferenceValue(SerializedProperty property, Object obj, ObjectFieldValidatorOptions options)
+        {
+            if ((options & ObjectFieldValidatorOptions.ExactObjectTypeValidation) == ObjectFieldValidatorOptions.ExactObjectTypeValidation)
+                return property.ValidateObjectReferenceValueExact(obj);
+
+            return property.ValidateObjectReferenceValue(obj);
+        }
+
+        internal static Object ValidateObjectFieldAssignment(Object[] references, System.Type objType, SerializedProperty property, ObjectFieldValidatorOptions options)
         {
             if (references.Length > 0)
             {
@@ -3260,7 +3260,7 @@ namespace UnityEditor
 
                 if (property != null)
                 {
-                    if (references[0] != null && property.ValidateObjectReferenceValue(references[0]))
+                    if (references[0] != null && ValidateObjectReferenceValue(property, references[0], options))
                     {
                         if (EditorSceneManager.preventCrossSceneReferences && CheckForCrossSceneReferencing(references[0], property.serializedObject.targetObject))
                             return null;
@@ -5221,9 +5221,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return ScriptAttributeUtility.GetHandler(property).OnGUI(position, property, label, includeChildren);
         }
 
-        const int kMaxArraySizeForMultiEditing = 64; //based on kMaxArraySizeForMultiEditing from SerializedProperty.h
-        static GUIContent s_ArrayMultiInfoText = EditorGUIUtility.TextContent("Arrays with more than " + kMaxArraySizeForMultiEditing + " elements cannot be displayed when multiple objects are selected.");
-        static GUIContent s_ArrayMultiInfoContent = new GUIContent(s_ArrayMultiInfoText.text, null, s_ArrayMultiInfoText.text);
+        static string s_ArrayMultiInfoFormatString = EditorGUIUtility.TextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.").text;
+        static GUIContent s_ArrayMultiInfoContent = new GUIContent();
 
         internal static bool DefaultPropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -5403,11 +5402,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
 
 
-                if (childrenAreExpanded && property.isArray && property.arraySize > kMaxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
+                if (childrenAreExpanded && property.isArray && property.arraySize > property.serializedObject.maxArraySizeForMultiEditing && property.serializedObject.isEditingMultipleObjects)
                 {
                     Rect boxRect = position;
                     boxRect.xMin += EditorGUIUtility.labelWidth - EditorGUI.indent;
 
+                    s_ArrayMultiInfoContent.text = s_ArrayMultiInfoContent.tooltip = string.Format(s_ArrayMultiInfoFormatString, property.serializedObject.maxArraySizeForMultiEditing);
                     EditorGUI.LabelField(boxRect, GUIContent.none, s_ArrayMultiInfoContent, EditorStyles.helpBox);
                 }
 
@@ -5457,7 +5457,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                             foreach (Object o in references)
                             {
                                 oArray[0] = o;
-                                Object validatedObject = ValidateObjectFieldAssignment(oArray, null, property);
+                                Object validatedObject = ValidateObjectFieldAssignment(oArray, null, property, ObjectFieldValidatorOptions.None);
                                 if (validatedObject != null)
                                 {
                                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
@@ -6850,10 +6850,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
             EditorGUI.ObjectField(r, property, objType, label);
         }
 
-        internal static Object MiniThumbnailObjectField(GUIContent label, Object obj, System.Type objType, EditorGUI.ObjectFieldValidator validator, params GUILayoutOption[] options)
+        internal static Object MiniThumbnailObjectField(GUIContent label, Object obj, System.Type objType, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
-            return EditorGUI.MiniThumbnailObjectField(r, label, obj, objType, validator);
+            return EditorGUI.MiniThumbnailObjectField(r, label, obj, objType);
         }
 
         /// *listonly*

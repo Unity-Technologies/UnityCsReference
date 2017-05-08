@@ -146,12 +146,12 @@ namespace UnityEditor.Build
                         isIOrderedCallback = typeof(IOrderedCallback).IsAssignableFrom(t);
                         if (isIOrderedCallback)
                         {
-                            if (!t.IsInterface && typeof(IPreprocessBuild).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper))
+                            if (ValidateType<IPreprocessBuild>(t))
                             {
                                 instance = Activator.CreateInstance(t);
                                 AddToList(instance, ref buildPreprocessors);
                             }
-                            if (!t.IsInterface && typeof(IPostprocessBuild).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper))
+                            if (ValidateType<IPostprocessBuild>(t))
                             {
                                 instance = instance == null ? Activator.CreateInstance(t) : instance;
                                 AddToList(instance, ref buildPostprocessors);
@@ -162,7 +162,7 @@ namespace UnityEditor.Build
                     {
                         if (!findBuildProcessors || isIOrderedCallback)
                         {
-                            if (!t.IsInterface && typeof(IProcessScene).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper))
+                            if (ValidateType<IProcessScene>(t))
                             {
                                 instance = instance == null ? Activator.CreateInstance(t) : instance;
                                 AddToList(instance, ref sceneProcessors);
@@ -173,7 +173,7 @@ namespace UnityEditor.Build
                     {
                         if (!findBuildProcessors || isIOrderedCallback)
                         {
-                            if (!t.IsInterface && typeof(IActiveBuildTargetChanged).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper))
+                            if (ValidateType<IActiveBuildTargetChanged>(t))
                             {
                                 instance = instance == null ? Activator.CreateInstance(t) : instance;
                                 AddToList(instance, ref buildTargetProcessors);
@@ -188,10 +188,10 @@ namespace UnityEditor.Build
                         //this skips all property getters/setters and operator overloads
                         if (m.IsSpecialName)
                             continue;
-                        if (findBuildProcessors && ValidateMethod(m, typeof(Callbacks.PostProcessBuildAttribute), postProcessBuildAttributeParams))
+                        if (findBuildProcessors && ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
                             AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
 
-                        if (findSceneProcessors && ValidateMethod(m, typeof(Callbacks.PostProcessSceneAttribute), Type.EmptyTypes))
+                        if (findSceneProcessors && ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
                             AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
                     }
                 }
@@ -207,8 +207,14 @@ namespace UnityEditor.Build
                 sceneProcessors.Sort(CompareICallbackOrder);
         }
 
-        static bool ValidateMethod(MethodInfo method, Type attribute, Type[] expectedArguments)
+        internal static bool ValidateType<T>(Type t)
         {
+            return (!t.IsInterface && !t.IsAbstract && typeof(T).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper));
+        }
+
+        static bool ValidateMethod<T>(MethodInfo method, Type[] expectedArguments)
+        {
+            Type attribute = typeof(T);
             if (method.IsDefined(attribute, false))
             {
                 // Remove the `Attribute` from the name.

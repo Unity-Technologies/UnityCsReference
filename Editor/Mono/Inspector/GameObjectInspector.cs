@@ -178,6 +178,7 @@ namespace UnityEditor
 
             EditorGUILayout.BeginHorizontal();
             EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, iconContent.image as Texture2D, m_Icon);
+            DrawPostIconContent();
 
             using (new EditorGUI.DisabledScope(prefabType == PrefabType.ModelPrefab))
             {
@@ -226,18 +227,6 @@ namespace UnityEditor
             // Prefab Toolbar
             using (new EditorGUI.DisabledScope(prefabType == PrefabType.ModelPrefab))
                 DoPrefabButtons(prefabType, go);
-
-            if (OnPostHeaderGUI != null)
-            {
-                EditorGUILayout.BeginVertical();
-                GUILayout.Space(2f);
-                EditorGUILayout.BeginHorizontal();
-                const float kAestheticLeftMargin = 12f;
-                GUILayout.Space(kIconSize + kAestheticLeftMargin);
-                DrawPostHeaderContent();
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
-            }
 
             serializedObject.ApplyModifiedProperties();
 
@@ -491,6 +480,8 @@ namespace UnityEditor
                     m_Layer.intValue = layer;
                     SetLayer(layer, includeChildren == GameObjectUtility.ShouldIncludeChildren.IncludeChildren);
                 }
+                // Displaying the dialog to ask the user whether to update children nukes the gui state
+                EditorGUIUtility.ExitGUI();
             }
             EditorGUI.EndProperty();
         }

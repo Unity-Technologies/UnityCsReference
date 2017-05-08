@@ -63,8 +63,8 @@ namespace UnityEditor
         private PopupElement[] spritePackerPopupList =
         {
             new PopupElement("Disabled"),
-            new PopupElement("Enabled For Builds(Legacy)"),
-            new PopupElement("Always Enabled(Legacy)"),
+            new PopupElement("Enabled For Builds(Legacy Sprite Packer)"),
+            new PopupElement("Always Enabled(Legacy Sprite Packer)"),
             new PopupElement("Enabled For Builds"),
             new PopupElement("Always Enabled"),
         };
@@ -227,9 +227,16 @@ namespace UnityEditor
                 int idx = System.Array.FindIndex(logLevelPopupList, (item) => item.ToLower() == logLevel);
                 if (idx == -1)
                 {
-                    logLevel = "info";
+                    logLevel = "notice";
+                    idx = System.Array.FindIndex(logLevelPopupList, (item) => item.ToLower() == logLevel);
+                    if (idx == -1)
+                    {
+                        idx = 0;
+                    }
+                    logLevel = logLevelPopupList[idx];
+                    EditorUserSettings.SetConfigValue("vcSharedLogLevel", logLevel);
                 }
-                int newIdx = EditorGUILayout.Popup("Log Level", System.Math.Abs(idx), logLevelPopupList);
+                int newIdx = EditorGUILayout.Popup("Log Level", idx, logLevelPopupList);
                 if (newIdx != idx)
                 {
                     EditorUserSettings.SetConfigValue("vcSharedLogLevel", logLevelPopupList[newIdx].ToLower());

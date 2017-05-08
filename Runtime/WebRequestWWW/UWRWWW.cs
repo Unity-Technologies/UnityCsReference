@@ -39,7 +39,8 @@ namespace UnityEngine
         [Obsolete("This overload is deprecated. Use UnityEngine.WWW.WWW(string, byte[], System.Collections.Generic.Dictionary<string, string>) instead.")]
         public WWW(string url, byte[] postData, Hashtable headers)
         {
-            _uwr = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
+            var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
+            _uwr = new UnityWebRequest(url, verb);
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
@@ -52,7 +53,8 @@ namespace UnityEngine
 
         public WWW(string url, byte[] postData, Dictionary<string, string> headers)
         {
-            _uwr = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
+            var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
+            _uwr = new UnityWebRequest(url, verb);
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;

@@ -50,6 +50,74 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
+        internal void GetMatchersFor(VisualElement element, List<RuleMatcher> ruleMatchers, List<StyleSheet> stylesheets)
+        {
+            List<VisualElement> hierarchy = new List<VisualElement>();
+            hierarchy.Add(element);
+            VisualContainer cursor = element as VisualContainer;
+            if (cursor == null)
+                cursor = element.parent;
+            while (cursor != null)
+            {
+                if (cursor.styleSheets != null)
+                {
+                    stylesheets.AddRange(cursor.styleSheets);
+                    AddMatchersFromSheet(cursor.styleSheets);
+                }
+                hierarchy.Add(cursor);
+                cursor = cursor.parent;
+            }
+            int depth = 0;
+            for (int i = hierarchy.Count - 1; i >= 0; i--)
+            {
+                GetMatchersFor(hierarchy, i, depth++, ruleMatchers);
+            }
+            m_Matchers.Clear();
+        }
+
+        private void GetMatchersFor(List<VisualElement> elements, int idx, int depth, List<RuleMatcher> ruleMatchers)
+        {
+            var element = elements[idx];
+            int count = m_Matchers.Count; // changes while we iterate so save
+
+            for (int i = 0; i < count; i++)
+            {
+                RuleMatcher matcher = m_Matchers[i];
+
+                if (matcher.depth < depth || // ignore matchers that don't apply to this depth
+                    !Match(element, ref matcher))
+                {
+                    continue;
+                }
+
+                StyleSelector[] selectors = matcher.complexSelector.selectors;
+                int nextIndex = matcher.simpleSelectorIndex + 1;
+                int selectorsCount = selectors.Length;
+                // if this sub selector in the complex selector is not the last
+                // we create a new matcher for the next element
+                // will stay in the list of matchers for as long as we visit descendents
+                if (nextIndex < selectorsCount)
+                {
+                    RuleMatcher copy = new RuleMatcher()
+                    {
+                        complexSelector = matcher.complexSelector,
+                        depth = selectors[nextIndex].previousRelationship == StyleSelectorRelationship.Child
+                            ? depth + 1
+                            : int.MaxValue,
+                        simpleSelectorIndex = nextIndex,
+                        sheet = matcher.sheet
+                    };
+
+                    m_Matchers.Add(copy);
+                }
+                // Otherwise we add the rule as matching this element
+                else if (idx == 0)
+                {
+                    ruleMatchers.Add(matcher);
+                }
+            }
+        }
+
         void PushStyleSheet(StyleSheet styleSheetData)
         {
             var complexSelectors = styleSheetData.complexSelectors;

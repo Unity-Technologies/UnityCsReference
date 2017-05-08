@@ -400,16 +400,6 @@ public sealed partial class UnityWebRequest : IDisposable
                 throw new ArgumentException("Cannot set a Request header with a null");
             }
 
-            if (!IsHeaderNameLegal(name))
-            {
-                throw new ArgumentException("Cannot set Request Header " + name + " - name contains illegal characters or is not user-overridable");
-            }
-
-            if (!IsHeaderValueLegal(value))
-            {
-                throw new ArgumentException("Cannot set Request Header - value contains illegal characters");
-            }
-
             InternalSetRequestHeader(name, value);
         }
     
@@ -471,86 +461,6 @@ public sealed partial class UnityWebRequest : IDisposable
         set;
     }
 
-    
-            static readonly string[] forbiddenHeaderKeys =
-        {
-            "accept-charset",
-            "access-control-request-headers",
-            "access-control-request-method",
-            "connection",
-            "content-length",
-            "date",
-            "dnt",
-            "expect",
-            "host",
-            "keep-alive",
-            "origin",
-            "referer",
-            "te",
-            "trailer",
-            "transfer-encoding",
-            "upgrade",
-            "user-agent",
-            "via",
-            "x-unity-version",
-        };
-    
-    
-    
-    private static bool ContainsForbiddenCharacters(string s, int firstAllowedCharCode)
-        {
-            foreach (char c in s)
-            {
-                if (c < firstAllowedCharCode || c == 127) return true;
-            }
-            return false;
-        }
-    
-    
-    
-    private static bool IsHeaderNameLegal(string headerName)
-        {
-            if (String.IsNullOrEmpty(headerName))
-            {
-                return false;
-            }
-
-            headerName = headerName.ToLower();
-
-            if (ContainsForbiddenCharacters(headerName, 33))
-            {
-                return false;
-            }
-
-            if (headerName.StartsWith("sec-") || headerName.StartsWith("proxy-"))
-            {
-                return false;
-            }
-
-            foreach (string forbiddenName in forbiddenHeaderKeys)
-            {
-                if (string.Equals(headerName, forbiddenName))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    
-    
-    
-    private static bool IsHeaderValueLegal(string headerValue)
-        {
-            if (ContainsForbiddenCharacters(headerValue, 32))
-            {
-                return false;
-            }
-
-            return true;
-        }
-    
-    
     
     private static string GetErrorDescription(UnityWebRequestError errorCode)
         {

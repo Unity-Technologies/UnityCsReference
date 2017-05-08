@@ -137,6 +137,13 @@ public sealed partial class DragAndDrop
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void AcceptDrag () ;
 
+    [RequiredByNativeCode]
+    private static bool HasGenericDragData()
+        {
+            return ms_GenericData != null;
+        }
+    
+    
     public static object GetGenericData(string type)
         {
             if (ms_GenericData != null && ms_GenericData.Contains(type))

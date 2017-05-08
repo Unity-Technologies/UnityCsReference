@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -11,6 +11,9 @@ using UnityEditorInternal;
 using UnityEditor.VersionControl;
 using UnityEditor.Connect;
 using UnityEditor.Web;
+using UnityEngine;
+
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -28,7 +31,7 @@ namespace UnityEditor
 
         static internal EditorWindow FindEditorWindowOfType(System.Type type)
         {
-            Object[] obj = Resources.FindObjectsOfTypeAll(type);
+            UnityObject[] obj = Resources.FindObjectsOfTypeAll(type);
             if (obj.Length > 0)
                 return obj[0] as EditorWindow;
             else
@@ -37,14 +40,14 @@ namespace UnityEditor
 
         static IEnumerable<T> FindEditorWindowsOfType<T>() where T : class
         {
-            foreach (Object obj in Resources.FindObjectsOfTypeAll(typeof(T)))
+            foreach (UnityObject obj in Resources.FindObjectsOfTypeAll(typeof(T)))
                 if (obj is T)
                     yield return obj as T;
         }
 
         static internal void CheckWindowConsistency()
         {
-            Object[] wins = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
+            UnityObject[] wins = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
 
             foreach (EditorWindow win in wins)
             {
@@ -128,7 +131,7 @@ namespace UnityEditor
 
         static internal EditorWindow GetMaximizedWindow()
         {
-            Object[] maximized = Resources.FindObjectsOfTypeAll(typeof(MaximizedHostView));
+            UnityObject[] maximized = Resources.FindObjectsOfTypeAll(typeof(MaximizedHostView));
             if (maximized.Length != 0)
             {
                 MaximizedHostView maximizedView = maximized[0] as MaximizedHostView;
@@ -256,7 +259,7 @@ namespace UnityEditor
                 return;
             }
 
-            Object[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(Path.Combine(layoutsProjectPath, kMaximizeRestoreFile));
+            UnityObject[] newWindows = InternalEditorUtility.LoadSerializedFileAndForget(Path.Combine(layoutsProjectPath, kMaximizeRestoreFile));
 
             if (newWindows.Length < 2)
             {
@@ -306,9 +309,9 @@ namespace UnityEditor
                     win.m_Parent = null;
                     newDockArea.AddTab(oldDockAreaIndex, win);
                     newDockArea.RemoveTab(oldWindow);
-                    Object.DestroyImmediate(oldWindow);
+                    UnityObject.DestroyImmediate(oldWindow);
 
-                    foreach (Object o in newWindows)
+                    foreach (UnityObject o in newWindows)
                     {
                         EditorWindow curWin = o as EditorWindow;
                         if (curWin != null)
@@ -326,7 +329,7 @@ namespace UnityEditor
                 }
 
                 // Kill the maximizedMainView
-                Object.DestroyImmediate(maximizedHostView);
+                UnityObject.DestroyImmediate(maximizedHostView);
 
                 win.Focus();
 
@@ -382,7 +385,7 @@ namespace UnityEditor
             all.Insert(0, splitview);
             all.Insert(1, win);
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(Object)) as Object[], path, true);
+            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
         }
 
         public static void Maximize(EditorWindow win)
@@ -443,7 +446,7 @@ namespace UnityEditor
             maximizedHostView.actualView = win;
             maximizedHostView.position = p; // Must be set after actualView so that value is propagated
 
-            Object.DestroyImmediate(rootSplit, true);
+            UnityObject.DestroyImmediate(rootSplit, true);
 
             return true;
         }
@@ -467,7 +470,7 @@ namespace UnityEditor
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
             Rect mainWindowPosition = new Rect();
-            Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+            UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
             {
                 if (window.showMode == ShowMode.MainWindow)
@@ -475,6 +478,8 @@ namespace UnityEditor
                     mainWindowPosition = window.position;
                 }
             }
+
+            bool layoutLoadingIssue = false;
 
             // Load new windows and show them
             try
@@ -484,8 +489,8 @@ namespace UnityEditor
                 CloseWindows();
 
                 // Load data
-                Object[] loadedWindows = InternalEditorUtility.LoadSerializedFileAndForget(path);
-                List<Object> newWindows = new List<Object>();
+                UnityObject[] loadedWindows = InternalEditorUtility.LoadSerializedFileAndForget(path);
+                List<UnityObject> newWindows = new List<UnityObject>();
 
                 // At this point, unparented editor windows are neither desired nor desirable.
                 // This can be caused by (legacy) serialization of FallbackEditorWindows or
@@ -493,16 +498,17 @@ namespace UnityEditor
                 // Same goes for empty DockAreas (no panes).  Leave them behind.
                 for (int i = 0; i < loadedWindows.Length; i++)
                 {
-                    Object o = loadedWindows[i];
+                    UnityObject o = loadedWindows[i];
 
                     EditorWindow editorWin = o as EditorWindow;
                     if (editorWin != null)
                     {
                         if (editorWin.m_Parent == null)
                         {
-                            Object.DestroyImmediate(editorWin, true);
-                            Debug.LogError("Removed unparented EditorWindow while reading window layout: window #" + i + ", type=" +
+                            UnityObject.DestroyImmediate(editorWin, true);
+                            Console.WriteLine("LoadWindowLayout: Removed unparented EditorWindow while reading window layout: window #" + i + ", type=" +
                                 o.GetType().ToString() + ", instanceID=" + o.GetInstanceID());
+                            layoutLoadingIssue = true;
                             continue;
                         }
                     }
@@ -512,8 +518,9 @@ namespace UnityEditor
                         if (dockArea != null && dockArea.m_Panes.Count == 0)
                         {
                             dockArea.Close(null);
-                            Debug.LogError("Removed empty DockArea while reading window layout: window #" + i + ", instanceID=" +
+                            Console.WriteLine("LoadWindowLayout: Removed empty DockArea while reading window layout: window #" + i + ", instanceID=" +
                                 o.GetInstanceID());
+                            layoutLoadingIssue = true;
                             continue;
                         }
                     }
@@ -540,15 +547,17 @@ namespace UnityEditor
 
                 for (int i = 0; i < newWindows.Count; i++)
                 {
-                    Object o = newWindows[i];
+                    UnityObject o = newWindows[i];
                     if (o == null)
                     {
-                        Debug.LogError("Error while reading window layout: window #" + i + " is null");
+                        Console.WriteLine("LoadWindowLayout: Error while reading window layout: window #" + i + " is null");
+                        layoutLoadingIssue = true;
                         // Keep going
                     }
                     else if (o.GetType() == null)
                     {
-                        Debug.LogError("Error while reading window layout: window #" + i + " type is null, instanceID=" + o.GetInstanceID());
+                        Console.WriteLine("LoadWindowLayout: Error while reading window layout: window #" + i + " type is null, instanceID=" + o.GetInstanceID());
+                        layoutLoadingIssue = true;
                         // Keep going
                     }
                     else
@@ -640,6 +649,9 @@ namespace UnityEditor
                     Toolbar.lastLoadedLayoutName = null;
             }
 
+            if (layoutLoadingIssue)
+                Debug.Log("The editor layout could not be fully loaded, this can happen when the layout contains EditorWindows not available in this project");
+
             return true;
         }
 
@@ -658,7 +670,7 @@ namespace UnityEditor
             catch (System.Exception) {}
 
             // Close all container windows
-            Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+            UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             foreach (ContainerWindow window in containers)
             {
                 try
@@ -669,26 +681,26 @@ namespace UnityEditor
             }
 
             // Double check correct closing
-            Object[] oldWindows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
+            UnityObject[] oldWindows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
             if (oldWindows.Length != 0)
             {
                 string output = "";
                 foreach (EditorWindow killme in oldWindows)
                 {
                     output += "\n" + killme.GetType().Name;
-                    Object.DestroyImmediate(killme, true);
+                    UnityObject.DestroyImmediate(killme, true);
                 }
                 Debug.LogError("Failed to destroy editor windows: #" + oldWindows.Length + output);
             }
 
-            Object[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));
+            UnityObject[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));
             if (oldViews.Length != 0)
             {
                 string output = "";
                 foreach (View killme in oldViews)
                 {
                     output += "\n" + killme.GetType().Name;
-                    Object.DestroyImmediate(killme, true);
+                    UnityObject.DestroyImmediate(killme, true);
                 }
                 Debug.LogError("Failed to destroy views: #" + oldViews.Length + output);
             }
@@ -699,9 +711,9 @@ namespace UnityEditor
             TooltipView.Close();
 
             ArrayList all = new ArrayList();
-            Object[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
-            Object[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
-            Object[] views = Resources.FindObjectsOfTypeAll(typeof(View));
+            UnityObject[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
+            UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+            UnityObject[] views = Resources.FindObjectsOfTypeAll(typeof(View));
 
             foreach (ContainerWindow w in containers)
             {
@@ -725,7 +737,7 @@ namespace UnityEditor
                 all.Add(w);
             }
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(Object)) as Object[], path, true);
+            InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
         }
 
         public static void EnsureMainWindowHasBeenLoaded()

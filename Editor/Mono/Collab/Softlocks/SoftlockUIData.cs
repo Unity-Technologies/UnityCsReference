@@ -17,12 +17,14 @@ namespace UnityEditor.Collaboration
     {
         private static Dictionary<string, Texture> s_ImageCache = new Dictionary<string, Texture>();
         private static Dictionary<SectionEnum, string> s_ImageNameCache = new Dictionary<SectionEnum, string>();
+        private const string kIconMipSuffix = " Icon";
 
         public enum SectionEnum
         {
             None,
             Inspector,
-            Scene
+            Scene,
+            ProjectBrowser
         }
 
         #region General
@@ -140,35 +142,34 @@ namespace UnityEditor.Collaboration
         #endregion
         #region Icons
 
-        // Retrieves the appropriate icon for the softlock area in the
-        // editor. 'GUID' is used to determine the soft lock count to display.
-        // Defaults to null.
-        public static Texture GetIconForGUID(SectionEnum section, string GUID)
-        {
-            Texture texture = null;
-            int count = 0;
-            if (SoftLockData.TryGetSoftlockCount(GUID, out count))
-            {
-                texture = GetIconForSection(section, count);
-            }
-            return texture;
-        }
-
         // The icon for the particular section in the editor.
         // Defaults to null.
-        public static Texture GetIconForSection(SectionEnum section, int lockCount)
+        public static Texture GetIconForSection(SectionEnum section)
         {
-            string iconName = IconNameForSection(section, lockCount);
+            string iconName = IconNameForSection(section);
             Texture texture = GetIconForName(iconName);
             return texture;
         }
 
-        private static string IconNameForSection(SectionEnum section, int lockCount)
+        private static string IconNameForSection(SectionEnum section)
         {
             string iconName;
             if (!s_ImageNameCache.TryGetValue(section, out iconName))
             {
-                iconName = String.Format("Softlock{0}{1}", section.ToString(), ".png");
+                switch (section)
+                {
+                    case SectionEnum.Inspector:
+                    case SectionEnum.Scene:
+                        iconName = "SoftlockInline.png";
+                        break;
+
+                    case SectionEnum.ProjectBrowser:
+                        iconName = String.Format("SoftlockProjectBrowser{0}", kIconMipSuffix);
+                        break;
+
+                    default:
+                        return null;
+                }
                 s_ImageNameCache.Add(section, iconName);
             }
             return iconName;
@@ -186,7 +187,14 @@ namespace UnityEditor.Collaboration
             // by the system on the c++ side.
             if (!s_ImageCache.TryGetValue(fileName, out texture) || texture == null)
             {
-                texture = EditorGUIUtility.LoadIconRequired(fileName) as Texture;
+                if (fileName.EndsWith(kIconMipSuffix))
+                {
+                    texture = EditorGUIUtility.FindTexture(fileName) as Texture;
+                }
+                else
+                {
+                    texture = EditorGUIUtility.LoadIconRequired(fileName) as Texture;
+                }
                 s_ImageCache.Remove(fileName);
                 s_ImageCache.Add(fileName, texture);
             }

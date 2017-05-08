@@ -89,7 +89,6 @@ namespace UnityEditor
                 changedDir = true;
             if (s_EnableCustomPath != oldCustomPath && s_CachePath != LocalCacheServer.GetCacheLocation() && s_CachePath != "")
                 changedDir = true;
-
             if (changedDir)
             {
                 s_LocalCacheServerUsedSize = -1;
@@ -228,6 +227,7 @@ namespace UnityEditor
                                 }
                                 else
                                     EditorUtility.DisplayDialog("Invalid Cache Location", "The directory " + path + " contains some files which don't look like Unity Cache server files. Please delete the directory contents or choose another directory.", "OK");
+                                EditorGUIUtility.ExitGUI();
                             }
                         }
                         GUILayout.EndHorizontal();

@@ -39,7 +39,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public CompilerMessage[] messages;
         }
 
-        Dictionary<string, CompilerMessage[]> compilerMessages = new Dictionary<string, CompilerMessage[]>();
         bool areAllScriptsDirty;
         string projectDirectory = string.Empty;
         string assemblySuffix = string.Empty;
@@ -51,7 +50,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         EditorBuildRules.TargetAssembly[] customTargetAssemblies; // TargetAssemblies for customScriptAssemblies.
         PrecompiledAssembly[] unityAssemblies;
         CompilationTask compilationTask;
-        bool weaverFailed;
 
         static readonly string EditorAssemblyPath;
         static readonly string EditorTempPath = "Temp";
@@ -230,6 +228,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        public void CleanScriptAssemblies()
+        {
+            string fullEditorAssemblyPath = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), EditorAssemblyPath);
+
+            if (!Directory.Exists(fullEditorAssemblyPath))
+                return;
+
+            foreach (var path in Directory.GetFiles(fullEditorAssemblyPath))
+                File.Delete(path);
+        }
+
         static bool MoveOrReplaceFile(string sourcePath, string destinationPath)
         {
             bool fileMoved = true;
@@ -334,8 +343,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             StopAllCompilation();
 
-            weaverFailed = false;
-
             if (!Directory.Exists(scriptAssemblySettings.OutputDirectory))
                 Directory.CreateDirectory(scriptAssemblySettings.OutputDirectory);
 
@@ -389,8 +396,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     Console.WriteLine("- Finished compile {0}", Path.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename));
 
-                    compilerMessages[assembly.Filename] = messages;
-
                     if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                         runScriptUpdaterAssemblies.Remove(assembly.Filename);
 
@@ -402,8 +407,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (!Serialization.Weaver.WeaveUnetFromEditor(compilingMonoIslands, Path.Combine(tempBuildDirectory, assembly.Filename), Path.Combine(EditorTempPath, assembly.Filename),
                             enginePath, unetPath, (buildflags & BuildFlags.BuildingForEditor) != 0))
                     {
+                        messages.Add(new CompilerMessage { message = "UNet Weaver failed", type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopAllCompilation();
-                        weaverFailed = true;
                         return;
                     }
 
@@ -413,17 +418,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.Poll();
             return true;
-        }
-
-        public bool HaveCompileErrors()
-        {
-            return weaverFailed || compilerMessages.Values.Any(msgs => msgs.Any(msg => msg.type == CompilerMessageType.Error));
-        }
-
-        public void ClearCompileErrors()
-        {
-            compilerMessages.Clear();
-            weaverFailed = false;
         }
 
         // TODO: Native should always keep allScripts in sync so that removing scripts
@@ -466,7 +460,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return CreateScriptAssemblySettings(EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget, defines);
         }
 
-        public AssemblyCompilerMessages[] GetLastAssemblyCompilerMessages()
+        public AssemblyCompilerMessages[] GetCompileMessages()
         {
             if (compilationTask == null)
                 return null;
@@ -480,25 +474,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var messages = entry.Value;
 
                 result[index++] = new AssemblyCompilerMessages { assemblyFilename = assembly.Filename, messages = messages };
-            }
-
-            // Sort compiler messages by assemby filename to make the order deterministic.
-            Array.Sort(result, (m1, m2) => String.Compare(m1.assemblyFilename, m2.assemblyFilename));
-
-            return result;
-        }
-
-        public AssemblyCompilerMessages[] GetAllAssemblyCompilerMessages()
-        {
-            var result = new AssemblyCompilerMessages[compilerMessages.Count];
-
-            int index = 0;
-            foreach (var entry in compilerMessages)
-            {
-                var filename = entry.Key;
-                var messages = entry.Value;
-
-                result[index++] = new AssemblyCompilerMessages { assemblyFilename = filename, messages = messages };
             }
 
             // Sort compiler messages by assemby filename to make the order deterministic.
@@ -547,7 +522,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (IsCompilationTaskCompiling())
             {
                 if (compilationTask.Poll()) // Returns true when compilation finished.
-                    return compilationTask.CompileErrors ? CompileStatus.CompilationFailed : CompileStatus.CompilationComplete;
+                    return (compilationTask == null || compilationTask.CompileErrors) ? CompileStatus.CompilationFailed : CompileStatus.CompilationComplete;
 
                 return CompileStatus.Compiling;
             }

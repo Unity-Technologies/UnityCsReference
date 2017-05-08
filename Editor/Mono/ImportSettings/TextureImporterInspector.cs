@@ -774,24 +774,7 @@ namespace UnityEditor
             importer.GetWidthAndHeight(ref m_TextureWidth, ref m_TextureHeight);
             m_IsPOT = IsPowerOfTwo(m_TextureWidth) && IsPowerOfTwo(m_TextureHeight);
 
-            if (s_TextureFormatStringsApplePVR == null)
-                s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
-            if (s_TextureFormatStringsAndroid == null)
-                s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
-            if (s_TextureFormatStringsTizen == null)
-                s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
-            if (s_TextureFormatStringsSTV == null)
-                s_TextureFormatStringsSTV = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSTV);
-            if (s_TextureFormatStringsWebGL == null)
-                s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
-            if (s_TextureFormatStringsWiiU == null)
-                s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
-            if (s_TextureFormatStringsDefault == null)
-                s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
-            if (s_NormalFormatStringsDefault == null)
-                s_NormalFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kNormalFormatsValueDefault);
-            if (s_TextureFormatStringsSingleChannel == null)
-                s_TextureFormatStringsSingleChannel = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSingleChannel);
+            InitializeTextureFormatStrings();
         }
 
         void SetSerializedPropertySettings(TextureImporterSettings settings)
@@ -1463,6 +1446,33 @@ namespace UnityEditor
                 retval[i] = " " + TextureUtil.GetTextureFormatString((TextureFormat)val);
             }
             return retval;
+        }
+
+        internal static void InitializeTextureFormatStrings()
+        {
+            if (s_TextureFormatStringsApplePVR == null)
+                s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
+            if (s_TextureFormatStringsAndroid == null)
+                s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
+            if (s_TextureFormatStringsTizen == null)
+                s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
+            if (s_TextureFormatStringsSTV == null)
+                s_TextureFormatStringsSTV = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSTV);
+            if (s_TextureFormatStringsWebGL == null)
+                s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
+            if (s_TextureFormatStringsWiiU == null)
+                s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsDefault == null)
+                s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
+            if (s_NormalFormatStringsDefault == null)
+                s_NormalFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kNormalFormatsValueDefault);
+            if (s_TextureFormatStringsSingleChannel == null)
+                s_TextureFormatStringsSingleChannel = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSingleChannel);
+        }
+
+        internal static bool IsFormatRequireCompressionSetting(TextureImporterFormat format)
+        {
+            return ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, format);
         }
 
         protected void ShowPlatformSpecificSettings()

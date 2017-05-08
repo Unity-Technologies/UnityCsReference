@@ -27,6 +27,12 @@ namespace UnityEngine.Experimental.Rendering
             return pipe;
         }
 
+        public virtual int GetTerrainBrushPassIndex()
+        {
+            return (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
+        }
+
+
         protected abstract IRenderPipeline InternalCreatePipeline();
 
         protected IEnumerable<IRenderPipeline> CreatedInstances()

@@ -170,7 +170,7 @@ namespace UnityEditor
                 Apply();
         }
 
-        static Object MonoScriptValidatorCallback(Object[] references, System.Type objType, SerializedProperty property)
+        static Object MonoScriptValidatorCallback(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
         {
             foreach (Object i in references)
             {

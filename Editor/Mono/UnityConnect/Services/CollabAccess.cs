@@ -44,13 +44,6 @@ namespace UnityEditor.Web
             Collab.instance.SetCollabEnabledForCurrentProject(enabled);
 
             AssetDatabase.Refresh();                    // If auto-refresh was off, make sure we refresh when setting it back on
-            UnityEngine.Object[] windows = Resources.FindObjectsOfTypeAll(typeof(PreferencesWindow));
-            if (windows.Length > 0)
-            {
-                PreferencesWindow w = EditorWindow.GetWindow<PreferencesWindow>(true, "Unity Preferences");
-                w.UpdateAutoRefresh();
-                w.ApplyChangesToPrefs(true);
-            }
         }
 
         static CollabAccess()

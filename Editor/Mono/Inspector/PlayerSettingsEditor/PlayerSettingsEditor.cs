@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Modules;
+using UnityEditor.Scripting.ScriptCompilation;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
 
@@ -1369,24 +1370,12 @@ namespace UnityEditor
             }
 
             // Multithreaded rendering
-            if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.SamsungTV) //TODO:enable on desktops when decision is made
+            if (settingsExtension != null)
             {
-                if (IsMobileTarget(targetGroup))
+                if (IsMobileTarget(targetGroup) && settingsExtension.SupportsMultithreadedRendering())
                     m_MobileMTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MobileMTRendering.boolValue);
-                else
+                else if (settingsExtension.SupportsMultithreadedRendering())
                     m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-            }
-            else if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM)
-            {
-                if (Unsupported.IsDeveloperBuild())
-                {
-                    m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-                }
-                else
-                {
-                    // Force MT Rendering = true if not an internal developer build.
-                    m_MTRendering.boolValue = true;
-                }
             }
 
             // Batching section
@@ -1542,7 +1531,7 @@ namespace UnityEditor
         internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string identifier = EditorGUILayout.DelayedTextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetApplicationIdentifier(targetGroup));
+            string identifier = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetApplicationIdentifier(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -1553,7 +1542,7 @@ namespace UnityEditor
         internal static void ShowBuildNumberUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string buildNumber = EditorGUILayout.DelayedTextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetBuildNumber(targetGroup));
+            string buildNumber = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetBuildNumber(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -1581,11 +1570,21 @@ namespace UnityEditor
             var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
             var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
             var newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
-            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
-                PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
 
-            if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
-                GUILayout.Label("Changing this setting requires a restart of the Editor to take effect.", EditorStyles.helpBox);
+            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
+            {
+                if (EditorUtility.DisplayDialog(
+                        LocalizationDatabase.GetLocalizedString("Restart required"),
+                        LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
+                        LocalizationDatabase.GetLocalizedString("Restart"),
+                        LocalizationDatabase.GetLocalizedString("Cancel")))
+                {
+                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                    EditorCompilationInterface.Instance.CleanScriptAssemblies();
+                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                }
+            }
 
             // Scripting back-end
             IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);

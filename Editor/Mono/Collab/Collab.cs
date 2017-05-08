@@ -21,18 +21,19 @@ namespace UnityEditor.Collaboration
     [Flags]
     internal enum CollabOperation : ulong
     {
-        Noop    = 0,
-        Publish = 1 << 0,
-        Update  = 1 << 1,
-        Revert  = 1 << 2,
-        GoBack  = 1 << 3,
-        Restore = 1 << 4,
-        Diff    = 1 << 5,
-        Exclude = 1 << 6,
-        Include = 1 << 7,
-        ChooseMine    = 1 << 8,
-        ChooseTheirs  = 1 << 9,
-        ExternalMerge = 1 << 10,
+        Noop          = 0,
+        Publish       = 1 << 0,
+        Update        = 1 << 1,
+        Revert        = 1 << 2,
+        GoBack        = 1 << 3,
+        Restore       = 1 << 4,
+        Diff          = 1 << 5,
+        ConflictDiff  = 1 << 6,
+        Exclude       = 1 << 7,
+        Include       = 1 << 8,
+        ChooseMine    = 1 << 9,
+        ChooseTheirs  = 1 << 10,
+        ExternalMerge = 1 << 11,
     };
 
     //*undocumented
@@ -53,7 +54,7 @@ namespace UnityEditor.Collaboration
         private static bool s_IsFirstStateChange = true;
 
         [SerializeField]
-        private CollabFilters collabFilters = new CollabFilters();
+        public CollabFilters collabFilters = new CollabFilters();
 
         public String projectBrowserSingleSelectionPath { get; set; }
 
@@ -146,9 +147,35 @@ namespace UnityEditor.Collaboration
             s_Instance.projectBrowserSingleSelectionPath = string.Empty;
             s_Instance.projectBrowserSingleMetaSelectionPath = string.Empty;
             JSProxyMgr.GetInstance().AddGlobalObject("unity/collab", s_Instance);
-
-            SoftlockViewController.Instance.TurnOn();
+            ObjectListArea.postAssetIconDrawCallback += CollabProjectHook.OnProjectWindowIconOverlay;
+            AssetsTreeViewGUI.postAssetIconDrawCallback += CollabProjectHook.OnProjectBrowserNavPanelIconOverlay;
+            if (!InitializeSoftlocksViewController())
+            {
+                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += OnSettingStatusChanged;
+            }
         }
+
+        public static void OnSettingStatusChanged(CollabSettingType type, CollabSettingStatus status)
+        {
+            if (InitializeSoftlocksViewController())
+            {
+                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnSettingStatusChanged;
+                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += SoftlockViewController.Instance.softLockFilters.OnSettingStatusChanged;
+            }
+        }
+
+        public static bool InitializeSoftlocksViewController()
+        {
+            if (!CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
+                return false;
+
+            if (CollabSettingsManager.inProgressEnabled)
+                SoftlockViewController.Instance.TurnOn();
+            else
+                SoftlockViewController.Instance.TurnOff();
+            return true;
+        }
+
 
         public void CancelJobWithoutException(int jobType)
         {
@@ -220,6 +247,16 @@ namespace UnityEditor.Collaboration
             collabFilters.ShowInProjectBrowser(filterString);
         }
 
+        public PublishInfo GetChangesToPublish()
+        {
+            Change[] changes = GetChangesToPublishInternal();
+            return new PublishInfo()
+            {
+                changes = changes,
+                filter = false
+            };
+        }
+
         private static void OnStateChanged()
         {
             // register only once
@@ -258,29 +295,57 @@ namespace UnityEditor.Collaboration
             instance.SendNotification();
         }
 
-        internal void UpdateFavoriteSearchFilters()
+        public static void OnProgressEnabledSettingStatusChanged(CollabSettingType type, CollabSettingStatus status)
         {
-            if (IsCollabEnabledForCurrentProject())
+            if (type == CollabSettingType.InProgressEnabled && status == CollabSettingStatus.Available)
             {
-                collabFilters.AddFavoriteSearchFilters();
-            }
-            else
-            {
-                collabFilters.RemoveFavoriteSearchFilters();
+                if (CollabSettingsManager.inProgressEnabled)
+                {
+                    SoftlockViewController.Instance.softLockFilters.ShowInFavoriteSearchFilters();
+                }
+
+                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnProgressEnabledSettingStatusChanged;
             }
         }
+
 
         [RequiredByNativeCode]
         static void OnCollabEnabledForCurrentProject(bool enabled)
         {
             if (enabled)
             {
-                instance.collabFilters.AddFavoriteSearchFilters();
+                instance.StateChanged += instance.collabFilters.OnCollabStateChanged;
+                instance.collabFilters.ShowInFavoriteSearchFilters();
+                if (CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
+                {
+                    if (CollabSettingsManager.inProgressEnabled)
+                    {
+                        SoftlockViewController.Instance.softLockFilters.ShowInFavoriteSearchFilters();
+                    }
+                }
+                else
+                {
+                    CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnProgressEnabledSettingStatusChanged;
+                    CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += OnProgressEnabledSettingStatusChanged;
+                }
             }
             else
             {
-                instance.collabFilters.RemoveFavoriteSearchFilters();
-                instance.collabFilters.ShowInProjectBrowser("");
+                instance.StateChanged -= instance.collabFilters.OnCollabStateChanged;
+                instance.collabFilters.HideFromFavoriteSearchFilters();
+                SoftlockViewController.Instance.softLockFilters.HideFromFavoriteSearchFilters();
+                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnProgressEnabledSettingStatusChanged;
+
+                if (ProjectBrowser.s_LastInteractedProjectBrowser != null)
+                {
+                    if (ProjectBrowser.s_LastInteractedProjectBrowser.Initialized() && ProjectBrowser.s_LastInteractedProjectBrowser.IsTwoColumns())
+                    {
+                        int instanceID = AssetDatabase.GetMainAssetInstanceID("assets");
+                        ProjectBrowser.s_LastInteractedProjectBrowser.SetFolderSelection(new int[] { instanceID }, true);
+                    }
+                    ProjectBrowser.s_LastInteractedProjectBrowser.SetSearch("");
+                    ProjectBrowser.s_LastInteractedProjectBrowser.Repaint();
+                }
             }
         }
     };

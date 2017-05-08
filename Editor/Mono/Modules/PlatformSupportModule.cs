@@ -200,6 +200,8 @@ namespace UnityEditor.Modules
         void ResolutionSectionGUI(float h, float midWidth, float maxWidth);
 
         bool HasBundleIdentifier();
+
+        bool SupportsMultithreadedRendering();
     }
 
 

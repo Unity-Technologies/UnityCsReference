@@ -318,10 +318,14 @@ namespace UnityEditorInternal
 
             Console.WriteLine("Invoking il2cpp with arguments: " + args);
 
+            CompilerOutputParserBase il2cppOutputParser = m_PlatformProvider.CreateIl2CppOutputParser();
+            if (il2cppOutputParser == null)
+                il2cppOutputParser = new Il2CppOutputParser();
+
             if (useNetCore)
-                Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, new Il2CppOutputParser(), setupStartInfo);
+                Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
             else
-                Runner.RunManagedProgram(il2CppPath, args, workingDirectory, new Il2CppOutputParser(), setupStartInfo);
+                Runner.RunManagedProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
         }
 
         private string GetIl2CppExe()
@@ -382,6 +386,7 @@ namespace UnityEditorInternal
 
         INativeCompiler CreateNativeCompiler();
         Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder();
+        CompilerOutputParserBase CreateIl2CppOutputParser();
     }
 
     internal class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
@@ -490,6 +495,11 @@ namespace UnityEditorInternal
         }
 
         public virtual Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder()
+        {
+            return null;
+        }
+
+        public virtual CompilerOutputParserBase CreateIl2CppOutputParser()
         {
             return null;
         }

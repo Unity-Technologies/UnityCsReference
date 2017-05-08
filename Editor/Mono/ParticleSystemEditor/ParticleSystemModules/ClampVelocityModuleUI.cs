@@ -74,7 +74,11 @@ namespace UnityEditor
             }
 
             // Keep states in sync
-            m_Z.state = m_Y.state = m_X.state;
+            if (!m_Z.stateHasMultipleDifferentValues)
+            {
+                m_X.SetMinMaxState(m_Z.state, true);
+                m_Y.SetMinMaxState(m_Y.state, true);
+            }
 
             if (separateAxes)
             {

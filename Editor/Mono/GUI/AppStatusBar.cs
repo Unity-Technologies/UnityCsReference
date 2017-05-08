@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -32,7 +31,7 @@ namespace UnityEditor
 
         void OnInspectorUpdate()
         {
-            string miniOverview = ProfilerDriver.miniMemoryOverview;
+            string miniOverview = UnityEditorInternal.ProfilerDriver.miniMemoryOverview;
             if (Unsupported.IsDeveloperBuild() && m_LastMiniMemoryOverview != miniOverview)
             {
                 m_LastMiniMemoryOverview = miniOverview;

@@ -1018,6 +1018,7 @@ public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValu
             desc.depthBufferBits = depthBuffer;
             desc.vrUsage = VRTextureUsage.None;
             desc.colorFormat = format;
+            desc.sRGB = (readWrite != RenderTextureReadWrite.Linear);
             desc.msaaSamples = antiAliasing;
             desc.memoryless = memorylessMode;
             return GetTemporary(desc);
