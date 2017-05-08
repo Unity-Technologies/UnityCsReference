@@ -397,7 +397,10 @@ namespace UnityEditor
 
             displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, "Command");
             if (GUI.changed)
+            {
                 Tools.current = (Tool)displayTool;
+                Tools.ResetGlobalHandleRotation();
+            }
         }
 
         void DoPivotButtons(Rect rect)

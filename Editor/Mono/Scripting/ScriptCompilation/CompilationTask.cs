@@ -23,11 +23,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildFlags buildFlags;
         int maxConcurrentCompilers;
 
-        public delegate void OnCompilationStartedDelegate(ScriptAssembly assembly, int phase);
-        public delegate void OnCompilationFinishedDelegate(ScriptAssembly assembly, CompilerMessage[] messages);
-
-        public event OnCompilationStartedDelegate OnCompilationStarted;
-        public event OnCompilationFinishedDelegate OnCompilationFinished;
+        public event Action<ScriptAssembly, int> OnCompilationStarted;
+        public event Action<ScriptAssembly, List<CompilerMessage>> OnCompilationFinished;
 
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
@@ -108,10 +105,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     var messages = compiler.GetCompilerMessages();
 
-                    if (OnCompilationFinished != null)
-                        OnCompilationFinished(assembly, messages);
+                    // Convert messages to list, OnCompilationFinished callbacks might add
+                    // more messages
+                    var messagesList = messages.ToList();
 
-                    processedAssemblies.Add(assembly, messages);
+                    if (OnCompilationFinished != null)
+                        OnCompilationFinished(assembly, messagesList);
+
+                    processedAssemblies.Add(assembly, messagesList.ToArray());
 
                     if (!CompileErrors)
                         CompileErrors = messages.Any(m => m.type == CompilerMessageType.Error);

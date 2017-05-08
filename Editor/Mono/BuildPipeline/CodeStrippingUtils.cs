@@ -262,21 +262,6 @@ namespace UnityEditor
             return result;
         }
 
-        private static bool IsVRModuleUsed(BuildTarget target)
-        {
-            var targetGroup = UnityEditor.BuildPipeline.GetBuildTargetGroup(target);
-
-            if (targetGroup != BuildTargetGroup.iOS)
-                return false;
-            if (!PlayerSettings.virtualRealitySupported)
-                return false;
-
-            string[] vrDevices = UnityEditorInternal.VR.VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
-            if (Array.IndexOf(vrDevices, "cardboard") < 0)
-                return false;
-            return true;
-        }
-
         public static void InjectCustomDependencies(BuildTarget target, StrippingInfo strippingInfo, HashSet<UnityType> nativeClasses,
             HashSet<string> nativeModules)
         {
@@ -300,7 +285,7 @@ namespace UnityEditor
                 }
             }
 
-            if (IsVRModuleUsed(target))
+            if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(target))
             {
                 const string moduleName = "VR";
                 const string requiredMessage = "Required because VR is enabled in PlayerSettings";

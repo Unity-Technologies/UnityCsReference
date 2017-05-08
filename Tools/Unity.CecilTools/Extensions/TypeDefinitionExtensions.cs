@@ -19,7 +19,12 @@ namespace Unity.CecilTools.Extensions
                 return false;
             if (baseType.FullName == baseTypeName)
                 return true;
-            return IsSubclassOf(baseType.CheckedResolve(), baseTypeName);
+
+            var baseTypeDef = baseType.Resolve();
+            if (baseTypeDef == null)
+                return false;
+
+            return IsSubclassOf(baseTypeDef, baseTypeName);
         }
     }
 }

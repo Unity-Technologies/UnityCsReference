@@ -13,10 +13,10 @@ namespace UnityEditor
     internal class PackageExport : EditorWindow
     {
         [SerializeField] private ExportPackageItem[]    m_ExportPackageItems;
-        [SerializeField] private IncrementalInitialize  m_IncrementalInitialize = new IncrementalInitialize();
         [SerializeField] private bool                   m_IncludeDependencies = true;
         [SerializeField] private TreeViewState          m_TreeViewState;
         [NonSerialized]  private PackageExportTreeView  m_Tree;
+        [NonSerialized]  private bool                   m_DidScheduleUpdate = false;
 
         public ExportPackageItem[] items { get { return m_ExportPackageItems; } }
 
@@ -83,7 +83,6 @@ namespace UnityEditor
 
         void RefreshAssetList()
         {
-            m_IncrementalInitialize.Restart();
             m_ExportPackageItems = null;
         }
 
@@ -94,12 +93,12 @@ namespace UnityEditor
 
         bool CheckAssetExportList()
         {
-            if (m_ExportPackageItems == null || m_ExportPackageItems.Length == 0)
+            if (m_ExportPackageItems.Length == 0)
             {
                 GUILayout.Space(20f);
                 GUILayout.BeginVertical(EditorStyles.helpBox);
-                GUILayout.Label("Nothing to import!", EditorStyles.boldLabel);
-                GUILayout.Label("All assets from this package are already in your project.", "WordWrappedLabel");
+                GUILayout.Label("Nothing to export!", EditorStyles.boldLabel);
+                GUILayout.Label("No assets to export were found in your project.", "WordWrappedLabel");
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("OK"))
@@ -115,31 +114,28 @@ namespace UnityEditor
             return false;
         }
 
+        public void OnDestroy()
+        {
+            UnscheduleBuildAssetList();
+        }
+
         public void OnGUI()
         {
-            m_IncrementalInitialize.OnEvent();
-
-            bool showLoadingScreen = false;
-            switch (m_IncrementalInitialize.state)
+            if (!HasValidAssetList())
             {
-                case IncrementalInitialize.State.PreInitialize:
-                    showLoadingScreen = true;
-                    break;
-
-                case IncrementalInitialize.State.Initialize:
-                    BuildAssetList();
-                    break;
+                ScheduleBuildAssetList();
             }
-
-            if (CheckAssetExportList())
+            else if (CheckAssetExportList())
+            {
                 return;
+            }
 
             using (new EditorGUI.DisabledScope(!HasValidAssetList()))
             {
                 TopArea();
             }
 
-            TreeViewArea(showLoadingScreen);
+            TreeViewArea(!HasValidAssetList());
 
             using (new EditorGUI.DisabledScope(!HasValidAssetList()))
             {
@@ -243,13 +239,35 @@ namespace UnityEditor
             }
         }
 
+        private void ScheduleBuildAssetList()
+        {
+            if (!m_DidScheduleUpdate)
+            {
+                EditorApplication.update += BuildAssetList;
+                m_DidScheduleUpdate = true;
+            }
+        }
+
+        private void UnscheduleBuildAssetList()
+        {
+            if (m_DidScheduleUpdate)
+            {
+                m_DidScheduleUpdate = false;
+                EditorApplication.update -= BuildAssetList;
+            }
+        }
+
         private void BuildAssetList()
         {
+            UnscheduleBuildAssetList();
+
             m_ExportPackageItems = GetAssetItemsForExport(Selection.assetGUIDsDeepSelection, m_IncludeDependencies).ToArray();
 
             // GUI is reconstructed in OnGUI (when needed)
             m_Tree = null;
             m_TreeViewState = null;
+
+            Repaint();
         }
     }
 }

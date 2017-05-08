@@ -30,15 +30,15 @@ namespace UnityEditor.Collaboration
             return false;
         }
 
-        public void AddFavoriteSearchFilters()
+        public void ShowInFavoriteSearchFilters()
         {
             if (SavedSearchFilters.GetRootInstanceID() == 0)
             {
-                SavedSearchFilters.AddInitializedListener(AddFavoriteSearchFilters);
+                SavedSearchFilters.AddInitializedListener(ShowInFavoriteSearchFilters);
                 return;
             }
 
-            SavedSearchFilters.RemoveInitializedListener(AddFavoriteSearchFilters);
+            SavedSearchFilters.RemoveInitializedListener(ShowInFavoriteSearchFilters);
             int prevInstanceID = 0;
             foreach (var filter in filters)
             {
@@ -61,7 +61,7 @@ namespace UnityEditor.Collaboration
             }
         }
 
-        public void RemoveFavoriteSearchFilters()
+        public void HideFromFavoriteSearchFilters()
         {
             SavedSearchFilters.RefreshSavedFilters();
 
@@ -108,7 +108,7 @@ namespace UnityEditor.Collaboration
                 if (browser == null)
                 {
                     browser = EditorWindow.GetWindow<ProjectBrowser>() as ProjectBrowser;
-                    AddFavoriteSearchFilters();
+                    ShowInFavoriteSearchFilters();
                     browser.RepaintImmediately();
                 }
 

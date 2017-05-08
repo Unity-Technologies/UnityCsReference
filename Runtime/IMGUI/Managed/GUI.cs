@@ -1501,6 +1501,13 @@ namespace UnityEngine
             {
                 state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
                 state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);
+
+                // If one of the visible rect dimensions is larger than the view rect dimensions
+                if (state.scrollPosition.x < 0f)
+                    state.scrollPosition.x = 0f;
+                if (state.scrollPosition.y < 0f)
+                    state.scrollPosition.y = 0f;
+
                 state.apply = true;
                 Event.current.Use();
             }

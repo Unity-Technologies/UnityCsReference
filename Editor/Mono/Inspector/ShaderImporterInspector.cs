@@ -52,7 +52,7 @@ namespace UnityEditor
                 {
                     // Require at least two character in display name to prevent names like "-"
                     var text = string.IsNullOrEmpty(displayNames[i]) ? ObjectNames.NicifyVariableName(propertyNames[i]) : displayNames[i];
-                    newTexture = EditorGUILayout.MiniThumbnailObjectField(GUIContent.Temp(text), oldTexture, textureType, null) as Texture;
+                    newTexture = EditorGUILayout.MiniThumbnailObjectField(GUIContent.Temp(text), oldTexture, textureType) as Texture;
                 }
 
                 if (EditorGUI.EndChangeCheck())

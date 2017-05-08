@@ -9,5 +9,7 @@ namespace UnityEngine.Experimental.Rendering
         void DestroyCreatedInstances();
 
         IRenderPipeline CreatePipeline();
+
+        int GetTerrainBrushPassIndex();
     }
 }

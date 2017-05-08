@@ -202,6 +202,10 @@ namespace UnityEngine.Experimental.UIElements
 
             bool invokedHandleEvent = false;
 
+            if (panel.panelDebug != null && panel.panelDebug.enabled && panel.panelDebug.interceptEvents != null)
+                if (panel.panelDebug.interceptEvents(e))
+                    return EventPropagation.Stop;
+
             if (capture != null && capture.panel == null)
             {
                 Debug.Log(string.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e.type));
@@ -255,8 +259,6 @@ namespace UnityEngine.Experimental.UIElements
                      || e.type == EventType.DragPerform
                      || e.type == EventType.DragExited)
             {
-                invokedHandleEvent = true;
-
                 // 3. General dispatch
 
                 // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
@@ -280,6 +282,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (elementUnderMouse != null)
                 {
+                    invokedHandleEvent = true;
                     if (PropagateEvent(elementUnderMouse, e) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
@@ -287,6 +290,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (e.type == EventType.MouseEnterWindow
                     || e.type == EventType.MouseLeaveWindow)
                 {
+                    invokedHandleEvent = true;
                     // do the old behavior here, propagate to all IMGUI Container widgets
                     if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
                         return EventPropagation.Stop;

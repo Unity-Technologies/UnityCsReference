@@ -12,6 +12,9 @@ namespace UnityEngine.StyleSheets
         [SerializeField]
         StyleProperty[] m_Properties;
 
+        [SerializeField]
+        internal int line;
+
         public StyleProperty[] properties
         {
             get

@@ -239,7 +239,7 @@ namespace UnityEditor
             {
                 if (e.InnerException is ExitGUIException)
                     isExitGUIException = true;
-                throw e.InnerException;
+                throw;
             }
             finally
             {

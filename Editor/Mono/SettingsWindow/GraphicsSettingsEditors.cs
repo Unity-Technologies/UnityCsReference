@@ -57,23 +57,32 @@ namespace UnityEditor
         {
             BuiltinShaderSettings m_Deferred;
             BuiltinShaderSettings m_DeferredReflections;
-            BuiltinShaderSettings m_ScreenSpaceShadows;
             BuiltinShaderSettings m_LegacyDeferred;
+            BuiltinShaderSettings m_ScreenSpaceShadows;
+            BuiltinShaderSettings m_DepthNormals;
             BuiltinShaderSettings m_MotionVectors;
+            BuiltinShaderSettings m_LightHalo;
+            BuiltinShaderSettings m_LensFlare;
 
-            string deferredString       { get { return LocalizationDatabase.GetLocalizedString("Deferred|Shader settings for Deferred Shading"); } }
-            string deferredReflString   { get { return LocalizationDatabase.GetLocalizedString("Deferred Reflections|Shader settings for deferred reflections"); } }
-            string legacyDeferredString { get { return LocalizationDatabase.GetLocalizedString("Legacy Deferred|Shader settings for Legacy (light prepass) Deferred Lighting"); } }
-            string screenShadowsString  { get { return LocalizationDatabase.GetLocalizedString("Screen Space Shadows|Shader settings for cascaded shadow maps"); } }
-            string motionVectorsString  { get { return LocalizationDatabase.GetLocalizedString("Motion Vectors|Shader for generation of Motion Vectors when the rendering camera has renderMotionVectors set to true"); } }
+            string deferredString       { get { return LocalizationDatabase.GetLocalizedString("Deferred|Shader used for Deferred Shading."); } }
+            string deferredReflString   { get { return LocalizationDatabase.GetLocalizedString("Deferred Reflections|Shader used for Deferred reflection probes."); } }
+            string legacyDeferredString { get { return LocalizationDatabase.GetLocalizedString("Legacy Deferred|Shader used for Legacy (light prepass) Deferred Lighting."); } }
+            string screenShadowsString  { get { return LocalizationDatabase.GetLocalizedString("Screen Space Shadows|Shader used for screen-space cascaded shadows."); } }
+            string depthNormalsString   { get { return LocalizationDatabase.GetLocalizedString("Depth Normals|Shader used for depth and normals texture when enabled on a Camera."); } }
+            string motionVectorsString  { get { return LocalizationDatabase.GetLocalizedString("Motion Vectors|Shader for generation of Motion Vectors when the rendering camera has renderMotionVectors set to true."); } }
+            string lightHaloString      { get { return LocalizationDatabase.GetLocalizedString("Light Halo|Default Shader used for light halos."); } }
+            string lensFlareString      { get { return LocalizationDatabase.GetLocalizedString("Lens Flare|Default Shader used for lens flares."); } }
 
             public void OnEnable()
             {
                 m_Deferred              = new BuiltinShaderSettings(deferredString, "m_Deferred", serializedObject);
                 m_DeferredReflections   = new BuiltinShaderSettings(deferredReflString, "m_DeferredReflections", serializedObject);
-                m_ScreenSpaceShadows    = new BuiltinShaderSettings(screenShadowsString, "m_ScreenSpaceShadows", serializedObject);
                 m_LegacyDeferred        = new BuiltinShaderSettings(legacyDeferredString, "m_LegacyDeferred", serializedObject);
+                m_ScreenSpaceShadows    = new BuiltinShaderSettings(screenShadowsString, "m_ScreenSpaceShadows", serializedObject);
+                m_DepthNormals          = new BuiltinShaderSettings(depthNormalsString, "m_DepthNormals", serializedObject);
                 m_MotionVectors         = new BuiltinShaderSettings(motionVectorsString, "m_MotionVectors", serializedObject);
+                m_LightHalo             = new BuiltinShaderSettings(lightHaloString, "m_LightHalo", serializedObject);
+                m_LensFlare             = new BuiltinShaderSettings(lensFlareString, "m_LensFlare", serializedObject);
             }
 
             public override void OnInspectorGUI()
@@ -89,9 +98,12 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                     ShaderUtil.ReloadAllShaders();
 
-                m_ScreenSpaceShadows.DoGUI();
                 m_LegacyDeferred.DoGUI();
+                m_ScreenSpaceShadows.DoGUI();
+                m_DepthNormals.DoGUI();
                 m_MotionVectors.DoGUI();
+                m_LightHalo.DoGUI();
+                m_LensFlare.DoGUI();
 
                 serializedObject.ApplyModifiedProperties();
             }

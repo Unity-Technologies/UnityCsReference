@@ -1474,7 +1474,7 @@ namespace UnityEditor
                         {
                             Event.current.Use();
                             int[] copiedFolders = DuplicateFolders(instanceIDs);
-                            m_FolderTree.SetSelection(copiedFolders, true);
+                            SetFolderSelection(copiedFolders, true);
                             GUIUtility.ExitGUI();
                         }
                     }

@@ -53,11 +53,15 @@ namespace UnityEditor
         public void UpdateScroll()
         {
             double deltaTime = EditorApplication.timeSinceStartup - m_LastScrollUpdate;
+            m_LastScrollUpdate = EditorApplication.timeSinceStartup;
+
+            if (GUIUtility.hotControl != 0)
+                return;
+
             m_TextYPos -= 40f * (float)deltaTime;
             if (m_TextYPos < -m_TotalCreditsHeight)
                 m_TextYPos = m_TextInitialYPos;
             Repaint();
-            m_LastScrollUpdate = EditorApplication.timeSinceStartup;
         }
 
         bool m_ShowDetailedVersion = false;
@@ -119,12 +123,15 @@ namespace UnityEditor
             float creditsWidth = position.width - 10;
             float chunkOffset = m_TextYPos;
 
-            GUI.BeginGroup(GUILayoutUtility.GetRect(10, m_TextInitialYPos));
+            Rect scrollAreaRect = GUILayoutUtility.GetRect(10, m_TextInitialYPos);
+            GUI.BeginGroup(scrollAreaRect);
             foreach (string nameChunk in AboutWindowNames.nameChunks)
                 chunkOffset = DoCreditsNameChunk(nameChunk, creditsWidth, chunkOffset);
             chunkOffset = DoCreditsNameChunk(kSpecialThanksNames, creditsWidth, chunkOffset);
             m_TotalCreditsHeight = chunkOffset - m_TextYPos;
             GUI.EndGroup();
+
+            HandleScrollEvents(scrollAreaRect);
 
             GUILayout.FlexibleSpace();
 
@@ -155,6 +162,38 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             GUILayout.Space(5);
+        }
+
+        private void HandleScrollEvents(Rect scrollAreaRect)
+        {
+            int id = GUIUtility.GetControlID(FocusType.Passive);
+
+            switch (Event.current.GetTypeForControl(id))
+            {
+                case EventType.MouseDown:
+                    if (scrollAreaRect.Contains(Event.current.mousePosition))
+                    {
+                        GUIUtility.hotControl = id;
+                        Event.current.Use();
+                    }
+                    break;
+                case EventType.MouseDrag:
+                    if (GUIUtility.hotControl == id)
+                    {
+                        m_TextYPos += Event.current.delta.y;
+                        m_TextYPos = Mathf.Min(m_TextYPos, m_TextInitialYPos);
+                        m_TextYPos = Mathf.Max(m_TextYPos, -m_TotalCreditsHeight);
+                        Event.current.Use();
+                    }
+                    break;
+                case EventType.MouseUp:
+                    if (GUIUtility.hotControl == id)
+                    {
+                        GUIUtility.hotControl = 0;
+                        Event.current.Use();
+                    }
+                    break;
+            }
         }
 
         private static float DoCreditsNameChunk(string nameChunk, float creditsWidth, float creditsChunkYOffset)

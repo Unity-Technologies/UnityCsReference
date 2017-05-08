@@ -234,6 +234,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\Editor\Mono\IDropArea.cs" >
 <Link>Editor\Mono\IDropArea.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\SerializedObject.cs" >
+<Link>Editor\Mono\SerializedObject.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\CSPreProcess.cs" >
 <Link>Editor\Mono\CSPreProcess.cs</Link>
 </Compile>
@@ -284,6 +287,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 </Compile>
 <Compile Include="..\..\Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs" >
 <Link>Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\SerializedProperty.cs" >
+<Link>Editor\Mono\SerializedProperty.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\PlayerSettings.deprecated.cs" >
 <Link>Editor\Mono\PlayerSettings.deprecated.cs</Link>
@@ -1178,9 +1184,6 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\MainView.cs" >
 <Link>Editor\Mono\GUI\MainView.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\GUI\IncrementalInitialize.cs" >
-<Link>Editor\Mono\GUI\IncrementalInitialize.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\ListViewShared.cs" >
 <Link>Editor\Mono\GUI\ListViewShared.cs</Link>
@@ -2900,6 +2903,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\artifacts\generated\common\editor\LODUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\LODUtilityBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\editor\LogEntriesBindings.gen.cs" >
+<Link>artifacts\generated\common\editor\LogEntriesBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\MeshUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\MeshUtilityBindings.gen.cs</Link>
 </Compile>
@@ -3288,6 +3294,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 </Compile>
 <Compile Include="..\..\Editor\Src\VR\Mono\VREditor.cs" >
 <Link>Editor\Src\VR\Mono\VREditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Src\VR\Mono\VRModule.cs" >
+<Link>Editor\Src\VR\Mono\VRModule.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Src\VR\Mono\VRCustomOptions.cs" >
 <Link>Editor\Src\VR\Mono\VRCustomOptions.cs</Link>

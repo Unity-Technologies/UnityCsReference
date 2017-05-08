@@ -383,6 +383,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
                 scriptAssembly.Defines = settings.Defines;
                 scriptAssembly.Files = sourceFiles.ToArray();
+
+                // Script files must always be passed in the same order to the compiler.
+                // Otherwise player builds might fail for partial classes.
+                Array.Sort(scriptAssembly.Files);
             }
 
             // Setup ScriptAssembly references

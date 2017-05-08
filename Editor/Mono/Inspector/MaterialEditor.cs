@@ -1417,6 +1417,7 @@ namespace UnityEditor
         {
             if (shader == null || string.IsNullOrEmpty(shader.customEditor))
             {
+                m_CustomEditorClassName = "";
                 m_CustomShaderGUI = null;
                 return;
             }
@@ -1549,7 +1550,7 @@ namespace UnityEditor
 
         private UnityEngine.Rendering.TextureDimension m_DesiredTexdim;
 
-        private Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property)
+        private Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
         {
             foreach (Object i in references)
             {

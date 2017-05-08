@@ -133,7 +133,7 @@ namespace UnityEditor.U2D
             return o != null && (o.GetType() == typeof(Sprite) || o.GetType() == typeof(DefaultAsset) || o.GetType() == typeof(Texture2D));
         }
 
-        static Object ValidateObjectForPackableFieldAssignment(Object[] references, System.Type objType, SerializedProperty property)
+        static Object ValidateObjectForPackableFieldAssignment(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
         {
             // We only validate and care about the first one as this is a object field assignment.
             if (references.Length > 0 && IsPackable(references[0]))

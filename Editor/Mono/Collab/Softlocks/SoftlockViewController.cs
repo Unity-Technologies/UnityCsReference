@@ -78,7 +78,7 @@ namespace UnityEditor
         {
             ObjectListArea.postAssetIconDrawCallback -= Instance.DrawProjectBrowserGridUI;
             ObjectListArea.postAssetLabelDrawCallback -= Instance.DrawProjectBrowserListUI;
-            Editor.OnPostHeaderGUI -= Instance.DrawInspectorUI;
+            Editor.OnPostIconGUI -= Instance.DrawInspectorUI;
             GameObjectTreeViewGUI.OnPostHeaderGUI -= Instance.DrawSceneUI;
         }
 
@@ -88,7 +88,7 @@ namespace UnityEditor
             UnregisterDrawDelegates();
             ObjectListArea.postAssetIconDrawCallback += Instance.DrawProjectBrowserGridUI;
             ObjectListArea.postAssetLabelDrawCallback += Instance.DrawProjectBrowserListUI;
-            Editor.OnPostHeaderGUI += Instance.DrawInspectorUI;
+            Editor.OnPostIconGUI += Instance.DrawInspectorUI;
             GameObjectTreeViewGUI.OnPostHeaderGUI += Instance.DrawSceneUI;
         }
 
@@ -177,12 +177,12 @@ namespace UnityEditor
         // Draws in the Hierarchy header, left of the context menu.
         public void DrawSceneUI(Rect availableRect, string scenePath)
         {
-            if (!CollabAccess.Instance.IsServiceEnabled())
+            string assetGUID = AssetDatabase.AssetPathToGUID(scenePath);
+            if (!HasSoftlocks(assetGUID))
             {
                 return;
             }
 
-            string assetGUID = AssetDatabase.AssetPathToGUID(scenePath);
             int lockCount;
             SoftLockData.TryGetSoftlockCount(assetGUID, out lockCount);
 
@@ -200,7 +200,7 @@ namespace UnityEditor
 
         // Assigned as a callback to Editor.OnPostHeaderGUI
         // Draws the Scene Inspector (Editor.cs) as well as the Game Object Inspector (GameObjectInspector.cs)
-        private void DrawInspectorUI(Editor editor)
+        private void DrawInspectorUI(Editor editor, Rect drawRect)
         {
             if (!HasSoftlockSupport(editor))
             {
@@ -210,10 +210,17 @@ namespace UnityEditor
             m_Cache.StoreEditor(editor);
             string assetGUID = null;
             AssetAccess.TryGetAssetGUIDFromObject(editor.target, out assetGUID);
-            GUIContent content = GetInspectorContent(assetGUID);
-            const int kHorizontalMargins = 74;
-            content.text = FitTextToWidth(content.text, EditorGUIUtility.currentViewWidth - kHorizontalMargins, GetStyle());
-            GUILayout.Label(content);
+
+            if (!HasSoftlocks(assetGUID))
+            {
+                return;
+            }
+
+            Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
+            if (icon != null)
+            {
+                DrawIconWithTooltips(drawRect, icon, assetGUID);
+            }
         }
 
         // Assigned callback to ObjectListArea.OnPostAssetDrawDelegate.
@@ -228,13 +235,10 @@ namespace UnityEditor
 
             Rect drawRect = Rect.zero;
             Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
-            if (null != icon)
+            if (icon != null)
             {
                 drawRect = Overlay.GetRectForBottomRight(iconRect, Overlay.k_OverlaySizeOnLargeIcon);
-
-
-                GUI.DrawTexture(drawRect, icon, ScaleMode.ScaleToFit);
-                DrawTooltip(drawRect, GetTooltip(assetGUID));
+                DrawIconWithTooltips(drawRect, icon, assetGUID);
             }
         }
 
@@ -247,17 +251,22 @@ namespace UnityEditor
 
             Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
             bool didDraw = false;
-            if (null != icon)
+            if (icon != null)
             {
                 // center icon.
                 Rect iconRect = drawRect;
                 iconRect.width = drawRect.height;
                 iconRect.x = (float)Math.Round(drawRect.center.x - (iconRect.width / 2F));
-                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-                DrawTooltip(iconRect, GetTooltip(assetGUID));
+                DrawIconWithTooltips(iconRect, icon, assetGUID);
                 didDraw = true;
             }
             return didDraw;
+        }
+
+        private void DrawIconWithTooltips(Rect iconRect, Texture icon, string assetGUID)
+        {
+            GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+            DrawTooltip(iconRect, GetTooltip(assetGUID));
         }
 
         private void DrawTooltip(Rect frame, string tooltip)
@@ -268,22 +277,6 @@ namespace UnityEditor
         }
 
         #region String Helpers
-
-        // Text displayed in the Inspector window.
-        // Has the format: (#) FirstName LastName, FirstName LastName
-        // e.g. "(2) David McGregor, Beau Hangerfield"
-        private string GetInspectorText(string assetGUID, int lockCount)
-        {
-            string text;
-            if (!Instance.m_Cache.TryGetConcatenatedNames(assetGUID, out text))
-            {
-                text = GetDisplayCount(lockCount);
-                text += " ";
-                text += ConcatenateNamesForGUID(assetGUID);
-                Instance.m_Cache.StoreConcatenatedNames(assetGUID, text);
-            }
-            return text;
-        }
 
         // Returns a string formatted as a vertical list of names with a heading.
         private string GetTooltip(string assetGUID)
@@ -303,24 +296,6 @@ namespace UnityEditor
             return formattedText;
         }
 
-        // Provides a comma separated list of names that have a softlock on the
-        // the given 'assetGUID'. Returns an empty string if no locks are present.
-        private static string ConcatenateNamesForGUID(string assetGUID)
-        {
-            List<string> softlockNames = SoftLockUIData.GetLocksNamesOnAsset(assetGUID);
-            string text = "";
-            for (int index = 0; index < softlockNames.Count; index++)
-            {
-                string name = softlockNames[index];
-                if (index > 0)
-                {
-                    text += ", ";
-                }
-                text += name;
-            }
-            return text;
-        }
-
         // Retrieves a previously generated string from cache
         // or creates a string displaying the given 'count' surrounded by brackets.
         // e.g. "(0)"
@@ -329,7 +304,7 @@ namespace UnityEditor
             string totalLocksText;
             if (!Instance.m_Cache.TryGetDisplayCount(count, out totalLocksText))
             {
-                totalLocksText = "(" + count.ToString() + ")";
+                totalLocksText = count.ToString();
                 Instance.m_Cache.StoreDisplayCount(count, totalLocksText);
             }
             return totalLocksText;
@@ -372,17 +347,6 @@ namespace UnityEditor
             return k_Content;
         }
 
-        private GUIContent GetInspectorContent(string assetGUID)
-        {
-            GUIContent content = GetGUIContent();
-            int lockCount;
-            SoftLockData.TryGetSoftlockCount(assetGUID, out lockCount);
-            content.image = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.Inspector);
-            content.text = GetInspectorText(assetGUID, lockCount);
-            content.tooltip = GetTooltip(assetGUID);
-            return content;
-        }
-
         public GUIStyle GetStyle()
         {
             if (k_Style == null)
@@ -402,7 +366,6 @@ namespace UnityEditor
             private List<WeakReference> m_CachedWeakReferences = new List<WeakReference>();
             private static Dictionary<int, string> s_CachedStringCount = new Dictionary<int, string>();
             private Dictionary<string, string> m_AssetGUIDToTooltip = new Dictionary<string, string>();
-            private Dictionary<string, string> m_AssetGUIDToConcatenatedNames = new Dictionary<string, string>();
             private Dictionary<string, Dictionary<int, string>> m_NamesListToEllipsedNames = new Dictionary<string, Dictionary<int, string>>();
 
             public Cache() {}
@@ -414,7 +377,6 @@ namespace UnityEditor
                 {
                     string assetGUID = assetGUIDs[index];
                     m_AssetGUIDToTooltip.Remove(assetGUID);
-                    m_AssetGUIDToConcatenatedNames.Remove(assetGUID);
                 }
             }
 
@@ -442,20 +404,6 @@ namespace UnityEditor
                 }
                 ellipsedVersions[characterLength] = ellipsedNames;
                 m_NamesListToEllipsedNames[allNames] = ellipsedVersions;
-            }
-
-            // Failure: assigns empty string ("") to 'names', returns false.
-            // Success: assigns the cached string to 'names', returns true.
-            public bool TryGetConcatenatedNames(string assetGUID, out string names)
-            {
-                return m_AssetGUIDToConcatenatedNames.TryGetValue(assetGUID, out names);
-            }
-
-            // 'assetGUID' will be the key to access the cached 'names'
-            // see TryGetConcatenatedNames() for retrieval.
-            public void StoreConcatenatedNames(string assetGUID, string names)
-            {
-                m_AssetGUIDToConcatenatedNames[assetGUID] = names;
             }
 
             // Failure: assigns empty string ("") to 'tooltipText', returns false.

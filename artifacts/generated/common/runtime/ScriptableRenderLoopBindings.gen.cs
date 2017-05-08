@@ -55,6 +55,7 @@ public partial struct DrawRendererSettings
             public DrawRendererSettings(CullResults cullResults, Camera camera, ShaderPassName shaderPassName)
         {
             _cullResults = cullResults.cullResults;
+
             this.shaderPassName = shaderPassName;
             rendererConfiguration = RendererConfiguration.None;
             flags = DrawRendererFlags.EnableInstancing;
@@ -215,6 +216,7 @@ public partial struct CullResults
 {
     
             public VisibleLight[]           visibleLights;
+            public VisibleLight[]           visibleOffscreenVertexLights;
             public VisibleReflectionProbe[] visibleReflectionProbes;
             internal IntPtr                 cullResults;
     
@@ -248,6 +250,7 @@ public partial struct CullResults
         {
             results.cullResults = IntPtr.Zero;
             results.visibleLights = null;
+            results.visibleOffscreenVertexLights = null;
             results.visibleReflectionProbes = null;
 
             CullingParameters cullingParams;
@@ -279,6 +282,26 @@ public partial struct CullResults
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void FillLightIndices (IntPtr cullResults, ComputeBuffer computeBuffer) ;
+
+    internal int[] GetLightIndexMap()
+        {
+            return GetLightIndexMap(cullResults);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  int[] GetLightIndexMap (IntPtr cullResults) ;
+
+    internal void SetLightIndexMap(int[] mapping)
+        {
+            SetLightIndexMap(cullResults, mapping);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void SetLightIndexMap (IntPtr cullResults, int[] mapping) ;
 
     public bool ComputeSpotShadowMatricesAndCullingPrimitives(int activeLightIndex,
             out Matrix4x4 viewMatrix, out Matrix4x4 projMatrix, out ShadowSplitData shadowSplitData)

@@ -474,7 +474,7 @@ namespace UnityEditor
                     {
                         if (CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
                         {
-                            if (!CollabSettingsManager.inProgressEnabled)
+                            if (!Collab.instance.IsCollabEnabledForCurrentProject() || !CollabSettingsManager.inProgressEnabled)
                                 continue;
                         }
                         else

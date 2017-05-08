@@ -35,6 +35,23 @@ namespace UnityEngine.Experimental.UIElements
         Repaint = 1 << 0
     }
 
+    public abstract class BasePanelDebug
+    {
+        internal bool enabled { get; set; }
+
+        internal virtual bool RecordRepaint(VisualElement visualElement)
+        {
+            return false;
+        }
+
+        internal virtual bool EndRepaint()
+        {
+            return false;
+        }
+
+        internal Func<Event, bool> interceptEvents { get; set; }
+    }
+
     // Passed-in to every element of the visual tree
     public interface IPanel
     {
@@ -46,6 +63,8 @@ namespace UnityEngine.Experimental.UIElements
         ContextType contextType { get; }
 
         VisualElement Pick(Vector2 point);
+
+        BasePanelDebug panelDebug { get; set; }
     }
 
     interface IVisualElementPanel : IPanel
@@ -110,6 +129,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             get { return m_StyleContext; }
         }
+
+        public BasePanelDebug panelDebug { get; set; }
 
         public int instanceID { get; set; }
 
@@ -319,8 +340,9 @@ namespace UnityEngine.Experimental.UIElements
                     return;
                 }
             }
-
-            if (root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
+            if (
+                (panel.panelDebug == null || !panel.panelDebug.RecordRepaint(root)) &&
+                root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
@@ -378,10 +400,16 @@ namespace UnityEngine.Experimental.UIElements
 
                     if (container != null)
                     {
-                        foreach (var child in container)
+                        int count = container.childrenCount;
+                        for (int i = 0; i < count; i++)
                         {
-                            // and children
+                            VisualElement child = container.GetChildAt(i);
                             PaintSubTree(e, child, offset, textureClip, offset, textureClip);
+
+                            if (count != container.childrenCount)
+                            {
+                                throw new NotImplementedException("Visual tree is read-only during repaint");
+                            }
                         }
                     }
                     RenderTexture.active = old;
@@ -408,9 +436,16 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (container != null)
                 {
-                    foreach (var child in container)
+                    int count = container.childrenCount;
+                    for (int i = 0; i < count; i++)
                     {
+                        VisualElement child = container.GetChildAt(i);
                         PaintSubTree(e, child, offset, currentClip, clipTransform, currentGlobalClip);
+
+                        if (count != container.childrenCount)
+                        {
+                            throw new NotImplementedException("Visual tree is read-only during repaint");
+                        }
                     }
                 }
             }
@@ -423,10 +458,18 @@ namespace UnityEngine.Experimental.UIElements
             m_StylePainter.repaintEvent = e;
 
             GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
+
             // paint
             PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position, Matrix4x4.identity, visualTree.position);
-
             GUIClip.Internal_Pop();
+
+            if (panelDebug != null)
+            {
+                GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
+                if (panelDebug.EndRepaint())
+                    this.Dirty(ChangeType.Repaint);
+                GUIClip.Internal_Pop();
+            }
         }
     }
 

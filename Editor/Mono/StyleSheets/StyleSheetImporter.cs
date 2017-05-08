@@ -80,7 +80,7 @@ namespace UnityEditor.StyleSheets
         {
             foreach (ParserStyleRule rule in styleSheet.StyleRules)
             {
-                m_Builder.BeginRule();
+                m_Builder.BeginRule(rule.Line);
 
                 // Note: we must rely on recursion to correctly handle parser types here
                 VisitBaseSelector(rule.Selector);

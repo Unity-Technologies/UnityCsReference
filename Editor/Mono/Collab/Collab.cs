@@ -301,7 +301,7 @@ namespace UnityEditor.Collaboration
             {
                 if (CollabSettingsManager.inProgressEnabled)
                 {
-                    SoftlockViewController.Instance.softLockFilters.AddFavoriteSearchFilters();
+                    SoftlockViewController.Instance.softLockFilters.ShowInFavoriteSearchFilters();
                 }
 
                 CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnProgressEnabledSettingStatusChanged;
@@ -315,12 +315,12 @@ namespace UnityEditor.Collaboration
             if (enabled)
             {
                 instance.StateChanged += instance.collabFilters.OnCollabStateChanged;
-                instance.collabFilters.AddFavoriteSearchFilters();
+                instance.collabFilters.ShowInFavoriteSearchFilters();
                 if (CollabSettingsManager.IsAvailable(CollabSettingType.InProgressEnabled))
                 {
                     if (CollabSettingsManager.inProgressEnabled)
                     {
-                        SoftlockViewController.Instance.softLockFilters.AddFavoriteSearchFilters();
+                        SoftlockViewController.Instance.softLockFilters.ShowInFavoriteSearchFilters();
                     }
                 }
                 else
@@ -332,8 +332,8 @@ namespace UnityEditor.Collaboration
             else
             {
                 instance.StateChanged -= instance.collabFilters.OnCollabStateChanged;
-                instance.collabFilters.RemoveFavoriteSearchFilters();
-                SoftlockViewController.Instance.softLockFilters.RemoveFavoriteSearchFilters();
+                instance.collabFilters.HideFromFavoriteSearchFilters();
+                SoftlockViewController.Instance.softLockFilters.HideFromFavoriteSearchFilters();
                 CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnProgressEnabledSettingStatusChanged;
 
                 if (ProjectBrowser.s_LastInteractedProjectBrowser != null)

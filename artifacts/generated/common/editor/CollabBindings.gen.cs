@@ -96,10 +96,13 @@ internal sealed partial class CollabSettingsManager
 
 internal enum CollabTempFolder
 {
+    None        = 0,
     Base        = 1 << 1,
     Merge       = 1 << 2,
     Original    = 1 << 3,
-    Download    = 1 << 4
+    Download    = 1 << 4,
+    Temp        = 1 << 5,
+    External    = 1 << 6
 }
 
 internal sealed partial class Collab : AssetPostprocessor

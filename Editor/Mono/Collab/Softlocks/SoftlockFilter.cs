@@ -28,10 +28,10 @@ namespace UnityEditor.Collaboration
         {
             if (type == CollabSettingType.InProgressEnabled && (status == CollabSettingStatus.Available))
             {
-                if (CollabSettingsManager.inProgressEnabled)
-                    AddFavoriteSearchFilters();
+                if (Collab.instance.IsCollabEnabledForCurrentProject() && CollabSettingsManager.inProgressEnabled)
+                    ShowInFavoriteSearchFilters();
                 else
-                    RemoveFavoriteSearchFilters();
+                    HideFromFavoriteSearchFilters();
             }
         }
     }

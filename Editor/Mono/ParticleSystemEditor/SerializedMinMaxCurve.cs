@@ -224,11 +224,14 @@ namespace UnityEditor
 
         public void SetMinMaxState(MinMaxCurveState newState, bool addToCurveEditor)
         {
-            if (!stateHasMultipleDifferentValues)
+            if (stateHasMultipleDifferentValues)
             {
-                if (newState == state)
-                    return;
+                Debug.LogError("SetMinMaxState is not allowed with multiple different values");
+                return;
             }
+
+            if (newState == state)
+                return;
 
             MinMaxCurveState oldState = state;
             ParticleSystemCurveEditor sce = m_Module.GetParticleSystemCurveEditor();

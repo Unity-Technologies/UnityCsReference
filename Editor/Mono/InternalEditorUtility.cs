@@ -484,5 +484,12 @@ namespace UnityEditorInternal
 
             return EditorCompilationInterface.GetAllMonoIslandsExt(unityAssemblies, precompiledAssemblies, BuildFlags.None);
         }
+
+        internal static string[] GetCompilationDefinesForPlayer()
+        {
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            return GetCompilationDefines(EditorScriptCompilationOptions.BuildingEmpty, group, target);
+        }
     }
 }

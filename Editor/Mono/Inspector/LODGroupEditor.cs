@@ -1086,6 +1086,8 @@ namespace UnityEditor
         {
             foreach (var renderer in lodRenderer.m_Renderers)
             {
+                if (renderer.objectReferenceValue == null)
+                    continue;
                 var so = new SerializedObject(renderer.objectReferenceValue);
                 var lightmapScaleProp = so.FindProperty("m_ScaleInLightmap");
                 lightmapScaleProp.floatValue = Mathf.Max(0.0f, lodRenderer.m_Scale * (1.0f / LightmapVisualization.GetLightmapLODLevelScale((Renderer)renderer.objectReferenceValue)));

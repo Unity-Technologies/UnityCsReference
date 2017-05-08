@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -73,6 +74,8 @@ namespace UnityEditor
                     CreatePreviewBrush();
 
                 m_BrushProjector.material.mainTexture = m_Preview;
+                if (GraphicsSettings.renderPipelineAsset != null)
+                    m_BrushProjector.material.renderQueue = GraphicsSettings.renderPipelineAsset.GetTerrainBrushPassIndex();
                 m_Brush = brushTex;
 
                 return true;
