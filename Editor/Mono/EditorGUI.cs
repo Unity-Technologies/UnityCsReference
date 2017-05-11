@@ -2218,12 +2218,18 @@ namespace UnityEditor
             // If property is an element in an array, show duplicate and delete menu options
             if (property.propertyPath.LastIndexOf(']') == property.propertyPath.Length - 1)
             {
-                if (pm.GetItemCount() > 0)
+                var parentArrayPropertyPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf(".Array.data["));
+                var parentArrayProperty = property.serializedObject.FindProperty(parentArrayPropertyPath);
+
+                if (!parentArrayProperty.isFixedBuffer)
                 {
-                    pm.AddSeparator("");
+                    if (pm.GetItemCount() > 0)
+                    {
+                        pm.AddSeparator("");
+                    }
+                    pm.AddItem(EditorGUIUtility.TextContent("Duplicate Array Element"), false, TargetChoiceHandler.DuplicateArrayElement, propertyWithPath);
+                    pm.AddItem(EditorGUIUtility.TextContent("Delete Array Element"), false, TargetChoiceHandler.DeleteArrayElement, propertyWithPath);
                 }
-                pm.AddItem(EditorGUIUtility.TextContent("Duplicate Array Element"), false, TargetChoiceHandler.DuplicateArrayElement, propertyWithPath);
-                pm.AddItem(EditorGUIUtility.TextContent("Delete Array Element"), false, TargetChoiceHandler.DeleteArrayElement, propertyWithPath);
             }
 
             // If shift is held down, show debug menu options
@@ -5300,6 +5306,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
                         {
                             property.intValue = newValue;
                         }
+                        break;
+                    }
+                    case SerializedPropertyType.FixedBufferSize:
+                    {
+                        EditorGUI.IntField(position, label, property.intValue);
                         break;
                     }
                     case SerializedPropertyType.Enum:

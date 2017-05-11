@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
+using UnityEditor.Scripting.Compilers;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -187,10 +188,11 @@ namespace UnityEditor.VisualStudioIntegration
                     Where(i => 0 < i._files.Length);
 
                 string otherAssetsProjectPart = GenerateAllAssetProjectPart();
+                var responseFileDefines = ScriptCompilerBase.GetResponseFileDefinesFromFile(MonoCSharpCompiler.ReponseFilename);
 
                 SyncSolution(islands);
                 foreach (MonoIsland island in RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()))
-                    SyncProject(island, otherAssetsProjectPart);
+                    SyncProject(island, otherAssetsProjectPart, responseFileDefines);
 
                 if (InternalEditorUtility.GetScriptEditorFromPreferences() == InternalEditorUtility.ScriptEditor.VisualStudioCode)
                     WriteVSCodeSettingsFiles();
@@ -214,9 +216,9 @@ namespace UnityEditor.VisualStudioIntegration
             return projectBuilder.ToString();
         }
 
-        void SyncProject(MonoIsland island, string otherAssetsProjectPart)
+        void SyncProject(MonoIsland island, string otherAssetsProjectPart, string[] additionalDefines)
         {
-            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), otherAssetsProjectPart));
+            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), otherAssetsProjectPart, additionalDefines));
         }
 
         private static void SyncFileIfNotChanged(string filename, string newContents)
@@ -253,9 +255,9 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        string ProjectText(MonoIsland island, Mode mode, string allAssetsProject)
+        string ProjectText(MonoIsland island, Mode mode, string allAssetsProject, string[] additionalDefines)
         {
-            var projectBuilder = new StringBuilder(ProjectHeader(island));
+            var projectBuilder = new StringBuilder(ProjectHeader(island, additionalDefines));
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
@@ -358,9 +360,10 @@ namespace UnityEditor.VisualStudioIntegration
             return Path.Combine(_projectDirectory, string.Format("{0}.sln", _projectName));
         }
 
-        private string ProjectHeader(MonoIsland island)
+        private string ProjectHeader(MonoIsland island, string[] additionalDefines)
         {
             string targetframeworkversion = "v3.5";
+            string targetLanguageVersion = "4";
             string toolsversion = "4.0";
             string productversion = "10.0.20506";
             ScriptingLanguage language = ScriptingLanguageFor(island);
@@ -368,6 +371,11 @@ namespace UnityEditor.VisualStudioIntegration
             if (island._api_compatibility_level == ApiCompatibilityLevel.NET_4_6)
             {
                 targetframeworkversion = "v4.6";
+                targetLanguageVersion = "6";
+            }
+            else if (InternalEditorUtility.GetScriptEditorFromPreferences() == InternalEditorUtility.ScriptEditor.Rider)
+            {
+                targetframeworkversion = "v4.5";
             }
             else if (_settings.VisualStudioVersion == 9)
             {
@@ -380,11 +388,12 @@ namespace UnityEditor.VisualStudioIntegration
                 toolsversion, productversion, ProjectGuid(island._output),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
-                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Distinct().ToArray()),
+                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Concat(additionalDefines).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(island._output),
                 EditorSettings.projectGenerationRootNamespace,
-                targetframeworkversion
+                targetframeworkversion,
+                targetLanguageVersion
             };
 
             try

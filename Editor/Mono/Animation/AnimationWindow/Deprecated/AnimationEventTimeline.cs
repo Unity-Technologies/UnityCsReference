@@ -83,13 +83,27 @@ namespace UnityEditor
                     awEvents.Add(AnimationWindowEvent.Edit(gameObject, clip, index));
             }
 
-            Selection.objects = awEvents.ToArray();
+            if (awEvents.Count > 0)
+            {
+                Selection.objects = awEvents.ToArray();
+            }
+            else
+            {
+                ClearSelection();
+            }
         }
 
         public void EditEvent(GameObject gameObject, AnimationClip clip, int index)
         {
             AnimationWindowEvent awEvent = AnimationWindowEvent.Edit(gameObject, clip, index);
             Selection.activeObject = awEvent;
+        }
+
+        public void ClearSelection()
+        {
+            // Do not unecessarily clear selection.  Only clear if selection already is animation window event.
+            if (Selection.activeObject is AnimationWindowEvent)
+                Selection.activeObject = null;
         }
 
         public void DeleteEvents(AnimationClip clip, bool[] deleteIndices)

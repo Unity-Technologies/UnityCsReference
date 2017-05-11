@@ -8,11 +8,14 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor.Utils;
+using System.Text;
 
 namespace UnityEditor.Scripting.Compilers
 {
     class MonoCSharpCompiler : MonoScriptCompilerBase
     {
+        public static readonly string ReponseFilename = "mcs.rsp";
+
         public MonoCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
@@ -50,12 +53,12 @@ namespace UnityEditor.Scripting.Compilers
                 if (File.Exists(path)) arguments.Add("-r:" + PrepareFileName(path));
             }
 
-            if (!AddCustomResponseFileIfPresent(arguments, "mcs.rsp"))
+            if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename))
             {
                 if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0_Subset && AddCustomResponseFileIfPresent(arguments, "smcs.rsp"))
-                    Debug.LogWarning("Using obsolete custom response file 'smcs.rsp'. Please use 'mcs.rsp' instead.");
+                    Debug.LogWarning(string.Format("Using obsolete custom response file 'smcs.rsp'. Please use '{0}' instead.", ReponseFilename));
                 else if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0 && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
-                    Debug.LogWarning("Using obsolete custom response file 'gmcs.rsp'. Please use 'mcs.rsp' instead.");
+                    Debug.LogWarning(string.Format("Using obsolete custom response file 'gmcs.rsp'. Please use '{0}' instead.", ReponseFilename));
             }
             return StartCompiler(_island._target, GetCompilerPath(arguments), arguments, false, MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation));
         }

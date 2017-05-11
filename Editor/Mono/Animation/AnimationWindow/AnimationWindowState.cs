@@ -1463,7 +1463,10 @@ namespace UnityEditorInternal
                     selectedGameObjectIDs.Add(t.gameObject.GetInstanceID());
             }
 
-            UnityEditor.Selection.instanceIDs = selectedGameObjectIDs.ToArray();
+            if (selectedGameObjectIDs.Count > 0)
+                UnityEditor.Selection.instanceIDs = selectedGameObjectIDs.ToArray();
+            else
+                UnityEditor.Selection.activeGameObject = rootGameObject;
         }
 
         public float clipFrameRate

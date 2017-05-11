@@ -205,9 +205,9 @@ namespace UnityEditor
                     break;
                 case EventType.ExecuteCommand:
                     string commandName = evt.commandName;
-                    if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && !property.isScript)
+                    if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && (property == null || !property.isScript))
                         return AssignSelectedObject(property, validator, objType, evt);
-                    else if (commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && property.isScript)
+                    else if (commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && property != null && property.isScript)
                     {
                         if (ObjectSelector.get.GetInstanceID() == 0)
                         {

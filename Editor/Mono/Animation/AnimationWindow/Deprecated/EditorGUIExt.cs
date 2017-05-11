@@ -609,7 +609,8 @@ namespace UnityEditor
                         Rect selRect = new Rect(0, 0, rect.width, rect.height);
                         selRect.x = min;
                         selRect.width = max - min;
-                        if (selRect.width != 0)
+                        // Display if bigger than 1 pixel.
+                        if (selRect.width > 1)
                             GUI.Box(selRect, "", ms_Styles.selectionRect);
                     }
 

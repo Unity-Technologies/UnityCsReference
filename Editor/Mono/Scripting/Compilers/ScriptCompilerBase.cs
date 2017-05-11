@@ -99,6 +99,45 @@ namespace UnityEditor.Scripting.Compilers
             return _responseFile;
         }
 
+        public static string[] GetResponseFileDefinesFromFile(string responseFileName)
+        {
+            var relativeCustomResponseFilePath = Path.Combine("Assets", responseFileName);
+
+            if (!File.Exists(relativeCustomResponseFilePath))
+                return new string[0];
+
+            var responseFileText = File.ReadAllText(relativeCustomResponseFilePath);
+
+            return GetResponseFileDefinesFromText(responseFileText);
+        }
+
+        public static string[] GetResponseFileDefinesFromText(string responseFileText)
+        {
+            const string defineString = "-define:";
+            var defineStringLength = defineString.Length;
+
+            if (!responseFileText.Contains(defineString))
+                return new string[0];
+
+            List<string> result = new List<string>();
+
+            var textLines = responseFileText.Split(' ', '\n');
+
+            foreach (var line in textLines)
+            {
+                var trimmedLine = line.Trim();
+
+                if (trimmedLine.StartsWith(defineString))
+                {
+                    var definesSubString = trimmedLine.Substring(defineStringLength);
+                    var defines = definesSubString.Split(',', ';');
+                    result.AddRange(defines);
+                }
+            }
+
+            return result.ToArray();
+        }
+
         protected static string PrepareFileName(string fileName)
         {
             return CommandLineFormatter.PrepareFileName(fileName);

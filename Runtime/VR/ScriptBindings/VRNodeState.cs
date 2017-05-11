@@ -16,9 +16,7 @@ namespace UnityEngine.VR
         PositionAvailable = 0x00000001,
         RotationAvailable = 0x00000002,
         VelocityAvailable = 0x00000004,
-        AngularVelocityAvailable = 0x00000008,
         AccelerationAvailable = 0x00000010,
-        AngularAccelerationAvailable = 0x00000020
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -101,29 +99,12 @@ namespace UnityEngine.VR
             }
         }
 
-        public Quaternion angularVelocity
-        {
-            set
-            {
-                m_AngularVelocity = value;
-                m_AvailableFields |= AvailableTrackingData.AngularVelocityAvailable;
-            }
-        }
         public Vector3 acceleration
         {
             set
             {
                 m_Acceleration = value;
                 m_AvailableFields |= AvailableTrackingData.AccelerationAvailable;
-            }
-        }
-
-        public Quaternion angularAcceleration
-        {
-            set
-            {
-                m_AngularAcceleration = value;
-                m_AvailableFields |= AvailableTrackingData.AngularAccelerationAvailable;
             }
         }
 
@@ -143,19 +124,9 @@ namespace UnityEngine.VR
             return TryGet<Vector3>(m_Velocity, AvailableTrackingData.VelocityAvailable, out velocity);
         }
 
-        public bool TryGetAngularVelocity(out Quaternion angularVelocity)
-        {
-            return TryGet<Quaternion>(m_AngularVelocity, AvailableTrackingData.AngularVelocityAvailable, out angularVelocity);
-        }
-
         public bool TryGetAcceleration(out Vector3 acceleration)
         {
             return TryGet<Vector3>(m_Acceleration, AvailableTrackingData.AccelerationAvailable, out acceleration);
-        }
-
-        public bool TryGetAngularAcceleration(out Quaternion angularAcceleration)
-        {
-            return TryGet<Quaternion>(m_AngularAcceleration, AvailableTrackingData.AngularAccelerationAvailable, out angularAcceleration);
         }
 
         private bool TryGet<T>(T inValue, AvailableTrackingData availabilityFlag, out T outValue) where T : new()

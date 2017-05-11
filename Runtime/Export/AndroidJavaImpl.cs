@@ -341,17 +341,17 @@ namespace UnityEngine
             else if (typeof(FieldType) == typeof(AndroidJavaClass))
             {
                 IntPtr jclass = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
-                return (FieldType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                return (jclass == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaClassDeleteLocalRef(jclass);
             }
             else if (typeof(FieldType) == typeof(AndroidJavaObject))
             {
                 IntPtr jobject = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
-                return (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
             }
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
-                return (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
+                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
             }
             else
             {
@@ -505,17 +505,17 @@ namespace UnityEngine
             else if (typeof(FieldType) == typeof(AndroidJavaClass))
             {
                 IntPtr jclass = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
-                return (FieldType)(object)AndroidJavaClassDeleteLocalRef(jclass);
+                return (jclass == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaClassDeleteLocalRef(jclass);
             }
             else if (typeof(FieldType) == typeof(AndroidJavaObject))
             {
                 IntPtr jobject = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
-                return (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
+                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
             }
             else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
-                return (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
+                return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJNIHelper.ConvertFromJNIArray<FieldType>(jobject);
             }
             else
             {

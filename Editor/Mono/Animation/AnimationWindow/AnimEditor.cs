@@ -255,7 +255,11 @@ namespace UnityEditor
             }
             else
             {
-                if (triggerFraming && Event.current.type == EventType.Repaint)
+                Event evt = Event.current;
+                if (evt.type == EventType.MouseDown && contentLayoutRect.Contains(evt.mousePosition))
+                    m_Events.ClearSelection();
+
+                if (triggerFraming && evt.type == EventType.Repaint)
                 {
                     m_DopeSheet.FrameClip();
                     m_CurveEditor.FrameClip(true, true);
