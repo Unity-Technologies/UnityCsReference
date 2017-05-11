@@ -57,7 +57,9 @@ public enum SerializedPropertyType
     Gradient = 16,
     
     Quaternion = 17,
-    ExposedReference = 18
+    ExposedReference = 18,
+    
+    FixedBufferSize = 19
 }
 
 public sealed partial class SerializedObject : IDisposable
@@ -703,6 +705,34 @@ public SerializedProperty GetEndProperty( [uei.DefaultValue("false")] bool inclu
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool MoveArrayElement (int srcIndex, int dstIndex) ;
+
+    public extern  bool isFixedBuffer
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern  int fixedBufferSize
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public SerializedProperty GetFixedBufferElementAtIndex(int index)
+        {
+            SerializedProperty prop = Copy();
+            if (prop.GetFixedBufferAtIndexInternal(index))
+                return prop;
+            else
+                return null;
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private bool GetFixedBufferAtIndexInternal (int index) ;
 
 }
 

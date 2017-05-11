@@ -108,9 +108,9 @@ namespace UnityEngine.Experimental.UIElements
             if (s_BeginContainerCallback != null)
                 s_BeginContainerCallback(container);
 
-            GUI.skin = null;
+
             GUILayoutUtility.BeginContainer(cache);
-            GUI.changed = false;
+            GUIUtility.ResetGlobalState();
 
             Matrix4x4 g = container.globalTransform;
             GUI.matrix = g;

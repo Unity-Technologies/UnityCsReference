@@ -618,7 +618,8 @@ namespace UnityEditorInternal
             for (int i = 0; i < state.allCurves.Count; ++i)
             {
                 AnimationWindowCurve curve = state.allCurves[i];
-                if (Array.Exists(bindings, binding => curve.binding.Equals(binding)) || Array.Exists(objectCurveBindings, binding => curve.binding.Equals(binding)))
+                EditorCurveBinding remappedBinding = RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(curve.binding, m_CandidateClip);
+                if (Array.Exists(bindings, binding => remappedBinding.Equals(binding)) || Array.Exists(objectCurveBindings, binding => remappedBinding.Equals(binding)))
                     curves.Add(curve);
             }
 

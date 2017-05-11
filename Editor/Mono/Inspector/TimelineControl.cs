@@ -41,6 +41,9 @@ namespace UnityEditor
         private float m_LeftThumbOffset = 0f;
         private float m_RightThumbOffset = 0f;
 
+        private float m_TimeStartDrag = 0f;
+        private float m_TimeOffset = 0f;
+
         private enum DragStates { None, LeftSelection, RightSelection, FullSelection, Destination, Source, Playhead, TimeArea };
         private DragStates m_DragState = DragStates.None;
 
@@ -504,6 +507,8 @@ namespace UnityEditor
                         m_LeftThumbOffset = 0f;
                     if (m_DragState == DragStates.RightSelection)
                         m_RightThumbOffset = 0f;
+                    if (m_DragState == DragStates.Playhead)
+                        m_TimeOffset = 0f;
                     if (m_DragState == DragStates.FullSelection)
                     {
                         m_LeftThumbOffset = 0f;
@@ -519,7 +524,10 @@ namespace UnityEditor
                         EditorGUIUtility.hotControl = id;
                         EditorGUIUtility.keyboardControl = id;
                         if (playHeadRect.Contains(evt.mousePosition))
+                        {
                             m_DragState = DragStates.Playhead;
+                            m_TimeStartDrag = m_TimeArea.TimeToPixel(Time, r);
+                        }
                         else if (srcRect.Contains(evt.mousePosition))
                             m_DragState = DragStates.Source;
                         else if (dstRect.Contains(evt.mousePosition))
@@ -576,7 +584,8 @@ namespace UnityEditor
                             case DragStates.Playhead:
                                 if ((evt.delta.x > 0 && evt.mousePosition.x > srcStart) ||
                                     (evt.delta.x < 0 && evt.mousePosition.x <= m_TimeArea.TimeToPixel(SampleStopTime, r)))
-                                    Time = m_TimeArea.PixelToTime(playPoint + evt.delta.x, r);
+                                    m_TimeOffset += evt.delta.x;
+                                Time = m_TimeArea.PixelToTime(m_TimeStartDrag + m_TimeOffset, r);
 
                                 break;
                             case DragStates.None:
@@ -603,6 +612,7 @@ namespace UnityEditor
                     hasModifiedData = WasDraggingData();
                     m_LeftThumbOffset = 0f;
                     m_RightThumbOffset = 0f;
+                    m_TimeOffset = 0f;
                     m_DstDragOffset = 0f;
                     EditorGUIUtility.hotControl = 0;
                     evt.Use();

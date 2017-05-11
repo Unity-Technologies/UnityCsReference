@@ -296,6 +296,9 @@ namespace UnityEngine
         ETC_RGB4_3DS = 60,
         ETC_RGBA8_3DS = 61,
 
+        RG16 = 62,
+        R8 = 63,
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
         PVRTC_2BPP_RGB = -127,
@@ -350,7 +353,8 @@ namespace UnityEngine
         // kRTFormatVideo = 21,
         RGB111110Float = 22,
         RG32 = 23,
-        RGBAUShort = 24
+        RGBAUShort = 24,
+        RG16 = 25,
     }
 
     public enum VRTextureUsage

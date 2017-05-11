@@ -531,7 +531,7 @@ namespace UnityEditor.U2D
 
         private void DrawGizmos()
         {
-            if (eventSystem.current.type == EventType.Layout || eventSystem.current.type == EventType.Repaint)
+            if (eventSystem.current.type == EventType.Repaint)
             {
                 var selected = spriteEditorWindow.selectedSpriteRect;
                 if (selected != null)

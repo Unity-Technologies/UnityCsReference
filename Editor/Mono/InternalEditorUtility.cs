@@ -18,7 +18,7 @@ namespace UnityEditorInternal
     partial class InternalEditorUtility
     {
         // Keep in sync with enum ScriptEditorType in ExternalEditor.h
-        public enum ScriptEditor { Internal = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Other = 32 }
+        public enum ScriptEditor { Internal = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Rider = 5, Other = 32 }
 
         public static ScriptEditor GetScriptEditorFromPath(string path)
         {
@@ -44,6 +44,10 @@ namespace UnityEditorInternal
 
             if (filename == "code.exe" || filename == "visualstudiocode.app" || filename == "vscode.app" || filename == "code.app" || filename == "code")
                 return ScriptEditor.VisualStudioCode;
+
+            if (filename == "rider.exe" || filename == "rider64.exe" || filename == "rider32.exe"
+                || filename == "ridereap.app" || filename == "rider.app" || filename == "rider.sh")
+                return ScriptEditor.Rider;
 
             return ScriptEditor.Other;
         }

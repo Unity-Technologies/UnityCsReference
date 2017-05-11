@@ -249,7 +249,7 @@ namespace Unity.SerializationLogic
             // thus keep those checks below
 
             //the type of the field must be serializable in the first place.
-            if (!IsFieldTypeSerializable(typeResolver.Resolve(fieldDefinition.FieldType)))
+            if (!IsFieldTypeSerializable(typeResolver.Resolve(fieldDefinition.FieldType), fieldDefinition))
                 return false;
 
             if (IsDelegate(typeResolver.Resolve(fieldDefinition.FieldType)))
@@ -382,9 +382,9 @@ namespace Unity.SerializationLogic
             return false;
         }
 
-        private static bool IsFieldTypeSerializable(TypeReference typeReference)
+        private static bool IsFieldTypeSerializable(TypeReference typeReference, FieldDefinition fieldDefinition)
         {
-            return IsTypeSerializable(typeReference) || IsSupportedCollection(typeReference);
+            return IsTypeSerializable(typeReference) || IsSupportedCollection(typeReference) || IsFixedBuffer(fieldDefinition);
         }
 
         private static bool IsTypeSerializable(TypeReference typeReference)
@@ -410,6 +410,60 @@ namespace Unity.SerializationLogic
             }
 
             return false;
+        }
+
+        public static bool IsFixedBuffer(FieldDefinition fieldDefinition)
+        {
+            return GetFixedBufferAttribute(fieldDefinition) != null;
+        }
+
+        public static CustomAttribute GetFixedBufferAttribute(FieldDefinition fieldDefinition)
+        {
+            if (!fieldDefinition.HasCustomAttributes)
+                return null;
+
+            return fieldDefinition.CustomAttributes.SingleOrDefault(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.FixedBufferAttribute");
+        }
+
+        public static int GetFixedBufferLength(FieldDefinition fieldDefinition)
+        {
+            var fixedBufferAttribute = GetFixedBufferAttribute(fieldDefinition);
+
+            if (fixedBufferAttribute == null)
+                throw new ArgumentException(string.Format("Field '{0}' is not a fixed buffer field.", fieldDefinition.FullName));
+
+            var size = (Int32)fixedBufferAttribute.ConstructorArguments[1].Value;
+
+            return size;
+        }
+
+        public static int PrimitiveTypeSize(TypeReference type)
+        {
+            switch (type.MetadataType)
+            {
+                case MetadataType.Boolean:
+                case MetadataType.Byte:
+                case MetadataType.SByte:
+                    return 1;
+
+                case MetadataType.Char:
+                case MetadataType.Int16:
+                case MetadataType.UInt16:
+                    return 2;
+
+                case MetadataType.Int32:
+                case MetadataType.UInt32:
+                case MetadataType.Single:
+                    return 4;
+
+                case MetadataType.Int64:
+                case MetadataType.UInt64:
+                case MetadataType.Double:
+                    return 8;
+
+                default:
+                    throw new ArgumentException(string.Format("Unsupported {0}", type.MetadataType));
+            }
         }
 
         private static bool IsSerializablePrimitive(TypeReference typeReference)

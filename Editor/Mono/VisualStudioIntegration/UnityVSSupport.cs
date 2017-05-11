@@ -124,11 +124,14 @@ namespace UnityEditor.VisualStudioIntegration
             // In the user addins repository, the addins are suffixed by their versions, like `MonoDevelop.Unity.1.0`
             // When installing another local user addin, MD will remove files inside the folder
             // So we browse all VSTUM addins, and return the one with a bridge, which is the one MD will load
-            foreach (var folder in Directory.GetDirectories(localAddins, addinName + "*", SearchOption.TopDirectoryOnly))
+            if (Directory.Exists(localAddins))
             {
-                bridge = Path.Combine(folder, addinBridge);
-                if (File.Exists(bridge))
-                    return bridge;
+                foreach (var folder in Directory.GetDirectories(localAddins, addinName + "*", SearchOption.TopDirectoryOnly))
+                {
+                    bridge = Path.Combine(folder, addinBridge);
+                    if (File.Exists(bridge))
+                        return bridge;
+                }
             }
 
             // Check in Visual Studio.app/
