@@ -293,7 +293,7 @@ public static string BuildStreamedSceneAssetBundle(string[] levels, string locat
     [System.Obsolete ("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc, BuildOptions options)
         {
-            BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
             return BuildStreamedSceneAssetBundle(levels, locationPath, buildTargetGroup, target, out crc, options);
         }
     
@@ -383,7 +383,7 @@ public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pa
     [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
             return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform);
         }
     
@@ -444,7 +444,7 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
     [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
             return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform);
         }
     
@@ -504,7 +504,7 @@ public static AssetBundleManifest BuildAssetBundles(string outputPath, [uei.Defa
     
     public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
             return BuildAssetBundles(outputPath, assetBundleOptions, targetPlatformGroup, targetPlatform);
         }
     
@@ -540,7 +540,7 @@ public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBund
     
     public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = EditorUserBuildSettings.activeBuildTargetGroup;
+            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
             return BuildAssetBundles(outputPath, builds, assetBundleOptions, targetPlatformGroup, targetPlatform);
         }
     

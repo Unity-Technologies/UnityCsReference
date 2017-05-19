@@ -237,7 +237,7 @@ namespace UnityEditor
                                     throw new BuildMethodException();
 
                                 newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-                                if (newLocation.Length == 0 || !System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(newLocation)))
+                                if (!BuildLocationIsValid(newLocation))
                                     throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
 
                                 break;

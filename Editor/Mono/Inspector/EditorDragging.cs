@@ -115,7 +115,7 @@ namespace UnityEditor
                                 }
                             }
 
-                            if (m_TargetAbove && m_InspectorWindow.EditorHasLargeHeader(m_TargetIndex))
+                            if (m_TargetAbove && m_InspectorWindow.EditorHasLargeHeader(m_TargetIndex, editors))
                             {
                                 m_TargetIndex--;
                                 while (m_TargetIndex >= 0 && m_InspectorWindow.ShouldCullEditor(editors, m_TargetIndex))

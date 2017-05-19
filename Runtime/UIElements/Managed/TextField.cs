@@ -87,7 +87,7 @@ namespace UnityEngine.Experimental.UIElements
             m_Styles.WriteToGUIStyle(style);
         }
 
-        public override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             // TODO: Use painter instead of either style or editor
             // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print

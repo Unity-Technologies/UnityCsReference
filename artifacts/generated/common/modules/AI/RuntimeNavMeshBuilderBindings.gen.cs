@@ -23,6 +23,7 @@ public partial struct NavMeshBuildSettings
             public float agentHeight { get { return m_AgentHeight; } set { m_AgentHeight = value; } }
             public float agentSlope { get { return m_AgentSlope; } set { m_AgentSlope = value; } }
             public float agentClimb { get { return m_AgentClimb; } set { m_AgentClimb = value; } }
+            public float minRegionArea { get { return m_MinRegionArea; } set { m_MinRegionArea = value; } }
             public bool overrideVoxelSize { get { return m_OverrideVoxelSize != 0; } set { m_OverrideVoxelSize = value ? 1 : 0; } }
             public float voxelSize { get { return m_VoxelSize; } set { m_VoxelSize = value; } }
             public bool overrideTileSize { get { return m_OverrideTileSize != 0; } set { m_OverrideTileSize = value ? 1 : 0; } }
@@ -35,7 +36,7 @@ public partial struct NavMeshBuildSettings
             private float m_AgentClimb;
             private float m_LedgeDropHeight;    
             private float m_MaxJumpAcrossDistance; 
-            private float m_MinRegionArea;      
+            private float m_MinRegionArea;
             private int m_OverrideVoxelSize;
             private float m_VoxelSize;
             private int m_OverrideTileSize;

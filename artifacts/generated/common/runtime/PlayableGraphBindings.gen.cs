@@ -80,32 +80,45 @@ public partial struct PlayableGraph
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static bool INTERNAL_CALL_IsDoneInternal (ref PlayableGraph graph);
+    public bool IsPlaying()
+        {
+            return IsPlayingInternal(ref this);
+        }
+    
+    
+    internal static bool IsPlayingInternal (ref PlayableGraph graph) {
+        return INTERNAL_CALL_IsPlayingInternal ( ref graph );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_IsPlayingInternal (ref PlayableGraph graph);
     public IExposedPropertyTable GetResolver()
         {
-            return InternalGetResolver(ref this);
+            return GetResolverInternal(ref this);
         }
     
     
     public void SetResolver(IExposedPropertyTable value)
         {
-            InternalSetResolver(ref this, value);
+            SetResolverInternal(ref this, value);
         }
     
     
-    internal static IExposedPropertyTable InternalGetResolver (ref PlayableGraph graph) {
-        return INTERNAL_CALL_InternalGetResolver ( ref graph );
+    internal static IExposedPropertyTable GetResolverInternal (ref PlayableGraph graph) {
+        return INTERNAL_CALL_GetResolverInternal ( ref graph );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static IExposedPropertyTable INTERNAL_CALL_InternalGetResolver (ref PlayableGraph graph);
-    internal static void InternalSetResolver (ref PlayableGraph graph, IExposedPropertyTable resolver) {
-        INTERNAL_CALL_InternalSetResolver ( ref graph, resolver );
+    private extern static IExposedPropertyTable INTERNAL_CALL_GetResolverInternal (ref PlayableGraph graph);
+    internal static void SetResolverInternal (ref PlayableGraph graph, IExposedPropertyTable resolver) {
+        INTERNAL_CALL_SetResolverInternal ( ref graph, resolver );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetResolver (ref PlayableGraph graph, IExposedPropertyTable resolver);
+    private extern static void INTERNAL_CALL_SetResolverInternal (ref PlayableGraph graph, IExposedPropertyTable resolver);
     public void Play()
         {
             PlayInternal(ref this);

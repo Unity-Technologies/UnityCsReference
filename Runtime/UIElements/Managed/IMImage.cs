@@ -21,7 +21,7 @@ namespace UnityEngine.Experimental.UIElements
             return NonInteractiveControlID;
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             if (image == null)
             {

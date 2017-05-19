@@ -18,16 +18,16 @@ namespace UnityEditor.U2D
     {
         class SpriteAtlasInspectorPlatformSettingView : TexturePlatformSettingsView
         {
-            private bool m_HideMaxSizeOption;
+            private bool m_ShowMaxSizeOption;
 
-            public SpriteAtlasInspectorPlatformSettingView(bool hideMaxSizeOption)
+            public SpriteAtlasInspectorPlatformSettingView(bool showMaxSizeOption)
             {
-                m_HideMaxSizeOption = hideMaxSizeOption;
+                m_ShowMaxSizeOption = showMaxSizeOption;
             }
 
             public override int DrawMaxSize(int defaultValue, bool isMixedValue, out bool changed)
             {
-                if (!m_HideMaxSizeOption)
+                if (m_ShowMaxSizeOption)
                     return base.DrawMaxSize(defaultValue, isMixedValue, out changed);
                 else
                     changed = false;
@@ -338,6 +338,9 @@ namespace UnityEditor.U2D
                 bool setToVariant = atlasType == AtlasType.Variant;
                 foreach (SpriteAtlas sa in targets)
                     sa.SetIsVariant(setToVariant);
+
+                // Reinit the platform setting view
+                m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(AllTargetsAreMaster());
             }
 
             if (atlasType == AtlasType.Variant)
@@ -468,14 +471,13 @@ namespace UnityEditor.U2D
 
         private void HandlePackableListUI()
         {
-            // EditorGUI.Foldout will use the DragUpdated event after a short time. We need the Drag events perform longer than that.
-            var eventBeforeFoldout = new Event(Event.current);
+            var currentEvent = Event.current;
+            var usedEvent = false;
 
             Rect rect = EditorGUILayout.GetControlRect();
-            m_PackableListExpanded = EditorGUI.Foldout(rect, m_PackableListExpanded, s_Styles.packableListLabel, true);
 
             var controlID = EditorGUIUtility.s_LastControlID;
-            switch (eventBeforeFoldout.type)
+            switch (currentEvent.type)
             {
                 case EventType.DragExited:
                     if (GUI.enabled)
@@ -484,7 +486,7 @@ namespace UnityEditor.U2D
 
                 case EventType.DragUpdated:
                 case EventType.DragPerform:
-                    if (rect.Contains(eventBeforeFoldout.mousePosition) && GUI.enabled)
+                    if (rect.Contains(currentEvent.mousePosition) && GUI.enabled)
                     {
                         // Check each single object, so we can add multiple objects in a single drag.
                         var didAcceptDrag = false;
@@ -494,7 +496,7 @@ namespace UnityEditor.U2D
                             if (IsPackable(obj))
                             {
                                 DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                                if (eventBeforeFoldout.type == EventType.DragPerform)
+                                if (currentEvent.type == EventType.DragPerform)
                                 {
                                     m_Packables.AppendFoldoutPPtrValue(obj);
                                     didAcceptDrag = true;
@@ -508,16 +510,16 @@ namespace UnityEditor.U2D
                         {
                             GUI.changed = true;
                             DragAndDrop.AcceptDrag();
-                            eventBeforeFoldout.Use();
+                            usedEvent = true;
                         }
                     }
                     break;
                 case EventType.ValidateCommand:
-                    if (eventBeforeFoldout.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
-                        eventBeforeFoldout.Use();
+                    if (currentEvent.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                        usedEvent = true;
                     break;
                 case EventType.ExecuteCommand:
-                    if (eventBeforeFoldout.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                    if (currentEvent.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
                     {
                         var obj = ObjectSelector.GetCurrentObject();
                         if (IsPackable(obj))
@@ -526,10 +528,16 @@ namespace UnityEditor.U2D
                             m_PackableList.index = m_Packables.arraySize - 1;
                         }
 
-                        eventBeforeFoldout.Use();
+                        usedEvent = true;
                     }
                     break;
             }
+
+            // Handle Foldout after we handle the current event because Foldout might process the drag and drop event and used it.
+            m_PackableListExpanded = EditorGUI.Foldout(rect, m_PackableListExpanded, s_Styles.packableListLabel, true);
+
+            if (usedEvent)
+                currentEvent.Use();
 
             if (m_PackableListExpanded)
             {

@@ -145,10 +145,18 @@ namespace UnityEditor
             EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
         }
 
-        // This overload is used by the Build & Run menu item & hot key - does not prompt for build location
+        static bool BuildLocationIsValid(string path)
+        {
+            return path.Length > 0 && System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));
+        }
+
+        // This overload is used by the Build & Run menu item & hot key - prompt for location only if the configured
+        // output location is not valid.
         static void BuildPlayerAndRun()
         {
-            BuildPlayerAndRun(false);
+            var buildTarget = CalculateSelectedBuildTarget();
+            var buildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
+            BuildPlayerAndRun(!BuildLocationIsValid(buildLocation));
         }
 
         // This overload is used by the default player window, to always prompt for build location

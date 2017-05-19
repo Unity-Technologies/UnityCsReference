@@ -78,7 +78,7 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             int count;
             float elemWidth;

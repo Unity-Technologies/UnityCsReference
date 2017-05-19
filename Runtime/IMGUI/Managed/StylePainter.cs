@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
-    public interface IStylePainter
+    interface IStylePainter
     {
         void DrawRect(Rect screenRect, Color color, float borderWidth = 0.0f, float borderRadius = 0.0f);
         void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f, int leftBorder = 0, int rightBorder = 0, int topBorder = 0, int bottomBorder = 0);
@@ -16,7 +16,8 @@ namespace UnityEngine
         Rect currentWorldClip { get; set; }
         Vector2 mousePosition { get; set; }
 
-        Event repaintEvent { get; }
+        Event repaintEvent { get; set; }
+        float opacity { get; set; }
 
         float ComputeTextWidth(string text, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);
         float ComputeTextHeight(string text, float width, bool wordWrap, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);

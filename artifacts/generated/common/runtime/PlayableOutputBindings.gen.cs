@@ -108,84 +108,84 @@ public partial struct PlayableOutputHandle
     private extern static void INTERNAL_CALL_SetInternalUserData (ref PlayableOutputHandle handle, [Writable]Object target);
     internal PlayableHandle GetSourcePlayable()
         {
-            return InternalGetSourcePlayable(ref this);
+            return GetSourcePlayableInternal(ref this);
         }
     
     
     internal void SetSourcePlayable(PlayableHandle value)
         {
-            InternalSetSourcePlayable(ref this, ref value);
+            SetSourcePlayableInternal(ref this, ref value);
         }
     
     
-    internal static PlayableHandle InternalGetSourcePlayable (ref PlayableOutputHandle handle) {
+    internal static PlayableHandle GetSourcePlayableInternal (ref PlayableOutputHandle handle) {
         PlayableHandle result;
-        INTERNAL_CALL_InternalGetSourcePlayable ( ref handle, out result );
+        INTERNAL_CALL_GetSourcePlayableInternal ( ref handle, out result );
         return result;
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalGetSourcePlayable (ref PlayableOutputHandle handle, out PlayableHandle value);
-    internal static void InternalSetSourcePlayable (ref PlayableOutputHandle handle, ref PlayableHandle target) {
-        INTERNAL_CALL_InternalSetSourcePlayable ( ref handle, ref target );
+    private extern static void INTERNAL_CALL_GetSourcePlayableInternal (ref PlayableOutputHandle handle, out PlayableHandle value);
+    internal static void SetSourcePlayableInternal (ref PlayableOutputHandle handle, ref PlayableHandle target) {
+        INTERNAL_CALL_SetSourcePlayableInternal ( ref handle, ref target );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetSourcePlayable (ref PlayableOutputHandle handle, ref PlayableHandle target);
+    private extern static void INTERNAL_CALL_SetSourcePlayableInternal (ref PlayableOutputHandle handle, ref PlayableHandle target);
     internal int GetSourceInputPort()
         {
-            return InternalGetSourceInputPort(ref this);
+            return GetSourceInputPortInternal(ref this);
         }
     
     
     internal void SetSourceInputPort(int value)
         {
-            InternalSetSourceInputPort(ref this, value);
+            SetSourceInputPortInternal(ref this, value);
         }
     
     
-    internal static int InternalGetSourceInputPort (ref PlayableOutputHandle handle) {
-        return INTERNAL_CALL_InternalGetSourceInputPort ( ref handle );
+    internal static int GetSourceInputPortInternal (ref PlayableOutputHandle handle) {
+        return INTERNAL_CALL_GetSourceInputPortInternal ( ref handle );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static int INTERNAL_CALL_InternalGetSourceInputPort (ref PlayableOutputHandle handle);
-    internal static void InternalSetSourceInputPort (ref PlayableOutputHandle handle, int port) {
-        INTERNAL_CALL_InternalSetSourceInputPort ( ref handle, port );
+    private extern static int INTERNAL_CALL_GetSourceInputPortInternal (ref PlayableOutputHandle handle);
+    internal static void SetSourceInputPortInternal (ref PlayableOutputHandle handle, int port) {
+        INTERNAL_CALL_SetSourceInputPortInternal ( ref handle, port );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetSourceInputPort (ref PlayableOutputHandle handle, int port);
+    private extern static void INTERNAL_CALL_SetSourceInputPortInternal (ref PlayableOutputHandle handle, int port);
     internal float GetWeight()
         {
-            return InternalGetWeight(ref this);
+            return GetWeightInternal(ref this);
         }
     
     
     internal void SetWeight(float value)
         {
-            InternalSetWeight(ref this, value);
+            SetWeightInternal(ref this, value);
         }
     
     
-    internal static void InternalSetWeight (ref PlayableOutputHandle handle, float weight) {
-        INTERNAL_CALL_InternalSetWeight ( ref handle, weight );
+    internal static void SetWeightInternal (ref PlayableOutputHandle handle, float weight) {
+        INTERNAL_CALL_SetWeightInternal ( ref handle, weight );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_InternalSetWeight (ref PlayableOutputHandle handle, float weight);
-    internal static float InternalGetWeight (ref PlayableOutputHandle handle) {
-        return INTERNAL_CALL_InternalGetWeight ( ref handle );
+    private extern static void INTERNAL_CALL_SetWeightInternal (ref PlayableOutputHandle handle, float weight);
+    internal static float GetWeightInternal (ref PlayableOutputHandle handle) {
+        return INTERNAL_CALL_GetWeightInternal ( ref handle );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static float INTERNAL_CALL_InternalGetWeight (ref PlayableOutputHandle handle);
+    private extern static float INTERNAL_CALL_GetWeightInternal (ref PlayableOutputHandle handle);
     public override int GetHashCode()
         {
             return m_Handle.GetHashCode() ^ m_Version.GetHashCode();

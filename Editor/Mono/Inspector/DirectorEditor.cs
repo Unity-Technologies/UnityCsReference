@@ -71,7 +71,20 @@ namespace UnityEditor
             }
             EditorGUI.EndProperty();
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_WrapMode, Styles.WrapModeContent);
+            if (EditorGUI.EndChangeCheck())
+            {
+                // case 876701 - we need to explicitly set the property so any playing graphs get
+                //  updated with the new wrap mode
+                DirectorWrapMode mode = (DirectorWrapMode)m_WrapMode.enumValueIndex;
+                foreach (var t in targets.OfType<PlayableDirector>())
+                {
+                    t.extrapolationMode = mode;
+                }
+            }
+
+
             PropertyFieldAsFloat(m_InitialTime, Styles.InitialTimeContent);
 
             if (Application.isPlaying)

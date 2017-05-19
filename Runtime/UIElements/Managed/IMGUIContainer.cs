@@ -34,13 +34,13 @@ namespace UnityEngine.Experimental.UIElements
             contextType = ContextType.Editor;
         }
 
-        public override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             lastWorldClip = painter.currentWorldClip;
             HandleEvent(painter.repaintEvent, this);
         }
 
-        internal override void ChangePanel(IVisualElementPanel p)
+        internal override void ChangePanel(BaseVisualElementPanel p)
         {
             if (elementPanel != null)
             {
