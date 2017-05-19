@@ -91,7 +91,7 @@ namespace UnityEngine.Experimental.UIElements
             return used;
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             // If we have keyboard focus, draw the cursor
             // TODO:    check if this OpenGL view has keyboard focus
@@ -274,7 +274,7 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.GetControlID("TouchScreenTextField".GetHashCode(), focusType, position);
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             if (editor.keyboardOnScreen != null)
             {

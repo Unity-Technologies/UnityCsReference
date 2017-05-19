@@ -159,7 +159,7 @@ namespace UnityEngine.Experimental.UIElements
 
         IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
 
-        internal override void ChangePanel(IVisualElementPanel p)
+        internal override void ChangePanel(BaseVisualElementPanel p)
         {
             if (p == panel) return;
             base.ChangePanel(p);

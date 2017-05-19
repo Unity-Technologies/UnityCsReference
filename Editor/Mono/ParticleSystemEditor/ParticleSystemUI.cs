@@ -33,7 +33,6 @@ namespace UnityEditor
         protected class Texts
         {
             public GUIContent addModules = new GUIContent("", "Show/Hide Modules");
-            public GUIContent supportsCullingText = new GUIContent("", ParticleSystemStyles.Get().warningIcon);
             public string bulletPoint = "\u2022 ";
         }
         private static Texts s_Texts = new Texts();
@@ -355,9 +354,11 @@ namespace UnityEditor
                             GUI.Label(plusRect, GUIContent.none, ParticleSystemStyles.Get().plus);
                     }
 
-                    s_Texts.supportsCullingText.tooltip = m_SupportsCullingTextLabel;
-                    if (initialModule && s_Texts.supportsCullingText.tooltip != null)
-                        GUI.Label(infoRect, s_Texts.supportsCullingText);
+                    if (initialModule && !string.IsNullOrEmpty(m_SupportsCullingTextLabel))
+                    {
+                        var supportsCullingText = new GUIContent("", ParticleSystemStyles.Get().warningIcon, m_SupportsCullingTextLabel);
+                        GUI.Label(infoRect, supportsCullingText);
+                    }
 
                     GUILayout.Space(1); // dist to next module
                 } // foreach module

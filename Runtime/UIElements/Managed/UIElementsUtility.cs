@@ -183,7 +183,7 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.s_SkinMode == 0 ? ContextType.Player : ContextType.Editor;
         }
 
-        static bool DoDispatch(IVisualElementPanel panel)
+        static bool DoDispatch(BaseVisualElementPanel panel)
         {
             bool usesEvent;
 
@@ -203,7 +203,7 @@ namespace UnityEngine.Experimental.UIElements
                 var result = s_EventDispatcher.DispatchEvent(s_EventInstance, panel);
                 if (result == EventPropagation.Stop)
                 {
-                    panel.Dirty(ChangeType.Repaint);
+                    panel.visualTree.Dirty(ChangeType.Repaint);
                 }
                 usesEvent = result == EventPropagation.Stop;
             }
@@ -221,11 +221,7 @@ namespace UnityEngine.Experimental.UIElements
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
             {
-                panel = new Panel(instanceId, contextType, loadResourceFunction)
-                {
-                    dataWatch = dataWatch,
-                    dispatcher = eventDispatcher
-                };
+                panel = new Panel(instanceId, contextType, loadResourceFunction, dataWatch, eventDispatcher);
                 s_UIElementsCache.Add(instanceId, panel);
             }
             else

@@ -779,7 +779,7 @@ namespace UnityEditor
 
         private void DoRenderPreview()
         {
-            var toDraw = targets[referenceTargetIndex] as GameObject;
+            var toDraw = target as GameObject;
             if (toDraw == null)
                 return;
 

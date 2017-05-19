@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.GetControlID("IMButton".GetHashCode(), focusType, position);
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             style.Draw(position, GUIContent.Temp(text), id,
                 false);          // on (???)

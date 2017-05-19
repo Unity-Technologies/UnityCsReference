@@ -52,7 +52,7 @@ namespace UnityEditor
                 service.ProcessNotificationQueue();
 
                 // Dispatch might have triggered a repaint request.
-                if (panel.IsDirty(ChangeType.Repaint))
+                if (panel.visualTree.IsDirty(ChangeType.Repaint))
                 {
                     var guiView = EditorUtility.InstanceIDToObject(panel.instanceID) as GUIView;
                     if (guiView != null)
@@ -89,7 +89,7 @@ namespace UnityEditor
                     continue;
 
                 panel.styleContext.DirtyStyleSheets();
-                panel.Dirty(ChangeType.Styles); // dirty all styles
+                panel.visualTree.Dirty(ChangeType.Styles); // dirty all styles
 
                 var guiView = EditorUtility.InstanceIDToObject(panel.instanceID) as GUIView;
                 if (guiView != null)

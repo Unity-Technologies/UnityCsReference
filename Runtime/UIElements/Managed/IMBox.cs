@@ -11,7 +11,7 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.GetControlID("IMBox".GetHashCode(), FocusType.Passive);
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             style.Draw(position, GUIContent.Temp(text), id);
         }

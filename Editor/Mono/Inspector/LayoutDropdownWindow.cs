@@ -145,8 +145,8 @@ namespace UnityEditor
             SerializedProperty position,
             SerializedProperty sizeDelta)
         {
-            LayoutMode hMode = GetLayoutModeForAxis(anchorMin, sizeDelta, 0);
-            LayoutMode vMode = GetLayoutModeForAxis(anchorMin, sizeDelta, 1);
+            LayoutMode hMode = GetLayoutModeForAxis(anchorMin, anchorMax, 0);
+            LayoutMode vMode = GetLayoutModeForAxis(anchorMin, anchorMax, 1);
             vMode = SwappedVMode(vMode);
             DrawLayoutModeHeaderOutsideRect(rect, 0, hMode);
             DrawLayoutModeHeaderOutsideRect(rect, 1, vMode);

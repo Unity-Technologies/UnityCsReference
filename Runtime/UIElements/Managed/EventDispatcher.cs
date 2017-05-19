@@ -192,7 +192,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public EventPropagation DispatchEvent(Event e, IVisualElementPanel panel)
+        public EventPropagation DispatchEvent(Event e, BaseVisualElementPanel panel)
         {
             if (e.type == EventType.Repaint)
             {
@@ -444,7 +444,7 @@ namespace UnityEngine.Experimental.UIElements
             return EventPropagation.Continue;
         }
 
-        void SetFocusedElement(IVisualElementPanel panel, VisualElement element)
+        void SetFocusedElement(BaseVisualElementPanel panel, VisualElement element)
         {
             if (panel.focusedElement == element)
                 return;

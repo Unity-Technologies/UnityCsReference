@@ -370,7 +370,13 @@ namespace UnityEditorInternal
             ClearCandidates();
 
             AnimationMode.StopAnimationMode(GetAnimationModeDriver());
-            AnimationPropertyContextualMenu.Instance.SetResponder(null);
+
+            // reset responder only if we have set it
+            if (AnimationPropertyContextualMenu.Instance.IsResponder(this))
+            {
+                AnimationPropertyContextualMenu.Instance.SetResponder(null);
+            }
+
             Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
         }
 

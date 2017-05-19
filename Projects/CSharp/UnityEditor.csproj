@@ -2550,6 +2550,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\Editor\Mono\2D\Common\TexturePlatformSettingsView.cs" >
 <Link>Editor\Mono\2D\Common\TexturePlatformSettingsView.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\2D\Interface\IHandles.cs" >
+<Link>Editor\Mono\2D\Interface\IHandles.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\2D\Interface\ITexturePlatformSetting.cs" >
 <Link>Editor\Mono\2D\Interface\ITexturePlatformSetting.cs</Link>
 </Compile>
@@ -2564,6 +2567,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 </Compile>
 <Compile Include="..\..\Editor\Mono\2D\Interface\ITexture.cs" >
 <Link>Editor\Mono\2D\Interface\ITexture.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\2D\Interface\IGL.cs" >
+<Link>Editor\Mono\2D\Interface\IGL.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\2D\Interface\IEvent.cs" >
 <Link>Editor\Mono\2D\Interface\IEvent.cs</Link>

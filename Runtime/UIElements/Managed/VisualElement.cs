@@ -226,7 +226,7 @@ namespace UnityEngine.Experimental.UIElements
 
         // each element has a ref to the root panel for internal bookkeeping
         // this will be null until a visual tree is added to a panel
-        internal IVisualElementPanel elementPanel { get; private set; }
+        internal BaseVisualElementPanel elementPanel { get; private set; }
 
         public IPanel panel { get { return elementPanel; } }
 
@@ -914,7 +914,7 @@ namespace UnityEngine.Experimental.UIElements
                 m_Manipulators.Remove(manipulator);
         }
 
-        internal virtual void ChangePanel(IVisualElementPanel p)
+        internal virtual void ChangePanel(BaseVisualElementPanel p)
         {
             if (panel == p)
                 return;
@@ -1080,19 +1080,10 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public virtual void DoRepaint(IStylePainter painter)
-        {
-            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
-            {
-                return;
-            }
-            PaintStyle(painter);
-        }
-
-        protected virtual void PaintStyle(IStylePainter painter)
+        public virtual void DoRepaint()
         {
             ScaleMode scaleMode = (ScaleMode)backgroundSize;
-
+            var painter = elementPanel.stylePainter;
             if (backgroundImage != null)
             {
                 painter.DrawTexture(position, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
@@ -1111,6 +1102,15 @@ namespace UnityEngine.Experimental.UIElements
             {
                 painter.DrawText(contentRect, text, font, fontSize, fontStyle, textColor, textAlignment, wordWrap, contentRect.width, false, textClipping);
             }
+        }
+
+        internal virtual void DoRepaint(IStylePainter painter)
+        {
+            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
+            {
+                return;
+            }
+            DoRepaint();
         }
 
         // position should be in local space

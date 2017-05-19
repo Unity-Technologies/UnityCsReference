@@ -37,6 +37,11 @@ namespace UnityEditorInternal
             m_Responder = responder;
         }
 
+        public bool IsResponder(IAnimationContextualResponder responder)
+        {
+            return responder == m_Responder;
+        }
+
         void OnPropertyContextMenu(GenericMenu menu, SerializedProperty property)
         {
             if (m_Responder == null)

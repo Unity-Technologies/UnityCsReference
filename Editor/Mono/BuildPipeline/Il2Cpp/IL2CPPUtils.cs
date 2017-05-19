@@ -340,6 +340,7 @@ namespace UnityEditorInternal
 
         private bool ShouldUseIl2CppCore()
         {
+            bool shouldUse = false;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 // On OSX 10.8 (and mabybe older versions, not sure) running .NET Core will result in the following error :
@@ -354,16 +355,16 @@ namespace UnityEditorInternal
                 if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
                 {
                     var versionText = SystemInfo.operatingSystem.Substring(9);
-                    if (new Version(versionText) < new Version(10, 9))
-                        return false;
-
-                    return true;
+                    if (new Version(versionText) >= new Version(10, 9))
+                        shouldUse = true;
                 }
-
-                return true;
+                else
+                {
+                    shouldUse = true;
+                }
             }
 
-            return false;
+            return shouldUse && NetCoreProgram.IsNetCoreAvailable();
         }
     }
 

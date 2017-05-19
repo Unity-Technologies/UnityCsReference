@@ -1803,6 +1803,8 @@ namespace UnityEditor
 
         public virtual void OnEnable()
         {
+            if (!target)
+                return;
             m_Shader = serializedObject.FindProperty("m_Shader").objectReferenceValue as Shader;
             m_CustomEditorClassName = "";
             CreateCustomShaderEditorIfNeeded(m_Shader);
