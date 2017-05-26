@@ -239,7 +239,7 @@ namespace UnityEditor
             {
                 if (e.InnerException is ExitGUIException)
                     isExitGUIException = true;
-                throw e.InnerException;
+                throw;
             }
             finally
             {
@@ -375,7 +375,23 @@ namespace UnityEditor
             Event.current.Use();
         }
 
-        protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow view) {}
+        private void Inspect(object userData)
+        {
+            Selection.activeObject = (UnityEngine.Object)userData;
+        }
+
+        protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)
+        {
+            if (menu.GetItemCount() != 0)
+                menu.AddSeparator("");
+
+            if (Unsupported.IsDeveloperBuild())
+            {
+                menu.AddItem(EditorGUIUtility.TextContent("Inspect Window"), false, Inspect, window);
+                menu.AddItem(EditorGUIUtility.TextContent("Inspect View"), false, Inspect, window.m_Parent);
+                menu.AddSeparator("");
+            }
+        }
 
         protected void ClearBackground()
         {

@@ -6,7 +6,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor.RestService
 {
-    internal class PlayModeRestHandler : Handler
+    internal class PlayModeRestHandler : JSONHandler
     {
         protected override JSONValue HandlePost(Request request, JSONValue payload)
         {

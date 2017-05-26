@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.U2D.Interface;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
@@ -64,7 +65,7 @@ namespace UnityEditor
         public Func<float> GetHandleSize = () => 5f;
         // --- END
 
-        public UnityTexture2D lineTexture { get; set; }
+        public ITexture2D lineTexture { get; set; }
         public int activePoint { get; set; }
         public HashSet<int> selectedPoints { get { return m_Selection.indices; } }
         public bool inEditMode { get; set; }
@@ -92,16 +93,39 @@ namespace UnityEditor
 
         private static Color handleOutlineColor { get; set; }
         private static Color handleFillColor { get; set; }
-        private static Quaternion handleMatrixrotation { get { return Quaternion.LookRotation(Handles.matrix.GetColumn(2), Handles.matrix.GetColumn(1)); } }
+        private Quaternion handleMatrixrotation { get { return Quaternion.LookRotation(handles.matrix.GetColumn(2), handles.matrix.GetColumn(1)); } }
 
-        private static readonly Color k_UnSelectedOutline = Color.gray;
-        private static readonly Color k_UnSelectedFill = Color.white;
-        private static readonly Color k_UnSelectedHoveredOutline = Color.white;
-        private static readonly Color k_UnSelectedHoveredFill = new Color(131f / 255f, 220f / 255f, 1f); // #83dcff
-        private static readonly Color k_SelectedOutline = new Color(34f / 255f, 171f / 255f, 1f); // #22abff
-        private static readonly Color k_SelectedFill = new Color(34f / 255f, 171f / 255f, 1f); // #22abff
-        private static readonly Color k_SelectedHoveredOutline = Color.white;
-        private static readonly Color k_SelectedHoveredFill = new Color(34f / 255f, 171f / 255f, 1f); // #22abff
+        private IGUIUtility guiUtility { get; set; }
+        private IEventSystem eventSystem { get; set; }
+        private IEvent currentEvent { get; set; }
+        private IGL glSystem { get; set; }
+        private IHandles handles { get; set; }
+
+        private Dictionary<DrawBatchDataKey, List<Vector3>> m_DrawBatch;
+        private Vector3[][] m_EdgePoints;
+
+        enum ColorEnum
+        {
+            EUnselected,
+            EUnselectedHovered,
+            ESelected,
+            ESelectedHovered
+        }
+
+        private static readonly Color[] k_OutlineColor = new[] {
+            Color.gray,
+            Color.white,
+            new Color(34f / 255f, 171f / 255f, 1f), // #22abff
+            Color.white
+        };
+
+        static readonly Color[] k_FillColor = new[]
+        {
+            Color.white,
+            new Color(131f / 255f, 220f / 255f, 1f), // #83dcff
+            new Color(34f / 255f, 171f / 255f, 1f), // #22abff
+            new Color(34f / 255f, 171f / 255f, 1f) // #22abff
+        };
         private static readonly Color k_TangentColor = new Color(34f / 255f, 171f / 255f, 1f); // #22abff
         private static readonly Color k_TangentColorAlternative = new Color(131f / 255f, 220f / 255f, 1f); // #83dcff
         private const float k_EdgeHoverDistance = 9f;
@@ -112,6 +136,31 @@ namespace UnityEditor
         private readonly int k_EdgeID;
         private readonly int k_RightTangentID;
         private readonly int k_LeftTangentID;
+        private const int k_BezierPatch = 40;
+
+        class DrawBatchDataKey
+        {
+            public Color color { get; private set; }
+            public int glMode { get; private set; }
+            private int m_Hash;
+
+            public DrawBatchDataKey(Color c , int mode)
+            {
+                color = c;
+                glMode = mode;
+                m_Hash = glMode ^ (color.GetHashCode() << 2);
+            }
+
+            public override int GetHashCode()
+            {
+                return m_Hash;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return m_Hash == obj.GetHashCode();
+            }
+        }
 
         public ShapeEditor(IGUIUtility gu, IEventSystem es)
         {
@@ -122,6 +171,8 @@ namespace UnityEditor
             k_EdgeID = guiUtility.GetPermanentControlID();
             k_RightTangentID = guiUtility.GetPermanentControlID();
             k_LeftTangentID = guiUtility.GetPermanentControlID();
+            glSystem = GLSystem.GetSystem();
+            handles = HandlesSystem.GetSystem();
         }
 
         public void SetRectSelectionTool(ShapeEditorRectSelectionTool sers)
@@ -143,6 +194,46 @@ namespace UnityEditor
             m_RectSelectionTool = null;
         }
 
+        private void PrepareDrawBatch()
+        {
+            if (currentEvent.type == EventType.Repaint)
+            {
+                m_DrawBatch = new Dictionary<DrawBatchDataKey, List<Vector3>>();
+            }
+        }
+
+        private void DrawBatch()
+        {
+            if (currentEvent.type == EventType.Repaint)
+            {
+                HandleUtility.ApplyWireMaterial();
+                glSystem.PushMatrix();
+                glSystem.MultMatrix(handles.matrix);
+                foreach (var drawBatch in m_DrawBatch)
+                {
+                    glSystem.Begin(drawBatch.Key.glMode);
+                    glSystem.Color(drawBatch.Key.color);
+                    foreach (var t in drawBatch.Value)
+                    {
+                        glSystem.Vertex(t);
+                    }
+                    glSystem.End();
+                }
+                glSystem.PopMatrix();
+            }
+        }
+
+        List<Vector3> GetDrawBatchList(DrawBatchDataKey key)
+        {
+            List<Vector3> data = null;
+            if (!m_DrawBatch.ContainsKey(key))
+            {
+                m_DrawBatch.Add(key, new List<Vector3>());
+            }
+            data = m_DrawBatch[key];
+            return data;
+        }
+
         public void OnGUI()
         {
             DelayedResetIfNecessary();
@@ -151,9 +242,11 @@ namespace UnityEditor
             if (currentEvent.type == EventType.MouseDown)
                 StoreMouseDownState();
 
-            var oldColor = Handles.color;
-            var oldMatrix = Handles.matrix;
-            Handles.matrix = LocalToWorldMatrix();
+            var oldColor = handles.color;
+            var oldMatrix = handles.matrix;
+            handles.matrix = LocalToWorldMatrix();
+
+            PrepareDrawBatch();
 
             Edges();
 
@@ -163,8 +256,11 @@ namespace UnityEditor
                 Tangents();
                 Points();
             }
-            Handles.color = oldColor;
-            Handles.matrix = oldMatrix;
+
+            DrawBatch();
+
+            handles.color = oldColor;
+            handles.matrix = oldMatrix;
 
             OnShapeEditorUpdateDone();
             foreach (var se in m_ShapeEditorListeners)
@@ -192,42 +288,68 @@ namespace UnityEditor
             }
         }
 
-        private float GetMouseClosestEdgeDistance()
+        void PrepareEdgePointList()
         {
-            var total = this.GetPointsCount();
-            if (m_MouseClosestEdge == -1 && total > 0)
+            if (m_EdgePoints == null)
             {
-                m_MouseClosestEdgeDist = float.MaxValue;
-
-                int index0 = 0;
-                int index1 = NextIndex(index0, total);
+                var total = this.GetPointsCount();
                 int loopCount = OpenEnded() ? total - 1 : total;
-
-                for (int loop = 0; loop < loopCount; loop++)
+                m_EdgePoints = new Vector3[loopCount][];
+                int index = mod(total - 1, loopCount);
+                for (int loop = mod(index + 1, total); loop < total; index = loop, ++loop)
                 {
-                    var position0 = this.GetPointPosition(index0);
-                    var position1 = this.GetPointPosition(index1);
-                    var tangent0 = position0 + this.GetPointRTangent(index0);
-                    var tangent1 = position1 + this.GetPointLTangent(index1);
-                    var screen0 = LocalToScreen(position0);
-                    var screen1 = LocalToScreen(position1);
-                    var screenTangent0 = LocalToScreen(tangent0);
-                    var screenTangent1 = LocalToScreen(tangent1);
-                    var dist = HandleUtility.DistancePointBezier(eventSystem.current.mousePosition, screen0, screen1, screenTangent0, screenTangent1);
-
-                    if (dist < m_MouseClosestEdgeDist)
+                    var position0 = this.GetPointPosition(index);
+                    var position1 = this.GetPointPosition(loop);
+                    if (GetTangentMode(index)  == TangentMode.Linear && GetTangentMode(loop) == TangentMode.Linear)
                     {
-                        m_MouseClosestEdge = index0;
-                        m_MouseClosestEdgeDist = dist;
+                        m_EdgePoints[index] = new[] { position0, position1 };
                     }
-
-                    index0 = NextIndex(index0, total);
-                    index1 = NextIndex(index1, total);
+                    else
+                    {
+                        var tangent0 = GetPointRTangent(index) + position0;
+                        var tangent1 = GetPointLTangent(loop) + position1;
+                        m_EdgePoints[index] = handles.MakeBezierPoints(position0, position1, tangent0, tangent1, k_BezierPatch);
+                    }
                 }
             }
+        }
+
+        float DistancePointEdge(Vector3 point, Vector3[] edge)
+        {
+            float result = float.MaxValue;
+            int index = edge.Length - 1;
+            for (int nextIndex = 0; nextIndex < edge.Length; index = nextIndex, nextIndex++)
+            {
+                float dist = HandleUtility.DistancePointLine(point, edge[index], edge[nextIndex]);
+                if (dist < result)
+                    result = dist;
+            }
+            return result;
+        }
+
+        private float GetMouseClosestEdgeDistance()
+        {
             if (guiUtility.hotControl == k_CreatorID || guiUtility.hotControl == k_EdgeID)
                 return float.MinValue;
 
+            var mousePosition = ScreenToLocal(eventSystem.current.mousePosition);
+            var total = this.GetPointsCount();
+            if (m_MouseClosestEdge == -1 && total > 0)
+            {
+                PrepareEdgePointList();
+                m_MouseClosestEdgeDist = float.MaxValue;
+
+                int loopCount = OpenEnded() ? total - 1 : total;
+                for (int loop = 0; loop < loopCount; loop++)
+                {
+                    var dist = DistancePointEdge(mousePosition, m_EdgePoints[loop]);
+                    if (dist < m_MouseClosestEdgeDist)
+                    {
+                        m_MouseClosestEdge = loop;
+                        m_MouseClosestEdgeDist = dist;
+                    }
+                }
+            }
             return m_MouseClosestEdgeDist;
         }
 
@@ -236,39 +358,41 @@ namespace UnityEditor
             var otherClosestEdgeDistance = float.MaxValue;
             if (m_ShapeEditorListeners.Count > 0)
                 otherClosestEdgeDistance = (from se in m_ShapeEditorListeners select se.GetMouseClosestEdgeDistance()).Max();
-
-            var total = this.GetPointsCount();
-            int index0 = 0;
-            int index1 = NextIndex(index0, total);
-            int loopCount = OpenEnded() ? total - 1 : total;
-
-            for (int loop = 0; loop < loopCount; loop++)
+            float edgeDistance = GetMouseClosestEdgeDistance();
+            bool closestEdgeHighlight = EdgeDragModifiersActive() && edgeDistance < k_EdgeHoverDistance && edgeDistance < otherClosestEdgeDistance;
+            if (currentEvent.type == EventType.Repaint)
             {
-                var position0 = this.GetPointPosition(index0);
-                var position1 = this.GetPointPosition(index1);
-                var tangent0 = position0 + this.GetPointRTangent(index0);
-                var tangent1 = position1 + this.GetPointLTangent(index1);
-                var screen0 = LocalToScreen(position0);
-                var screen1 = LocalToScreen(position1);
-                var screenTangent0 = LocalToScreen(tangent0);
-                var screenTangent1 = LocalToScreen(tangent1);
-                var dist = HandleUtility.DistancePointBezier(currentEvent.mousePosition, screen0, screen1, screenTangent0, screenTangent1);
+                Color handlesOldColor = handles.color;
+                PrepareEdgePointList();
 
-                Color edgeColor = (index0 == m_ActiveEdge) ? Color.yellow : Color.white;
-                float edgeWidth = (index0 == m_ActiveEdge || EdgeDragModifiersActive() && dist < k_EdgeHoverDistance && dist < otherClosestEdgeDistance) ? k_ActiveEdgeWidth : k_EdgeWidth;
+                var total = this.GetPointsCount();
+                int loopCount = OpenEnded() ? total - 1 : total;
 
-                Handles.DrawBezier(position0, position1, tangent0, tangent1, edgeColor, lineTexture, edgeWidth);
+                for (int loop = 0; loop < loopCount; loop++)
+                {
+                    Color edgeColor = loop == m_ActiveEdge ? Color.yellow : Color.white;
+                    float edgeWidth = loop == m_ActiveEdge || (m_MouseClosestEdge == loop && closestEdgeHighlight) ? k_ActiveEdgeWidth : k_EdgeWidth;
 
-                index0 = NextIndex(index0, total);
-                index1 = NextIndex(index1, total);
+                    handles.color = edgeColor;
+                    handles.DrawAAPolyLine(lineTexture, edgeWidth, m_EdgePoints[loop]);
+                }
+                handles.color = handlesOldColor;
             }
 
             if (inEditMode)
             {
-                if (otherClosestEdgeDistance > GetMouseClosestEdgeDistance())
+                if (otherClosestEdgeDistance > edgeDistance)
                 {
-                    HandlePointInsertToEdge(m_MouseClosestEdge, m_MouseClosestEdgeDist);
-                    HandleEdgeDragging(m_MouseClosestEdge, m_MouseClosestEdgeDist);
+                    var farEnoughFromExistingPoints = MouseDistanceToPoint(FindClosestPointToMouse()) > k_MinExistingPointDistanceForInsert;
+                    var farEnoughtFromActiveTangents = MouseDistanceToClosestTangent() > k_MinExistingPointDistanceForInsert;
+                    var farEnoughFromExisting = farEnoughFromExistingPoints && farEnoughtFromActiveTangents;
+                    var hoveringEdge = m_MouseClosestEdgeDist < k_EdgeHoverDistance;
+                    var handleEvent = hoveringEdge && farEnoughFromExisting && !m_RectSelectionTool.isSelecting;
+
+                    if (GUIUtility.hotControl == k_EdgeID || EdgeDragModifiersActive() && handleEvent)
+                        HandleEdgeDragging(m_MouseClosestEdge);
+                    else if (GUIUtility.hotControl == k_CreatorID || (currentEvent.modifiers == EventModifiers.None && handleEvent))
+                        HandlePointInsertToEdge(m_MouseClosestEdge, m_MouseClosestEdgeDist);
                 }
             }
 
@@ -349,14 +473,17 @@ namespace UnityEditor
 
                 var p0 = this.GetPointPosition(i);
                 var id = guiUtility.GetControlID(5353, FocusType.Keyboard);
-                var selected = m_Selection.Contains(i);
                 var mouseDown = currentEvent.GetTypeForControl(id) == EventType.MouseDown;
                 var mouseUp = currentEvent.GetTypeForControl(id) == EventType.MouseUp;
 
                 EditorGUI.BeginChangeCheck();
 
-                handleOutlineColor = GetOutlineColorForPoint(i, id);
-                handleFillColor = GetFillColorForPoint(i, id);
+                if (currentEvent.type == EventType.Repaint)
+                {
+                    ColorEnum c = GetColorForPoint(i, id);
+                    handleOutlineColor = k_OutlineColor[(int)c];
+                    handleFillColor = k_FillColor[(int)c];
+                }
 
                 var np = p0;
                 var hotControlBefore = guiUtility.hotControl;
@@ -364,7 +491,7 @@ namespace UnityEditor
                 if (!currentEvent.alt || guiUtility.hotControl == id)
                     np = DoSlider(id, p0, Vector3.up, Vector3.right, GetHandleSizeForPoint(i), GetCapForPoint(i));
                 else if (currentEvent.type == EventType.Repaint)
-                    GetCapForPoint(i).Invoke(id, p0, Quaternion.LookRotation(Vector3.forward, Vector3.up), GetHandleSizeForPoint(i), currentEvent.type);
+                    GetCapForPoint(i)(id, p0, Quaternion.LookRotation(Vector3.forward, Vector3.up), GetHandleSizeForPoint(i), currentEvent.type);
 
                 var hotcontrolAfter = guiUtility.hotControl;
 
@@ -378,7 +505,7 @@ namespace UnityEditor
                     MoveSelections(np - p0);
                 }
 
-                if (guiUtility.hotControl == id && !selected && mouseDown)
+                if (guiUtility.hotControl == id && mouseDown && !m_Selection.Contains(i))
                 {
                     SelectPoint(i, currentEvent.shift ? SelectionType.Additive : SelectionType.Normal);
                     Repaint();
@@ -409,96 +536,78 @@ namespace UnityEditor
         public void HandlePointInsertToEdge(int closestEdge, float closestEdgeDist)
         {
             var pointCreatorIsHot = GUIUtility.hotControl == k_CreatorID;
-            var farEnoughFromExistingPoints = MouseDistanceToPoint(FindClosestPointToMouse()) > k_MinExistingPointDistanceForInsert;
-            var farEnoughtFromActiveTangents = MouseDistanceToClosestTangent() > k_MinExistingPointDistanceForInsert;
-            var farEnoughFromExisting = farEnoughFromExistingPoints && farEnoughtFromActiveTangents;
-            var hoveringEdge = closestEdgeDist < k_EdgeHoverDistance;
-            bool pointInsertPossible = hoveringEdge && farEnoughFromExisting && !m_RectSelectionTool.isSelecting && currentEvent.modifiers == EventModifiers.None;
 
-            if (pointInsertPossible || pointCreatorIsHot)
+            Vector3 position = pointCreatorIsHot ? GetPointPosition(m_NewPointIndex) : FindClosestPointOnEdge(closestEdge, ScreenToLocal(currentEvent.mousePosition), 100);
+
+            EditorGUI.BeginChangeCheck();
+
+            handleFillColor = k_FillColor[(int)ColorEnum.ESelectedHovered];
+            handleOutlineColor = k_OutlineColor[(int)ColorEnum.ESelectedHovered];
+
+            if (!pointCreatorIsHot)
             {
-                Vector3 position = pointCreatorIsHot ? GetPointPosition(m_NewPointIndex) : FindClosestPointOnEdge(closestEdge, ScreenToLocal(currentEvent.mousePosition), 100);
+                handleFillColor = handleFillColor.AlphaMultiplied(0.5f);
+                handleOutlineColor = handleOutlineColor.AlphaMultiplied(0.5f);
+            }
 
-                EditorGUI.BeginChangeCheck();
-
-                handleFillColor = k_SelectedHoveredFill;
-                handleOutlineColor = k_SelectedHoveredOutline;
-
-                if (!pointCreatorIsHot)
-                {
-                    handleFillColor = handleFillColor.AlphaMultiplied(0.5f);
-                    handleOutlineColor = handleOutlineColor.AlphaMultiplied(0.5f);
-                }
-
-                int hotControlBefore = GUIUtility.hotControl;
-                var newPosition = DoSlider(k_CreatorID, position, Vector3.up, Vector3.right, GetHandleSizeForPoint(closestEdge), RectCap);
-                if (hotControlBefore != k_CreatorID && GUIUtility.hotControl == k_CreatorID)
-                {
-                    RecordUndo();
-                    m_NewPointIndex = NextIndex(closestEdge, GetPointsCount());
-                    InsertPointAt(m_NewPointIndex, newPosition);
-                    SelectPoint(m_NewPointIndex, SelectionType.Normal);
-                }
-                else if (EditorGUI.EndChangeCheck())
-                {
-                    RecordUndo();
-                    newPosition = Snap(newPosition);
-                    MoveSelections(newPosition - position);
-                }
+            int hotControlBefore = GUIUtility.hotControl;
+            var newPosition = DoSlider(k_CreatorID, position, Vector3.up, Vector3.right, GetHandleSizeForPoint(closestEdge), RectCap);
+            if (hotControlBefore != k_CreatorID && GUIUtility.hotControl == k_CreatorID)
+            {
+                RecordUndo();
+                m_NewPointIndex = NextIndex(closestEdge, GetPointsCount());
+                InsertPointAt(m_NewPointIndex, newPosition);
+                SelectPoint(m_NewPointIndex, SelectionType.Normal);
+            }
+            else if (EditorGUI.EndChangeCheck())
+            {
+                RecordUndo();
+                newPosition = Snap(newPosition);
+                MoveSelections(newPosition - position);
             }
         }
 
-        private void HandleEdgeDragging(int closestEdge, float closestEdgeDist)
+        private void HandleEdgeDragging(int closestEdge)
         {
-            var edgeIsHot = GUIUtility.hotControl == k_EdgeID;
-            var farEnoughFromExistingPoints = MouseDistanceToPoint(FindClosestPointToMouse()) > k_MinExistingPointDistanceForInsert;
-            var farEnoughtFromActiveTangents = MouseDistanceToClosestTangent() > k_MinExistingPointDistanceForInsert;
-            var farEnoughFromExisting = farEnoughFromExistingPoints && farEnoughtFromActiveTangents;
-            var hoveringEdge = closestEdgeDist < k_EdgeHoverDistance;
-            bool edgeDragPossible = hoveringEdge && farEnoughFromExisting && !m_RectSelectionTool.isSelecting && EdgeDragModifiersActive();
-
-            if (edgeDragPossible || edgeIsHot)
+            switch (currentEvent.type)
             {
-                switch (currentEvent.type)
-                {
-                    case EventType.MouseDown:
-                        m_ActiveEdge = closestEdge;
-                        m_EdgeDragStartP0 = GetPointPosition(m_ActiveEdge);
-                        m_EdgeDragStartP1 = GetPointPosition(NextIndex(m_ActiveEdge, GetPointsCount()));
-                        if (currentEvent.shift)
-                        {
-                            RecordUndo();
-                            InsertPointAt(m_ActiveEdge + 1, m_EdgeDragStartP0);
-                            InsertPointAt(m_ActiveEdge + 2, m_EdgeDragStartP1);
-                            m_ActiveEdge++;
-                        }
-                        m_EdgeDragStartMousePosition = ScreenToLocal(currentEvent.mousePosition);
-                        GUIUtility.hotControl = k_EdgeID;
-                        currentEvent.Use();
-                        break;
-                    case EventType.MouseDrag:
+                case EventType.MouseDown:
+                    m_ActiveEdge = closestEdge;
+                    m_EdgeDragStartP0 = GetPointPosition(m_ActiveEdge);
+                    m_EdgeDragStartP1 = GetPointPosition(NextIndex(m_ActiveEdge, GetPointsCount()));
+                    if (currentEvent.shift)
+                    {
                         RecordUndo();
-                        Vector3 mousePos = ScreenToLocal(currentEvent.mousePosition);
-                        Vector3 delta = mousePos - m_EdgeDragStartMousePosition;
+                        InsertPointAt(m_ActiveEdge + 1, m_EdgeDragStartP0);
+                        InsertPointAt(m_ActiveEdge + 2, m_EdgeDragStartP1);
+                        m_ActiveEdge++;
+                    }
+                    m_EdgeDragStartMousePosition = ScreenToLocal(currentEvent.mousePosition);
+                    GUIUtility.hotControl = k_EdgeID;
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseDrag:
+                    RecordUndo();
+                    Vector3 mousePos = ScreenToLocal(currentEvent.mousePosition);
+                    Vector3 delta = mousePos - m_EdgeDragStartMousePosition;
 
-                        Vector3 position = GetPointPosition(m_ActiveEdge);
-                        Vector3 newPosition = m_EdgeDragStartP0 + delta;
+                    Vector3 position = GetPointPosition(m_ActiveEdge);
+                    Vector3 newPosition = m_EdgeDragStartP0 + delta;
 
-                        newPosition = Snap(newPosition);
+                    newPosition = Snap(newPosition);
 
-                        Vector3 snappedDelta = newPosition - position;
-                        var i0 = m_ActiveEdge;
-                        var i1 = NextIndex(m_ActiveEdge, GetPointsCount());
-                        SetPointPosition(m_ActiveEdge, GetPointPosition(i0) + snappedDelta);
-                        SetPointPosition(i1, GetPointPosition(i1) + snappedDelta);
-                        currentEvent.Use();
-                        break;
-                    case EventType.MouseUp:
-                        m_ActiveEdge = -1;
-                        GUIUtility.hotControl = 0;
-                        currentEvent.Use();
-                        break;
-                }
+                    Vector3 snappedDelta = newPosition - position;
+                    var i0 = m_ActiveEdge;
+                    var i1 = NextIndex(m_ActiveEdge, GetPointsCount());
+                    SetPointPosition(m_ActiveEdge, GetPointPosition(i0) + snappedDelta);
+                    SetPointPosition(i1, GetPointPosition(i1) + snappedDelta);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseUp:
+                    m_ActiveEdge = -1;
+                    GUIUtility.hotControl = 0;
+                    currentEvent.Use();
+                    break;
             }
         }
 
@@ -507,16 +616,16 @@ namespace UnityEditor
             var handleSize = GetHandleSizeForPoint(pointIndex);
             var tangentSize = GetTangentSizeForPoint(pointIndex);
 
-            Handles.color = color;
+            handles.color = color;
 
             float distance = HandleUtility.DistanceToCircle(t0, tangentSize);
 
             if (lineTexture != null)
-                Handles.DrawAAPolyLine(lineTexture, new Vector3[] {p0, t0});
+                handles.DrawAAPolyLine(lineTexture, new Vector3[] {p0, t0});
             else
-                Handles.DrawLine(p0, t0);
+                handles.DrawLine(p0, t0);
 
-            handleOutlineColor = distance > 0f ? color : k_SelectedHoveredOutline;
+            handleOutlineColor = distance > 0f ? color : k_OutlineColor[(int)ColorEnum.ESelectedHovered];
             handleFillColor = color;
             var delta = DoSlider(cid, t0, Vector3.up, Vector3.right, tangentSize, GetCapForTangent(pointIndex)) - p0;
 
@@ -568,34 +677,19 @@ namespace UnityEditor
             }
         }
 
-        private Color GetOutlineColorForPoint(int pointIndex, int handleID)
+        private ColorEnum GetColorForPoint(int pointIndex, int handleID)
         {
             bool hovered = MouseDistanceToPoint(pointIndex) <= 0f;
             bool selected = m_Selection.Contains(pointIndex);
 
             if (hovered && selected || GUIUtility.hotControl == handleID)
-                return k_SelectedHoveredOutline;
+                return ColorEnum.ESelectedHovered;
             if (hovered)
-                return k_UnSelectedHoveredOutline;
+                return ColorEnum.EUnselectedHovered;
             if (selected)
-                return k_SelectedOutline;
+                return ColorEnum.ESelected;
 
-            return k_UnSelectedOutline;
-        }
-
-        private Color GetFillColorForPoint(int pointIndex, int handleID)
-        {
-            bool hovered = MouseDistanceToPoint(pointIndex) <= 0f;
-            bool selected = m_Selection.Contains(pointIndex);
-
-            if (hovered && selected || GUIUtility.hotControl == handleID)
-                return k_SelectedHoveredFill;
-            if (hovered)
-                return k_UnSelectedHoveredFill;
-            if (selected)
-                return k_SelectedFill;
-
-            return k_UnSelectedFill;
+            return ColorEnum.EUnselected;
         }
 
         private void FromAllZeroToTangents(int pointIndex)
@@ -718,7 +812,7 @@ namespace UnityEditor
             for (float a = 0f; a <= 1f; a += step)
             {
                 Vector3 pos = GetPositionByIndex(edgeIndex + a);
-                float distance = (position - pos).magnitude;
+                float distance = (position - pos).sqrMagnitude;
                 if (distance < closestDistance)
                 {
                     closestDistance = distance;
@@ -777,7 +871,7 @@ namespace UnityEditor
             for (int i = 0; i < this.GetPointsCount(); i++)
             {
                 var p0 = this.GetPointPosition(i);
-                var distance = (p0 - position).magnitude;
+                var distance = (p0 - position).sqrMagnitude;
                 if (distance < closestDistance)
                 {
                     closestIndex = i;
@@ -825,7 +919,7 @@ namespace UnityEditor
             return Slider2D.Do(id, position, Vector3.zero, Vector3.Cross(slide1, slide2), slide1, slide2, s, cap, Vector2.zero, false);
         }
 
-        public static void RectCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public void RectCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             if (eventType == EventType.Layout)
             {
@@ -833,39 +927,32 @@ namespace UnityEditor
             }
             else if (eventType == EventType.repaint)
             {
-                Vector3 normal = Handles.matrix.GetColumn(2);
+                Vector3 normal = handles.matrix.GetColumn(2);
                 Vector3 projectedUp = (ProjectPointOnPlane(normal, position, position + Vector3.up) - position).normalized;
-                Quaternion localRotation = Quaternion.LookRotation(Handles.matrix.GetColumn(2), projectedUp);
+                Quaternion localRotation = Quaternion.LookRotation(handles.matrix.GetColumn(2), projectedUp);
                 Vector3 sideways = localRotation * Vector3.right * size;
                 Vector3 up = localRotation * Vector3.up * size;
-                HandleUtility.ApplyWireMaterial();
+                List<Vector3> list = GetDrawBatchList(new DrawBatchDataKey(handleFillColor, GL.TRIANGLES));
+                list.Add(position + sideways + up);
+                list.Add(position + sideways - up);
+                list.Add(position - sideways - up);
+                list.Add(position - sideways - up);
+                list.Add(position - sideways + up);
+                list.Add(position + sideways + up);
 
-                GL.PushMatrix();
-                GL.MultMatrix(Handles.matrix);
-                GL.Begin(GL.QUADS);
-                GL.Color(handleFillColor);
-                GL.Vertex(position + sideways + up);
-                GL.Vertex(position + sideways - up);
-                GL.Vertex(position - sideways - up);
-                GL.Vertex(position - sideways + up);
-                GL.End();
-
-                GL.Begin(GL.LINES);
-                GL.Color(handleOutlineColor);
-                GL.Vertex(position + sideways + up);
-                GL.Vertex(position + sideways - up);
-                GL.Vertex(position + sideways - up);
-                GL.Vertex(position - sideways - up);
-                GL.Vertex(position - sideways - up);
-                GL.Vertex(position - sideways + up);
-                GL.Vertex(position - sideways + up);
-                GL.Vertex(position + sideways + up);
-                GL.End();
-                GL.PopMatrix();
+                list = GetDrawBatchList(new DrawBatchDataKey(handleOutlineColor, GL.LINES));
+                list.Add(position + sideways + up);
+                list.Add(position + sideways - up);
+                list.Add(position + sideways - up);
+                list.Add(position - sideways - up);
+                list.Add(position - sideways - up);
+                list.Add(position - sideways + up);
+                list.Add(position - sideways + up);
+                list.Add(position + sideways + up);
             }
         }
 
-        public static void CircleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public void CircleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             if (eventType == EventType.Layout)
             {
@@ -873,41 +960,32 @@ namespace UnityEditor
             }
             else if (eventType == EventType.repaint)
             {
-                Handles.StartCapDraw(position, rotation, size);
                 Vector3 forward = handleMatrixrotation * rotation * Vector3.forward;
                 Vector3 tangent = Vector3.Cross(forward, Vector3.up);
                 if (tangent.sqrMagnitude < .001f)
                     tangent = Vector3.Cross(forward, Vector3.right);
 
                 Vector3[] points = new Vector3[60];
-                Handles.SetDiscSectionPoints(points, position, forward, tangent, 360f, size);
-                HandleUtility.ApplyWireMaterial();
+                handles.SetDiscSectionPoints(points, position, forward, tangent, 360f, size);
 
-                GL.PushMatrix();
-                GL.Begin(GL.TRIANGLES);
-                GL.MultMatrix(Handles.matrix);
-                GL.Color(handleFillColor);
+                List<Vector3> list = GetDrawBatchList(new DrawBatchDataKey(handleFillColor, GL.TRIANGLES));
                 for (int i = 1; i < points.Length; i++)
                 {
-                    GL.Vertex(position);
-                    GL.Vertex(points[i - 1]);
-                    GL.Vertex(points[i]);
+                    list.Add(position);
+                    list.Add(points[i]);
+                    list.Add(points[i - 1]);
                 }
-                GL.End();
 
-                GL.Begin(GL.LINES);
-                GL.Color(handleOutlineColor);
+                list = GetDrawBatchList(new DrawBatchDataKey(handleOutlineColor, GL.LINES));
                 for (int i = 0; i < points.Length - 1; i++)
                 {
-                    GL.Vertex(points[i]);
-                    GL.Vertex(points[i + 1]);
+                    list.Add(points[i]);
+                    list.Add(points[i + 1]);
                 }
-                GL.End();
-                GL.PopMatrix();
             }
         }
 
-        public static void DiamondCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public void DiamondCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             if (eventType == EventType.Layout)
             {
@@ -915,35 +993,29 @@ namespace UnityEditor
             }
             else if (eventType == EventType.repaint)
             {
-                Vector3 normal = Handles.matrix.GetColumn(2);
+                Vector3 normal = handles.matrix.GetColumn(2);
                 Vector3 projectedUp = (ProjectPointOnPlane(normal, position, position + Vector3.up) - position).normalized;
-                Quaternion localRotation = Quaternion.LookRotation(Handles.matrix.GetColumn(2), projectedUp);
+                Quaternion localRotation = Quaternion.LookRotation(handles.matrix.GetColumn(2), projectedUp);
                 Vector3 sideways = localRotation * Vector3.right * size * 1.25f;
                 Vector3 up = localRotation * Vector3.up * size * 1.25f;
-                HandleUtility.ApplyWireMaterial();
 
-                GL.PushMatrix();
-                GL.Begin(GL.QUADS);
-                GL.MultMatrix(Handles.matrix);
-                GL.Color(handleFillColor);
-                GL.Vertex(position + sideways);
-                GL.Vertex(position - up);
-                GL.Vertex(position - sideways);
-                GL.Vertex(position + up);
-                GL.End();
+                List<Vector3> list = GetDrawBatchList(new DrawBatchDataKey(handleFillColor, GL.TRIANGLES));
+                list.Add(position - up);
+                list.Add(position + sideways);
+                list.Add(position - sideways);
+                list.Add(position - sideways);
+                list.Add(position + up);
+                list.Add(position + sideways);
 
-                GL.Begin(GL.LINES);
-                GL.Color(handleOutlineColor);
-                GL.Vertex(position + sideways);
-                GL.Vertex(position - up);
-                GL.Vertex(position - up);
-                GL.Vertex(position - sideways);
-                GL.Vertex(position - sideways);
-                GL.Vertex(position + up);
-                GL.Vertex(position + up);
-                GL.Vertex(position + sideways);
-                GL.End();
-                GL.PopMatrix();
+                list = GetDrawBatchList(new DrawBatchDataKey(handleOutlineColor, GL.LINES));
+                list.Add(position + sideways);
+                list.Add(position - up);
+                list.Add(position - up);
+                list.Add(position - sideways);
+                list.Add(position - sideways);
+                list.Add(position + up);
+                list.Add(position + up);
+                list.Add(position + sideways);
             }
         }
 
@@ -970,10 +1042,6 @@ namespace UnityEditor
             return point + planeNormal * distance;
         }
 
-        private IGUIUtility guiUtility { get; set; }
-        private IEventSystem eventSystem { get; set; }
-        private IEvent currentEvent { get; set; }
-
         public void RegisterToShapeEditor(ShapeEditor se)
         {
             ++m_ShapeEditorRegisteredTo;
@@ -996,6 +1064,7 @@ namespace UnityEditor
                 m_ShapeEditorUpdateDone =  0;
                 m_MouseClosestEdge = -1;
                 m_MouseClosestEdgeDist = float.MaxValue;
+                m_EdgePoints = null;
             }
         }
 

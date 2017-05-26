@@ -48,13 +48,13 @@ namespace UnityEditor.StyleSheets
         string m_CurrentPropertyName;
         StyleRule m_CurrentRule;
 
-        public void BeginRule()
+        public void BeginRule(int ruleLine)
         {
             Log("Beginning rule");
             Debug.Assert(m_BuilderState == BuilderState.Init);
             m_BuilderState = BuilderState.Rule;
 
-            m_CurrentRule = new StyleRule();
+            m_CurrentRule = new StyleRule { line = ruleLine };
         }
 
         public ComplexSelectorScope BeginComplexSelector(int specificity)
@@ -143,7 +143,7 @@ namespace UnityEditor.StyleSheets
             m_CurrentValues.Clear();
         }
 
-        public void EndRule()
+        public int EndRule()
         {
             Log("Ending rule");
 
@@ -154,6 +154,7 @@ namespace UnityEditor.StyleSheets
             m_Rules.Add(m_CurrentRule);
             m_CurrentRule = null;
             m_CurrentProperties.Clear();
+            return m_Rules.Count - 1;
         }
 
         public void BuildTo(StyleSheet writeTo)

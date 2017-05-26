@@ -155,8 +155,23 @@ namespace UnityEditor
                 var report = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, null, options.targetGroup, options.target, options.options, delayToAfterScriptReload);
 
 
-                if (report != null && report.totalErrors > 0)
-                    throw new BuildMethodException("Build failed with errors.");
+                if (report != null)
+                {
+                    var resultStr = String.Format("Build completed with a result of '{0}'", report.buildResult.ToString("g"));
+
+                    switch (report.buildResult)
+                    {
+                        case BuildReporting.BuildResult.Unknown:
+                            Debug.LogWarning(resultStr);
+                            break;
+                        case BuildReporting.BuildResult.Failed:
+                            Debug.LogError(resultStr);
+                            throw new BuildMethodException(report.SummarizeErrors());
+                        default:
+                            Debug.Log(resultStr);
+                            break;
+                    }
+                }
             }
 
             /// <summary>
@@ -237,7 +252,7 @@ namespace UnityEditor
                                     throw new BuildMethodException();
 
                                 newLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
-                                if (newLocation.Length == 0 || !System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(newLocation)))
+                                if (!BuildLocationIsValid(newLocation))
                                     throw new BuildMethodException("Build location for buildTarget " + buildTarget.ToString() + "is not valid.");
 
                                 break;

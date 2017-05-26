@@ -4,14 +4,11 @@
 
 using System;
 using UnityEngine;
-using UnityRandom = UnityEngine.Random;
 
 namespace UnityEditor.IMGUI.Controls
 {
     public class ArcHandle
     {
-        static readonly Quaternion s_DefaultAngleHandleRotationOffset = Quaternion.AngleAxis(90f, Vector3.up);
-
         static readonly float s_DefaultAngleHandleSize = 0.08f;
         static readonly float s_DefaultAngleHandleSizeRatio = 1.25f;
 
@@ -25,9 +22,9 @@ namespace UnityEditor.IMGUI.Controls
 
             // draw a cylindrical "hammer head" to indicate the direction the handle will move
             Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
-            Vector3 look = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
-            Vector3 up = Handles.matrix.MultiplyVector(rotation * Vector3.forward);
-            rotation = Quaternion.LookRotation(look, up) * s_DefaultAngleHandleRotationOffset;
+            Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
+            Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
+            rotation = Quaternion.LookRotation(tangent, normal);
             Matrix4x4 matrix =
                 Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
             using (new Handles.DrawingScope(matrix))
@@ -53,8 +50,8 @@ namespace UnityEditor.IMGUI.Controls
             Handles.DotHandleCap(controlID, position, rotation, size, eventType);
         }
 
-        int m_ControlIDHint;
-        int[] m_RadiusHandleControlIDs = new int[4];
+        private int m_ControlIDHint;
+        private int[] m_RadiusHandleControlIDs = new int[4];
 
         public float angle { get; set; }
 
@@ -79,7 +76,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public ArcHandle() : this(0)
         {
-            m_ControlIDHint = UnityRandom.Range(Int32.MinValue, Int32.MaxValue);
+            m_ControlIDHint = GetHashCode();
         }
 
         public ArcHandle(int controlIDHint)
@@ -112,6 +109,10 @@ namespace UnityEditor.IMGUI.Controls
                 m_RadiusHandleControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Keyboard);
 
             if (Handles.color.a == 0f)
+                return;
+
+            Vector3 scale = Handles.matrix.MultiplyPoint3x4(Vector3.one) - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
+            if (scale.x == 0f && scale.z == 0f)
                 return;
 
             Vector3 angleHandlePosition = Quaternion.AngleAxis(angle, Vector3.up) * Vector3.forward * radius;

@@ -13,6 +13,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
     {
         static readonly EditorCompilation editorCompilation = new EditorCompilation();
 
+        public static EditorCompilation Instance
+        {
+            get { return editorCompilation; }
+        }
+
         [RequiredByNativeCodeAttribute]
         public static void SetAssemblySuffix(string suffix)
         {
@@ -80,18 +85,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool HaveCompileErrors()
-        {
-            return editorCompilation.HaveCompileErrors();
-        }
-
-        [RequiredByNativeCode]
-        public static void ClearCompileErrors()
-        {
-            editorCompilation.ClearCompileErrors();
-        }
-
-        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return editorCompilation.DoesProjectFolderHaveAnyDirtyScripts();
@@ -104,15 +97,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.AssemblyCompilerMessages[] GetLastAssemblyCompilerMessages()
+        public static EditorCompilation.AssemblyCompilerMessages[] GetCompileMessages()
         {
-            return editorCompilation.GetLastAssemblyCompilerMessages();
-        }
-
-        [RequiredByNativeCode]
-        public static EditorCompilation.AssemblyCompilerMessages[] GetAllAssemblyCompilerMessages()
-        {
-            return editorCompilation.GetAllAssemblyCompilerMessages();
+            return editorCompilation.GetCompileMessages();
         }
 
         [RequiredByNativeCode]

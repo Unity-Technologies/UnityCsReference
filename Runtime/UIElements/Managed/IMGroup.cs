@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
             id = GUIUtility.GetControlID("IMGroup".GetHashCode(), FocusType.Passive);
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             // TODO: Same as box. Should move in common base class?
             style.Draw(position, GUIContent.Temp(text), id);

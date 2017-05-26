@@ -471,34 +471,40 @@ namespace UnityEngine
             SetTextureImpl(nameID, value);
         }
 
-        public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])ExtractArrayFromList(values)); }
-        public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, float[] values)
+        public void SetFloatArray(string name, List<float> values) { SetFloatArray(Shader.PropertyToID(name), values); }
+        public void SetFloatArray(int nameID, List<float> values)  { SetFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
+        public void SetFloatArray(string name, float[] values)     { SetFloatArray(Shader.PropertyToID(name), values); }
+        public void SetFloatArray(int nameID, float[] values)      { SetFloatArray(nameID, values, values.Length); }
+        private void SetFloatArray(int nameID, float[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetFloatArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetFloatArrayImpl(nameID, values, count);
         }
 
-        public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values)); }
-        public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, Vector4[] values)
+        public void SetVectorArray(string name, List<Vector4> values) { SetVectorArray(Shader.PropertyToID(name), values); }
+        public void SetVectorArray(int nameID, List<Vector4> values)  { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
+        public void SetVectorArray(string name, Vector4[] values)     { SetVectorArray(Shader.PropertyToID(name), values); }
+        public void SetVectorArray(int nameID, Vector4[] values)      { SetVectorArray(nameID, values, values.Length); }
+        private void SetVectorArray(int nameID, Vector4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetVectorArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetVectorArrayImpl(nameID, values, count);
         }
 
         public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values)); }
+        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
         public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, Matrix4x4[] values)
+        public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
+        private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetMatrixArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetMatrixArrayImpl(nameID, values, count);
         }
 
         public float GetFloat(string name)      { return GetFloat(Shader.PropertyToID(name)); }
@@ -577,33 +583,39 @@ namespace UnityEngine
         public static void SetGlobalBuffer(string name, ComputeBuffer buffer) { SetGlobalBuffer(Shader.PropertyToID(name), buffer); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, (float[])ExtractArrayFromList(values)); }
+        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalFloatArray(int nameID, float[] values)
+        public static void SetGlobalFloatArray(int nameID, float[] values)      { SetGlobalFloatArray(nameID, values, values.Length); }
+        private static void SetGlobalFloatArray(int nameID, float[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalFloatArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetGlobalFloatArrayImpl(nameID, values, count);
         }
 
-        public static void SetGlobalVectorArray(string name, List<Vector4> values)  { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)   { SetGlobalVectorArray(nameID, (Vector4[])ExtractArrayFromList(values)); }
-        public static void SetGlobalVectorArray(string name, Vector4[] values)      { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalVectorArray(int nameID, Vector4[] values)
+        public static void SetGlobalVectorArray(string name, List<Vector4> values) { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
+        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)  { SetGlobalVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalVectorArray(string name, Vector4[] values)     { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
+        public static void SetGlobalVectorArray(int nameID, Vector4[] values)      { SetGlobalVectorArray(nameID, values, values.Length); }
+        private static void SetGlobalVectorArray(int nameID, Vector4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalVectorArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetGlobalVectorArrayImpl(nameID, values, count);
         }
 
-        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values)    { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values)     { SetGlobalMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values)); }
-        public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)        { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)
+        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
+        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { SetGlobalMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)     { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
+        public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)      { SetGlobalMatrixArray(nameID, values, values.Length); }
+        private static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetGlobalMatrixArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetGlobalMatrixArrayImpl(nameID, values, count);
         }
 
         public static float GetGlobalFloat(string name) { return GetGlobalFloat(Shader.PropertyToID(name)); }
@@ -691,43 +703,51 @@ namespace UnityEngine
 
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])ExtractArrayFromList(values)); }
+        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
         public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, float[] values)
+        public void SetFloatArray(int nameID, float[] values)       { SetFloatArray(nameID, values, values.Length); }
+        private void SetFloatArray(int nameID, float[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetFloatArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetFloatArrayImpl(nameID, values, count);
         }
 
         public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), values); }
-        public void SetColorArray(int nameID, List<Color> values)   { SetColorArray(nameID, (Color[])ExtractArrayFromList(values)); }
+        public void SetColorArray(int nameID, List<Color> values)   { SetColorArray(nameID, (Color[])ExtractArrayFromList(values), values.Count); }
         public void SetColorArray(string name, Color[] values)      { SetColorArray(Shader.PropertyToID(name), values); }
-        public void SetColorArray(int nameID, Color[] values)
+        public void SetColorArray(int nameID, Color[] values)       { SetColorArray(nameID, values, values.Length); }
+        private void SetColorArray(int nameID, Color[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetColorArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetColorArrayImpl(nameID, values, count);
         }
 
         public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values)); }
+        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, Vector4[] values)
+        public void SetVectorArray(int nameID, Vector4[] values)        { SetVectorArray(nameID, values, values.Length); }
+        private void SetVectorArray(int nameID, Vector4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetVectorArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetVectorArrayImpl(nameID, values, count);
         }
 
         public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values)); }
-        public void SetMatrixArray(string name, Matrix4x4[] values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, Matrix4x4[] values)
+        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
+        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
+        public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
+        private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)
         {
             if (values == null) throw new ArgumentNullException("values");
             if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            SetMatrixArrayImpl(nameID, values);
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+            SetMatrixArrayImpl(nameID, values, count);
         }
 
         public float        GetFloat(string name)   { return GetFloat(Shader.PropertyToID(name)); }

@@ -57,10 +57,12 @@ public enum SerializedPropertyType
     Gradient = 16,
     
     Quaternion = 17,
-    ExposedReference = 18
+    ExposedReference = 18,
+    
+    FixedBufferSize = 19
 }
 
-public sealed partial class SerializedObject
+public sealed partial class SerializedObject : IDisposable
 {
     
             IntPtr m_Property;
@@ -68,30 +70,6 @@ public sealed partial class SerializedObject
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void InternalCreate (Object[] monoObjs, Object context) ;
 
-    public SerializedObject(Object obj)
-        {
-            InternalCreate(new Object[] {obj}, null);
-        }
-    
-    
-    public SerializedObject(Object obj, Object context)
-        {
-            InternalCreate(new Object[] {obj}, context);
-        }
-    
-    
-    public SerializedObject(Object[] objs)
-        {
-            InternalCreate(objs, null);
-        }
-    
-    
-    public SerializedObject(Object[] objs, Object context)
-        {
-            InternalCreate(objs, context);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void Update () ;
@@ -114,9 +92,6 @@ public sealed partial class SerializedObject
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void Dispose () ;
 
-    ~SerializedObject() { Dispose(); }
-    
-    
     public extern  Object targetObject
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -138,25 +113,6 @@ public sealed partial class SerializedObject
         get;
     }
 
-    public SerializedProperty GetIterator()
-        {
-            SerializedProperty i = GetIterator_Internal();
-            i.m_SerializedObject = this;
-            return i;
-        }
-    
-    
-    public SerializedProperty FindProperty(string propertyPath)
-        {
-            SerializedProperty i = GetIterator_Internal();
-            i.m_SerializedObject = this;
-            if (i.FindPropertyInternal(propertyPath))
-                return i;
-            else
-                return null;
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private SerializedProperty GetIterator_Internal () ;
@@ -222,14 +178,11 @@ public sealed partial class SerializedObject
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public sealed partial class SerializedProperty
+public sealed partial class SerializedProperty : IDisposable
 {
     
             IntPtr m_Property;
             internal SerializedObject m_SerializedObject;
-    
-            internal SerializedProperty() {}
-            ~SerializedProperty() { Dispose(); }
     
     
     [ThreadAndSerializationSafe ()]
@@ -241,9 +194,6 @@ public sealed partial class SerializedProperty
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool EqualContents (SerializedProperty x, SerializedProperty y) ;
 
-    public SerializedObject serializedObject { get { return m_SerializedObject; } }
-    
-    
     public extern  bool hasMultipleDifferentValues
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -519,6 +469,10 @@ public sealed partial class SerializedProperty
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal bool ValidateObjectReferenceValue (Object obj) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal bool ValidateObjectReferenceValueExact (Object obj) ;
+
     internal extern  string objectReferenceTypeString
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -526,64 +480,6 @@ public sealed partial class SerializedProperty
         get;
     }
 
-    public Object exposedReferenceValue
-        {
-            get
-            {
-                if (propertyType != SerializedPropertyType.ExposedReference)
-                    return null;
-
-                var defaultValue = FindPropertyRelative("defaultValue");
-                if (defaultValue == null)
-                    return null;
-
-                var returnedValue = defaultValue.objectReferenceValue;
-
-                var exposedPropertyTable = serializedObject.context as IExposedPropertyTable;
-                if (exposedPropertyTable != null)
-                {
-                    SerializedProperty exposedName = FindPropertyRelative("exposedName");
-                    var propertyName = new PropertyName(exposedName.stringValue);
-
-                    bool propertyFoundInTable = false;
-                    var objReference = exposedPropertyTable.GetReferenceValue(propertyName, out propertyFoundInTable);
-                    if (propertyFoundInTable == true)
-                        returnedValue = objReference;
-                }
-                return returnedValue;
-            }
-
-            set
-            {
-                if (propertyType != SerializedPropertyType.ExposedReference)
-                {
-                    throw new InvalidOperationException("Attempting to set the reference value on a SerializedProperty that is not an ExposedReference");
-                }
-
-                var defaultValue = FindPropertyRelative("defaultValue");
-
-                var exposedPropertyTable = serializedObject.context as IExposedPropertyTable;
-                if (exposedPropertyTable == null)
-                {
-                    defaultValue.objectReferenceValue = value;
-                    defaultValue.serializedObject.ApplyModifiedProperties();
-                    return;
-                }
-
-                SerializedProperty exposedName = FindPropertyRelative("exposedName");
-
-                var exposedId = exposedName.stringValue;
-                if (String.IsNullOrEmpty(exposedId))
-                {
-                    exposedId = UnityEditor.GUID.Generate().ToString();
-                    exposedName.stringValue = exposedId;
-                }
-                var propertyName = new PropertyName(exposedId);
-                exposedPropertyTable.SetReferenceValue(propertyName, value);
-            }
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void AppendFoldoutPPtrValue (Object obj) ;
@@ -723,14 +619,6 @@ public sealed partial class SerializedProperty
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public int CountInProperty () ;
 
-    public SerializedProperty Copy()
-        {
-            SerializedProperty property = CopyInternal();
-            property.m_SerializedObject = m_SerializedObject;
-            return property;
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private SerializedProperty CopyInternal () ;
@@ -743,16 +631,6 @@ public sealed partial class SerializedProperty
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool DeleteCommand () ;
 
-    public SerializedProperty FindPropertyRelative(string relativePropertyPath)
-        {
-            SerializedProperty prop = Copy();
-            if (prop.FindPropertyRelativeInternal(relativePropertyPath))
-                return prop;
-            else
-                return null;
-        }
-    
-    
     [uei.ExcludeFromDocs]
 public SerializedProperty GetEndProperty () {
     bool includeInvisible = false;
@@ -769,26 +647,6 @@ public SerializedProperty GetEndProperty( [uei.DefaultValue("false")] bool inclu
             return prop;
         }
 
-    
-    
-    public System.Collections.IEnumerator GetEnumerator()
-        {
-            if (isArray)
-            {
-                for (int i = 0; i < arraySize; i++)
-                {
-                    yield return GetArrayElementAtIndex(i);
-                }
-            }
-            else
-            {
-                var end = GetEndProperty();
-                while (NextVisible(true) && !SerializedProperty.EqualContents(this, end))
-                {
-                    yield return this;
-                }
-            }
-        }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -828,16 +686,6 @@ public SerializedProperty GetEndProperty( [uei.DefaultValue("false")] bool inclu
         set;
     }
 
-    public SerializedProperty GetArrayElementAtIndex(int index)
-        {
-            SerializedProperty prop = Copy();
-            if (prop.GetArrayElementAtIndexInternal(index))
-                return prop;
-            else
-                return null;
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private bool GetArrayElementAtIndexInternal (int index) ;
@@ -858,40 +706,34 @@ public SerializedProperty GetEndProperty( [uei.DefaultValue("false")] bool inclu
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool MoveArrayElement (int srcIndex, int dstIndex) ;
 
-    internal void SetToValueOfTarget(Object target)
+    public extern  bool isFixedBuffer
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern  int fixedBufferSize
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public SerializedProperty GetFixedBufferElementAtIndex(int index)
         {
-            SerializedProperty targetProperty = new SerializedObject(target).FindProperty(propertyPath);
-            if (targetProperty == null)
-            {
-                Debug.LogError(target.name + " does not have the property " + propertyPath);
-                return;
-            }
-            switch (propertyType)
-            {
-                case SerializedPropertyType.Integer: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Boolean: boolValue = targetProperty.boolValue; break;
-                case SerializedPropertyType.Float: floatValue = targetProperty.floatValue; break;
-                case SerializedPropertyType.String: stringValue = targetProperty.stringValue; break;
-                case SerializedPropertyType.Color: colorValue = targetProperty.colorValue; break;
-                case SerializedPropertyType.ObjectReference: objectReferenceValue = targetProperty.objectReferenceValue; break;
-                case SerializedPropertyType.LayerMask: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Enum: enumValueIndex = targetProperty.enumValueIndex; break;
-                case SerializedPropertyType.Vector2: vector2Value = targetProperty.vector2Value; break;
-                case SerializedPropertyType.Vector3: vector3Value = targetProperty.vector3Value; break;
-                case SerializedPropertyType.Vector4: vector4Value = targetProperty.vector4Value; break;
-                case SerializedPropertyType.Rect: rectValue = targetProperty.rectValue; break;
-                case SerializedPropertyType.ArraySize: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.Character: intValue = targetProperty.intValue; break;
-                case SerializedPropertyType.AnimationCurve: animationCurveValue = targetProperty.animationCurveValue; break;
-                case SerializedPropertyType.Bounds: boundsValue = targetProperty.boundsValue; break;
-                case SerializedPropertyType.Gradient: gradientValue = targetProperty.gradientValue; break;
-                case SerializedPropertyType.ExposedReference: exposedReferenceValue = targetProperty.exposedReferenceValue; break;
-            }
+            SerializedProperty prop = Copy();
+            if (prop.GetFixedBufferAtIndexInternal(index))
+                return prop;
+            else
+                return null;
         }
     
     
-    
-    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private bool GetFixedBufferAtIndexInternal (int index) ;
+
 }
 
 }

@@ -94,6 +94,10 @@ namespace UnityEditor
 
         private static Color lineTransparency = new Color(1, 1, 1, 0.75f);
 
+        internal const float kCameraViewLerpStart = 0.85f;
+        internal const float kCameraViewThreshold = 0.9f;
+        internal const float kCameraViewLerpSpeed = 1f / (1 - kCameraViewLerpStart);
+
         // The function for calling AddControl in Layout event and draw the handle in Repaint event.
         public delegate void CapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType);
 
@@ -245,7 +249,7 @@ namespace UnityEditor
 
         public static Vector3 Slider(Vector3 position, Vector3 direction, float size, CapFunction capFunction, float snap)
         {
-            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Passive);
             return UnityEditorInternal.Slider1D.Do(id, position, direction, size, capFunction, snap);
         }
 
@@ -257,35 +261,44 @@ namespace UnityEditor
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
         public static Vector3 Slider(Vector3 position, Vector3 direction, float size, DrawCapFunction drawFunc, float snap)
         {
-            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Passive);
             return UnityEditorInternal.Slider1D.Do(id, position, direction, size, drawFunc, snap);
         }
 
-        // Make an unconstrained movement handle.
         public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
         {
-            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
             return UnityEditorInternal.FreeMove.Do(id, position, rotation, size, snap, capFunction);
+        }
+
+        public static Vector3 FreeMoveHandle(int controlID, Vector3 position, Quaternion rotation, float size, Vector3 snap, CapFunction capFunction)
+        {
+            return UnityEditorInternal.FreeMove.Do(controlID, position, rotation, size, snap, capFunction);
         }
 
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
         public static Vector3 FreeMoveHandle(Vector3 position, Quaternion rotation, float size, Vector3 snap, DrawCapFunction capFunc)
         {
-            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
             return UnityEditorInternal.FreeMove.Do(id, position, rotation, size, snap, capFunc);
         }
 
         // Make a single-float draggable handle.
         public static float ScaleValueHandle(float value, Vector3 position, Quaternion rotation, float size, CapFunction capFunction, float snap)
         {
-            int id = GUIUtility.GetControlID(s_ScaleValueHandleHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_ScaleValueHandleHash, FocusType.Passive);
             return UnityEditorInternal.SliderScale.DoCenter(id, value, position, rotation, size, capFunction, snap);
+        }
+
+        public static float ScaleValueHandle(int controlID, float value, Vector3 position, Quaternion rotation, float size, CapFunction capFunction, float snap)
+        {
+            return UnityEditorInternal.SliderScale.DoCenter(controlID, value, position, rotation, size, capFunction, snap);
         }
 
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
         public static float ScaleValueHandle(float value, Vector3 position, Quaternion rotation, float size, DrawCapFunction capFunc, float snap)
         {
-            int id = GUIUtility.GetControlID(s_ScaleValueHandleHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_ScaleValueHandleHash, FocusType.Passive);
             return UnityEditorInternal.SliderScale.DoCenter(id, value, position, rotation, size, capFunc, snap);
         }
 
@@ -487,6 +500,21 @@ namespace UnityEditor
             Handles.DrawLine(point2, point3);
             Handles.DrawLine(point3, point4);
             Handles.DrawLine(point4, point1);
+        }
+
+        internal static float GetCameraViewLerpForWorldAxis(Vector3 viewVector, Vector3 axis)
+        {
+            return
+                Mathf.Clamp01(kCameraViewLerpSpeed *
+                (Mathf.Abs(Vector3.Dot(viewVector, axis)) - kCameraViewLerpStart));
+        }
+
+        internal static Vector3 GetCameraViewFrom(Vector3 position, Matrix4x4 matrix)
+        {
+            Camera camera = Camera.current;
+            return camera.orthographic
+                ? matrix.MultiplyVector(-camera.transform.forward).normalized
+                : matrix.MultiplyVector(position - camera.transform.position).normalized;
         }
     }
 }

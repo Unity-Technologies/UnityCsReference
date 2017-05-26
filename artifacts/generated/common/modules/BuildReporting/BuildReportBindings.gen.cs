@@ -16,7 +16,13 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.BuildReporting
 {
-
+internal enum BuildResult
+{
+    Unknown      = (1 << 0),
+    Succeeded    = (1 << 1),
+    Failed       = (1 << 2),
+    Canceled     = (1 << 3)
+}
 
 internal sealed partial class BuildReport : Object
 {
@@ -85,6 +91,13 @@ internal sealed partial class BuildReport : Object
     }
 
     public extern BuildOptions buildOptions
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern BuildResult buildResult
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

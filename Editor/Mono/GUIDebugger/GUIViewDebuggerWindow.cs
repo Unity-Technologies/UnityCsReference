@@ -6,13 +6,26 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     class GUIViewDebuggerWindow : EditorWindow
     {
+        enum InstructionType
+        {
+            Draw,
+            Clip,
+            Layout,
+            Unified,
+        }
+
         internal class Styles
         {
+            public readonly string defaultWindowPopupText = "<Please Select>";
+
+            public readonly GUIContent inspectedWindowLabel = new GUIContent("Inspected View: ");
+
             public readonly GUIStyle listItem = new GUIStyle("PR Label");
             public readonly GUIStyle listItemBackground = new GUIStyle("CN EntryBackOdd");
             public readonly GUIStyle listBackgroundStyle = new GUIStyle("CN Box");
@@ -20,7 +33,6 @@ namespace UnityEditor
             public readonly GUIStyle stackframeStyle = new GUIStyle(EditorStyles.label);
             public readonly GUIStyle stacktraceBackground = new GUIStyle("CN Box");
             public readonly GUIStyle centeredText = new GUIStyle("PR Label");
-
 
             public Styles()
             {
@@ -34,57 +46,138 @@ namespace UnityEditor
             }
         }
 
-        enum InstructionType
-        {
-            Draw,
-            Clip,
-            Layout,
-            Unified,
-        }
-
-
-        public GUIView m_Inspected;
-        InstructionType m_InstructionType = InstructionType.Draw;
-
-        bool m_ShowOverlay = true;
-
-
-        [NonSerialized]
-        int m_LastSelectedRow;
-
-
-        [NonSerialized]
-        private bool m_QueuedPointInspection = false;
-
-        [NonSerialized]
-        Vector2 m_PointToInspect;
-
-        public static Styles s_Styles;
-
-        //TODO: figure out proper minimum values and make sure the window also has compatible minimum size
-        readonly SplitterState m_InstructionListDetailSplitter = new SplitterState(new float[] { 30, 70 }, new int[] { 32, 32 }, null);
-
-
-        InstructionOverlayWindow m_InstructionOverlayWindow;
+        public static Styles styles { get { return s_Styles = s_Styles == null ? new Styles() : s_Styles; } }
+        static Styles s_Styles;
 
         static GUIViewDebuggerWindow s_ActiveInspector;
-        private IBaseInspectView m_InstructionModeView;
 
-        public GUIViewDebuggerWindow()
+        static EditorWindow GetEditorWindow(GUIView view)
+        {
+            var hostView = view as HostView;
+            if (hostView != null)
+                return hostView.actualView;
+
+            return null;
+        }
+
+        static string GetViewName(GUIView view)
+        {
+            var editorWindow = GetEditorWindow(view);
+            if (editorWindow != null)
+                return editorWindow.titleContent.text;
+
+            return view.GetType().Name;
+        }
+
+        public GUIView inspected
+        {
+            get
+            {
+                if (m_Inspected != null || m_InspectedEditorWindow == null)
+                    return m_Inspected;
+                // continue inspecting the same window if its dock area is destroyed by e.g., docking or undocking it
+                return inspected = m_InspectedEditorWindow.m_Parent;
+            }
+            private set
+            {
+                if (m_Inspected != value)
+                {
+                    CloseInstructionOverlayWindow();
+
+                    m_Inspected = value;
+                    if (m_Inspected != null)
+                    {
+                        m_InspectedEditorWindow = (m_Inspected is HostView) ? ((HostView)m_Inspected).actualView : null;
+                        GUIViewDebuggerHelper.DebugWindow(m_Inspected);
+                        m_Inspected.Repaint();
+                    }
+                    else
+                    {
+                        GUIViewDebuggerHelper.StopDebugging();
+                    }
+                    if (instructionModeView != null)
+                        instructionModeView.ClearRowSelection();
+
+                    OnInspectedViewChanged();
+                }
+            }
+        }
+        [SerializeField]
+        GUIView m_Inspected;
+        EditorWindow m_InspectedEditorWindow;
+
+        public IBaseInspectView instructionModeView { get { return m_InstructionModeView; } }
+        IBaseInspectView m_InstructionModeView;
+
+        protected GUIViewDebuggerWindow()
         {
             m_InstructionModeView = new StyleDrawInspectView(this);
         }
 
-        public IBaseInspectView instructionModeView
+        public void CloseInstructionOverlayWindow()
         {
-            get { return m_InstructionModeView; }
+            if (m_InstructionOverlayWindow != null)
+                m_InstructionOverlayWindow.Close();
         }
 
-        public InstructionOverlayWindow InstructionOverlayWindow
+        public void HighlightInstruction(GUIView view, Rect instructionRect, GUIStyle style)
         {
-            set { m_InstructionOverlayWindow = value; }
-            get { return m_InstructionOverlayWindow; }
+            /*if (m_ListViewState.row < 0)
+                return;
+                */
+            if (!m_ShowOverlay)
+                return;
+
+            if (m_InstructionOverlayWindow == null)
+                m_InstructionOverlayWindow = CreateInstance<InstructionOverlayWindow>();
+            m_InstructionOverlayWindow.Show(view, instructionRect, style);
+            Focus();
         }
+
+        InstructionType instructionType
+        {
+            get { return m_InstructionType; }
+            set
+            {
+                if (m_InstructionType != value || m_InstructionModeView == null)
+                {
+                    m_InstructionType = value;
+                    switch (m_InstructionType)
+                    {
+                        case InstructionType.Clip:
+                            m_InstructionModeView = new GUIClipInspectView(this);
+                            break;
+                        case InstructionType.Draw:
+                            m_InstructionModeView = new StyleDrawInspectView(this);
+                            break;
+                        case InstructionType.Layout:
+                            m_InstructionModeView = new GUILayoutInspectView(this);
+                            break;
+                        case InstructionType.Unified:
+                            m_InstructionModeView = new UnifiedInspectView(this);
+                            break;
+                    }
+                    m_InstructionModeView.UpdateInstructions();
+                }
+            }
+        }
+        [SerializeField]
+        InstructionType m_InstructionType = InstructionType.Draw;
+
+        InstructionOverlayWindow m_InstructionOverlayWindow;
+        bool m_ShowOverlay = true;
+
+        [NonSerialized]
+        int m_LastSelectedRow;
+
+        [NonSerialized]
+        bool m_QueuedPointInspection = false;
+
+        [NonSerialized]
+        Vector2 m_PointToInspect;
+
+        //TODO: figure out proper minimum values and make sure the window also has compatible minimum size
+        readonly SplitterState m_InstructionListDetailSplitter = new SplitterState(new float[] { 30, 70 }, new int[] { 32, 32 }, null);
 
         //Internal Tool for now. Uncomment it to enable it.
         //[MenuItem("Window/GUIView Inspector")]
@@ -99,36 +192,34 @@ namespace UnityEditor
             s_ActiveInspector.Show();
         }
 
-        static void InspectPoint(Vector2 point)
-        {
-            Debug.Log("Inspecting " + point);
-            s_ActiveInspector.InspectPointAt(point);
-        }
-
         void OnEnable()
         {
             titleContent =  new GUIContent("GUI Inspector");
+            GUIViewDebuggerHelper.onViewInstructionsChanged += OnInspectedViewChanged;
+            GUIView serializedInspected = m_Inspected;
+            inspected = null;
+            inspected = serializedInspected;
+            m_InstructionModeView = null;
+            instructionType = m_InstructionType;
+        }
+
+        void OnDisable()
+        {
+            GUIViewDebuggerHelper.onViewInstructionsChanged -= OnInspectedViewChanged;
+            GUIViewDebuggerHelper.StopDebugging();
+            CloseInstructionOverlayWindow();
         }
 
         void OnGUI()
         {
-            InitializeStylesIfNeeded();
             DoToolbar();
             ShowDrawInstructions();
         }
 
-        void InitializeStylesIfNeeded()
+        void OnInspectedViewChanged()
         {
-            if (s_Styles == null)
-                s_Styles = new GUIViewDebuggerWindow.Styles();
-        }
-
-        static void OnInspectedViewChanged()
-        {
-            if (s_ActiveInspector == null)
-                return;
-            s_ActiveInspector.RefreshData();
-            s_ActiveInspector.Repaint();
+            RefreshData();
+            Repaint();
         }
 
         void DoToolbar()
@@ -142,13 +233,26 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        private void DoWindowPopup()
+        bool CanInspectView(GUIView view)
         {
-            string selectedName = "<Please Select>";
-            if (m_Inspected != null)
-                selectedName = GetViewName(m_Inspected);
+            if (view == null)
+                return false;
 
-            GUILayout.Label("Inspected Window: ", GUILayout.ExpandWidth(false));
+            EditorWindow editorWindow = GetEditorWindow(view);
+            if (editorWindow == null)
+                return true;
+
+            if (editorWindow == this || editorWindow == m_InstructionOverlayWindow)
+                return false;
+
+            return true;
+        }
+
+        void DoWindowPopup()
+        {
+            string selectedName = inspected == null ? styles.defaultWindowPopupText : GetViewName(inspected);
+
+            GUILayout.Label(styles.inspectedWindowLabel, GUILayout.ExpandWidth(false));
 
             Rect popupPosition = GUILayoutUtility.GetRect(GUIContent.Temp(selectedName), EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(true));
             if (GUI.Button(popupPosition, GUIContent.Temp(selectedName), EditorStyles.toolbarDropDown))
@@ -171,12 +275,11 @@ namespace UnityEditor
                     if (!CanInspectView(view))
                         continue;
 
-                    string viewName = options.Count + ". " +  GetViewName(view);
-                    GUIContent content = new GUIContent(viewName);
-                    options.Add(content);
+                    GUIContent label = new GUIContent(string.Format("{0}. {1}", options.Count,  GetViewName(view)));
+                    options.Add(label);
                     selectableViews.Add(view);
 
-                    if (view == m_Inspected)
+                    if (view == inspected)
                         selectedIndex = selectableViews.Count;
                 }
                 //TODO: convert this to a Unity Window style popup. This way we could highlight the window on hover ;)
@@ -189,28 +292,10 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             var newInstructionType = (InstructionType)EditorGUILayout.EnumPopup(m_InstructionType, EditorStyles.toolbarDropDown);
             if (EditorGUI.EndChangeCheck())
-            {
-                m_InstructionType = newInstructionType;
-                switch (m_InstructionType)
-                {
-                    case InstructionType.Clip:
-                        m_InstructionModeView = new GUIClipInspectView(this);
-                        break;
-                    case InstructionType.Draw:
-                        m_InstructionModeView = new StyleDrawInspectView(this);
-                        break;
-                    case InstructionType.Layout:
-                        m_InstructionModeView = new GUILayoutInspectView(this);
-                        break;
-                    case InstructionType.Unified:
-                        m_InstructionModeView = new UnifiedInspectView(this);
-                        break;
-                }
-                m_InstructionModeView.UpdateInstructions();
-            }
+                instructionType = newInstructionType;
         }
 
-        private void DoInstructionOverlayToggle()
+        void DoInstructionOverlayToggle()
         {
             EditorGUI.BeginChangeCheck();
             m_ShowOverlay = GUILayout.Toggle(m_ShowOverlay, GUIContent.Temp("Show overlay"), EditorStyles.toolbarButton);
@@ -220,110 +305,48 @@ namespace UnityEditor
             }
         }
 
-        private void OnShowOverlayChanged()
+        void OnShowOverlayChanged()
         {
             if (m_ShowOverlay == false)
             {
-                if (m_InstructionOverlayWindow != null)
-                {
-                    m_InstructionOverlayWindow.Close();
-                }
+                CloseInstructionOverlayWindow();
             }
             else
             {
-                if (m_Inspected != null)
+                if (inspected != null)
                 {
                     instructionModeView.ShowOverlay();
                 }
             }
         }
 
-        private bool CanInspectView(GUIView view)
-        {
-            if (view == null)
-                return false;
-
-            EditorWindow editorWindow = GetEditorWindow(view);
-            if (editorWindow == null)
-                return true;
-
-            if (editorWindow == this || editorWindow == m_InstructionOverlayWindow)
-                return false;
-
-            return true;
-        }
-
         void OnWindowSelected(object userdata, string[] options, int selected)
         {
-            GUIView newInspected;
             selected--;
-            if (selected >= 0)
-            {
-                List<GUIView> views = (List<GUIView>)userdata;
-                newInspected = views[selected];
-            }
-            else
-                newInspected = null;
-
-            if (m_Inspected != newInspected)
-            {
-                if (m_InstructionOverlayWindow != null)
-                    m_InstructionOverlayWindow.Close();
-
-                m_Inspected = newInspected;
-                if (m_Inspected != null)
-                {
-                    GUIViewDebuggerHelper.DebugWindow(m_Inspected);
-                    m_Inspected.Repaint();
-                }
-                else
-                {
-                    GUIViewDebuggerHelper.StopDebugging();
-                }
-                instructionModeView.Unselect();
-            }
-
-
-            Repaint();
+            inspected = selected < 0 ? null : ((List<GUIView>)userdata)[selected];
         }
 
-        static EditorWindow GetEditorWindow(GUIView view)
-        {
-            var hostView = view as HostView;
-            if (hostView != null)
-                return hostView.actualView;
-
-            return null;
-        }
-
-        static string GetViewName(GUIView view)
-        {
-            var editorWindow = GetEditorWindow(view);
-            if (editorWindow != null)
-                return editorWindow.titleContent.text;
-
-            return view.GetType().Name;
-        }
-
-        private void RefreshData()
+        void RefreshData()
         {
             instructionModeView.UpdateInstructions();
         }
 
         void ShowDrawInstructions()
         {
-            if (m_Inspected == null)
+            if (inspected == null)
+            {
+                CloseInstructionOverlayWindow();
                 return;
+            }
 
             if (m_QueuedPointInspection)
             {
-                instructionModeView.Unselect();
+                instructionModeView.ClearRowSelection();
                 instructionModeView.SelectRow(FindInstructionUnderPoint(m_PointToInspect));
                 m_QueuedPointInspection = false;
             }
 
             SplitterGUILayout.BeginHorizontalSplit(m_InstructionListDetailSplitter);
-
 
             instructionModeView.DrawInstructionList();
 
@@ -336,51 +359,27 @@ namespace UnityEditor
             SplitterGUILayout.EndHorizontalSplit();
         }
 
-        public void HighlightInstruction(GUIView view, Rect instructionRect, GUIStyle style)
-        {
-            /*if (m_ListViewState.row < 0)
-                return;
-                */
-            if (!m_ShowOverlay)
-                return;
-
-            if (m_InstructionOverlayWindow == null)
-            {
-                m_InstructionOverlayWindow = CreateInstance<InstructionOverlayWindow>();
-            }
-
-
-            m_InstructionOverlayWindow.Show(view, instructionRect, style);
-            Focus();
-        }
-
         void InspectPointAt(Vector2 point)
         {
             m_PointToInspect = point;
             m_QueuedPointInspection = true;
-            m_Inspected.Repaint();
+            inspected.Repaint();
             Repaint();
         }
 
         int FindInstructionUnderPoint(Vector2 point)
         {
-            int instructionCount = GUIViewDebuggerHelper.GetInstructionCount();
-            for (int i = 0; i < instructionCount; ++i)
+            List<IMGUIDrawInstruction> drawInstructions = new List<IMGUIDrawInstruction>();
+            GUIViewDebuggerHelper.GetDrawInstructions(drawInstructions);
+            for (int i = 0; i < drawInstructions.Count; ++i)
             {
-                Rect rect = GUIViewDebuggerHelper.GetRectFromInstruction(i);
+                Rect rect = drawInstructions[i].rect;
                 if (rect.Contains(point))
                 {
                     return i;
                 }
             }
             return -1;
-        }
-
-        void OnDisable()
-        {
-            GUIViewDebuggerHelper.StopDebugging();
-            if (m_InstructionOverlayWindow != null)
-                m_InstructionOverlayWindow.Close();
         }
     }
 
@@ -393,5 +392,17 @@ namespace UnityEditor
         public string methodName;
         public string signature;
         public string moduleName; //TODO: we only get "Mono JIT Code" or "wrapper something", can we get the actual assembly name?
+    }
+
+    internal partial class GUIViewDebuggerHelper
+    {
+        internal static Action onViewInstructionsChanged;
+
+        [RequiredByNativeCode]
+        private static void CallOnViewInstructionsChanged()
+        {
+            if (onViewInstructionsChanged != null)
+                onViewInstructionsChanged();
+        }
     }
 }

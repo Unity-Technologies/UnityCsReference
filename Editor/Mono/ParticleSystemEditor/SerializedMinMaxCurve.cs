@@ -19,10 +19,9 @@ namespace UnityEditor
     internal class SerializedMinMaxCurve
     {
         public SerializedProperty scalar;
+        public SerializedProperty minScalar;
         public SerializedProperty maxCurve;
         public SerializedProperty minCurve;
-        public SerializedProperty minCurveFirstKeyValue;
-        public SerializedProperty maxCurveFirstKeyValue;
         private SerializedProperty minMaxState;
 
         public ModuleUI m_Module;       // Module that owns this SerializedMinMaxCurve
@@ -80,10 +79,9 @@ namespace UnityEditor
             m_AllowCurves = true;
 
             scalar = useProp0 ? m.GetProperty0(m_Name, "scalar") : m.GetProperty(m_Name, "scalar");
+            minScalar = useProp0 ? m.GetProperty0(m_Name, "minScalar") : m.GetProperty(m_Name, "minScalar");
             maxCurve = useProp0 ? m.GetProperty0(m_Name, "maxCurve") : m.GetProperty(m_Name, "maxCurve");
-            maxCurveFirstKeyValue = maxCurve.FindPropertyRelative("m_Curve.Array.data[0].value");
             minCurve = useProp0 ? m.GetProperty0(m_Name, "minCurve") : m.GetProperty(m_Name, "minCurve");
-            minCurveFirstKeyValue = minCurve.FindPropertyRelative("m_Curve.Array.data[0].value");
             minMaxState = useProp0 ? m.GetProperty0(m_Name, "minMaxState") : m.GetProperty(m_Name, "minMaxState");
 
             // Reconstruct added curves when we initialize
@@ -116,10 +114,9 @@ namespace UnityEditor
 
         public float maxConstant
         {
-            // The maxConstant is stored as a normalized value in the first key of maxCurve and then scaled with our scalar
             get
             {
-                return maxCurveFirstKeyValue.floatValue * scalar.floatValue;
+                return scalar.floatValue;
             }
 
             set
@@ -129,19 +126,7 @@ namespace UnityEditor
                 if (!signedRange)
                     value = Mathf.Max(value, 0f);
 
-                float totalMin = minConstant;
-                float absMin = Mathf.Abs(totalMin);
-                float absMax = Mathf.Abs(value);
-
-                float newScalar = absMax > absMin ? absMax : absMin;
-                if (newScalar != scalar.floatValue)
-                {
-                    SetScalarAndNormalizedConstants(newScalar, totalMin, value);
-                }
-                else
-                {
-                    SetNormalizedConstant(maxCurve, value);
-                }
+                scalar.floatValue = value;
             }
         }
 
@@ -154,10 +139,9 @@ namespace UnityEditor
 
         public float minConstant
         {
-            // The minConstant is stored as a normalized value in the first key of minCurve and then scaled with our scalar
             get
             {
-                return minCurveFirstKeyValue.floatValue * scalar.floatValue;
+                return minScalar.floatValue;
             }
 
             set
@@ -167,37 +151,8 @@ namespace UnityEditor
                 if (!signedRange)
                     value = Mathf.Max(value, 0f);
 
-                float totalMax = maxConstant;
-                float absMin = Mathf.Abs(value);
-                float absMax = Mathf.Abs(totalMax);
-
-                float newScalar = absMax > absMin ? absMax : absMin;
-                if (newScalar != scalar.floatValue)
-                {
-                    SetScalarAndNormalizedConstants(newScalar, value, totalMax);
-                }
-                else
-                {
-                    SetNormalizedConstant(minCurve, value);
-                }
+                minScalar.floatValue = value;
             }
-        }
-
-        public void SetScalarAndNormalizedConstants(float newScalar, float totalMin, float totalMax)
-        {
-            scalar.floatValue = newScalar;
-            SetNormalizedConstant(minCurve, totalMin);
-            SetNormalizedConstant(maxCurve, totalMax);
-        }
-
-        void SetNormalizedConstant(SerializedProperty curve, float totalValue)
-        {
-            float scalarValue = scalar.floatValue;
-
-            scalarValue = Mathf.Max(scalarValue, 0.0001f);
-            float relativeValue = totalValue / scalarValue;
-
-            SetCurveConstant(curve, relativeValue);
         }
 
         // Callback for Curve Editor to get axis labels
@@ -269,11 +224,14 @@ namespace UnityEditor
 
         public void SetMinMaxState(MinMaxCurveState newState, bool addToCurveEditor)
         {
-            if (!stateHasMultipleDifferentValues)
+            if (stateHasMultipleDifferentValues)
             {
-                if (newState == state)
-                    return;
+                Debug.LogError("SetMinMaxState is not allowed with multiple different values");
+                return;
             }
+
+            if (newState == state)
+                return;
 
             MinMaxCurveState oldState = state;
             ParticleSystemCurveEditor sce = m_Module.GetParticleSystemCurveEditor();
@@ -285,10 +243,8 @@ namespace UnityEditor
 
             switch (newState)
             {
-                case MinMaxCurveState.k_Scalar:     InitSingleScalar(oldState); break;
-                case MinMaxCurveState.k_TwoScalars: InitDoubleScalars(oldState); break;
-                case MinMaxCurveState.k_Curve:      InitSingleCurve(oldState); break;
-                case MinMaxCurveState.k_TwoCurves:  InitDoubleCurves(oldState); break;
+                case MinMaxCurveState.k_Curve: SetCurveRequirements(); break;
+                case MinMaxCurveState.k_TwoCurves: SetCurveRequirements(); break;
             }
 
             // Assign state AFTER matching data to new state AND removing curve from curveEditor since it uses current 'state'
@@ -318,101 +274,6 @@ namespace UnityEditor
             UnityEditorInternal.AnimationCurvePreviewCache.ClearCache();
         }
 
-        void InitSingleScalar(MinMaxCurveState oldState)
-        {
-            switch (oldState)
-            {
-                case MinMaxCurveState.k_Curve:
-                case MinMaxCurveState.k_TwoCurves:
-                case MinMaxCurveState.k_TwoScalars:
-                    // Transfer curve sign back to scalar
-                    float maxCurveValue = GetMaxKeyValue(maxCurve.animationCurveValue.keys);
-                    scalar.floatValue *= maxCurveValue;
-                    break;
-            }
-
-            // Ensure one key max curve (assumed by MinMaxCurve when evaluting curve.key[0].value * scalar)
-            SetCurveConstant(maxCurve, 1f);
-        }
-
-        void InitDoubleScalars(MinMaxCurveState oldState)
-        {
-            // It is important that both minConstant and maxConstent is set to ensure one-key optimized curves!
-            minConstant = GetAverageKeyValue(minCurve.animationCurveValue.keys) * scalar.floatValue;
-
-            switch (oldState)
-            {
-                case MinMaxCurveState.k_Scalar:
-                    // Transfer scalar sign back to max curve
-                    maxConstant = scalar.floatValue;
-                    break;
-
-                case MinMaxCurveState.k_Curve:
-                case MinMaxCurveState.k_TwoCurves:
-                    maxConstant = GetAverageKeyValue(maxCurve.animationCurveValue.keys) * scalar.floatValue;
-                    break;
-                default:
-                    Debug.LogError("Enum not handled!");
-                    break;
-            }
-
-            // Double scalars is treated as double curves in the backend so ensure to call SetCurveRequirements
-            SetCurveRequirements();
-        }
-
-        void InitSingleCurve(MinMaxCurveState oldState)
-        {
-            switch (oldState)
-            {
-                case MinMaxCurveState.k_Scalar:
-                    SetCurveConstant(maxCurve, GetNormalizedValueFromScalar());
-                    break;
-
-                case MinMaxCurveState.k_TwoScalars:
-                case MinMaxCurveState.k_TwoCurves:
-                    // Do nothing as maxCurve is the same as for two curves (notice that twoScalars is similar to twoCurves)
-                    break;
-            }
-
-            SetCurveRequirements();
-        }
-
-        void InitDoubleCurves(MinMaxCurveState oldState)
-        {
-            switch (oldState)
-            {
-                case MinMaxCurveState.k_Scalar:
-                {
-                    // Transfer scalar sign to max curve
-                    SetCurveConstant(maxCurve, GetNormalizedValueFromScalar());
-                }
-                break;
-                case MinMaxCurveState.k_TwoScalars:
-                {
-                    // The TwoScalars mimic the TwoCurves so no need to change here
-                }
-                break;
-                case MinMaxCurveState.k_Curve:
-                {
-                    // Do nothing as maxCurve is the same as for two curves
-                }
-                break;
-            }
-
-            SetCurveRequirements();
-        }
-
-        float GetNormalizedValueFromScalar()
-        {
-            if (scalar.floatValue < 0)
-                return -1.0f;
-
-            if (scalar.floatValue > 0)
-                return 1.0f;
-
-            return 0.0f;
-        }
-
         void SetCurveRequirements()
         {
             // Abs negative values if we change to curve mode (in curve mode the sign is transfered to the curve)
@@ -421,57 +282,6 @@ namespace UnityEditor
             // Ensure proper y-axis value (0 does not create a valid range)
             if (scalar.floatValue == 0)
                 scalar.floatValue = m_DefaultCurveScalar;
-        }
-
-        void SetCurveConstant(SerializedProperty curve, float value)
-        {
-            Keyframe[] keys = new Keyframe[1];
-            keys[0] = new Keyframe(0f, value);
-            curve.animationCurveValue = new AnimationCurve(keys);
-        }
-
-        private float GetAverageKeyValue(Keyframe[] keyFrames)
-        {
-            float sum = 0;
-            foreach (Keyframe key in keyFrames)
-                sum += key.value;
-
-            return sum / keyFrames.Length;
-        }
-
-        private float GetMaxKeyValue(Keyframe[] keyFrames)
-        {
-            float maxValue = -Mathf.Infinity;
-            float minValue = Mathf.Infinity;
-            foreach (Keyframe key in keyFrames)
-            {
-                if (key.value > maxValue)
-                    maxValue = key.value;
-                if (key.value < minValue)
-                    minValue = key.value;
-            }
-
-            if (Mathf.Abs(minValue) > maxValue)
-                return minValue;
-
-            return maxValue;
-        }
-
-        private bool IsCurveConstant(Keyframe[] keyFrames, out float constantValue)
-        {
-            if (keyFrames.Length == 0)
-            {
-                constantValue = 0.0f;
-                return false;
-            }
-
-            constantValue = keyFrames[0].value;
-            for (int i = 1; i < keyFrames.Length; ++i)
-            {
-                if (Mathf.Abs(constantValue - keyFrames[i].value) > 0.00001f)
-                    return false;
-            }
-            return true;
         }
 
         public string GetUniqueCurveName()

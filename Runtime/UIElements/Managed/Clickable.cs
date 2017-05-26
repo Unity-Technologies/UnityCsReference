@@ -50,60 +50,77 @@ namespace UnityEngine.Experimental.UIElements
             return (m_Delay > 0 || m_Interval > 0);
         }
 
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        protected override void RegisterCallbacksOnTarget()
         {
-            switch (evt.type)
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        protected override void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        protected void OnMouseDown(MouseEventBase evt)
+        {
+            if (CanStartManipulation(evt))
             {
-                case EventType.MouseDown:
-                    if (CanStartManipulation(evt))
+                target.TakeCapture();
+                lastMousePosition = evt.localMousePosition;
+
+                if (IsRepeatable())
+                {
+                    // Repeatable button clicks are performed on the MouseDown and at timer events
+                    if (clicked != null && target.ContainsPointToLocal(evt.localMousePosition))
                     {
-                        this.TakeCapture();
-                        lastMousePosition = evt.mousePosition;
-                        if (IsRepeatable())
-                        {
-                            // Repeatable button clicks are performed on the MouseDown and at timer events
-                            if (clicked != null && target.ContainsPointToLocal(evt.mousePosition))
-                                clicked();
-
-                            this.Schedule(OnTimer)
-                            .StartingIn(m_Delay)
-                            .Every(m_Interval);
-                        }
-                        target.pseudoStates |= PseudoStates.Active;
-                        return EventPropagation.Stop;
+                        clicked();
                     }
-                    break;
 
-                case EventType.MouseUp:
-                    if (CanStopManipulation(evt))
-                    {
-                        this.ReleaseCapture();
+                    target.Schedule(OnTimer)
+                    .StartingIn(m_Delay)
+                    .Every(m_Interval);
+                }
 
-                        if (IsRepeatable())
-                        {
-                            // Repeatable button clicks are performed on the MouseDown and at timer events only
-                            target.Unschedule(OnTimer);
-                        }
-                        else
-                        {
-                            // Non repeatable button clicks are performed on the MouseUp
-                            if (clicked != null && target.ContainsPointToLocal(evt.mousePosition))
-                                clicked();
-                        }
-                        target.pseudoStates &= ~PseudoStates.Active;
-                        return EventPropagation.Stop;
-                    }
-                    break;
+                target.pseudoStates |= PseudoStates.Active;
 
-                case EventType.MouseDrag:
-                    if (this.HasCapture())
-                    {
-                        lastMousePosition = evt.mousePosition;
-                        return EventPropagation.Stop;
-                    }
-                    break;
+                evt.StopPropagation();
             }
-            return EventPropagation.Continue;
+        }
+
+        protected void OnMouseMove(MouseEventBase evt)
+        {
+            if (target.HasCapture())
+            {
+                lastMousePosition = evt.localMousePosition;
+                evt.StopPropagation();
+            }
+        }
+
+        protected void OnMouseUp(MouseEventBase evt)
+        {
+            if (CanStopManipulation(evt))
+            {
+                target.ReleaseCapture();
+
+                if (IsRepeatable())
+                {
+                    // Repeatable button clicks are performed on the MouseDown and at timer events only
+                    target.Unschedule(OnTimer);
+                }
+                else
+                {
+                    // Non repeatable button clicks are performed on the MouseUp
+                    if (clicked != null && target.ContainsPoint(target.ChangeCoordinatesTo(target.parent, evt.localMousePosition)))
+                    {
+                        clicked();
+                    }
+                }
+                target.pseudoStates &= ~PseudoStates.Active;
+                evt.StopPropagation();
+            }
         }
     }
 }

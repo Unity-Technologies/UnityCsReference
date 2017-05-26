@@ -43,6 +43,11 @@ namespace UnityEditor.Modules
             internal virtual void Reset(PluginImporterInspector inspector)
             {
                 string valueString = inspector.importer.GetPlatformData(platformName, key);
+                ParseStringValue(valueString);
+            }
+
+            protected void ParseStringValue(string valueString)
+            {
                 try
                 {
                     value = TypeDescriptor.GetConverter(type).ConvertFromString(valueString);

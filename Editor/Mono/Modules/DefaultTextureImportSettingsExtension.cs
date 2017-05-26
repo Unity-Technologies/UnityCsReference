@@ -21,6 +21,10 @@ namespace UnityEditor.Modules
         static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
         static readonly GUIContent maxSize = EditorGUIUtility.TextContent("Max Size|Textures larger than this will be scaled down.");
 
+        static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };
+        static readonly int[] kResizeAlgorithmValues = { (int)TextureResizeAlgorithm.Mitchell, (int)TextureResizeAlgorithm.Bilinear };
+        static readonly GUIContent resizeAlgorithm = EditorGUIUtility.TextContent("Resize Algorithm|Select algorithm to apply for textures when scaled down.");
+
         static readonly GUIContent kTextureCompression = EditorGUIUtility.TextContent("Compression|How will this texture be compressed?");
         static readonly GUIContent[] kTextureCompressionOptions =
         {
@@ -40,6 +44,7 @@ namespace UnityEditor.Modules
         public virtual void ShowImportSettings(Editor baseEditor, TextureImportPlatformSettings platformSettings)
         {
             TextureImporterInspector editor = baseEditor as TextureImporterInspector;
+
             // Max texture size
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.maxTextureSizeIsDifferent;
@@ -48,6 +53,16 @@ namespace UnityEditor.Modules
             if (EditorGUI.EndChangeCheck())
             {
                 platformSettings.SetMaxTextureSizeForAll(maxTextureSize);
+            }
+
+            // Resize Algorithm
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.resizeAlgorithmIsDifferent;
+            int resizeAlgorithmVal = EditorGUILayout.IntPopup(resizeAlgorithm.text, (int)platformSettings.resizeAlgorithm, kResizeAlgorithmStrings, kResizeAlgorithmValues);
+            EditorGUI.showMixedValue = false;
+            if (EditorGUI.EndChangeCheck())
+            {
+                platformSettings.SetResizeAlgorithmForAll((TextureResizeAlgorithm)resizeAlgorithmVal);
             }
 
             // Texture Compression

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
 using UnityEditor.Connect;
 
 namespace UnityEditor.Web
@@ -22,6 +23,17 @@ namespace UnityEditor.Web
         public override string GetServiceDisplayName()
         {
             return kServiceDisplayName;
+        }
+
+        [Serializable]
+        public struct UnetServiceState { public bool unet; }
+        override public void EnableService(bool enabled)
+        {
+            if (IsServiceEnabled() != enabled)
+            {
+                base.EnableService(enabled);
+                UsabilityAnalytics.SendEventParam("service_state", new UnetServiceState() { unet =  enabled });
+            }
         }
 
         static UnetAccess()

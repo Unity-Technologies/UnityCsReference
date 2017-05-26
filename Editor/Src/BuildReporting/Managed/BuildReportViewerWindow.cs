@@ -11,4 +11,5 @@ using UnityEditorInternal;
 using System.Text;
 using UnityEditor.Web;
 using System.IO;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 

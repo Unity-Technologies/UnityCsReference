@@ -19,6 +19,7 @@ namespace UnityEngine
 
 
 
+[StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
 public sealed partial class AssetBundleCreateRequest : AsyncOperation
 {
@@ -109,6 +110,68 @@ public sealed partial class AssetBundle : Object
     public static AssetBundle LoadFromMemory (byte[] binary) {
         uint crc = 0;
         return LoadFromMemory ( binary, crc );
+    }
+
+    [uei.ExcludeFromDocs]
+public static AssetBundleCreateRequest LoadFromStreamAsync (System.IO.Stream stream, uint crc ) {
+    uint managedReadBufferSize = 0;
+    return LoadFromStreamAsync ( stream, crc, managedReadBufferSize );
+}
+
+[uei.ExcludeFromDocs]
+public static AssetBundleCreateRequest LoadFromStreamAsync (System.IO.Stream stream) {
+    uint managedReadBufferSize = 0;
+    uint crc = 0;
+    return LoadFromStreamAsync ( stream, crc, managedReadBufferSize );
+}
+
+public static AssetBundleCreateRequest LoadFromStreamAsync(System.IO.Stream stream, [uei.DefaultValue("0")]  uint crc , [uei.DefaultValue("0")]  uint managedReadBufferSize )
+        {
+            ManagedStreamHelpers.ValidateLoadFromStream(stream);
+            return LoadFromStreamAsyncInternal(stream, crc, managedReadBufferSize);
+        }
+
+    
+    
+    [uei.ExcludeFromDocs]
+public static AssetBundle LoadFromStream (System.IO.Stream stream, uint crc ) {
+    uint managedReadBufferSize = 0;
+    return LoadFromStream ( stream, crc, managedReadBufferSize );
+}
+
+[uei.ExcludeFromDocs]
+public static AssetBundle LoadFromStream (System.IO.Stream stream) {
+    uint managedReadBufferSize = 0;
+    uint crc = 0;
+    return LoadFromStream ( stream, crc, managedReadBufferSize );
+}
+
+public static AssetBundle LoadFromStream(System.IO.Stream stream, [uei.DefaultValue("0")]  uint crc , [uei.DefaultValue("0")]  uint managedReadBufferSize )
+        {
+            ManagedStreamHelpers.ValidateLoadFromStream(stream);
+            return LoadFromStreamInternal(stream, crc, managedReadBufferSize);
+        }
+
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  AssetBundleCreateRequest LoadFromStreamAsyncInternal (System.IO.Stream stream, uint crc, [uei.DefaultValue("0")]  uint managedReadBufferSize ) ;
+
+    [uei.ExcludeFromDocs]
+    internal static AssetBundleCreateRequest LoadFromStreamAsyncInternal (System.IO.Stream stream, uint crc) {
+        uint managedReadBufferSize = 0;
+        return LoadFromStreamAsyncInternal ( stream, crc, managedReadBufferSize );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  AssetBundle LoadFromStreamInternal (System.IO.Stream stream, uint crc, [uei.DefaultValue("0")]  uint managedReadBufferSize ) ;
+
+    [uei.ExcludeFromDocs]
+    internal static AssetBundle LoadFromStreamInternal (System.IO.Stream stream, uint crc) {
+        uint managedReadBufferSize = 0;
+        return LoadFromStreamInternal ( stream, crc, managedReadBufferSize );
     }
 
     public extern  Object mainAsset

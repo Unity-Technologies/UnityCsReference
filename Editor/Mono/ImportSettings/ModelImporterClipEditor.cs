@@ -46,6 +46,7 @@ namespace UnityEditor
         SerializedProperty m_AnimationScaleError;
         SerializedProperty m_AnimationWrapMode;
         SerializedProperty m_LegacyGenerateAnimations;
+        SerializedProperty m_ImportAnimatedCustomProperties;
 
         SerializedProperty m_MotionNodeName;
         public int motionNodeIndex { get; set; }
@@ -134,6 +135,7 @@ namespace UnityEditor
 
             public GUIContent Mask = EditorGUIUtility.TextContent("Mask|Configure the mask for this clip to remove unnecessary curves.");
 
+            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TextContent("Animated Custom Properties|Controls if animated custom properties are imported.");
 
             public Styles()
             {
@@ -162,6 +164,7 @@ namespace UnityEditor
             m_AnimationPositionError = serializedObject.FindProperty("m_AnimationPositionError");
             m_AnimationScaleError = serializedObject.FindProperty("m_AnimationScaleError");
             m_AnimationWrapMode = serializedObject.FindProperty("m_AnimationWrapMode");
+            m_ImportAnimatedCustomProperties = serializedObject.FindProperty("m_ImportAnimatedCustomProperties");
 
             m_RigImportErrors = serializedObject.FindProperty("m_RigImportErrors");
             m_RigImportWarnings = serializedObject.FindProperty("m_RigImportWarnings");
@@ -387,11 +390,11 @@ namespace UnityEditor
 
             if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
             {
-                bool HasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0;
+                bool hasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0 && singleImporter.animationType != ModelImporterAnimationType.None;
 
                 if (IsDeprecatedMultiAnimationRootImport())
                     EditorGUILayout.HelpBox("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info);
-                else if (HasNoValidAnimationData)
+                else if (hasNoValidAnimationData)
                 {
                     if (serializedObject.hasModifiedProperties)
                     {
@@ -412,9 +415,9 @@ namespace UnityEditor
                     }
                 }
                 else if (m_AnimationType.hasMultipleDifferentValues)
-                    EditorGUILayout.HelpBox("The rigs of the selected models have different animation types.", MessageType.Info);
+                    EditorGUILayout.HelpBox("The rigs of the selected models have different Animation Types.", MessageType.Info);
                 else if (animationType == ModelImporterAnimationType.None)
-                    EditorGUILayout.HelpBox("The rigs is not setup to handle animation. Edit the settings in the Rig tab.", MessageType.Info);
+                    EditorGUILayout.HelpBox("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
                 else
                 {
                     if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
@@ -472,6 +475,8 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_AnimationScaleError, styles.AnimScaleErrorLabel);
                 GUILayout.Label(styles.AnimationCompressionHelp, EditorStyles.helpBox);
             }
+
+            EditorGUILayout.PropertyField(m_ImportAnimatedCustomProperties, styles.ImportAnimatedCustomProperties);
         }
 
         void RootMotionNodeSettings()

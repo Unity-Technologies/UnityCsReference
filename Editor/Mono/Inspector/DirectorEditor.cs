@@ -3,11 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEditorInternal;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Playables;
@@ -37,6 +34,7 @@ namespace UnityEditor
         private SerializedProperty m_UpdateMethod;
 
         private GUIContent m_AnimatorContent;
+        private GUIContent m_AudioContent;
         private GUIContent m_ScriptContent;
         private Texture    m_DefaultScriptContentTexture;
 
@@ -49,6 +47,7 @@ namespace UnityEditor
             m_InitialTime = serializedObject.FindProperty("m_InitialTime");
 
             m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
+            m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioSource)));
             m_ScriptContent = new GUIContent(EditorGUIUtility.LoadIcon("ScriptableObject Icon"));
             m_DefaultScriptContentTexture = m_ScriptContent.image;
         }
@@ -71,7 +70,19 @@ namespace UnityEditor
             }
             EditorGUI.EndProperty();
 
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_WrapMode, Styles.WrapModeContent);
+            if (EditorGUI.EndChangeCheck())
+            {
+                // case 876701 - we need to explicitly set the property so any playing graphs get
+                //  updated with the new wrap mode
+                DirectorWrapMode mode = (DirectorWrapMode)m_WrapMode.enumValueIndex;
+                foreach (var t in targets.OfType<PlayableDirector>())
+                {
+                    t.extrapolationMode = mode;
+                }
+            }
+
             PropertyFieldAsFloat(m_InitialTime, Styles.InitialTimeContent);
 
             if (Application.isPlaying)
@@ -99,6 +110,15 @@ namespace UnityEditor
 
             if (binding.streamType == DataStreamType.Audio)
             {
+                AudioSource source = director.GetGenericBinding(binding.sourceObject) as AudioSource;
+                m_AudioContent.text = binding.streamName;
+                m_AudioContent.tooltip = (source == null) ? Styles.NoBindingsContent.text : string.Empty;
+                EditorGUI.BeginChangeCheck();
+                source = EditorGUILayout.ObjectField(m_AudioContent, source, typeof(AudioSource), false) as AudioSource;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SetBinding(director, binding.sourceObject, source);
+                }
             }
             else if (binding.streamType == DataStreamType.Animation)
             {
@@ -180,6 +200,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 property.objectReferenceValue = prop;
+                // some editors (like Timeline) needs to repaint when the playable asset changes
+                InternalEditorUtility.RepaintAllViews();
             }
 
             EditorGUI.EndProperty();

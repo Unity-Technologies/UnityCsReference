@@ -12,9 +12,9 @@ namespace UnityEngine.Experimental.UIElements
         public enum DragDirection
         {
             None = 0,
-            LowToHigh = 1 << 0,    // i.e. left-to-right, or top-to-bottom drag
-            HighToLow = 1 << 1,    // i.e. right-to-left, or bottom-to-top
-            Free = 1 << 2        // i.e. user is dragging using the drag element, free of any direction constraint
+            LowToHigh = 1 << 0, // i.e. left-to-right, or top-to-bottom drag
+            HighToLow = 1 << 1, // i.e. right-to-left, or bottom-to-top
+            Free = 1 << 2 // i.e. user is dragging using the drag element, free of any direction constraint
         }
 
         public event System.Action dragging;
@@ -30,7 +30,8 @@ namespace UnityEngine.Experimental.UIElements
             get { return lastMousePosition - startMousePosition; }
         }
 
-        public ClampedDragger(Slider slider, System.Action clickHandler, System.Action dragHandler) :
+        public ClampedDragger(Slider slider, System.Action clickHandler, System.Action dragHandler)
+            :
             base(clickHandler, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait)
         {
             dragDirection = DragDirection.None;
@@ -40,54 +41,51 @@ namespace UnityEngine.Experimental.UIElements
             dragging += dragHandler;
         }
 
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        protected override void RegisterCallbacksOnTarget()
         {
-            switch (evt.type)
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        protected override void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
+            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+        }
+
+        new void OnMouseDown(MouseEventBase evt)
+        {
+            if (CanStartManipulation(evt))
             {
-                case EventType.MouseDown:
-                    if (CanStartManipulation(evt))
-                    {
-                        startMousePosition = evt.mousePosition;
-                        dragDirection = DragDirection.None;
-                        // Let base class Clickable handle the mouse event
-                        base.HandleEvent(evt, finalTarget);
-                        return EventPropagation.Stop;
-                    }
-                    break;
-
-                case EventType.MouseDrag:
-                    if (this.HasCapture())
-                    {
-                        // Let base class Clickable handle the mouse event first
-                        // (although nothing much happens in the base class on mouse drags)
-                        base.HandleEvent(evt, finalTarget);
-
-                        // The drag element does the real work
-
-                        // Take control if we can
-                        if (dragDirection == DragDirection.None)
-                            dragDirection = DragDirection.Free;
-
-                        // If and when we have control, set value from drag element
-                        if (dragDirection == DragDirection.Free)
-                        {
-                            if (dragging != null)
-                                dragging();
-                        }
-
-                        return EventPropagation.Stop;
-                    }
-                    break;
-
-                case EventType.MouseUp:
-                    if (CanStopManipulation(evt))
-                    {
-                        // Let base class Clickable handle the mouse event
-                        return base.HandleEvent(evt, finalTarget);
-                    }
-                    break;
+                startMousePosition = evt.localMousePosition;
+                dragDirection = DragDirection.None;
+                base.OnMouseDown(evt);
             }
-            return EventPropagation.Continue;
+        }
+
+        new void OnMouseMove(MouseEventBase evt)
+        {
+            if (target.HasCapture())
+            {
+                // Let base class Clickable handle the mouse event first
+                // (although nothing much happens in the base class on mouse drags)
+                base.OnMouseMove(evt);
+
+                // The drag element does the real work
+
+                // Take control if we can
+                if (dragDirection == DragDirection.None)
+                    dragDirection = DragDirection.Free;
+
+                // If and when we have control, set value from drag element
+                if (dragDirection == DragDirection.Free)
+                {
+                    if (dragging != null)
+                        dragging();
+                }
+            }
         }
     }
 }

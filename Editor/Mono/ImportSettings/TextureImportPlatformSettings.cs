@@ -46,6 +46,19 @@ namespace UnityEditor
             SetChanged();
         }
 
+        // Resize Algorithm
+        [SerializeField]
+        private bool m_ResizeAlgorithmIsDifferent = false;
+        public TextureResizeAlgorithm resizeAlgorithm { get { return m_PlatformSettings.resizeAlgorithm; } }
+        public bool resizeAlgorithmIsDifferent { get { return m_ResizeAlgorithmIsDifferent; } }
+        public void SetResizeAlgorithmForAll(TextureResizeAlgorithm algorithm)
+        {
+            Debug.Assert(allAreOverridden, "Attempting to set resize algorithm for all platforms even though settings are not overridden for all platforms.");
+            m_PlatformSettings.resizeAlgorithm = algorithm;
+            m_ResizeAlgorithmIsDifferent = false;
+            SetChanged();
+        }
+
         // Texture compression
         [SerializeField] private bool m_TextureCompressionIsDifferent = false;
         public TextureImporterCompression textureCompression { get { return m_PlatformSettings.textureCompression; } }
@@ -140,6 +153,8 @@ namespace UnityEditor
                         m_TextureFormatIsDifferent = true;
                     if (curPlatformSettings.maxTextureSize != m_PlatformSettings.maxTextureSize)
                         m_MaxTextureSizeIsDifferent = true;
+                    if (curPlatformSettings.resizeAlgorithm != m_PlatformSettings.resizeAlgorithm)
+                        m_ResizeAlgorithmIsDifferent = true;
                     if (curPlatformSettings.textureCompression != m_PlatformSettings.textureCompression)
                         m_TextureCompressionIsDifferent = true;
                     if (curPlatformSettings.compressionQuality != m_PlatformSettings.compressionQuality)
@@ -216,6 +231,8 @@ namespace UnityEditor
                 TextureImportPlatformSettings defaultSettings = m_Inspector.m_PlatformSettings[0];
                 m_PlatformSettings.maxTextureSize = defaultSettings.maxTextureSize;
                 m_MaxTextureSizeIsDifferent = defaultSettings.m_MaxTextureSizeIsDifferent;
+                m_PlatformSettings.resizeAlgorithm = defaultSettings.resizeAlgorithm;
+                m_ResizeAlgorithmIsDifferent = defaultSettings.m_ResizeAlgorithmIsDifferent;
                 m_PlatformSettings.textureCompression = defaultSettings.textureCompression;
                 m_TextureCompressionIsDifferent = defaultSettings.m_TextureCompressionIsDifferent;
                 m_PlatformSettings.format = defaultSettings.format;
@@ -277,6 +294,8 @@ namespace UnityEditor
                     platformSettings.format = m_PlatformSettings.format;
                 if (!m_MaxTextureSizeIsDifferent)
                     platformSettings.maxTextureSize = m_PlatformSettings.maxTextureSize;
+                if (!m_ResizeAlgorithmIsDifferent)
+                    platformSettings.resizeAlgorithm = m_PlatformSettings.resizeAlgorithm;
                 if (!m_TextureCompressionIsDifferent)
                     platformSettings.textureCompression = m_PlatformSettings.textureCompression;
                 if (!m_CompressionQualityIsDifferent)

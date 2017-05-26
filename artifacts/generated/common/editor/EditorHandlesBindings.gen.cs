@@ -46,6 +46,8 @@ public sealed partial class Handles
     public static Color centerColor { get { return s_CenterColor; } }
     internal static PrefColor s_SelectedColor = new PrefColor("Scene/Selected Axis", 246f / 255, 242f / 255, 50f / 255, .89f);
     public static Color selectedColor { get { return s_SelectedColor; } }
+    internal static PrefColor s_PreselectionColor = new PrefColor("Scene/Preselection Axis", 246f / 255, 242f / 255, 50f / 255, .89f);
+    public static Color preselectionColor { get { return s_PreselectionColor; } }
     internal static PrefColor s_SecondaryColor = new PrefColor("Scene/Guide Line", .5f, .5f, .5f, .2f);
     public static Color secondaryColor { get { return s_SecondaryColor; } }
     internal static Color staticColor = new Color(.5f, .5f, .5f, 0f);
@@ -66,11 +68,14 @@ public sealed partial class Handles
             internal static int s_RadiusHandleHash = "RadiusHandleHash".GetHashCode();
             internal static int s_xAxisMoveHandleHash  = "xAxisFreeMoveHandleHash".GetHashCode();
             internal static int s_yAxisMoveHandleHash  = "yAxisFreeMoveHandleHash".GetHashCode();
-            internal static int s_zAxisMoveHandleHash  = "xAxisFreeMoveHandleHash".GetHashCode();
+            internal static int s_zAxisMoveHandleHash  = "zAxisFreeMoveHandleHash".GetHashCode();
             internal static int s_FreeMoveHandleHash  = "FreeMoveHandleHash".GetHashCode();
             internal static int s_xzAxisMoveHandleHash = "xzAxisFreeMoveHandleHash".GetHashCode();
             internal static int s_xyAxisMoveHandleHash = "xyAxisFreeMoveHandleHash".GetHashCode();
             internal static int s_yzAxisMoveHandleHash = "yzAxisFreeMoveHandleHash".GetHashCode();
+            internal static int s_xAxisScaleHandleHash = "xAxisScaleHandleHash".GetHashCode();
+            internal static int s_yAxisScaleHandleHash = "yAxisScaleHandleHash".GetHashCode();
+            internal static int s_zAxisScaleHandleHash = "zAxisScaleHandleHash".GetHashCode();
             internal static int s_ScaleSliderHash = "ScaleSliderHash".GetHashCode();
             internal static int s_ScaleValueHandleHash = "ScaleValueHandleHash".GetHashCode();
             internal static int s_DiscHash = "DiscHash".GetHashCode();
@@ -212,7 +217,7 @@ public static Vector3 Slider2D (Vector3 handlePos, Vector3 handleDir, Vector3 sl
 
 public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Vector2 snap, [uei.DefaultValue("false")]  bool drawHelper )
         {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, capFunction, snap, drawHelper);
         }
 
@@ -228,7 +233,7 @@ public static Vector3 Slider2D (Vector3 handlePos, Vector3 handleDir, Vector3 sl
 [System.Obsolete ("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
 public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, Vector2 snap, [uei.DefaultValue("false")]  bool drawHelper )
         {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return UnityEditorInternal.Slider2D.Do(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, snap, drawHelper);
         }
 
@@ -270,7 +275,7 @@ public static Vector3 Slider2D (Vector3 handlePos, Vector3 handleDir, Vector3 sl
 
 public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, float snap, [uei.DefaultValue("false")]  bool drawHelper )
         {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return Slider2D(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, capFunction, new Vector2(snap, snap), drawHelper);
         }
 
@@ -286,7 +291,7 @@ public static Vector3 Slider2D (Vector3 handlePos, Vector3 handleDir, Vector3 sl
 [System.Obsolete ("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
 public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, DrawCapFunction drawFunc, float snap, [uei.DefaultValue("false")]  bool drawHelper )
         {
-            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_Slider2DHash, FocusType.Passive);
             return Slider2D(id, handlePos, new Vector3(0, 0, 0), handleDir, slideDir1, slideDir2, handleSize, drawFunc, new Vector2(snap, snap), drawHelper);
         }
 
@@ -294,21 +299,21 @@ public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 sli
     
     public static Quaternion FreeRotateHandle(Quaternion rotation, Vector3 position, float size)
         {
-            int id = GUIUtility.GetControlID(s_FreeRotateHandleHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_FreeRotateHandleHash, FocusType.Passive);
             return UnityEditorInternal.FreeRotate.Do(id, rotation, position, size);
         }
     
     
     public static float ScaleSlider(float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap)
         {
-            int id = GUIUtility.GetControlID(s_ScaleSliderHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_ScaleSliderHash, FocusType.Passive);
             return UnityEditorInternal.SliderScale.DoAxis(id, scale, position, direction, rotation, size, snap);
         }
     
     
     public static Quaternion Disc(Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
         {
-            int id = GUIUtility.GetControlID(s_DiscHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(s_DiscHash, FocusType.Passive);
             return UnityEditorInternal.Disc.Do(id, rotation, position, axis, size, cutoffPlane, snap);
         }
     

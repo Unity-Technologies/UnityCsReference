@@ -4,11 +4,11 @@
 
 using System;
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace UnityEngine.Playables
 {
-    internal partial class Playables
+    public interface IPlayable
     {
+        PlayableHandle GetHandle();
     }
 }

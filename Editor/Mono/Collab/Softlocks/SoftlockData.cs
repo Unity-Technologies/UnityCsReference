@@ -44,13 +44,27 @@ namespace UnityEditor.Collaboration
             }
             else
             {
-                PrefabType prefabType = PrefabUtility.GetPrefabType(unityObject);
-                if (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.Prefab)
-                {
-                    supportsSoftLocks = true;
-                }
+                supportsSoftLocks = IsPrefab(unityObject);
             }
             return supportsSoftLocks;
+        }
+
+        public static bool IsPrefab(UnityEngine.Object unityObject)
+        {
+            PrefabType prefabType = PrefabUtility.GetPrefabType(unityObject);
+            bool isPrefab = (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.Prefab);
+            return isPrefab;
+        }
+
+        public static bool IsPrefab(string assetGUID)
+        {
+            bool isPrefab = false;
+            UnityEngine.Object unityObject;
+            if (AssetAccess.TryGetAssetFromGUID(assetGUID, out unityObject))
+            {
+                isPrefab = IsPrefab(unityObject);
+            }
+            return isPrefab;
         }
 
         private static bool TryHasSoftLocks(Scene scene, out bool hasSoftLocks)
@@ -72,7 +86,7 @@ namespace UnityEditor.Collaboration
             return success;
         }
 
-        private static bool TryHasSoftLocks(string assetGuid, out bool hasSoftLocks)
+        public static bool TryHasSoftLocks(string assetGuid, out bool hasSoftLocks)
         {
             hasSoftLocks = false;
             bool success = false;

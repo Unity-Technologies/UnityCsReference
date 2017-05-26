@@ -104,7 +104,7 @@ namespace UnityEditor
             {
                 // Get the id no matter if we're drawing the slider or not,
                 // in order to not corrupt the id order when slider handles pop in and out.
-                int id = GUIUtility.GetControlID(s_RadiusHandleHash, FocusType.Keyboard);
+                int id = GUIUtility.GetControlID(s_RadiusHandleHash, FocusType.Passive);
 
                 // The angle between the axis and the center-camera vector
                 float angle = Vector3.Angle(dirs[i], -planeNormal);

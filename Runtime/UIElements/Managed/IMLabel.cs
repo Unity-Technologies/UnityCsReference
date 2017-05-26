@@ -30,7 +30,7 @@ namespace UnityEngine.Experimental.UIElements
             return NonInteractiveControlID;
         }
 
-        public override void DoRepaint(IStylePainter args)
+        internal override void DoRepaint(IStylePainter args)
         {
             // Same as box but for tooltip
             style.Draw(position, GUIContent.Temp(text),

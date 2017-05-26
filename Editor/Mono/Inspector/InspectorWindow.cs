@@ -997,7 +997,7 @@ namespace UnityEditor
                 }
 
                 bool oldValue = GUIUtility.textFieldInput;
-                DrawEditor(editors[editorIndex], editorIndex, rebuildOptimizedGUIBlocks, ref showImportedObjectBarNext, ref importedObjectBarRect);
+                DrawEditor(editors, editorIndex, rebuildOptimizedGUIBlocks, ref showImportedObjectBarNext, ref importedObjectBarRect);
                 if (Event.current.type == EventType.Repaint && !oldValue && GUIUtility.textFieldInput) // Did this editor set textFieldInput=true?
                 {
                     // If so, We need to flush the OptimizedGUIBlock every frame, so that EditorGUI.DoTextField() repaint keeps getting called and textFieldInput set to true.
@@ -1023,14 +1023,21 @@ namespace UnityEditor
             m_InvalidateGUIBlockCache = true;
         }
 
-        private void DrawEditor(Editor editor, int editorIndex, bool rebuildOptimizedGUIBlock, ref bool showImportedObjectBarNext, ref Rect importedObjectBarRect)
+        private void DrawEditor(Editor[] editors, int editorIndex, bool rebuildOptimizedGUIBlock, ref bool showImportedObjectBarNext, ref Rect importedObjectBarRect)
         {
+            var editor = editors[editorIndex];
             // Protect us against someone triggering an asset reimport during
             // OnGUI as that will kill all active editors.
             if (editor == null)
                 return;
 
             Object target = editor.target;
+            // see case 891450:
+            // inspector onGui starts, fetch ActiveEditorTrackers - this includes a MaterialEditor created with a canvasRenderer material
+            // then, disabling a Mask component deletes this material
+            // after that, either Active Editors are fetched again and the count is different OR the material is invalid and crashes the whole app
+            if (!target)
+                return;
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
 
@@ -1061,7 +1068,7 @@ namespace UnityEditor
             //set the current PropertyHandlerCache to the current editor
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
-            bool largeHeader = EditorHasLargeHeader(editorIndex);
+            bool largeHeader = EditorHasLargeHeader(editorIndex, editors);
 
             // Draw large headers before we do the culling of unsupported editors below,
             // so the large header is always shown even when the editor can't be.
@@ -1252,9 +1259,9 @@ namespace UnityEditor
             HandleComponentScreenshot(contentRect, editor);
         }
 
-        public bool EditorHasLargeHeader(int editorIndex)
+        public bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
         {
-            var target = m_Tracker.activeEditors[editorIndex].target;
+            var target = trackerActiveEditors[editorIndex].target;
             return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target) || editorIndex == 0 || target is Material;
         }
 

@@ -117,7 +117,10 @@ namespace UnityEditorInternal
         public int indexCount;
         public int instanceCount;
         public string shaderName;
+        public string passName;
+        public string passLightMode;
         public int shaderInstanceID;
+        public int subShaderIndex;
         public int shaderPassIndex;
         public string shaderKeywords;
         public int rendererInstanceID;
@@ -147,6 +150,8 @@ namespace UnityEditorInternal
         public FrameDebuggerBlendState blendState;
         public FrameDebuggerRasterState rasterState;
         public FrameDebuggerDepthState depthState;
+        public FrameDebuggerStencilState stencilState;
+        public int stencilRef;
         public int batchBreakCause;
 
         public ShaderProperties shaderProperties;
@@ -189,6 +194,24 @@ namespace UnityEditorInternal
         public int depthWrite;
         public CompareFunction depthFunc;
     };
+
+    // Match C++ ScriptingFrameDebuggerStencilState memory layout!
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    struct FrameDebuggerStencilState
+    {
+        public bool stencilEnable;
+        public byte readMask;
+        public byte writeMask;
+        public byte padding;
+        public CompareFunction stencilFuncFront;
+        public StencilOp stencilPassOpFront;
+        public StencilOp stencilFailOpFront;
+        public StencilOp stencilZFailOpFront;
+        public CompareFunction stencilFuncBack;
+        public StencilOp stencilPassOpBack;
+        public StencilOp stencilFailOpBack;
+        public StencilOp stencilZFailOpBack;
+    };
 }
 
 namespace UnityEditor
@@ -221,6 +244,24 @@ namespace UnityEditor
             "Plugin Event",
             "Draw Mesh (instanced)"
         };
+
+        // Cached strings built from FrameDebuggerEventData.
+        // Only need to rebuild them when event data actually changes.
+        private struct EventDataStrings
+        {
+            public string shader;
+            public string pass;
+
+            public string stencilRef;
+            public string stencilReadMask;
+            public string stencilWriteMask;
+            public string stencilComp;
+            public string stencilPass;
+            public string stencilFail;
+            public string stencilZFail;
+
+            public string[] texturePropertyTooltips;
+        }
 
         const float kScrollbarWidth = 16;
         const float kResizerWidth = 5f;
@@ -276,6 +317,10 @@ namespace UnityEditor
 
         private int m_PrevEventsLimit = 0;
         private int m_PrevEventsCount = 0;
+
+        private FrameDebuggerEventData  m_CurEventData;
+        private uint                    m_CurEventDataHash = 0;
+        private EventDataStrings        m_CurEventDataStrings;
 
         // Shader Properties
         private Vector2 m_ScrollViewShaderProps = Vector2.zero;
@@ -347,7 +392,12 @@ namespace UnityEditor
             DisableFrameDebugger();
         }
 
-        void OnPlayModeStateChanged()
+        void OnPauseStateChanged(PauseState state)
+        {
+            RepaintOnLimitChange();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             RepaintOnLimitChange();
         }
@@ -356,7 +406,8 @@ namespace UnityEditor
         {
             autoRepaintOnSceneChange = true;
             s_FrameDebuggers.Add(this);
-            EditorApplication.playmodeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged += OnPauseStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_RepaintFrames = kNeedToRepaintFrames;
         }
 
@@ -373,7 +424,8 @@ namespace UnityEditor
             }
 
             s_FrameDebuggers.Remove(this);
-            EditorApplication.playmodeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             DisableFrameDebugger();
         }
@@ -423,6 +475,109 @@ namespace UnityEditor
 
             m_PrevEventsLimit = FrameDebuggerUtility.limit;
             m_PrevEventsCount = FrameDebuggerUtility.count;
+        }
+
+        // Only call this when m_CurEventData changes.
+        void BuildCurEventDataStrings()
+        {
+            // shader name & subshader index
+            m_CurEventDataStrings.shader = string.Format("{0}, SubShader #{1}", m_CurEventData.shaderName, m_CurEventData.subShaderIndex.ToString());
+
+            // pass name & LightMode tag
+            string passName = string.IsNullOrEmpty(m_CurEventData.passName) ? "#" + m_CurEventData.shaderPassIndex.ToString() : m_CurEventData.passName;
+            string lightMode = string.IsNullOrEmpty(m_CurEventData.passLightMode) ? "" : string.Format(" ({0})", m_CurEventData.passLightMode);
+            m_CurEventDataStrings.pass = passName + lightMode;
+
+            // stencil states
+            if (m_CurEventData.stencilState.stencilEnable)
+            {
+                m_CurEventDataStrings.stencilRef = m_CurEventData.stencilRef.ToString();
+
+                if (m_CurEventData.stencilState.readMask != 255)
+                    m_CurEventDataStrings.stencilReadMask = m_CurEventData.stencilState.readMask.ToString();
+
+                if (m_CurEventData.stencilState.writeMask != 255)
+                    m_CurEventDataStrings.stencilWriteMask = m_CurEventData.stencilState.writeMask.ToString();
+
+                // Only show *Front states when CullMode is set to Back.
+                // Only show *Back states when CullMode is set to Front.
+                // Show both *Front and *Back states for two-sided geometry.
+                if (m_CurEventData.rasterState.cullMode == CullMode.Back)
+                {
+                    m_CurEventDataStrings.stencilComp = m_CurEventData.stencilState.stencilFuncFront.ToString();
+                    m_CurEventDataStrings.stencilPass = m_CurEventData.stencilState.stencilPassOpFront.ToString();
+                    m_CurEventDataStrings.stencilFail = m_CurEventData.stencilState.stencilFailOpFront.ToString();
+                    m_CurEventDataStrings.stencilZFail = m_CurEventData.stencilState.stencilZFailOpFront.ToString();
+                }
+                else if (m_CurEventData.rasterState.cullMode == CullMode.Front)
+                {
+                    m_CurEventDataStrings.stencilComp = m_CurEventData.stencilState.stencilFuncBack.ToString();
+                    m_CurEventDataStrings.stencilPass = m_CurEventData.stencilState.stencilPassOpBack.ToString();
+                    m_CurEventDataStrings.stencilFail = m_CurEventData.stencilState.stencilFailOpBack.ToString();
+                    m_CurEventDataStrings.stencilZFail = m_CurEventData.stencilState.stencilZFailOpBack.ToString();
+                }
+                else
+                {
+                    m_CurEventDataStrings.stencilComp =
+                        string.Format("{0} {1}", m_CurEventData.stencilState.stencilFuncFront.ToString(), m_CurEventData.stencilState.stencilFuncBack.ToString());
+
+                    m_CurEventDataStrings.stencilPass =
+                        string.Format("{0} {1}", m_CurEventData.stencilState.stencilPassOpFront.ToString(), m_CurEventData.stencilState.stencilPassOpBack.ToString());
+
+                    m_CurEventDataStrings.stencilFail =
+                        string.Format("{0} {1}", m_CurEventData.stencilState.stencilFailOpFront.ToString(), m_CurEventData.stencilState.stencilFailOpBack.ToString());
+
+                    m_CurEventDataStrings.stencilZFail =
+                        string.Format("{0} {1}", m_CurEventData.stencilState.stencilZFailOpFront.ToString(), m_CurEventData.stencilState.stencilZFailOpBack.ToString());
+                }
+            }
+
+            // texture property tooltips
+            ShaderTextureInfo[] textureInfoArray = m_CurEventData.shaderProperties.textures;
+            m_CurEventDataStrings.texturePropertyTooltips = new string[textureInfoArray.Length];
+            StringBuilder tooltip = new StringBuilder();
+
+            for (int i = 0; i < textureInfoArray.Length; ++i)
+            {
+                Texture texture = textureInfoArray[i].value;
+                if (texture == null)
+                    continue;
+
+                tooltip.Clear();
+                tooltip.AppendFormat("Size: {0} x {1}", texture.width.ToString(), texture.height.ToString());
+                tooltip.AppendFormat("\nDimension: {0}", texture.dimension.ToString());
+
+                string formatFormat = "\nFormat: {0}";
+                string depthFormat = "\nDepth: {0}";
+
+                if (texture is Texture2D)
+                    tooltip.AppendFormat(formatFormat, (texture as Texture2D).format.ToString());
+                else if (texture is Cubemap)
+                    tooltip.AppendFormat(formatFormat, (texture as Cubemap).format.ToString());
+                else if (texture is Texture2DArray)
+                {
+                    tooltip.AppendFormat(formatFormat, (texture as Texture2DArray).format.ToString());
+                    tooltip.AppendFormat(depthFormat, (texture as Texture2DArray).depth.ToString());
+                }
+                else if (texture is Texture3D)
+                {
+                    tooltip.AppendFormat(formatFormat, (texture as Texture3D).format.ToString());
+                    tooltip.AppendFormat(depthFormat, (texture as Texture3D).depth.ToString());
+                }
+                else if (texture is CubemapArray)
+                {
+                    tooltip.AppendFormat(formatFormat, (texture as CubemapArray).format.ToString());
+                    tooltip.AppendFormat("\nCubemap Count: {0}", (texture as CubemapArray).cubemapCount.ToString());
+                }
+                else if (texture is RenderTexture)
+                {
+                    tooltip.AppendFormat("\nRT Format: {0}", (texture as RenderTexture).format.ToString());
+                }
+
+                tooltip.Append("\n\nCtrl + Click to show preview");
+
+                m_CurEventDataStrings.texturePropertyTooltips[i] = tooltip.ToString();
+            }
         }
 
         // Return true if should repaint
@@ -501,7 +656,7 @@ namespace UnityEditor
             return repaint;
         }
 
-        private void DrawMeshPreview(FrameDebuggerEventData curEventData, Rect previewRect, Rect meshInfoRect, Mesh mesh, int meshSubset)
+        private void DrawMeshPreview(Rect previewRect, Rect meshInfoRect, Mesh mesh, int meshSubset)
         {
             if (m_PreviewUtility == null)
             {
@@ -525,18 +680,18 @@ namespace UnityEditor
             string meshName = mesh.name;
             if (string.IsNullOrEmpty(meshName))
                 meshName = "<no name>";
-            string info = meshName + " subset " + meshSubset + "\n" + curEventData.vertexCount + " verts, " + curEventData.indexCount + " indices";
-            if (curEventData.instanceCount > 1)
-                info += ", " + curEventData.instanceCount + " instances";
+            string info = meshName + " subset " + meshSubset + "\n" + m_CurEventData.vertexCount + " verts, " + m_CurEventData.indexCount + " indices";
+            if (m_CurEventData.instanceCount > 1)
+                info += ", " + m_CurEventData.instanceCount + " instances";
 
             EditorGUI.DropShadowLabel(meshInfoRect, info);
         }
 
         // Draw any mesh associated with the draw event
         // Return false if no mesh.
-        private bool DrawEventMesh(FrameDebuggerEventData curEventData)
+        private bool DrawEventMesh()
         {
-            Mesh mesh = curEventData.mesh;
+            Mesh mesh = m_CurEventData.mesh;
             if (mesh == null)
                 return false;
 
@@ -544,7 +699,7 @@ namespace UnityEditor
             if (previewRect.width < kMinPreviewSize || previewRect.height < kMinPreviewSize)
                 return true;
 
-            GameObject go = FrameDebuggerUtility.GetFrameEventGameObject(curEventData.frameEventIndex);
+            GameObject go = FrameDebuggerUtility.GetFrameEventGameObject(m_CurEventData.frameEventIndex);
 
             // Info display at bottom (and pings object when clicked)
             Rect meshInfoRect = previewRect;
@@ -571,8 +726,8 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                int meshSubset = curEventData.meshSubset;
-                DrawMeshPreview(curEventData, previewRect, meshInfoRect, mesh, meshSubset);
+                int meshSubset = m_CurEventData.meshSubset;
+                DrawMeshPreview(previewRect, meshInfoRect, mesh, meshSubset);
                 if (go != null)
                 {
                     EditorGUI.DropShadowLabel(goInfoRect, go.name);
@@ -582,8 +737,10 @@ namespace UnityEditor
             return true;
         }
 
-        private void DrawRenderTargetControls(FrameDebuggerEventData cur)
+        private void DrawRenderTargetControls()
         {
+            FrameDebuggerEventData cur = m_CurEventData;
+
             if (cur.rtWidth <= 0 || cur.rtHeight <= 0)
                 return;
 
@@ -662,34 +819,35 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox("Rendering into shadowmap on DX9, can't visualize it in the game view properly", MessageType.Info, true);
         }
 
-        private void DrawEventDrawCallInfo(FrameDebuggerEventData curEventData)
+        private void DrawEventDrawCallInfo()
         {
-            // shader & keyword information
-            string shaderText = curEventData.shaderName + ", pass #" + curEventData.shaderPassIndex;
-            EditorGUILayout.LabelField("Shader", shaderText);
+            // shader, pass & keyword information
+            EditorGUILayout.LabelField("Shader", m_CurEventDataStrings.shader);
 
             if (GUI.Button(GUILayoutUtility.GetLastRect(), Styles.selectShaderTooltip, GUI.skin.label))
             {
-                EditorGUIUtility.PingObject(curEventData.shaderInstanceID);
+                EditorGUIUtility.PingObject(m_CurEventData.shaderInstanceID);
                 Event.current.Use();
             }
 
-            if (!string.IsNullOrEmpty(curEventData.shaderKeywords))
+            EditorGUILayout.LabelField("Pass", m_CurEventDataStrings.pass);
+
+            if (!string.IsNullOrEmpty(m_CurEventData.shaderKeywords))
             {
-                EditorGUILayout.LabelField("Keywords", curEventData.shaderKeywords);
+                EditorGUILayout.LabelField("Keywords", m_CurEventData.shaderKeywords);
 
                 if (GUI.Button(GUILayoutUtility.GetLastRect(), Styles.copyToClipboardTooltip, GUI.skin.label))
-                    EditorGUIUtility.systemCopyBuffer = shaderText + System.Environment.NewLine + curEventData.shaderKeywords;
+                    EditorGUIUtility.systemCopyBuffer = m_CurEventDataStrings.shader + System.Environment.NewLine + m_CurEventData.shaderKeywords;
             }
 
-            DrawStates(curEventData);
+            DrawStates();
 
             // Show why this draw call can't batch with the previous one.
-            if (curEventData.batchBreakCause > 1)   // Valid batch break cause enum value on the C++ side starts at 2.
+            if (m_CurEventData.batchBreakCause > 1)   // Valid batch break cause enum value on the C++ side starts at 2.
             {
                 GUILayout.Space(10.0f);
                 GUILayout.Label(Styles.causeOfNewDrawCallLabel, EditorStyles.boldLabel);
-                GUILayout.Label(styles.batchBreakCauses[curEventData.batchBreakCause], EditorStyles.wordWrappedLabel);
+                GUILayout.Label(styles.batchBreakCauses[m_CurEventData.batchBreakCause], EditorStyles.wordWrappedLabel);
             }
 
             GUILayout.Space(15.0f);
@@ -700,35 +858,35 @@ namespace UnityEditor
             {
                 case ShowAdditionalInfo.Preview:
                     // Show mesh preview if possible
-                    if (!DrawEventMesh(curEventData))
+                    if (!DrawEventMesh())
                     {
                         // If no mesh preview, then show vertex/index count at least
-                        EditorGUILayout.LabelField("Vertices", curEventData.vertexCount.ToString());
-                        EditorGUILayout.LabelField("Indices", curEventData.indexCount.ToString());
+                        EditorGUILayout.LabelField("Vertices", m_CurEventData.vertexCount.ToString());
+                        EditorGUILayout.LabelField("Indices", m_CurEventData.indexCount.ToString());
                     }
                     break;
                 case ShowAdditionalInfo.ShaderProperties:
-                    DrawShaderProperties(curEventData.shaderProperties);
+                    DrawShaderProperties(m_CurEventData.shaderProperties);
                     break;
             }
         }
 
-        private void DrawEventComputeDispatchInfo(FrameDebuggerEventData curEventData)
+        private void DrawEventComputeDispatchInfo()
         {
             // compute shader & kernel information
-            EditorGUILayout.LabelField("Compute Shader", curEventData.csName);
+            EditorGUILayout.LabelField("Compute Shader", m_CurEventData.csName);
             if (GUI.Button(GUILayoutUtility.GetLastRect(), GUIContent.none, GUI.skin.label))
             {
-                EditorGUIUtility.PingObject(curEventData.csInstanceID);
+                EditorGUIUtility.PingObject(m_CurEventData.csInstanceID);
                 Event.current.Use();
             }
 
-            EditorGUILayout.LabelField("Kernel", curEventData.csKernel);
+            EditorGUILayout.LabelField("Kernel", m_CurEventData.csKernel);
 
             // dispatch size
             string threadGroupsText;
-            if (curEventData.csThreadGroupsX != 0 || curEventData.csThreadGroupsY != 0 || curEventData.csThreadGroupsZ != 0)
-                threadGroupsText = string.Format("{0}x{1}x{2}", curEventData.csThreadGroupsX, curEventData.csThreadGroupsY, curEventData.csThreadGroupsZ);
+            if (m_CurEventData.csThreadGroupsX != 0 || m_CurEventData.csThreadGroupsY != 0 || m_CurEventData.csThreadGroupsZ != 0)
+                threadGroupsText = string.Format("{0}x{1}x{2}", m_CurEventData.csThreadGroupsX, m_CurEventData.csThreadGroupsY, m_CurEventData.csThreadGroupsZ);
             else
                 threadGroupsText = "indirect dispatch";
 
@@ -743,34 +901,39 @@ namespace UnityEditor
 
             GUILayout.BeginArea(rect);
 
-            FrameDebuggerEvent cur = descs[curEventIndex];
-            FrameDebuggerEventData curEventData;
+            uint eventDataHash = FrameDebuggerUtility.eventDataHash;
+            bool isFrameEventDataValid = curEventIndex == m_CurEventData.frameEventIndex;
 
-            bool isFrameEventDataValid = FrameDebuggerUtility.GetFrameEventData(curEventIndex, out curEventData);
+            if (eventDataHash != 0 && m_CurEventDataHash != eventDataHash)
+            {
+                isFrameEventDataValid = FrameDebuggerUtility.GetFrameEventData(curEventIndex, out m_CurEventData);
+                m_CurEventDataHash = eventDataHash;
+                BuildCurEventDataStrings();
+            }
 
             // render target
             if (isFrameEventDataValid)
-                DrawRenderTargetControls(curEventData);
+                DrawRenderTargetControls();
 
             // event type and draw call info
+            FrameDebuggerEvent cur = descs[curEventIndex];
             GUILayout.Label(string.Format("Event #{0}: {1}", (curEventIndex + 1), s_FrameEventTypeNames[(int)cur.type]), EditorStyles.boldLabel);
 
             if (FrameDebuggerUtility.IsRemoteEnabled() && FrameDebuggerUtility.receivingRemoteFrameEventData)
             {
                 GUILayout.Label("Receiving frame event data...");
             }
-            // Is this a draw call?
-            else if (isFrameEventDataValid)
+            else if (isFrameEventDataValid)     // Is this a draw call?
             {
-                if (curEventData.vertexCount > 0 || curEventData.indexCount > 0)
+                if (m_CurEventData.vertexCount > 0 || m_CurEventData.indexCount > 0)
                 {
                     // a draw call, display extra info
-                    DrawEventDrawCallInfo(curEventData);
+                    DrawEventDrawCallInfo();
                 }
                 else if (cur.type == FrameEventType.ComputeDispatch)
                 {
                     // a compute dispatch, display extra info
-                    DrawEventComputeDispatchInfo(curEventData);
+                    DrawEventComputeDispatchInfo();
                 }
             }
 
@@ -942,7 +1105,7 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        private void OnGUIShaderPropTexture(ShaderTextureInfo t)
+        private void OnGUIShaderPropTexture(int idx, ShaderTextureInfo t)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Space(kShaderPropertiesIndention);
@@ -959,7 +1122,7 @@ namespace UnityEditor
 
             // Tooltip
             if (t.value != null && previewRect.Contains(evt.mousePosition))
-                GUI.Label(previewRect, GUIContent.Temp(string.Empty, "Ctrl + Click to show preview"));
+                GUI.Label(previewRect, GUIContent.Temp(string.Empty, m_CurEventDataStrings.texturePropertyTooltips[idx]));
 
             if (evt.type == EventType.Repaint)
             {
@@ -977,6 +1140,7 @@ namespace UnityEditor
                         previewTexture = AssetPreview.GetMiniThumbnail(previewTexture);
                     EditorGUI.DrawPreviewTexture(previewRect, previewTexture);
                 }
+
                 GUI.Label(textRect, t.value != null ? t.value.name : t.textureName);
             }
             else if (evt.type == EventType.MouseDown)
@@ -1000,9 +1164,9 @@ namespace UnityEditor
             {
                 GUILayout.Label("Textures", EditorStyles.boldLabel);
 
-                foreach (var d in props.textures)
+                for (int i = 0; i < props.textures.Length; ++i)
                 {
-                    OnGUIShaderPropTexture(d);
+                    OnGUIShaderPropTexture(i, props.textures[i]);
                 }
             }
 
@@ -1055,11 +1219,11 @@ namespace UnityEditor
             GUILayout.EndScrollView();
         }
 
-        void DrawStates(FrameDebuggerEventData curEventData)
+        void DrawStates()
         {
-            FrameDebuggerBlendState blendState = curEventData.blendState;
-            FrameDebuggerRasterState rasterState = curEventData.rasterState;
-            FrameDebuggerDepthState depthState = curEventData.depthState;
+            FrameDebuggerBlendState blendState = m_CurEventData.blendState;
+            FrameDebuggerRasterState rasterState = m_CurEventData.rasterState;
+            FrameDebuggerDepthState depthState = m_CurEventData.depthState;
 
             // blend state
             string blendText = string.Format("{0} {1}", blendState.srcBlend, blendState.dstBlend);
@@ -1112,6 +1276,23 @@ namespace UnityEditor
             {
                 string offsetText = string.Format("{0}, {1}", rasterState.slopeScaledDepthBias, rasterState.depthBias);
                 EditorGUILayout.LabelField("Offset", offsetText);
+            }
+
+            // Stencil state
+            if (m_CurEventData.stencilState.stencilEnable)
+            {
+                EditorGUILayout.LabelField("Stencil Ref", m_CurEventDataStrings.stencilRef);
+
+                if (m_CurEventData.stencilState.readMask != 255)
+                    EditorGUILayout.LabelField("Stencil ReadMask", m_CurEventDataStrings.stencilReadMask);
+
+                if (m_CurEventData.stencilState.writeMask != 255)
+                    EditorGUILayout.LabelField("Stencil WriteMask", m_CurEventDataStrings.stencilWriteMask);
+
+                EditorGUILayout.LabelField("Stencil Comp", m_CurEventDataStrings.stencilComp);
+                EditorGUILayout.LabelField("Stencil Pass", m_CurEventDataStrings.stencilPass);
+                EditorGUILayout.LabelField("Stencil Fail", m_CurEventDataStrings.stencilFail);
+                EditorGUILayout.LabelField("Stencil ZFail", m_CurEventDataStrings.stencilZFail);
             }
         }
 

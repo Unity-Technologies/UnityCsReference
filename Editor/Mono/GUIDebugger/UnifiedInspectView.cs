@@ -11,40 +11,18 @@ namespace UnityEditor
 {
     class UnifiedInspectView : BaseInspectView
     {
-        private readonly List<IMGUIInstruction> m_Instructions = new List<IMGUIInstruction>();
+        Vector2 m_StacktraceScrollPos =  new Vector2();
 
-        private Vector2 m_StacktraceScrollPos =  new Vector2();
-
-        private BaseInspectView m_InstructionClipView;
-        private BaseInspectView m_InstructionStyleView;
-        private BaseInspectView m_InstructionLayoutView;
+        readonly List<IMGUIInstruction> m_Instructions = new List<IMGUIInstruction>();
+        BaseInspectView m_InstructionClipView;
+        BaseInspectView m_InstructionStyleView;
+        BaseInspectView m_InstructionLayoutView;
 
         public UnifiedInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
             m_InstructionClipView = new GUIClipInspectView(guiViewDebuggerWindow);
             m_InstructionStyleView = new StyleDrawInspectView(guiViewDebuggerWindow);
             m_InstructionLayoutView = new GUILayoutInspectView(guiViewDebuggerWindow);
-        }
-
-        protected BaseInspectView GetInspectViewForType(InstructionType type)
-        {
-            switch (type)
-            {
-                case InstructionType.kStyleDraw:
-                    return m_InstructionStyleView;
-
-                case InstructionType.kClipPop:
-                case InstructionType.kClipPush:
-                    return m_InstructionClipView;
-
-                case InstructionType.kLayoutBeginGroup:
-                case InstructionType.kLayoutEndGroup:
-                case InstructionType.kLayoutEntry:
-                    return m_InstructionLayoutView;
-
-                default:
-                    throw new NotImplementedException("Unhandled InstructionType");
-            }
         }
 
         public override void UpdateInstructions()
@@ -64,6 +42,19 @@ namespace UnityEditor
             GUIViewDebuggerHelper.GetUnifiedInstructions(m_Instructions);
         }
 
+        public override void ShowOverlay()
+        {
+            if (!isInstructionSelected)
+            {
+                debuggerWindow.CloseInstructionOverlayWindow();
+                return;
+            }
+
+            IMGUIInstruction instruction = m_Instructions[listViewState.row];
+            var viewForType = GetInspectViewForType(instruction.type);
+            viewForType.ShowOverlay();
+        }
+
         protected override int GetInstructionCount()
         {
             return m_Instructions.Count;
@@ -73,16 +64,32 @@ namespace UnityEditor
         {
             IMGUIInstruction instruction = m_Instructions[el.row];
 
-
             string listDisplayName = GetInstructionListName(el.row);
             GUIContent tempContent = GUIContent.Temp(listDisplayName);
 
             var rect = el.position;
             rect.xMin += instruction.level * 10;
 
-            GUIViewDebuggerWindow.s_Styles.listItemBackground.Draw(rect, false, false, m_ListViewState.row == el.row, false);
+            GUIViewDebuggerWindow.styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
 
-            GUIViewDebuggerWindow.s_Styles.listItem.Draw(rect, tempContent, controlId, m_ListViewState.row == el.row);
+            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, controlId, listViewState.row == el.row);
+        }
+
+        protected override void DrawInspectedStacktrace()
+        {
+            IMGUIInstruction instruction = m_Instructions[listViewState.row];
+
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            DrawStackFrameList(instruction.stack);
+            EditorGUILayout.EndScrollView();
+        }
+
+        internal override void DoDrawSelectedInstructionDetails(int selectedInstructionIndex)
+        {
+            IMGUIInstruction instruction = m_Instructions[selectedInstructionIndex];
+
+            var viewForType = GetInspectViewForType(instruction.type);
+            viewForType.DoDrawSelectedInstructionDetails(instruction.typeInstructionIndex);
         }
 
         internal override string GetInstructionListName(int index)
@@ -92,9 +99,27 @@ namespace UnityEditor
             //string listDisplayName = instruction.type + " #" + instruction.typeInstructionIndex;
             //return listDisplayName;
 
-
             var viewForType = GetInspectViewForType(instruction.type);
             return viewForType.GetInstructionListName(instruction.typeInstructionIndex);
+        }
+
+        internal override void OnSelectedInstructionChanged(int index)
+        {
+            listViewState.row = index;
+
+            if (listViewState.row >= -0)
+            {
+                IMGUIInstruction instruction = m_Instructions[listViewState.row];
+
+                var viewForType = GetInspectViewForType(instruction.type);
+                viewForType.OnSelectedInstructionChanged(instruction.typeInstructionIndex);
+
+                ShowOverlay();
+            }
+            else
+            {
+                debuggerWindow.CloseInstructionOverlayWindow();
+            }
         }
 
         internal override void OnDoubleClickInstruction(int index)
@@ -105,43 +130,25 @@ namespace UnityEditor
             viewForType.OnDoubleClickInstruction(instruction.typeInstructionIndex);
         }
 
-        protected override void DrawInspectedStacktrace()
+        BaseInspectView GetInspectViewForType(InstructionType type)
         {
-            IMGUIInstruction instruction = m_Instructions[m_ListViewState.row];
+            switch (type)
+            {
+                case InstructionType.kStyleDraw:
+                    return m_InstructionStyleView;
 
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.s_Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
-            DrawStackFrameList(instruction.stack);
-            EditorGUILayout.EndScrollView();
-        }
+                case InstructionType.kClipPop:
+                case InstructionType.kClipPush:
+                    return m_InstructionClipView;
 
-        internal override void DoDrawSelectedInstructionDetails(int index)
-        {
-            IMGUIInstruction instruction = m_Instructions[index];
+                case InstructionType.kLayoutBeginGroup:
+                case InstructionType.kLayoutEndGroup:
+                case InstructionType.kLayoutEntry:
+                    return m_InstructionLayoutView;
 
-            var viewForType = GetInspectViewForType(instruction.type);
-            viewForType.DoDrawSelectedInstructionDetails(instruction.typeInstructionIndex);
-        }
-
-        internal override void OnSelectedInstructionChanged(int index)
-        {
-            m_ListViewState.row = index;
-
-            IMGUIInstruction instruction = m_Instructions[m_ListViewState.row];
-
-            var viewForType = GetInspectViewForType(instruction.type);
-            viewForType.OnSelectedInstructionChanged(instruction.typeInstructionIndex);
-
-            ShowOverlay();
-        }
-
-        public override void ShowOverlay()
-        {
-            if (!HasSelectedinstruction())
-                return;
-
-            IMGUIInstruction instruction = m_Instructions[m_ListViewState.row];
-            var viewForType = GetInspectViewForType(instruction.type);
-            viewForType.ShowOverlay();
+                default:
+                    throw new NotImplementedException("Unhandled InstructionType");
+            }
         }
     }
 }

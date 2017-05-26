@@ -95,6 +95,8 @@ namespace UnityEngine.Experimental.UIElements
                 }, Slider.Direction.Vertical)
             {name = "VerticalScroller"};
             AddChild(verticalScroller);
+
+            RegisterCallback<WheelEvent>(OnScrollWheel);
         }
 
         protected internal override void OnPostLayout(bool hasNewLayout)
@@ -120,24 +122,17 @@ namespace UnityEngine.Experimental.UIElements
 
         // TODO: Same behaviour as IMGUI Scroll view; it would probably be nice to show same behaviour
         // as Web browsers, which give back event to parent if not consumed
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        void OnScrollWheel(WheelEvent evt)
         {
-            switch (evt.type)
+            if (contentView.position.height - position.height > 0)
             {
-                case EventType.ScrollWheel: // Execute even if no capture
-                {
-                    // Only use vertical, scroll wheel has no effect on horizontal
-                    if (contentView.position.height - position.height > 0)
-                    {
-                        if (evt.delta.y < 0)
-                            verticalScroller.ScrollPageUp();
-                        else if (evt.delta.y > 0)
-                            verticalScroller.ScrollPageDown();
-                    }
-                    return EventPropagation.Stop;
-                }
+                if (evt.delta.y < 0)
+                    verticalScroller.ScrollPageUp();
+                else if (evt.delta.y > 0)
+                    verticalScroller.ScrollPageDown();
             }
-            return EventPropagation.Continue;
+
+            evt.StopPropagation();
         }
     }
 }

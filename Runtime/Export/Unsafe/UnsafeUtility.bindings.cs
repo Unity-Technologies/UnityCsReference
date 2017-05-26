@@ -60,20 +60,20 @@ namespace UnityEngine
             return 4;
         }
 
-        [ThreadSafe]
+        [FreeFunction("UnsafeUtility::Malloc", true)]
         public static extern IntPtr Malloc(int size, int alignment, UnityEngine.Collections.Allocator label);
 
-        [ThreadSafe]
+        [FreeFunction("UnsafeUtility::Free", true)]
         public static extern void Free(IntPtr memory, UnityEngine.Collections.Allocator label);
 
-        [ThreadSafe]
+        [FreeFunction("UnsafeUtility::MemCpy", true)]
         public static extern void MemCpy(IntPtr destination, IntPtr source, int size);
 
-        [ThreadSafe]
+        [FreeFunction("UnsafeUtility::SizeOfStruct", true)]
         public static extern int SizeOfStruct(Type type);
 
         // @TODO : This is probably not the ideal place to have this?
-        [ThreadSafe]
+        [FreeFunction("UnsafeUtility::LogError", true)]
         public static extern void LogError(string msg, string filename, int linenumber);
     }
 }

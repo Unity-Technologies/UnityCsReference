@@ -217,6 +217,16 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void PostprocessAnimation(GameObject root, AnimationClip clip)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { root, clip };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessAnimation", args);
+            }
+        }
+
+        [RequiredByNativeCode]
         static Material ProcessMeshAssignMaterial(Renderer renderer, Material material)
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
@@ -268,6 +278,17 @@ namespace UnityEditor
                 object[] args = { go, prop_names, prop_values };
                 AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessGameObjectWithUserProperties", args);
             }
+        }
+
+        [RequiredByNativeCode]
+        static EditorCurveBinding[] PostprocessGameObjectWithAnimatedUserProperties(GameObject go, EditorCurveBinding[] bindings)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { go, bindings };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessGameObjectWithAnimatedUserProperties", args);
+            }
+            return bindings;
         }
 
         [RequiredByNativeCode]

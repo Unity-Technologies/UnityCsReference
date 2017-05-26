@@ -123,7 +123,6 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.Cloth,
                 "Edit Constraints",
                 EditorGUIUtility.IconContent("EditCollider"),
-                GetClothBounds(),
                 this
                 );
             EditorGUI.EndDisabledGroup();
@@ -134,16 +133,11 @@ namespace UnityEditor
                 Debug.LogWarning("MeshRenderer will not work with a cloth component! Use only SkinnedMeshRenderer. Any MeshRenderer's attached to a cloth component will be deleted at runtime.");
         }
 
-        private Bounds GetClothBounds()
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
-            if (target is Cloth)
-            {
-                Cloth cloth = (Cloth)target;
-                SkinnedMeshRenderer skinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
-                if (skinnedMeshRenderer != null)
-                    return skinnedMeshRenderer.bounds;
-            }
-            return new Bounds();
+            Cloth cloth = (Cloth)targetObject;
+            var skin = cloth.GetComponent<SkinnedMeshRenderer>();
+            return skin == null ? base.GetWorldBoundsOfTarget(targetObject) : skin.bounds;
         }
 
         bool SelectionMeshDirty()

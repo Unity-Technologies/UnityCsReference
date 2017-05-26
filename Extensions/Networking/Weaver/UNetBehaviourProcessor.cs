@@ -1568,13 +1568,6 @@ namespace Unity.UNetWeaver
                 return false;
             }
 
-            if (md.IsVirtual)
-            {
-                Log.Error("Command function [" + m_td.FullName + ":" + md.Name + "] cant be a derived method");
-                Weaver.fail = true;
-                return false;
-            }
-
             if (!ProcessMethodsValidateFunction(md, ca, "Command"))
             {
                 return false;
@@ -1602,13 +1595,6 @@ namespace Unity.UNetWeaver
             if (md.IsStatic)
             {
                 Log.Error("TargetRpc function [" + m_td.FullName + ":" + md.Name + "] cant be a static method");
-                Weaver.fail = true;
-                return false;
-            }
-
-            if (md.IsVirtual)
-            {
-                Log.Error("TargetRpc function [" + m_td.FullName + ":" + md.Name + "] cant be a derived method");
                 Weaver.fail = true;
                 return false;
             }
@@ -1651,13 +1637,6 @@ namespace Unity.UNetWeaver
             if (md.IsStatic)
             {
                 Log.Error("ClientRpc function [" + m_td.FullName + ":" + md.Name + "] cant be a static method");
-                Weaver.fail = true;
-                return false;
-            }
-
-            if (md.IsVirtual)
-            {
-                Log.Error("ClientRpc function [" + m_td.FullName + ":" + md.Name + "] cant be a derived method");
                 Weaver.fail = true;
                 return false;
             }

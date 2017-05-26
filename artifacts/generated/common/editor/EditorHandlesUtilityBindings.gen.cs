@@ -382,6 +382,7 @@ public sealed partial class HandleUtility
             AddControl(controlId, kPickDistance);
         }
     
+            static int s_PreviousNearestControl;
             static int s_NearestControl;
             static float s_NearestDistance;
             internal const float kPickDistance = 5.0f;
@@ -421,6 +422,12 @@ public sealed partial class HandleUtility
     [RequiredByNativeCode]
     static internal void EndHandles()
         {
+            if (s_PreviousNearestControl != s_NearestControl
+                && s_NearestControl != 0)
+            {
+                s_PreviousNearestControl = s_NearestControl;
+                Repaint();
+            }
             EditorGUI.s_DelayedTextEditor.EndGUI(Event.current.type);
         }
     

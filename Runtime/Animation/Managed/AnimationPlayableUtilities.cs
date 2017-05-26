@@ -4,63 +4,63 @@
 
 using System;
 using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine.Animations;
 
 namespace UnityEngine.Playables
 {
-    public class AnimationPlayableUtilities
+    public static class AnimationPlayableUtilities
     {
-        static public void Play(Animator animator, PlayableHandle playable, PlayableGraph graph)
+        static public void Play(Animator animator, Playable playable, PlayableGraph graph)
         {
-            AnimationPlayableOutput playableOutput = graph.CreateAnimationOutput("AnimationClip", animator);
-            playableOutput.sourcePlayable = playable;
-            playableOutput.sourceInputPort = 0;
+            AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimationClip", animator);
+            playableOutput.SetSourcePlayable(playable);
+            playableOutput.SetSourceInputPort(0);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
         }
 
-        static public PlayableHandle PlayClip(Animator animator, AnimationClip clip, out PlayableGraph graph)
+        static public AnimationClipPlayable PlayClip(Animator animator, AnimationClip clip, out PlayableGraph graph)
         {
-            graph = PlayableGraph.CreateGraph();
-            AnimationPlayableOutput playableOutput = graph.CreateAnimationOutput("AnimationClip", animator);
-            var clipPlayable = graph.CreateAnimationClipPlayable(clip);
-            playableOutput.sourcePlayable = clipPlayable;
+            graph = PlayableGraph.Create();
+            AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimationClip", animator);
+            var clipPlayable = AnimationClipPlayable.Create(graph, clip);
+            playableOutput.SetSourcePlayable(clipPlayable);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
 
             return clipPlayable;
         }
 
-        static public PlayableHandle PlayMixer(Animator animator, int inputCount, out PlayableGraph graph)
+        static public AnimationMixerPlayable PlayMixer(Animator animator, int inputCount, out PlayableGraph graph)
         {
-            graph = PlayableGraph.CreateGraph();
-            AnimationPlayableOutput playableOutput = graph.CreateAnimationOutput("Mixer", animator);
-            var mixer = graph.CreateAnimationMixerPlayable(inputCount);
-            playableOutput.sourcePlayable = mixer;
+            graph = PlayableGraph.Create();
+            AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "Mixer", animator);
+            var mixer = AnimationMixerPlayable.Create(graph, inputCount);
+            playableOutput.SetSourcePlayable(mixer);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
 
             return mixer;
         }
 
-        static public PlayableHandle PlayLayerMixer(Animator animator, int inputCount, out PlayableGraph graph)
+        static public AnimationLayerMixerPlayable PlayLayerMixer(Animator animator, int inputCount, out PlayableGraph graph)
         {
-            graph = PlayableGraph.CreateGraph();
-            AnimationPlayableOutput playableOutput = graph.CreateAnimationOutput("Mixer", animator);
-            var mixer = graph.CreateAnimationLayerMixerPlayable(inputCount);
-            playableOutput.sourcePlayable = mixer;
+            graph = PlayableGraph.Create();
+            AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "Mixer", animator);
+            var mixer = AnimationLayerMixerPlayable.Create(graph, inputCount);
+            playableOutput.SetSourcePlayable(mixer);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
 
             return mixer;
         }
 
-        static public PlayableHandle PlayAnimatorController(Animator animator, RuntimeAnimatorController controller, out PlayableGraph graph)
+        static public AnimatorControllerPlayable PlayAnimatorController(Animator animator, RuntimeAnimatorController controller, out PlayableGraph graph)
         {
-            graph = PlayableGraph.CreateGraph();
-            AnimationPlayableOutput playableOutput = graph.CreateAnimationOutput("AnimatorControllerPlayable", animator);
-            var controllerPlayable = graph.CreateAnimatorControllerPlayable(controller);
-            playableOutput.sourcePlayable = controllerPlayable;
+            graph = PlayableGraph.Create();
+            AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimatorControllerPlayable", animator);
+            var controllerPlayable = AnimatorControllerPlayable.Create(graph, controller);
+            playableOutput.SetSourcePlayable(controllerPlayable);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
 

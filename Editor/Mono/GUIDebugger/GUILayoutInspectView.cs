@@ -10,10 +10,11 @@ namespace UnityEditor
 {
     class GUILayoutInspectView : BaseInspectView
     {
-        private Vector2 m_StacktraceScrollPos = new Vector2();
-        private readonly List<IMGUILayoutInstruction> m_LayoutInstructions = new List<IMGUILayoutInstruction>();
+        Vector2 m_StacktraceScrollPos = new Vector2();
 
-        private GUIStyle m_FakeMargingStyleForOverlay = new GUIStyle();
+        readonly List<IMGUILayoutInstruction> m_LayoutInstructions = new List<IMGUILayoutInstruction>();
+
+        GUIStyle m_FakeMarginStyleForOverlay = new GUIStyle();
 
         public GUILayoutInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
@@ -23,6 +24,34 @@ namespace UnityEditor
         {
             m_LayoutInstructions.Clear();
             GUIViewDebuggerHelper.GetLayoutInstructions(m_LayoutInstructions);
+        }
+
+        public override void ShowOverlay()
+        {
+            if (!isInstructionSelected)
+            {
+                debuggerWindow.CloseInstructionOverlayWindow();
+                return;
+            }
+
+            IMGUILayoutInstruction instruction = m_LayoutInstructions[listViewState.row];
+
+            RectOffset offset = new RectOffset();
+            offset.left = instruction.marginLeft;
+            offset.right = instruction.marginRight;
+            offset.top = instruction.marginTop;
+            offset.bottom = instruction.marginBottom;
+
+            //TODO: right now the overlay only know about padding
+            //For now we just save margin into padding
+            //while the overlay isn't improved.
+            m_FakeMarginStyleForOverlay.padding = offset;
+
+            Rect rect = instruction.unclippedRect;
+
+            rect = offset.Add(rect);
+
+            debuggerWindow.HighlightInstruction(debuggerWindow.inspected, rect, m_FakeMarginStyleForOverlay);
         }
 
         protected override int GetInstructionCount()
@@ -39,8 +68,40 @@ namespace UnityEditor
             var rect = el.position;
             rect.xMin += instruction.level * 10;
 
-            GUIViewDebuggerWindow.s_Styles.listItemBackground.Draw(rect, false, false, m_ListViewState.row == el.row, false);
-            GUIViewDebuggerWindow.s_Styles.listItem.Draw(rect, tempContent, id, m_ListViewState.row == el.row);
+            GUIViewDebuggerWindow.styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
+        }
+
+        protected override void DrawInspectedStacktrace()
+        {
+            IMGUILayoutInstruction instruction = m_LayoutInstructions[listViewState.row];
+
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            DrawStackFrameList(instruction.stack);
+            EditorGUILayout.EndScrollView();
+        }
+
+        internal override void DoDrawSelectedInstructionDetails(int selectedInstructionIndex)
+        {
+            IMGUILayoutInstruction instruction = m_LayoutInstructions[selectedInstructionIndex];
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                DrawInspectedRect(instruction.unclippedRect);
+
+                EditorGUILayout.IntField("margin.left", instruction.marginLeft);
+                EditorGUILayout.IntField("margin.top", instruction.marginTop);
+                EditorGUILayout.IntField("margin.right", instruction.marginRight);
+                EditorGUILayout.IntField("margin.bottom", instruction.marginBottom);
+
+                if (instruction.style != null)
+                    EditorGUILayout.LabelField("Style Name", instruction.style.name);
+
+                if (instruction.isGroup == 1)
+                    return;
+
+                EditorGUILayout.Toggle("IsVertical", (instruction.isVertical == 1));
+            }
         }
 
         internal override string GetInstructionListName(int index)
@@ -58,7 +119,18 @@ namespace UnityEditor
             return methodName;
         }
 
-        private int GetInterestingFrameIndex(StackFrame[] stacktrace)
+        internal override void OnDoubleClickInstruction(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void OnSelectedInstructionChanged(int index)
+        {
+            listViewState.row = index;
+            ShowOverlay();
+        }
+
+        int GetInterestingFrameIndex(StackFrame[] stacktrace)
         {
             //We try to find the first frame that belongs to the user project.
             //If there is no frame inside the user project, we will return the first frame outside any class starting with:
@@ -88,75 +160,6 @@ namespace UnityEditor
                 return index;
 
             return stacktrace.Length - 1;
-        }
-
-        internal override void OnDoubleClickInstruction(int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override void DrawInspectedStacktrace()
-        {
-            IMGUILayoutInstruction instruction = m_LayoutInstructions[m_ListViewState.row];
-
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.s_Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
-            DrawStackFrameList(instruction.stack);
-            EditorGUILayout.EndScrollView();
-        }
-
-        internal override void DoDrawSelectedInstructionDetails(int index)
-        {
-            IMGUILayoutInstruction instruction = m_LayoutInstructions[index];
-
-            using (new EditorGUI.DisabledScope(true))
-            {
-                DrawInspectedRect(instruction.unclippedRect);
-
-
-                EditorGUILayout.IntField("margin.left", instruction.marginLeft);
-                EditorGUILayout.IntField("margin.top", instruction.marginTop);
-                EditorGUILayout.IntField("margin.right", instruction.marginRight);
-                EditorGUILayout.IntField("margin.bottom", instruction.marginBottom);
-
-                if (instruction.style != null)
-                    EditorGUILayout.LabelField("Style Name", instruction.style.name);
-
-                if (instruction.isGroup == 1)
-                    return;
-
-                EditorGUILayout.Toggle("IsVertical", (instruction.isVertical == 1));
-            }
-        }
-
-        internal override void OnSelectedInstructionChanged(int index)
-        {
-            m_ListViewState.row = index;
-            ShowOverlay();
-        }
-
-        public override void ShowOverlay()
-        {
-            if (!HasSelectedinstruction())
-                return;
-
-            IMGUILayoutInstruction instruction = m_LayoutInstructions[m_ListViewState.row];
-
-            RectOffset offset = new RectOffset();
-            offset.left = instruction.marginLeft;
-            offset.right = instruction.marginRight;
-            offset.top = instruction.marginTop;
-            offset.bottom = instruction.marginBottom;
-
-            //TODO: right now the overlay only know about padding
-            //For now we just save margin into padding
-            //while the overlay isn't improved.
-            m_FakeMargingStyleForOverlay.padding = offset;
-
-            Rect rect = instruction.unclippedRect;
-
-            rect = offset.Add(rect);
-
-            m_GuiViewDebuggerWindow.HighlightInstruction(m_GuiViewDebuggerWindow.m_Inspected, rect, m_FakeMargingStyleForOverlay);
         }
     }
 }

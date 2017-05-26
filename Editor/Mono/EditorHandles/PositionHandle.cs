@@ -10,6 +10,9 @@ namespace UnityEditor
     {
         static Vector3[] verts = {Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero};
 
+        const float kPlanarHandleSizeFactor = 0.25f;
+        const float kFreeMoveHandleSizeFactor = 0.15f;
+
         // While the user has Free Move mode turned on by holding 'shift' or 'V' (for Vertex Snapping),
         // this variable will be set to True.
         static bool s_FreeMoveMode = false;
@@ -66,33 +69,73 @@ namespace UnityEditor
 
         static Vector3 DoPositionHandle_Internal(Vector3 position, Quaternion rotation)
         {
+            // We must call ALL of the GetControlIDs call here to get consistent IDs
+            // If one call is skipped from time to time, IDs will not be consistent
+            var xId = GUIUtility.GetControlID(s_xAxisMoveHandleHash, FocusType.Passive);
+            var yId = GUIUtility.GetControlID(s_yAxisMoveHandleHash, FocusType.Passive);
+            var zId = GUIUtility.GetControlID(s_zAxisMoveHandleHash, FocusType.Passive);
+            var xzId = GUIUtility.GetControlID(s_xzAxisMoveHandleHash, FocusType.Passive);
+            var xyId = GUIUtility.GetControlID(s_xyAxisMoveHandleHash, FocusType.Passive);
+            var yzId = GUIUtility.GetControlID(s_yzAxisMoveHandleHash, FocusType.Passive);
+            var freeMoveId = GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive);
+
+            // Calculate the camera view vector in Handle draw space
+            // this handle the case where the matrix is skewed
+            var handlePosition = matrix.MultiplyPoint3x4(position);
+            var drawToWorldMatrix = matrix * Matrix4x4.TRS(position, rotation, Vector3.one);
+            var invDrawToWorldMatrix = drawToWorldMatrix.inverse;
+            var viewVectorDrawSpace = GetCameraViewFrom(handlePosition, invDrawToWorldMatrix);
+
             float size = HandleUtility.GetHandleSize(position);
+            var xCameraViewLerp = xId == GUIUtility.hotControl ? 0 : GetCameraViewLerpForWorldAxis(viewVectorDrawSpace, Vector3.right);
+            var yCameraViewLerp = yId == GUIUtility.hotControl ? 0 : GetCameraViewLerpForWorldAxis(viewVectorDrawSpace, Vector3.up);
+            var zCameraViewLerp = zId == GUIUtility.hotControl ? 0 : GetCameraViewLerpForWorldAxis(viewVectorDrawSpace, Vector3.forward);
+
             Color temp = color;
             bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
 
             color = isStatic ? Color.Lerp(xAxisColor, staticColor, staticBlend) : xAxisColor;
             GUI.SetNextControlName("xAxis");
-            position = Slider(position, rotation * Vector3.right, size, ArrowHandleCap, SnapSettings.move.x);
+            if (xCameraViewLerp <= kCameraViewThreshold)
+            {
+                color = Color.Lerp(color, Color.clear, xCameraViewLerp);
+                position = Slider(xId, position, rotation * Vector3.right, size, ArrowHandleCap, SnapSettings.move.x);
+            }
 
             color = isStatic ? Color.Lerp(yAxisColor, staticColor, staticBlend) : yAxisColor;
             GUI.SetNextControlName("yAxis");
-            position = Slider(position, rotation * Vector3.up, size, ArrowHandleCap, SnapSettings.move.y);
+            if (yCameraViewLerp <= kCameraViewThreshold)
+            {
+                color = Color.Lerp(color, Color.clear, yCameraViewLerp);
+                position = Slider(yId, position, rotation * Vector3.up, size, ArrowHandleCap, SnapSettings.move.y);
+            }
 
             color = isStatic ? Color.Lerp(zAxisColor, staticColor, staticBlend) : zAxisColor;
             GUI.SetNextControlName("zAxis");
-            position = Slider(position, rotation * Vector3.forward, size, ArrowHandleCap, SnapSettings.move.z);
+            if (zCameraViewLerp <= kCameraViewThreshold)
+            {
+                color = Color.Lerp(color, Color.clear, zCameraViewLerp);
+                position = Slider(zId, position, rotation * Vector3.forward, size, ArrowHandleCap, SnapSettings.move.z);
+            }
 
             if (s_FreeMoveMode)
             {
                 color = centerColor;
                 GUI.SetNextControlName("FreeMoveAxis");
-                position = FreeMoveHandle(position, rotation, size * .15f, SnapSettings.move, RectangleHandleCap);
+                position = FreeMoveHandle(freeMoveId, position, rotation, size * kFreeMoveHandleSizeFactor, SnapSettings.move, RectangleHandleCap);
             }
             else
             {
-                position = DoPlanarHandle(PlaneHandle.xzPlane, position, rotation, size * 0.25f);
-                position = DoPlanarHandle(PlaneHandle.xyPlane, position, rotation, size * 0.25f);
-                position = DoPlanarHandle(PlaneHandle.yzPlane, position, rotation, size * 0.25f);
+                var xzCameraViewLerp = Mathf.Max(xCameraViewLerp, zCameraViewLerp);
+                var xyCameraViewLerp = Mathf.Max(xCameraViewLerp, yCameraViewLerp);
+                var yzCameraViewLerp = Mathf.Max(yCameraViewLerp, zCameraViewLerp);
+
+                if (xzCameraViewLerp <= kCameraViewThreshold)
+                    position = DoPlanarHandle(xzId, PlaneHandle.xzPlane, position, rotation, size * kPlanarHandleSizeFactor, xzCameraViewLerp);
+                if (xyCameraViewLerp <= kCameraViewThreshold)
+                    position = DoPlanarHandle(xyId, PlaneHandle.xyPlane, position, rotation, size * kPlanarHandleSizeFactor, xyCameraViewLerp);
+                if (yzCameraViewLerp <= kCameraViewThreshold)
+                    position = DoPlanarHandle(yzId, PlaneHandle.yzPlane, position, rotation, size * kPlanarHandleSizeFactor, yzCameraViewLerp);
             }
 
             color = temp;
@@ -100,11 +143,10 @@ namespace UnityEditor
             return position;
         }
 
-        static Vector3 DoPlanarHandle(PlaneHandle planeID, Vector3 position, Quaternion rotation, float handleSize)
+        static Vector3 DoPlanarHandle(int id, PlaneHandle planeID, Vector3 position, Quaternion rotation, float handleSize, float cameraLerp)
         {
             int axis1index = 0;
             int axis2index = 0;
-            int moveHandleHash = 0;
             bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
             switch (planeID)
             {
@@ -113,7 +155,6 @@ namespace UnityEditor
                     axis1index = 0;
                     axis2index = 2;
                     color = isStatic ? staticColor : yAxisColor;
-                    moveHandleHash = Handles.s_xzAxisMoveHandleHash;
                     break;
                 }
                 case PlaneHandle.xyPlane:
@@ -121,7 +162,6 @@ namespace UnityEditor
                     axis1index = 0;
                     axis2index = 1;
                     color = isStatic ? staticColor : zAxisColor;
-                    moveHandleHash = Handles.s_xyAxisMoveHandleHash;
                     break;
                 }
                 case PlaneHandle.yzPlane:
@@ -129,10 +169,11 @@ namespace UnityEditor
                     axis1index = 1;
                     axis2index = 2;
                     color = isStatic ? staticColor : xAxisColor;
-                    moveHandleHash = Handles.s_yzAxisMoveHandleHash;
                     break;
                 }
             }
+
+            color = Color.Lerp(color, Color.clear, cameraLerp);
 
             int axisNormalIndex = 3 - axis2index - axis1index;
             Color prevColor = Handles.color;
@@ -151,9 +192,6 @@ namespace UnityEditor
                 cameraToTransformToolVector = handleTransform.inverse.MultiplyVector(Camera.current.transform.rotation * -Vector3.forward).normalized;
             else
                 cameraToTransformToolVector = handleTransform.inverse.MultiplyPoint(Camera.current.transform.position).normalized;
-
-            // Never cull getting the id, or we might get id mis-matches
-            int id = GUIUtility.GetControlID(moveHandleHash, FocusType.Keyboard);
 
             // Cull handling this rect if it's almost entirely flat on the screen (except if it's currently being dragged)
             if (Mathf.Abs(cameraToTransformToolVector[axisNormalIndex]) < 0.05f && GUIUtility.hotControl != id)

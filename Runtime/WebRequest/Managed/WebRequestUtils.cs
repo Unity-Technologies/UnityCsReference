@@ -159,7 +159,7 @@ namespace UnityEngine
                             memStream.Write(crlf, 0, (int)crlf.Length);
                             memStream.Write(dispositionHeader, 0, (int)dispositionHeader.Length);
 
-                            string headerName = System.Text.Encoding.UTF8.HeaderName;
+                            string headerName = "";
                             // Headers must be 7 bit clean, so encode as per rfc1522 using quoted-printable if needed.
                             string encodedFieldName = (string)fieldNames[i];
                             if (!WWWTranscoder.SevenBitClean(encodedFieldName, System.Text.Encoding.UTF8) ||

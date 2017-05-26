@@ -14,6 +14,7 @@ using System;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using UnityEditor.Modules;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.BuildReporting
 {
@@ -32,6 +33,7 @@ namespace UnityEditor.BuildReporting
             return m_CachedAnalyzer;
         }
 
+        [RequiredByNativeCode]
         public static void OnAddedExecutable(BuildReport report, int fileIndex)
         {
             var analyzer = GetAnalyzerForTarget(report.buildTarget);

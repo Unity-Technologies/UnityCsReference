@@ -14,7 +14,7 @@ using UnityEngine.AI;
 
 namespace UnityEditor.AI
 {
-    public class NavMeshEditorHelpers
+    public static partial class NavMeshEditorHelpers
     {
         public static void OpenAgentSettings(int agentTypeID)
         {

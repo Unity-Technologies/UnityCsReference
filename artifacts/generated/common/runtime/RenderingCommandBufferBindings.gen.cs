@@ -495,61 +495,67 @@ public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material mate
 
     public void Blit(Texture source, RenderTargetIdentifier dest)
         {
-            Blit_Texture(source, ref dest, null, -1);
+
+            Blit_Texture(source, ref dest, null, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
+        }
+    
+    
+    public void Blit(Texture source, RenderTargetIdentifier dest, Vector2 scale, Vector2 offset)
+        {
+            Blit_Texture(source, ref dest, null, -1, scale, offset);
         }
     
     
     public void Blit(Texture source, RenderTargetIdentifier dest, Material mat)
         {
-            Blit_Texture(source, ref dest, mat, -1);
+            Blit_Texture(source, ref dest, mat, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
     
     
     public void Blit(Texture source, RenderTargetIdentifier dest, Material mat, int pass)
         {
-            Blit_Texture(source, ref dest, mat, pass);
+            Blit_Texture(source, ref dest, mat, pass, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
     
     
+    private void Blit_Texture (Texture source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, Vector2 scale, Vector2 offset) {
+        INTERNAL_CALL_Blit_Texture ( this, source, ref dest, mat, pass, ref scale, ref offset );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Blit_Texture (Texture source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass) ;
-
+    private extern static void INTERNAL_CALL_Blit_Texture (CommandBuffer self, Texture source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, ref Vector2 scale, ref Vector2 offset);
     public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest)
         {
-            Blit_Identifier(ref source, ref dest, null, -1);
+            Blit_Identifier(ref source, ref dest, null, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
+        }
+    
+    
+    public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Vector2 scale, Vector2 offset)
+        {
+            Blit_Identifier(ref source, ref dest, null, -1, scale, offset);
         }
     
     
     public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Material mat)
         {
-            Blit_Identifier(ref source, ref dest, mat, -1);
+            Blit_Identifier(ref source, ref dest, mat, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
     
     
     public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Material mat, int pass)
         {
-            Blit_Identifier(ref source, ref dest, mat, pass);
+            Blit_Identifier(ref source, ref dest, mat, pass, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
     
     
+    private void Blit_Identifier (ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, Vector2 scale, Vector2 offset) {
+        INTERNAL_CALL_Blit_Identifier ( this, ref source, ref dest, mat, pass, ref scale, ref offset );
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Blit_Identifier (ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, [uei.DefaultValue("null")]  Material mat , [uei.DefaultValue("-1")]  int pass ) ;
-
-    [uei.ExcludeFromDocs]
-    private void Blit_Identifier (ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat ) {
-        int pass = -1;
-        Blit_Identifier ( ref source, ref dest, mat, pass );
-    }
-
-    [uei.ExcludeFromDocs]
-    private void Blit_Identifier (ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest) {
-        int pass = -1;
-        Material mat = null;
-        Blit_Identifier ( ref source, ref dest, mat, pass );
-    }
-
+    private extern static void INTERNAL_CALL_Blit_Identifier (CommandBuffer self, ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, ref Vector2 scale, ref Vector2 offset);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void GetTemporaryRT (int nameID, int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("FilterMode.Point")]  FilterMode filter , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("false")]  bool enableRandomWrite , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode ) ;
@@ -948,6 +954,16 @@ public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material mate
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void IssuePluginCustomBlitInternal (IntPtr callback, uint command, ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, uint commandParam, uint commandFlags) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void IssuePluginCustomTextureUpdateInternal (IntPtr callback, Texture targetTexture, uint userData) ;
+
+    public void IssuePluginCustomTextureUpdate(IntPtr callback, Texture targetTexture, uint userData)
+        {
+            IssuePluginCustomTextureUpdateInternal(callback, targetTexture, userData);
+        }
+    
+    
 }
 
 

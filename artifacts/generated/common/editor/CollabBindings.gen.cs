@@ -46,6 +46,65 @@ internal partial struct CollabInfo
     string m_Tip;
 }
 
+internal enum CollabSettingType
+{
+    InProgressEnabled = 0,
+    InProgressProjectEnabled = 1,
+    InProgressGlobalEnabled = 2
+}
+
+internal enum CollabSettingStatus
+{
+    None = 0,
+    Available = 1
+}
+
+internal sealed partial class CollabSettingsManager
+{
+    
+    static void NotifyStatusListeners(CollabSettingType type, CollabSettingStatus status)
+        {
+            if (statusNotifier[type] != null)
+                statusNotifier[type](type, status);
+        }
+    
+    
+    public delegate void SettingStatusChanged(CollabSettingType type, CollabSettingStatus status);
+    public static Dictionary<CollabSettingType, SettingStatusChanged> statusNotifier = new Dictionary<CollabSettingType, SettingStatusChanged>();
+    
+    
+    
+            static CollabSettingsManager()
+        {
+            foreach (CollabSettingType type in Enum.GetValues(typeof(CollabSettingType)))
+                statusNotifier[type] = null;
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool IsAvailable (CollabSettingType type) ;
+
+    public extern static bool inProgressEnabled
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+}
+
+internal enum CollabTempFolder
+{
+    None        = 0,
+    Base        = 1 << 1,
+    Merge       = 1 << 2,
+    Original    = 1 << 3,
+    Download    = 1 << 4,
+    Temp        = 1 << 5,
+    External    = 1 << 6
+}
+
 internal sealed partial class Collab : AssetPostprocessor
 {
     [ThreadAndSerializationSafe ()]
@@ -109,12 +168,27 @@ internal sealed partial class Collab : AssetPostprocessor
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Publish (string comment, [uei.DefaultValue("false")]  bool useSelectedAssets ) ;
+    extern public void DoInitialCommit () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool ShouldDoInitialCommit () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void Publish (string comment, [uei.DefaultValue("false")]  bool useSelectedAssets , [uei.DefaultValue("false")]  bool confirmMatchesPrevious ) ;
+
+    [uei.ExcludeFromDocs]
+    public void Publish (string comment, bool useSelectedAssets ) {
+        bool confirmMatchesPrevious = false;
+        Publish ( comment, useSelectedAssets, confirmMatchesPrevious );
+    }
 
     [uei.ExcludeFromDocs]
     public void Publish (string comment) {
+        bool confirmMatchesPrevious = false;
         bool useSelectedAssets = false;
-        Publish ( comment, useSelectedAssets );
+        Publish ( comment, useSelectedAssets, confirmMatchesPrevious );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -179,7 +253,7 @@ internal sealed partial class Collab : AssetPostprocessor
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public Change[] GetChangesToPublish () ;
+    extern internal Change[] GetChangesToPublishInternal () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -247,6 +321,10 @@ internal sealed partial class Collab : AssetPostprocessor
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void DeleteTempFile (string path, CollabTempFolder folderMask) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void FailNextOperation (int operation, int code) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -268,6 +346,14 @@ internal sealed partial class Collab : AssetPostprocessor
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void ClearNextOperationFailureForFile (string path) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public string GetGUIDForTests () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void NewGUIDForTests () ;
 
 }
 

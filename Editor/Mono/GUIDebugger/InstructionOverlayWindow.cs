@@ -80,14 +80,16 @@ namespace UnityEditor
         {
             if (m_RenderTexture == null)
             {
-                m_RenderTexture = new RenderTexture(Mathf.CeilToInt(m_InstructionRect.width), Mathf.CeilToInt(m_InstructionRect.height), 24);
+                int width = Mathf.Max(Mathf.CeilToInt(m_InstructionRect.width), 1);
+                int height = Mathf.Max(Mathf.CeilToInt(m_InstructionRect.height), 1);
+                m_RenderTexture = new RenderTexture(width, height, 24);
                 m_RenderTexture.Create();
             }
             else if (m_RenderTexture.width != m_InstructionRect.width || m_RenderTexture.height != m_InstructionRect.height)
             {
                 m_RenderTexture.Release();
-                m_RenderTexture.width = Mathf.CeilToInt(m_InstructionRect.width);
-                m_RenderTexture.height = Mathf.CeilToInt(m_InstructionRect.height);
+                m_RenderTexture.width = Mathf.Max(Mathf.CeilToInt(m_InstructionRect.width), 1);
+                m_RenderTexture.height = Mathf.Max(Mathf.CeilToInt(m_InstructionRect.height), 1);
                 m_RenderTexture.Create();
             }
 

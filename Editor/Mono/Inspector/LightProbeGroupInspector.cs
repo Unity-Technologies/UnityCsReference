@@ -182,8 +182,11 @@ namespace UnityEditor
 
         public void PullProbePositions()
         {
-            m_SourcePositions = new List<Vector3>(m_Group.probePositions);
-            m_Selection = new List<int>(m_SerializedSelectedProbes.m_Selection);
+            if (m_Group != null && m_SerializedSelectedProbes != null)
+            {
+                m_SourcePositions = new List<Vector3>(m_Group.probePositions);
+                m_Selection = new List<int>(m_SerializedSelectedProbes.m_Selection);
+            }
         }
 
         public void PushProbePositions()
@@ -521,12 +524,18 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static GUIContent showWireframe = new GUIContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
-            public static GUIContent selectedProbePosition = new GUIContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
-            public static GUIContent addProbe = new GUIContent("Add Probe");
-            public static GUIContent deleteSelected = new GUIContent("Delete Selected");
-            public static GUIContent selectAll = new GUIContent("Select All");
-            public static GUIContent duplicateSelected = new GUIContent("Duplicate Selected");
+            public static readonly GUIContent showWireframe = new GUIContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
+            public static readonly GUIContent selectedProbePosition = new GUIContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
+            public static readonly GUIContent addProbe = new GUIContent("Add Probe");
+            public static readonly GUIContent deleteSelected = new GUIContent("Delete Selected");
+            public static readonly GUIContent selectAll = new GUIContent("Select All");
+            public static readonly GUIContent duplicateSelected = new GUIContent("Duplicate Selected");
+            public static readonly GUIContent editModeButton;
+
+            static Styles()
+            {
+                editModeButton = EditorGUIUtility.IconContent("EditCollider");
+            }
         }
         private LightProbeGroupEditor m_Editor;
 
@@ -538,21 +547,21 @@ namespace UnityEditor
             m_Editor.PushProbePositions();
             SceneView.onSceneGUIDelegate += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
-            EditMode.onEditModeStartDelegate += EditModeStarted;
-            EditMode.onEditModeEndDelegate += EditModeEnded;
+            EditMode.editModeStarted += OnEditModeStarted;
+            EditMode.editModeEnded += OnEditModeEnded;
         }
 
-        private void EditModeEnded(Editor editor)
+        private void OnEditModeEnded(IToolModeOwner owner)
         {
-            if (editor == this)
+            if (owner == (IToolModeOwner)this)
             {
                 EndEditProbes();
             }
         }
 
-        private void EditModeStarted(Editor editor, EditMode.SceneViewEditMode mode)
+        private void OnEditModeStarted(IToolModeOwner owner, EditMode.SceneViewEditMode mode)
         {
-            if (editor == this && mode == EditMode.SceneViewEditMode.LightProbeGroup)
+            if (owner == (IToolModeOwner)this && mode == EditMode.SceneViewEditMode.LightProbeGroup)
             {
                 StartEditProbes();
             }
@@ -614,7 +623,12 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             m_Editor.PullProbePositions();
-            EditMode.DoEditModeInspectorModeButton(EditMode.SceneViewEditMode.LightProbeGroup, "Edit Light Probes", EditorGUIUtility.IconContent("EditCollider"), m_Editor.bounds, this);
+            EditMode.DoEditModeInspectorModeButton(
+                EditMode.SceneViewEditMode.LightProbeGroup,
+                "Edit Light Probes",
+                Styles.editModeButton,
+                this
+                );
 
             GUILayout.Space(3);
             EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
@@ -683,6 +697,11 @@ namespace UnityEditor
                 m_Editor.MarkTetrahedraDirty();
                 SceneView.RepaintAll();
             }
+        }
+
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
+        {
+            return m_Editor.bounds;
         }
 
         private void InternalOnSceneView()

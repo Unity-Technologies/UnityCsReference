@@ -25,6 +25,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (s_EventDispatcher == null)
                     s_EventDispatcher = new EventDispatcher();
+
                 return s_EventDispatcher;
             }
         }
@@ -108,59 +109,30 @@ namespace UnityEngine.Experimental.UIElements
             if (s_BeginContainerCallback != null)
                 s_BeginContainerCallback(container);
 
-            GUI.skin = null;
+
             GUILayoutUtility.BeginContainer(cache);
-            GUI.changed = false;
+            GUIUtility.ResetGlobalState();
 
-            Matrix4x4 g = container.globalTransform;
-            GUI.matrix = g;
-
-            // do an offset area for IMGUI
-            Rect screenRect = container.position;
-
-            // back to local
-            var inv = container.globalTransform.inverse;
-            Vector3 min;
-            Vector3 max;
-            if (container.IsDirty(ChangeType.Repaint) && container.lastWorldClip.size == Vector2.zero)
+            var clippingRect = container.lastWorldClip;
+            if (clippingRect.width == 0.0f || clippingRect.height == 0.0f)
             {
-                min = inv.MultiplyPoint3x4(container.globalBound.min);
-                max = inv.MultiplyPoint3x4(container.globalBound.max);
+                // lastWorldClip will be empty until the first repaint occurred,
+                // we fall back on the globalBound in this case.
+                clippingRect = container.globalBound;
             }
-            else
-            {
-                min = inv.MultiplyPoint3x4(container.lastWorldClip.min);
-                max = inv.MultiplyPoint3x4(container.lastWorldClip.max);
-            }
-            var localClip = Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x),
-                    Math.Max(min.y, max.y));
 
-            // combine clips
-            float x1 = Mathf.Max(screenRect.x, localClip.x);
-            float x2 = Mathf.Min(screenRect.x + screenRect.width, localClip.x + localClip.width);
-            float y1 = Mathf.Max(screenRect.y, localClip.y);
-            float y2 = Mathf.Min(screenRect.y + screenRect.height, localClip.y + localClip.height);
-
-            // new global clip
-            var clippedScreen = new Rect(x1, y1, x2 - x1, y2 - y1);
-
-            var offset = new Vector2(Mathf.Round(screenRect.x - clippedScreen.x), Mathf.Round(screenRect.y - clippedScreen.y));
-            GUI.BeginGroup(clippedScreen, GUIContent.none, GUIStyle.none, offset);
+            var translate = Matrix4x4.TRS(new Vector3(container.position.x, container.position.y, 0.0f), Quaternion.identity, Vector3.one);
+            GUIClip.SetTransform(container.globalTransform * translate, clippingRect);
         }
 
         // End the 2D GUI.
         internal static void EndContainerGUI()
         {
-            if (Event.current.type != EventType.Used)
-            {
-                GUI.EndGroup();
-            }
-
 
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)
             {
-                var r = s_ContainerStack.Peek().globalBound;
+                var r = s_ContainerStack.Peek().position;
                 GUILayoutUtility.LayoutFromContainer(r.width, r.height);
             }
             // restore cache
@@ -183,7 +155,30 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.s_SkinMode == 0 ? ContextType.Player : ContextType.Editor;
         }
 
-        static bool DoDispatch(IVisualElementPanel panel)
+        static EventBase CreateEvent(Event systemEvent)
+        {
+            switch (systemEvent.type)
+            {
+                case EventType.MouseDown:
+                    return new MouseDownEvent(systemEvent);
+                case EventType.MouseUp:
+                    return new MouseUpEvent(systemEvent);
+                case EventType.MouseMove:
+                    return new MouseMoveEvent(systemEvent);
+                case EventType.MouseDrag:
+                    return new MouseMoveEvent(systemEvent);
+                case EventType.KeyDown:
+                    return new KeyDownEvent(systemEvent);
+                case EventType.KeyUp:
+                    return new KeyUpEvent(systemEvent);
+                case EventType.ScrollWheel:
+                    return new WheelEvent(systemEvent);
+                default:
+                    return new IMGUIEvent(systemEvent);
+            }
+        }
+
+        static bool DoDispatch(BaseVisualElementPanel panel)
         {
             bool usesEvent;
 
@@ -200,12 +195,13 @@ namespace UnityEngine.Experimental.UIElements
             {
                 panel.ValidateLayout();
 
-                var result = s_EventDispatcher.DispatchEvent(s_EventInstance, panel);
-                if (result == EventPropagation.Stop)
+                EventBase evt = CreateEvent(s_EventInstance);
+                s_EventDispatcher.DispatchEvent(evt, panel);
+                if (evt.isPropagationStopped)
                 {
-                    panel.Dirty(ChangeType.Repaint);
+                    panel.visualTree.Dirty(ChangeType.Repaint);
                 }
-                usesEvent = result == EventPropagation.Stop;
+                usesEvent = evt.isPropagationStopped;
             }
 
             return usesEvent;
@@ -221,11 +217,7 @@ namespace UnityEngine.Experimental.UIElements
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
             {
-                panel = new Panel(instanceId, contextType, loadResourceFunction)
-                {
-                    dataWatch = dataWatch,
-                    dispatcher = eventDispatcher
-                };
+                panel = new Panel(instanceId, contextType, loadResourceFunction, dataWatch, eventDispatcher);
                 s_UIElementsCache.Add(instanceId, panel);
             }
             else

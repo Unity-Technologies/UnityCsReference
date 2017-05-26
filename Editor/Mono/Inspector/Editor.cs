@@ -7,15 +7,15 @@ using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal interface IPreviewable
     {
-        void Initialize(Object[] targets);
+        void Initialize(UnityObject[] targets);
 
-        Object target { get; }
+        UnityObject target { get; }
         bool MoveNextTarget();
         void ResetTarget();
 
@@ -53,10 +53,10 @@ namespace UnityEditor
         const int kGridSpacing = 10;
         const int kPreviewLabelPadding = 5;
 
-        protected Object[] m_Targets;
+        protected UnityObject[] m_Targets;
         protected int m_ReferenceTargetIndex;
 
-        public virtual void Initialize(Object[] targets)
+        public virtual void Initialize(UnityObject[] targets)
         {
             m_ReferenceTargetIndex = 0;
             m_Targets = targets;
@@ -74,7 +74,7 @@ namespace UnityEditor
             m_ReferenceTargetIndex = 0;
         }
 
-        public virtual Object target
+        public virtual UnityObject target
         {
             get
             {
@@ -135,7 +135,7 @@ namespace UnityEditor
         {
         }
 
-        internal static void DrawPreview(IPreviewable defaultPreview, Rect previewArea, Object[] targets)
+        internal static void DrawPreview(IPreviewable defaultPreview, Rect previewArea, UnityObject[] targets)
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -195,7 +195,7 @@ namespace UnityEditor
                             );
 
                     if (selectingOne && r.Contains(Event.current.mousePosition))
-                        Selection.objects = new Object[] { defaultPreview.target };
+                        Selection.objects = new UnityObject[] { defaultPreview.target };
 
                     // Make room for label underneath
                     r.height -= kPreviewLabelHeight;
@@ -281,13 +281,21 @@ namespace UnityEditor
         }
     }
 
-    public partial class Editor : ScriptableObject, IPreviewable
+    internal interface IToolModeOwner
+    {
+        bool areToolModesAvailable { get; }
+        int GetInstanceID();
+        Bounds GetWorldBoundsOfTargets();
+        bool ModeSurvivesSelectionChange(int toolMode);
+    }
+
+    public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
     {
         static Styles s_Styles;
 
         private const float kImageSectionWidth = 44;
-        internal delegate void OnEditorGUIDelegate(Editor editor);
-        internal static OnEditorGUIDelegate OnPostHeaderGUI = null;
+        internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
+        internal static OnEditorGUIDelegate OnPostIconGUI = null;
 
         internal virtual IPreviewable preview
         {
@@ -318,6 +326,47 @@ namespace UnityEditor
                 centerStyle.alignment = TextAnchor.MiddleCenter;
                 inspectorBig.padding.bottom -= 1;
             }
+        }
+
+        bool IToolModeOwner.areToolModesAvailable
+        {
+            get
+            {
+                // tool modes not available when the target is a prefab parent
+                return !EditorUtility.IsPersistent(target);
+            }
+        }
+
+        Bounds IToolModeOwner.GetWorldBoundsOfTargets()
+        {
+            var result = new Bounds();
+            bool initialized = false;
+
+            foreach (var t in targets)
+            {
+                if (t == null)
+                    continue;
+
+                Bounds targetBounds = GetWorldBoundsOfTarget(t);
+
+                if (!initialized)
+                    result = targetBounds;
+                result.Encapsulate(targetBounds);
+
+                initialized = true;
+            }
+
+            return result;
+        }
+
+        internal virtual Bounds GetWorldBoundsOfTarget(UnityObject targetObject)
+        {
+            return targetObject is Component ? ((Component)targetObject).gameObject.CalculateBounds() : new Bounds();
+        }
+
+        bool IToolModeOwner.ModeSurvivesSelectionChange(int toolMode)
+        {
+            return false;
         }
 
         internal static bool DoDrawDefaultInspector(SerializedObject obj)
@@ -436,7 +485,7 @@ namespace UnityEditor
         internal virtual void DrawHeaderHelpAndSettingsGUI(Rect r)
         {
             // Help
-            Object helpObject = target;
+            UnityObject helpObject = target;
             var settingsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.titleSettingsIcon);
 
             float currentOffset = settingsSize.x;
@@ -475,8 +524,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            GUILayout.BeginVertical(s_Styles.inspectorBig);
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(s_Styles.inspectorBig);
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
             GUILayout.Space(19);
@@ -488,10 +536,8 @@ namespace UnityEditor
             else
                 EditorGUILayout.GetControlRect();
             GUILayout.EndHorizontal();
-            editor.DrawPostHeaderContent();
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
             Rect fullRect = GUILayoutUtility.GetLastRect();
 
             // Content rect
@@ -503,7 +549,10 @@ namespace UnityEditor
             if (editor)
                 editor.OnHeaderIconGUI(iconRect);
             else
-                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(Object)), s_Styles.centerStyle);
+                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject)), s_Styles.centerStyle);
+
+            if (editor)
+                editor.DrawPostIconContent(iconRect);
 
             // Title
             Rect titleRect = new Rect(r.x + kImageSectionWidth, r.y + 6, r.width - kImageSectionWidth - 38 - 4, 16);
@@ -527,10 +576,28 @@ namespace UnityEditor
             return fullRect;
         }
 
-        internal void DrawPostHeaderContent()
+        internal void DrawPostIconContent(Rect iconRect)
         {
-            if (OnPostHeaderGUI != null)
-                OnPostHeaderGUI(this);
+            if (OnPostIconGUI != null)
+            {
+                // Post icon draws 16 x 16 at bottom right corner
+                const float k_Size = 16;
+                Rect drawRect = iconRect;
+                drawRect.x = (drawRect.xMax - k_Size) + 4; // Move slightly outside bounds for overlap effect.
+                drawRect.y = (drawRect.yMax - k_Size) + 1;
+                drawRect.width = k_Size;
+                drawRect.height = k_Size;
+                OnPostIconGUI(this, drawRect);
+            }
+        }
+
+        internal void DrawPostIconContent()
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect iconRect = GUILayoutUtility.GetLastRect();
+                DrawPostIconContent(iconRect);
+            }
         }
 
         public virtual void DrawPreview(Rect previewArea)
@@ -565,13 +632,13 @@ namespace UnityEditor
             return false;
         }
 
-        static internal bool IsAppropriateFileOpenForEdit(Object assetObject)
+        static internal bool IsAppropriateFileOpenForEdit(UnityObject assetObject)
         {
             string message;
             return IsAppropriateFileOpenForEdit(assetObject, out message);
         }
 
-        static internal bool IsAppropriateFileOpenForEdit(Object assetObject, out string message)
+        static internal bool IsAppropriateFileOpenForEdit(UnityObject assetObject, out string message)
         {
             message = string.Empty;
 
@@ -592,7 +659,7 @@ namespace UnityEditor
         internal virtual bool IsEnabled()
         {
             // disable editor if any objects in the editor are not editable
-            foreach (Object target in targets)
+            foreach (UnityObject target in targets)
             {
                 if ((target.hideFlags & HideFlags.NotEditable) != 0)
                     return false;
@@ -614,7 +681,7 @@ namespace UnityEditor
         {
             message = "";
 
-            foreach (Object target in targets)
+            foreach (UnityObject target in targets)
             {
                 if (EditorUtility.IsPersistent(target) && !IsAppropriateFileOpenForEdit(target))
                     return false;
@@ -628,7 +695,7 @@ namespace UnityEditor
             return true;
         }
 
-        public void Initialize(Object[] targets)
+        public void Initialize(UnityObject[] targets)
         {
             throw new InvalidOperationException("You shouldn't call Initialize for Editors");
         }

@@ -17,7 +17,6 @@ namespace UnityEngine
 {
 
 
-
 [StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
 public partial class AsyncOperation : YieldInstruction
@@ -70,6 +69,38 @@ public partial class AsyncOperation : YieldInstruction
         set;
     }
 
+    [RequiredByNativeCode]
+    internal void InvokeCompletionEvent()
+        {
+            if (m_completeCallback != null)
+            {
+                m_completeCallback(this);
+                m_completeCallback = null;
+            }
+        }
+    
+    
+    private System.Action<AsyncOperation> m_completeCallback;
+    public event System.Action<AsyncOperation> completed
+        {
+            add
+            {
+                if (isDone)
+                {
+                    value(this);
+                }
+                else
+                {
+                    m_completeCallback += value;
+                }
+            }
+            remove
+            {
+                m_completeCallback -= value;
+            }
+        }
+    
+    
 }
 
 }

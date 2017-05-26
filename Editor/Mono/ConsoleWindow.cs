@@ -9,7 +9,6 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using UnityEditorInternal;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -390,9 +389,13 @@ namespace UnityEditor
 
             int errorCount = 0, warningCount = 0, logCount = 0;
             LogEntries.GetCountsByType(ref errorCount, ref warningCount, ref logCount);
+            EditorGUI.BeginChangeCheck();
             bool setLogFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelLog), new GUIContent((logCount <= 999 ? logCount.ToString() : "999+"), logCount > 0 ? iconInfoSmall : iconInfoMono), Constants.MiniButtonRight);
             bool setWarningFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelWarning), new GUIContent((warningCount <= 999 ? warningCount.ToString() : "999+"), warningCount > 0 ? iconWarnSmall : iconWarnMono), Constants.MiniButtonMiddle);
             bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButtonLeft);
+            // Active entry index may no longer be valid
+            if (EditorGUI.EndChangeCheck())
+                SetActiveEntry(null);
 
             SetFlag(ConsoleFlags.LogLevelLog, setLogFlag);
             SetFlag(ConsoleFlags.LogLevelWarning, setWarningFlag);
@@ -541,8 +544,8 @@ namespace UnityEditor
         public void AddItemsToMenu(GenericMenu menu)
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
-                menu.AddItem(new GUIContent("Open Player Log"), false, InternalEditorUtility.OpenPlayerConsole);
-            menu.AddItem(new GUIContent("Open Editor Log"), false, InternalEditorUtility.OpenEditorConsole);
+                menu.AddItem(new GUIContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
+            menu.AddItem(new GUIContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
             AddStackTraceLoggingMenu(menu);
         }

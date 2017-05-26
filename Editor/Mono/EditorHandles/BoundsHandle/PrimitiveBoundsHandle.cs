@@ -93,20 +93,28 @@ namespace UnityEditor.IMGUI.Controls
             // generate control IDs first so they will match if the function is exited early
             for (int i = 0; i < m_ControlIDs.Length; ++i)
             {
-                m_ControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Keyboard);
+                m_ControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Passive);
             }
 
             // wireframe (before handles so handles are rendered top most)
-            Color oldColor = Handles.color;
-            Handles.color *= wireframeColor;
-            if (Handles.color.a > 0f)
-            {
+            using (new Handles.DrawingScope(Handles.color * wireframeColor))
                 DrawWireframe();
-            }
 
-            // exit before drawing control handles if holding alt, since alt-click will rotate scene view
+            // unless holding alt to pin center, exit before drawing control handles when holding alt, since alt-click will rotate scene view
             if (Event.current.alt)
-                return;
+            {
+                bool exit = true;
+                foreach (var id in m_ControlIDs)
+                {
+                    if (id == GUIUtility.hotControl)
+                    {
+                        exit = false;
+                        break;
+                    }
+                }
+                if (exit)
+                    return;
+            }
 
             // bounding box extents
             Vector3 minPos = m_Bounds.min;
@@ -114,11 +122,11 @@ namespace UnityEditor.IMGUI.Controls
 
             // handles
             int prevHotControl = GUIUtility.hotControl;
-            Handles.color = oldColor * handleColor;
             Vector3 cameraLocalPos = Handles.inverseMatrix.MultiplyPoint(Camera.current.transform.position);
             bool isCameraInsideBox = m_Bounds.Contains(cameraLocalPos);
             EditorGUI.BeginChangeCheck();
-            MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
+            using (new Handles.DrawingScope(Handles.color * handleColor))
+                MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
             bool changed = EditorGUI.EndChangeCheck();
 
             // detect if any handles got hotControl
@@ -166,9 +174,6 @@ namespace UnityEditor.IMGUI.Controls
                 if (Event.current.alt)
                     m_Bounds.center = m_BoundsOnClick.center;
             }
-
-            // Reset states
-            Handles.color = oldColor;
         }
 
         protected abstract void DrawWireframe();

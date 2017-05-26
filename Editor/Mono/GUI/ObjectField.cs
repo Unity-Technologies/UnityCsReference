@@ -11,7 +11,14 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUI
     {
-        internal delegate Object ObjectFieldValidator(Object[] references, System.Type objType, SerializedProperty property);
+        [Flags]
+        internal enum ObjectFieldValidatorOptions
+        {
+            None = 0,
+            ExactObjectTypeValidation = (1 << 0)
+        }
+
+        internal delegate Object ObjectFieldValidator(Object[] references, System.Type objType, SerializedProperty property, ObjectFieldValidatorOptions options);
 
         internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects)
         {
@@ -45,6 +52,20 @@ namespace UnityEditor
                     new ObjectPreviewPopup(targetObject),
                     new[] { PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below, PopupLocationHelper.PopupLocation.Right });
             }
+        }
+
+        static Object AssignSelectedObject(SerializedProperty property, ObjectFieldValidator validator, System.Type objectType, Event evt)
+        {
+            Object[] references = { ObjectSelector.GetCurrentObject() };
+            Object assigned = validator(references, objectType, property, ObjectFieldValidatorOptions.None);
+
+            // Assign the value
+            if (property != null)
+                property.objectReferenceValue = assigned;
+
+            GUI.changed = true;
+            evt.Use();
+            return assigned;
         }
 
         internal static Object DoObjectField(Rect position, Rect dropRect, int id, Object obj, System.Type objType, SerializedProperty property, ObjectFieldValidator validator, bool allowSceneObjects, GUIStyle style)
@@ -86,7 +107,7 @@ namespace UnityEditor
                     if (dropRect.Contains(Event.current.mousePosition) && GUI.enabled)
                     {
                         Object[] references = DragAndDrop.objectReferences;
-                        Object validatedObject = validator(references, objType, property);
+                        Object validatedObject = validator(references, objType, property, ObjectFieldValidatorOptions.None);
 
                         if (validatedObject != null)
                         {
@@ -184,21 +205,18 @@ namespace UnityEditor
                     break;
                 case EventType.ExecuteCommand:
                     string commandName = evt.commandName;
-                    if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id)
+                    if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && (property == null || !property.isScript))
+                        return AssignSelectedObject(property, validator, objType, evt);
+                    else if (commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id && property != null && property.isScript)
                     {
-                        // Validate the assignment
-                        Object[] references = { ObjectSelector.GetCurrentObject() };
-                        Object assigned = validator(references, objType, property);
-
-                        // Assign the value
-                        if (property != null)
-                            property.objectReferenceValue = assigned;
-
-                        GUI.changed = true;
-                        evt.Use();
-                        return assigned;
+                        if (ObjectSelector.get.GetInstanceID() == 0)
+                        {
+                            // User canceled object selection; don't apply
+                            evt.Use();
+                            break;
+                        }
+                        return AssignSelectedObject(property, validator, objType, evt);
                     }
-
                     break;
                 case EventType.KeyDown:
                     if (GUIUtility.keyboardControl == id)
@@ -245,7 +263,7 @@ namespace UnityEditor
                                 else
                                     temp.text = temp.text + string.Format(" ({0})", GetGameObjectFromObject(obj).scene.name);
                             }
-                            else if (validator(references, objType, property) == null)
+                            else if (validator(references, objType, property, ObjectFieldValidatorOptions.ExactObjectTypeValidation) == null)
                                 temp = EditorGUIUtility.TempContent("Type mismatch");
                         }
                     }
@@ -381,7 +399,7 @@ namespace UnityEditor
                     if (position.Contains(Event.current.mousePosition) && GUI.enabled)
                     {
                         Object[] references = DragAndDrop.objectReferences;
-                        Object validatedObject = validator(references, objType, null);
+                        Object validatedObject = validator(references, objType, null, ObjectFieldValidatorOptions.None);
 
                         if (validatedObject != null)
                         {

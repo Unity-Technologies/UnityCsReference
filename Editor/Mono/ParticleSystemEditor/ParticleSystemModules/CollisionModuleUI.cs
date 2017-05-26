@@ -194,11 +194,16 @@ namespace UnityEditor
         private Bounds GetBounds()
         {
             var combinedBounds = new Bounds();
+            bool initialized = false;
 
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
             {
                 ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (!initialized)
+                    combinedBounds = particleSystemRenderer.bounds;
                 combinedBounds.Encapsulate(particleSystemRenderer.bounds);
+
+                initialized = true;
             }
 
             return combinedBounds;
@@ -231,7 +236,7 @@ namespace UnityEditor
                     EditorPrefs.SetFloat("ScalePlaneColision", m_ScaleGrid);
                 }
 
-                GUIButtonGroup(s_Texts.sceneViewEditModes, s_Texts.toolContents, GetBounds(), m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
+                GUIButtonGroup(s_Texts.sceneViewEditModes, s_Texts.toolContents, GetBounds, m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor);
             }
             else
             {

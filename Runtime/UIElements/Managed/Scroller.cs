@@ -64,8 +64,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, Slider.Direction direction = Slider.Direction.Vertical)
         {
-            phaseInterest = EventPhase.BubbleUp;
-
             this.direction = direction;
             this.valueChanged = valueChanged;
 

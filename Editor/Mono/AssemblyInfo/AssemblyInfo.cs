@@ -7,6 +7,7 @@ using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
+[assembly: InternalsVisibleTo("UnityEditor.UIAutomation")]
 [assembly: InternalsVisibleTo("Unity.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerStandalone")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
@@ -44,6 +45,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("UnityEditor.Facebook.Extensions")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 

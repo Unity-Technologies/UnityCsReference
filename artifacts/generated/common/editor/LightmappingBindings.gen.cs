@@ -316,15 +316,30 @@ public sealed partial class Lightmapping
 
             var sceneSetup = EditorSceneManager.GetSceneManagerSetup();
 
+            Lightmapping.OnCompletedFunction OnBakeFinish = null;
+            OnBakeFinish = () =>
+                {
+                    EditorSceneManager.SaveOpenScenes();
+                    EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
+                    Lightmapping.completed -= OnBakeFinish;
+                };
+
+            EditorSceneManager.SceneOpenedCallback BakeOnAllOpen = null;
+            BakeOnAllOpen = (UnityEngine.SceneManagement.Scene scene, SceneManagement.OpenSceneMode loadSceneMode) =>
+                {
+                    if (EditorSceneManager.loadedSceneCount == paths.Length)
+                    {
+                        BakeAsync();
+                        Lightmapping.completed += OnBakeFinish;
+                        EditorSceneManager.sceneOpened -= BakeOnAllOpen;
+                    }
+                };
+
+            EditorSceneManager.sceneOpened += BakeOnAllOpen;
+
             EditorSceneManager.OpenScene(paths[0]);
             for (int i = 1; i < paths.Length; i++)
                 EditorSceneManager.OpenScene(paths[i], OpenSceneMode.Additive);
-
-            Bake();
-
-            EditorSceneManager.SaveOpenScenes();
-
-            EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
         }
     
     

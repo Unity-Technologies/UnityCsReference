@@ -10,22 +10,28 @@ using UnityEditorInternal;
 
 namespace UnityEditor.RestService
 {
-    abstract internal class Handler
+    [UnityEngine.Scripting.RequiredByNativeCode]
+    internal abstract class Handler
     {
-        //invoked from native code.
-        void InvokeGet(Request request, string payload, Response writeResponse)
+        // The following methods are invoked from native code.
+        protected abstract void InvokeGet(Request request, string payload, Response writeResponse);
+        protected abstract void InvokePost(Request request, string payload, Response writeResponse);
+        protected abstract void InvokeDelete(Request request, string payload, Response writeResponse);
+    }
+
+    internal abstract class JSONHandler : Handler
+    {
+        protected override void InvokeGet(Request request, string payload, Response writeResponse)
         {
             CallSafely(request, payload, writeResponse, HandleGet);
         }
 
-        //invoked from native code.
-        void InvokePost(Request request, string payload, Response writeResponse)
+        protected override void InvokePost(Request request, string payload, Response writeResponse)
         {
             CallSafely(request, payload, writeResponse, HandlePost);
         }
 
-        //invoked from native code.
-        void InvokeDelete(Request request, string payload, Response writeResponse)
+        protected override void InvokeDelete(Request request, string payload, Response writeResponse)
         {
             CallSafely(request, payload, writeResponse, HandleDelete);
         }
@@ -50,7 +56,7 @@ namespace UnityEditor.RestService
                     }
                 }
 
-                writeResponse.SimpleResponse(HttpStatusCode.Ok, method(request, json).ToString());
+                writeResponse.SimpleResponse(HttpStatusCode.Ok, "application/json", method(request, json).ToString());
             }
             catch (JSONTypeException)
             {
@@ -83,7 +89,7 @@ namespace UnityEditor.RestService
             if (rre.RestErrorDescription != null)
                 body.AppendFormat("\"errordescription\":\"{0}\"", rre.RestErrorDescription);
             body.Append("}");
-            writeResponse.SimpleResponse(rre.HttpStatusCode, body.ToString());
+            writeResponse.SimpleResponse(rre.HttpStatusCode, "application/json", body.ToString());
         }
 
         virtual protected JSONValue HandleGet(Request request, JSONValue payload)

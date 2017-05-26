@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.UIElements
             this.scaleMode = ScaleMode.ScaleAndCrop;
         }
 
-        public override void DoRepaint(IStylePainter painter)
+        internal override void DoRepaint(IStylePainter painter)
         {
             if (image == null)
             {

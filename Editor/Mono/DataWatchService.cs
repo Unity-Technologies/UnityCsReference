@@ -92,7 +92,7 @@ namespace UnityEditor
             foreach (var m in modifications)
             {
                 var cv = m.currentValue;
-                if (cv == null)
+                if (cv == null || cv.target == null)
                     continue;
                 if (m_Watched.ContainsKey(cv.target))
                 {

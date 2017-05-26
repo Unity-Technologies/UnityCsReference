@@ -18,6 +18,7 @@ namespace UnityEditor
         }
 
         public GUIStyle label = FindStyle("ShurikenLabel"); //new GUIStyle (EditorStyles.miniLabel);
+        public GUIStyle editableLabel = FindStyle("ShurikenEditableLabel"); //new GUIStyle (EditorStyles.miniLabel);
         public GUIStyle numberField = FindStyle("ShurikenValue");//new GUIStyle(EditorStyles.miniLabel);//new GUIStyle(EditorStyles.miniTextField);//label; //new GUIStyle (EditorStyles.miniTextField);//
         public GUIStyle objectField = FindStyle("ShurikenObjectField"); //new GUIStyle (EditorStyles.objectField);
         public GUIStyle effectBgStyle = FindStyle("ShurikenEffectBg");//new GUIStyle (GUI.skin.button);

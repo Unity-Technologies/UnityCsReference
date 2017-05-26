@@ -11,11 +11,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Collections.Generic;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.Scripting
 {
     internal class PragmaFixing30
     {
+        [RequiredByNativeCode]
         static void FixJavaScriptPragmas()
         {
             string[] filesToFix = CollectBadFiles();

@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.Animations
 {
@@ -136,6 +137,7 @@ namespace UnityEditor.Animations
             parameters = parameterVector;
         }
 
+        [RequiredByNativeCode]
         public AnimatorState AddMotion(Motion motion)
         {
             return AddMotion(motion, 0);
@@ -188,6 +190,7 @@ namespace UnityEditor.Animations
             return clip;
         }
 
+        [RequiredByNativeCode]
         internal static AnimatorController CreateAnimatorControllerForClip(AnimationClip clip, GameObject animatedObject)
         {
             string path = AssetDatabase.GetAssetPath(clip);

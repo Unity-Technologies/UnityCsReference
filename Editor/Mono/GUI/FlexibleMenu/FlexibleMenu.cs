@@ -259,7 +259,7 @@ namespace UnityEditor
                     m_ItemProvider.Replace(index, obj);
                     EditorApplication.RequestRepaintAllViews(); // We want to repaint the flexible menu (currently in modifyItemUI)
                 });
-            PopupWindow.Show(itemRect, m_ModifyItemUI);
+            PopupWindow.Show(itemRect, m_ModifyItemUI, null, ShowMode.PopupMenuWithKeyboardFocus);
         }
 
         void DeleteItem(int index)

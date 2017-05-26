@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
 using UnityEditor.Connect;
 using UnityEditor.Advertisements;
 using UnityEngine;
@@ -31,9 +32,15 @@ namespace UnityEditor.Web
             return AdvertisementSettings.enabled;
         }
 
+        [Serializable]
+        public struct AdsServiceState { public bool ads; }
         override public void EnableService(bool enabled)
         {
-            AdvertisementSettings.enabled = enabled;
+            if (AdvertisementSettings.enabled != enabled)
+            {
+                AdvertisementSettings.enabled = enabled;
+                UsabilityAnalytics.SendEventParam("service_state", new AdsServiceState() { ads = enabled });
+            }
         }
 
         override public void OnProjectUnbound()

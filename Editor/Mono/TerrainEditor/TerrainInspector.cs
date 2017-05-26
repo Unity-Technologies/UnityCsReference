@@ -458,7 +458,7 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("TerrainInspector.TerrainToolSmoothHeight", "|Smooth the terrain height."),
                 EditorGUIUtility.IconContent("TerrainInspector.TerrainToolSplat", "|Paint the terrain texture."),
                 EditorGUIUtility.IconContent("TerrainInspector.TerrainToolTrees", "|Place trees"),
-                EditorGUIUtility.IconContent("TerrainInspector.TerrainToolPlants", "|Place plants, stones and other small foilage"),
+                EditorGUIUtility.IconContent("TerrainInspector.TerrainToolPlants", "|Place plants, stones and other small foliage"),
                 EditorGUIUtility.IconContent("TerrainInspector.TerrainToolSettings", "|Settings for the terrain")
             };
 
@@ -1803,7 +1803,7 @@ namespace UnityEditor
         {
             Initialize();
 
-            if (!m_Terrain.terrainData)
+            if (m_Terrain == null || m_Terrain.terrainData == null)
                 return;
 
             Event e = Event.current;

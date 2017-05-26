@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace UnityEditor.RestService
 {
-    internal class ProjectStateRestHandler : Handler
+    internal class ProjectStateRestHandler : JSONHandler
     {
         protected override JSONValue HandleGet(Request request, JSONValue payload)
         {

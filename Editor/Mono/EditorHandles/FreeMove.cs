@@ -35,9 +35,9 @@ namespace UnityEditorInternal
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
-                        GUIUtility.hotControl = GUIUtility.keyboardControl = id;     // Grab mouse focus
+                        GUIUtility.hotControl = id;     // Grab mouse focus
                         s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
                         s_StartPosition = position;
                         HandleUtility.ignoreRaySnapObjects = null;
@@ -127,12 +127,22 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+                case EventType.mouseMove:
+                    if (id == HandleUtility.nearestControl)
+                        HandleUtility.Repaint();
+                    break;
                 case EventType.repaint:
                     Color temp = Color.white;
-                    if (id == GUIUtility.keyboardControl)
+
+                    if (id == GUIUtility.hotControl)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
+                    }
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    {
+                        temp = Handles.color;
+                        Handles.color = Handles.preselectionColor;
                     }
 
                     // We only want the position to be affected by the Handles.matrix.
@@ -140,7 +150,7 @@ namespace UnityEditorInternal
                     capFunc(id, worldPosition, Camera.current.transform.rotation, size);
                     Handles.matrix = origMatrix;
 
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
                     break;
             }
@@ -165,9 +175,9 @@ namespace UnityEditorInternal
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
-                        GUIUtility.hotControl = GUIUtility.keyboardControl = id;     // Grab mouse focus
+                        GUIUtility.hotControl = id;     // Grab mouse focus
                         s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
                         s_StartPosition = position;
                         HandleUtility.ignoreRaySnapObjects = null;
@@ -257,12 +267,22 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+                case EventType.mouseMove:
+                    if (id == HandleUtility.nearestControl)
+                        HandleUtility.Repaint();
+                    break;
                 case EventType.repaint:
                     Color temp = Color.white;
-                    if (id == GUIUtility.keyboardControl)
+
+                    if (id == GUIUtility.hotControl)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
+                    }
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    {
+                        temp = Handles.color;
+                        Handles.color = Handles.preselectionColor;
                     }
 
                     // We only want the position to be affected by the Handles.matrix.
@@ -270,7 +290,7 @@ namespace UnityEditorInternal
                     handleFunction(id, worldPosition, Camera.current.transform.rotation, size, EventType.Repaint);
                     Handles.matrix = origMatrix;
 
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
                     break;
             }

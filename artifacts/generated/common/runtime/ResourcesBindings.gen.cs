@@ -17,15 +17,11 @@ namespace UnityEngine
 
 [StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
-public sealed partial class ResourceRequest : AsyncOperation
+public partial class ResourceRequest : AsyncOperation
 {
     internal string m_Path;
     internal Type m_Type;
-    
-    
     public Object asset { get { return Resources.Load(m_Path, m_Type); } }
-    
-    
 }
 
 public sealed partial class Resources
@@ -81,9 +77,18 @@ public sealed partial class Resources
         }
     
     
+    public static ResourceRequest LoadAsync(string path, Type type)
+        {
+            ResourceRequest req = LoadAsyncInternal(path, type);
+            req.m_Path = path;
+            req.m_Type = type;
+            return req;
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  ResourceRequest LoadAsync (string path, Type type) ;
+    extern internal static  ResourceRequest LoadAsyncInternal (string path, Type type) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

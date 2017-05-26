@@ -73,7 +73,6 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.Collider,
                 "Edit Bounds",
                 PrimitiveBoundsHandle.editModeButton,
-                (target as SkinnedMeshRenderer).bounds,
                 this
                 );
             EditorGUI.BeginChangeCheck();
@@ -87,6 +86,11 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Materials, true);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
+        {
+            return ((SkinnedMeshRenderer)targetObject).bounds;
         }
 
         private void LightingFieldsGUI()

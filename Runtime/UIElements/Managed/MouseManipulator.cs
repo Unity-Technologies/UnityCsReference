@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class MouseManipulator : Manipulator
+    public abstract class MouseManipulator : Manipulator
     {
         public List<ManipulatorActivationFilter> activators { get; private set; }
         private ManipulatorActivationFilter m_currentActivator;
@@ -16,11 +16,11 @@ namespace UnityEngine.Experimental.UIElements
             activators = new List<ManipulatorActivationFilter>();
         }
 
-        protected bool CanStartManipulation(Event evt)
+        protected bool CanStartManipulation(MouseEventBase e)
         {
             foreach (var activator in activators)
             {
-                if (activator.Matches(evt))
+                if (activator.Matches(e))
                 {
                     m_currentActivator = activator;
                     return true;
@@ -30,9 +30,9 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        protected bool CanStopManipulation(Event evt)
+        protected bool CanStopManipulation(MouseEventBase e)
         {
-            return ((MouseButton)evt.button == m_currentActivator.button) && this.HasCapture();
+            return ((MouseButton)e.button == m_currentActivator.button) && target.HasCapture();
         }
     }
 }

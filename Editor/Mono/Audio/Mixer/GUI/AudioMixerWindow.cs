@@ -9,6 +9,7 @@ using System;
 using UnityEditorInternal;
 using UnityEditor.Audio;
 using UnityEditor.IMGUI.Controls;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor
 {
@@ -175,7 +176,8 @@ namespace UnityEditor
             AudioMixerUtility.RepaintAudioMixerAndInspectors();
         }
 
-        public static void Create()
+        [RequiredByNativeCode]
+        public static void CreateAudioMixerWindow()
         {
             var win = GetWindow<AudioMixerWindow>(typeof(ProjectBrowser));  // From usability tests we decided to auto dock together with project browser to prevent the mixer window keep going behind the main window on OSX
 
@@ -277,18 +279,30 @@ namespace UnityEditor
             s_Instance = this;
 
             Undo.undoRedoPerformed += UndoRedoPerformed;
-            EditorApplication.playmodeStateChanged += PlaymodeChanged;
+            EditorApplication.pauseStateChanged += OnPauseStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.projectWindowChanged += OnProjectChanged;
         }
 
         public void OnDisable()
         {
-            EditorApplication.playmodeStateChanged -= PlaymodeChanged;
+            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
             EditorApplication.projectWindowChanged -= OnProjectChanged;
         }
 
-        void PlaymodeChanged()
+        void OnPauseStateChanged(PauseState state)
+        {
+            OnPauseOrPlayModeStateChanged();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            OnPauseOrPlayModeStateChanged();
+        }
+
+        void OnPauseOrPlayModeStateChanged()
         {
             m_Ticker.Reset();  // ensures immediate tick on play mode change
             if (m_Controller != null)

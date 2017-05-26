@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditorInternal;
 using Enum = System.Enum;
+using GetBoundsFunc = System.Func<UnityEngine.Bounds>;
 
 namespace UnityEditor
 {
@@ -41,13 +42,19 @@ namespace UnityEditor
             return GUILayoutUtility.GetRect(0, height, s_ControlRectStyle, layoutOptions);
         }
 
+        protected static Rect FieldPosition(Rect totalPosition, out Rect labelPosition)
+        {
+            labelPosition = new Rect(totalPosition.x + EditorGUI.indent, totalPosition.y, EditorGUIUtility.labelWidth - EditorGUI.indent, kSingleLineHeight);
+            return new Rect(totalPosition.x + EditorGUIUtility.labelWidth, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth, totalPosition.height);
+        }
+
         protected static Rect PrefixLabel(Rect totalPosition, GUIContent label)
         {
             if (!EditorGUI.LabelHasContent(label))
                 return EditorGUI.IndentedRect(totalPosition);
 
-            Rect labelPosition = new Rect(totalPosition.x + EditorGUI.indent, totalPosition.y, EditorGUIUtility.labelWidth - EditorGUI.indent, kSingleLineHeight);
-            Rect fieldPosition = new Rect(totalPosition.x + EditorGUIUtility.labelWidth, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth, totalPosition.height);
+            Rect labelPosition;
+            Rect fieldPosition = FieldPosition(totalPosition, out labelPosition);
             EditorGUI.HandlePrefixLabel(totalPosition, labelPosition, label, 0, ParticleSystemStyles.Get().label);
             return fieldPosition;
         }
@@ -156,11 +163,11 @@ namespace UnityEditor
             return FloatDraggable(rect, floatValue, 1f, EditorGUIUtility.labelWidth, formatString);
         }
 
-        public static void GUIButtonGroup(EditMode.SceneViewEditMode[] modes, GUIContent[] guiContents, Bounds bounds, Editor caller)
+        public static void GUIButtonGroup(EditMode.SceneViewEditMode[] modes, GUIContent[] guiContents, GetBoundsFunc getBoundsOfTargets, Editor caller)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Space(EditorGUIUtility.labelWidth);
-            EditMode.DoInspectorToolbar(modes, guiContents, bounds, caller);
+            EditMode.DoInspectorToolbar(modes, guiContents, getBoundsOfTargets, caller);
             GUILayout.EndHorizontal();
         }
 
@@ -612,12 +619,46 @@ namespace UnityEditor
 
         public static void GUIMinMaxCurve(GUIContent label, SerializedMinMaxCurve mmCurve, params GUILayoutOption[] layoutOptions)
         {
+            GUIMinMaxCurve(label, mmCurve, null, layoutOptions);
+        }
+
+        public static void GUIMinMaxCurve(SerializedProperty editableLabel, SerializedMinMaxCurve mmCurve, params GUILayoutOption[] layoutOptions)
+        {
+            GUIMinMaxCurve(null, mmCurve, editableLabel, layoutOptions);
+        }
+
+        internal static void GUIMinMaxCurve(GUIContent label, SerializedMinMaxCurve mmCurve, SerializedProperty editableLabel, params GUILayoutOption[] layoutOptions)
+        {
             bool mixedState = mmCurve.stateHasMultipleDifferentValues;
 
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             Rect popupRect = GetPopupRect(rect);
             rect = SubtractPopupWidth(rect);
-            Rect controlRect = PrefixLabel(rect, label);
+            Rect controlRect;
+
+            if (editableLabel != null)
+            {
+                Rect labelPosition;
+                controlRect = FieldPosition(rect, out labelPosition);
+                labelPosition.width -= kSpacingSubLabel;
+
+                // Draw with the minimum width so we don't lose the draggable functionality to the left of the float field
+                float textWidth = ParticleSystemStyles.Get().editableLabel.CalcSize(GUIContent.Temp(editableLabel.stringValue)).x;
+                labelPosition.width = Mathf.Min(labelPosition.width, textWidth + kSpacingSubLabel);
+
+                EditorGUI.BeginProperty(labelPosition, GUIContent.none, editableLabel);
+
+                EditorGUI.BeginChangeCheck();
+                string newString = EditorGUI.TextFieldInternal(GUIUtility.GetControlID(FocusType.Passive, labelPosition), labelPosition, editableLabel.stringValue, ParticleSystemStyles.Get().editableLabel);
+                if (EditorGUI.EndChangeCheck())
+                    editableLabel.stringValue = newString;
+
+                EditorGUI.EndProperty();
+            }
+            else
+            {
+                controlRect = PrefixLabel(rect, label);
+            }
 
             if (mixedState)
             {
@@ -677,6 +718,16 @@ namespace UnityEditor
 
         public void GUIMinMaxGradient(GUIContent label, SerializedMinMaxGradient minMaxGradient, bool hdr, params GUILayoutOption[] layoutOptions)
         {
+            GUIMinMaxGradient(label, minMaxGradient, null, hdr, layoutOptions);
+        }
+
+        public void GUIMinMaxGradient(SerializedProperty editableLabel, SerializedMinMaxGradient minMaxGradient, bool hdr, params GUILayoutOption[] layoutOptions)
+        {
+            GUIMinMaxGradient(null, minMaxGradient, editableLabel, hdr, layoutOptions);
+        }
+
+        internal void GUIMinMaxGradient(GUIContent label, SerializedMinMaxGradient minMaxGradient, SerializedProperty editableLabel, bool hdr, params GUILayoutOption[] layoutOptions)
+        {
             bool mixedState = minMaxGradient.stateHasMultipleDifferentValues;
 
             MinMaxGradientState state = minMaxGradient.state;
@@ -685,7 +736,28 @@ namespace UnityEditor
             Rect rect = GUILayoutUtility.GetRect(0, useRandomness ? 2 * kSingleLineHeight : kSingleLineHeight, layoutOptions);
             Rect popupRect = GetPopupRect(rect);
             rect = SubtractPopupWidth(rect);
-            Rect gradientRect = PrefixLabel(rect, label);
+
+            Rect gradientRect;
+            if (editableLabel != null)
+            {
+                Rect labelPosition;
+                gradientRect = FieldPosition(rect, out labelPosition);
+                labelPosition.width -= kSpacingSubLabel;
+
+                EditorGUI.BeginProperty(labelPosition, GUIContent.none, editableLabel);
+
+                EditorGUI.BeginChangeCheck();
+                string newString = EditorGUI.TextFieldInternal(GUIUtility.GetControlID(FocusType.Passive, labelPosition), labelPosition, editableLabel.stringValue, ParticleSystemStyles.Get().editableLabel);
+                if (EditorGUI.EndChangeCheck())
+                    editableLabel.stringValue = newString;
+
+                EditorGUI.EndProperty();
+            }
+            else
+            {
+                gradientRect = PrefixLabel(rect, label);
+            }
+
             gradientRect.height = kSingleLineHeight;
 
             if (mixedState)

@@ -26,26 +26,19 @@ namespace UnityEngine.Experimental.UIElements
             secureText = string.Empty;
         }
 
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        protected override void RegisterCallbacksOnTarget()
         {
-            SyncTextEditor();
-
-            EventPropagation result = EventPropagation.Continue;
-            switch (evt.type)
-            {
-                case EventType.MouseDown:
-                    result = DoMouseDown();
-                    break;
-            }
-
-            // Scroll offset might need to be updated
-            UpdateScrollOffset();
-
-            return result;
+            target.RegisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
         }
 
-        EventPropagation DoMouseDown()
+        protected override void UnregisterCallbacksFromTarget()
         {
+            target.UnregisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
+        }
+
+        void OnMouseUpDownEvent(MouseEventBase evt)
+        {
+            SyncTextEditor();
             textField.TakeCapture();
 
             keyboardOnScreen = TouchScreenKeyboard.Open(!string.IsNullOrEmpty(secureText) ? secureText : textField.text,
@@ -54,7 +47,9 @@ namespace UnityEngine.Experimental.UIElements
                     multiline,
                     !string.IsNullOrEmpty(secureText));
 
-            return EventPropagation.Stop;
+            // Scroll offset might need to be updated
+            UpdateScrollOffset();
+            evt.StopPropagation();
         }
     }
 }

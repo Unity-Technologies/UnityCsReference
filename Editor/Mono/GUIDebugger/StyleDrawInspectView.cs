@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -13,25 +14,12 @@ namespace UnityEditor
     class GUIStyleHolder : ScriptableObject
     {
         public GUIStyle inspectedStyle;
+
+        protected GUIStyleHolder() {}
     }
 
     class StyleDrawInspectView : BaseInspectView
     {
-        class GUIInstruction
-        {
-            public Rect         rect;
-            public GUIStyle     usedGUIStyle = GUIStyle.none;
-            public GUIContent   usedGUIContent = GUIContent.none;
-            public StackFrame[] stackframes;
-
-            public void Reset()
-            {
-                rect = new Rect();
-                usedGUIStyle = GUIStyle.none;
-                usedGUIContent = GUIContent.none;
-            }
-        }
-
         [Serializable]
         class CachedInstructionInfo
         {
@@ -45,10 +33,11 @@ namespace UnityEditor
             }
         }
 
-        [NonSerialized] private GUIInstruction m_Instruction;
-        [NonSerialized] private CachedInstructionInfo m_CachedinstructionInfo;
-        private Vector2 m_StacktraceScrollPos =  new Vector2();
+        Vector2 m_StacktraceScrollPos =  new Vector2();
 
+        [NonSerialized] List<IMGUIDrawInstruction> m_Instructions = new List<IMGUIDrawInstruction>();
+        [NonSerialized] IMGUIDrawInstruction m_Instruction;
+        [NonSerialized] CachedInstructionInfo m_CachedInstructionInfo;
 
         public StyleDrawInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
@@ -56,11 +45,25 @@ namespace UnityEditor
 
         public override void UpdateInstructions()
         {
+            m_Instructions.Clear();
+            GUIViewDebuggerHelper.GetDrawInstructions(m_Instructions);
+        }
+
+        public override void ClearRowSelection()
+        {
+            base.ClearRowSelection();
+            m_CachedInstructionInfo = null;
+        }
+
+        public override void ShowOverlay()
+        {
+            if (m_CachedInstructionInfo != null)
+                debuggerWindow.HighlightInstruction(debuggerWindow.inspected, m_Instruction.rect, m_Instruction.usedGUIStyle);
         }
 
         protected override int GetInstructionCount()
         {
-            return GUIViewDebuggerHelper.GetInstructionCount();
+            return m_Instructions.Count;
         }
 
         protected override void DoDrawInstruction(ListViewElement el, int id)
@@ -68,17 +71,113 @@ namespace UnityEditor
             string listDisplayName = GetInstructionListName(el.row);
             GUIContent tempContent = GUIContent.Temp(listDisplayName);
 
-            GUIViewDebuggerWindow.s_Styles.listItemBackground.Draw(el.position, false, false, m_ListViewState.row == el.row, false);
+            GUIViewDebuggerWindow.styles.listItemBackground.Draw(el.position, false, false, listViewState.row == el.row, false);
 
-            GUIViewDebuggerWindow.s_Styles.listItem.Draw(el.position, tempContent, id, m_ListViewState.row == el.row);
+            GUIViewDebuggerWindow.styles.listItem.Draw(el.position, tempContent, id, listViewState.row == el.row);
+        }
+
+        protected override void DrawInspectedStacktrace()
+        {
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            DrawStackFrameList(m_Instruction.stackframes);
+            EditorGUILayout.EndScrollView();
+        }
+
+        protected override bool isInstructionSelected { get { return m_CachedInstructionInfo != null; } }
+
+        internal override void DoDrawSelectedInstructionDetails(int selectedInstructionIndex)
+        {
+            using (new EditorGUI.DisabledScope(true))
+            {
+                DrawInspectedRect(m_Instruction.rect);
+            }
+
+            DrawInspectedStyle();
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                DrawInspectedGUIContent();
+            }
+        }
+
+        internal override string GetInstructionListName(int index)
+        {
+            //This means we will resolve the stack trace for all instructions.
+            //TODO: make sure only visible items do this. Also, cache so we don't have to do everyframe.
+            var methodName = GetInstructionListName(m_Instructions[index].stackframes);
+
+            //TODO: use the signature we get from the managed stack
+            return string.Format("{0}. {1}", index, methodName);
+        }
+
+        string GetInstructionListName(StackFrame[] stacktrace)
+        {
+            int frameIndex = GetInterestingFrameIndex(stacktrace);
+
+            if (frameIndex > 0)
+                --frameIndex;
+
+            StackFrame interestingFrame = stacktrace[frameIndex];
+            return interestingFrame.methodName;
         }
 
         internal override void OnDoubleClickInstruction(int index)
         {
-            ShowInstructionInExternalEditor(GUIViewDebuggerHelper.GetManagedStackTrace(index));
+            ShowInstructionInExternalEditor(m_Instructions[index].stackframes);
         }
 
-        private int GetInterestingFrameIndex(StackFrame[] stacktrace)
+        internal override void OnSelectedInstructionChanged(int index)
+        {
+            listViewState.row = index;
+
+            if (listViewState.row >= 0)
+            {
+                if (m_CachedInstructionInfo == null)
+                {
+                    m_CachedInstructionInfo = new CachedInstructionInfo();
+                }
+
+                m_Instruction = m_Instructions[listViewState.row];
+
+                //updated Cached data related to the Selected Instruction
+                m_CachedInstructionInfo.styleContainer.inspectedStyle = m_Instruction.usedGUIStyle;
+                m_CachedInstructionInfo.styleContainerSerializedObject = null;
+                m_CachedInstructionInfo.styleSerializedProperty = null;
+                GetSelectedStyleProperty(out m_CachedInstructionInfo.styleContainerSerializedObject, out m_CachedInstructionInfo.styleSerializedProperty);
+
+                //Hightlight the item
+                debuggerWindow.HighlightInstruction(debuggerWindow.inspected, m_Instruction.rect, m_Instruction.usedGUIStyle);
+            }
+            else
+            {
+                m_CachedInstructionInfo = null;
+
+                debuggerWindow.CloseInstructionOverlayWindow();
+            }
+        }
+
+        void DrawInspectedGUIContent()
+        {
+            GUILayout.Label(GUIContent.Temp("GUIContent"));
+            EditorGUI.indentLevel++;
+            EditorGUILayout.TextField(m_Instruction.usedGUIContent.text);
+            EditorGUILayout.ObjectField(m_Instruction.usedGUIContent.image, typeof(Texture2D), false);
+            EditorGUI.indentLevel--;
+        }
+
+        void DrawInspectedStyle()
+        {
+            EditorGUI.BeginChangeCheck();
+
+            EditorGUILayout.PropertyField(m_CachedInstructionInfo.styleSerializedProperty, GUIContent.Temp("Style"), true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_CachedInstructionInfo.styleContainerSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                debuggerWindow.inspected.Repaint();
+            }
+        }
+
+        int GetInterestingFrameIndex(StackFrame[] stacktrace)
         {
             //We try to find the first frame that belongs to the user project.
             //If there is no frame inside the user project, we will return the first frame outside any class starting with:
@@ -115,55 +214,7 @@ namespace UnityEditor
             return stacktrace.Length - 1;
         }
 
-        internal override void DoDrawSelectedInstructionDetails(int index)
-        {
-            using (new EditorGUI.DisabledScope(true))
-            {
-                DrawInspectedRect(m_Instruction.rect);
-            }
-
-            DrawInspectedStyle();
-
-            using (new EditorGUI.DisabledScope(true))
-            {
-                DrawInspectedGUIContent();
-            }
-        }
-
-        protected override bool HasSelectedinstruction()
-        {
-            return m_Instruction != null;
-        }
-
-        private void DrawInspectedGUIContent()
-        {
-            GUILayout.Label(GUIContent.Temp("GUIContent"));
-            EditorGUI.indentLevel++;
-            EditorGUILayout.TextField(m_Instruction.usedGUIContent.text);
-            EditorGUILayout.ObjectField(m_Instruction.usedGUIContent.image, typeof(Texture2D), false);
-            EditorGUI.indentLevel--;
-        }
-
-        private void DrawInspectedStyle()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            EditorGUILayout.PropertyField(m_CachedinstructionInfo.styleSerializedProperty, GUIContent.Temp("Style"), true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_CachedinstructionInfo.styleContainerSerializedObject.ApplyModifiedPropertiesWithoutUndo();
-                m_GuiViewDebuggerWindow.m_Inspected.Repaint();
-            }
-        }
-
-        protected override void DrawInspectedStacktrace()
-        {
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.s_Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
-            DrawStackFrameList(m_Instruction.stackframes);
-            EditorGUILayout.EndScrollView();
-        }
-
-        public void GetSelectedStyleProperty(out SerializedObject serializedObject, out SerializedProperty styleProperty)
+        void GetSelectedStyleProperty(out SerializedObject serializedObject, out SerializedProperty styleProperty)
         {
             //GUISkin[] guiskins = FindObjectsOfType<GUISkin>();
             GUISkin guiskin = null;
@@ -207,90 +258,16 @@ namespace UnityEditor
             }
 
             //Could not find the styles in the GUISkin.
-            serializedObject = new SerializedObject(m_CachedinstructionInfo.styleContainer);
+            serializedObject = new SerializedObject(m_CachedInstructionInfo.styleContainer);
             styleProperty = serializedObject.FindProperty("inspectedStyle");
         }
 
-        internal override void OnSelectedInstructionChanged(int index)
-        {
-            m_ListViewState.row = index;
-
-            if (m_ListViewState.row >= 0)
-            {
-                if (m_Instruction == null)
-                    m_Instruction = new GUIInstruction();
-
-                if (m_CachedinstructionInfo == null)
-                    m_CachedinstructionInfo = new CachedInstructionInfo();
-
-
-                //TODO: instead of calling multiple functions, do this properly!
-                m_Instruction.rect = GUIViewDebuggerHelper.GetRectFromInstruction(m_ListViewState.row);
-                m_Instruction.usedGUIStyle = GUIViewDebuggerHelper.GetStyleFromInstruction(m_ListViewState.row);
-                m_Instruction.usedGUIContent = GUIViewDebuggerHelper.GetContentFromInstruction(m_ListViewState.row);
-                m_Instruction.stackframes = GUIViewDebuggerHelper.GetManagedStackTrace(m_ListViewState.row);
-
-                //updated Cached data related to the Selected Instruction
-                m_CachedinstructionInfo.styleContainer.inspectedStyle = m_Instruction.usedGUIStyle;
-                m_CachedinstructionInfo.styleContainerSerializedObject = null;
-                m_CachedinstructionInfo.styleSerializedProperty = null;
-                GetSelectedStyleProperty(out m_CachedinstructionInfo.styleContainerSerializedObject, out m_CachedinstructionInfo.styleSerializedProperty);
-
-                //Hightlight the item
-                m_GuiViewDebuggerWindow.HighlightInstruction(m_GuiViewDebuggerWindow.m_Inspected, m_Instruction.rect, m_Instruction.usedGUIStyle);
-            }
-            else
-            {
-                m_Instruction = null;
-                m_CachedinstructionInfo = null;
-
-                if (m_GuiViewDebuggerWindow.InstructionOverlayWindow != null)
-                    m_GuiViewDebuggerWindow.InstructionOverlayWindow.Close();
-            }
-        }
-
-        private void ShowInstructionInExternalEditor(StackFrame[] frames)
+        void ShowInstructionInExternalEditor(StackFrame[] frames)
         {
             int frameIndex = GetInterestingFrameIndex(frames);
             StackFrame frame = frames[frameIndex];
 
             InternalEditorUtility.OpenFileAtLineExternal(frame.sourceFile, (int)frame.lineNumber);
-        }
-
-        internal override string GetInstructionListName(int index)
-        {
-            //This means we will resolve the stack trace for all instructions.
-            //TODO: make sure only visible items do this. Also, cache so we don't have to do everyframe.
-            StackFrame[] stacktrace = GUIViewDebuggerHelper.GetManagedStackTrace(index);
-            var methodName = GetInstructionListName(stacktrace);
-
-
-            //TODO: use the signature we get from the managed stack
-            return string.Format("{0}. {1}", index, methodName);
-        }
-
-        protected string GetInstructionListName(StackFrame[] stacktrace)
-        {
-            int frameIndex = GetInterestingFrameIndex(stacktrace);
-
-            if (frameIndex > 0)
-                --frameIndex;
-
-            StackFrame interestingFrame = stacktrace[frameIndex];
-            string methodName = interestingFrame.methodName;
-            return methodName;
-        }
-
-        public override void Unselect()
-        {
-            base.Unselect();
-            m_Instruction = null;
-        }
-
-        public override void ShowOverlay()
-        {
-            if (m_Instruction != null)
-                m_GuiViewDebuggerWindow.HighlightInstruction(m_GuiViewDebuggerWindow.m_Inspected, m_Instruction.rect, m_Instruction.usedGUIStyle);
         }
     }
 }

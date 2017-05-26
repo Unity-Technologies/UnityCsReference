@@ -317,6 +317,7 @@ namespace UnityEditor
                 (mode == DrawCameraMode.BakedAlbedo && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
                 (mode == DrawCameraMode.BakedEmissive && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
                 (mode == DrawCameraMode.BakedTexelValidity && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
+                (mode == DrawCameraMode.BakedCharting && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
                 (mode >= DrawCameraMode.RealtimeCharting && mode < DrawCameraMode.BakedLightmap && !m_EnableRealtimeGI.boolValue && (!m_EnableBakedGI.boolValue || (m_EnableBakedGI.boolValue && m_PathTracerBackend)));
         }
 

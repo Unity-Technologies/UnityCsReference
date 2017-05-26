@@ -15,6 +15,7 @@ using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
 using UnityEngine.Experimental.Rendering;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor
 {
@@ -323,6 +324,8 @@ namespace UnityEditor
             }
         }
 
+
+        [RequiredByNativeCode]
         public static bool FrameLastActiveSceneView()
         {
             if (lastActiveSceneView == null)
@@ -330,6 +333,7 @@ namespace UnityEditor
             return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent("FrameSelected"));
         }
 
+        [RequiredByNativeCode]
         public static bool FrameLastActiveSceneViewWithLock()
         {
             if (lastActiveSceneView == null)
@@ -1550,6 +1554,14 @@ namespace UnityEditor
             {
                 // Blit to final target RT in deferred mode
                 Handles.DrawCameraStep2(m_Camera, m_RenderMode);
+
+                // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
+                // view won't be able to properly render to the rendertexture as needed.
+                // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
+                bool sRGBWriteOld = GL.sRGBWrite;
+                GL.sRGBWrite = false;
+                HandleSelectionAndOnSceneGUI();
+                GL.sRGBWrite = sRGBWriteOld;
             }
 
             // Handle commands
@@ -1564,6 +1576,14 @@ namespace UnityEditor
                 Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.ShowFiltered);
             else
                 Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.Off);
+
+            // Draw default scene manipulation tools (Move/Rotate/...)
+            {
+                bool sRGBWriteOld = GL.sRGBWrite;
+                GL.sRGBWrite = false;
+                DefaultHandles();
+                GL.sRGBWrite = sRGBWriteOld;
+            }
 
             if (!UseSceneFiltering())
             {
@@ -1582,15 +1602,7 @@ namespace UnityEditor
                     GL.sRGBWrite = false;
                     Profiler.EndSample();
                 }
-
-                // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
-                // view won't be able to properly render to the rendertexture as needed.
-                // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
-                HandleSelectionAndOnSceneGUI();
             }
-
-            // Draw default scene manipulation tools (Move/Rotate/...)
-            DefaultHandles();
 
             Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.Off);
             Handles.SetCameraFilterMode(m_Camera, Handles.FilterMode.Off);

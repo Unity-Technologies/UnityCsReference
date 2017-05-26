@@ -46,5 +46,16 @@ namespace UnityEditorInternal.VR
             string[] enabledVRDevices = GetVREnabledDevicesOnTarget(target);
             return GetAllVRDeviceInfoByTarget(target).Where(d => enabledVRDevices.Contains(d.deviceNameKey)).ToArray();
         }
+
+        public static bool IsVRDeviceEnabledForBuildTarget(BuildTarget target, string deviceName)
+        {
+            string[] vrDevices = GetVREnabledDevicesOnTarget(target);
+            foreach (string device in vrDevices)
+            {
+                if (device == deviceName)
+                    return true;
+            }
+            return false;
+        }
     }
 }

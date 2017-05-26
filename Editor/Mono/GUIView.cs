@@ -30,18 +30,18 @@ namespace UnityEditor
             get
             {
                 Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, StyleSheetResourceUtil.LoadResource);
-                if (p.styleSheets == null)
+                if (p.visualTree.styleSheets == null)
                 {
-                    p.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
+                    p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
                     if (EditorGUIUtility.isProSkin)
                     {
-                        p.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
+                        p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
                     }
                     else
                     {
-                        p.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
+                        p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
                     }
-                    p.LoadStyleSheetsFromPaths();
+                    p.visualTree.LoadStyleSheetsFromPaths();
                 }
                 return p;
             }
@@ -89,7 +89,7 @@ namespace UnityEditor
             Internal_SetWantsMouseMove(m_EventInterests.wantsMouseMove);
             Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
-            panel.SetSize(windowPosition.size);
+            panel.visualTree.SetSize(windowPosition.size);
 
             m_BackgroundValid = false;
         }
@@ -174,7 +174,7 @@ namespace UnityEditor
 
             m_BackgroundValid = false;
 
-            panel.SetSize(windowPosition.size);
+            panel.visualTree.SetSize(windowPosition.size);
             Repaint();
         }
 

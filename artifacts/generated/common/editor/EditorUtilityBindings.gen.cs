@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Animations;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -144,13 +145,49 @@ public sealed partial class EditorUtility
 
     public static void CompressTexture(Texture2D texture, TextureFormat format, TextureCompressionQuality quality)
         {
+            if (texture == null)
+            {
+                throw new ArgumentNullException("texture can not be null");
+            }
+
             CompressTexture(texture, format, (int)quality);
         }
     
     
     static void CompressTexture(Texture2D texture, TextureFormat format)
         {
+            if (texture == null)
+            {
+                throw new ArgumentNullException("texture can not be null");
+            }
+
             CompressTexture(texture, format, TextureCompressionQuality.Normal);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void CompressCubemapTexture (Cubemap texture, TextureFormat format, int quality) ;
+
+    public static void CompressCubemapTexture(Cubemap texture, TextureFormat format, TextureCompressionQuality quality)
+        {
+            if (texture == null)
+            {
+                throw new ArgumentNullException("texture can not be null");
+            }
+
+            CompressCubemapTexture(texture, format, (int)quality);
+        }
+    
+    
+    static void CompressCubemapTexture(Cubemap texture, TextureFormat format)
+        {
+            if (texture == null)
+            {
+                throw new ArgumentNullException("texture can not be null");
+            }
+
+            CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
     
     
@@ -653,6 +690,10 @@ static public bool ResetToPrefabState(Object source)
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
     }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void LaunchBugReporter () ;
 
     internal extern static bool audioProfilingEnabled
     {

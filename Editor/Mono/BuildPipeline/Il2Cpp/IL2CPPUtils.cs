@@ -318,10 +318,14 @@ namespace UnityEditorInternal
 
             Console.WriteLine("Invoking il2cpp with arguments: " + args);
 
+            CompilerOutputParserBase il2cppOutputParser = m_PlatformProvider.CreateIl2CppOutputParser();
+            if (il2cppOutputParser == null)
+                il2cppOutputParser = new Il2CppOutputParser();
+
             if (useNetCore)
-                Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, new Il2CppOutputParser(), setupStartInfo);
+                Runner.RunNetCoreProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
             else
-                Runner.RunManagedProgram(il2CppPath, args, workingDirectory, new Il2CppOutputParser(), setupStartInfo);
+                Runner.RunManagedProgram(il2CppPath, args, workingDirectory, il2cppOutputParser, setupStartInfo);
         }
 
         private string GetIl2CppExe()
@@ -336,6 +340,7 @@ namespace UnityEditorInternal
 
         private bool ShouldUseIl2CppCore()
         {
+            bool shouldUse = false;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 // On OSX 10.8 (and mabybe older versions, not sure) running .NET Core will result in the following error :
@@ -350,16 +355,16 @@ namespace UnityEditorInternal
                 if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
                 {
                     var versionText = SystemInfo.operatingSystem.Substring(9);
-                    if (new Version(versionText) < new Version(10, 9))
-                        return false;
-
-                    return true;
+                    if (new Version(versionText) >= new Version(10, 9))
+                        shouldUse = true;
                 }
-
-                return true;
+                else
+                {
+                    shouldUse = true;
+                }
             }
 
-            return false;
+            return shouldUse && NetCoreProgram.IsNetCoreAvailable();
         }
     }
 
@@ -382,6 +387,7 @@ namespace UnityEditorInternal
 
         INativeCompiler CreateNativeCompiler();
         Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder();
+        CompilerOutputParserBase CreateIl2CppOutputParser();
     }
 
     internal class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
@@ -490,6 +496,11 @@ namespace UnityEditorInternal
         }
 
         public virtual Il2CppNativeCodeBuilder CreateIl2CppNativeCodeBuilder()
+        {
+            return null;
+        }
+
+        public virtual CompilerOutputParserBase CreateIl2CppOutputParser()
         {
             return null;
         }

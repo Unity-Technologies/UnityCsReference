@@ -6,25 +6,89 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.Collaboration
 {
-    internal class CollabFilters
+    internal abstract class AbstractFilters
+    {
+        [SerializeField]
+        private List<string[]> m_Filters;
+
+        public List<string[]> filters { get { return m_Filters; } set { m_Filters = value; } }
+
+        public abstract void InitializeFilters();
+
+        public bool ContainsSearchFilter(string name, string searchString)
+        {
+            foreach (var filter in filters)
+            {
+                if (filter[0] == name && filter[1] == searchString)
+                    return true;
+            }
+            return false;
+        }
+
+        public void ShowInFavoriteSearchFilters()
+        {
+            if (SavedSearchFilters.GetRootInstanceID() == 0)
+            {
+                SavedSearchFilters.AddInitializedListener(ShowInFavoriteSearchFilters);
+                return;
+            }
+
+            SavedSearchFilters.RemoveInitializedListener(ShowInFavoriteSearchFilters);
+            int prevInstanceID = 0;
+            foreach (var filter in filters)
+            {
+                int instanceID = SavedSearchFilters.GetFilterInstanceID(filter[0], filter[1]);
+                if (instanceID == 0)
+                {
+                    SearchFilter searchFilter = SearchFilter.CreateSearchFilterFromString(filter[1]);
+                    if (prevInstanceID == 0)
+                        prevInstanceID = SavedSearchFilters.AddSavedFilter(filter[0], searchFilter, 64);
+                    else
+                        prevInstanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(filter[0], searchFilter, 64, prevInstanceID, false);
+                }
+            }
+
+            SavedSearchFilters.RefreshSavedFilters();
+
+            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
+            {
+                pb.Repaint();
+            }
+        }
+
+        public void HideFromFavoriteSearchFilters()
+        {
+            SavedSearchFilters.RefreshSavedFilters();
+
+            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
+            {
+                pb.Repaint();
+            }
+        }
+    }
+
+    internal class CollabFilters : AbstractFilters
     {
         [SerializeField]
         private bool m_SearchFilterWasSet = false;
 
-        internal static List<string[]> s_Filters;
+        public override void InitializeFilters()
+        {
+            filters = new List<string[]>() {
+                new string[] { "All Modified", "v:any" },
+                new string[] { "All Conflicts", "v:conflicted" },
+                new string[] { "All Excluded" , "v:ignored"},
+            };
+        }
 
         public CollabFilters()
         {
-            s_Filters = new List<string[]>() {
-                new string[] { "All Modified", "v:any" },
-                new string[] { "All Conflicts", "v:conflicted" },
-                new string[] { "All Excluded" , "v:ignored"}
-            };
+            InitializeFilters();
         }
 
         public void ShowInProjectBrowser(string filterString)
@@ -44,6 +108,7 @@ namespace UnityEditor.Collaboration
                 if (browser == null)
                 {
                     browser = EditorWindow.GetWindow<ProjectBrowser>() as ProjectBrowser;
+                    ShowInFavoriteSearchFilters();
                     browser.RepaintImmediately();
                 }
 
@@ -52,7 +117,7 @@ namespace UnityEditor.Collaboration
                 string filterSearchString = "v:" + filterString;
                 if (browser.IsTwoColumns())
                 {
-                    foreach (var filter in s_Filters)
+                    foreach (var filter in filters)
                     {
                         if (filterSearchString == filter[1])
                         {
@@ -67,61 +132,36 @@ namespace UnityEditor.Collaboration
                 }
 
                 browser.SetSearch(filterSearchString);
-                browser.RepaintImmediately();
+                browser.Repaint();
                 browser.Focus();
             }
             else
             {
                 if (m_SearchFilterWasSet)
                 {
-                    int instanceID = AssetDatabase.GetMainAssetInstanceID("assets");
                     if (browser != null)
                     {
-                        browser.SetFolderSelection(new int[] { instanceID }, true);
+                        if (browser.IsTwoColumns())
+                        {
+                            int instanceID = AssetDatabase.GetMainAssetInstanceID("assets");
+                            browser.SetFolderSelection(new int[] { instanceID }, true);
+                        }
                         browser.SetSearch("");
-                        browser.RepaintImmediately();
+                        browser.Repaint();
                     }
                 }
                 m_SearchFilterWasSet = false;
             }
         }
 
-        public void AddFavoriteSearchFilters()
+        public void OnCollabStateChanged(CollabInfo info)
         {
-            if (ProjectBrowser.s_LastInteractedProjectBrowser == null)
-            {
+            if (!info.ready || info.inProgress || info.maintenance)
                 return;
-            }
 
-            int prevInstanceID = 0;
-            foreach (var filter in s_Filters)
+            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
             {
-                int instanceID = SavedSearchFilters.GetFilterInstanceID(filter[0], filter[1]);
-                if (instanceID == 0)
-                {
-                    SearchFilter searchFilter = SearchFilter.CreateSearchFilterFromString(filter[1]);
-                    if (prevInstanceID == 0)
-                        prevInstanceID = SavedSearchFilters.AddSavedFilter(filter[0], searchFilter, 64);
-                    else
-                        prevInstanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(filter[0], searchFilter, 64, prevInstanceID, false);
-                }
-            }
-        }
-
-        public void RemoveFavoriteSearchFilters()
-        {
-            if (ProjectBrowser.s_LastInteractedProjectBrowser == null)
-            {
-                return;
-            }
-
-            foreach (var filter in s_Filters)
-            {
-                int instanceID = SavedSearchFilters.GetFilterInstanceID(filter[0], filter[1]);
-                if (instanceID > ProjectWindowUtil.k_FavoritesStartInstanceID)
-                {
-                    SavedSearchFilters.RemoveSavedFilter(instanceID);
-                }
+                pb.RefreshSearchIfFilterContains("v:");
             }
         }
     }

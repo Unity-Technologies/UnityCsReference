@@ -103,6 +103,16 @@ public partial class Physics2D
         set;
     }
 
+    public extern static bool autoSyncTransforms
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern static bool autoSimulation
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -332,6 +342,10 @@ public partial class Physics2D
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool Simulate (float step) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SyncTransforms () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1840,6 +1854,13 @@ public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDir
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static int INTERNAL_CALL_GetColliderContacts (Collider2D collider, ref ContactFilter2D contactFilter, ContactPoint2D[] results);
+    private static int GetColliderColliderContacts (Collider2D collider1, Collider2D collider2, ContactFilter2D contactFilter, ContactPoint2D[] results) {
+        return INTERNAL_CALL_GetColliderColliderContacts ( collider1, collider2, ref contactFilter, results );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static int INTERNAL_CALL_GetColliderColliderContacts (Collider2D collider1, Collider2D collider2, ref ContactFilter2D contactFilter, ContactPoint2D[] results);
     private static int GetRigidbodyContacts (Rigidbody2D rigidbody, ContactFilter2D contactFilter, ContactPoint2D[] results) {
         return INTERNAL_CALL_GetRigidbodyContacts ( rigidbody, ref contactFilter, results );
     }
@@ -1861,6 +1882,12 @@ public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDir
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static int INTERNAL_CALL_GetRigidbodyContactsCollidersOnly (Rigidbody2D rigidbody, ref ContactFilter2D contactFilter, Collider2D[] results);
+    public static int GetContacts(Collider2D collider1, Collider2D collider2, ContactFilter2D contactFilter, ContactPoint2D[] contacts)
+        {
+            return GetColliderColliderContacts(collider1, collider2, contactFilter, contacts);
+        }
+    
+    
     public static int GetContacts(Collider2D collider, ContactPoint2D[] contacts)
         {
             return GetColliderContacts(collider, new ContactFilter2D().NoFilter(), contacts);
@@ -3335,7 +3362,26 @@ public partial class Collision2D
     public GameObject gameObject { get { return rigidbody != null ? rigidbody.gameObject : collider.gameObject; } }
     
     
-    public ContactPoint2D[] contacts { get { return m_Contacts; } }
+    public ContactPoint2D[] contacts
+        {
+            get
+            {
+                if (m_Contacts == null)
+                    m_Contacts = CreateCollisionContacts(collider, otherCollider, rigidbody, otherRigidbody, enabled);
+
+                return m_Contacts;
+            }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  ContactPoint2D[] CreateCollisionContacts (Collider2D collider, Collider2D otherCollider, Rigidbody2D rigidbody, Rigidbody2D otherRigidbody, bool enabled) ;
+
+    public int GetContacts(ContactPoint2D[] contacts)
+        {
+            return Physics2D.GetContacts(collider, otherCollider, new ContactFilter2D().NoFilter(), contacts);
+        }
     
     
     public Vector2 relativeVelocity { get { return m_RelativeVelocity; } }

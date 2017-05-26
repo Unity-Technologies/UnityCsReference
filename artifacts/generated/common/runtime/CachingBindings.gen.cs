@@ -275,18 +275,45 @@ public static bool MarkAsUsed(string url, int version)
         get;
     }
 
+    [System.Obsolete ("This function is obsolete. Please use SetNoBackupFlag with Hash128 instead.")]
+public static void SetNoBackupFlag(string url, int version)
+        {
+        }
     
     
+    public static void SetNoBackupFlag(string url, Hash128 hash)
+        {
+        }
     
     
+    public static void SetNoBackupFlag(CachedAssetBundle cachedBundle)
+        {
+        }
     
     
+    [System.Obsolete ("This function is obsolete. Please use ResetNoBackupFlag with Hash128 instead.")]
+public static void ResetNoBackupFlag(string url, int version)
+        {
+        }
     
     
+    public static void ResetNoBackupFlag(string url, Hash128 hash)
+        {
+        }
     
     
+    public static void ResetNoBackupFlag(CachedAssetBundle cachedBundle)
+        {
+        }
     
     
+    internal static void SetNoBackupFlag (string url, string name, Hash128 hash, bool enabled) {
+        INTERNAL_CALL_SetNoBackupFlag ( url, name, ref hash, enabled );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetNoBackupFlag (string url, string name, ref Hash128 hash, bool enabled);
     public static Cache AddCache(string cachePath)
         {
             if (String.IsNullOrEmpty(cachePath))

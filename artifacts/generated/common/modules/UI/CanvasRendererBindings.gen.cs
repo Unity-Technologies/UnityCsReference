@@ -67,6 +67,8 @@ public void SetVertices(UIVertex[] vertices, int size)
             var colors = new List<Color32>();
             var uv0S = new List<Vector2>();
             var uv1S = new List<Vector2>();
+            var uv2S = new List<Vector2>();
+            var uv3S = new List<Vector2>();
             var normals = new List<Vector3>();
             var tangents = new List<Vector4>();
             var indices = new List<int>();
@@ -79,6 +81,8 @@ public void SetVertices(UIVertex[] vertices, int size)
                     colors.Add(vertices[i + k].color);
                     uv0S.Add(vertices[i + k].uv0);
                     uv1S.Add(vertices[i + k].uv1);
+                    uv2S.Add(vertices[i + k].uv2);
+                    uv3S.Add(vertices[i + k].uv3);
                     normals.Add(vertices[i + k].normal);
                     tangents.Add(vertices[i + k].tangent);
                 }
@@ -97,6 +101,8 @@ public void SetVertices(UIVertex[] vertices, int size)
             mesh.SetTangents(tangents);
             mesh.SetUVs(0, uv0S);
             mesh.SetUVs(1, uv1S);
+            mesh.SetUVs(2, uv2S);
+            mesh.SetUVs(3, uv3S);
             mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
             SetMesh(mesh);
             DestroyImmediate(mesh);
@@ -199,7 +205,13 @@ public void SetVertices(UIVertex[] vertices, int size)
 
     public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, normals, tangents);
+            SplitUIVertexStreams(verts, positions, colors, uv0S, uv1S, new List<Vector2>(), new List<Vector2>(), normals, tangents, indices);
+        }
+    
+    
+    public static void SplitUIVertexStreams(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector2> uv2S, List<Vector2> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
+        {
+            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
             SplitIndicesStreamsInternal(verts, indices);
 
         }
@@ -207,7 +219,7 @@ public void SetVertices(UIVertex[] vertices, int size)
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void SplitUIVertexStreamsInternal (object verts, object positions, object colors, object uv0S, object uv1S, object normals, object tangents) ;
+    extern private static  void SplitUIVertexStreamsInternal (object verts, object positions, object colors, object uv0S, object uv1S, object uv2S, object uv3S, object normals, object tangents) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -215,17 +227,29 @@ public void SetVertices(UIVertex[] vertices, int size)
 
     public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
         {
-            CreateUIVertexStreamInternal(verts, positions, colors, uv0S, uv1S, normals, tangents, indices);
+            CreateUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector2>(), new List<Vector2>(), normals, tangents, indices);
+        }
+    
+    
+    public static void CreateUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector2> uv2S, List<Vector2> uv3S, List<Vector3> normals, List<Vector4> tangents, List<int> indices)
+        {
+            CreateUIVertexStreamInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents, indices);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void CreateUIVertexStreamInternal (object verts, object positions, object colors, object uv0S, object uv1S, object normals, object tangents, object indices) ;
+    extern private static  void CreateUIVertexStreamInternal (object verts, object positions, object colors, object uv0S, object uv1S, object uv2S, object uv3S, object normals, object tangents, object indices) ;
 
     public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector3> normals, List<Vector4> tangents)
         {
-            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, normals, tangents);
+            AddUIVertexStream(verts, positions, colors, uv0S, uv1S, new List<Vector2>(), new List<Vector2>(), normals, tangents);
+        }
+    
+    
+    public static void AddUIVertexStream(List<UIVertex> verts, List<Vector3> positions, List<Color32> colors, List<Vector2> uv0S, List<Vector2> uv1S, List<Vector2> uv2S, List<Vector2> uv3S, List<Vector3> normals, List<Vector4> tangents)
+        {
+            SplitUIVertexStreamsInternal(verts, positions, colors, uv0S, uv1S, uv2S, uv3S, normals, tangents);
 
         }
     

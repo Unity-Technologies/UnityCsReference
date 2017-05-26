@@ -124,14 +124,22 @@ namespace UnityEditorInternal
             HandleDelete();
 
             // Reserve unique control ids.
+            // This is required to avoid changing control ids mapping as we scroll in the tree view
+            // and change items visibility.  Hopefully, we should be able to remove it entirely if we
+            // isolate the animation window layouts in separate IMGUIContainers...
             int rowCount = m_TreeView.data.rowCount;
             m_HierarchyItemFoldControlIDs = new int[rowCount];
             m_HierarchyItemValueControlIDs = new int[rowCount];
             m_HierarchyItemButtonControlIDs = new int[rowCount];
             for (int i = 0; i < rowCount; ++i)
             {
+                var propertyNode  = m_TreeView.data.GetItem(i) as AnimationWindowHierarchyPropertyNode;
+                if (propertyNode != null && !propertyNode.isPptrNode)
+                    m_HierarchyItemValueControlIDs[i] = GUIUtility.GetControlID(FocusType.Keyboard);
+                else
+                    m_HierarchyItemValueControlIDs[i] = 0; // not needed.
+
                 m_HierarchyItemFoldControlIDs[i] = GUIUtility.GetControlID(FocusType.Passive);
-                m_HierarchyItemValueControlIDs[i] = GUIUtility.GetControlID(FocusType.Passive);
                 m_HierarchyItemButtonControlIDs[i] = GUIUtility.GetControlID(FocusType.Passive);
             }
         }

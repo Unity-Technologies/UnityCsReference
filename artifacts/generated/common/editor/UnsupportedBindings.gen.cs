@@ -162,6 +162,49 @@ public sealed partial class Unsupported
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool PasteComponentValuesFromPasteboard (Component component) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool HasStateMachineTransitionDataInPasteboard () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool AreAllParametersInDestinationInternal (Object transition, AnimatorController controller, object missingParameters) ;
+
+    public static bool AreAllParametersInDestination(Object transition, AnimatorController controller, List<string> missingParameters)
+        {
+            return AreAllParametersInDestinationInternal(transition, controller, missingParameters);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool DestinationHasCompatibleParameterTypesInternal (Object transition, AnimatorController controller, object mismatchedParameters) ;
+
+    public static bool DestinationHasCompatibleParameterTypes(Object transition, AnimatorController controller, List<string> mismatchedParameters)
+        {
+            return DestinationHasCompatibleParameterTypesInternal(transition, controller, mismatchedParameters);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool CanPasteParametersToTransition (Object transition, AnimatorController controller) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void CopyStateMachineTransitionParametersToPasteboard (Object transition, AnimatorController controller) ;
+
+    public static void PasteToStateMachineTransitionParametersFromPasteboard(Object transition, AnimatorController controller, bool conditions, bool parameters)
+        {
+            Undo.RegisterCompleteObjectUndo(transition, "Paste to Transition");
+            PasteToStateMachineTransitionParametersFromPasteboardInternal(transition, controller, conditions, parameters);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void PasteToStateMachineTransitionParametersFromPasteboardInternal (Object transition, AnimatorController controller, bool conditions, bool parameters) ;
+
     public static void CopyStateMachineDataToPasteboard(Object stateMachineObject, AnimatorController controller, int layerIndex)
         {
             CopyStateMachineDataToPasteboard(new Object[] {stateMachineObject}, new Vector3[] {new Vector3()}, controller, layerIndex);
@@ -170,7 +213,7 @@ public sealed partial class Unsupported
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void CopyStateMachineDataToPasteboard (Object[] stateMachineObjects, Vector3[] monoPositions, AnimatorController controller, int layerIndex) ;
+    extern internal static  void CopyStateMachineDataToPasteboard (Object[] stateMachineObjects, Vector3[] monoPositions, AnimatorController controller, int layerIndex) ;
 
     public static void PasteToStateMachineFromPasteboard(AnimatorStateMachine sm, AnimatorController controller, int layerIndex, Vector3 position)
         {

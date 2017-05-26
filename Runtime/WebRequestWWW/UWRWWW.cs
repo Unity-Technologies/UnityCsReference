@@ -17,13 +17,13 @@ namespace UnityEngine
         public WWW(string url)
         {
             _uwr = UnityWebRequest.Get(url);
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
         public WWW(string url, WWWForm form)
         {
             _uwr = UnityWebRequest.Post(url, form);
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
         public WWW(string url, byte[] postData)
@@ -33,39 +33,41 @@ namespace UnityEngine
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
             _uwr.downloadHandler = new DownloadHandlerBuffer();
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
         [Obsolete("This overload is deprecated. Use UnityEngine.WWW.WWW(string, byte[], System.Collections.Generic.Dictionary<string, string>) instead.")]
         public WWW(string url, byte[] postData, Hashtable headers)
         {
-            _uwr = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
+            var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
+            _uwr = new UnityWebRequest(url, verb);
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
             _uwr.downloadHandler = new DownloadHandlerBuffer();
             foreach (var header in headers.Keys)
                 _uwr.SetRequestHeader((string)header, (string)headers[header]);
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
 
         public WWW(string url, byte[] postData, Dictionary<string, string> headers)
         {
-            _uwr = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
+            var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
+            _uwr = new UnityWebRequest(url, verb);
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
             _uwr.downloadHandler = new DownloadHandlerBuffer();
             foreach (var header in headers)
                 _uwr.SetRequestHeader(header.Key, header.Value);
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
         internal WWW(string url, string name, Hash128 hash, uint crc)
         {
             _uwr = UnityWebRequest.GetAssetBundle(url, new CachedAssetBundle(name, hash), crc);
-            _uwr.Send();
+            _uwr.SendWebRequest();
         }
 
         public AssetBundle assetBundle

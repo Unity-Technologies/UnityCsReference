@@ -6,8 +6,6 @@ using UnityEngine;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
-using UnityEditor.Collaboration;
-using UnityEditor.Web;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +16,18 @@ namespace UnityEditor
 {
     internal partial class ObjectListArea
     {
+        // Enable external source(s) to draw in the project browser.
+        // 'iconRect' frame for the asset icon.
+        // 'guid' asset being drawn.
+        internal delegate void OnAssetIconDrawDelegate(Rect iconRect, string guid, bool isListMode);
+        internal static event OnAssetIconDrawDelegate postAssetIconDrawCallback = null;
+
+        // 'drawRect' prescribed draw area after the asset label.
+        // 'guid' asset being drawn.
+        // return whether drawing occured (space will be redistributed if false)
+        internal delegate bool OnAssetLabelDrawDelegate(Rect drawRect, string guid, bool isListMode);
+        internal static event OnAssetLabelDrawDelegate postAssetLabelDrawCallback = null;
+
         // Asset on local disk in project
         class LocalGroup : Group
         {
@@ -44,8 +54,10 @@ namespace UnityEditor
             public const int k_ListModeLeftPadding = 13;
             public const int k_ListModeLeftPaddingForSubAssets = 28;
             public const int k_ListModeVersionControlOverlayPadding = 14;
+            const int k_ListModeExternalIconPadding = 6;
             const float k_IconWidth = 16f;
             const float k_SpaceBetweenIconAndText = 2f;
+
 
             public SearchFilter searchFilter { get {return m_FilteredHierarchy.searchFilter; }}
             public override bool ListMode { get { return m_ListMode; } set { m_ListMode = value; } }
@@ -695,7 +707,6 @@ namespace UnityEditor
                             labeltext = "";
                         }
 
-                        position.width = Mathf.Max(position.width, 500); // For some reason the icon is clipped if the rect cannot contain both the text and icon so make sure its large
                         m_Content.text = labeltext;
                         m_Content.image = null;
                         Texture2D icon = filterItem != null ? filterItem.icon : AssetPreview.GetAssetPreview(instanceID, m_Owner.GetAssetPreviewManagerID());
@@ -817,9 +828,9 @@ namespace UnityEditor
 
                         if (filterItem != null && filterItem.isMainRepresentation)
                         {
-                            if (CollabAccess.Instance.IsServiceEnabled())
+                            if (null != postAssetIconDrawCallback)
                             {
-                                CollabProjectHook.OnProjectWindowItemIconOverlay(filterItem.guid, position);
+                                postAssetIconDrawCallback(position, filterItem.guid, false);
                             }
 
                             ProjectHooks.OnProjectWindowItem(filterItem.guid, position);
@@ -1303,11 +1314,19 @@ namespace UnityEditor
             public static void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
             {
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
-
                 rect.xMin += s_Styles.resultsLabel.margin.left;
 
+                // Reduce the label width to allow delegate drawing on the right.
+                float delegateDrawWidth = (k_ListModeExternalIconPadding * 2) + k_IconWidth;
+                Rect delegateDrawRect = new Rect(rect.xMax - delegateDrawWidth, rect.y, delegateDrawWidth, rect.height);
+                Rect labelRect = new Rect(rect);
+                if (DrawExternalPostLabelInList(delegateDrawRect, filterItem))
+                {
+                    labelRect.width = (rect.width - delegateDrawWidth);
+                }
+
                 s_Styles.resultsLabel.padding.left = (int)(vcPadding + k_IconWidth + k_SpaceBetweenIconAndText);
-                s_Styles.resultsLabel.Draw(rect, label, false, false, selected, focus);
+                s_Styles.resultsLabel.Draw(labelRect, label, false, false, selected, focus);
 
                 Rect iconRect = rect;
                 iconRect.width = k_IconWidth;
@@ -1316,16 +1335,30 @@ namespace UnityEditor
                 if (icon != null)
                     GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 
-                if (filterItem != null && filterItem.isMainRepresentation)
+                if (filterItem != null && filterItem.guid != null && filterItem.isMainRepresentation)
                 {
                     Rect overlayRect = rect;
                     overlayRect.width = vcPadding + k_IconWidth;
-                    if (CollabAccess.Instance.IsServiceEnabled())
+
+                    if (null != postAssetIconDrawCallback)
                     {
-                        CollabProjectHook.OnProjectWindowItemIconOverlay(filterItem.guid, overlayRect);
+                        postAssetIconDrawCallback(overlayRect, filterItem.guid, true);
                     }
                     ProjectHooks.OnProjectWindowItem(filterItem.guid, overlayRect);
                 }
+            }
+
+            private static bool DrawExternalPostLabelInList(Rect drawRect, FilteredHierarchy.FilterResult filterItem)
+            {
+                bool didDraw = false;
+                if (filterItem != null && filterItem.guid != null && filterItem.isMainRepresentation)
+                {
+                    if (null != postAssetLabelDrawCallback)
+                    {
+                        didDraw = postAssetLabelDrawCallback(drawRect, filterItem.guid, true);
+                    }
+                }
+                return didDraw;
             }
 
             class ItemFader

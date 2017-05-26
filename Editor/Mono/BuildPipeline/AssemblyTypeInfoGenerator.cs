@@ -18,11 +18,21 @@ namespace UnityEditor
 
     internal class AssemblyTypeInfoGenerator
     {
+        [Flags]
+        public enum FieldInfoFlags
+        {
+            None = 0,
+            FixedBuffer = (1 << 0)
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct FieldInfo
         {
             public string name;
             public string type;
+            public FieldInfoFlags flags;
+            public int fixedBufferLength;
+            public string fixedBufferTypename;
         };
 
         [StructLayout(LayoutKind.Sequential)]
@@ -109,18 +119,21 @@ namespace UnityEditor
             // Strip modifiers like volatile, as Mono doesn't treat them as part of type
             if (typeSpec != null && typeSpec.IsRequiredModifier)
             {
-                typeName = typeSpec.ElementType.FullName;
+                type  = typeSpec.ElementType;
             }
             else if (type.IsRequiredModifier)
             {
-                typeName = type.GetElementType().FullName;
-            }
-            else
-            {
-                typeName = type.FullName;
+                type = type.GetElementType();
             }
 
-            return typeName.Replace('/', '+').Replace('<', '[').Replace('>', ']');
+            typeName = type.FullName;
+
+            // Mono compiler generates internal types with names such as  "<byteArray>__FixedBuffer0" and "<OnFinishSubmit>c__Iterator0"
+            // so we only replace angle brackets with square brackets if the type is a generic instance or has generic parameters.
+            if (type.HasGenericParameters || type.IsGenericInstance)
+                typeName = typeName.Replace('<', '[').Replace('>', ']');
+
+            return typeName.Replace('/', '+');
         }
 
         /* We use this GenericInstanceTypeMap to map generic types to their generic instance types,
@@ -330,6 +343,25 @@ namespace UnityEditor
             return fields.ToArray();
         }
 
+        private static CustomAttribute GetFixedBufferAttribute(FieldDefinition fieldDefinition)
+        {
+            if (!fieldDefinition.HasCustomAttributes)
+                return null;
+
+            return fieldDefinition.CustomAttributes.SingleOrDefault(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.FixedBufferAttribute");
+        }
+
+        private static int GetFixedBufferLength(CustomAttribute fixedBufferAttribute)
+        {
+            return (Int32)fixedBufferAttribute.ConstructorArguments[1].Value;
+        }
+
+        private static string GetFixedBufferTypename(CustomAttribute fixedBufferAttribute)
+        {
+            var typeRef = (TypeReference)fixedBufferAttribute.ConstructorArguments[0].Value;
+            return typeRef.Name;
+        }
+
         private FieldInfo? GetFieldInfo(TypeDefinition type, FieldDefinition field, bool isDeclaringTypeGenericInstance,
             GenericInstanceTypeMap genericInstanceTypeMap)
         {
@@ -351,7 +383,16 @@ namespace UnityEditor
             }
 
             ti.type = GetMonoEmbeddedFullTypeNameFor(fieldType);
+            ti.flags = FieldInfoFlags.None;
 
+            var fixedBufferAttribute = GetFixedBufferAttribute(field);
+
+            if (fixedBufferAttribute  != null)
+            {
+                ti.flags |= FieldInfoFlags.FixedBuffer;
+                ti.fixedBufferLength = GetFixedBufferLength(fixedBufferAttribute);
+                ti.fixedBufferTypename = GetFixedBufferTypename(fixedBufferAttribute);
+            }
             return ti;
         }
 

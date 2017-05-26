@@ -199,6 +199,18 @@ namespace UnityEngine
         Linear = 1
     }
 
+    // Match ColorGamut on C++ side
+    [UsedByNativeCode]
+    public enum ColorGamut
+    {
+        sRGB = 0,
+        Rec709 = 1,
+        Rec2020 = 2,
+        DisplayP3 = 3,
+        HDR10 = 4,
+        DolbyHDR = 5
+    };
+
     public enum ScreenOrientation
     {
         Unknown = 0,
@@ -296,6 +308,9 @@ namespace UnityEngine
         ETC_RGB4_3DS = 60,
         ETC_RGBA8_3DS = 61,
 
+        RG16 = 62,
+        R8 = 63,
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
         PVRTC_2BPP_RGB = -127,
@@ -350,7 +365,10 @@ namespace UnityEngine
         // kRTFormatVideo = 21,
         RGB111110Float = 22,
         RG32 = 23,
-        RGBAUShort = 24
+        RGBAUShort = 24,
+        RG16 = 25,
+        BGRA10101010_XR = 26,
+        BGR101010_XR = 27,
     }
 
     public enum VRTextureUsage
@@ -491,16 +509,21 @@ namespace UnityEngine.Rendering
         Overlay = 4000,
     }
 
+    // Make sure the values are in sync with the native side!
     public enum RenderBufferLoadAction
     {
         Load = 0,
-        //Clear = 1,
+        Clear = 1,
         DontCare = 2,
     }
+
+    // Make sure the values are in sync with the native side!
     public enum RenderBufferStoreAction
     {
         Store = 0,
-        DontCare = 1,
+        Resolve = 1, // Resolve the MSAA surface (currently only works with RenderPassSetup)
+        StoreAndResolve = 2, // Resolve the MSAA surface into the resolve target, but also store the MSAA version
+        DontCare = 3,
     }
 
     public enum BlendMode
@@ -687,6 +710,8 @@ namespace UnityEngine.Rendering
 
     public enum BuiltinRenderTextureType
     {
+        PropertyName = -3, // Property id
+        BufferPtr = -2, // Raw buffer pointer
         BindableTexture = -1, // a bindable texture, of any dimension, that is not a render texture
         None = 0, // "nothing", just need zero default value for RenderTargetIdentifier
         CurrentActive = 1,  // currently active RT
@@ -790,27 +815,115 @@ namespace UnityEngine.Rendering
             m_Type = type;
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = 0;
+            m_BufferPointer = IntPtr.Zero;
+            m_MipLevel = 0;
+            m_CubeFace = CubemapFace.Unknown;
+            m_DepthSlice = 0;
         }
 
         public RenderTargetIdentifier(string name)
         {
-            m_Type = BuiltinRenderTextureType.None;
+            m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = Shader.PropertyToID(name);
             m_InstanceID = 0;
+            m_BufferPointer = IntPtr.Zero;
+            m_MipLevel = 0;
+            m_CubeFace = CubemapFace.Unknown;
+            m_DepthSlice = 0;
+        }
+
+        public RenderTargetIdentifier(string name, int mipLevel = 0, CubemapFace cubeFace = CubemapFace.Unknown, int depthSlice = 0)
+        {
+            m_Type = BuiltinRenderTextureType.PropertyName;
+            m_NameID = Shader.PropertyToID(name);
+            m_InstanceID = 0;
+            m_BufferPointer = IntPtr.Zero;
+            m_MipLevel = mipLevel;
+            m_CubeFace = cubeFace;
+            m_DepthSlice = depthSlice;
         }
 
         public RenderTargetIdentifier(int nameID)
         {
-            m_Type = BuiltinRenderTextureType.None;
+            m_Type = BuiltinRenderTextureType.PropertyName;
             m_NameID = nameID;
             m_InstanceID = 0;
+            m_BufferPointer = IntPtr.Zero;
+            m_MipLevel = 0;
+            m_CubeFace = CubemapFace.Unknown;
+            m_DepthSlice = 0;
+        }
+
+        public RenderTargetIdentifier(int nameID, int mipLevel = 0, CubemapFace cubeFace = CubemapFace.Unknown, int depthSlice = 0)
+        {
+            m_Type = BuiltinRenderTextureType.PropertyName;
+            m_NameID = nameID;
+            m_InstanceID = 0;
+            m_BufferPointer = IntPtr.Zero;
+            m_MipLevel = mipLevel;
+            m_CubeFace = cubeFace;
+            m_DepthSlice = depthSlice;
         }
 
         public RenderTargetIdentifier(Texture tex)
         {
-            m_Type = (tex == null || tex is RenderTexture) ? BuiltinRenderTextureType.None : BuiltinRenderTextureType.BindableTexture;
+            if (tex == null)
+            {
+                m_Type = BuiltinRenderTextureType.None;
+                m_InstanceID = 0;
+                m_BufferPointer = IntPtr.Zero;
+            }
+            else if (tex is RenderTexture)
+            {
+                m_Type = BuiltinRenderTextureType.BufferPtr;
+                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+            }
+            else
+            {
+                m_Type = BuiltinRenderTextureType.BindableTexture;
+                m_BufferPointer = IntPtr.Zero;
+            }
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = tex ? tex.GetInstanceID() : 0;
+            m_MipLevel = 0;
+            m_CubeFace = CubemapFace.Unknown;
+            m_DepthSlice = 0;
+        }
+
+        public RenderTargetIdentifier(Texture tex, int mipLevel = 0, CubemapFace cubeFace = CubemapFace.Unknown, int depthSlice = 0)
+        {
+            if (tex == null)
+            {
+                m_Type = BuiltinRenderTextureType.None;
+                m_InstanceID = 0;
+                m_BufferPointer = IntPtr.Zero;
+            }
+            else if (tex is RenderTexture)
+            {
+                m_Type = BuiltinRenderTextureType.BufferPtr;
+                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+            }
+            else
+            {
+                m_Type = BuiltinRenderTextureType.BindableTexture;
+                m_BufferPointer = IntPtr.Zero;
+            }
+            m_NameID = -1; // FastPropertyName kInvalidIndex
+            m_InstanceID = tex ? tex.GetInstanceID() : 0;
+            m_MipLevel = mipLevel;
+            m_CubeFace = cubeFace;
+            m_DepthSlice = depthSlice;
+        }
+
+        public RenderTargetIdentifier(RenderBuffer buf, int mipLevel = 0, CubemapFace cubeFace = CubemapFace.Unknown, int depthSlice = 0)
+        {
+            m_Type = BuiltinRenderTextureType.BufferPtr;
+            m_NameID = -1;
+            m_InstanceID = buf.m_RenderTextureInstanceID;
+            m_BufferPointer = buf.m_BufferPtr;
+            m_MipLevel = mipLevel;
+            m_CubeFace = cubeFace;
+            m_DepthSlice = depthSlice;
         }
 
         // implicit conversion operators
@@ -834,6 +947,11 @@ namespace UnityEngine.Rendering
             return new RenderTargetIdentifier(tex);
         }
 
+        public static implicit operator RenderTargetIdentifier(RenderBuffer buf)
+        {
+            return new RenderTargetIdentifier(buf);
+        }
+
         public override string ToString()
         {
             return UnityString.Format("Type {0} NameID {1} InstanceID {2}", m_Type, m_NameID, m_InstanceID);
@@ -844,27 +962,33 @@ namespace UnityEngine.Rendering
             return (m_Type.GetHashCode() * 23 + m_NameID.GetHashCode()) * 23 + m_InstanceID.GetHashCode();
         }
 
+        public bool Equals(RenderTargetIdentifier rhs)
+        {
+            return m_Type == rhs.m_Type &&
+                m_NameID == rhs.m_NameID &&
+                m_InstanceID == rhs.m_InstanceID &&
+                m_BufferPointer == rhs.m_BufferPointer &&
+                m_MipLevel == rhs.m_MipLevel &&
+                m_CubeFace == rhs.m_CubeFace &&
+                m_DepthSlice == rhs.m_DepthSlice;
+        }
+
         public override bool Equals(object obj)
         {
             if (!(obj is RenderTargetIdentifier))
                 return false;
             RenderTargetIdentifier rhs = (RenderTargetIdentifier)obj;
-            return m_Type == rhs.m_Type && m_NameID == rhs.m_NameID && m_InstanceID == rhs.m_InstanceID;
-        }
-
-        public bool Equals(RenderTargetIdentifier rhs)
-        {
-            return m_Type == rhs.m_Type && m_NameID == rhs.m_NameID && m_InstanceID == rhs.m_InstanceID;
+            return Equals(rhs);
         }
 
         public static bool operator==(RenderTargetIdentifier lhs, RenderTargetIdentifier rhs)
         {
-            return lhs.m_Type == rhs.m_Type && lhs.m_NameID == rhs.m_NameID && lhs.m_InstanceID == rhs.m_InstanceID;
+            return lhs.Equals(rhs);
         }
 
         public static bool operator!=(RenderTargetIdentifier lhs, RenderTargetIdentifier rhs)
         {
-            return lhs.m_Type != rhs.m_Type || lhs.m_NameID != rhs.m_NameID || lhs.m_InstanceID != rhs.m_InstanceID;
+            return !lhs.Equals(rhs);
         }
 
         // private variable never read: we match struct in native side
@@ -872,6 +996,10 @@ namespace UnityEngine.Rendering
         private BuiltinRenderTextureType m_Type;
         private int m_NameID;
         private int m_InstanceID;
+        private IntPtr m_BufferPointer;
+        private int m_MipLevel;
+        private CubemapFace m_CubeFace;
+        private int m_DepthSlice;
         #pragma warning restore 0414
     }
 
@@ -972,7 +1100,7 @@ namespace UnityEngine.Rendering
         UNITY_FRAMEBUFFER_FETCH_AVAILABLE,
         UNITY_ENABLE_NATIVE_SHADOW_LOOKUPS,
         UNITY_METAL_SHADOWS_USE_POINT_FILTERING,
-        UNITY_USE_PREMULTIPLIED_MATRICES,
+        UNITY_NO_CUBEMAP_ARRAY,
         UNITY_NO_SCREENSPACE_SHADOWS,
         UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS,
         UNITY_PBS_USE_BRDF1,

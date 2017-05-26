@@ -174,16 +174,13 @@ namespace UnityEngine
             s_SkinMode = skinMode;
             s_OriginalID = instanceID;
 
-            GUI.skin = null;
-            guiIsExiting = false;
+            ResetGlobalState();
 
             // Switch to the correct ID list & clear keyboard loop if we're about to layout (we rebuild it during layout, so we want it cleared beforehand)
             if (useGUILayout != 0)
             {
                 GUILayoutUtility.Begin(instanceID);
             }
-
-            GUI.changed = false;
         }
 
         [RequiredByNativeCode]
@@ -237,6 +234,13 @@ namespace UnityEngine
             if (endContainerGUIFromException != null)
                 return endContainerGUIFromException(exception);
             return false;
+        }
+
+        internal static void ResetGlobalState()
+        {
+            GUI.skin = null;
+            guiIsExiting = false;
+            GUI.changed = false;
         }
 
         internal static bool ShouldRethrowException(Exception exception)

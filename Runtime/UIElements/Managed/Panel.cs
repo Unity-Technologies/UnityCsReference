@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -35,6 +34,23 @@ namespace UnityEngine.Experimental.UIElements
         Repaint = 1 << 0
     }
 
+    public abstract class BasePanelDebug
+    {
+        internal bool enabled { get; set; }
+
+        internal virtual bool RecordRepaint(VisualElement visualElement)
+        {
+            return false;
+        }
+
+        internal virtual bool EndRepaint()
+        {
+            return false;
+        }
+
+        internal Func<Event, bool> interceptEvents { get; set; }
+    }
+
     // Passed-in to every element of the visual tree
     public interface IPanel
     {
@@ -46,53 +62,56 @@ namespace UnityEngine.Experimental.UIElements
         ContextType contextType { get; }
 
         VisualElement Pick(Vector2 point);
+
+        VisualElement PickAll(Vector2 point, List<VisualElement> picked);
+
+        BasePanelDebug panelDebug { get; set; }
     }
 
-    interface IVisualElementPanel : IPanel
+    abstract class BaseVisualElementPanel : IPanel
     {
-        IStylePainter stylePainter { get; }
-        VisualElement focusedElement { get; set; }
+        public virtual VisualElement focusedElement { get; set; }
 
-        EventInterests IMGUIEventInterests { get; set; }
-        int instanceID { get; }
-        LoadResourceFunction loadResourceFunc { get; }
-        int IMGUIContainersCount { get; set; }
+        public abstract EventInterests IMGUIEventInterests { get; set; }
+        public abstract int instanceID { get; protected set; }
+        public abstract LoadResourceFunction loadResourceFunc { get; protected set; }
+        public abstract int IMGUIContainersCount { get; set; }
 
-        void Dirty(ChangeType type);
-        bool IsDirty(ChangeType type);
-        void ClearDirty(ChangeType type);
+        public abstract void Repaint(Event e);
+        public abstract void ValidateLayout();
 
-        void Repaint(Event e);
-        void ValidateLayout();
+        internal virtual IStylePainter stylePainter { get; set; }
+        //IPanel
+        public abstract VisualContainer visualTree { get; }
+        public abstract IDispatcher dispatcher { get; protected set; }
+        public abstract IScheduler scheduler { get; }
+        public abstract IDataWatchService dataWatch { get; protected set; }
+        public abstract ContextType contextType { get; protected set; }
+        public abstract VisualElement Pick(Vector2 point);
+        public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
+
+        public BasePanelDebug panelDebug { get; set; }
     }
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
 
     // Default panel implementation
-    internal class Panel : VisualContainer, IVisualElementPanel
+    internal class Panel : BaseVisualElementPanel
     {
         private StyleSheets.StyleContext m_StyleContext;
+        private VisualContainer m_RootContainer;
 
-        public VisualContainer visualTree
+        public override VisualContainer visualTree
         {
-            get { return this; }
+            get { return m_RootContainer; }
         }
 
         public VisualContainer defaultIMRoot { get; set; }
 
-        public IDispatcher dispatcher { get; set; }
+        public override IDispatcher dispatcher { get; protected set; }
 
-        public IDataWatchService dataWatch { get; set; }
-
-        StylePainter m_StylePainter;
-        public IStylePainter stylePainter
-        {
-            get
-            {
-                return m_StylePainter;
-            }
-        }
+        public override IDataWatchService dataWatch { get; protected set; }
 
         TimerEventScheduler m_Scheduler;
 
@@ -101,7 +120,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Scheduler ?? (m_Scheduler = new TimerEventScheduler()); }
         }
 
-        public IScheduler scheduler
+        public override IScheduler scheduler
         {
             get { return timerEventScheduler; }
         }
@@ -111,29 +130,29 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_StyleContext; }
         }
 
-        public int instanceID { get; set; }
+        public override int instanceID { get; protected set; }
 
         public bool allowPixelCaching { get; set; }
 
-        public VisualElement focusedElement { get; set; }
+        public override ContextType contextType { get; protected set; }
 
-        public ContextType contextType { get; private set; }
+        public override EventInterests IMGUIEventInterests { get; set; }
 
-        public EventInterests IMGUIEventInterests { get; set; }
+        public override LoadResourceFunction loadResourceFunc { get; protected set; }
 
-        public LoadResourceFunction loadResourceFunc { get; private set; }
-
-        public int IMGUIContainersCount { get; set; }
-
-        public Panel(int instanceID, ContextType contextType, LoadResourceFunction loadResourceDelegate = null)
+        public override int IMGUIContainersCount { get; set; }
+        public Panel(int instanceID, ContextType contextType, LoadResourceFunction loadResourceDelegate = null, IDataWatchService dataWatch = null, IDispatcher dispatcher = null)
         {
             this.instanceID = instanceID;
             this.contextType = contextType;
             this.loadResourceFunc = loadResourceDelegate ?? Resources.Load;
-            m_StylePainter = new StylePainter();
-            name = VisualElementUtils.GetUniqueName("PanelContainer");
+            this.dataWatch = dataWatch;
+            this.dispatcher = dispatcher;
+            stylePainter = new StylePainter();
+            m_RootContainer = new VisualContainer();
+            m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
-            m_StyleContext = new StyleSheets.StyleContext(this);
+            m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
             // this really should be an IMGUI container with the EditorWindow OnGUI on it.
             defaultIMRoot = new IMContainer()
             {
@@ -146,7 +165,7 @@ namespace UnityEngine.Experimental.UIElements
             allowPixelCaching = true;
         }
 
-        VisualElement Pick(VisualElement root, Vector2 point)
+        VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
             // do not pick invisible
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
@@ -164,6 +183,11 @@ namespace UnityEngine.Experimental.UIElements
                     return null;
                 }
 
+                if (picked != null)
+                {
+                    picked.Add(root);
+                }
+
                 // reset ref to upper left
                 localPoint = localPoint - new Vector3(container.position.position.x, container.position.position.y, 0);
 
@@ -171,7 +195,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     var child = container.GetChildAt(i);
                     // Depth first in reverse order, do children
-                    var result = Pick(child, localPoint);
+                    var result = PickAll(child, localPoint, picked);
                     if (result != null)
                         return result;
                 }
@@ -193,11 +217,21 @@ namespace UnityEngine.Experimental.UIElements
             return null;
         }
 
-        public VisualElement Pick(Vector2 point)
+        public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
         {
             ValidateLayout();
 
-            return Pick(visualTree, point);
+            if (picked != null)
+                picked.Clear();
+
+            return PickAll(visualTree, point, picked);
+        }
+
+        public override VisualElement Pick(Vector2 point)
+        {
+            ValidateLayout();
+
+            return PickAll(visualTree, point);
         }
 
         void ValidateStyling()
@@ -205,11 +239,11 @@ namespace UnityEngine.Experimental.UIElements
             // if the surface DPI changes we need to invalidate styles
             if (!Mathf.Approximately(m_StyleContext.currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
             {
-                Dirty(ChangeType.Styles);
+                m_RootContainer.Dirty(ChangeType.Styles);
                 m_StyleContext.currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
             }
 
-            if (IsDirty(ChangeType.Styles | ChangeType.StylesPath))
+            if (m_RootContainer.IsDirty(ChangeType.Styles | ChangeType.StylesPath))
             {
                 m_StyleContext.ApplyStyles();
             }
@@ -217,7 +251,7 @@ namespace UnityEngine.Experimental.UIElements
 
         const int kMaxValidateLayoutCount = 5;
 
-        public void ValidateLayout()
+        public override void ValidateLayout()
         {
             ValidateStyling();
 
@@ -270,14 +304,21 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // get the AA aligned bound
-        public Rect ComputeAAAlignedBound(Rect position, Matrix4x4 transform)
+        private Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
         {
-            var min = transform.MultiplyPoint3x4(position.min);
-            var max = transform.MultiplyPoint3x4(position.max);
-            return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
+            Rect p = position;
+            Vector3 v0 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y, 0.0f));
+            Vector3 v1 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y, 0.0f));
+            Vector3 v2 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y + p.height, 0.0f));
+            Vector3 v3 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y + p.height, 0.0f));
+            return Rect.MinMaxRect(
+                Mathf.Min(v0.x, Mathf.Min(v1.x, Mathf.Min(v2.x, v3.x))),
+                Mathf.Min(v0.y, Mathf.Min(v1.y, Mathf.Min(v2.y, v3.y))),
+                Mathf.Max(v0.x, Mathf.Max(v1.x, Mathf.Max(v2.x, v3.x))),
+                Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
-        public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentClip, Matrix4x4 clipTransform, Rect currentGlobalClip)
+        public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
         {
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return;
@@ -288,7 +329,7 @@ namespace UnityEngine.Experimental.UIElements
                 // update clip
                 if (container.clipChildren)
                 {
-                    var worldBound = ComputeAAAlignedBound(root.position, root.globalTransform);
+                    var worldBound = ComputeAAAlignedBound(root.position, offset * root.globalTransform);
                     // are we and our children clipped?
                     if (!worldBound.Overlaps(currentGlobalClip))
                     {
@@ -302,29 +343,22 @@ namespace UnityEngine.Experimental.UIElements
 
                     // new global clip
                     currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
-
-                    clipTransform = root.globalTransform;
-                    // back to local
-                    var inv = clipTransform.inverse;
-                    var min = inv.MultiplyPoint3x4(currentGlobalClip.min);
-                    var max = inv.MultiplyPoint3x4(currentGlobalClip.max);
-                    currentClip = Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x),
-                            Math.Max(min.y, max.y));
                 }
             }
             else
             {
-                if (!root.globalBound.Overlaps(currentGlobalClip))
+                var offsetBounds = ComputeAAAlignedBound(root.globalBound, offset);
+                if (!offsetBounds.Overlaps(currentGlobalClip))
                 {
                     return;
                 }
             }
-
-            if (root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
+            if (
+                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
+                root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
-                painter.currentWorldClip = currentGlobalClip;
 
                 // validate cache texture size first
                 var globalBound = root.globalBound;
@@ -341,7 +375,7 @@ namespace UnityEngine.Experimental.UIElements
                     root.renderData.pixelCache = null;
                 }
 
-                float oldOpacity = m_StylePainter.opacity;
+                float oldOpacity = stylePainter.opacity;
 
                 // if the child node world transforms are not up to date due to changes below the pixel cache this is fine.
                 if (root.IsDirty(ChangeType.Repaint)
@@ -368,20 +402,26 @@ namespace UnityEngine.Experimental.UIElements
                     offset = Matrix4x4.Translate(new Vector3(-globalBound.x, -globalBound.y, 0));
 
                     // reset clipping
-                    var textureClip = new Rect(globalBound.x, globalBound.y, w, h);
-                    GUIClip.SetTransform(offset * Matrix4x4.identity, offset * root.globalTransform, textureClip);
+                    var textureClip = new Rect(0, 0, w, h);
+                    GUIClip.SetTransform(offset * root.globalTransform, textureClip);
 
                     // paint self
-                    painter.currentWorldClip = textureClip;
+                    painter.currentWorldClip = currentGlobalClip;
                     root.DoRepaint(painter);
                     root.ClearDirty(ChangeType.Repaint);
 
                     if (container != null)
                     {
-                        foreach (var child in container)
+                        int count = container.childrenCount;
+                        for (int i = 0; i < count; i++)
                         {
-                            // and children
-                            PaintSubTree(e, child, offset, textureClip, offset, textureClip);
+                            VisualElement child = container.GetChildAt(i);
+                            PaintSubTree(e, child, offset, textureClip);
+
+                            if (count != container.childrenCount)
+                            {
+                                throw new NotImplementedException("Visual tree is read-only during repaint");
+                            }
                         }
                     }
                     RenderTexture.active = old;
@@ -389,44 +429,53 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-
-                GUIClip.SetTransform(clipTransform, root.globalTransform, currentClip);
-
-                painter.DrawTexture(root.position, root.renderData.pixelCache, Color.white);
+                GUIClip.SetTransform(root.globalTransform, currentGlobalClip);
+                painter.DrawTexture(root.position, root.renderData.pixelCache, Color.white, ScaleMode.ScaleAndCrop);
             }
             else
             {
-                GUIClip.SetTransform(offset * clipTransform, offset * root.globalTransform, currentClip);
+                GUIClip.SetTransform(offset * root.globalTransform, currentGlobalClip);
 
-                m_StylePainter.currentWorldClip = currentGlobalClip;
-                m_StylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
+                stylePainter.currentWorldClip = currentGlobalClip;
+                stylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
 
-                m_StylePainter.opacity = root.styles.opacity.GetSpecifiedValueOrDefault(1.0f);
-                root.DoRepaint(m_StylePainter);
-                m_StylePainter.opacity = 1.0f;
+                stylePainter.opacity = root.styles.opacity.GetSpecifiedValueOrDefault(1.0f);
+                root.DoRepaint(stylePainter);
+                stylePainter.opacity = 1.0f;
                 root.ClearDirty(ChangeType.Repaint);
 
                 if (container != null)
                 {
-                    foreach (var child in container)
+                    int count = container.childrenCount;
+                    for (int i = 0; i < count; i++)
                     {
-                        PaintSubTree(e, child, offset, currentClip, clipTransform, currentGlobalClip);
+                        VisualElement child = container.GetChildAt(i);
+                        PaintSubTree(e, child, offset, currentGlobalClip);
+
+                        if (count != container.childrenCount)
+                        {
+                            throw new NotImplementedException("Visual tree is read-only during repaint");
+                        }
                     }
                 }
             }
         }
 
-        public void Repaint(Event e)
+        public override void Repaint(Event e)
         {
             ValidateLayout();
+            stylePainter.repaintEvent = e;
 
-            m_StylePainter.repaintEvent = e;
-
-            GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
             // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position, Matrix4x4.identity, visualTree.position);
+            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position);
 
-            GUIClip.Internal_Pop();
+            if (panelDebug != null)
+            {
+                GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
+                if (panelDebug.EndRepaint())
+                    this.visualTree.Dirty(ChangeType.Repaint);
+                GUIClip.Internal_Pop();
+            }
         }
     }
 

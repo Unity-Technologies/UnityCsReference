@@ -328,7 +328,7 @@ namespace UnityEditor
 
             ReserveWidthLeft(32, ref pos);
             if (GUI.Button(GetThinArea(pos), s_CloudIcon))
-                UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true); // Should show hub when it's done
+                UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
 
             ReserveWidthLeft(space, ref pos);
             ReserveWidthLeft(kCollabButtonWidth, ref pos);
@@ -397,7 +397,10 @@ namespace UnityEditor
 
             displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, "Command");
             if (GUI.changed)
+            {
                 Tools.current = (Tool)displayTool;
+                Tools.ResetGlobalHandleRotation();
+            }
         }
 
         void DoPivotButtons(Rect rect)

@@ -70,6 +70,13 @@ internal sealed partial class FrameDebuggerUtility
         get;
     }
 
+    public extern static uint eventDataHash
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
     public static void SetRenderTargetDisplayOptions (int rtIndex, Vector4 channels, float blackLevel, float whiteLevel) {
         INTERNAL_CALL_SetRenderTargetDisplayOptions ( rtIndex, ref channels, blackLevel, whiteLevel );
     }
@@ -83,20 +90,15 @@ internal sealed partial class FrameDebuggerUtility
 
     public static bool GetFrameEventData(int index, out FrameDebuggerEventData frameDebuggerEventData)
         {
-            frameDebuggerEventData = GetFrameEventData();
+            GetFrameEventDataInternal(out frameDebuggerEventData);
             return frameDebuggerEventData.frameEventIndex == index;
         }
     
     
-    private static FrameDebuggerEventData GetFrameEventData () {
-        FrameDebuggerEventData result;
-        INTERNAL_CALL_GetFrameEventData ( out result );
-        return result;
-    }
-
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetFrameEventData (out FrameDebuggerEventData value);
+    extern private static  void GetFrameEventDataInternal (out FrameDebuggerEventData frameDebuggerEventData) ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string GetFrameEventInfoName (int index) ;

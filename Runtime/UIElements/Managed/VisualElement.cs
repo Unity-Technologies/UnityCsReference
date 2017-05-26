@@ -35,8 +35,10 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
-    public class VisualElement : IEventHandler
+    public class VisualElement : CallbackEventHandler
     {
+        private static uint s_NextId;
+
         string m_Name;
         HashSet<string> m_ClassList;
         string m_TypeName;
@@ -224,12 +226,10 @@ namespace UnityEngine.Experimental.UIElements
 
         // each element has a ref to the root panel for internal bookkeeping
         // this will be null until a visual tree is added to a panel
-        internal IVisualElementPanel elementPanel { get; private set; }
+        internal BaseVisualElementPanel elementPanel { get; private set; }
 
-        public IPanel panel { get { return elementPanel; } }
+        public override IPanel panel { get { return elementPanel; } }
 
-        // which event phase does this visual element listen to
-        public EventPhase phaseInterest { get; set; }
         public PickingMode pickingMode { get; set; }
 
         // does not guarantee uniqueness
@@ -861,15 +861,17 @@ namespace UnityEngine.Experimental.UIElements
 
         private List<IManipulator> m_Manipulators = new List<IManipulator>();
 
+        internal readonly uint controlid;
+
         public VisualElement()
         {
+            controlid = ++s_NextId;
+
             m_ClassList = new HashSet<string>();
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
             enabled = true;
             visible = true;
-            // by default interested in event if children do not handle
-            phaseInterest = EventPhase.BubbleUp;
             name = string.Empty;
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
@@ -887,28 +889,34 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (m_Manipulators == null)
                 m_Manipulators = new List<IManipulator>();
-            manipulator.target = this;
             if (!m_Manipulators.Contains(manipulator))
+            {
+                manipulator.target = this;
                 m_Manipulators.Insert(index, manipulator);
+            }
         }
 
         public void AddManipulator(IManipulator manipulator)
         {
             if (m_Manipulators == null)
                 m_Manipulators = new List<IManipulator>();
-            manipulator.target = this;
             if (!m_Manipulators.Contains(manipulator))
+            {
+                manipulator.target = this;
                 m_Manipulators.Add(manipulator);
+            }
         }
 
         public void RemoveManipulator(IManipulator manipulator)
         {
             manipulator.target = null;
             if (m_Manipulators != null)
+            {
                 m_Manipulators.Remove(manipulator);
+            }
         }
 
-        internal virtual void ChangePanel(IVisualElementPanel p)
+        internal virtual void ChangePanel(BaseVisualElementPanel p)
         {
             if (panel == p)
                 return;
@@ -1074,19 +1082,10 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public virtual void DoRepaint(IStylePainter painter)
-        {
-            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
-            {
-                return;
-            }
-            PaintStyle(painter);
-        }
-
-        protected virtual void PaintStyle(IStylePainter painter)
+        public virtual void DoRepaint()
         {
             ScaleMode scaleMode = (ScaleMode)backgroundSize;
-
+            var painter = elementPanel.stylePainter;
             if (backgroundImage != null)
             {
                 painter.DrawTexture(position, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
@@ -1107,6 +1106,15 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal virtual void DoRepaint(IStylePainter painter)
+        {
+            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
+            {
+                return;
+            }
+            DoRepaint();
+        }
+
         // position should be in local space
         // override to customize intersection between point and shape
         public virtual bool ContainsPoint(Vector2 localPoint)
@@ -1122,20 +1130,6 @@ namespace UnityEngine.Experimental.UIElements
         public virtual bool Overlaps(Rect rectangle)
         {
             return position.Overlaps(rectangle, true);
-        }
-
-        public virtual EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
-        {
-            return EventPropagation.Continue;
-        }
-
-        public virtual void OnLostCapture()
-        {
-        }
-
-        // TODO: replace
-        public virtual void OnLostKeyboardFocus()
-        {
         }
 
         public enum MeasureMode
@@ -1254,6 +1248,12 @@ namespace UnityEngine.Experimental.UIElements
 
         internal event OnStylesResolved onStylesResolved;
 
+        internal void SetInlineStyles(VisualElementStyles styles)
+        {
+            Debug.Assert(!styles.isShared);
+            m_Styles = styles;
+        }
+
         internal void SetSharedStyles(VisualElementStyles styles)
         {
             Debug.Assert(styles.isShared);
@@ -1312,6 +1312,12 @@ namespace UnityEngine.Experimental.UIElements
         public override string ToString()
         {
             return name + " " + position + " global rect: " + globalBound;
+        }
+
+        // WARNING returning the HashSet means it could be modified, be careful
+        internal IEnumerable<string> GetClasses()
+        {
+            return m_ClassList;
         }
 
         public void ClearClassList()

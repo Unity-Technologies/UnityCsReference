@@ -1894,16 +1894,6 @@ public partial class Joint : Component
         set;
     }
 
-    public extern bool enabled
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
     public  Vector3 currentForce
     {
         get { Vector3 tmp; INTERNAL_get_currentForce(out tmp); return tmp;  }
@@ -2711,6 +2701,7 @@ public enum CollisionDetectionMode
     ContinuousDynamic = 2
 }
 
+[RequiredByNativeCode]
 [RequireComponent(typeof(Transform))]
 public partial class Collider : Component
 {
@@ -2814,6 +2805,7 @@ public partial class Collider : Component
     
 }
 
+[RequiredByNativeCode]
 public sealed partial class BoxCollider : Collider
 {
     public Vector3 center
@@ -2848,6 +2840,7 @@ public sealed partial class BoxCollider : Collider
     public Vector3 extents { get { return size * 0.5F; }  set { size = value * 2.0F; } }
 }
 
+[RequiredByNativeCode]
 public sealed partial class SphereCollider : Collider
 {
     public Vector3 center
@@ -2876,6 +2869,7 @@ public sealed partial class SphereCollider : Collider
 
 }
 
+[RequiredByNativeCode]
 public sealed partial class MeshCollider : Collider
 {
     public extern Mesh sharedMesh
@@ -2922,6 +2916,7 @@ public sealed partial class MeshCollider : Collider
     public bool smoothSphereCollisions { get { return true; } set {} }
 }
 
+[RequiredByNativeCode]
 public sealed partial class CapsuleCollider : Collider
 {
     public Vector3 center

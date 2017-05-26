@@ -133,5 +133,44 @@ public sealed partial class CrashReport
 
 }
 
+internal sealed partial class UnhandledExceptionHandler
+{
+    [RequiredByNativeCode]
+    private static void RegisterUECatcher()
+        {
+            AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
+        }
+    
+    
+    private static void HandleUnhandledException(object sender, UnhandledExceptionEventArgs args)
+        {
+            Exception e = args.ExceptionObject as Exception;
+            if (e != null)
+            {
+                PrintException("Unhandled Exception: ", e);
+                NativeUnhandledExceptionHandler(e.GetType().Name, e.Message, e.StackTrace);
+            }
+            else
+            {
+                NativeUnhandledExceptionHandler(null, null, null);
+            }
+        }
+    
+    
+    private static void PrintException(string title, Exception e)
+        {
+            Debug.LogException(e);
+            if (e.InnerException != null)
+                PrintException("Inner Exception: ", e.InnerException);
+        }
+    
+    
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void NativeUnhandledExceptionHandler (string managedExceptionType, string managedExceptionMessage, string managedExceptionStack) ;
+
+}
+
 
 }

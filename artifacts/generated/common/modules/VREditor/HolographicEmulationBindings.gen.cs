@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine;
 
-namespace UnityEditor.HolographicEmulation
+namespace UnityEditorInternal.VR
 {
 internal enum HolographicStreamerConnectionState
 {
@@ -33,19 +33,25 @@ internal enum HolographicStreamerConnectionFailureReason
 }
 
 
-internal enum EmulationMode
+public enum EmulationMode
 {
     None,
     RemoteDevice,
-    Simulated,
+    Simulated
     };
-    internal enum GestureHand    
+    public enum GestureHand    
     {
         Left,
-        Right,
+        Right
         };
+        public enum SimulatedGesture        
+        {
+            FingerPressed,
+            FingerReleased
+        }
+
         
-        internal sealed partial class HolographicEmulation        
+        public sealed partial class HolographicEmulation        
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -57,18 +63,20 @@ internal enum EmulationMode
 
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-            extern internal static  void LoadRoom (string id) ;
+            extern public static  void LoadRoom (string id) ;
 
-            internal static void SetEmulationMode(EmulationMode mode)
-        {
-        }
-            
-            
-            internal static void SetGestureHand(GestureHand hand)
-        {
-        }
-            
-            
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            extern internal static  void SetEmulationMode (EmulationMode mode) ;
+
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            extern internal static  void SetGestureHand (GestureHand hand) ;
+
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            extern public static  void Reset () ;
+
         }
 
         internal sealed partial class PerceptionRemotingPlugin        

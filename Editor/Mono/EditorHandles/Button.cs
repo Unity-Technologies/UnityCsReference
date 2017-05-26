@@ -25,7 +25,7 @@ namespace UnityEditorInternal
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, pickSize));
                     break;
                 case EventType.mouseMove:
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                         HandleUtility.Repaint();
                     break;
                 case EventType.mouseDown:
@@ -48,8 +48,8 @@ namespace UnityEditorInternal
                     break;
                 case EventType.repaint:
                     Color origColor = Handles.color;
-                    if (HandleUtility.nearestControl == id && GUI.enabled)
-                        Handles.color = Handles.selectedColor;
+                    if (HandleUtility.nearestControl == id && GUI.enabled && GUIUtility.hotControl == 0)
+                        Handles.color = Handles.preselectionColor;
 
                     capFunc(id, position, direction, size);
 
@@ -70,7 +70,7 @@ namespace UnityEditorInternal
                         capFunction(id, position, direction, pickSize, EventType.Layout);
                     break;
                 case EventType.mouseMove:
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                         HandleUtility.Repaint();
                     break;
                 case EventType.mouseDown:
@@ -93,8 +93,8 @@ namespace UnityEditorInternal
                     break;
                 case EventType.repaint:
                     Color origColor = Handles.color;
-                    if (HandleUtility.nearestControl == id && GUI.enabled)
-                        Handles.color = Handles.selectedColor;
+                    if (HandleUtility.nearestControl == id && GUI.enabled && GUIUtility.hotControl == 0)
+                        Handles.color = Handles.preselectionColor;
 
                     capFunction(id, position, direction, size, EventType.Repaint);
 

@@ -61,7 +61,8 @@ namespace UnityEditor
             EditorApplication.hierarchyWindowChanged += OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.projectWindowChanged += OnHierarchyOrProjectWindowWasChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
-            EditorApplication.playmodeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged += OnPauseStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += UndoRedoPerformed;
 
             autoRepaintOnSceneChange = false;
@@ -72,7 +73,8 @@ namespace UnityEditor
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
             EditorApplication.projectWindowChanged -= OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.hierarchyWindowChanged -= OnHierarchyOrProjectWindowWasChanged;
-            EditorApplication.playmodeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
 
 
@@ -92,7 +94,12 @@ namespace UnityEditor
             }
         }
 
-        void OnPlayModeStateChanged()
+        void OnPauseStateChanged(PauseState state)
+        {
+            Repaint();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             // Need to refresh because UpdateAll changes state
             Repaint();

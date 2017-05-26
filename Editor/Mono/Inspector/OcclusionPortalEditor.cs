@@ -12,17 +12,14 @@ namespace UnityEditor
     [CustomEditor(typeof(OcclusionPortal)), CanEditMultipleObjects]
     internal class OcclusionPortalEditor : Editor
     {
+        private const string k_CenterPath = "m_Center";
+        private const string k_SizePath = "m_Size";
+
         private static readonly int s_HandleControlIDHint = typeof(OcclusionPortalEditor).Name.GetHashCode();
         private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
 
-        SerializedProperty m_Center;
-        SerializedProperty m_Size;
-
         protected virtual void OnEnable()
         {
-            m_Center = serializedObject.FindProperty("m_Center");
-            m_Size = serializedObject.FindProperty("m_Size");
-
             m_BoundsHandle.SetColor(Handles.s_ColliderHandleColor);
         }
 
@@ -32,7 +29,6 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.Collider,
                 "Edit Bounds",
                 PrimitiveBoundsHandle.editModeButton,
-                GetWorldBounds(m_Center.vector3Value, m_Size.vector3Value),
                 this
                 );
 
@@ -52,8 +48,8 @@ namespace UnityEditor
 
             using (new Handles.DrawingScope(portal.transform.localToWorldMatrix))
             {
-                SerializedProperty centerProperty = so.FindProperty(m_Center.propertyPath);
-                SerializedProperty sizeProperty = so.FindProperty(m_Size.propertyPath);
+                SerializedProperty centerProperty = so.FindProperty(k_CenterPath);
+                SerializedProperty sizeProperty = so.FindProperty(k_SizePath);
                 m_BoundsHandle.center = centerProperty.vector3Value;
                 m_BoundsHandle.size = sizeProperty.vector3Value;
 
@@ -68,13 +64,17 @@ namespace UnityEditor
             }
         }
 
-        private Bounds GetWorldBounds(Vector3 center, Vector3 size)
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
-            Bounds localBounds = new Bounds(center, size);
+            var so = new SerializedObject(targetObject);
+            Vector3 center = so.FindProperty(k_CenterPath).vector3Value;
+            Vector3 size = so.FindProperty(k_SizePath).vector3Value;
+
+            var localBounds = new Bounds(center, size);
             Vector3 max = localBounds.max;
             Vector3 min = localBounds.min;
-            Matrix4x4 portalTransformMatrix = ((OcclusionPortal)target).transform.localToWorldMatrix;
-            Bounds worldBounds = new Bounds(portalTransformMatrix.MultiplyPoint3x4(new Vector3(max.x, max.y, max.z)), Vector3.zero);
+            Matrix4x4 portalTransformMatrix = ((OcclusionPortal)targetObject).transform.localToWorldMatrix;
+            var worldBounds = new Bounds(portalTransformMatrix.MultiplyPoint3x4(new Vector3(max.x, max.y, max.z)), Vector3.zero);
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(max.x, max.y, max.z)));
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(max.x, max.y, min.z)));
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(max.x, min.y, max.z)));
@@ -83,6 +83,7 @@ namespace UnityEditor
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(min.x, max.y, min.z)));
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(min.x, min.y, max.z)));
             worldBounds.Encapsulate(portalTransformMatrix.MultiplyPoint3x4(new Vector3(min.x, min.y, min.z)));
+
             return worldBounds;
         }
     }

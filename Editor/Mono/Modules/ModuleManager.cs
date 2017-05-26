@@ -17,6 +17,7 @@ using Unity.DataContract;
 using UnityEditor.Callbacks;
 using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.Modules
 {
@@ -41,7 +42,7 @@ namespace UnityEditor.Modules
         {
             get
             {
-                Initialize();
+                InitializeModuleManager();
                 return s_PackageManager;
             }
         }
@@ -50,7 +51,7 @@ namespace UnityEditor.Modules
         {
             get
             {
-                Initialize();
+                InitializeModuleManager();
                 if (s_PlatformModules == null)
                     RegisterPlatformSupportModules();
                 return s_PlatformModules;
@@ -131,6 +132,7 @@ namespace UnityEditor.Modules
         }
 
         // entry point from native
+        [RequiredByNativeCode]
         internal static bool IsPlatformSupportLoaded(string target)
         {
             foreach (var module in platformSupportModules)
@@ -141,6 +143,7 @@ namespace UnityEditor.Modules
         }
 
         // entry point from native
+        [RequiredByNativeCode]
         internal static void RegisterAdditionalUnityExtensions()
         {
             foreach (var module in platformSupportModules)
@@ -150,7 +153,8 @@ namespace UnityEditor.Modules
         }
 
         // entry point from native
-        internal static void Initialize()
+        [RequiredByNativeCode]
+        internal static void InitializeModuleManager()
         {
             if (s_PackageManager == null)
             {
@@ -208,6 +212,7 @@ namespace UnityEditor.Modules
         // investigates the currently loaded set of assemblies. The second reload is needed so that
         // assemblies returned by module.AssemblyReferencesForUserScripts are actually loaded in the
         // current domain and user code may use it.
+        [RequiredByNativeCode]
         internal static void InitializePlatformSupportModules()
         {
             if (s_PlatformModulesInitialized)
@@ -216,7 +221,7 @@ namespace UnityEditor.Modules
                 return;
             }
 
-            Initialize();
+            InitializeModuleManager();
             RegisterPlatformSupportModules();
 
             foreach (var module in platformSupportModules)
@@ -238,6 +243,7 @@ namespace UnityEditor.Modules
         }
 
         // entry point from native
+        [RequiredByNativeCode]
         internal static void ShutdownPlatformSupportModules()
         {
             DeactivateActivePlatformModule();
@@ -250,7 +256,8 @@ namespace UnityEditor.Modules
         }
 
         // entry point from native
-        internal static void Shutdown()
+        [RequiredByNativeCode(true)]
+        internal static void ShutdownModuleManager()
         {
             if (s_PackageManager != null)
                 s_PackageManager.Shutdown(true);

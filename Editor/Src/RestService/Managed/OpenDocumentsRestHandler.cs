@@ -10,7 +10,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor.RestService
 {
-    internal class OpenDocumentsRestHandler : Handler
+    internal class OpenDocumentsRestHandler : JSONHandler
     {
         protected override JSONValue HandlePost(Request request, JSONValue payload)
         {

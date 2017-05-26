@@ -13,6 +13,8 @@ namespace UnityEditor
 {
     internal class RendererEditorBase : Editor
     {
+        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TextContent("Dynamic Occluded|Controls if dynamic occlusion culling should be performed for this renderer.");
+
         internal class Probes
         {
             private SerializedProperty m_LightProbeUsage;
@@ -282,6 +284,7 @@ namespace UnityEditor
 
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
+        private SerializedProperty m_DynamicOccludee;
 
 
         protected Probes m_Probes;
@@ -290,6 +293,7 @@ namespace UnityEditor
         {
             m_SortingOrder = serializedObject.FindProperty("m_SortingOrder");
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
+            m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
         }
 
         protected void RenderSortingLayerFields()
@@ -307,6 +311,11 @@ namespace UnityEditor
         protected void RenderProbeFields()
         {
             m_Probes.OnGUI(targets, (Renderer)target, false);
+        }
+
+        protected void CullDynamicFieldGUI()
+        {
+            EditorGUILayout.PropertyField(m_DynamicOccludee, m_DynamicOccludeeLabel);
         }
 
         protected void RenderCommonProbeFields(bool useMiniStyle)

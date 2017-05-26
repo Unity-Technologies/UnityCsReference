@@ -20,6 +20,24 @@ namespace UnityEditor
 
 
 [RequiredByNativeCode]
+    internal struct IMGUIDrawInstruction
+    {
+        public Rect         rect;
+        public GUIStyle     usedGUIStyle;
+        public GUIContent   usedGUIContent;
+        public StackFrame[] stackframes;
+
+        public void Reset()
+        {
+            rect = new Rect();
+            usedGUIStyle = GUIStyle.none;
+            usedGUIContent = GUIContent.none;
+        }
+
+    }
+
+
+[RequiredByNativeCode]
     internal struct IMGUIClipInstruction
     {
         public Rect screenRect;
@@ -97,43 +115,22 @@ internal partial class GUIViewDebuggerHelper
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void StopDebugging () ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  int GetInstructionCount () ;
-
-    public static Rect GetRectFromInstruction (int instructionIndex) {
-        Rect result;
-        INTERNAL_CALL_GetRectFromInstruction ( instructionIndex, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetRectFromInstruction (int instructionIndex, out Rect value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  GUIStyle GetStyleFromInstruction (int instructionIndex) ;
-
-    internal static GUIContent GetContentFromInstruction(int instructionIndex)
+    
+    private static GUIContent CreateGUIContent(string text, Texture image, string tooltip)
         {
-            var content = new GUIContent();
-            content.text = GetContentTextFromInstruction(instructionIndex);
-            content.image = GetContentImageFromInstruction(instructionIndex);
-            return content;
+            return new GUIContent(text, image, tooltip);
+        }
+    
+    
+    internal static void GetDrawInstructions(List<IMGUIDrawInstruction> drawInstructions)
+        {
+            GetDrawInstructionsInternal(drawInstructions);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  string GetContentTextFromInstruction (int instructionIndex) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  Texture GetContentImageFromInstruction (int instructionIndex) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  StackFrame[] GetManagedStackTrace (int instructionIndex) ;
+    extern private static  void GetDrawInstructionsInternal (object drawInstructions) ;
 
     internal static void GetClipInstructions(List<IMGUIClipInstruction> clipInstructions)
         {

@@ -219,12 +219,12 @@ namespace UnityEditor
             bool anyWithoutParent = false;
             foreach (RectTransform gui in targets)
             {
-                if (gui.drivenByObject != null)
+                if (gui.IsDriven())
                 {
                     anyDriven = true;
-                    if ((gui.drivenProperties & (DrivenTransformProperties.AnchoredPositionX | DrivenTransformProperties.SizeDeltaX)) != 0)
+                    if (gui.IsDriven(DrivenTransformProperties.AnchoredPositionX | DrivenTransformProperties.SizeDeltaX))
                         anyDrivenXPositionOrSize = true;
-                    if ((gui.drivenProperties & (DrivenTransformProperties.AnchoredPositionY | DrivenTransformProperties.SizeDeltaY)) != 0)
+                    if (gui.IsDriven(DrivenTransformProperties.AnchoredPositionY | DrivenTransformProperties.SizeDeltaY))
                         anyDrivenYPositionOrSize = true;
                 }
 
@@ -237,7 +237,7 @@ namespace UnityEditor
             if (anyDriven)
             {
                 if (targets.Length == 1)
-                    EditorGUILayout.HelpBox("Some values driven by " + (target as RectTransform).drivenByObject.GetType().Name + ".", MessageType.None);
+                    EditorGUILayout.HelpBox("Some values are driven by another object.", MessageType.None);
                 else
                     EditorGUILayout.HelpBox("Some values in some or all objects are driven.", MessageType.None);
             }
@@ -256,12 +256,12 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Rotation
-            m_RotationGUI.RotationField(targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.Rotation) != 0));
+            m_RotationGUI.RotationField(targets.Any(x => (x as RectTransform).IsDriven(DrivenTransformProperties.Rotation)));
 
             // Scale
-            s_ScaleDisabledMask[0] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleX) != 0);
-            s_ScaleDisabledMask[1] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleY) != 0);
-            s_ScaleDisabledMask[2] = targets.Any(x => ((x as RectTransform).drivenProperties & DrivenTransformProperties.ScaleZ) != 0);
+            s_ScaleDisabledMask[0] = targets.Any(x => (x as RectTransform).IsDriven(DrivenTransformProperties.ScaleX));
+            s_ScaleDisabledMask[1] = targets.Any(x => (x as RectTransform).IsDriven(DrivenTransformProperties.ScaleY));
+            s_ScaleDisabledMask[2] = targets.Any(x => (x as RectTransform).IsDriven(DrivenTransformProperties.ScaleZ));
             Vector3FieldWithDisabledMash(EditorGUILayout.GetControlRect(), m_LocalScale, styles.transformScaleContent, s_ScaleDisabledMask);
 
             serializedObject.ApplyModifiedProperties();
@@ -299,7 +299,7 @@ namespace UnityEditor
                 {
                     GUIUtility.keyboardControl = 0;
                     m_DropdownWindow = new LayoutDropdownWindow(serializedObject);
-                    PopupWindow.Show(dropdownPosition, m_DropdownWindow);
+                    PopupWindow.Show(dropdownPosition, m_DropdownWindow, null, ShowMode.PopupMenuWithKeyboardFocus);
                 }
                 GUI.color = oldColor;
             }
@@ -528,7 +528,7 @@ namespace UnityEditor
 
         void FloatFieldLabelAbove(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-            using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
+            using (new EditorGUI.DisabledScope(targets.Any(x => (x as RectTransform).IsDriven(driven))))
             {
                 float value = getter(target as RectTransform);
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
@@ -584,7 +584,7 @@ namespace UnityEditor
 
         void FloatField(Rect position, FloatGetter getter, FloatSetter setter, DrivenTransformProperties driven, GUIContent label)
         {
-            using (new EditorGUI.DisabledScope(targets.Any(x => ((x as RectTransform).drivenProperties & driven) != 0)))
+            using (new EditorGUI.DisabledScope(targets.Any(x => (x as RectTransform).IsDriven(driven))))
             {
                 float value = getter(target as RectTransform);
                 EditorGUI.showMixedValue = targets.Select(x => getter(x as RectTransform)).Distinct().Count() >= 2;
@@ -984,7 +984,7 @@ namespace UnityEditor
                         SetAnchorSmart(gui, newValue, axis, isMax, !evtCopy.shift, snap, true, s_DragAnchorsTogether);
                     }
                     EditorUtility.SetDirty(gui);
-                    if (gui.drivenByObject != null)
+                    if (gui.IsDriven())
                         RectTransform.SendReapplyDrivenProperties(gui);
                 }
             }

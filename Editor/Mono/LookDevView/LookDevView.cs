@@ -406,7 +406,7 @@ namespace UnityEditor
             PreviewRenderUtility previewUtility = previewUtilityContext.m_PreviewUtility[(int)contextPass];
             PreviewContextCB contextCB          = previewUtilityContext.m_PreviewCB[(int)contextPass];
 
-            previewUtility.BeginPreviewHDR(previewRect, styles.sBigTitleInnerStyle);
+            previewUtility.BeginPreview(previewRect, styles.sBigTitleInnerStyle);
             bool shadowPass = contextPass == PreviewContext.PreviewContextPass.kShadow;
 
             DrawCameraMode shadingMode = (DrawCameraMode)lookDevContext.shadingMode;

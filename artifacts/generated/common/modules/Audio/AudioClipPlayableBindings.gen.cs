@@ -11,143 +11,137 @@ using System;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Playables;
-using UnityEngine.Playables.Audio;
 
-namespace UnityEngine.Playables.Audio
+namespace UnityEngine.Audio
 {
-public partial struct AudioClipPlayable : IPlayable {}
-
-
 [RequiredByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct AudioClipPlayable
 {
-    PlayableHandle handle;
-    PlayableHandle IPlayable.playableHandle { get { return handle; } set { handle = value; } }
-    public PlayableHandle GetHandle() { return handle; }
-    
-    
-    public AudioClip clip
+    public AudioClip GetClip()
         {
-            get { return GetClip(ref handle); }
-            set { SetClip(ref handle, value); }
+            return GetClipInternal(ref m_Handle);
         }
     
     
-    private static AudioClip GetClip (ref PlayableHandle hdl) {
-        return INTERNAL_CALL_GetClip ( ref hdl );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static AudioClip INTERNAL_CALL_GetClip (ref PlayableHandle hdl);
-    private static void SetClip (ref PlayableHandle hdl, AudioClip clip) {
-        INTERNAL_CALL_SetClip ( ref hdl, clip );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetClip (ref PlayableHandle hdl, AudioClip clip);
-    public bool looped
+    public void GetClip(AudioClip value)
         {
-            get { return GetLooped(ref handle); }
-            set { SetLooped(ref handle, value); }
+            SetClipInternal(ref m_Handle, value);
         }
     
     
-    private static bool GetLooped (ref PlayableHandle hdl) {
-        return INTERNAL_CALL_GetLooped ( ref hdl );
+    private static AudioClip GetClipInternal (ref PlayableHandle hdl) {
+        return INTERNAL_CALL_GetClipInternal ( ref hdl );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_GetLooped (ref PlayableHandle hdl);
-    private static void SetLooped (ref PlayableHandle hdl, bool looped) {
-        INTERNAL_CALL_SetLooped ( ref hdl, looped );
+    private extern static AudioClip INTERNAL_CALL_GetClipInternal (ref PlayableHandle hdl);
+    private static void SetClipInternal (ref PlayableHandle hdl, AudioClip clip) {
+        INTERNAL_CALL_SetClipInternal ( ref hdl, clip );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetLooped (ref PlayableHandle hdl, bool looped);
-    public bool isPlaying
+    private extern static void INTERNAL_CALL_SetClipInternal (ref PlayableHandle hdl, AudioClip clip);
+    public bool GetLooped()
         {
-            get { return GetIsPlaying(ref handle); }
+            return GetLoopedInternal(ref m_Handle);
         }
     
     
-    private static bool GetIsPlaying (ref PlayableHandle hdl) {
-        return INTERNAL_CALL_GetIsPlaying ( ref hdl );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_GetIsPlaying (ref PlayableHandle hdl);
-    public double startDelay
+    public void SetLooped(bool value)
         {
-            get { return GetStartDelay(ref handle); }
-            internal set
-            {
-                ValidateStartDelay(value);
-                SetStartDelay(ref handle, value);
-            }
+            SetLoopedInternal(ref m_Handle, value);
         }
     
     
-    private static double GetStartDelay (ref PlayableHandle hdl) {
-        return INTERNAL_CALL_GetStartDelay ( ref hdl );
+    private static bool GetLoopedInternal (ref PlayableHandle hdl) {
+        return INTERNAL_CALL_GetLoopedInternal ( ref hdl );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static double INTERNAL_CALL_GetStartDelay (ref PlayableHandle hdl);
-    private static void SetStartDelay (ref PlayableHandle hdl, double delay) {
-        INTERNAL_CALL_SetStartDelay ( ref hdl, delay );
+    private extern static bool INTERNAL_CALL_GetLoopedInternal (ref PlayableHandle hdl);
+    private static void SetLoopedInternal (ref PlayableHandle hdl, bool looped) {
+        INTERNAL_CALL_SetLoopedInternal ( ref hdl, looped );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetStartDelay (ref PlayableHandle hdl, double delay);
-    public double pauseDelay
+    private extern static void INTERNAL_CALL_SetLoopedInternal (ref PlayableHandle hdl, bool looped);
+    public bool IsPlaying()
         {
-            get { return GetPauseDelay(ref handle); }
-            internal set
-            {
-                double currentDelay = GetPauseDelay(ref handle);
-                if (handle.playState == PlayState.Playing &&
-                    (value < 0.05 || (currentDelay != 0.0 && currentDelay < 0.05)))
-                    throw new ArgumentException("AudioClipPlayable.pauseDelay: Setting new delay when existing delay is too small or 0.0 ("
-                        + currentDelay + "), audio system will not be able to change in time");
-
-                SetPauseDelay(ref handle, value);
-            }
+            return GetIsPlayingInternal(ref m_Handle);
         }
     
     
-    private static double GetPauseDelay (ref PlayableHandle hdl) {
-        return INTERNAL_CALL_GetPauseDelay ( ref hdl );
+    private static bool GetIsPlayingInternal (ref PlayableHandle hdl) {
+        return INTERNAL_CALL_GetIsPlayingInternal ( ref hdl );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static double INTERNAL_CALL_GetPauseDelay (ref PlayableHandle hdl);
-    private static void SetPauseDelay (ref PlayableHandle hdl, double delay) {
-        INTERNAL_CALL_SetPauseDelay ( ref hdl, delay );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetPauseDelay (ref PlayableHandle hdl, double delay);
-    public static AudioClipPlayable CreatePlayable(PlayableGraph graph, AudioClip clip, bool looping)
+    private extern static bool INTERNAL_CALL_GetIsPlayingInternal (ref PlayableHandle hdl);
+    public double GetStartDelay()
         {
-            var playable = new AudioClipPlayable { handle = PlayableHandle.Null };
-            if (!InternalCreateAudioClipPlayable(ref graph, clip, looping, ref playable.handle))
-                throw new System.Exception("Could not create AudioClipPlayable");
-            if (clip != null)
-                playable.handle.duration = clip.length;
-            return playable;
+            return GetStartDelayInternal(ref m_Handle);
         }
     
     
+    internal void SetStartDelay(double value)
+        {
+            ValidateStartDelayInternal(value);
+            SetStartDelayInternal(ref m_Handle, value);
+        }
+    
+    
+    private static double GetStartDelayInternal (ref PlayableHandle hdl) {
+        return INTERNAL_CALL_GetStartDelayInternal ( ref hdl );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static double INTERNAL_CALL_GetStartDelayInternal (ref PlayableHandle hdl);
+    private static void SetStartDelayInternal (ref PlayableHandle hdl, double delay) {
+        INTERNAL_CALL_SetStartDelayInternal ( ref hdl, delay );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetStartDelayInternal (ref PlayableHandle hdl, double delay);
+    public double GetPauseDelay()
+        {
+            return GetPauseDelayInternal(ref m_Handle);
+        }
+    
+    
+    internal void GetPauseDelay(double value)
+        {
+            double currentDelay = GetPauseDelayInternal(ref m_Handle);
+            if (m_Handle.GetPlayState() == PlayState.Playing &&
+                (value < 0.05 || (currentDelay != 0.0 && currentDelay < 0.05)))
+                throw new ArgumentException("AudioClipPlayable.pauseDelay: Setting new delay when existing delay is too small or 0.0 ("
+                    + currentDelay + "), audio system will not be able to change in time");
+
+            SetPauseDelayInternal(ref m_Handle, value);
+        }
+    
+    
+    private static double GetPauseDelayInternal (ref PlayableHandle hdl) {
+        return INTERNAL_CALL_GetPauseDelayInternal ( ref hdl );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static double INTERNAL_CALL_GetPauseDelayInternal (ref PlayableHandle hdl);
+    private static void SetPauseDelayInternal (ref PlayableHandle hdl, double delay) {
+        INTERNAL_CALL_SetPauseDelayInternal ( ref hdl, delay );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetPauseDelayInternal (ref PlayableHandle hdl, double delay);
     private static bool InternalCreateAudioClipPlayable (ref PlayableGraph graph, AudioClip clip, bool looping, ref PlayableHandle handle) {
         return INTERNAL_CALL_InternalCreateAudioClipPlayable ( ref graph, clip, looping, ref handle );
     }
@@ -155,17 +149,6 @@ public partial struct AudioClipPlayable
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static bool INTERNAL_CALL_InternalCreateAudioClipPlayable (ref PlayableGraph graph, AudioClip clip, bool looping, ref PlayableHandle handle);
-    public static AudioClipPlayable CastFrom(PlayableHandle handle)
-        {
-            if (!ValidateType(ref handle))
-                throw new InvalidOperationException("CastFrom: Handle is not a valid AudioClipPlayable");
-
-            AudioClipPlayable ret = new AudioClipPlayable();
-            ret.handle = handle;
-            return ret;
-        }
-    
-    
     private static bool ValidateType (ref PlayableHandle hdl) {
         return INTERNAL_CALL_ValidateType ( ref hdl );
     }
@@ -181,33 +164,33 @@ public void Seek (double startTime, double startDelay) {
 
 public void Seek(double startTime, double startDelay, [uei.DefaultValue("0")]  double duration )
         {
-            ValidateStartDelay(startDelay);
-            SetStartDelay(ref handle, startDelay);
+            ValidateStartDelayInternal(startDelay);
+            SetStartDelayInternal(ref m_Handle, startDelay);
             if (duration > 0)
             {
-                handle.duration = duration + startTime;
-                SetPauseDelay(ref handle, startDelay + duration);
+                m_Handle.SetDuration(duration + startTime);
+                SetPauseDelayInternal(ref m_Handle, startDelay + duration);
             }
             else
             {
-                handle.duration = double.MaxValue;
-                SetPauseDelay(ref handle, 0);
+                m_Handle.SetDuration(double.MaxValue);
+                SetPauseDelayInternal(ref m_Handle, 0);
             }
 
-            handle.time = startTime;
-            handle.playState = PlayState.Playing;
+            m_Handle.SetTime(startTime);
+            m_Handle.SetPlayState(PlayState.Playing);
         }
 
     
     
-    private void ValidateStartDelay(double startDelay)
+    private void ValidateStartDelayInternal(double startDelay)
         {
-            double currentDelay = GetStartDelay(ref handle);
+            double currentDelay = GetStartDelayInternal(ref m_Handle);
 
             const double validEndDelay = 0.05;
             const double validStartDelay = 0.00001; 
 
-            if (isPlaying &&
+            if (IsPlaying() &&
                 (startDelay < validEndDelay || (currentDelay >= validStartDelay && currentDelay < validEndDelay)))
             {
                 Debug.LogWarning("AudioClipPlayable.StartDelay: Setting new delay when existing delay is too small or 0.0 ("

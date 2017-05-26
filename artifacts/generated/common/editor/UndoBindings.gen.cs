@@ -150,6 +150,10 @@ public static void RegisterFullObjectHierarchyUndo(UnityEngine.Object objectToUn
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void CollapseUndoOperations (int groupIndex) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void ClearAll () ;
+
     [System.Obsolete ("Use Undo.RegisterCompleteObjectUndo instead")]
 public static void RegisterUndo(Object objectToUndo, string name)
         {

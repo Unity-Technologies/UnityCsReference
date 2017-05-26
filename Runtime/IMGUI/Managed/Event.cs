@@ -109,7 +109,7 @@ namespace UnityEngine
         public bool numeric
         {
             get { return (modifiers & EventModifiers.Numeric)  != 0; }
-            set { if (!value) modifiers &= ~EventModifiers.Shift; else modifiers |= EventModifiers.Shift; }
+            set { if (!value) modifiers &= ~EventModifiers.Numeric; else modifiers |= EventModifiers.Numeric; }
         }
 
         // Is the current keypress a function key? (RO)

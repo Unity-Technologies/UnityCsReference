@@ -18,8 +18,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.AI;
-using UnityScript.Scripting;
+using UnityEngine.AI;
 using UnityEngine.Scripting.APIUpdating;
+using UnityScript.Scripting;
 
 namespace UnityEditor.AI
 {
@@ -168,6 +169,20 @@ public sealed partial class NavMeshVisualizationSettings
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
+    }
+
+}
+
+public static partial class NavMeshEditorHelpers
+{
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void DrawBuildDebug (NavMeshData navMeshData, [uei.DefaultValue("NavMeshBuildDebugFlags.All")]  NavMeshBuildDebugFlags flags ) ;
+
+    [uei.ExcludeFromDocs]
+    public static void DrawBuildDebug (NavMeshData navMeshData) {
+        NavMeshBuildDebugFlags flags = NavMeshBuildDebugFlags.All;
+        DrawBuildDebug ( navMeshData, flags );
     }
 
 }

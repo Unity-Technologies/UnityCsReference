@@ -12,7 +12,7 @@ namespace UnityEditor.RestService
 {
     internal class AssetRestHandler
     {
-        internal class AssetHandler : Handler
+        internal class AssetHandler : JSONHandler
         {
             protected override JSONValue HandleDelete(Request request, JSONValue payload)
             {
@@ -99,7 +99,7 @@ namespace UnityEditor.RestService
             }
         }
 
-        internal class LibraryHandler : Handler
+        internal class LibraryHandler : JSONHandler
         {
             //GET Requests, right now only "get all"
             protected override JSONValue HandleGet(Request request, JSONValue payload)

@@ -10,10 +10,10 @@ namespace UnityEditor
 {
     class GUIClipInspectView : BaseInspectView
     {
-        List<IMGUIClipInstruction> m_ClipList = new List<IMGUIClipInstruction>();
-        private IMGUIClipInstruction m_Instruction;
-        private Vector2 m_StacktraceScrollPos =  new Vector2();
+        Vector2 m_StacktraceScrollPos =  new Vector2();
 
+        List<IMGUIClipInstruction> m_ClipList = new List<IMGUIClipInstruction>();
+        IMGUIClipInstruction m_Instruction;
 
         public GUIClipInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
@@ -24,6 +24,18 @@ namespace UnityEditor
             //TODO: find a better approach instead of getting the whole list everyframe.
             m_ClipList.Clear();
             GUIViewDebuggerHelper.GetClipInstructions(m_ClipList);
+        }
+
+        public override void ShowOverlay()
+        {
+            if (!isInstructionSelected)
+            {
+                debuggerWindow.CloseInstructionOverlayWindow();
+                return;
+            }
+
+            var clipInstruction = m_ClipList[listViewState.row];
+            debuggerWindow.HighlightInstruction(debuggerWindow.inspected, clipInstruction.unclippedScreenRect, GUIStyle.none);
         }
 
         protected override int GetInstructionCount()
@@ -41,26 +53,21 @@ namespace UnityEditor
             var rect = el.position;
             rect.xMin += clipInstruction.level * 12;
 
-            GUIViewDebuggerWindow.s_Styles.listItemBackground.Draw(el.position, false, false, m_ListViewState.row == el.row, false);
-            GUIViewDebuggerWindow.s_Styles.listItem.Draw(rect, tempContent, id, m_ListViewState.row == el.row);
-        }
-
-        internal override void OnDoubleClickInstruction(int index)
-        {
-            throw new NotImplementedException();
+            GUIViewDebuggerWindow.styles.listItemBackground.Draw(el.position, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
         }
 
         protected override void DrawInspectedStacktrace()
         {
-            var clipInstruction = m_ClipList[m_ListViewState.row];
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.s_Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            var clipInstruction = m_ClipList[listViewState.row];
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
             DrawStackFrameList(clipInstruction.pushStacktrace);
             EditorGUILayout.EndScrollView();
         }
 
-        internal override void DoDrawSelectedInstructionDetails(int index)
+        internal override void DoDrawSelectedInstructionDetails(int selectedInstructionIndex)
         {
-            var clipInstruction = m_ClipList[index];
+            var clipInstruction = m_ClipList[selectedInstructionIndex];
 
             GUILayout.Label("RenderOffset:");
             GUILayout.Label(clipInstruction.renderOffset.ToString());
@@ -70,21 +77,6 @@ namespace UnityEditor
             GUILayout.Label(clipInstruction.screenRect.ToString());
             GUILayout.Label("scrollOffset:");
             GUILayout.Label(clipInstruction.scrollOffset.ToString());
-        }
-
-        internal override void OnSelectedInstructionChanged(int index)
-        {
-            m_ListViewState.row = index;
-            ShowOverlay();
-        }
-
-        public override void ShowOverlay()
-        {
-            if (!HasSelectedinstruction())
-                return;
-
-            var clipInstruction = m_ClipList[m_ListViewState.row];
-            m_GuiViewDebuggerWindow.HighlightInstruction(m_GuiViewDebuggerWindow.m_Inspected, clipInstruction.unclippedScreenRect, GUIStyle.none);
         }
 
         internal override string GetInstructionListName(int index)
@@ -102,7 +94,18 @@ namespace UnityEditor
             return methodName;
         }
 
-        private int GetInterestingFrameIndex(StackFrame[] stacktrace)
+        internal override void OnDoubleClickInstruction(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void OnSelectedInstructionChanged(int index)
+        {
+            listViewState.row = index;
+            ShowOverlay();
+        }
+
+        int GetInterestingFrameIndex(StackFrame[] stacktrace)
         {
             string currentProjectPath = Application.dataPath;
 

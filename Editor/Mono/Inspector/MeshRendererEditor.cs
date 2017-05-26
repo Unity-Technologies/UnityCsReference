@@ -109,6 +109,8 @@ namespace UnityEditor
                 }
             }
 
+            CullDynamicFieldGUI();
+
             serializedObject.ApplyModifiedProperties();
         }
     }

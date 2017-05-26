@@ -465,16 +465,17 @@ namespace UnityEditor.IMGUI.Controls
                 m_ExpansionAnimator.OnRowGUI(row);
             gui.OnRowGUI(rowRect, item, row, selected, hasFocus);
 
-            // 3. After row GUI
-            if (animatingExpansion)
-                m_ExpansionAnimator.OnEndRowGUI(row);
-
+            // 3. Draw extra gui callbacks
             if (onGUIRowCallback != null)
             {
                 float indent = gui.GetContentIndent(item);
                 Rect indentedRect = new Rect(rowRect.x + indent, rowRect.y, rowRect.width - indent, rowRect.height);
                 onGUIRowCallback(item.id, indentedRect);
             }
+
+            // 4. After row GUI
+            if (animatingExpansion)
+                m_ExpansionAnimator.OnEndRowGUI(row);
 
             HandleUnusedMouseEventsForItem(rowRect, item, row);
         }

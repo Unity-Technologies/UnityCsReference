@@ -22,7 +22,6 @@ namespace UnityEditor
         const double k_FetchDelta = 0.1; // How much time between long fetches is acceptable.
         const int k_MaxDelayedFetch = 5; // How many consecutive fetches can be delayed.
         const HierarchyType k_HierarchyType = HierarchyType.GameObjects;
-        readonly int kGameObjectClassID = UnityType.FindTypeByName("GameObject").persistentTypeID;
         const int k_DefaultStartCapacity = 1000;
 
         int m_RootInstanceID;
@@ -119,7 +118,7 @@ namespace UnityEditor
         private bool IsValidHierarchyInstanceID(int instanceID)
         {
             bool isScene = SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID));
-            bool isGameObject = InternalEditorUtility.GetClassIDWithoutLoadingObject(instanceID) == kGameObjectClassID;
+            bool isGameObject = InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject);
             return isScene || isGameObject;
         }
 

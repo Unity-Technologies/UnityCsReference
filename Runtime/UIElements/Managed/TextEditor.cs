@@ -15,35 +15,34 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override Rect localPosition { get { return new Rect(0, 0, position.width, position.height); } }
 
-        // Default manipulator implementation
-        public VisualElement target { get; set; }
-        public EventPhase phaseInterest { get; set; }
-        public IPanel panel
+        protected virtual void RegisterCallbacksOnTarget() {}
+        protected virtual void UnregisterCallbacksFromTarget() {}
+
+        VisualElement m_Target;
+
+        public VisualElement target
         {
             get
             {
-                if (target != null)
-                    return target.panel;
-                return null;
+                return m_Target;
             }
-        }
 
-        public virtual EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
-        {
-            return EventPropagation.Continue;
-        }
-
-        public virtual void OnLostCapture()
-        {
-        }
-
-        public virtual void OnLostKeyboardFocus()
-        {
+            set
+            {
+                if (target != null)
+                {
+                    UnregisterCallbacksFromTarget();
+                }
+                m_Target = value;
+                if (target != null)
+                {
+                    RegisterCallbacksOnTarget();
+                }
+            }
         }
 
         protected TextEditor(TextField textField)
         {
-            phaseInterest = EventPhase.BubbleUp;
             this.textField = textField;
             SyncTextEditor();
         }

@@ -464,8 +464,7 @@ namespace UnityEditor
 
         protected override void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow view)
         {
-            if (menu.GetItemCount() != 0)
-                menu.AddSeparator("");
+            base.AddDefaultItemsToMenu(menu, view);
 
             if (parent.window.showMode == ShowMode.MainWindow)
                 menu.AddItem(EditorGUIUtility.TextContent("Maximize"), !(parent is SplitView), Maximize, view);
@@ -771,16 +770,10 @@ namespace UnityEditor
                 m_BorderSize.right += (int)kSideBorders;
             }
 
-            m_BorderSize.top = (int)kTabHeight + 2;
-
-            // Aras: I don't really know why, but this makes GUI be actually correct.
-            bool touchesTop = windowPosition.y == 0;
-            bool touchesBottom = r.yMax == window.position.height;
-            m_BorderSize.bottom = 2;
-            if (touchesBottom)
-                m_BorderSize.bottom -= 2;
-            if (touchesTop)
-                m_BorderSize.bottom += 3;
+            const int mainWindowTopAdjustment = 2;
+            const int floatingWindowTopAdjustment = 5;
+            m_BorderSize.top = (int)kTabHeight + (window != null && window.showMode != ShowMode.MainWindow ? floatingWindowTopAdjustment : mainWindowTopAdjustment);
+            m_BorderSize.bottom = (window != null && window.showMode != ShowMode.MainWindow ? 0 : (int)kBottomBorders);
 
             return m_BorderSize;
         }
@@ -842,12 +835,11 @@ namespace UnityEditor
             WindowLayout.Unmaximize(ew);
         }
 
-        protected override void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow view)
+        protected override void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)
         {
-            if (menu.GetItemCount() != 0)
-                menu.AddSeparator("");
+            base.AddDefaultItemsToMenu(menu, window);
 
-            menu.AddItem(EditorGUIUtility.TextContent("Maximize"), !(parent is SplitView), Unmaximize, view);
+            menu.AddItem(EditorGUIUtility.TextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
             menu.AddDisabledItem(EditorGUIUtility.TextContent("Close Tab"));
             menu.AddSeparator("");
             System.Type[] types = GetPaneTypes();

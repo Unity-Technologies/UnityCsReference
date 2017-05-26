@@ -88,7 +88,7 @@ namespace UnityEditor
             public static GUIContent intensityText = new GUIContent("Intensity");
             public static GUIContent resolutionText = new GUIContent("Resolution");
             public static GUIContent captureCubemapHeaderText = new GUIContent("Cubemap capture settings");
-            public static GUIContent boxProjectionText = new GUIContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away.");
+            public static GUIContent boxProjectionText = new GUIContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away. Note that this feature can be globally disabled from Graphics Settings -> Tier Settings");
             public static GUIContent blendDistanceText = new GUIContent("Blend Distance", "Area around the probe where it is blended with other probes. Only used in deferred probes.");
             public static GUIContent sizeText = EditorGUIUtility.TextContent("Box Size|The size of the box in which the reflections will be applied to objects. The value is not affected by the Transform of the Game Object.");
             public static GUIContent centerText = EditorGUIUtility.TextContent("Box Offset|The center of the box in which the reflections will be applied to objects. The value is relative to the position of the Game Object.");
@@ -344,7 +344,7 @@ namespace UnityEditor
             var oldEditMode = EditMode.editMode;
 
             EditorGUI.BeginChangeCheck();
-            EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, GetBounds(), this);
+            EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, this);
             if (EditorGUI.EndChangeCheck())
                 s_LastInteractedEditor = this;
 
@@ -435,7 +435,19 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_Importance, Styles.importanceText);
                 EditorGUILayout.PropertyField(m_IntensityMultiplier, Styles.intensityText);
-                EditorGUILayout.PropertyField(m_BoxProjection, Styles.boxProjectionText);
+
+                if (Rendering.EditorGraphicsSettings.GetCurrentTierSettings().reflectionProbeBoxProjection == false)
+                {
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.Toggle(Styles.boxProjectionText, false);
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(m_BoxProjection, Styles.boxProjectionText);
+                }
+
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
                 bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
                 using (new EditorGUI.DisabledScope(!isDeferredReflections))
@@ -499,14 +511,9 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private Bounds GetBounds()
+        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
         {
-            if (target is ReflectionProbe)
-            {
-                ReflectionProbe probe = (ReflectionProbe)target;
-                return probe.bounds;
-            }
-            return new Bounds();
+            return ((ReflectionProbe)targetObject).bounds;
         }
 
         bool ValidPreviewSetup()

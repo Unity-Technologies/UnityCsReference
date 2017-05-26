@@ -24,6 +24,15 @@ namespace UnityEditor.Web
             return kServiceDisplayName;
         }
 
+        public void ShowBuildForCommit(string commitId)
+        {
+            ShowServicePage();
+
+            string eventCmd = string.Format("window.unityEvents ? window.unityEvents.broadcast('build.showForCommit', '{0}'): '';", commitId);
+            var webview = GetWebView();
+            webview.ExecuteJavascript(eventCmd);
+        }
+
         static BuildAccess()
         {
             var serviceData = new UnityConnectServiceData(kServiceName, kServiceUrl, new BuildAccess(), "unity/project/cloud/build");

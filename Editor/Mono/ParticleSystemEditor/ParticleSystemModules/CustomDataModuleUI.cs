@@ -17,14 +17,14 @@ namespace UnityEditor
         SerializedProperty[] m_VectorComponentCount = new SerializedProperty[k_NumCustomDataStreams];
         SerializedMinMaxCurve[,] m_Vectors = new SerializedMinMaxCurve[k_NumCustomDataStreams, k_NumChannelsPerStream];
         SerializedMinMaxGradient[] m_Colors = new SerializedMinMaxGradient[k_NumCustomDataStreams];
+        SerializedProperty[,] m_VectorLabels = new SerializedProperty[k_NumCustomDataStreams, k_NumChannelsPerStream];
+        SerializedProperty[] m_ColorLabels = new SerializedProperty[k_NumCustomDataStreams];
 
         class Texts
         {
             public GUIContent mode = EditorGUIUtility.TextContent("Mode|Select the type of data to populate this stream with.");
             public GUIContent vectorComponentCount = EditorGUIUtility.TextContent("Number of Components|How many of the components (XYZW) to fill.");
-            public GUIContent color = EditorGUIUtility.TextContent("Color");
             public string[] modes = { "Disabled", "Vector", "Color" };
-            public GUIContent[] components = { EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W") };
         }
         static Texts s_Texts;
 
@@ -48,8 +48,12 @@ namespace UnityEditor
                 m_Modes[i] = GetProperty("mode" + i);
                 m_VectorComponentCount[i] = GetProperty("vectorComponentCount" + i);
                 m_Colors[i] = new SerializedMinMaxGradient(this, "color" + i);
+                m_ColorLabels[i] = GetProperty("colorLabel" + i);
                 for (int j = 0; j < k_NumChannelsPerStream; j++)
-                    m_Vectors[i, j] = new SerializedMinMaxCurve(this, s_Texts.components[j], "vector" + i + "_" + j, kUseSignedRange);
+                {
+                    m_Vectors[i, j] = new SerializedMinMaxCurve(this, null, "vector" + i + "_" + j, kUseSignedRange);
+                    m_VectorLabels[i, j] = GetProperty("vectorLabel" + i + "_" + j);
+                }
             }
         }
 
@@ -67,11 +71,13 @@ namespace UnityEditor
                 {
                     int vectorComponentCount = Mathf.Min(GUIInt(s_Texts.vectorComponentCount, m_VectorComponentCount[i]), k_NumChannelsPerStream);
                     for (int j = 0; j < vectorComponentCount; j++)
-                        GUIMinMaxCurve(s_Texts.components[j], m_Vectors[i, j]);
+                    {
+                        GUIMinMaxCurve(m_VectorLabels[i, j], m_Vectors[i, j]);
+                    }
                 }
                 else if (mode == Mode.Color)
                 {
-                    GUIMinMaxGradient(s_Texts.color, m_Colors[i], true);
+                    GUIMinMaxGradient(m_ColorLabels[i], m_Colors[i], true);
                 }
 
                 GUILayout.EndVertical();

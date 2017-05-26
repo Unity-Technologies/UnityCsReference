@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -144,10 +145,18 @@ namespace UnityEditor
             EditorWindow.GetWindow<BuildPlayerWindow>(true, "Build Settings");
         }
 
-        // This overload is used by the Build & Run menu item & hot key - does not prompt for build location
+        static bool BuildLocationIsValid(string path)
+        {
+            return path.Length > 0 && System.IO.Directory.Exists(FileUtil.DeleteLastPathNameComponent(path));
+        }
+
+        // This overload is used by the Build & Run menu item & hot key - prompt for location only if the configured
+        // output location is not valid.
         static void BuildPlayerAndRun()
         {
-            BuildPlayerAndRun(false);
+            var buildTarget = CalculateSelectedBuildTarget();
+            var buildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
+            BuildPlayerAndRun(!BuildLocationIsValid(buildLocation));
         }
 
         // This overload is used by the default player window, to always prompt for build location
@@ -294,9 +303,11 @@ namespace UnityEditor
                         if (scenes.Any(s => s.path == scenePath))
                             continue;
 
-                        EditorBuildSettingsScene newScene = new EditorBuildSettingsScene();
-                        newScene.path = scenePath;
-                        newScene.enabled = true;
+                        GUID newGUID;
+                        GUID.TryParse(AssetDatabase.AssetPathToGUID(scenePath), out newGUID);
+                        var newScene = (newGUID == default(GUID)) ?
+                            new EditorBuildSettingsScene(scenePath, true) :
+                            new EditorBuildSettingsScene(newGUID, true);
                         scenes.Insert(lv.draggedTo + (k++), newScene);
                     }
                 }
@@ -571,7 +582,7 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            GUILayout.BeginHorizontal(GUILayout.Height(301));
+            GUILayout.BeginHorizontal(GUILayout.Height(351));
             ActiveBuildTargetsGUI();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
@@ -644,73 +655,62 @@ namespace UnityEditor
             }
         }
 
-        public static string GetPlaybackEngineDownloadURL(string moduleName)
+        // Major.Minor.Micro followed by one of abxfp followed by an identifier, optionally suffixed with " (revisionhash)"
+        static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
+                RegexOptions.Compiled);
+        static Dictionary<string, string> s_ModuleNames = new Dictionary<string, string>()
         {
-            string fullVersion = InternalEditorUtility.GetUnityVersionFull();
-            string revision = "";
-            string shortVersion = "";
-
-            int idx = fullVersion.LastIndexOf('_');
-            if (idx != -1)
-            {
-                revision = fullVersion.Substring(idx + 1);
-                shortVersion = fullVersion.Substring(0, idx);
-            }
-
+            { "SamsungTV", "Samsung-TV" },
+            { "tvOS", "AppleTV" },
+            { "OSXStandalone", "Mac" },
+            { "WindowsStandalone", "Windows" },
+            { "LinuxStandalone", "Linux" },
+            { "Facebook", "Facebook-Games"}
+        };
+        static public string GetPlaybackEngineDownloadURL(string moduleName)
+        {
             if (moduleName == "PS4" || moduleName == "PSP2" || moduleName == "XboxOne")
                 return "https://unity3d.com/platform-installation";
 
-            var moduleNames = new Dictionary<string, string>()
-            {
-                { "SamsungTV", "Samsung-TV" },
-                { "tvOS", "AppleTV" },
-                { "OSXStandalone", "Mac" },
-                { "WindowsStandalone", "Windows" },
-                { "LinuxStandalone", "Linux" },
-                { "Facebook", "Facebook-Games"}
-            };
+            string fullVersion = InternalEditorUtility.GetFullUnityVersion();
+            string revision = "";
+            string shortVersion = "";
+            Match versionMatch = s_VersionPattern.Match(fullVersion);
+            if (!versionMatch.Success || !versionMatch.Groups["shortVersion"].Success || !versionMatch.Groups["suffix"].Success)
+                Debug.LogWarningFormat("Error parsing version '{0}'", fullVersion);
 
-            if (moduleNames.ContainsKey(moduleName))
-            {
-                moduleName = moduleNames[moduleName];
-            }
+            if (versionMatch.Groups["shortVersion"].Success)
+                shortVersion = versionMatch.Groups["shortVersion"].Value;
+            if (versionMatch.Groups["revision"].Success)
+                revision = versionMatch.Groups["revision"].Value;
 
-            string prefix = "Unknown";
-            string suffix = "Unknown";
+            if (s_ModuleNames.ContainsKey(moduleName))
+                moduleName = s_ModuleNames[moduleName];
+
+            string prefix = "download";
+            string suffix = "download_unity";
             string folder = "Unknown";
+            string extension = string.Empty;
 
-            if (shortVersion.IndexOf('a') != -1 || shortVersion.IndexOf('b') != -1)
+            if (versionMatch.Groups["alphabeta"].Success)
             {
+                // These releases are hosted on the beta site
                 prefix = "beta";
                 suffix = "download";
-            }
-            else
-            {
-                prefix = "download";
-                suffix = "download_unity";
             }
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 folder = "TargetSupportInstaller";
+                extension = ".exe";
             }
             else if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 folder = "MacEditorTargetInstaller";
+                extension = ".pkg";
             }
 
-            string url = "http://" + prefix + ".unity3d.com/" + suffix + "/" + revision + "/" + folder + "/UnitySetup-" + moduleName + "-Support-for-Editor-" + shortVersion;
-
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                url += ".exe";
-            }
-            else if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                url += ".pkg";
-            }
-
-            return url;
+            return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }
 
         bool IsModuleInstalled(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
@@ -942,6 +942,9 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
+            if (buildTarget == BuildTarget.Android)
+                AndroidPublishGUI();
 
             GUIBuildButtons(buildWindowExtension, enableBuildButton, enableBuildAndRunButton,
                 canInstallInBuildFolder, platform);

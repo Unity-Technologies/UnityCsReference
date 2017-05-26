@@ -20,7 +20,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TextContent("Global Illumination|Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
             public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TextContent("Baked"), EditorGUIUtility.TextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
-            public static string propBlockWarning = EditorGUIUtility.TextContent("MaterialPropertyBlock is used to modify these values").text;
+            public static string propBlockInfo = EditorGUIUtility.TextContent("MaterialPropertyBlock is used to modify these values").text;
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
@@ -1417,6 +1417,7 @@ namespace UnityEditor
         {
             if (shader == null || string.IsNullOrEmpty(shader.customEditor))
             {
+                m_CustomEditorClassName = "";
                 m_CustomShaderGUI = null;
                 return;
             }
@@ -1470,7 +1471,7 @@ namespace UnityEditor
                     }
 
                     if (m_PropertyBlock != null && !m_PropertyBlock.isEmpty)
-                        EditorGUILayout.HelpBox(Styles.propBlockWarning, MessageType.Warning);
+                        EditorGUILayout.HelpBox(Styles.propBlockInfo, MessageType.Info);
                 }
             }
             catch (Exception)
@@ -1549,7 +1550,7 @@ namespace UnityEditor
 
         private UnityEngine.Rendering.TextureDimension m_DesiredTexdim;
 
-        private Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property)
+        private Object TextureValidator(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
         {
             foreach (Object i in references)
             {
@@ -1802,6 +1803,8 @@ namespace UnityEditor
 
         public virtual void OnEnable()
         {
+            if (!target)
+                return;
             m_Shader = serializedObject.FindProperty("m_Shader").objectReferenceValue as Shader;
             m_CustomEditorClassName = "";
             CreateCustomShaderEditorIfNeeded(m_Shader);

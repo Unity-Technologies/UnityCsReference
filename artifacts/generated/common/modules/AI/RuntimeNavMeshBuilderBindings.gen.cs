@@ -23,10 +23,12 @@ public partial struct NavMeshBuildSettings
             public float agentHeight { get { return m_AgentHeight; } set { m_AgentHeight = value; } }
             public float agentSlope { get { return m_AgentSlope; } set { m_AgentSlope = value; } }
             public float agentClimb { get { return m_AgentClimb; } set { m_AgentClimb = value; } }
+            public float minRegionArea { get { return m_MinRegionArea; } set { m_MinRegionArea = value; } }
             public bool overrideVoxelSize { get { return m_OverrideVoxelSize != 0; } set { m_OverrideVoxelSize = value ? 1 : 0; } }
             public float voxelSize { get { return m_VoxelSize; } set { m_VoxelSize = value; } }
             public bool overrideTileSize { get { return m_OverrideTileSize != 0; } set { m_OverrideTileSize = value ? 1 : 0; } }
             public int tileSize { get { return m_TileSize; } set { m_TileSize = value; } }
+            public NavMeshBuildDebugSettings debug { get { return m_Debug; } set { m_Debug = value; } }
     
             private int m_AgentTypeID;
             private float m_AgentRadius;
@@ -35,13 +37,13 @@ public partial struct NavMeshBuildSettings
             private float m_AgentClimb;
             private float m_LedgeDropHeight;    
             private float m_MaxJumpAcrossDistance; 
-            private float m_MinRegionArea;      
+            private float m_MinRegionArea;
             private int m_OverrideVoxelSize;
             private float m_VoxelSize;
             private int m_OverrideTileSize;
             private int m_TileSize;
             private int m_AccuratePlacement;    
-    
+            private NavMeshBuildDebugSettings m_Debug;
     
     
     public String[] ValidationReport(Bounds buildBounds)
@@ -59,28 +61,26 @@ public partial struct NavMeshBuildSettings
     private extern static String[] INTERNAL_CALL_InternalValidationReport (ref NavMeshBuildSettings buildSettings, ref Bounds buildBounds);
 }
 
-[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-internal partial struct NavMeshBuildDebugSettings
+[Flags]
+public enum NavMeshBuildDebugFlags
 {
-            public bool showInputGeom { get { return m_ShowInputGeom != 0; } set { m_ShowInputGeom = value ? 1 : 0; } }
-            public bool showVoxels { get { return m_ShowVoxels != 0; } set { m_ShowVoxels = value ? 1 : 0; } }
-            public bool showRegions { get { return m_ShowRegions != 0; } set { m_ShowRegions = value ? 1 : 0; } }
-            public bool showRawContours { get { return m_ShowRawContours != 0; } set { m_ShowRawContours = value ? 1 : 0; } }
-            public bool showContours { get { return m_ShowContours != 0; } set { m_ShowContours = value ? 1 : 0; } }
-            public bool showPolyMesh { get { return m_ShowPolyMesh != 0; } set { m_ShowPolyMesh = value ? 1 : 0; } }
-            public bool showPolyMeshDetail { get { return m_ShowPolyMeshDetail != 0; } set { m_ShowPolyMeshDetail = value ? 1 : 0; } }
-            public bool useFocus { get { return m_UseFocus != 0; } set { m_UseFocus = value ? 1 : 0; } }
-            public Vector3 focusPoint { get { return m_FocusPoint; } set { m_FocusPoint = value; } }
+    None = 0,
+    InputGeometry = 1 << 0,
+    Voxels = 1 << 1,
+    Regions = 1 << 2,
+    RawContours = 1 << 3,
+    SimplifiedContours = 1 << 4,
+    PolygonMeshes = 1 << 5,
+    PolygonMeshesDetail = 1 << 6,
+    All = unchecked((int)(~(~0U << 7)))
+}
+
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct NavMeshBuildDebugSettings
+{
+            public NavMeshBuildDebugFlags flags { get { return (NavMeshBuildDebugFlags)m_Flags; } set { m_Flags = (byte)value; } }
     
-            private int m_ShowInputGeom;
-            private int m_ShowVoxels;
-            private int m_ShowRegions;
-            private int m_ShowRawContours;
-            private int m_ShowContours;
-            private int m_ShowPolyMesh;
-            private int m_ShowPolyMeshDetail;
-            private int m_UseFocus;
-            private Vector3 m_FocusPoint;
+            private byte m_Flags;
 }
 
 public enum NavMeshBuildSourceShape
@@ -185,19 +185,10 @@ public static partial class NavMeshBuilder
         {
             if (sources == null) throw new ArgumentNullException("sources");
 
-            var debug = new NavMeshBuildDebugSettings();
-            return BuildNavMeshData(buildSettings, sources, localBounds, position, rotation, debug);
-        }
-    
-    
-    private static NavMeshData BuildNavMeshData(NavMeshBuildSettings buildSettings, List<NavMeshBuildSource> sources, Bounds localBounds, Vector3 position, Quaternion rotation, NavMeshBuildDebugSettings debug)
-        {
-            if (sources == null) throw new ArgumentNullException("sources");
-
             var data = new NavMeshData(buildSettings.agentTypeID);
             data.position = position;
             data.rotation = rotation;
-            UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds, debug);
+            UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds);
             return data;
         }
     
@@ -207,43 +198,23 @@ public static partial class NavMeshBuilder
             if (data == null) throw new ArgumentNullException("data");
             if (sources == null) throw new ArgumentNullException("sources");
 
-            var debug = new NavMeshBuildDebugSettings();
-            return UpdateNavMeshData(data, buildSettings, sources, localBounds, debug);
+            return UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds);
         }
     
     
-    private static bool UpdateNavMeshData(NavMeshData data, NavMeshBuildSettings buildSettings, List<NavMeshBuildSource> sources, Bounds localBounds, NavMeshBuildDebugSettings debug)
-        {
-            if (data == null) throw new ArgumentNullException("data");
-            if (sources == null) throw new ArgumentNullException("sources");
-
-            return UpdateNavMeshDataListInternal(data, buildSettings, sources, localBounds, debug);
-        }
-    
-    
-    private static bool UpdateNavMeshDataListInternal (NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds, NavMeshBuildDebugSettings debug) {
-        return INTERNAL_CALL_UpdateNavMeshDataListInternal ( data, ref buildSettings, sources, ref localBounds, ref debug );
+    private static bool UpdateNavMeshDataListInternal (NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds) {
+        return INTERNAL_CALL_UpdateNavMeshDataListInternal ( data, ref buildSettings, sources, ref localBounds );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_UpdateNavMeshDataListInternal (NavMeshData data, ref NavMeshBuildSettings buildSettings, object sources, ref Bounds localBounds, ref NavMeshBuildDebugSettings debug);
+    private extern static bool INTERNAL_CALL_UpdateNavMeshDataListInternal (NavMeshData data, ref NavMeshBuildSettings buildSettings, object sources, ref Bounds localBounds);
     public static AsyncOperation UpdateNavMeshDataAsync(NavMeshData data, NavMeshBuildSettings buildSettings, List<NavMeshBuildSource> sources, Bounds localBounds)
         {
             if (data == null) throw new ArgumentNullException("data");
             if (sources == null) throw new ArgumentNullException("sources");
 
-            var debug = new NavMeshBuildDebugSettings();
-            return UpdateNavMeshDataAsync(data, buildSettings, sources, localBounds, debug);
-        }
-    
-    
-    private static AsyncOperation UpdateNavMeshDataAsync(NavMeshData data, NavMeshBuildSettings buildSettings, List<NavMeshBuildSource> sources, Bounds localBounds, NavMeshBuildDebugSettings debug)
-        {
-            if (data == null) throw new ArgumentNullException("data");
-            if (sources == null) throw new ArgumentNullException("sources");
-
-            return UpdateNavMeshDataAsyncListInternal(data, buildSettings, sources, localBounds, debug);
+            return UpdateNavMeshDataAsyncListInternal(data, buildSettings, sources, localBounds);
         }
     
     
@@ -251,13 +222,13 @@ public static partial class NavMeshBuilder
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Cancel (NavMeshData data) ;
 
-    private static AsyncOperation UpdateNavMeshDataAsyncListInternal (NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds, NavMeshBuildDebugSettings debug) {
-        return INTERNAL_CALL_UpdateNavMeshDataAsyncListInternal ( data, ref buildSettings, sources, ref localBounds, ref debug );
+    private static AsyncOperation UpdateNavMeshDataAsyncListInternal (NavMeshData data, NavMeshBuildSettings buildSettings, object sources, Bounds localBounds) {
+        return INTERNAL_CALL_UpdateNavMeshDataAsyncListInternal ( data, ref buildSettings, sources, ref localBounds );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static AsyncOperation INTERNAL_CALL_UpdateNavMeshDataAsyncListInternal (NavMeshData data, ref NavMeshBuildSettings buildSettings, object sources, ref Bounds localBounds, ref NavMeshBuildDebugSettings debug);
+    private extern static AsyncOperation INTERNAL_CALL_UpdateNavMeshDataAsyncListInternal (NavMeshData data, ref NavMeshBuildSettings buildSettings, object sources, ref Bounds localBounds);
 }
 
 }

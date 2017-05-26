@@ -276,6 +276,7 @@ namespace UnityEditor
         {
             return name.StartsWith("System")
                 || name.Equals("UnityEngine")
+                || (name.StartsWith("UnityEngine.") && name.EndsWith("Module"))
                 || name.Equals("UnityEngine.Networking")
                 || name.Equals("Mono.Posix")
                 || name.Equals("Moq");

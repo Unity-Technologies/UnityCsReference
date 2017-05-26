@@ -804,6 +804,21 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetUseDefaultGraphicsAPIs (BuildTarget platform, bool automatic) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  ColorGamut[] GetColorGamuts () ;
+
+    internal static void SetColorGamuts(ColorGamut[] colorSpaces)
+        {
+            SetColorGamutsImpl(colorSpaces);
+            PlayerSettingsEditor.SyncColorGamuts();
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void SetColorGamutsImpl (ColorGamut[] colorSpaces) ;
+
     internal extern static string webPlayerTemplate
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

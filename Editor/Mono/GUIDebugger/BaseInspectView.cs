@@ -12,15 +12,18 @@ namespace UnityEditor
         void UpdateInstructions();
         void DrawInstructionList();
         void DrawSelectedInstructionDetails();
-        void Unselect();
-        void SelectRow(int index);
         void ShowOverlay();
+        void SelectRow(int index);
+        void ClearRowSelection();
     }
 
     internal abstract class BaseInspectView : IBaseInspectView
     {
-        private class Styles
+        class Styles
         {
+            public GUIContent instructionsLabel = new GUIContent("Instructions");
+            public GUIContent emptyViewLabel = new GUIContent("Select an Instruction on the left to see details");
+
             public GUIStyle centeredLabel = new GUIStyle("PR Label");
 
             public Styles()
@@ -31,73 +34,63 @@ namespace UnityEditor
             }
         }
 
-        private Styles m_Styles;
-        private Styles styles
-        {
-            get
-            {
-                if (m_Styles == null)
-                    m_Styles = new Styles();
-                return m_Styles;
-            }
-        }
+        static Styles styles { get { return s_Styles = s_Styles == null ? new Styles() : s_Styles; } }
+        static Styles s_Styles;
 
-        protected GUIViewDebuggerWindow m_GuiViewDebuggerWindow;
-        [NonSerialized] public readonly ListViewState m_ListViewState = new ListViewState();
+        protected ListViewState listViewState { get { return m_ListViewState; } }
+        [NonSerialized]
+        readonly ListViewState m_ListViewState = new ListViewState();
 
-        protected Vector2 m_InstructionDetailsScrollPos = new Vector2();
-        protected readonly SplitterState m_InstructionDetailStacktraceSplitter = new SplitterState(new float[] { 80, 20 }, new int[] { 100, 100 }, null);
+        protected GUIViewDebuggerWindow debuggerWindow { get { return m_DebuggerWindow; } }
+        GUIViewDebuggerWindow m_DebuggerWindow;
+
+        Vector2 m_InstructionDetailsScrollPos = new Vector2();
+
+        readonly SplitterState m_InstructionDetailStacktraceSplitter = new SplitterState(new float[] { 80, 20 }, new int[] { 100, 100 }, null);
 
         public BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
         {
-            m_GuiViewDebuggerWindow = guiViewDebuggerWindow;
+            m_DebuggerWindow = guiViewDebuggerWindow;
         }
+
+        public abstract void UpdateInstructions();
 
         public virtual void DrawInstructionList()
         {
-            Event e = Event.current;
+            Event evt = Event.current;
             m_ListViewState.totalRows = GetInstructionCount();
 
-
-            EditorGUILayout.BeginVertical(GUIViewDebuggerWindow.s_Styles.listBackgroundStyle);
-            GUILayout.Label("Instructions");
-
+            EditorGUILayout.BeginVertical(GUIViewDebuggerWindow.styles.listBackgroundStyle);
+            GUILayout.Label(styles.instructionsLabel);
 
             int id = GUIUtility.GetControlID(FocusType.Keyboard);
-            foreach (ListViewElement el in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.s_Styles.listBackgroundStyle))
+            foreach (var element in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.styles.listBackgroundStyle))
             {
-                if (e.type == EventType.mouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
+                ListViewElement listViewElement = (ListViewElement)element;
+                if (evt.type == EventType.mouseDown && evt.button == 0 && listViewElement.position.Contains(evt.mousePosition))
                 {
-                    if (e.clickCount == 2)
+                    if (evt.clickCount == 2)
                     {
-                        OnDoubleClickInstruction(el.row);
+                        OnDoubleClickInstruction(listViewElement.row);
                     }
                 }
                 // Paint list view element
-                if (e.type == EventType.repaint)
+                if (evt.type == EventType.repaint && listViewElement.row < GetInstructionCount())
                 {
-                    DoDrawInstruction(el, id);
+                    DoDrawInstruction(listViewElement, id);
                 }
             }
             EditorGUILayout.EndVertical();
         }
 
-        public abstract void UpdateInstructions();
-
-        protected abstract int GetInstructionCount();
-
-        protected abstract void DoDrawInstruction(ListViewElement el, int controlId);
-
-        internal abstract string GetInstructionListName(int index);
-
-        internal abstract void OnDoubleClickInstruction(int index);
-
         public virtual void DrawSelectedInstructionDetails()
         {
             if (m_ListViewState.selectionChanged)
                 OnSelectedInstructionChanged(m_ListViewState.row);
+            else if (m_ListViewState.row >= GetInstructionCount())
+                OnSelectedInstructionChanged(-1);
 
-            if (!HasSelectedinstruction())
+            if (!isInstructionSelected)
             {
                 DoDrawNothingSelected();
                 return;
@@ -105,7 +98,7 @@ namespace UnityEditor
 
             SplitterGUILayout.BeginVerticalSplit(m_InstructionDetailStacktraceSplitter);
 
-            m_InstructionDetailsScrollPos = EditorGUILayout.BeginScrollView(m_InstructionDetailsScrollPos, GUIViewDebuggerWindow.s_Styles.boxStyle);
+            m_InstructionDetailsScrollPos = EditorGUILayout.BeginScrollView(m_InstructionDetailsScrollPos, GUIViewDebuggerWindow.styles.boxStyle);
 
             DoDrawSelectedInstructionDetails(m_ListViewState.row);
             EditorGUILayout.EndScrollView();
@@ -114,31 +107,7 @@ namespace UnityEditor
             SplitterGUILayout.EndVerticalSplit();
         }
 
-        protected abstract void DrawInspectedStacktrace();
-
-        internal abstract void DoDrawSelectedInstructionDetails(int index);
-
-        protected virtual bool HasSelectedinstruction()
-        {
-            return m_ListViewState.row >= 0;
-        }
-
-        protected virtual void DoDrawNothingSelected()
-        {
-            EditorGUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("Select a Instruction on the left to see details", GUIViewDebuggerWindow.s_Styles.centeredText);
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndVertical();
-        }
-
-        internal abstract void OnSelectedInstructionChanged(int newSelectionIndex);
-
-        public virtual void Unselect()
-        {
-            m_ListViewState.row = -1;
-            m_ListViewState.selectionChanged = true;
-        }
+        public abstract void ShowOverlay();
 
         public virtual void SelectRow(int index)
         {
@@ -146,7 +115,19 @@ namespace UnityEditor
             m_ListViewState.selectionChanged = true;
         }
 
-        public abstract void ShowOverlay();
+        public virtual void ClearRowSelection()
+        {
+            m_ListViewState.row = -1;
+            m_ListViewState.selectionChanged = true;
+        }
+
+        protected abstract int GetInstructionCount();
+
+        protected abstract void DoDrawInstruction(ListViewElement el, int controlId);
+
+        protected abstract void DrawInspectedStacktrace();
+
+        protected virtual bool isInstructionSelected { get { return m_ListViewState.row >= 0 && m_ListViewState.row < GetInstructionCount(); } }
 
         protected void DrawStackFrameList(StackFrame[] stackframes)
         {
@@ -157,7 +138,7 @@ namespace UnityEditor
                     if (string.IsNullOrEmpty(stackframe.sourceFile))
                         continue;
 
-                    GUILayout.Label(string.Format("{0} [{1}:{2}]", stackframe.signature, stackframe.sourceFile, stackframe.lineNumber), GUIViewDebuggerWindow.s_Styles.stackframeStyle);
+                    GUILayout.Label(string.Format("{0} [{1}:{2}]", stackframe.signature, stackframe.sourceFile, stackframe.lineNumber), GUIViewDebuggerWindow.styles.stackframeStyle);
                     //GUILayout.Label(string.Format("{0} - {1}", stackframe.methodName, stackframe.moduleName), stackframeStyle);
                 }
             }
@@ -204,7 +185,6 @@ namespace UnityEditor
                 height = EditorGUI.kSingleLineHeight
             };
 
-
             var widthFieldRect = widthMarkersArea;
             widthFieldRect.width = widthMarkersArea.width / 3;
             widthFieldRect.x = widthMarkersArea.x + (widthMarkersArea.width - widthFieldRect.width) / 2f;
@@ -241,7 +221,6 @@ namespace UnityEditor
 
             GUI.Label(widthFieldRect, instructionRect.width.ToString(), styles.centeredLabel);
 
-
             //Draw Height markers and value
             startP = new Vector3(heightMarkerArea.x, heightMarkerArea.y);
             endP = new Vector3(heightMarkerArea.xMax, heightMarkerArea.y);
@@ -263,9 +242,25 @@ namespace UnityEditor
 
             GUI.Label(endPointFieldRect, string.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), styles.centeredLabel);
 
-
             //Draws the rect
             GUI.Box(visualRect, GUIContent.none);
+        }
+
+        internal abstract void DoDrawSelectedInstructionDetails(int selectedInstructionIndex);
+
+        internal abstract string GetInstructionListName(int index);
+
+        internal abstract void OnDoubleClickInstruction(int index);
+
+        internal abstract void OnSelectedInstructionChanged(int newSelectionIndex);
+
+        void DoDrawNothingSelected()
+        {
+            EditorGUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(styles.emptyViewLabel, GUIViewDebuggerWindow.styles.centeredText);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndVertical();
         }
     }
 }

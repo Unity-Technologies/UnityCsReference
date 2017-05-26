@@ -120,8 +120,11 @@ namespace UnityEditorInternal
         internal static void GenerateInternalCallSummaryFile(string icallSummaryPath, string managedAssemblyFolderPath, string strippedDLLPath)
         {
             var exe = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Tools/InternalCallRegistrationWriter/InternalCallRegistrationWriter.exe");
-            var args = string.Format("-assembly=\"{0}\" -output=\"{1}\" -summary=\"{2}\"",
-                    Path.Combine(strippedDLLPath, "UnityEngine.dll"), Path.Combine(managedAssemblyFolderPath, "UnityICallRegistration.cpp"), icallSummaryPath
+            var dlls = Directory.GetFiles(strippedDLLPath, "UnityEngine.*Module.dll").Concat(new[] {Path.Combine(strippedDLLPath, "UnityEngine.dll")});
+            var args = string.Format("-output=\"{0}\" -summary=\"{1}\" -assembly=\"{2}\"",
+                    Path.Combine(managedAssemblyFolderPath, "UnityICallRegistration.cpp"),
+                    icallSummaryPath,
+                    dlls.Aggregate((dllArg, next) => dllArg + ";" + next)
                     );
             Runner.RunManagedProgram(exe, args);
         }

@@ -148,19 +148,17 @@ namespace UnityEditor
             if (!m_Instances.Contains(this))
                 m_Instances.Add(this);
 
-            EditorApplication.playmodeStateChanged += OnPlayModeChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
-            EditorApplication.playmodeStateChanged -= OnPlayModeChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
-        private void OnPlayModeChanged()
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            bool enteringPlaymode = !EditorApplication.isPlaying && EditorApplication.isPlayingOrWillChangePlaymode;
-
-            if (!enteringPlaymode)
+            if (state != PlayModeStateChange.ExitingEditMode)
                 return;
 
             if (!m_DirtyOrders)
@@ -170,7 +168,7 @@ namespace UnityEditor
                 Apply();
         }
 
-        static Object MonoScriptValidatorCallback(Object[] references, System.Type objType, SerializedProperty property)
+        static Object MonoScriptValidatorCallback(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
         {
             foreach (Object i in references)
             {

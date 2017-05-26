@@ -25,9 +25,9 @@ namespace UnityEditorInternal
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
-                        GUIUtility.hotControl = GUIUtility.keyboardControl = id;    // Grab mouse focus
+                        GUIUtility.hotControl = id;    // Grab mouse focus
                         s_CurrentMousePosition = s_StartMousePosition = evt.mousePosition;
                         s_StartScale = scale;
                         evt.Use();
@@ -53,12 +53,21 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+                case EventType.mouseMove:
+                    if (id == HandleUtility.nearestControl)
+                        HandleUtility.Repaint();
+                    break;
                 case EventType.repaint:
                     Color temp = Color.white;
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
+                    }
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    {
+                        temp = Handles.color;
+                        Handles.color = Handles.preselectionColor;
                     }
                     float s = size;
                     if (GUIUtility.hotControl == id)
@@ -68,7 +77,7 @@ namespace UnityEditorInternal
                     Handles.CubeHandleCap(id, position + direction * s * s_ScaleDrawLength, rotation, size * .1f, EventType.Repaint);
                     Handles.DrawLine(position, position + direction * (s * s_ScaleDrawLength - size * .05f));
 
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
                     break;
             }
@@ -90,9 +99,9 @@ namespace UnityEditorInternal
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
-                        GUIUtility.hotControl = GUIUtility.keyboardControl = id;     // Grab mouse focus
+                        GUIUtility.hotControl = id;     // Grab mouse focus
                         s_StartScale = value;
                         s_ValueDrag = 0;
                         evt.Use();
@@ -108,6 +117,10 @@ namespace UnityEditorInternal
                         GUI.changed = true;
                         evt.Use();
                     }
+                    break;
+                case EventType.mouseMove:
+                    if (id == HandleUtility.nearestControl)
+                        HandleUtility.Repaint();
                     break;
                 case EventType.keyDown:
                     if (GUIUtility.hotControl == id)
@@ -134,14 +147,19 @@ namespace UnityEditorInternal
                     break;
                 case EventType.repaint:
                     Color temp = Color.white;
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    {
+                        temp = Handles.color;
+                        Handles.color = Handles.preselectionColor;
+                    }
                     capFunc(id, position, rotation, size * .15f);
 
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
                     break;
             }
@@ -159,9 +177,9 @@ namespace UnityEditorInternal
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
-                    if ((HandleUtility.nearestControl == id && evt.button == 0) || (GUIUtility.keyboardControl == id && evt.button == 2))
+                    if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
-                        GUIUtility.hotControl = GUIUtility.keyboardControl = id;     // Grab mouse focus
+                        GUIUtility.hotControl = id;     // Grab mouse focus
                         s_StartScale = value;
                         s_ValueDrag = 0;
                         evt.Use();
@@ -201,16 +219,25 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
+                case EventType.mouseMove:
+                    if (id == HandleUtility.nearestControl)
+                        HandleUtility.Repaint();
+                    break;
                 case EventType.repaint:
                     Color temp = Color.white;
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
+                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    {
+                        temp = Handles.color;
+                        Handles.color = Handles.preselectionColor;
+                    }
                     capFunction(id, position, rotation, size * .15f, EventType.Repaint);
 
-                    if (id == GUIUtility.keyboardControl)
+                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
                     break;
             }

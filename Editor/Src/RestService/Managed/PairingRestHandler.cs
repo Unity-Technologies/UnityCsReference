@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace UnityEditor.RestService
 {
-    internal class PairingRestHandler : Handler
+    internal class PairingRestHandler : JSONHandler
     {
         protected override JSONValue HandlePost(Request request, JSONValue payload)
         {

@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.Collaboration;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -196,14 +195,13 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             s_ProjectBrowsers.Add(this);
             EditorApplication.projectWindowChanged += OnProjectChanged;
-            EditorApplication.playmodeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged += OnPauseStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.assetLabelsChanged += OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged += OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-            Collab.instance.StateChanged += OnCollabStateChanged;
             s_LastInteractedProjectBrowser = this;
 
-            Collab.instance.UpdateFavoriteSearchFilters();
             // Keep for debugging
             //EditorApplication.projectWindowItemOnGUI += TestProjectItemOverlayCallback;
         }
@@ -217,17 +215,21 @@ namespace UnityEditor
 
         void OnDisable()
         {
-            EditorApplication.playmodeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged -= OnPauseStateChanged;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.projectWindowChanged -= OnProjectChanged;
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
-            Collab.instance.StateChanged -= OnCollabStateChanged;
-            Collab.instance.UpdateFavoriteSearchFilters();
             s_ProjectBrowsers.Remove(this);
         }
 
-        void OnPlayModeStateChanged()
+        void OnPauseStateChanged(PauseState state)
+        {
+            EndRenaming();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             EndRenaming();
         }
@@ -247,21 +249,6 @@ namespace UnityEditor
             if (m_ListArea != null)
                 InitListArea();
         }
-
-        void OnCollabStateChanged(CollabInfo info)
-        {
-            if (!info.ready || info.inProgress || info.maintenance)
-                return;
-
-            if (Initialized())
-            {
-                if (m_SearchFilter.IsSearching())
-                {
-                    InitListArea();
-                }
-            }
-        }
-
 
         void Awake()
         {
@@ -456,6 +443,17 @@ namespace UnityEditor
             m_SearchFieldText = searchFilter.FilterToSearchFieldString();
 
             TopBarSearchSettingsChanged();
+        }
+
+        internal void RefreshSearchIfFilterContains(string searchString)
+        {
+            if (!Initialized() || !m_SearchFilter.IsSearching())
+                return;
+
+            if (m_SearchFieldText.IndexOf(searchString) >= 0)
+            {
+                InitListArea();
+            }
         }
 
         void SetSearchViewState(SearchViewState state)
@@ -1483,7 +1481,7 @@ namespace UnityEditor
                         {
                             Event.current.Use();
                             int[] copiedFolders = DuplicateFolders(instanceIDs);
-                            m_FolderTree.SetSelection(copiedFolders, true);
+                            SetFolderSelection(copiedFolders, true);
                             GUIUtility.ExitGUI();
                         }
                     }

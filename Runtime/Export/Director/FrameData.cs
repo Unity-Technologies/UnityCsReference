@@ -16,7 +16,9 @@ namespace UnityEngine.Playables
         internal enum Flags
         {
             Evaluate    = 1,
-            SeekOccured = 2
+            SeekOccured = 2,
+            Loop        = 4,
+            Hold        = 8
         }
 
         public enum EvaluationType
@@ -39,5 +41,7 @@ namespace UnityEngine.Playables
         public float effectiveSpeed             { get { return m_EffectiveSpeed; } }
         public EvaluationType evaluationType    { get { return ((m_Flags & Flags.Evaluate) != 0) ? EvaluationType.Evaluate : EvaluationType.Playback; } }
         public bool seekOccurred                { get { return (m_Flags & Flags.SeekOccured) != 0; } }
+        public bool timeLooped                  { get { return (m_Flags & Flags.Loop) != 0; } }
+        public bool timeHeld                    { get { return (m_Flags & Flags.Hold) != 0; } }
     }
 }

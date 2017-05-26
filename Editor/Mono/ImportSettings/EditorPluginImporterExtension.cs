@@ -29,6 +29,25 @@ namespace UnityEditor
             Linux
         };
 
+        internal class EditorProperty : Property
+        {
+            public EditorProperty(GUIContent name, string key, object defaultValue)
+                : base(name, key, defaultValue, BuildPipeline.GetEditorTargetName())
+            {
+            }
+
+            internal override void Reset(PluginImporterInspector inspector)
+            {
+                string valueString = inspector.importer.GetEditorData(key);
+                ParseStringValue(valueString);
+            }
+
+            internal override void Apply(PluginImporterInspector inspector)
+            {
+                inspector.importer.SetEditorData(key, value.ToString());
+            }
+        }
+
         EditorPluginCPUArchitecture cpu;
         EditorPluginOSArchitecture os;
 
@@ -40,8 +59,8 @@ namespace UnityEditor
         {
             return new[]
             {
-                new Property(EditorGUIUtility.TextContent("CPU|Is plugin compatible with 32bit or 64bit Editor?"), "CPU", EditorPluginCPUArchitecture.AnyCPU, BuildPipeline.GetEditorTargetName()),
-                new Property(EditorGUIUtility.TextContent("OS|Is plugin compatible with Windows, OS X or Linux Editor?"), "OS", EditorPluginOSArchitecture.AnyOS, BuildPipeline.GetEditorTargetName()),
+                new EditorProperty(EditorGUIUtility.TextContent("CPU|Is plugin compatible with 32bit or 64bit Editor?"), "CPU", EditorPluginCPUArchitecture.AnyCPU),
+                new EditorProperty(EditorGUIUtility.TextContent("OS|Is plugin compatible with Windows, OS X or Linux Editor?"), "OS", EditorPluginOSArchitecture.AnyOS),
             };
         }
     }

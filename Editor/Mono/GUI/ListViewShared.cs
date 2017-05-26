@@ -14,6 +14,7 @@ namespace UnityEditor
         public static bool OSX = Application.platform == RuntimePlatform.OSXEditor;
 
         internal static int dragControlID = -1;
+        internal static bool isDragging = false;
 
         /// *undocumented*
         internal class InternalListViewState
@@ -190,6 +191,7 @@ namespace UnityEditor
                 {
                     GUIUtility.hotControl = ilvState.state.ID;
                     GUIUtility.keyboardControl = ilvState.state.ID;
+                    ListViewShared.isDragging = false;
                     Event.current.Use();
                     return true;
                 }
@@ -385,7 +387,8 @@ namespace UnityEditor
                         }
                     }
                     // On Mouse drag, start drag & drop
-                    if ((ilvState.wantsReordering || ilvState.wantsToStartCustomDrag) &&
+                    if (!ListViewShared.isDragging &&
+                        (ilvState.wantsReordering || ilvState.wantsToStartCustomDrag) &&
                         GUIUtility.hotControl == ilvState.state.ID &&
                         Event.current.type == EventType.mouseDrag &&
                         GUIClip.visibleRect.Contains(Event.current.mousePosition))
@@ -409,6 +412,8 @@ namespace UnityEditor
                                 DragAndDrop.SetGenericData("CustomDragID", ilvState.state.ID);
                                 DragAndDrop.StartDrag(dragTitle);
                             }
+
+                            ListViewShared.isDragging = true;
                         }
 
                         Event.current.Use();

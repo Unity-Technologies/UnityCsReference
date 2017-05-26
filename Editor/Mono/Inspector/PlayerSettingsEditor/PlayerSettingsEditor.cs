@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Modules;
+using UnityEditor.Scripting.ScriptCompilation;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
 
@@ -110,6 +111,8 @@ namespace UnityEditor
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TextContent("Enable CrashReport API*");
             public static readonly GUIContent activeColorSpace = EditorGUIUtility.TextContent("Color Space*");
+            public static readonly GUIContent colorGamut = EditorGUIUtility.TextContent("Color Gamut*");
+            public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TextContent("Color Gamut For Mac*");
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TextContent("Metal Editor Support* (Experimental)");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TextContent("Metal API Validation*");
@@ -315,6 +318,13 @@ namespace UnityEditor
             if (!s_GraphicsDeviceLists.ContainsKey(target))
                 return;
             s_GraphicsDeviceLists[target].list = PlayerSettings.GetGraphicsAPIs(target).ToList();
+        }
+
+        static ReorderableList s_ColorGamutList;
+
+        public static void SyncColorGamuts()
+        {
+            s_ColorGamutList.list = PlayerSettings.GetColorGamuts().ToList();
         }
 
         public VR.PlayerSettingsEditorVR m_VRSettings;
@@ -1158,6 +1168,135 @@ namespace UnityEditor
             }
         }
 
+        // Contains information about color gamuts supported by each platform.
+        // If platform group is not in the dictionary, then it's assumed it supports only sRGB.
+        // Color gamut player setting is not displayed for such platforms.
+        //
+        // This information might be useful for users that use the color gamut APIs,
+        // we could expose it somehow
+        private static Dictionary<BuildTargetGroup, List<ColorGamut>> s_SupportedColorGamuts =
+            new Dictionary<BuildTargetGroup, List<ColorGamut>>
+        {
+            { BuildTargetGroup.Standalone, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.iOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } }
+        };
+
+        private static bool IsColorGamutSupportedOnTargetGroup(BuildTargetGroup targetGroup, ColorGamut gamut)
+        {
+            if (gamut == ColorGamut.sRGB)
+                return true;
+            if (s_SupportedColorGamuts.ContainsKey(targetGroup) &&
+                s_SupportedColorGamuts[targetGroup].Contains(gamut))
+                return true;
+            return false;
+        }
+
+        private static string GetColorGamutDisplayString(BuildTargetGroup targetGroup, ColorGamut gamut)
+        {
+            string name = gamut.ToString();
+            if (!IsColorGamutSupportedOnTargetGroup(targetGroup, gamut))
+                name += " (not supported on this platform)";
+            return name;
+        }
+
+        private void AddColorGamutElement(BuildTargetGroup targetGroup, Rect rect, ReorderableList list)
+        {
+            var availableColorGamuts = new ColorGamut[]
+            {
+                // Enable the gamuts when at least one platform supports them
+                ColorGamut.sRGB,
+                //ColorGamut.Rec709,
+                //ColorGamut.Rec2020,
+                ColorGamut.DisplayP3,
+                //ColorGamut.HDR10,
+                //ColorGamut.DolbyHDR
+            };
+
+            var names = new string[availableColorGamuts.Length];
+            var enabled = new bool[availableColorGamuts.Length];
+            for (int i = 0; i < availableColorGamuts.Length; ++i)
+            {
+                names[i] = GetColorGamutDisplayString(targetGroup, availableColorGamuts[i]);
+                enabled[i] = !list.list.Contains(availableColorGamuts[i]);
+            }
+
+            EditorUtility.DisplayCustomMenu(rect, names, enabled, null, AddColorGamutMenuSelected, availableColorGamuts);
+        }
+
+        private void AddColorGamutMenuSelected(object userData, string[] options, int selected)
+        {
+            var colorGamuts = (ColorGamut[])userData;
+            var colorGamutList = PlayerSettings.GetColorGamuts().ToList();
+            colorGamutList.Add(colorGamuts[selected]);
+            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+        }
+
+        private bool CanRemoveColorGamutElement(ReorderableList list)
+        {
+            // don't allow removing the sRGB
+            var colorGamutList = (List<ColorGamut>)list.list;
+            return colorGamutList[list.index] != ColorGamut.sRGB;
+        }
+
+        private void RemoveColorGamutElement(ReorderableList list)
+        {
+            var colorGamutList = PlayerSettings.GetColorGamuts().ToList();
+            // don't allow removing the last ColorGamut
+            if (colorGamutList.Count < 2)
+            {
+                EditorApplication.Beep();
+                return;
+            }
+            colorGamutList.RemoveAt(list.index);
+            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+        }
+
+        private void ReorderColorGamutElement(ReorderableList list)
+        {
+            var colorGamutList = (List<ColorGamut>)list.list;
+            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+        }
+
+        private void DrawColorGamutElement(BuildTargetGroup targetGroup, Rect rect, int index, bool selected, bool focused)
+        {
+            var colorGamut = s_ColorGamutList.list[index];
+            GUI.Label(rect, GetColorGamutDisplayString(targetGroup, (ColorGamut)colorGamut), EditorStyles.label);
+        }
+
+        void ColorGamutGUI(BuildTargetGroup targetGroup)
+        {
+            if (!s_SupportedColorGamuts.ContainsKey(targetGroup))
+                return;
+
+            if (s_ColorGamutList == null)
+            {
+                ColorGamut[] colorGamuts = PlayerSettings.GetColorGamuts();
+                var colorGamutsList = (colorGamuts != null) ? colorGamuts.ToList() : new List<ColorGamut>();
+                var rlist = new ReorderableList(colorGamutsList, typeof(ColorGamut), true, true, true, true);
+                rlist.onCanRemoveCallback = CanRemoveColorGamutElement;
+                rlist.onRemoveCallback = RemoveColorGamutElement;
+                rlist.onReorderCallback = ReorderColorGamutElement;
+                rlist.elementHeight = 16;
+
+                s_ColorGamutList = rlist;
+            }
+
+            // On standalone inspector mention that the setting applies only to Mac
+            // (Temporarily until other standalones support this setting)
+            GUIContent header = targetGroup == BuildTargetGroup.Standalone ? Styles.colorGamutForMac : Styles.colorGamut;
+            s_ColorGamutList.drawHeaderCallback = (rect) =>
+                GUI.Label(rect, header, EditorStyles.label);
+
+            // we want to change the displayed text per platform, to indicate unsupported gamuts
+            s_ColorGamutList.onAddDropdownCallback = (rect, list) =>
+                AddColorGamutElement(targetGroup, rect, list);
+
+            s_ColorGamutList.drawElementCallback = (rect, index, selected, focused) =>
+                DrawColorGamutElement(targetGroup, rect, index, selected, focused);
+
+            s_ColorGamutList.DoLayoutList();
+        }
+
         public void DebugAndCrashReportingGUI(BuildPlatform platform, BuildTargetGroup targetGroup,
             ISettingEditorExtension settingsExtension)
         {
@@ -1328,6 +1467,9 @@ namespace UnityEditor
             // Graphics APIs
             GraphicsAPIsGUI(targetGroup, platform.defaultTarget);
 
+            // Output color spaces
+            ColorGamutGUI(targetGroup);
+
             // Mobile Metal
             if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                 m_MetalForceHardShadows.boolValue = EditorGUILayout.Toggle(Styles.metalForceHardShadows, m_MetalForceHardShadows.boolValue);
@@ -1369,24 +1511,12 @@ namespace UnityEditor
             }
 
             // Multithreaded rendering
-            if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.SamsungTV) //TODO:enable on desktops when decision is made
+            if (settingsExtension != null)
             {
-                if (IsMobileTarget(targetGroup))
+                if (IsMobileTarget(targetGroup) && settingsExtension.SupportsMultithreadedRendering())
                     m_MobileMTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MobileMTRendering.boolValue);
-                else
+                else if (settingsExtension.SupportsMultithreadedRendering())
                     m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-            }
-            else if (targetGroup == BuildTargetGroup.PSP2 || targetGroup == BuildTargetGroup.PSM)
-            {
-                if (Unsupported.IsDeveloperBuild())
-                {
-                    m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-                }
-                else
-                {
-                    // Force MT Rendering = true if not an internal developer build.
-                    m_MTRendering.boolValue = true;
-                }
             }
 
             // Batching section
@@ -1458,6 +1588,7 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.PSM ||
+                targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA)
             {
                 EditorGUI.BeginChangeCheck();
@@ -1542,7 +1673,7 @@ namespace UnityEditor
         internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string identifier = EditorGUILayout.DelayedTextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetApplicationIdentifier(targetGroup));
+            string identifier = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetApplicationIdentifier(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -1553,7 +1684,7 @@ namespace UnityEditor
         internal static void ShowBuildNumberUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string buildNumber = EditorGUILayout.DelayedTextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetBuildNumber(targetGroup));
+            string buildNumber = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetBuildNumber(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -1581,11 +1712,21 @@ namespace UnityEditor
             var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
             var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
             var newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
-            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
-                PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
 
-            if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
-                GUILayout.Label("Changing this setting requires a restart of the Editor to take effect.", EditorStyles.helpBox);
+            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
+            {
+                if (EditorUtility.DisplayDialog(
+                        LocalizationDatabase.GetLocalizedString("Restart required"),
+                        LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
+                        LocalizationDatabase.GetLocalizedString("Restart"),
+                        LocalizationDatabase.GetLocalizedString("Cancel")))
+                {
+                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                    EditorCompilationInterface.Instance.CleanScriptAssemblies();
+                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                }
+            }
 
             // Scripting back-end
             IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
@@ -1608,17 +1749,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    // The latest runtime version for some platforms can only be supported when using IL2CPP
-                    if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest &&
-                        (targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.PSP2))
-                    {
-                        newBackend = ScriptingImplementation.IL2CPP;
-                        PlayerSettingsEditor.BuildDisabledEnumPopup(Styles.scriptingIL2CPP, Styles.scriptingBackend);
-                    }
-                    else
-                    {
-                        newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
-                    }
+                    newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                 }
                 if (newBackend != currBackend)
                     PlayerSettings.SetScriptingBackend(targetGroup, newBackend);

@@ -18,6 +18,8 @@ namespace UnityEditor
             public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
 
             public static readonly GUIContent kPlatformTooltip = new GUIContent("", "Allow quality setting on platform");
+            public static readonly GUIContent kAddQualityLevel = new GUIContent("Add Quality Level");
+
             public static readonly GUIContent kIconTrash = EditorGUIUtility.IconContent("TreeEditor.Trash", "|Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TextContent("Billboards Face Camera Position|Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
@@ -240,9 +242,9 @@ namespace UnityEditor
                 GUILayout.MaxWidth(Styles.kMaxToggleWidth),
                 GUILayout.Height(Styles.kHeaderRowHeight));
 
-            var addButtonRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.ExpandWidth(true));
+            var addButtonRect = GUILayoutUtility.GetRect(Styles.kAddQualityLevel, Styles.kToggle, GUILayout.ExpandWidth(true));
 
-            if (GUI.Button(addButtonRect, EditorGUIUtility.TempContent("Add Quality Level")))
+            if (GUI.Button(addButtonRect, Styles.kAddQualityLevel))
                 m_ShouldAddNewLevel = true;
 
             GUILayout.EndHorizontal();
@@ -307,7 +309,7 @@ namespace UnityEditor
             if (m_DeleteLevel >= 0)
             {
                 if (m_DeleteLevel < selectedLevel || m_DeleteLevel == m_QualitySettingsProperty.arraySize - 1)
-                    selectedLevel--;
+                    selectedLevel = Mathf.Max(0, selectedLevel - 1);
 
                 //Always ensure there is one quality setting
                 if (m_QualitySettingsProperty.arraySize > 1 && m_DeleteLevel >= 0 && m_DeleteLevel < m_QualitySettingsProperty.arraySize)

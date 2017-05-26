@@ -25,6 +25,10 @@ internal sealed partial class SpriteAtlasUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void PackAllAtlases (BuildTarget target) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void PackAtlases (SpriteAtlas[] atlases, BuildTarget target) ;
+
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -36,10 +40,9 @@ internal sealed partial class SpriteAtlasTextureSettings
     internal TextureImporterCompression m_TextureCompression;
     internal ColorSpace m_ColorSpace;
     internal FilterMode m_FilterMode;
-    internal TextureFormat m_CustomFormat;
-    internal TextureFormat m_Format;
     internal int m_GenerateMipMaps;
     internal int m_Readable;
+    internal int m_CrunchedCompression;
     
     
     public uint anisoLevel { get {return m_AnisoLevel; } set {m_AnisoLevel = value; } }
@@ -48,9 +51,9 @@ internal sealed partial class SpriteAtlasTextureSettings
     public TextureImporterCompression textureCompression { get {return m_TextureCompression; } set {m_TextureCompression = value; } }
     public ColorSpace colorSpace { get {return m_ColorSpace; } set {m_ColorSpace = value; } }
     public FilterMode filterMode { get {return m_FilterMode; } set {m_FilterMode = value; } }
-    public TextureFormat customFormat { get {return m_CustomFormat; } set {m_CustomFormat = value; } }
     public bool generateMipMaps { get {return m_GenerateMipMaps != 0; } set {m_GenerateMipMaps = value ? 1 : 0; } }
     public bool readable { get {return m_Readable != 0; } set {m_Readable = value ? 1 : 0; } }
+    public bool crunchedCompression { get {return m_CrunchedCompression != 0; } set {m_CrunchedCompression = value ? 1 : 0; } }
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -97,6 +100,14 @@ internal static partial class SpriteAtlasExtensions
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool CopyPlatformSettingsIfAvailable (this SpriteAtlas spriteAtlas, string buildTarget, TextureImporterPlatformSettings dest) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetPlatformSettings (this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void CopyPackingParametersTo (this SpriteAtlas spriteAtlas, SpriteAtlasPackingParameters dest) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -109,7 +120,15 @@ internal static partial class SpriteAtlasExtensions
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetMasterSpriteAtlas (this SpriteAtlas spriteAtlas, SpriteAtlas value) ;
+    extern public static  void SetIsVariant (this SpriteAtlas spriteAtlas, bool value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetMasterAtlas (this SpriteAtlas spriteAtlas, SpriteAtlas value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void CopyMasterAtlasSettings (this SpriteAtlas spriteAtlas) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -121,11 +140,11 @@ internal static partial class SpriteAtlasExtensions
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void Pack (this SpriteAtlas spriteAtlas, BuildTarget target) ;
+    extern internal static  Texture2D[] GetPreviewTextures (this SpriteAtlas spriteAtlas) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  Texture2D[] GetPreviewTextures (this SpriteAtlas spriteAtlas) ;
+    extern internal static  TextureImporterFormat FormatDetermineByAtlasSettings (this SpriteAtlas spriteAtlas, BuildTarget target) ;
 
 }
 

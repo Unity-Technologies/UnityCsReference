@@ -692,6 +692,10 @@ namespace UnityEditor
             // Undo changes we have done in the ObjectSelector
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
+            // Clear selection so that object field doesn't grab it
+            m_ListArea.InitSelection(new int[0]);
+            m_ObjectTreeWithSearch.Clear();
+
             Close();
             GUI.changed = true;
             GUIUtility.ExitGUI();

@@ -398,6 +398,12 @@ public enum TextureImporterCompression
     CompressedLQ = 3
 }
 
+public enum TextureResizeAlgorithm
+{
+    Mitchell = 0,
+    Bilinear = 1
+}
+
 [Flags]
 public enum TextureImporterShape
 {
@@ -1489,6 +1495,8 @@ public sealed partial class TextureImporterPlatformSettings
     [SerializeField]
             int m_MaxTextureSize = 2048;
     [SerializeField]
+            int m_ResizeAlgorithm = (int)TextureResizeAlgorithm.Mitchell;
+    [SerializeField]
             int m_TextureFormat = (int)TextureImporterFormat.Automatic;
     [SerializeField]
             int m_TextureCompression = (int)TextureImporterCompression.Compressed;
@@ -1515,6 +1523,12 @@ public sealed partial class TextureImporterPlatformSettings
         {
             get {return m_MaxTextureSize; }
             set { m_MaxTextureSize = value; }
+        }
+    
+            public TextureResizeAlgorithm resizeAlgorithm
+        {
+            get {return (TextureResizeAlgorithm)m_ResizeAlgorithm; }
+            set { m_ResizeAlgorithm = (int)value; }
         }
     
             public TextureImporterFormat format

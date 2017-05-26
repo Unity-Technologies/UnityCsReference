@@ -77,13 +77,16 @@ namespace UnityEditor
 
                         break;
                     }
+                    case EventType.MouseMove:
+                        if (id == HandleUtility.nearestControl)
+                            HandleUtility.Repaint();
+                        break;
                     case EventType.MouseDown:
                     {
                         // am I closest to the thingy?
-                        if (!evt.alt  && ((HandleUtility.nearestControl == id && evt.button == 0) ||
-                                          (GUIUtility.keyboardControl == id && evt.button == 2)))
+                        if (!evt.alt  && HandleUtility.nearestControl == id && evt.button == 0)
                         {
-                            GUIUtility.hotControl = GUIUtility.keyboardControl = id; // Grab mouse focus
+                            GUIUtility.hotControl = id; // Grab mouse focus
                             if (evt.shift)
                             {
                                 Object[] selected = Selection.objects;
@@ -127,6 +130,8 @@ namespace UnityEditor
                         float len = Vector3.Magnitude(endPoint - basePoint);
                         if (len > 0)
                         {
+                            color = GUIUtility.hotControl == 0 && HandleUtility.nearestControl == id ? Handles.preselectionColor : color;
+
                             // size used to be based on sqrt of length but that makes bones for
                             // huge creatures hair-thin and bones for tiny creatures bulky.
                             // So base on a fixed proportion instead.

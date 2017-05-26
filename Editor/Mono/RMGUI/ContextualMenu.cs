@@ -31,29 +31,32 @@ namespace UnityEditor.Experimental.UIElements
 
         public ContextualMenu()
         {
-            phaseInterest = EventPhase.Capture;
         }
 
-        public override EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
+        protected override void RegisterCallbacksOnTarget()
         {
-            switch (evt.type)
-            {
-                case EventType.ContextClick:
-                {
-                    var menu = new GenericMenu();
-                    foreach (var action in menuActions)
-                    {
-                        if (action.enabled)
-                            menu.AddItem(action.name, false, action.action);
-                        else
-                            menu.AddDisabledItem(action.name);
-                    }
-                    menu.ShowAsContext();
-                }
-                break;
-            }
+            target.RegisterCallback<IMGUIEvent>(OnIMGUIEvent, Capture.Capture);
+        }
 
-            return EventPropagation.Continue;
+        protected override void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<IMGUIEvent>(OnIMGUIEvent, Capture.Capture);
+        }
+
+        void OnIMGUIEvent(IMGUIEvent evt)
+        {
+            if (evt.imguiEvent.type == EventType.ContextClick)
+            {
+                var menu = new GenericMenu();
+                foreach (var action in menuActions)
+                {
+                    if (action.enabled)
+                        menu.AddItem(action.name, false, action.action);
+                    else
+                        menu.AddDisabledItem(action.name);
+                }
+                menu.ShowAsContext();
+            }
         }
 
         public void AddAction(string actionName, GenericMenu.MenuFunction action, ActionStatusCallback actionStatusCallback)

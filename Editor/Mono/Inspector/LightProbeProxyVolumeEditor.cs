@@ -170,14 +170,9 @@ namespace UnityEditor
             UpdateShowOptions(true);
         }
 
-        private Bounds GetGlobalBounds()
+        internal override Bounds GetWorldBoundsOfTarget(UnityEngine.Object targetObject)
         {
-            if (target is LightProbeProxyVolume)
-            {
-                LightProbeProxyVolume proxyVolume = (LightProbeProxyVolume)target;
-                return proxyVolume.boundsGlobal;
-            }
-            return new Bounds();
+            return ((LightProbeProxyVolume)target).boundsGlobal;
         }
 
         void DoToolbar()
@@ -189,7 +184,7 @@ namespace UnityEditor
                 var oldEditMode = EditMode.editMode;
 
                 EditorGUI.BeginChangeCheck();
-                EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, GetGlobalBounds(), this);
+                EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, this);
                 if (EditorGUI.EndChangeCheck())
                     s_LastInteractedEditor = this;
 

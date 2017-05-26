@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
 using UnityEditor.Connect;
 using UnityEngine;
 using UnityEditor.Analytics;
@@ -31,9 +32,15 @@ namespace UnityEditor.Web
             return AnalyticsSettings.enabled;
         }
 
+        [Serializable]
+        public struct AnalyticsServiceState { public bool analytics; }
         override public void EnableService(bool enabled)
         {
-            AnalyticsSettings.enabled = enabled;
+            if (AnalyticsSettings.enabled != enabled)
+            {
+                AnalyticsSettings.enabled = enabled;
+                UsabilityAnalytics.SendEventParam("service_state", new AnalyticsServiceState() { analytics = enabled });
+            }
         }
 
         public bool IsTestModeEnabled()

@@ -2,44 +2,36 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEngine.Experimental.UIElements
 {
-    public interface IManipulator : IEventHandler
+    public interface IManipulator
     {
         VisualElement target { get; set; }
     }
 
-    // helper
-    public class Manipulator : IManipulator
+    public abstract class Manipulator : IManipulator
     {
-        public VisualElement target { get; set; }
-        public EventPhase phaseInterest { get; set; }
-        public IPanel panel
+        protected abstract void RegisterCallbacksOnTarget();
+        protected abstract void UnregisterCallbacksFromTarget();
+
+        VisualElement m_Target;
+        public VisualElement target
         {
-            get
+            get { return m_Target; }
+            set
             {
                 if (target != null)
-                    return target.panel;
-                return null;
+                {
+                    UnregisterCallbacksFromTarget();
+                }
+                m_Target = value;
+                if (target != null)
+                {
+                    RegisterCallbacksOnTarget();
+                }
             }
-        }
-
-        public Manipulator()
-        {
-            phaseInterest = EventPhase.BubbleUp;
-        }
-
-        public virtual EventPropagation HandleEvent(Event evt, VisualElement finalTarget)
-        {
-            return EventPropagation.Continue;
-        }
-
-        public virtual void OnLostCapture()
-        {
-        }
-
-        public virtual void OnLostKeyboardFocus()
-        {
         }
     }
 }

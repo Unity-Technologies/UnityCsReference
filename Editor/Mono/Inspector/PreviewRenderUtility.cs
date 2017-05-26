@@ -83,6 +83,7 @@ namespace UnityEditor
         private Rect m_TargetRect;
         private SavedRenderTargetState m_SavedState;
         private readonly List<GameObject> m_TempGameObjects = new List<GameObject>();
+        private Material m_InvisibleMaterial;
 
         public PreviewRenderUtility(bool renderFullScene) : this()
         {}
@@ -150,12 +151,19 @@ namespace UnityEditor
                 Object.DestroyImmediate(m_RenderTexture);
                 m_RenderTexture = null;
             }
+
+            if (m_InvisibleMaterial != null)
+            {
+                Object.DestroyImmediate(m_InvisibleMaterial);
+                m_InvisibleMaterial = null;
+            }
+
             m_PreviewScene.Dispose();
         }
 
-        private void BeginPreview(Rect r, GUIStyle previewBackground, bool hdr)
+        public void BeginPreview(Rect r, GUIStyle previewBackground)
         {
-            InitPreview(r, hdr);
+            InitPreview(r);
 
             if (previewBackground == null || previewBackground == GUIStyle.none)
                 return;
@@ -171,9 +179,9 @@ namespace UnityEditor
                 );
         }
 
-        private void BeginStaticPreview(Rect r, bool hdr)
+        public void BeginStaticPreview(Rect r)
         {
-            InitPreview(r, hdr);
+            InitPreview(r);
             var color = new Color(82 / 255f, 82 / 255f, 82 / 255f, 1.0f);
             var darkGreyBackground = new Texture2D(1, 1, TextureFormat.RGBA32, true, true);
             darkGreyBackground.SetPixel(0, 0, color);
@@ -182,7 +190,7 @@ namespace UnityEditor
             Object.DestroyImmediate(darkGreyBackground);
         }
 
-        private void InitPreview(Rect r, bool hdr)
+        private void InitPreview(Rect r)
         {
             m_TargetRect = r;
             float scaleFac = GetScaleFactor(r.width, r.height);
@@ -200,7 +208,8 @@ namespace UnityEditor
                 // Do not use GetTemporary to manage render textures. Temporary RTs are only
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+                RenderTextureFormat format = camera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format, RenderTextureReadWrite.Default);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;
@@ -212,7 +221,10 @@ namespace UnityEditor
             GL.LoadPixelMatrix(0, m_RenderTexture.width, m_RenderTexture.height, 0);
             ShaderUtil.rawViewportRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
             ShaderUtil.rawScissorRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
-            GL.Clear(true, true, new Color(0, 0, 0, 0));
+            GL.Clear(true, true, camera.backgroundColor);
+
+            foreach (var light in lights)
+                light.enabled = true;
         }
 
         public float GetScaleFactor(float width, float height)
@@ -222,24 +234,16 @@ namespace UnityEditor
             return Mathf.Min(scaleFacX, scaleFacY) * EditorGUIUtility.pixelsPerPoint;
         }
 
-        public void BeginStaticPreview(Rect r)
-        {
-            BeginStaticPreview(r, false);
-        }
-
+        [Obsolete("This method has been marked obsolete, use BeginStaticPreview() instead (UnityUpgradable) -> BeginStaticPreview(*)", false)]
         public void BeginStaticPreviewHDR(Rect r)
         {
-            BeginStaticPreview(r, true);
+            BeginStaticPreview(r);
         }
 
-        public void BeginPreview(Rect r, GUIStyle previewBackground)
-        {
-            BeginPreview(r, previewBackground, false);
-        }
-
+        [Obsolete("This method has been marked obsolete, use BeginPreview() instead (UnityUpgradable) -> BeginPreview(*)", false)]
         public void BeginPreviewHDR(Rect r, GUIStyle previewBackground)
         {
-            BeginPreview(r, previewBackground, true);
+            BeginPreview(r, previewBackground);
         }
 
         public Texture EndPreview()
@@ -255,6 +259,9 @@ namespace UnityEditor
                 m_PreviewScene.DestroyGameObject(go);
 
             m_TempGameObjects.Clear();
+
+            foreach (var light in lights)
+                light.enabled = false;
         }
 
         public void EndAndDrawPreview(Rect r)
@@ -288,6 +295,20 @@ namespace UnityEditor
             var copy = instantiateAtZero ? Object.Instantiate(go, Vector3.zero, Quaternion.identity) : Object.Instantiate(go);
             m_PreviewScene.AddGameObject(copy);
             m_TempGameObjects.Add(copy);
+        }
+
+        private Material GetInvisibleMaterial()
+        {
+            if (m_InvisibleMaterial == null)
+            {
+                // A material intentionally draws nothing. Used to hide submeshes we don't want users to see.
+                m_InvisibleMaterial = new Material(Shader.FindBuiltin("Internal-Colored.shader"));
+                m_InvisibleMaterial.hideFlags = HideFlags.HideAndDontSave;
+                m_InvisibleMaterial.SetColor("_Color", Color.clear);
+                m_InvisibleMaterial.SetInt("_ZWrite", 0);
+            }
+
+            return m_InvisibleMaterial;
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex)
@@ -334,9 +355,11 @@ namespace UnityEditor
 
             var renderer = meshGo.GetComponent<MeshRenderer>();
 
-            var materials = renderer.sharedMaterials;
-            if (subMeshIndex < materials.Length)
-                materials[subMeshIndex] = mat;
+            var materials = new Material[mesh.subMeshCount];
+
+            for (int i = 0; i < materials.Length; ++i)
+                materials[i] = (i == subMeshIndex) ? mat : GetInvisibleMaterial();
+
             renderer.sharedMaterials = materials;
 
             renderer.SetPropertyBlock(customProperties);
@@ -378,6 +401,7 @@ namespace UnityEditor
             var light = lightGO.GetComponent<Light>();
             light.type = LightType.Directional;
             light.intensity = 1.0f;
+            light.enabled = false;
             return lightGO;
         }
 
