@@ -112,50 +112,21 @@ namespace UnityEngine.Experimental.UIElements
             GUILayoutUtility.BeginContainer(cache);
             GUIUtility.ResetGlobalState();
 
-            Matrix4x4 g = container.globalTransform;
-            GUI.matrix = g;
-
-            // do an offset area for IMGUI
-            Rect screenRect = container.position;
-
-            // back to local
-            var inv = container.globalTransform.inverse;
-            Vector3 min;
-            Vector3 max;
-            if (container.IsDirty(ChangeType.Repaint) && container.lastWorldClip.size == Vector2.zero)
+            var clippingRect = container.lastWorldClip;
+            if (clippingRect.width == 0.0f || clippingRect.height == 0.0f)
             {
-                min = inv.MultiplyPoint3x4(container.globalBound.min);
-                max = inv.MultiplyPoint3x4(container.globalBound.max);
+                // lastWorldClip will be empty until the first repaint occurred,
+                // we fall back on the globalBound in this case.
+                clippingRect = container.globalBound;
             }
-            else
-            {
-                min = inv.MultiplyPoint3x4(container.lastWorldClip.min);
-                max = inv.MultiplyPoint3x4(container.lastWorldClip.max);
-            }
-            var localClip = Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x),
-                    Math.Max(min.y, max.y));
 
-            // combine clips
-            float x1 = Mathf.Max(screenRect.x, localClip.x);
-            float x2 = Mathf.Min(screenRect.x + screenRect.width, localClip.x + localClip.width);
-            float y1 = Mathf.Max(screenRect.y, localClip.y);
-            float y2 = Mathf.Min(screenRect.y + screenRect.height, localClip.y + localClip.height);
-
-            // new global clip
-            var clippedScreen = new Rect(x1, y1, x2 - x1, y2 - y1);
-
-            var offset = new Vector2(Mathf.Round(screenRect.x - clippedScreen.x), Mathf.Round(screenRect.y - clippedScreen.y));
-            GUI.BeginGroup(clippedScreen, GUIContent.none, GUIStyle.none, offset);
+            var translate = Matrix4x4.TRS(new Vector3(container.position.x, container.position.y, 0.0f), Quaternion.identity, Vector3.one);
+            GUIClip.SetTransform(container.globalTransform * translate, clippingRect);
         }
 
         // End the 2D GUI.
         internal static void EndContainerGUI()
         {
-            if (Event.current.type != EventType.Used)
-            {
-                GUI.EndGroup();
-            }
-
 
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)

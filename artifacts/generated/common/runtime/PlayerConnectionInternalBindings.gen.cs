@@ -21,6 +21,7 @@ namespace UnityEngine
     internal interface IPlayerEditorConnectionNative
     {
         void Initialize();
+        void DisconnectAll();
         void SendMessage(Guid messageId, byte[] data, int playerId);
         void RegisterInternal(Guid messageId);
         void UnregisterInternal(Guid messageId);
@@ -61,6 +62,11 @@ internal sealed partial class PlayerConnectionInternal : IPlayerEditorConnection
             return IsConnected();
         }
     
+    void IPlayerEditorConnectionNative.DisconnectAll()
+        {
+            DisconnectAll();
+        }
+    
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -81,6 +87,10 @@ internal sealed partial class PlayerConnectionInternal : IPlayerEditorConnection
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SendMessage (string messageId, byte[] data, int playerId) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void DisconnectAll () ;
 
 }
 

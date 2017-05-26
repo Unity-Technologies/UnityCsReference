@@ -227,13 +227,13 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetMatrix (ref Matrix4x4 m);
-    internal static void SetTransform (Matrix4x4 clipTransform, Matrix4x4 objectTransform, Rect clipRect) {
-        INTERNAL_CALL_SetTransform ( ref clipTransform, ref objectTransform, ref clipRect );
+    internal static void SetTransform (Matrix4x4 objectTransform, Rect clipRect) {
+        INTERNAL_CALL_SetTransform ( ref objectTransform, ref clipRect );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetTransform (ref Matrix4x4 clipTransform, ref Matrix4x4 objectTransform, ref Rect clipRect);
+    private extern static void INTERNAL_CALL_SetTransform (ref Matrix4x4 objectTransform, ref Rect clipRect);
     public static Rect visibleRect
     {
         get { Rect tmp; INTERNAL_get_visibleRect(out tmp); return tmp;  }

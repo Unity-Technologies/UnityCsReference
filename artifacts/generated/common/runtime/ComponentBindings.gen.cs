@@ -185,11 +185,12 @@ public Component[] GetComponentsInParent(Type t, [uei.DefaultValue("false")]  bo
             return gameObject.GetComponents<T>();
         }
     
+    public bool CompareTag(string tag)
+        {
+            return gameObject.CompareTag(tag);
+        }
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public bool CompareTag (string tag) ;
-
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SendMessageUpwards (string methodName, [uei.DefaultValue("null")]  object value , [uei.DefaultValue("SendMessageOptions.RequireReceiver")]  SendMessageOptions options ) ;

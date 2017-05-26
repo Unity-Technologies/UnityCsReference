@@ -113,14 +113,18 @@ namespace UnityEditorInternal
                 stopwatch.Stop();
                 Console.WriteLine("{0} exited after {1} ms.", exe, stopwatch.ElapsedMilliseconds);
 
+                IEnumerable<CompilerMessage> messages = null;
+                if (parser != null)
+                {
+                    var errorOutput = p.GetErrorOutput();
+                    var standardOutput = p.GetStandardOutput();
+                    messages = parser.Parse(errorOutput, standardOutput, true);
+                }
+
                 if (p.ExitCode != 0)
                 {
-                    if (parser != null)
+                    if (messages != null)
                     {
-                        var errorOutput = p.GetErrorOutput();
-                        var standardOutput = p.GetStandardOutput();
-                        var messages = parser.Parse(errorOutput, standardOutput, true);
-
                         foreach (var message in messages)
                             Debug.LogPlayerBuildError(message.message, message.file, message.line, message.column);
                     }
@@ -128,6 +132,14 @@ namespace UnityEditorInternal
                     Debug.LogError("Failed running " + exe + " " + args + "\n\n" + p.GetAllOutput());
 
                     throw new Exception(string.Format("{0} did not run properly!", exe));
+                }
+                else
+                {
+                    if (messages != null)
+                    {
+                        foreach (var message in messages)
+                            Console.WriteLine(message.message + " - " + message.file + " - " + message.line + " - " + message.column);
+                    }
                 }
             }
         }

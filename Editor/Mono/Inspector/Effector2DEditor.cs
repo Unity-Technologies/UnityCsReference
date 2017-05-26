@@ -68,7 +68,7 @@ namespace UnityEditor
         public static void CheckEffectorWarnings(Collider2D collider)
         {
             // Finish if the collider is not used by the effector.
-            if (!collider.usedByEffector)
+            if (!collider.usedByEffector || collider.usedByComposite)
                 return;
 
             // Fetch the effector.

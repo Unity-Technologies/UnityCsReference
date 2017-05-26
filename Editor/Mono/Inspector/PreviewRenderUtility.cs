@@ -83,6 +83,7 @@ namespace UnityEditor
         private Rect m_TargetRect;
         private SavedRenderTargetState m_SavedState;
         private readonly List<GameObject> m_TempGameObjects = new List<GameObject>();
+        private Material m_InvisibleMaterial;
 
         public PreviewRenderUtility(bool renderFullScene) : this()
         {}
@@ -150,6 +151,13 @@ namespace UnityEditor
                 Object.DestroyImmediate(m_RenderTexture);
                 m_RenderTexture = null;
             }
+
+            if (m_InvisibleMaterial != null)
+            {
+                Object.DestroyImmediate(m_InvisibleMaterial);
+                m_InvisibleMaterial = null;
+            }
+
             m_PreviewScene.Dispose();
         }
 
@@ -213,6 +221,9 @@ namespace UnityEditor
             ShaderUtil.rawViewportRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
             ShaderUtil.rawScissorRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
             GL.Clear(true, true, new Color(0, 0, 0, 0));
+
+            foreach (var light in lights)
+                light.enabled = true;
         }
 
         public float GetScaleFactor(float width, float height)
@@ -255,6 +266,9 @@ namespace UnityEditor
                 m_PreviewScene.DestroyGameObject(go);
 
             m_TempGameObjects.Clear();
+
+            foreach (var light in lights)
+                light.enabled = false;
         }
 
         public void EndAndDrawPreview(Rect r)
@@ -288,6 +302,20 @@ namespace UnityEditor
             var copy = instantiateAtZero ? Object.Instantiate(go, Vector3.zero, Quaternion.identity) : Object.Instantiate(go);
             m_PreviewScene.AddGameObject(copy);
             m_TempGameObjects.Add(copy);
+        }
+
+        private Material GetInvisibleMaterial()
+        {
+            if (m_InvisibleMaterial == null)
+            {
+                // A material intentionally draws nothing. Used to hide submeshes we don't want users to see.
+                m_InvisibleMaterial = new Material(Shader.FindBuiltin("Internal-Colored.shader"));
+                m_InvisibleMaterial.hideFlags = HideFlags.HideAndDontSave;
+                m_InvisibleMaterial.SetColor("_Color", Color.clear);
+                m_InvisibleMaterial.SetInt("_ZWrite", 0);
+            }
+
+            return m_InvisibleMaterial;
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex)
@@ -334,9 +362,11 @@ namespace UnityEditor
 
             var renderer = meshGo.GetComponent<MeshRenderer>();
 
-            var materials = renderer.sharedMaterials;
-            if (subMeshIndex < materials.Length)
-                materials[subMeshIndex] = mat;
+            var materials = new Material[mesh.subMeshCount];
+
+            for (int i = 0; i < materials.Length; ++i)
+                materials[i] = (i == subMeshIndex) ? mat : GetInvisibleMaterial();
+
             renderer.sharedMaterials = materials;
 
             renderer.SetPropertyBlock(customProperties);
@@ -378,6 +408,7 @@ namespace UnityEditor
             var light = lightGO.GetComponent<Light>();
             light.type = LightType.Directional;
             light.intensity = 1.0f;
+            light.enabled = false;
             return lightGO;
         }
 

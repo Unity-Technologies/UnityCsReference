@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-// This should exclude Linux editor and standalone but doesn't seem like the targeted _OSX and _WIN
-// #defines work when generating native dependencies.
 
 namespace UnityEngineInternal.Input
 {
@@ -21,76 +20,91 @@ namespace UnityEngineInternal.Input
 
         KeyDown = 0x4B455944,
         KeyUp = 0x4B455955,
-        KeyRepeat = 0x4B455952,
 
         PointerDown = 0x50545244,
         PointerMove = 0x5054524D,
         PointerUp = 0x50545255,
         PointerCancelled = 0x50545243,
 
+        Click = 0x434C494B,
+
         Text = 0x54455854,
         Tracking = 0x5452434B,
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 20)]
     public struct NativeInputEvent
     {
-        public NativeInputEventType type;
-        public int sizeInBytes;
-        public int deviceId;
-        public double time; // Time on GetTimeSinceStartup() timeline in seconds. *NOT* on Time.time timeline.
+        [FieldOffset(0)] public NativeInputEventType type;
+        [FieldOffset(4)] public int sizeInBytes;
+        [FieldOffset(8)] public int deviceId;
+        [FieldOffset(12)] public double time; // Time on GetTimeSinceStartup() timeline in seconds. *NOT* on Time.time timeline.
     }
 
     // Generic.
+    [StructLayout(LayoutKind.Explicit, Size = 36)]
     public struct NativeGenericEvent
     {
-        public NativeInputEvent baseEvent;
-        public int controlIndex;
-        public int rawValue;
-        public double scaledValue;
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public int controlIndex;
+        [FieldOffset(24)] public int rawValue;
+        [FieldOffset(28)] public double scaledValue;
     }
 
     // KeyDown, KeyUp, KeyRepeat.
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
     public struct NativeKeyEvent
     {
-        public NativeInputEvent baseEvent;
-        public KeyCode key; // This is the raw key without any translation from keyboard layouts.
-        public int modifiers; ////TODO: make flags field
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public KeyCode key; // This is the raw key without any translation from keyboard layouts.
     }
 
     // PointerDown, PointerMove, PointerUp.
+    [StructLayout(LayoutKind.Explicit, Size = 80)]
     public struct NativePointerEvent
     {
-        public NativeInputEvent baseEvent;
-        public int pointerId;
-        public Vector3 position;
-        public Vector3 delta;
-        public float pressure;
-        public float rotation;
-        public float tilt;
-        public Vector3 radius;
-        public float distance;
-        public int displayIndex;
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public int pointerId;
+        [FieldOffset(24)] public Vector3 position;
+        [FieldOffset(36)] public Vector3 delta;
+        [FieldOffset(48)] public float pressure;
+        [FieldOffset(52)] public float twist;
+        [FieldOffset(56)] public Vector2 tilt;
+        [FieldOffset(64)] public Vector3 radius;
+        [FieldOffset(76)] public int displayIndex;
+    }
+
+    // Click Events
+    [StructLayout(LayoutKind.Explicit, Size = 32)]
+    public struct NativeClickEvent
+    {
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public bool isPressed;
+        [FieldOffset(24)] public int controlIndex;
+        [FieldOffset(28)] public int clickCount;
     }
 
     // Text.
+    [StructLayout(LayoutKind.Explicit, Size = 24)]
     public struct NativeTextEvent
     {
-        public NativeInputEvent baseEvent;
-        public int utf32Character;
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public int utf32Character;
     }
 
     // Tracking.
+    [StructLayout(LayoutKind.Explicit, Size = 104)]
     public struct NativeTrackingEvent
     {
-        public NativeInputEvent baseEvent;
-        public int nodeId;
-        public Vector3 localPosition;
-        public Quaternion localRotation;
-    }
-
-    ////TODO
-    public struct NativeOutputEvent
-    {
+        [FieldOffset(0)] public NativeInputEvent baseEvent;
+        [FieldOffset(20)] public int nodeId;
+        [FieldOffset(24)] public uint availableFields;
+        [FieldOffset(28)] public Vector3 localPosition;
+        [FieldOffset(40)] public Quaternion localRotation;
+        [FieldOffset(56)] public Vector3 velocity;
+        [FieldOffset(68)] public Vector3 angularVelocity;
+        [FieldOffset(80)] public Vector3 acceleration;
+        [FieldOffset(92)] public Vector3 angularAcceleration;
     }
 
     // Keep in sync with InputDeviceInfo in InputDeviceData.h.
@@ -144,6 +158,12 @@ namespace UnityEngineInternal.Input
         }
 
         [RequiredByNativeCode]
+        internal static bool HasDeviceDiscoveredHandler()
+        {
+            return onDeviceDiscovered != null;
+        }
+
+        [RequiredByNativeCode]
         internal static void NotifyDeviceDiscovered(NativeInputDeviceInfo deviceInfo)
         {
             NativeDeviceDiscoveredCallback callback = onDeviceDiscovered;
@@ -152,4 +172,3 @@ namespace UnityEngineInternal.Input
         }
     }
 }
-

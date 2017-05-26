@@ -97,12 +97,8 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             // wireframe (before handles so handles are rendered top most)
-            Color oldColor = Handles.color;
-            Handles.color *= wireframeColor;
-            if (Handles.color.a > 0f)
-            {
+            using (new Handles.DrawingScope(Handles.color * wireframeColor))
                 DrawWireframe();
-            }
 
             // unless holding alt to pin center, exit before drawing control handles when holding alt, since alt-click will rotate scene view
             if (Event.current.alt)
@@ -126,11 +122,11 @@ namespace UnityEditor.IMGUI.Controls
 
             // handles
             int prevHotControl = GUIUtility.hotControl;
-            Handles.color = oldColor * handleColor;
             Vector3 cameraLocalPos = Handles.inverseMatrix.MultiplyPoint(Camera.current.transform.position);
             bool isCameraInsideBox = m_Bounds.Contains(cameraLocalPos);
             EditorGUI.BeginChangeCheck();
-            MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
+            using (new Handles.DrawingScope(Handles.color * handleColor))
+                MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);
             bool changed = EditorGUI.EndChangeCheck();
 
             // detect if any handles got hotControl
@@ -178,9 +174,6 @@ namespace UnityEditor.IMGUI.Controls
                 if (Event.current.alt)
                     m_Bounds.center = m_BoundsOnClick.center;
             }
-
-            // Reset states
-            Handles.color = oldColor;
         }
 
         protected abstract void DrawWireframe();

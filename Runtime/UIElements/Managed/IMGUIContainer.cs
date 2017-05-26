@@ -36,6 +36,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override void DoRepaint(IStylePainter painter)
         {
+            base.DoRepaint(painter);
             lastWorldClip = painter.currentWorldClip;
             HandleEvent(painter.repaintEvent, this);
         }

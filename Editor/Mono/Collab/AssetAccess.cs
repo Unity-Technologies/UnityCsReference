@@ -37,6 +37,31 @@ namespace UnityEditor.Collaboration
             return success;
         }
 
+        // Attempts to retrieve the Asset corresponding to the given GUID.
+        // Failure: returns false and the given 'asset' is set to null.
+        // Success: returns true and updates 'asset'.
+        public static bool TryGetAssetFromGUID(string assetGUID, out UnityEngine.Object asset)
+        {
+            if (assetGUID == null)
+            {
+                throw new ArgumentNullException("assetGUID");
+            }
+
+            bool success = false;
+            string objectPath = AssetDatabase.GUIDToAssetPath(assetGUID);
+
+            if (objectPath == null)
+            {
+                asset = null;
+            }
+            else
+            {
+                asset = AssetDatabase.LoadMainAssetAtPath(objectPath);
+                success = (asset != null);
+            }
+            return success;
+        }
+
         // Expects the given 'gameObject' to have a 'PrefabType' which
         // is either an 'instance' or straight prefab.
         // Failure: assigns empty string to 'assetGUID', returns false.

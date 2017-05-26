@@ -115,6 +115,11 @@ namespace UnityEngine.Networking.PlayerConnection
             GetConnectionNativeApi().SendMessage(messageId, data, 0);
         }
 
+        public void DisconnectAll()
+        {
+            GetConnectionNativeApi().DisconnectAll();
+        }
+
         [RequiredByNativeCode]
         private static void MessageCallbackInternal(IntPtr data, UInt64 size, UInt64 guid, string messageId)
         {

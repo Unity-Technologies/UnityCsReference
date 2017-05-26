@@ -129,6 +129,11 @@ namespace UnityEditor.Networking.PlayerConnection
             Send(messageId, data, 0);
         }
 
+        public void DisconnectAll()
+        {
+            GetEditorConnectionNativeApi().DisconnectAll();
+        }
+
         [RequiredByNativeCode]
         private static void MessageCallbackInternal(IntPtr data, UInt64 size, UInt64 guid, string messageId)
         {
@@ -138,6 +143,7 @@ namespace UnityEditor.Networking.PlayerConnection
                 bytes = new byte[size];
                 Marshal.Copy(data, bytes, 0, unchecked((int)size));
             }
+
             instance.m_PlayerEditorConnectionEvents.InvokeMessageIdSubscribers(new Guid(messageId), bytes, (int)guid);
         }
 

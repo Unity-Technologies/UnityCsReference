@@ -284,7 +284,22 @@ namespace UnityEngine.Experimental.UIElements
             return hasNewLayout;
         }
 
-        public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentClip, Matrix4x4 clipTransform, Rect currentGlobalClip)
+        // get the AA aligned bound
+        private Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
+        {
+            Rect p = position;
+            Vector3 v0 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y, 0.0f));
+            Vector3 v1 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y, 0.0f));
+            Vector3 v2 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y + p.height, 0.0f));
+            Vector3 v3 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y + p.height, 0.0f));
+            return Rect.MinMaxRect(
+                Mathf.Min(v0.x, Mathf.Min(v1.x, Mathf.Min(v2.x, v3.x))),
+                Mathf.Min(v0.y, Mathf.Min(v1.y, Mathf.Min(v2.y, v3.y))),
+                Mathf.Max(v0.x, Mathf.Max(v1.x, Mathf.Max(v2.x, v3.x))),
+                Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
+        }
+
+        public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
         {
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return;
@@ -295,7 +310,7 @@ namespace UnityEngine.Experimental.UIElements
                 // update clip
                 if (container.clipChildren)
                 {
-                    var worldBound = root.globalBound;
+                    var worldBound = ComputeAAAlignedBound(root.position, offset * root.globalTransform);
                     // are we and our children clipped?
                     if (!worldBound.Overlaps(currentGlobalClip))
                     {
@@ -309,30 +324,21 @@ namespace UnityEngine.Experimental.UIElements
 
                     // new global clip
                     currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
-
-                    clipTransform = root.globalTransform;
-                    // back to local
-                    var inv = clipTransform.inverse;
-                    var min = inv.MultiplyPoint3x4(currentGlobalClip.min);
-                    var max = inv.MultiplyPoint3x4(currentGlobalClip.max);
-                    currentClip = Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x),
-                            Math.Max(min.y, max.y));
                 }
             }
             else
             {
-                if (!root.globalBound.Overlaps(currentGlobalClip))
+                var offsetBounds = ComputeAAAlignedBound(root.globalBound, offset);
+                if (!offsetBounds.Overlaps(currentGlobalClip))
                 {
                     return;
                 }
             }
-            if (
-                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
-                root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
+
+            if (root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
-                painter.currentWorldClip = currentGlobalClip;
 
                 // validate cache texture size first
                 var globalBound = root.globalBound;
@@ -376,11 +382,11 @@ namespace UnityEngine.Experimental.UIElements
                     offset = Matrix4x4.Translate(new Vector3(-globalBound.x, -globalBound.y, 0));
 
                     // reset clipping
-                    var textureClip = new Rect(globalBound.x, globalBound.y, w, h);
-                    GUIClip.SetTransform(offset * Matrix4x4.identity, offset * root.globalTransform, textureClip);
+                    var textureClip = new Rect(0, 0, w, h);
+                    GUIClip.SetTransform(offset * root.globalTransform, textureClip);
 
                     // paint self
-                    painter.currentWorldClip = textureClip;
+                    painter.currentWorldClip = currentGlobalClip;
                     root.DoRepaint(painter);
                     root.ClearDirty(ChangeType.Repaint);
 
@@ -390,7 +396,7 @@ namespace UnityEngine.Experimental.UIElements
                         for (int i = 0; i < count; i++)
                         {
                             VisualElement child = container.GetChildAt(i);
-                            PaintSubTree(e, child, offset, textureClip, offset, textureClip);
+                            PaintSubTree(e, child, offset, textureClip);
 
                             if (count != container.childrenCount)
                             {
@@ -403,14 +409,12 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-
-                GUIClip.SetTransform(clipTransform, root.globalTransform, currentClip);
-
+                GUIClip.SetTransform(root.globalTransform, currentGlobalClip);
                 painter.DrawTexture(root.position, root.renderData.pixelCache, Color.white, ScaleMode.ScaleAndCrop);
             }
             else
             {
-                GUIClip.SetTransform(offset * clipTransform, offset * root.globalTransform, currentClip);
+                GUIClip.SetTransform(offset * root.globalTransform, currentGlobalClip);
 
                 stylePainter.currentWorldClip = currentGlobalClip;
                 stylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
@@ -426,7 +430,7 @@ namespace UnityEngine.Experimental.UIElements
                     for (int i = 0; i < count; i++)
                     {
                         VisualElement child = container.GetChildAt(i);
-                        PaintSubTree(e, child, offset, currentClip, clipTransform, currentGlobalClip);
+                        PaintSubTree(e, child, offset, currentGlobalClip);
 
                         if (count != container.childrenCount)
                         {
@@ -440,14 +444,8 @@ namespace UnityEngine.Experimental.UIElements
         public override void Repaint(Event e)
         {
             ValidateLayout();
-
             stylePainter.repaintEvent = e;
-
-            GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
-
-            // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position, Matrix4x4.identity, visualTree.position);
-            GUIClip.Internal_Pop();
+            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position);
 
             if (panelDebug != null)
             {

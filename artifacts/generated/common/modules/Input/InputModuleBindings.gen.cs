@@ -14,10 +14,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngineInternal;
 
+
 namespace UnityEngineInternal.Input
 {
-
-
 public sealed partial class NativeInputSystem
 {
     public extern static double zeroEventTime

@@ -1335,7 +1335,7 @@ namespace UnityEditor
                 if (icon != null)
                     GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 
-                if (filterItem != null && filterItem.isMainRepresentation)
+                if (filterItem != null && filterItem.guid != null && filterItem.isMainRepresentation)
                 {
                     Rect overlayRect = rect;
                     overlayRect.width = vcPadding + k_IconWidth;
@@ -1351,7 +1351,7 @@ namespace UnityEditor
             private static bool DrawExternalPostLabelInList(Rect drawRect, FilteredHierarchy.FilterResult filterItem)
             {
                 bool didDraw = false;
-                if (filterItem != null && filterItem.isMainRepresentation)
+                if (filterItem != null && filterItem.guid != null && filterItem.isMainRepresentation)
                 {
                     if (null != postAssetLabelDrawCallback)
                     {

@@ -273,15 +273,15 @@ public sealed partial class Light : Behaviour
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetFalloffTable (float[] input) ;
+    extern private void SetFalloffTable (float[] input) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetAllLightsFalloffToInverseSquared () ;
+    extern private static  void SetAllLightsFalloffToInverseSquared () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetAllLightsFalloffToUnityLegacy () ;
+    extern private static  void SetAllLightsFalloffToUnityLegacy () ;
 
     public extern  LightmapBakeType lightmapBakeType
     {
