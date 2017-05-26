@@ -25,7 +25,8 @@ namespace UnityEditor
         // a repaint when softlock data changes.
         private SoftlockViewController.Cache m_Cache = null;
 
-        private const string k_TooltipHeader = "Currently Editing:";
+        private const string k_TooltipHeader = "Unpublished changes by:";
+        private const string k_TooltipPrefabHeader = "Unpublished Prefab changes by:";
         private const string k_TooltipNamePrefix = " \n \u2022  "; // u2022 displays a • (bullet point)
 
         private SoftlockViewController() {}
@@ -285,7 +286,8 @@ namespace UnityEditor
             if (!m_Cache.TryGetTooltipForGUID(assetGUID, out formattedText))
             {
                 List<string> softLockNames = SoftLockUIData.GetLocksNamesOnAsset(assetGUID);
-                formattedText = k_TooltipHeader;
+                string tooltipHeaderText = (SoftLockData.IsPrefab(assetGUID) ? k_TooltipPrefabHeader : k_TooltipHeader);
+                formattedText = tooltipHeaderText;
 
                 foreach (string name in softLockNames)
                 {

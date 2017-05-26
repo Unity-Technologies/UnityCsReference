@@ -48,6 +48,11 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
             Initialize();
         }
     
+    void IPlayerEditorConnectionNative.DisconnectAll()
+        {
+            DisconnectAll();
+        }
+    
     public bool IsConnected()
         {
             throw new NotSupportedException("Check the connected players list instead");
@@ -73,6 +78,10 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  int Connect (string IP, int port) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void DisconnectAll () ;
 
 }
 

@@ -156,6 +156,8 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TextContent(".NET 4.6");
+            public static readonly GUIContent activeInputHandling = EditorGUIUtility.TextContent("Active Input Handling*");
+            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { new GUIContent("Input Manager"), new GUIContent("Input System (Preview)"), new GUIContent("Both") };
 
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -253,6 +255,8 @@ namespace UnityEditor
         SerializedProperty m_ActionOnDotNetUnhandledException;
         SerializedProperty m_LogObjCUncaughtExceptions;
         SerializedProperty m_EnableCrashReportAPI;
+        SerializedProperty m_EnableInputSystem;
+        SerializedProperty m_DisableInputManager;
 
         // vita
         SerializedProperty m_VideoMemoryForVertexBuffers;
@@ -410,6 +414,8 @@ namespace UnityEditor
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
             m_LogObjCUncaughtExceptions     = FindPropertyAssert("logObjCUncaughtExceptions");
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
+            m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
+            m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -1728,6 +1734,17 @@ namespace UnityEditor
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 if (EditorGUI.EndChangeCheck())
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+            }
+
+            // Active input handling
+            int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
+            EditorGUI.BeginChangeCheck();
+            inputOption = EditorGUILayout.Popup(Styles.activeInputHandling, inputOption, Styles.activeInputHandlingOptions);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
+                m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
+                m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
             }
 
             EditorGUILayout.Space();

@@ -44,15 +44,6 @@ namespace UnityEditor
         private static bool s_HasPendingChanges = false;
         enum ConnectionState { Unknown, Success, Failure };
         private static ConnectionState s_ConnectionState;
-        private static bool s_CollabCacheEnabled;
-        private static string s_CollabCacheIPAddress; // TODO default to CacheServerIPAddress when blank
-        private static bool s_EnableCollabCacheConfiguration = false; // Since it has not been tested enough, we currently want to disable the cache configuration UI
-
-        private static bool IsCollabCacheEnabled()
-        {
-            return s_EnableCollabCacheConfiguration || Application.HasARGV("enableCacheServer");
-        }
-
         public enum CacheServerMode { Local, Remote, Disabled }
         private static CacheServerMode s_CacheServerMode;
         private static string s_CacheServerIPAddress;
@@ -70,11 +61,6 @@ namespace UnityEditor
             s_LocalCacheServerSize = EditorPrefs.GetInt(LocalCacheServer.SizeKey, 10);
             s_CachePath = EditorPrefs.GetString(LocalCacheServer.PathKey);
             s_EnableCustomPath = EditorPrefs.GetBool(LocalCacheServer.CustomPathKey);
-            if (IsCollabCacheEnabled())
-            {
-                s_CollabCacheIPAddress = EditorPrefs.GetString("CollabCacheIPAddress", s_CollabCacheIPAddress);
-                s_CollabCacheEnabled = EditorPrefs.GetBool("CollabCacheEnabled");
-            }
         }
 
         public static void WritePreferences()
@@ -108,11 +94,6 @@ namespace UnityEditor
             EditorPrefs.SetInt(LocalCacheServer.SizeKey, s_LocalCacheServerSize);
             EditorPrefs.SetString(LocalCacheServer.PathKey, s_CachePath);
             EditorPrefs.SetBool(LocalCacheServer.CustomPathKey, s_EnableCustomPath);
-            if (IsCollabCacheEnabled())
-            {
-                EditorPrefs.SetString("CollabCacheIPAddress", s_CollabCacheIPAddress);
-                EditorPrefs.SetBool("CollabCacheEnabled", s_CollabCacheEnabled);
-            }
             LocalCacheServer.Setup();
 
             if (changedDir)
@@ -153,14 +134,6 @@ namespace UnityEditor
                 }
 
                 EditorGUI.BeginChangeCheck();
-                if (IsCollabCacheEnabled())
-                {
-                    s_CollabCacheEnabled = EditorGUILayout.Toggle("Use Collab Cache", s_CollabCacheEnabled);
-                    using (new EditorGUI.DisabledScope(!s_CollabCacheEnabled))
-                    {
-                        s_CollabCacheIPAddress = EditorGUILayout.TextField("Collab Cache IP Address", s_CollabCacheIPAddress);
-                    }
-                }
 
                 s_CacheServerMode = (CacheServerMode)EditorGUILayout.EnumPopup("Cache Server Mode", s_CacheServerMode);
 

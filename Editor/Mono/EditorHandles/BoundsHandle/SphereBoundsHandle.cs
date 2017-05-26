@@ -38,6 +38,12 @@ namespace UnityEditor.IMGUI.Controls
                 Handles.DrawWireArc(center, Vector3.up, Vector3.right, 360f, radius);
             if (y && z)
                 Handles.DrawWireArc(center, Vector3.right, Vector3.forward, 360f, radius);
+            if (x && !y && !z)
+                Handles.DrawLine(Vector3.right * radius, Vector3.left * radius);
+            if (!x && y && !z)
+                Handles.DrawLine(Vector3.up * radius, Vector3.down * radius);
+            if (!x && !y && z)
+                Handles.DrawLine(Vector3.forward * radius, Vector3.back * radius);
         }
 
         protected override Bounds OnHandleChanged(HandleDirection handle, Bounds boundsOnClick, Bounds newBounds)

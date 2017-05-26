@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityRandom = UnityEngine.Random;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -77,7 +76,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public ArcHandle() : this(0)
         {
-            m_ControlIDHint = UnityRandom.Range(Int32.MinValue, Int32.MaxValue);
+            m_ControlIDHint = GetHashCode();
         }
 
         public ArcHandle(int controlIDHint)
