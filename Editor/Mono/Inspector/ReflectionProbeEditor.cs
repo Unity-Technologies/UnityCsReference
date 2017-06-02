@@ -49,8 +49,7 @@ namespace UnityEditor
         private Matrix4x4 m_OldLocalSpace = Matrix4x4.identity;
         private float m_MipLevelPreview = 0.0F;
 
-        private static int s_HandleControlIDHint = typeof(ReflectionProbeEditor).Name.GetHashCode();
-        private BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
+        private BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
         private Hashtable m_CachedGizmoMaterials = new Hashtable();
 

@@ -11,10 +11,8 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class CircleCollider2DEditor : PrimitiveCollider2DEditor
     {
-        private static readonly int s_HandleControlIDHint = typeof(CircleCollider2DEditor).Name.GetHashCode();
-
         private SerializedProperty m_Radius;
-        private readonly SphereBoundsHandle m_BoundsHandle = new SphereBoundsHandle(s_HandleControlIDHint);
+        private readonly SphereBoundsHandle m_BoundsHandle = new SphereBoundsHandle();
 
         public override void OnEnable()
         {

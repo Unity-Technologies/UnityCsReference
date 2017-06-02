@@ -385,7 +385,7 @@ public Component[] GetComponentsInParent(Type type, [uei.DefaultValue("false")] 
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  GameObject Find (string name) ;
 
-    public Bounds CalculateBounds () {
+    internal Bounds CalculateBounds () {
         Bounds result;
         INTERNAL_CALL_CalculateBounds ( this, out result );
         return result;

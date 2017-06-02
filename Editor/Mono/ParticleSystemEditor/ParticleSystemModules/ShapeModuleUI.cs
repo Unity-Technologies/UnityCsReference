@@ -82,13 +82,12 @@ namespace UnityEditor
 
         // internal
         private Material m_Material;
-        private static int s_HandleControlIDHint = typeof(ShapeModuleUI).Name.GetHashCode();
         Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(
                 Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one
                 );
-        private ArcHandle m_ArcHandle = new ArcHandle(s_HandleControlIDHint);
-        private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
-        private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle(s_HandleControlIDHint);
+        private ArcHandle m_ArcHandle = new ArcHandle();
+        private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle();
+        private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
         private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
 
         private readonly string[] m_GuiNames = new string[] { "Sphere", "Hemisphere", "Cone", "Donut", "Box", "Mesh", "Mesh Renderer", "Skinned Mesh Renderer", "Circle", "Edge" };

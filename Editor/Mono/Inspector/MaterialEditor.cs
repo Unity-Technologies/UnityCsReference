@@ -1897,6 +1897,9 @@ namespace UnityEditor
 
         internal void HandleRenderer(Renderer r, int materialIndex, Event evt)
         {
+            if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
+                return;
+
             var applyAndConsumeEvent = false;
             switch (evt.type)
             {

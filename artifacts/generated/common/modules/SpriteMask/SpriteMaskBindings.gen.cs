@@ -12,8 +12,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-
-
+[RejectDragAndDropMaterial]
 public sealed partial class SpriteMask : Renderer
 {
     public extern  Sprite sprite
