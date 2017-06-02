@@ -14,13 +14,11 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class BoxCollider2DEditor : Collider2DEditorBase
     {
-        private static readonly int s_HandleControlIDHint = typeof(BoxCollider2DEditor).Name.GetHashCode();
-
         private SerializedProperty m_Size;
         private SerializedProperty m_EdgeRadius;
         private SerializedProperty m_UsedByComposite;
         private readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
-        private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
+        private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
         protected override GUIContent editModeButton { get { return PrimitiveBoundsHandle.editModeButton; } }
 

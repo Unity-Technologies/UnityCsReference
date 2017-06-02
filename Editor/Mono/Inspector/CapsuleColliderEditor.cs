@@ -11,14 +11,12 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class CapsuleColliderEditor : PrimitiveCollider3DEditor
     {
-        private static readonly int s_HandleControlIDHint = typeof(CapsuleColliderEditor).Name.GetHashCode();
-
         SerializedProperty m_Center;
         SerializedProperty m_Radius;
         SerializedProperty m_Height;
         SerializedProperty m_Direction;
 
-        private readonly CapsuleBoundsHandle m_BoundsHandle = new CapsuleBoundsHandle(s_HandleControlIDHint);
+        private readonly CapsuleBoundsHandle m_BoundsHandle = new CapsuleBoundsHandle();
 
         public override void OnEnable()
         {
@@ -54,6 +52,7 @@ namespace UnityEditor
             float radiusScaleFactor;
             Vector3 sizeScale =
                 GetCapsuleColliderHandleScale(collider.transform.lossyScale, collider.direction, out radiusScaleFactor);
+            m_BoundsHandle.height = m_BoundsHandle.radius = 0f;
             m_BoundsHandle.height = collider.height * Mathf.Abs(sizeScale[collider.direction]);
             m_BoundsHandle.radius = collider.radius * radiusScaleFactor;
             switch (collider.direction)

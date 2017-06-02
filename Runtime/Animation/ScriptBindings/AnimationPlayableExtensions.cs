@@ -11,13 +11,6 @@ namespace UnityEngine.Animations
 {
     public static partial class AnimationPlayableExtensions
     {
-        public static AnimationClip GetAnimatedProperties<U>(this U playable)
-            where U : struct, IPlayable
-        {
-            var handle = playable.GetHandle();
-            return GetAnimatedPropertiesInternal(ref handle);
-        }
-
         public static void SetAnimatedProperties<U>(this U playable, AnimationClip clip)
             where U : struct, IPlayable
         {
