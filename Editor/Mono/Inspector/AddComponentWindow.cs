@@ -191,6 +191,13 @@ namespace UnityEditor
                     InternalEditorUtility.AddScriptComponentUncheckedUndoable(go, script);
                 }
 
+                s_AddComponentWindow.SendUsabilityAnalyticsEvent(new AnalyticsEventData
+                {
+                    name = className,
+                    filter = s_AddComponentWindow.m_DelayedSearch ?? s_AddComponentWindow.m_Search,
+                    isNewScript = true
+                });
+
                 s_AddComponentWindow.Close();
             }
 
@@ -272,6 +279,14 @@ namespace UnityEditor
             }
         }
 
+        [System.Serializable]
+        class AnalyticsEventData
+        {
+            public string name;
+            public string filter;
+            public bool isNewScript;
+        }
+
         // Styles
 
         class Styles
@@ -340,6 +355,8 @@ namespace UnityEditor
         private bool m_ScrollToSelected = false;
         private string m_DelayedSearch = null;
         private string m_Search = "";
+
+        private DateTime m_OpenTime;
 
         // Properties
 
@@ -438,6 +455,8 @@ namespace UnityEditor
 
         void Init(Rect buttonRect)
         {
+            m_OpenTime = System.DateTime.UtcNow;
+
             // Has to be done before calling Show / ShowWithMode
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
 
@@ -785,6 +804,13 @@ namespace UnityEditor
             {
                 if (addIfComponent)
                 {
+                    SendUsabilityAnalyticsEvent(new AnalyticsEventData
+                    {
+                        name = ((ComponentElement)e).name,
+                        filter = m_DelayedSearch ?? m_Search,
+                        isNewScript = false
+                    });
+
                     EditorApplication.ExecuteMenuItemOnGameObjects(((ComponentElement)e).menuPath, m_GameObjects);
                     Close();
                 }
@@ -800,6 +826,11 @@ namespace UnityEditor
                     m_Stack.Add(e as GroupElement);
                 }
             }
+        }
+
+        void SendUsabilityAnalyticsEvent(AnalyticsEventData eventData)
+        {
+            UsabilityAnalytics.SendEvent("executeAddComponentWindow", m_OpenTime, DateTime.UtcNow - m_OpenTime, false, eventData);
         }
 
         private void ListGUI(Element[] tree, float anim, GroupElement parent, GroupElement grandParent)

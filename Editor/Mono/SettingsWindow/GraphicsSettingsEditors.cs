@@ -3,13 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditor.Build;
 using UnityEngine.Rendering;
-using Object = UnityEngine.Object;
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 using TierSettings = UnityEditor.Rendering.TierSettings;
 using GraphicsTier = UnityEngine.Rendering.GraphicsTier;

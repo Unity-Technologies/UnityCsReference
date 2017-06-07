@@ -103,7 +103,10 @@ namespace UnityEditor
                     }
                     else
                     {
-                        diagnosticSwitch.persistentValue = EditorGUI.IntPopup(rowRect, labelText, (int)diagnosticSwitch.persistentValue, diagnosticSwitch.enumInfo.guiNames, diagnosticSwitch.enumInfo.values);
+                        var guiNames = new GUIContent[diagnosticSwitch.enumInfo.names.Length];
+                        for (int i = 0; i < diagnosticSwitch.enumInfo.names.Length; ++i)
+                            guiNames[i] = new GUIContent(diagnosticSwitch.enumInfo.names[i], diagnosticSwitch.enumInfo.annotations[i]);
+                        diagnosticSwitch.persistentValue = EditorGUI.IntPopup(rowRect, labelText, (int)diagnosticSwitch.persistentValue, guiNames, diagnosticSwitch.enumInfo.values);
                     }
                 }
                 else if (diagnosticSwitch.value is UInt32)

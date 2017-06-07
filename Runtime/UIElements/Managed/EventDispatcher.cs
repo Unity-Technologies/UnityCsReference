@@ -195,7 +195,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
                 else
                 {
-                    // Force call to PropagateToIMGUIContainer(), even if capture != null.
+                    // Force call to SendEventToIMGUIContainers(), even if capture != null.
                     invokedHandleEvent = false;
                 }
 
@@ -244,13 +244,13 @@ namespace UnityEngine.Experimental.UIElements
             // Fallback on IMGUI propagation if we don't recognize this event
             if (!evt.isPropagationStopped && (e.type == EventType.MouseEnterWindow || e.type == EventType.MouseLeaveWindow || e.type == EventType.Used || !invokedHandleEvent))
             {
-                PropagateToIMGUIContainer(panel.visualTree, evt);
+                SendEventToIMGUIContainers(panel.visualTree, evt);
             }
 
             e.mousePosition = savedMousePosition;
         }
 
-        private void PropagateToIMGUIContainer(VisualElement root, EventBase evt)
+        private void SendEventToIMGUIContainers(VisualElement root, EventBase evt)
         {
             // Send the event to the first IMGUIContainer that can handle it.
 
@@ -275,7 +275,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     for (int i = 0; i < container.childrenCount; i++)
                     {
-                        PropagateToIMGUIContainer(container.GetChildAt(i), evt);
+                        SendEventToIMGUIContainers(container.GetChildAt(i), evt);
                         if (evt.isPropagationStopped)
                             break;
                     }

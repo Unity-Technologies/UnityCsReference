@@ -112,13 +112,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        public bool IsCompatibleWith(BuildTarget buildTarget, BuildFlags buildFlags)
+        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
             // Compatible with editor and all platforms.
             if (IncludePlatforms == null && ExcludePlatforms == null)
                 return true;
 
-            bool buildingForEditor = (buildFlags & BuildFlags.BuildingForEditor) == BuildFlags.BuildingForEditor;
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             if (buildingForEditor)
                 return IsCompatibleWithEditor();

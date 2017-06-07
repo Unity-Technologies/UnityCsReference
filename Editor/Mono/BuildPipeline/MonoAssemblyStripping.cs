@@ -269,6 +269,10 @@ namespace UnityEditor
             }
             catch (AssemblyResolutionException e)
             {
+                // Skip module dlls if we can't find them - we might build for a platform without modular UnityEngine support.
+                if (AssemblyHelper.IsUnityEngineModule(assemblyName.Name))
+                    return null;
+
                 // DefaultAssemblyResolver doesn't handle windows runtime references correctly. But that is okay, as they cannot derive from managed types anyway
                 if (e.AssemblyReference.IsWindowsRuntime)
                     return null;

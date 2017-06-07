@@ -32,8 +32,9 @@ namespace UnityEditorInternal
         public State dstState  { get { return default(State); } }
         public AnimatorCondition GetCondition(int index) { return default(AnimatorCondition); }
         public AnimatorCondition AddCondition() { return default(AnimatorCondition); }
-        */
+
         public GUIContent GetTransitionContentForRect(Rect rect) { return default(GUIContent); }
+        */
     }
 
     [System.Obsolete("StateMachine is obsolete. Use UnityEditor.Animations.AnimatorStateMachine instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorStateMachine", true)]

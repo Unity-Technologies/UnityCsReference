@@ -2078,10 +2078,22 @@ namespace UnityEditor
             string intStr = EditorGUI.DelayedTextFieldInternal(position, id, label, oldVal.ToString(), s_AllowedCharactersForInt, style);
             if (EditorGUI.EndChangeCheck())
             {
-                if (int.TryParse(intStr, out newVal) && newVal != oldVal)
+                if (int.TryParse(intStr, out newVal))
                 {
-                    value = newVal;
-                    GUI.changed = true;
+                    if (newVal != oldVal)
+                    {
+                        value = newVal;
+                        GUI.changed = true;
+                    }
+                }
+                else
+                {
+                    newVal = ExpressionEvaluator.Evaluate<int>(intStr);
+                    if (newVal != oldVal)
+                    {
+                        value = newVal;
+                        GUI.changed = true;
+                    }
                 }
             }
             return newVal;

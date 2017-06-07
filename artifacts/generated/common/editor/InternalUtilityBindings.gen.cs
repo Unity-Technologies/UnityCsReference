@@ -41,6 +41,7 @@ public enum HierarchyType
 {
     Assets = 1,
     GameObjects = 2,
+    Packages = 3
 }
 
 public enum IconDrawStyle
@@ -90,7 +91,7 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public HierarchyProperty (HierarchyType hierarchytType) ;
+    extern public HierarchyProperty (HierarchyType hierarchyType) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

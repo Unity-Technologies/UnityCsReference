@@ -57,6 +57,8 @@ namespace UnityEditor
 
             m_ShowAnimateCrossFading.valueChanged.RemoveListener(Repaint);
             m_ShowFadeTransitionWidth.valueChanged.RemoveListener(Repaint);
+            if (m_PreviewUtility != null)
+                m_PreviewUtility.Cleanup();
         }
 
         // Find the given sceen space recangular bounds from a list of vector 3 points.

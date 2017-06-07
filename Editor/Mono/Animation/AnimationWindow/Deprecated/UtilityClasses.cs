@@ -81,14 +81,16 @@ namespace UnityEditor
             {
                 if (AnimationUtility.GetKeyBroken(curve[keyIndex - 1]))
                     broken = true;
-                if (AnimationUtility.GetKeyRightTangentMode(curve[keyIndex - 1]) == TangentMode.ClampedAuto)
+                TangentMode prevTangentMode = AnimationUtility.GetKeyRightTangentMode(curve[keyIndex - 1]);
+                if (prevTangentMode == TangentMode.ClampedAuto || prevTangentMode == TangentMode.Auto)
                     smoothTangent = true;
             }
             if (keyIndex < curve.length - 1)
             {
                 if (AnimationUtility.GetKeyBroken(curve[keyIndex + 1]))
                     broken = true;
-                if (AnimationUtility.GetKeyLeftTangentMode(curve[keyIndex + 1]) == TangentMode.ClampedAuto)
+                TangentMode nextTangentMode = AnimationUtility.GetKeyLeftTangentMode(curve[keyIndex + 1]);
+                if (nextTangentMode == TangentMode.ClampedAuto || nextTangentMode == TangentMode.Auto)
                     smoothTangent = true;
             }
 

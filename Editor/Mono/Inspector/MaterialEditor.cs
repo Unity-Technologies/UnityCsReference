@@ -57,6 +57,7 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable Instancing");
+            public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TextContent("Double Sided Global Illumination|When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
             public static readonly GUIContent emissionLabel = EditorGUIUtility.TextContent("Emission");
         }
 
@@ -100,6 +101,7 @@ namespace UnityEditor
 
         private Shader m_Shader;
         private SerializedProperty m_EnableInstancing;
+        private SerializedProperty m_DoubleSidedGI;
 
         private string                      m_InfoMessage;
         private Vector2                     m_PreviewDir = new Vector2(0, -20);
@@ -1517,6 +1519,7 @@ namespace UnityEditor
 
             RenderQueueField();
             EnableInstancingField();
+            DoubleSidedGIField();
         }
 
         public static void ApplyMaterialPropertyDrawers(Material material)
@@ -1810,6 +1813,7 @@ namespace UnityEditor
             CreateCustomShaderEditorIfNeeded(m_Shader);
 
             m_EnableInstancing = serializedObject.FindProperty("m_EnableInstancingVariants");
+            m_DoubleSidedGI =  serializedObject.FindProperty("m_DoubleSidedGI");
 
             s_MaterialEditors.Add(this);
             Undo.undoRedoPerformed += UndoRedoPerformed;
@@ -1897,6 +1901,9 @@ namespace UnityEditor
 
         internal void HandleRenderer(Renderer r, int materialIndex, Event evt)
         {
+            if (r.GetType().GetCustomAttributes(typeof(RejectDragAndDropMaterial), true).Length > 0)
+                return;
+
             var applyAndConsumeEvent = false;
             switch (evt.type)
             {

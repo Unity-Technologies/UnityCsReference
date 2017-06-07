@@ -965,26 +965,24 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        protected internal void PropagateChangesToParents()
+        private void PropagateChangesToParents()
         {
             ChangeType parentChanges = 0;
-            if ((changesNeeded & ChangeType.Styles) > 0)
+            if (changesNeeded != 0)
             {
-                parentChanges |= ChangeType.StylesPath;
+                // if we have any change at all, propagate the repaint flag
+                // this is somehow an implementation detail but this is the only flag that is checked in the app tick
+                // this means that styles, layout, transform, etc. will be processed just before painting a panel
+                // a small downside is that we might repaint more often that necessary
+                // another solution would be to process all flags sequentially in the tick to check if a repaint is needed
                 parentChanges |= ChangeType.Repaint;
-            }
-            if ((changesNeeded & ChangeType.Transform) > 0)
-            {
-                parentChanges |= ChangeType.Repaint;
-            }
-            if ((changesNeeded & ChangeType.Layout) > 0)
-            {
-                parentChanges |= ChangeType.Repaint;
-            }
-            if ((changesNeeded & ChangeType.Repaint) > 0)
-            {
-                // up to root.
-                parentChanges |= ChangeType.Repaint;
+
+                if ((changesNeeded & ChangeType.Styles) > 0)
+                {
+                    // if this visual element needs its styles recomputed, propagate this specific flags for its parents
+                    // it is less expensive than a full styles re-pass
+                    parentChanges |= ChangeType.StylesPath;
+                }
             }
 
             var current = parent;

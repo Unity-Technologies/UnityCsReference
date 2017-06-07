@@ -5,8 +5,6 @@
 using System;
 using UnityEditorInternal;
 using UnityEditor.Web;
-using UnityEditor;
-using System.Text;
 
 namespace UnityEditor.Connect
 {
@@ -201,12 +199,6 @@ namespace UnityEditor.Connect
         public static void TestComputerDidWakeUp()
         {
             instance.ComputerDidWakeUp();
-        }
-
-        [MenuItem("Window/Unity Connect/Reset AccessToken", false, 1000, true)]
-        public static void TestClearAccessToken()
-        {
-            instance.ClearAccessToken();
         }
 
         public static UnityConnect instance

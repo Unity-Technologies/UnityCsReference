@@ -450,6 +450,37 @@ public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material mate
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void SetRenderTarget_Multiple (UnityEngine.Rendering.RenderTargetIdentifier[] color, ref UnityEngine.Rendering.RenderTargetIdentifier depth) ;
 
+    public void SetRandomWriteTarget(int index, RenderTargetIdentifier rt)
+        {
+            SetRandomWriteTarget_Texture(index, ref rt);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void SetRandomWriteTarget_Texture (int index, ref UnityEngine.Rendering.RenderTargetIdentifier rt) ;
+
+    [uei.ExcludeFromDocs]
+public void SetRandomWriteTarget (int index, ComputeBuffer buffer) {
+    bool preserveCounterValue = false;
+    SetRandomWriteTarget ( index, buffer, preserveCounterValue );
+}
+
+public void SetRandomWriteTarget(int index, ComputeBuffer buffer, [uei.DefaultValue("false")]  bool preserveCounterValue )
+        {
+            SetRandomWriteTarget_Buffer(index, buffer, preserveCounterValue);
+        }
+
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void SetRandomWriteTarget_Buffer (int index, ComputeBuffer uav, bool preserveCounterValue) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void ClearRandomWriteTargets () ;
+
     public void CopyTexture(RenderTargetIdentifier src, RenderTargetIdentifier dst)
         {
             CopyTexture_Internal(ref src, -1, -1, -1, -1, -1, -1,

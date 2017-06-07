@@ -954,6 +954,14 @@ public float[] GetSpectrumData(int numSamples, int channel, FFTWindow window)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public bool GetSpatializerFloat (int index, out float value) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool SetAmbisonicDecoderFloat (int index, float value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool GetAmbisonicDecoderFloat (int index, out float value) ;
+
 }
 
 public enum AudioReverbPreset

@@ -14,25 +14,6 @@ namespace UnityEditor.IMGUI.Controls
 
         static readonly float s_DefaultRadiusHandleSize = 0.03f;
 
-        static void DefaultAngleHandleDrawFunction(
-            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
-            )
-        {
-            Handles.DrawLine(Vector3.zero, position);
-
-            // draw a cylindrical "hammer head" to indicate the direction the handle will move
-            Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
-            Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
-            Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
-            rotation = Quaternion.LookRotation(tangent, normal);
-            Matrix4x4 matrix =
-                Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
-            using (new Handles.DrawingScope(matrix))
-            {
-                Handles.CylinderHandleCap(controlID, Vector3.zero, Quaternion.identity, size, eventType);
-            }
-        }
-
         static float DefaultAngleHandleSizeFunction(Vector3 position)
         {
             return HandleUtility.GetHandleSize(position) * s_DefaultAngleHandleSize;
@@ -50,13 +31,14 @@ namespace UnityEditor.IMGUI.Controls
             Handles.DotHandleCap(controlID, position, rotation, size, eventType);
         }
 
-        private int m_ControlIDHint;
+        private bool m_ControlIDsReserved = false;
+        private int m_AngleHandleControlID;
         private int[] m_RadiusHandleControlIDs = new int[4];
+        private Quaternion m_MostRecentValidAngleHandleOrientation = Quaternion.identity;
 
         public float angle { get; set; }
 
-        public float radius { get { return m_Radius; } set { m_Radius = Mathf.Abs(value); } }
-        float m_Radius;
+        public float radius { get; set; }
 
         public Color angleHandleColor { get; set; }
 
@@ -74,15 +56,9 @@ namespace UnityEditor.IMGUI.Controls
 
         public Handles.SizeFunction radiusHandleSizeFunction { get; set; }
 
-        public ArcHandle() : this(0)
+        public ArcHandle()
         {
-            m_ControlIDHint = GetHashCode();
-        }
-
-        public ArcHandle(int controlIDHint)
-        {
-            m_ControlIDHint = controlIDHint;
-            this.radius = 1f;
+            radius = 1f;
             SetColorWithoutRadiusHandle(Color.white, 0.1f);
         }
 
@@ -103,10 +79,9 @@ namespace UnityEditor.IMGUI.Controls
 
         public void DrawHandle()
         {
-            // get control IDs first in case function exits early
-            int angleHandleControlID = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Keyboard);
-            for (int i = 0; i < m_RadiusHandleControlIDs.Length; ++i)
-                m_RadiusHandleControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Keyboard);
+            if (!m_ControlIDsReserved)
+                GetControlIDs();
+            m_ControlIDsReserved = false;
 
             if (Handles.color.a == 0f)
                 return;
@@ -140,9 +115,21 @@ namespace UnityEditor.IMGUI.Controls
                 }
             }
 
-            // exit before drawing control handles if holding alt, since alt-click will rotate scene view
+            // unless holding alt while already manipulating a control, exit before drawing control handles when holding alt, since alt-click will rotate scene view
             if (Event.current.alt)
-                return;
+            {
+                bool exit = true;
+                foreach (var id in m_RadiusHandleControlIDs)
+                {
+                    if (id == GUIUtility.hotControl)
+                    {
+                        exit = false;
+                        break;
+                    }
+                }
+                if (exit && GUIUtility.hotControl != m_AngleHandleControlID)
+                    return;
+            }
 
             using (new Handles.DrawingScope(Handles.color * radiusHandleColor))
             {
@@ -175,7 +162,6 @@ namespace UnityEditor.IMGUI.Controls
                             if (EditorGUI.EndChangeCheck())
                             {
                                 radius += (newPosition - radiusHandlePosition).z;
-                                radius = Mathf.Max(radius, 0f);
                             }
                         }
                     }
@@ -193,7 +179,7 @@ namespace UnityEditor.IMGUI.Controls
                             DefaultAngleHandleSizeFunction(angleHandlePosition) :
                             angleHandleSizeFunction(angleHandlePosition);
                         angleHandlePosition = Handles.Slider2D(
-                                angleHandleControlID,
+                                m_AngleHandleControlID,
                                 angleHandlePosition,
                                 Vector3.up,
                                 Vector3.forward,
@@ -212,6 +198,32 @@ namespace UnityEditor.IMGUI.Controls
                     }
                 }
             }
+        }
+
+        internal void GetControlIDs()
+        {
+            m_AngleHandleControlID = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
+            for (int i = 0; i < m_RadiusHandleControlIDs.Length; ++i)
+                m_RadiusHandleControlIDs[i] = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
+            m_ControlIDsReserved = true;
+        }
+
+        private void DefaultAngleHandleDrawFunction(
+            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
+            )
+        {
+            Handles.DrawLine(Vector3.zero, position);
+
+            // draw a cylindrical "hammer head" to indicate the direction the handle will move
+            Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
+            Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
+            Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
+            m_MostRecentValidAngleHandleOrientation = rotation = tangent.sqrMagnitude == 0f ?
+                    m_MostRecentValidAngleHandleOrientation : Quaternion.LookRotation(tangent, normal);
+            Matrix4x4 matrix =
+                Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
+            using (new Handles.DrawingScope(matrix))
+                Handles.CylinderHandleCap(controlID, Vector3.zero, Quaternion.identity, size, eventType);
         }
     }
 }

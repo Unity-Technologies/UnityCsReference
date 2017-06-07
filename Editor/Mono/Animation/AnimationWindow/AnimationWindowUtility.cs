@@ -206,8 +206,15 @@ namespace UnityEditorInternal
                     int keyIndex = animationCurve.AddKey(tempKey);
                     if (keyIndex != -1)
                     {
+                        // Make sure tangent slopes default to ClampedAuto.  Tangent mode will be modified afterwards.
+                        AnimationUtility.SetKeyLeftTangentMode(animationCurve, keyIndex, TangentMode.ClampedAuto);
+                        AnimationUtility.SetKeyRightTangentMode(animationCurve, keyIndex, TangentMode.ClampedAuto);
+                        AnimationUtility.UpdateTangentsFromModeSurrounding(animationCurve, keyIndex);
+
                         CurveUtility.SetKeyModeFromContext(animationCurve, keyIndex);
                         keyframe.m_TangentMode = animationCurve[keyIndex].tangentMode;
+                        keyframe.m_InTangent = animationCurve[keyIndex].inTangent;
+                        keyframe.m_OutTangent = animationCurve[keyIndex].outTangent;
                     }
                 }
 

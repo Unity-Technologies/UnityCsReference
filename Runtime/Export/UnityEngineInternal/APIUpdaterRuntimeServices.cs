@@ -32,21 +32,21 @@ In order to be able to build the game, replace this call (APIUpdaterRuntimeServi
             var foundOnUnityEngine = ComponentsFromUnityEngine.FirstOrDefault(t => (t.Name == name || t.FullName == name) && !IsMarkedAsObsolete(t));
             if (foundOnUnityEngine != null)
             {
-                Debug.LogWarningFormat("[{1}] Type '{0}' found in UnityEngine, consider replacing with go.AddComponent<{0}>();", name, sourceInfo);
+                Debug.LogWarningFormat("[{1}] Component type '{0}' found in UnityEngine, consider replacing with go.AddComponent<{0}>()", name, sourceInfo);
                 return foundOnUnityEngine;
             }
 
             var candidateType = callingAssembly.GetType(name);
             if (candidateType != null)
             {
-                Debug.LogWarningFormat("[{1}] Component type '{0}' found on caller assembly. Consider replacing the call method call with: AddComponent<{0}>()", candidateType.FullName, sourceInfo);
+                Debug.LogWarningFormat("[{1}] Component type '{0}' found on caller assembly, consider replacing with go.AddComponent<{0}>()", name, sourceInfo);
                 return candidateType;
             }
 
-            candidateType = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).SingleOrDefault(t => t.Name == name && typeof(Component).IsAssignableFrom(t));
+            candidateType = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).SingleOrDefault(t => (t.Name == name || t.FullName == name) && typeof(Component).IsAssignableFrom(t));
             if (candidateType != null)
             {
-                Debug.LogWarningFormat("[{2}] Component type '{0}' found on assembly {1}. Consider replacing the call method with: AddComponent<{0}>()", candidateType.FullName, candidateType.Assembly.Location, sourceInfo);
+                Debug.LogWarningFormat("[{2}] Component type '{0}' found on assembly {1}, consider replacing with go.AddComponent<{0}>()", name, new AssemblyName(candidateType.Assembly.FullName).Name, sourceInfo);
                 return candidateType;
             }
 

@@ -130,6 +130,39 @@ namespace UnityEditor
         private int m_PrevLastFrame = -1;
         private int m_LastAudioProfilerFrame = -1;
 
+        private readonly string[] k_CPUProfilerViewTypeNames = new string[]
+        {
+            "Hierarchy",
+            "Timeline",
+            "Raw Hierarchy"
+        };
+
+        private readonly int[] k_CPUProfilerViewTypes = new int[]
+        {
+            (int)ProfilerViewType.Hierarchy,
+            (int)ProfilerViewType.Timeline,
+            (int)ProfilerViewType.RawHierarchy
+        };
+
+        private readonly string[] k_GPUProfilerViewTypeNames = new string[]
+        {
+            "Hierarchy",
+            "Raw Hierarchy"
+        };
+
+        private readonly int[] k_GPUProfilerViewTypes = new int[]
+        {
+            (int)ProfilerViewType.Hierarchy,
+            (int)ProfilerViewType.RawHierarchy
+        };
+
+        private readonly int[] k_HierarchyViewDetailPaneTypes = new[]
+        {
+            (int)HierarchyViewDetailPaneType.None,
+            (int)HierarchyViewDetailPaneType.Objects,
+            (int)HierarchyViewDetailPaneType.CallersAndCallees,
+        };
+
         // Profiler charts
         private ProfilerChart[] m_Charts;
 
@@ -162,8 +195,10 @@ namespace UnityEditor
         const int kFirst = -999999;
         const int kLast = 999999;
 
-        private ProfilerHierarchyGUI m_CPUHierarchyGUI;
-        private ProfilerHierarchyGUI m_GPUHierarchyGUI;
+        [SerializeField]
+        private ProfilerHierarchyGUI m_CPUHierarchyGUI = new ProfilerHierarchyGUI(ProfilerColumn.TotalTime);
+        [SerializeField]
+        private ProfilerHierarchyGUI m_GPUHierarchyGUI = new ProfilerHierarchyGUI(ProfilerColumn.TotalGPUTime);
         private ProfilerTimelineGUI m_CPUTimelineGUI;
 
         struct CachedProfilerPropertyConfig
@@ -225,9 +260,8 @@ namespace UnityEditor
             var names = ProfilerColumnNames(cpuDetailColumns);
             names[0] = objectText;
             var cpuDetailHierarchyGUI = new ProfilerHierarchyGUI(this, null, kProfilerDetailColumnSettings, cpuDetailColumns, names, true, ProfilerColumn.TotalTime);
-            m_CPUHierarchyGUI = new ProfilerHierarchyGUI(this, cpuDetailHierarchyGUI, kProfilerColumnSettings, cpuHierarchyColumns, ProfilerColumnNames(cpuHierarchyColumns), false, ProfilerColumn.TotalTime);
+            m_CPUHierarchyGUI.Setup(this, cpuDetailHierarchyGUI, kProfilerColumnSettings, cpuHierarchyColumns, ProfilerColumnNames(cpuHierarchyColumns), false);
             m_CPUTimelineGUI = new ProfilerTimelineGUI(this);
-
 
             var gpuHierarchyColumns = new[] { ProfilerColumn.FunctionName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
             var gpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
@@ -235,7 +269,7 @@ namespace UnityEditor
             names = ProfilerColumnNames(gpuDetailColumns);
             names[0] = objectText;
             var gpuDetailHierarchyGUI = new ProfilerHierarchyGUI(this, null, kProfilerGPUDetailColumnSettings, gpuDetailColumns, names, true, ProfilerColumn.TotalGPUTime);
-            m_GPUHierarchyGUI = new ProfilerHierarchyGUI(this, gpuDetailHierarchyGUI, kProfilerGPUColumnSettings, gpuHierarchyColumns, ProfilerColumnNames(gpuHierarchyColumns), false, ProfilerColumn.TotalGPUTime);
+            m_GPUHierarchyGUI.Setup(this, gpuDetailHierarchyGUI, kProfilerGPUColumnSettings, gpuHierarchyColumns, ProfilerColumnNames(gpuHierarchyColumns), false);
             m_UISystemProfiler = new UISystemProfiler();
         }
 
@@ -558,11 +592,11 @@ namespace UnityEditor
                 SetCurrentFrame(nextFrame);
         }
 
-        void DrawCPUOrGPUHierarchyViewToolbar(ProfilerProperty property, bool showDetailedView)
+        void DrawCPUOrGPUHierarchyViewToolbar(ProfilerProperty property, bool showDetailedView, bool hasTimeline)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            DrawCPUorGPUCommonToolbar(property);
+            DrawCPUorGPUCommonToolbar(property, hasTimeline);
 
             GUILayout.FlexibleSpace();
 
@@ -576,13 +610,11 @@ namespace UnityEditor
             HandleCommandEvents();
         }
 
-        void DrawCPUOrGPUTimelineViewToolbar(ProfilerProperty property)
+        void DrawCPUTimelineViewToolbar(ProfilerProperty property)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            DrawCPUorGPUCommonToolbar(property);
-
-
+            DrawCPUorGPUCommonToolbar(property, true);
             GUILayout.FlexibleSpace();
 
             // Memory record
@@ -621,35 +653,32 @@ namespace UnityEditor
             HandleCommandEvents();
         }
 
-        void DrawCPUorGPUCommonToolbar(ProfilerProperty property)
+        void DrawCPUorGPUCommonToolbar(ProfilerProperty property, bool hasTimeline)
         {
-            string[] supportedViewTypes = new string[]
+            if (hasTimeline)
+                m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, k_CPUProfilerViewTypeNames, k_CPUProfilerViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            else
             {
-                "Hierarchy",
-                "Timeline",
-                "Raw Hierarchy"
-            };
-            int[] supportedEnumValues = new int[]
-            {
-                (int)ProfilerViewType.Hierarchy,
-                (int)ProfilerViewType.Timeline,
-                (int)ProfilerViewType.RawHierarchy
-            };
-
-            m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, supportedViewTypes, supportedEnumValues, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+                if (m_ViewType == ProfilerViewType.Timeline)
+                    m_ViewType = ProfilerViewType.Hierarchy;
+                m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, k_GPUProfilerViewTypeNames, k_GPUProfilerViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            }
 
             GUILayout.FlexibleSpace();
 
             GUILayout.Label(string.Format("CPU:{0}ms   GPU:{1}ms", property.frameTime, property.frameGpuTime), EditorStyles.miniLabel);
 
-            GUI.enabled = true;
-
-            if (ProfilerInstrumentationPopup.InstrumentationEnabled)
+            if (hasTimeline)
             {
-                if (GUILayout.Button(ms_Styles.profilerInstrumentation, EditorStyles.toolbarDropDown))
+                GUI.enabled = true;
+
+                if (ProfilerInstrumentationPopup.InstrumentationEnabled)
                 {
-                    Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    ProfilerInstrumentationPopup.Show(rect);
+                    if (GUILayout.Button(ms_Styles.profilerInstrumentation, EditorStyles.toolbarDropDown))
+                    {
+                        Rect rect = GUILayoutUtility.topLevel.GetLast();
+                        ProfilerInstrumentationPopup.Show(rect);
+                    }
                 }
             }
         }
@@ -730,7 +759,7 @@ namespace UnityEditor
             var property = GetRootProfilerProperty();
             if (!CheckFrameData(property))
             {
-                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView);
+                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView, timelinePane != null);
 
                 GUILayout.Label(ms_Styles.noData, ms_Styles.background);
 
@@ -739,7 +768,7 @@ namespace UnityEditor
 
             if (timelinePane != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                DrawCPUOrGPUTimelineViewToolbar(property);
+                DrawCPUTimelineViewToolbar(property);
 
                 float lowerPaneSize = m_VertSplit.realSizes[1];
                 lowerPaneSize -= EditorStyles.toolbar.CalcHeight(GUIContent.none, 10.0f) + 2.0f;
@@ -753,7 +782,7 @@ namespace UnityEditor
                 // Hierarchy view area
                 GUILayout.BeginVertical();
 
-                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView);
+                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView, timelinePane != null);
 
                 bool expandAll = false;
                 mainPane.DoGUI(property, m_SearchString, expandAll);
@@ -788,14 +817,7 @@ namespace UnityEditor
 
         HierarchyViewDetailPaneType DrawCPUOrGPUDetailedViewPopup()
         {
-            var supportedEnumValues = new[]
-            {
-                (int)HierarchyViewDetailPaneType.None,
-                (int)HierarchyViewDetailPaneType.Objects,
-                (int)HierarchyViewDetailPaneType.CallersAndCallees,
-            };
-
-            return (HierarchyViewDetailPaneType)EditorGUILayout.IntPopup((int)m_HierarchyViewDetailPaneType, ms_Styles.detailedPaneTypes, supportedEnumValues, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            return (HierarchyViewDetailPaneType)EditorGUILayout.IntPopup((int)m_HierarchyViewDetailPaneType, ms_Styles.detailedPaneTypes, k_HierarchyViewDetailPaneTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
         }
 
         public ProfilerProperty GetRootProfilerProperty()
@@ -1525,6 +1547,9 @@ namespace UnityEditor
 
         private void DrawOverviewText(ProfilerArea area)
         {
+            if (area == ProfilerArea.AreaCount)
+                return;
+
             m_PaneScroll[(int)area] = GUILayout.BeginScrollView(m_PaneScroll[(int)area], ms_Styles.background);
             GUILayout.Label(ProfilerDriver.GetOverviewText(area, GetActiveVisibleFrameIndex()), EditorStyles.wordWrappedLabel);
             GUILayout.EndScrollView();
@@ -1609,8 +1634,7 @@ namespace UnityEditor
                 {
                     if (m_CurrentArea == (ProfilerArea)c)
                     {
-                        m_CurrentArea = ProfilerArea.CPU;
-                        m_UISystemProfiler.CurrentAreaChanged(m_CurrentArea);
+                        m_CurrentArea = ProfilerArea.AreaCount;
                     }
                     chart.active = false;
                 }

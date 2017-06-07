@@ -67,6 +67,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void SetCompileScriptsOutputDirectory(string directory)
+        {
+            editorCompilation.SetCompileScriptsOutputDirectory(directory);
+        }
+
+        [RequiredByNativeCode]
+        public static string GetCompileScriptsOutputDirectory()
+        {
+            return editorCompilation.GetCompileScriptsOutputDirectory();
+        }
+
+        [RequiredByNativeCode]
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
             editorCompilation.SetAllCustomScriptAssemblyJsons(allAssemblyJsons);
@@ -138,21 +150,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return editorCompilation.GetTargetAssembly(scriptPath);
         }
 
-        public static EditorBuildRules.TargetAssembly GetTargetAssemblyDetails(string scriptPath)
-        {
-            return editorCompilation.GetTargetAssemblyDetails(scriptPath);
-        }
-
         [RequiredByNativeCode]
         public static MonoIsland[] GetAllMonoIslands()
         {
             return editorCompilation.GetAllMonoIslands();
-        }
-
-        [RequiredByNativeCode]
-        public static MonoIsland[] GetAllMonoIslandsExt(PrecompiledAssembly[] unityAssemblies, PrecompiledAssembly[] precompiledAssemblies, BuildFlags buildFlags)
-        {
-            return editorCompilation.GetAllMonoIslands(unityAssemblies, precompiledAssemblies, buildFlags);
         }
     }
 }

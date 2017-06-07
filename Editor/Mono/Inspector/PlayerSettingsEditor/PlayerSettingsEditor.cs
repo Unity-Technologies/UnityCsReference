@@ -116,7 +116,6 @@ namespace UnityEditor
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TextContent("Metal Editor Support* (Experimental)");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TextContent("Metal API Validation*");
-            public static readonly GUIContent mTRendering = EditorGUIUtility.TextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TextContent("Dynamic Batching");
             public static readonly GUIContent graphicsJobs = EditorGUIUtility.TextContent("Graphics Jobs (Experimental)*");
@@ -158,6 +157,8 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TextContent(".NET 4.6");
+            public static readonly GUIContent activeInputHandling = EditorGUIUtility.TextContent("Active Input Handling*");
+            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { new GUIContent("Input Manager"), new GUIContent("Input System (Preview)"), new GUIContent("Both") };
 
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -255,6 +256,8 @@ namespace UnityEditor
         SerializedProperty m_ActionOnDotNetUnhandledException;
         SerializedProperty m_LogObjCUncaughtExceptions;
         SerializedProperty m_EnableCrashReportAPI;
+        SerializedProperty m_EnableInputSystem;
+        SerializedProperty m_DisableInputManager;
 
         // vita
         SerializedProperty m_VideoMemoryForVertexBuffers;
@@ -274,8 +277,6 @@ namespace UnityEditor
         SerializedProperty m_StereoRenderingPath;
 
         SerializedProperty m_ActiveColorSpace;
-        SerializedProperty m_MTRendering;
-        SerializedProperty m_MobileMTRendering;
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_VertexChannelCompressionMask;
         SerializedProperty m_MetalForceHardShadows;
@@ -339,7 +340,7 @@ namespace UnityEditor
         readonly AnimBool m_ShowResolution = new AnimBool();
         private static Texture2D s_WarningIcon;
 
-        private bool IsMobileTarget(BuildTargetGroup targetGroup)
+        public bool IsMobileTarget(BuildTargetGroup targetGroup)
         {
             return targetGroup == BuildTargetGroup.iOS
                 ||  targetGroup == BuildTargetGroup.tvOS
@@ -385,8 +386,6 @@ namespace UnityEditor
             m_UIStatusBarStyle              = FindPropertyAssert("uIStatusBarStyle");
             m_StereoRenderingPath               = FindPropertyAssert("m_StereoRenderingPath");
             m_ActiveColorSpace              = FindPropertyAssert("m_ActiveColorSpace");
-            m_MTRendering                   = FindPropertyAssert("m_MTRendering");
-            m_MobileMTRendering             = FindPropertyAssert("m_MobileMTRendering");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
@@ -419,6 +418,8 @@ namespace UnityEditor
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
             m_LogObjCUncaughtExceptions     = FindPropertyAssert("logObjCUncaughtExceptions");
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
+            m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
+            m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -1511,13 +1512,8 @@ namespace UnityEditor
             }
 
             // Multithreaded rendering
-            if (settingsExtension != null)
-            {
-                if (IsMobileTarget(targetGroup) && settingsExtension.SupportsMultithreadedRendering())
-                    m_MobileMTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MobileMTRendering.boolValue);
-                else if (settingsExtension.SupportsMultithreadedRendering())
-                    m_MTRendering.boolValue = EditorGUILayout.Toggle(Styles.mTRendering, m_MTRendering.boolValue);
-            }
+            if (settingsExtension != null && settingsExtension.SupportsMultithreadedRendering())
+                settingsExtension.MultithreadedRenderingGUI(targetGroup);
 
             // Batching section
             {
@@ -1860,6 +1856,17 @@ namespace UnityEditor
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 if (EditorGUI.EndChangeCheck())
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+            }
+
+            // Active input handling
+            int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
+            EditorGUI.BeginChangeCheck();
+            inputOption = EditorGUILayout.Popup(Styles.activeInputHandling, inputOption, Styles.activeInputHandlingOptions);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
+                m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
+                m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
             }
 
             EditorGUILayout.Space();

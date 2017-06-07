@@ -12,8 +12,6 @@ using System.Collections.Generic;
 
 namespace UnityEngine.VR
 {
-
-
 [System.Obsolete ("VRDeviceType is deprecated. Use VRSettings.supportedDevices instead.")]
 public enum VRDeviceType
 {
@@ -31,6 +29,14 @@ public enum TrackingSpaceType
 {
     Stationary,
     RoomScale
+}
+
+public enum UserPresenceState
+{
+    Unsupported = -1,
+    NotPresent = 0,
+    Present = 1,
+    Unknown = 2,
 }
 
 public static partial class VRSettings
@@ -168,6 +174,13 @@ public static partial class VRSettings
 public static partial class VRDevice
 {
     public extern static bool isPresent
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern static UserPresenceState userPresence
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

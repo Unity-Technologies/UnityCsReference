@@ -164,7 +164,7 @@ namespace UnityEditorInternal
             if (rcr != null)
             {
                 blacklists = blacklists.Concat(new[] {
-                    WriteMethodsToPreserveBlackList(stagingAreaData, rcr),
+                    WriteMethodsToPreserveBlackList(stagingAreaData, rcr, platformProvider.target),
                     MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(stagingAreaData, managedAssemblyFolderPath, rcr)
                 });
             }
@@ -259,15 +259,15 @@ namespace UnityEditorInternal
             Directory.Delete(tempStripPath);
         }
 
-        private static string WriteMethodsToPreserveBlackList(string stagingAreaData, RuntimeClassRegistry rcr)
+        private static string WriteMethodsToPreserveBlackList(string stagingAreaData, RuntimeClassRegistry rcr, BuildTarget target)
         {
             var methodPerserveBlackList = Path.IsPathRooted(stagingAreaData) ? "" : Directory.GetCurrentDirectory() + "/";
             methodPerserveBlackList += stagingAreaData  + "/methods_pointedto_by_uievents.xml";
-            File.WriteAllText(methodPerserveBlackList, GetMethodPreserveBlacklistContents(rcr));
+            File.WriteAllText(methodPerserveBlackList, GetMethodPreserveBlacklistContents(rcr, target));
             return methodPerserveBlackList;
         }
 
-        private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr)
+        private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr, BuildTarget target)
         {
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
@@ -275,7 +275,12 @@ namespace UnityEditorInternal
             var groupedByAssembly = rcr.GetMethodsToPreserve().GroupBy(m => m.assembly);
             foreach (var assembly in groupedByAssembly)
             {
-                sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", assembly.Key));
+                var assemblyName = assembly.Key;
+                // Convert assembly names to monolithic Unity Engine if target platform requires it.
+                if (AssemblyHelper.IsUnityEngineModule(assemblyName) && !BuildPipeline.IsFeatureSupported("ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES", target))
+                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", "UnityEngine"));
+                else
+                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", assemblyName));
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
                 foreach (var type in groupedByType)
                 {

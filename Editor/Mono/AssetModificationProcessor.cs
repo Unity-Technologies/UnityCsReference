@@ -274,6 +274,11 @@ namespace UnityEditor
             if (String.IsNullOrEmpty(assetPath))
                 return true; // assetPath can be empty in some cases where Unity is checking for stuff in Library folder
 
+            if (AssetDatabase.IsPackagedAssetPath(assetPath))
+            {
+                return false;
+            }
+
             bool finalResult = AssetModificationHook.IsOpenForEdit(assetPath, out message, statusOptions);
 
             foreach (var method in GetIsOpenForEditMethods())

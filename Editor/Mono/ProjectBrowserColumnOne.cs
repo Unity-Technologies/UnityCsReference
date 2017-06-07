@@ -270,7 +270,8 @@ namespace UnityEditor
             int depth = 0;
             string displayName = "Assets"; //CreateDisplayName (assetsFolderInstanceID);
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
-            ReadAssetDatabase(assetRootItem, depth + 1);
+            ReadAssetDatabase(HierarchyType.Assets, assetRootItem, depth + 1);
+
 
             // Fetch saved filters
             TreeViewItem savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
@@ -279,6 +280,8 @@ namespace UnityEditor
             // Order
             visibleRoots.Add(savedFiltersRootItem);
             visibleRoots.Add(assetRootItem);
+
+
             m_RootItem.children = visibleRoots;
 
             // Get global expanded state of roots
@@ -291,10 +294,10 @@ namespace UnityEditor
             m_NeedRefreshRows = true;
         }
 
-        private void ReadAssetDatabase(TreeViewItem parent, int baseDepth)
+        private void ReadAssetDatabase(HierarchyType htype, TreeViewItem parent, int baseDepth)
         {
             // Read from Assets directory
-            IHierarchyProperty property = new HierarchyProperty(HierarchyType.Assets);
+            IHierarchyProperty property = new HierarchyProperty(htype);
             property.Reset();
 
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);

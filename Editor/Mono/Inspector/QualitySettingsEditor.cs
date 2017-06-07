@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Build;
 using System.Linq;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -499,40 +500,57 @@ namespace UnityEditor
             var asyncUploadBufferSizeProperty = currentSettings.FindPropertyRelative("asyncUploadBufferSize");
             var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
 
+            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
 
             EditorGUILayout.PropertyField(nameProperty);
+
+            if (usingSRP)
+                EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);
+
             GUILayout.Space(10);
 
             GUILayout.Label(EditorGUIUtility.TempContent("Rendering"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(pixelLightCountProperty);
+            if (!usingSRP)
+                EditorGUILayout.PropertyField(pixelLightCountProperty);
+
+            // still valid with SRP
             EditorGUILayout.PropertyField(textureQualityProperty);
             EditorGUILayout.PropertyField(anisotropicTexturesProperty);
-            EditorGUILayout.PropertyField(antiAliasingProperty);
-            EditorGUILayout.PropertyField(softParticlesProperty);
-            if (softParticlesProperty.boolValue)
-                SoftParticlesHintGUI();
+
+            if (!usingSRP)
+            {
+                EditorGUILayout.PropertyField(antiAliasingProperty);
+                EditorGUILayout.PropertyField(softParticlesProperty);
+                if (softParticlesProperty.boolValue)
+                    SoftParticlesHintGUI();
+            }
+
             EditorGUILayout.PropertyField(realtimeReflectionProbes);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Styles.kBillboardsFaceCameraPos);
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
             GUILayout.Space(10);
 
-            GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(shadowsProperty);
-            EditorGUILayout.PropertyField(shadowResolutionProperty);
-            EditorGUILayout.PropertyField(shadowProjectionProperty);
-            EditorGUILayout.PropertyField(shadowDistanceProperty);
-            EditorGUILayout.PropertyField(shadowMaskUsageProperty);
-            EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
-            EditorGUILayout.PropertyField(shadowCascadesProperty);
+            if (!usingSRP)
+            {
+                GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(shadowsProperty);
+                EditorGUILayout.PropertyField(shadowResolutionProperty);
+                EditorGUILayout.PropertyField(shadowProjectionProperty);
+                EditorGUILayout.PropertyField(shadowDistanceProperty);
+                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
+                EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
+                EditorGUILayout.PropertyField(shadowCascadesProperty);
 
-            if (shadowCascadesProperty.intValue == 2)
-                DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
-            else if (shadowCascadesProperty.intValue == 4)
-                DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
+                if (shadowCascadesProperty.intValue == 2)
+                    DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
+                else if (shadowCascadesProperty.intValue == 4)
+                    DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
 
-            GUILayout.Space(10);
+                GUILayout.Space(10);
+            }
 
             GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(blendWeightsProperty);

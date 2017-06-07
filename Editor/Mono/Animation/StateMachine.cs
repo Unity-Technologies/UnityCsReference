@@ -351,11 +351,18 @@ namespace UnityEditor.Animations
 
         public void AddState(AnimatorState state, Vector3 position)
         {
+            ChildAnimatorState[] childStates = states;
+            if (System.Array.Exists(childStates, childState => childState.state == state))
+            {
+                Debug.LogWarning(System.String.Format("State '{0}' already exists in state machine '{1}', discarding new state.", state.name, name));
+                return;
+            }
+
             undoHandler.DoUndo(this, "State added");
             ChildAnimatorState newState = new ChildAnimatorState();
             newState.state = state;
             newState.position = position;
-            ChildAnimatorState[] childStates = states;
+
             ArrayUtility.Add(ref childStates, newState);
             states = childStates;
         }
@@ -388,12 +395,18 @@ namespace UnityEditor.Animations
 
         public void AddStateMachine(AnimatorStateMachine stateMachine, Vector3 position)
         {
+            ChildAnimatorStateMachine[] childStateMachines = stateMachines;
+            if (System.Array.Exists(childStateMachines, childStateMachine => childStateMachine.stateMachine == stateMachine))
+            {
+                Debug.LogWarning(System.String.Format("Sub state machine '{0}' already exists in state machine '{1}', discarding new state machine.", stateMachine.name, name));
+                return;
+            }
+
             undoHandler.DoUndo(this, "StateMachine " + stateMachine.name + " added");
             ChildAnimatorStateMachine newStateMachine = new ChildAnimatorStateMachine();
             newStateMachine.stateMachine = stateMachine;
             newStateMachine.position = position;
 
-            ChildAnimatorStateMachine[] childStateMachines = stateMachines;
             ArrayUtility.Add(ref childStateMachines, newStateMachine);
             stateMachines = childStateMachines;
         }

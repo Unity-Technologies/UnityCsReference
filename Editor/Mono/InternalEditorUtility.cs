@@ -473,11 +473,7 @@ namespace UnityEditorInternal
                 .Select(asset => AssetDatabase.AssetPathToGUID(asset));
         }
 
-        internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslands()
-        {
-            return EditorCompilationInterface.GetAllMonoIslands();
-        }
-
+        // Do not remove. Called through reflection by Visual Studio Tools for Unity.
         internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslandsForPlayer()
         {
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
@@ -486,7 +482,14 @@ namespace UnityEditorInternal
             PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
             PrecompiledAssembly[] precompiledAssemblies = GetPrecompiledAssemblies(false, group, target);
 
-            return EditorCompilationInterface.GetAllMonoIslandsExt(unityAssemblies, precompiledAssemblies, BuildFlags.None);
+            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, precompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty);
+        }
+
+        // Do not remove. Called through reflection by Visual Studio Tools for Unity.
+        // Use EditorCompilationInterface.GetAllMonoIslands internally instead of this method.
+        internal static UnityEditor.Scripting.MonoIsland[] GetMonoIslands()
+        {
+            return EditorCompilationInterface.GetAllMonoIslands();
         }
 
         internal static string[] GetCompilationDefinesForPlayer()

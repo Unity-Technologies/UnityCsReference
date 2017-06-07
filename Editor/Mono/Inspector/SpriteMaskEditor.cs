@@ -57,6 +57,7 @@ namespace UnityEditor
             }
             go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Contents.newSpriteMaskName.text);
             Undo.RegisterCreatedObjectUndo(go, Contents.createSpriteMaskUndoString.text);
+            Selection.activeGameObject = go;
         }
 
         public override void OnEnable()

@@ -144,6 +144,11 @@ namespace UnityEngine
     internal class WritableAttribute : Attribute
     {
     }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    internal class RejectDragAndDropMaterial : Attribute
+    {
+    }
 }
 
 namespace UnityEngine.Scripting

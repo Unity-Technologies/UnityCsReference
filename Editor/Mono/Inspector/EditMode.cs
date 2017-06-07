@@ -293,7 +293,7 @@ namespace UnityEditorInternal
             // When entering the edit mode, check if the collider is seen by the scene view camera. If not, then we frame it.
             if (editMode != SceneViewEditMode.None && SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
                 if (!SeenByCamera(SceneView.lastActiveSceneView.camera, bounds))
-                    SceneView.lastActiveSceneView.Frame(bounds);
+                    SceneView.lastActiveSceneView.Frame(bounds, EditorApplication.isPlaying);
 
             SceneView.RepaintAll();
         }

@@ -6,10 +6,10 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Editor/Src/HomeWindow.h")]
+    [NativeHeader("Editor/Src/HomeWindow/HomeWindow.h")]
     static class HomeWindow
     {
-        // NOTE: Keep in sync with enum in Editor/Src/HomeWindow.h
+        // NOTE: Keep in sync with enum in Editor/Src/HomeWindow/HomeWindow.h
         public enum HomeMode
         {
             Login,
@@ -22,6 +22,7 @@ namespace UnityEditor
             Tutorial,
         }
 
-        public static extern bool Show(HomeMode homeMode);
+        [NativeMethod("StaticShow")]
+        public static extern bool Show(HomeMode mode);
     }
 }

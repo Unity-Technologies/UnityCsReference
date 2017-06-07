@@ -106,6 +106,9 @@ namespace UnityEditor.VisualStudioIntegration
             if (extension == ".dll")
                 return true;
 
+            if (file.ToLower().EndsWith(".assembly.json"))
+                return true;
+
             return IsSupportedExtension(extension);
         }
 
@@ -184,7 +187,7 @@ namespace UnityEditor.VisualStudioIntegration
             if (!externalCodeAlreadyGeneratedProjects)
             {
                 // Only synchronize islands that have associated source files
-                IEnumerable<MonoIsland> islands = UnityEditorInternal.InternalEditorUtility.GetMonoIslands().
+                IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
                     Where(i => 0 < i._files.Length);
 
                 string otherAssetsProjectPart = GenerateAllAssetProjectPart();
@@ -293,7 +296,7 @@ namespace UnityEditor.VisualStudioIntegration
                 match = scriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {
-                    var targetAssembly = EditorCompilationInterface.GetTargetAssemblyDetails(match.Groups["dllname"].Value);
+                    var targetAssembly = EditorCompilationInterface.Instance.GetTargetAssemblyDetails(match.Groups["dllname"].Value);
                     ScriptingLanguage targetLanguage = ScriptingLanguage.None;
                     if (targetAssembly != null)
                         targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), targetAssembly.Language.GetLanguageName(), true);
@@ -332,7 +335,7 @@ namespace UnityEditor.VisualStudioIntegration
                 projectBuilder.AppendLine("  <ItemGroup>");
                 foreach (Match reference in projectReferences)
                 {
-                    var targetAssembly = EditorCompilationInterface.GetTargetAssemblyDetails(reference.Groups["dllname"].Value);
+                    var targetAssembly = EditorCompilationInterface.Instance.GetTargetAssemblyDetails(reference.Groups["dllname"].Value);
                     ScriptingLanguage targetLanguage = ScriptingLanguage.None;
                     if (targetAssembly != null)
                         targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), targetAssembly.Language.GetLanguageName(), true);

@@ -497,12 +497,12 @@ namespace UnityEditor
             m_SceneStates = new List<SceneStateCache>();
             foreach (SceneView s in SceneView.sceneViews)
             {
-                m_SceneStates.Add(new SceneStateCache {state = new SceneView.SceneViewState(s.m_SceneViewState), view = s});
-                s.m_SceneViewState.showFlares = false;
-                s.m_SceneViewState.showMaterialUpdate = false;
-                s.m_SceneViewState.showFog = false;
-                s.m_SceneViewState.showSkybox = false;
-                s.m_SceneViewState.showImageEffects = false;
+                m_SceneStates.Add(new SceneStateCache {state = new SceneView.SceneViewState(s.sceneViewState), view = s});
+                s.sceneViewState.showFlares = false;
+                s.sceneViewState.showMaterialUpdate = false;
+                s.sceneViewState.showFog = false;
+                s.sceneViewState.showSkybox = false;
+                s.sceneViewState.showImageEffects = false;
                 s.FrameSelected();
             }
         }
@@ -514,11 +514,11 @@ namespace UnityEditor
                 if (state.view == null)
                     continue;
 
-                state.view.m_SceneViewState.showFog = state.state.showFog;
-                state.view.m_SceneViewState.showFlares = state.state.showFlares;
-                state.view.m_SceneViewState.showMaterialUpdate = state.state.showMaterialUpdate;
-                state.view.m_SceneViewState.showSkybox = state.state.showSkybox;
-                state.view.m_SceneViewState.showImageEffects = state.state.showImageEffects;
+                state.view.sceneViewState.showFog = state.state.showFog;
+                state.view.sceneViewState.showFlares = state.state.showFlares;
+                state.view.sceneViewState.showMaterialUpdate = state.state.showMaterialUpdate;
+                state.view.sceneViewState.showSkybox = state.state.showSkybox;
+                state.view.sceneViewState.showImageEffects = state.state.showImageEffects;
             }
 
             m_EditMode = EditMode.Stopping;

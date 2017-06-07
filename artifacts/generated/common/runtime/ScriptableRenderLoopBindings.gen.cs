@@ -9,6 +9,7 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
@@ -74,57 +75,6 @@ public partial struct DrawRendererSettings
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct ScriptableRenderContext
 {
-            private IntPtr m_Ptr;
-    
-    
-    internal ScriptableRenderContext(IntPtr ptr)
-        {
-            m_Ptr = ptr;
-        }
-    
-    
-    public void Submit()
-        {
-            CheckValid();
-            Submit_Internal();
-        }
-    
-    
-    public void DrawRenderers(ref DrawRendererSettings settings)
-        {
-            CheckValid();
-            DrawRenderers_Internal(ref settings);
-        }
-    
-    
-    public void DrawShadows(ref DrawShadowsSettings settings)
-        {
-            CheckValid();
-            DrawShadows_Internal(ref settings);
-        }
-    
-    
-    public void ExecuteCommandBuffer(CommandBuffer commandBuffer)
-        {
-            CheckValid();
-            ExecuteCommandBuffer_Internal(commandBuffer);
-        }
-    
-    
-    public void SetupCameraProperties(Camera camera)
-        {
-            CheckValid();
-            SetupCameraProperties_Internal(camera);
-        }
-    
-    
-    public void DrawSkybox(Camera camera)
-        {
-            CheckValid();
-            DrawSkybox_Internal(camera);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Submit_Internal () ;
@@ -132,6 +82,23 @@ public partial struct ScriptableRenderContext
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void DrawRenderers_Internal (ref DrawRendererSettings settings) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  System.Array ExtractArrayFromList (object list) ;
+
+    
+    
+    private void DrawRenderersWithState_Internal (ref DrawRendererSettings settings, RenderStateBlock stateBlock) {
+        INTERNAL_CALL_DrawRenderersWithState_Internal ( ref this, ref settings, ref stateBlock );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_DrawRenderersWithState_Internal (ref ScriptableRenderContext self, ref DrawRendererSettings settings, ref RenderStateBlock stateBlock);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void DrawRenderersWithStateMap_Internal (ref DrawRendererSettings settings, System.Array array, int length) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -149,13 +116,6 @@ public partial struct ScriptableRenderContext
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void DrawSkybox_Internal (Camera camera) ;
 
-    internal void CheckValid()
-        {
-            if (m_Ptr.ToInt64() == 0)
-                throw new ArgumentException("Invalid ScriptableRenderContext.  This can be caused by allocating a context in user code.");
-        }
-    
-    
     internal IntPtr Internal_GetPtr()
         {
             return m_Ptr;

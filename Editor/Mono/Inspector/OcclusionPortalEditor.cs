@@ -15,8 +15,7 @@ namespace UnityEditor
         private const string k_CenterPath = "m_Center";
         private const string k_SizePath = "m_Size";
 
-        private static readonly int s_HandleControlIDHint = typeof(OcclusionPortalEditor).Name.GetHashCode();
-        private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle(s_HandleControlIDHint);
+        private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
         protected virtual void OnEnable()
         {

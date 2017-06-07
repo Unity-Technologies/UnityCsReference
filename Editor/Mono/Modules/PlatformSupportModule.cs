@@ -202,6 +202,8 @@ namespace UnityEditor.Modules
         bool HasBundleIdentifier();
 
         bool SupportsMultithreadedRendering();
+
+        void MultithreadedRenderingGUI(BuildTargetGroup targetGroup);
     }
 
 

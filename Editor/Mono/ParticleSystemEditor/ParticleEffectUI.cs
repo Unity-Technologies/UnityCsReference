@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 // The ParticleEffectUI displays one or more ParticleSystemUIs.
 
@@ -396,7 +397,13 @@ namespace UnityEditor
 
                 // Assign default material
                 ParticleSystemRenderer renderer = go.GetComponent<ParticleSystemRenderer>();
-                renderer.materials = new Material[] { AssetDatabase.GetBuiltinExtraResource<Material>("Default-Particle.mat"), null };
+                Material particleMat = null;
+                if (GraphicsSettings.renderPipelineAsset != null)
+                    particleMat = GraphicsSettings.renderPipelineAsset.GetDefaultParticleMaterial();
+
+                if (particleMat == null)
+                    particleMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Particle.mat");
+                renderer.materials = new[] {particleMat, null};
 
                 Undo.RegisterCreatedObjectUndo(go, "Create ParticleSystem");
                 return go;

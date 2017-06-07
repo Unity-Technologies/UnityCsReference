@@ -34,7 +34,7 @@ namespace UnityEditor
 
         public override void OnGUI(Rect rect)
         {
-            if (m_SceneView == null || m_SceneView.m_SceneViewState == null)
+            if (m_SceneView == null || m_SceneView.sceneViewState == null)
                 return;
 
             // We do not use the layout event
@@ -61,12 +61,12 @@ namespace UnityEditor
 
         private void Draw(Rect rect)
         {
-            if (m_SceneView == null || m_SceneView.m_SceneViewState == null)
+            if (m_SceneView == null || m_SceneView.sceneViewState == null)
                 return;
 
             var drawPos = new Rect(kFrameWidth, kFrameWidth, rect.width - 2 * kFrameWidth, EditorGUI.kSingleLineHeight);
 
-            var state = m_SceneView.m_SceneViewState;
+            var state = m_SceneView.sceneViewState;
 
             //
             // scene view effect options

@@ -62,6 +62,7 @@ namespace UnityEditor
             SceneBakeSettings = 2,
             ObjectSettings = 3
         }
+
         Mode m_Mode = Mode.ObjectSettings;
         bool m_BecameVisibleCalled = false;
 
@@ -397,7 +398,6 @@ namespace UnityEditor
                 GUI.Label(rect, EditorGUIUtility.TempContent(sname));
             }
         }
-
 
         public void OnGUI()
         {
@@ -949,7 +949,6 @@ namespace UnityEditor
             }
 
             m_SettingsObject.ApplyModifiedProperties();
-
             BakeButtons();
         }
 
@@ -1002,7 +1001,6 @@ namespace UnityEditor
 
             m_NavMeshProjectSettingsObject.ApplyModifiedProperties();
         }
-
 
         static void BakeButtons()
         {

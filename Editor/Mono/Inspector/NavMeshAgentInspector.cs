@@ -172,6 +172,5 @@ namespace UnityEditor
 
             EditorGUI.EndProperty();
         }
-
     }
 }

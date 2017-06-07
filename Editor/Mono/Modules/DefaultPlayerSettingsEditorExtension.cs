@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
 using UnityEngine;
 using UnityEditor;
 
@@ -11,7 +10,19 @@ namespace UnityEditor.Modules
 {
     internal abstract class DefaultPlayerSettingsEditorExtension : ISettingEditorExtension
     {
-        public virtual void OnEnable(PlayerSettingsEditor settingsEditor) {}
+        protected PlayerSettingsEditor m_playerSettingsEditor;
+
+        protected PlayerSettingsEditor playerSettingsEditor
+        {
+            get { return m_playerSettingsEditor; }
+        }
+
+        public virtual void OnEnable(PlayerSettingsEditor settingsEditor)
+        {
+            m_playerSettingsEditor = settingsEditor;
+
+            m_MTRendering = playerSettingsEditor.FindPropertyAssert("m_MTRendering");
+        }
 
         public virtual bool HasPublishSection()
         {
@@ -70,13 +81,39 @@ namespace UnityEditor.Modules
             return true;
         }
 
-        public virtual bool SupportsHighDynamicRangeDisplays() { return false; }
+        public virtual bool SupportsHighDynamicRangeDisplays()
+        {
+            return false;
+        }
 
-        public virtual bool SupportsGfxJobModes() { return false; }
+        public virtual bool SupportsGfxJobModes()
+        {
+            return false;
+        }
 
         public virtual bool SupportsMultithreadedRendering()
         {
             return false;
+        }
+
+        protected SerializedProperty m_MTRendering;
+        private static readonly GUIContent m_MTRenderingTooltip = EditorGUIUtility.TextContent("Multithreaded Rendering*");
+
+        protected virtual GUIContent MultithreadedRenderingGUITooltip()
+        {
+            return m_MTRenderingTooltip;
+        }
+
+        public virtual void MultithreadedRenderingGUI(BuildTargetGroup targetGroup)
+        {
+            if (playerSettingsEditor.IsMobileTarget(targetGroup))
+            {
+                bool oldValue = PlayerSettings.GetMobileMTRendering(targetGroup);
+                bool newValue = EditorGUILayout.Toggle(MultithreadedRenderingGUITooltip(), oldValue);
+                if (oldValue != newValue)
+                    PlayerSettings.SetMobileMTRendering(targetGroup, newValue);
+            }
+            else EditorGUILayout.PropertyField(m_MTRendering, m_MTRenderingTooltip);
         }
     }
 }

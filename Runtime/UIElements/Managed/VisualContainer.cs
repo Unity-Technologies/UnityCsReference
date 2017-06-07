@@ -187,8 +187,6 @@ namespace UnityEngine.Experimental.UIElements
 
             // child styles are dependent on topology
             child.Dirty(ChangeType.Styles);
-            // propagating dirty flags up to root is needed
-            child.PropagateChangesToParents();
         }
 
         public void InsertChild(int index, VisualElement child)
@@ -207,8 +205,8 @@ namespace UnityEngine.Experimental.UIElements
             m_Children.Insert(index, child);
             cssNode.Insert(index, child.cssNode);
 
+            // child styles are dependent on topology
             child.Dirty(ChangeType.Styles);
-            child.PropagateChangesToParents();
         }
 
         public void RemoveChild(VisualElement child)
@@ -222,6 +220,7 @@ namespace UnityEngine.Experimental.UIElements
             child.parent = null;
             m_Children.Remove(child);
             cssNode.RemoveAt(cssNode.IndexOf(child.cssNode));
+            Dirty(ChangeType.Layout);
         }
 
         public void RemoveChildAt(int index)
@@ -233,6 +232,7 @@ namespace UnityEngine.Experimental.UIElements
             child.parent = null;
             m_Children.RemoveAt(index);
             cssNode.RemoveAt(index);
+            Dirty(ChangeType.Layout);
         }
 
         public void ClearChildren()
@@ -243,6 +243,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             m_Children.Clear();
             cssNode.Clear();
+            Dirty(ChangeType.Layout);
         }
 
         public VisualElement GetChildAt(int index)

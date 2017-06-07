@@ -53,7 +53,6 @@ namespace UnityEditor.IMGUI.Controls
             return HandleUtility.GetHandleSize(position) * s_DefaultMidpointHandleSize;
         }
 
-        private int m_ControlIDHint;
         private int[] m_ControlIDs = new int[6] { 0, 0, 0, 0, 0, 0 };
         private Bounds m_Bounds;
         private Bounds m_BoundsOnClick;
@@ -74,9 +73,11 @@ namespace UnityEditor.IMGUI.Controls
 
         public Handles.SizeFunction midpointHandleSizeFunction { get; set; }
 
-        public PrimitiveBoundsHandle(int controlIDHint)
+        [Obsolete("Use parameterless constructor instead.")]
+        public PrimitiveBoundsHandle(int controlIDHint) : this() {}
+
+        public PrimitiveBoundsHandle()
         {
-            m_ControlIDHint = controlIDHint;
             handleColor = Color.white;
             wireframeColor = Color.white;
             axes = Axes.X | Axes.Y | Axes.Z;
@@ -90,11 +91,8 @@ namespace UnityEditor.IMGUI.Controls
 
         public void DrawHandle()
         {
-            // generate control IDs first so they will match if the function is exited early
-            for (int i = 0; i < m_ControlIDs.Length; ++i)
-            {
-                m_ControlIDs[i] = GUIUtility.GetControlID(m_ControlIDHint, FocusType.Passive);
-            }
+            for (int i = 0, count = m_ControlIDs.Length; i < count; ++i)
+                m_ControlIDs[i] = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
 
             // wireframe (before handles so handles are rendered top most)
             using (new Handles.DrawingScope(Handles.color * wireframeColor))

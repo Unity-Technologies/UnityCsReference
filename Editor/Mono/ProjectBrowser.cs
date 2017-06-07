@@ -1341,7 +1341,8 @@ namespace UnityEditor
         {
             ShowAndHideFolderTreeSelectionAsNeeded();
 
-            m_ListArea.Init(m_ListAreaRect, HierarchyType.Assets, m_SearchFilter, false);
+            var hierarchyType = HierarchyType.Assets;
+            m_ListArea.Init(m_ListAreaRect, hierarchyType, m_SearchFilter, false);
             m_ListArea.InitSelection(Selection.instanceIDs);
         }
 

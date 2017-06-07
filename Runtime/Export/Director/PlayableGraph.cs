@@ -8,11 +8,11 @@ namespace UnityEngine.Playables
 {
     public partial struct PlayableGraph
     {
-        public bool Connect<U, V>(U input, int inputPort, V output, int outputPort)
+        public bool Connect<U, V>(U source, int sourceOutputPort, V destination, int destinationInputPort)
             where U : struct, IPlayable
             where V : struct, IPlayable
         {
-            return ConnectInternal(ref this, input.GetHandle(), inputPort, output.GetHandle(), outputPort);
+            return ConnectInternal(ref this, source.GetHandle(), sourceOutputPort, destination.GetHandle(), destinationInputPort);
         }
 
         public void Disconnect<U>(U input, int inputPort)

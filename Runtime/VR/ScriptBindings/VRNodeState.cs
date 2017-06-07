@@ -2,13 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.VR
 {
     // Matches UnityVRTrackedNodeAttribs in IUnityVR.h
-    [System.Flags]
+    [Flags]
     internal enum AvailableTrackingData
     {
         None = 0,
@@ -16,7 +17,9 @@ namespace UnityEngine.VR
         PositionAvailable = 0x00000001,
         RotationAvailable = 0x00000002,
         VelocityAvailable = 0x00000004,
+        AngularVelocityAvailable = 0x00000008,
         AccelerationAvailable = 0x00000010,
+        AngularAccelerationAvailable = 0x00000020
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -29,9 +32,9 @@ namespace UnityEngine.VR
         private Vector3 m_Position;
         private Quaternion m_Rotation;
         private Vector3 m_Velocity;
-        private Quaternion m_AngularVelocity;
+        private Vector3 m_AngularVelocity;
         private Vector3 m_Acceleration;
-        private Quaternion m_AngularAcceleration;
+        private Vector3 m_AngularAcceleration;
         private int m_Tracked;
         private ulong m_UniqueID;
 
@@ -99,12 +102,30 @@ namespace UnityEngine.VR
             }
         }
 
+        public Vector3 angularVelocity
+        {
+            set
+            {
+                m_AngularVelocity = value;
+                m_AvailableFields |= AvailableTrackingData.AngularVelocityAvailable;
+            }
+        }
+
         public Vector3 acceleration
         {
             set
             {
                 m_Acceleration = value;
                 m_AvailableFields |= AvailableTrackingData.AccelerationAvailable;
+            }
+        }
+
+        public Vector3 angularAcceleration
+        {
+            set
+            {
+                m_AngularAcceleration = value;
+                m_AvailableFields |= AvailableTrackingData.AngularAccelerationAvailable;
             }
         }
 
@@ -124,9 +145,19 @@ namespace UnityEngine.VR
             return TryGet<Vector3>(m_Velocity, AvailableTrackingData.VelocityAvailable, out velocity);
         }
 
+        public bool TryGetAngularVelocity(out Vector3 angularVelocity)
+        {
+            return TryGet<Vector3>(m_AngularVelocity, AvailableTrackingData.AngularVelocityAvailable, out angularVelocity);
+        }
+
         public bool TryGetAcceleration(out Vector3 acceleration)
         {
             return TryGet<Vector3>(m_Acceleration, AvailableTrackingData.AccelerationAvailable, out acceleration);
+        }
+
+        public bool TryGetAngularAcceleration(out Vector3 angularAcceleration)
+        {
+            return TryGet<Vector3>(m_AngularAcceleration, AvailableTrackingData.AngularAccelerationAvailable, out angularAcceleration);
         }
 
         private bool TryGet<T>(T inValue, AvailableTrackingData availabilityFlag, out T outValue) where T : new()

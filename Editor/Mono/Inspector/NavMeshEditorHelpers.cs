@@ -26,7 +26,6 @@ namespace UnityEditor.AI
             NavMeshEditorWindow.OpenAreaSettings();
         }
 
-
         public static void DrawAgentDiagram(Rect rect, float agentRadius, float agentHeight, float agentClimb, float agentSlope)
         {
             if (Event.current.type != EventType.repaint)

@@ -2,10 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Scripting.ScriptCompilation;
 using System.IO;
+using UnityEditor.Scripting.Compilers;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -17,6 +16,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string OutputDirectory { get; set; }
         public string[] Defines { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
+        public EditorScriptCompilationOptions CompilationOptions { get; set; }
         public string FilenameSuffix { get; set; }
 
         public ScriptAssemblySettings()
@@ -24,11 +24,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget = BuildTarget.NoTarget;
             BuildTargetGroup = BuildTargetGroup.Unknown;
         }
+
+        public bool BuildingForEditor
+        {
+            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor; }
+        }
+
+        public bool BuildingDevelopmentBuild
+        {
+            get { return (CompilationOptions & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild; }
+        }
     }
 
     class ScriptAssembly
     {
+        public AssemblyFlags Flags { get; set; }
         public BuildTarget BuildTarget { get; set; }
+        public SupportedLanguage Language { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string Filename { get; set; }
         public string OutputDirectory { get; set; }
@@ -40,15 +52,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public string FullPath { get { return Path.Combine(OutputDirectory, Filename); } }
 
-        public string GetExtensionOfSourceFiles()
+        public string[] GetAllReferences()
         {
-            return Files.Length > 0 ? Path.GetExtension(Files[0]).ToLower().Substring(1) : "NA";
+            return References.Concat(ScriptAssemblyReferences.Select(a => a.FullPath)).ToArray();
         }
 
-        public MonoIsland ToMonoIsland(BuildFlags buildFlags, string buildOutputDirectory)
+        public MonoIsland ToMonoIsland(EditorScriptCompilationOptions options, string buildOutputDirectory)
         {
-            bool buildingForEditor = (buildFlags & BuildFlags.BuildingForEditor) == BuildFlags.BuildingForEditor;
-            bool developmentBuild = (buildFlags & BuildFlags.BuildingDevelopmentBuild) == BuildFlags.BuildingDevelopmentBuild;
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
+            bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
             var references = ScriptAssemblyReferences.Select(a => Path.Combine(a.OutputDirectory, a.Filename));
             var referencesArray = references.Concat(References).ToArray();

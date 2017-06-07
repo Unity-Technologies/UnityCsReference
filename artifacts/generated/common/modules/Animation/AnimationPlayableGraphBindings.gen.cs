@@ -19,13 +19,6 @@ namespace UnityEngine.Animations
 
 public static partial class AnimationPlayableExtensions
 {
-    internal static AnimationClip GetAnimatedPropertiesInternal (ref PlayableHandle playable) {
-        return INTERNAL_CALL_GetAnimatedPropertiesInternal ( ref playable );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static AnimationClip INTERNAL_CALL_GetAnimatedPropertiesInternal (ref PlayableHandle playable);
     internal static void SetAnimatedPropertiesInternal (ref PlayableHandle playable, AnimationClip animatedProperties) {
         INTERNAL_CALL_SetAnimatedPropertiesInternal ( ref playable, animatedProperties );
     }

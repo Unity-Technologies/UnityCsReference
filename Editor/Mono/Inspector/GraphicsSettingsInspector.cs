@@ -11,6 +11,7 @@ using ShaderStrippingEditor         = UnityEditor.GraphicsSettingsWindow.ShaderS
 using ShaderPreloadEditor           = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
 
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -26,8 +27,8 @@ namespace UnityEditor
             public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TextContent("Shader Stripping");
             public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TextContent("Shader Preloading");
             public static readonly GUIContent cameraSettings = EditorGUIUtility.TextContent("Camera Settings");
-            public static readonly GUIContent renderLoopSettings = EditorGUIUtility.TextContent("Scriptable RenderLoop Settings");
-            public static readonly GUIContent renderLoopLabel = EditorGUIUtility.TextContent("Scriptable Render Loop");
+            public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TextContent("Scriptable Render Pipeline Settings");
+            public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TextContent("Scriptable Render Pipeline");
         }
 
         Editor m_TierSettingsEditor;
@@ -127,10 +128,10 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            GUILayout.Label(Styles.renderLoopSettings, EditorStyles.boldLabel);
+            GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
             Rect renderLoopRect = EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(m_ScriptableRenderLoop));
 
-            EditorGUI.BeginProperty(renderLoopRect, Styles.renderLoopLabel, m_ScriptableRenderLoop);
+            EditorGUI.BeginProperty(renderLoopRect, Styles.renderPipeLabel, m_ScriptableRenderLoop);
 
             m_ScriptableRenderLoop.objectReferenceValue =
                 EditorGUI.ObjectField(renderLoopRect, m_ScriptableRenderLoop.objectReferenceValue, typeof(RenderPipelineAsset), false);
@@ -138,15 +139,25 @@ namespace UnityEditor
             EditorGUI.EndProperty();
             EditorGUILayout.Space();
 
-            GUILayout.Label(Styles.cameraSettings, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_TransparencySortMode);
-            EditorGUILayout.PropertyField(m_TransparencySortAxis);
 
-            EditorGUILayout.Space();
-            TierSettingsGUI();
+            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+
+            if (usingSRP)
+                EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);
+
+            if (!usingSRP)
+            {
+                GUILayout.Label(Styles.cameraSettings, EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(m_TransparencySortMode);
+                EditorGUILayout.PropertyField(m_TransparencySortAxis);
+
+                EditorGUILayout.Space();
+                TierSettingsGUI();
+            }
 
             GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
-            builtinShadersEditor.OnInspectorGUI();
+            if (!usingSRP)
+                builtinShadersEditor.OnInspectorGUI();
             alwaysIncludedShadersEditor.OnInspectorGUI();
 
             EditorGUILayout.Space();

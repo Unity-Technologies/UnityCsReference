@@ -55,8 +55,11 @@ namespace UnityEngine.Playables
             if (!handle.IsValid())
                 return PlayableHandle.Null;
 
-            handle.SetScriptInstance(scriptInstance);
             handle.SetInputCount(inputCount);
+
+            // This line should be the last one because it eventually calls
+            // IPlayableBehaviour.OnPlayableCreate() on scriptInstance.
+            handle.SetScriptInstance(scriptInstance);
 
             return handle;
         }

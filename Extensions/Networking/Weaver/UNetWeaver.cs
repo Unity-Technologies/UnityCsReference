@@ -1763,19 +1763,6 @@ namespace Unity.UNetWeaver
 
         static bool Weave(string assName, IEnumerable<string> dependencies, IAssemblyResolver assemblyResolver, string unityEngineDLLPath, string unityUNetDLLPath, string outputDir)
         {
-            // FIXME: Does not work with Custom Script Assemblies, as they have arbitrary names.
-            if (assName.IndexOf("Assembly-") == -1)
-            {
-                //Console.WriteLine ("Skipping " + assName);
-                return true;
-            }
-
-            // FIXME: Custom script assemblies can be either editor or runtime, independent of filename.
-            // dont process editor script dll. it cannot have network functionality
-            if (assName.IndexOf("-Editor.") != -1)
-            {
-                return true;
-            }
             var readParams = Helpers.ReaderParameters(assName, dependencies, assemblyResolver, unityEngineDLLPath, unityUNetDLLPath);
             scriptDef = AssemblyDefinition.ReadAssembly(assName, readParams);
 

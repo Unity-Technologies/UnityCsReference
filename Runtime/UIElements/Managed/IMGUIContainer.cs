@@ -27,6 +27,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public ContextType contextType { get; set; }
+        internal int GUIDepth { get; private set; }
 
         public IMGUIContainer(Action onGUIHandler)
         {
@@ -104,6 +105,7 @@ namespace UnityEngine.Experimental.UIElements
             int ctx = executionContext != 0 ? executionContext : elementPanel.instanceID;
             UIElementsUtility.BeginContainerGUI(cache, ctx, evt, this);
 
+            GUIDepth = GUIUtility.Internal_GetGUIDepth();
             EventType originalEventType = Event.current.type;
 
             try

@@ -11,6 +11,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
+    [System.Serializable]
     internal partial class ProfilerHierarchyGUI
     {
         static int hierarchyViewHash = "HierarchyView".GetHashCode();
@@ -101,6 +102,7 @@ namespace UnityEditorInternal
             }
         }
 
+        [SerializeField]
         private ProfilerColumn m_SortType = ProfilerColumn.TotalTime;
 
         public ProfilerColumn sortType
@@ -123,14 +125,24 @@ namespace UnityEditorInternal
         private ProfilerDetailedObjectsView m_DetailedObjectsView;
         ProfilerDetailedCallsView m_DetailedCallsView;
 
+        public ProfilerHierarchyGUI(ProfilerColumn sort)
+        {
+            m_SortType = sort;
+        }
+
         public ProfilerHierarchyGUI(IProfilerWindowController window, ProfilerHierarchyGUI detailedObjectsView, string columnSettingsName, ProfilerColumn[] columnsToShow, string[] columnNames, bool detailPane, ProfilerColumn sort)
+        {
+            m_SortType = sort;
+            Setup(window, detailedObjectsView, columnSettingsName, columnsToShow, columnNames, detailPane);
+        }
+
+        public void Setup(IProfilerWindowController window, ProfilerHierarchyGUI detailedObjectsView, string columnSettingsName, ProfilerColumn[] columnsToShow, string[] columnNames, bool detailPane)
         {
             m_Window = window;
             m_ColumnNames = columnNames;
             m_ColumnSettingsName = columnSettingsName;
             m_ColumnsToShow = columnsToShow;
             m_DetailPane = detailPane;
-            m_SortType = sort;
             m_HeaderContent = new GUIContent[columnNames.Length];
             m_Splitter = null;
             for (int i = 0; i < m_HeaderContent.Length; i++)

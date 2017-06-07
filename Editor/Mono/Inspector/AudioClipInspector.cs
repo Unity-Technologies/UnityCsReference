@@ -129,6 +129,7 @@ namespace UnityEditor
 
                     if (newPlaying != playing)
                     {
+                        AudioUtil.StopAllClips();
                         if (newPlaying)
                         {
                             AudioUtil.PlayClip(clip, 0, m_bLoop);
@@ -136,7 +137,6 @@ namespace UnityEditor
                         }
                         else
                         {
-                            AudioUtil.StopAllClips();
                             m_PlayingClip = null;
                         }
                     }
@@ -295,8 +295,9 @@ namespace UnityEditor
 
 
             // autoplay start?
-            if (m_bPlayFirst)
+            if (m_bPlayFirst || (m_bAutoPlay && m_PlayingClip != clip))
             {
+                AudioUtil.StopAllClips();
                 AudioUtil.PlayClip(clip, 0, m_bLoop);
                 m_PlayingClip = clip;
                 m_bPlayFirst = false;

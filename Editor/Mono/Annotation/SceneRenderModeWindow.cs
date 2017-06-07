@@ -213,7 +213,7 @@ namespace UnityEditor
 
         public override void OnGUI(Rect rect)
         {
-            if (m_SceneView == null || m_SceneView.m_SceneViewState == null)
+            if (m_SceneView == null || m_SceneView.sceneViewState == null)
                 return;
 
             // We do not use the layout event

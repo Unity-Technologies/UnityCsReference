@@ -170,7 +170,12 @@ namespace UnityEditor
         public bool m_ValidateTrueMetals = false;
 
         [SerializeField]
-        internal SceneViewState m_SceneViewState;
+        private SceneViewState m_SceneViewState;
+
+        public SceneViewState sceneViewState
+        {
+            get { return m_SceneViewState; }
+        }
 
         [SerializeField]
         SceneViewGrid grid;
@@ -445,7 +450,7 @@ namespace UnityEditor
 
         internal void Awake()
         {
-            if (m_SceneViewState == null)
+            if (sceneViewState == null)
                 m_SceneViewState = new SceneViewState();
 
             if (m_2DMode || EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
@@ -571,9 +576,9 @@ namespace UnityEditor
                     GUIUtility.ExitGUI();
                 }
 
-                var allOn = GUI.Toggle(fxRect, m_SceneViewState.IsAllOn(), m_Fx, effectsDropDownStyle);
-                if (allOn != m_SceneViewState.IsAllOn())
-                    m_SceneViewState.Toggle(allOn);
+                var allOn = GUI.Toggle(fxRect, sceneViewState.IsAllOn(), m_Fx, effectsDropDownStyle);
+                if (allOn != sceneViewState.IsAllOn())
+                    sceneViewState.Toggle(allOn);
 
                 EditorGUILayout.Space();
                 GUILayout.FlexibleSpace();
@@ -870,7 +875,7 @@ namespace UnityEditor
             oldShadowDistance = QualitySettings.shadowDistance;
             if (Event.current.type == EventType.Repaint)
             {
-                if (!m_SceneViewState.showFog)
+                if (!sceneViewState.showFog)
                     Unsupported.SetRenderSettingsUseFogNoDirty(false);
                 if (m_Camera.orthographic)
                     Unsupported.SetQualitySettingsShadowDistanceTemporarily(QualitySettings.shadowDistance + 0.5f * cameraDistance);
@@ -1868,10 +1873,10 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                UpdateImageEffects(UseSceneFiltering() ? false : m_RenderMode == DrawCameraMode.Textured && m_SceneViewState.showImageEffects);
+                UpdateImageEffects(UseSceneFiltering() ? false : m_RenderMode == DrawCameraMode.Textured && sceneViewState.showImageEffects);
             }
 
-            EditorUtility.SetCameraAnimateMaterials(m_Camera, m_SceneViewState.showMaterialUpdate);
+            EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
 
             ResetIfNaN();
 
@@ -1910,8 +1915,8 @@ namespace UnityEditor
 
             if (m_RenderMode == DrawCameraMode.Textured || m_RenderMode == DrawCameraMode.TexturedWire)
             {
-                Handles.EnableCameraFlares(m_Camera, m_SceneViewState.showFlares);
-                Handles.EnableCameraSkybox(m_Camera, m_SceneViewState.showSkybox);
+                Handles.EnableCameraFlares(m_Camera, sceneViewState.showFlares);
+                Handles.EnableCameraSkybox(m_Camera, sceneViewState.showSkybox);
             }
             else
             {
@@ -1932,23 +1937,20 @@ namespace UnityEditor
 
             if (m_ViewIsLockedToObject && Selection.gameObjects.Length > 0)
             {
-                switch (m_DraggingLockedState)
+                var bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot);
+                switch (draggingLocked)
                 {
                     case (DraggingLockedState.Dragging):
                         // While dragging via handles, we don't want to move the camera
                         break;
                     case (DraggingLockedState.LookAt):
-                        if (!m_Position.value.Equals(Selection.activeGameObject.transform.position))
-                            // In playmode things might be moving fast so we can't lerp because it will lag behind
-                            if (!EditorApplication.isPlaying)
-                                m_Position.target = Selection.activeGameObject.transform.position;
-                            else
-                                m_Position.value = Selection.activeGameObject.transform.position;
+                        if (!m_Position.value.Equals(m_Position.target))
+                            Frame(bounds, EditorApplication.isPlaying);
                         else
-                            m_DraggingLockedState = DraggingLockedState.NotDragging;
+                            draggingLocked = DraggingLockedState.NotDragging;
                         break;
                     case (DraggingLockedState.NotDragging):
-                        m_Position.value = Selection.activeGameObject.transform.position;
+                        Frame(bounds, true);
                         break;
                 }
             }
@@ -1966,7 +1968,7 @@ namespace UnityEditor
 
         void UpdateAnimatedMaterials()
         {
-            if (m_SceneViewState.showMaterialUpdate && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            if (sceneViewState.showMaterialUpdate && m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
             {
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();
@@ -2053,6 +2055,7 @@ namespace UnityEditor
                 m_Rotation.value = rot;
                 m_Size.value = Mathf.Abs(newSize);
                 m_Ortho.value = ortho;
+                draggingLocked = DraggingLockedState.NotDragging;
             }
             else
             {
@@ -2316,10 +2319,10 @@ namespace UnityEditor
                 }
             }
 
-            return Frame(bounds);
+            return Frame(bounds, EditorApplication.isPlaying);
         }
 
-        public bool Frame(Bounds bounds)
+        public bool Frame(Bounds bounds, bool instant)
         {
             float newSize = bounds.extents.magnitude * 1.5f;
             if (newSize == Mathf.Infinity)
@@ -2328,7 +2331,7 @@ namespace UnityEditor
                 newSize = 10;
 
             // We snap instantly into target on playmode, because things might be moving fast and lerping lags behind
-            LookAt(bounds.center, m_Rotation.target, newSize * 2.2f, m_Ortho.value, EditorApplication.isPlaying);
+            LookAt(bounds.center, m_Rotation.target, newSize * 2.2f, m_Ortho.value, instant);
 
             return true;
         }

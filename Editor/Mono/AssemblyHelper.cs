@@ -134,6 +134,13 @@ namespace UnityEditor
 
                 if (foundPath == "")
                 {
+                    if (!BuildPipeline.IsFeatureSupported("ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES", target))
+                    {
+                        // Skip module dlls if the platform is not set up for a modular UnityEngine.
+                        if (IsUnityEngineModule(referencedAssembly.Name))
+                            continue;
+                    }
+
                     // Ignore architecture specific plugin references
                     var found = false;
                     foreach (var extension in new[] { ".dll", ".winmd" })
@@ -199,6 +206,11 @@ namespace UnityEditor
             string[] tmp = new string[1];
             tmp[0] = path;
             return FindAssembliesReferencedBy(tmp, foldersToSearch, target);
+        }
+
+        static public bool IsUnityEngineModule(string assemblyName)
+        {
+            return assemblyName.EndsWith("Module") && assemblyName.StartsWith("UnityEngine.");
         }
 
         private static bool IsTypeAUserExtendedScript(AssemblyDefinition assembly, TypeReference type)

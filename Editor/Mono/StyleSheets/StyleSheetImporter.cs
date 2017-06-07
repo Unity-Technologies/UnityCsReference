@@ -3,46 +3,49 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 using ExCSS;
 using UnityEngine;
-using UnityEditor;
-using UnityEngine.Scripting;
-using Object = UnityEngine.Object;
+using UnityEditor.Experimental.AssetImporters;
 using ParserStyleSheet = ExCSS.StyleSheet;
 using ParserStyleRule = ExCSS.StyleRule;
 using UnityStyleSheet = UnityEngine.StyleSheets.StyleSheet;
 using UnityEngine.StyleSheets;
+
 namespace UnityEditor.StyleSheets
 {
-    class StyleSheetImporter
+    [ScriptedImporter(2, "uss", -20)]
+    class StyleSheetImporter : ScriptedImporter
     {
-        [RequiredByNativeCode]
-        public static void ImportStyleSheet(UnityStyleSheet asset, string contents)
+        public override void OnImportAsset(AssetImportContext ctx)
         {
             var importer = new StyleSheetImporter();
+            string contents = File.ReadAllText(ctx.assetPath);
+            UnityStyleSheet asset = ScriptableObject.CreateInstance<UnityStyleSheet>();
+            asset.hideFlags = HideFlags.NotEditable;
             importer.Import(asset, contents);
+            ctx.SetMainAsset("stylesheet", asset);
         }
 
 
-        Parser s_Parser;
-        const string kResourcePathFunctionName = "resource";
+        Parser m_Parser;
+        const string k_ResourcePathFunctionName = "resource";
 
         StyleSheetBuilder m_Builder;
         StyleSheetImportErrors m_Errors;
 
         public StyleSheetImporter()
         {
-            s_Parser = new Parser();
+            m_Parser = new Parser();
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
         }
 
         public void Import(UnityStyleSheet asset, string contents)
         {
-            ParserStyleSheet styleSheet = s_Parser.Parse(contents);
+            ParserStyleSheet styleSheet = m_Parser.Parse(contents);
 
             if (styleSheet.Errors.Count > 0)
             {
@@ -149,7 +152,7 @@ namespace UnityEditor.StyleSheets
             else if (funcTerm != null)
             {
                 primitiveTerm = funcTerm.Arguments.FirstOrDefault() as PrimitiveTerm;
-                if (funcTerm.Name == kResourcePathFunctionName && primitiveTerm != null)
+                if (funcTerm.Name == k_ResourcePathFunctionName && primitiveTerm != null)
                 {
                     string path = primitiveTerm.Value as string;
                     m_Builder.AddValue(path, StyleValueType.ResourcePath);

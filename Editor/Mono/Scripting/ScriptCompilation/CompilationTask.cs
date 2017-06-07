@@ -20,7 +20,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         Dictionary<ScriptAssembly, ScriptCompilerBase> compilerTasks = new Dictionary<ScriptAssembly, ScriptCompilerBase>();
         string buildOutputDirectory;
         int compilePhase = 0;
-        BuildFlags buildFlags;
+        EditorScriptCompilationOptions options;
         int maxConcurrentCompilers;
 
         public event Action<ScriptAssembly, int> OnCompilationStarted;
@@ -29,12 +29,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
 
-        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, BuildFlags buildFlags, int maxConcurrentCompilers)
+        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, EditorScriptCompilationOptions options, int maxConcurrentCompilers)
         {
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
-            this.buildFlags = buildFlags;
+            this.options = options;
             this.maxConcurrentCompilers = maxConcurrentCompilers;
         }
 
@@ -181,13 +181,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
             }
 
-            bool buildingForEditor = (buildFlags & BuildFlags.BuildingForEditor) == BuildFlags.BuildingForEditor;
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             // Begin compiling any queued assemblies
             foreach (var assembly in assemblyCompileQueue)
             {
                 pendingAssemblies.Remove(assembly);
-                var island = assembly.ToMonoIsland(buildFlags, buildOutputDirectory);
+                var island = assembly.ToMonoIsland(options, buildOutputDirectory);
                 var compiler = ScriptCompilers.CreateCompilerInstance(island, buildingForEditor, island._target, assembly.RunUpdater);
 
                 compilerTasks.Add(assembly, compiler);

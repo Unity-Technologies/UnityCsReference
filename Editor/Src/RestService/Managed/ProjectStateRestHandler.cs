@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor.Scripting;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -30,7 +31,7 @@ namespace UnityEditor.RestService
 
         private static JSONValue JsonForProject()
         {
-            var islands = InternalEditorUtility.GetMonoIslands().Select(i => new Island
+            var islands = EditorCompilationInterface.GetAllMonoIslands().Select(i => new Island
             {
                 MonoIsland = i,
                 Name = Path.GetFileNameWithoutExtension(i._output),

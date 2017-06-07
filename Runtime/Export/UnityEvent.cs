@@ -78,10 +78,15 @@ namespace UnityEngine.Events
             i = m_ObjectArgumentAssemblyTypeName.IndexOf(", PublicKeyToken=");
             if (i != -1)
                 min = Math.Min(i, min);
-            if (min == Int32.MaxValue)
-                return;
 
-            m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, min);
+            if (min != Int32.MaxValue)
+                m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, min);
+
+            // Strip module assembly name, as some platforms use modules, and some don't.
+            // The non-modular version will always work, due to type forwarders.
+            i = m_ObjectArgumentAssemblyTypeName.IndexOf(", UnityEngine.");
+            if (i != -1 && m_ObjectArgumentAssemblyTypeName.EndsWith("Module"))
+                m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, i) + ", UnityEngine";
         }
 
         public void OnBeforeSerialize()

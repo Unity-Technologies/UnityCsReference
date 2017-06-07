@@ -13,8 +13,6 @@ namespace UnityEngine
         public string[] annotations;
         public bool isFlags;
 
-        public GUIContent[] guiNames;
-
         [UsedByNativeCode]
         internal static EnumInfo CreateEnumInfoFromNativeEnum(string[] names, int[] values, string[] annotations, bool isFlags)
         {
@@ -24,10 +22,6 @@ namespace UnityEngine
             result.values = values;
             result.annotations = annotations;
             result.isFlags = isFlags;
-
-            result.guiNames = new GUIContent[names.Length];
-            for (int i = 0; i < names.Length; ++i)
-                result.guiNames[i] = new GUIContent(names[i], annotations[i]);
 
             return result;
         }

@@ -16,7 +16,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.WiiU.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
 

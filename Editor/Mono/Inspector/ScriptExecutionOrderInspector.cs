@@ -156,16 +156,21 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
-        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        private void AskApplyRevertIfNecessary()
         {
-            if (state != PlayModeStateChange.ExitingEditMode)
-                return;
-
             if (!m_DirtyOrders)
                 return;
 
             if (EditorUtility.DisplayDialog("Unapplied execution order", "Unapplied script execution order", "Apply", "Revert"))
                 Apply();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.ExitingEditMode)
+                return;
+
+            AskApplyRevertIfNecessary();
         }
 
         static Object MonoScriptValidatorCallback(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
@@ -306,6 +311,9 @@ namespace UnityEditor
         {
             if (m_Instances.Contains(this))
                 m_Instances.Remove(this);
+
+            if (!Application.isPlaying)
+                AskApplyRevertIfNecessary();
         }
 
         private void ApplyRevertGUI()

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEditor.Experimental.Build.Player;
 
 namespace UnityEditor.Experimental.Build.AssetBundle
 {
@@ -145,10 +146,9 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     public struct BuildSettings
     {
         public string outputFolder;
-        public string scriptsFolder;
+        public TypeDB typeDB;
         public BuildTarget target;
         public BuildTargetGroup group;
-        public bool editorBundles;
     }
 
     [Serializable]

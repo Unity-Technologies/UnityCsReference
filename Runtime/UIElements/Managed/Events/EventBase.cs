@@ -54,7 +54,8 @@ namespace UnityEngine.Experimental.UIElements
         public virtual IEventHandler currentTarget { get; internal set; }
         public bool dispatch { get; internal set; }
 
-        internal Event imguiEvent { get; private set; }
+        // We aim to make this internal.
+        public /*internal*/ Event imguiEvent { get; private set; }
 
         public EventBase(EventFlags flags, Event imguiEvent)
         {
