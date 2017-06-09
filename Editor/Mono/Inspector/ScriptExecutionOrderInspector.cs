@@ -308,6 +308,15 @@ namespace UnityEditor
         {
             if (m_Instances.Contains(this))
                 m_Instances.Remove(this);
+
+            if (Application.isPlaying)
+                return;
+
+            if (!m_DirtyOrders)
+                return;
+
+            if (EditorUtility.DisplayDialog("Unapplied execution order", "Unapplied script execution order", "Apply", "Revert"))
+                Apply();
         }
 
         private void ApplyRevertGUI()

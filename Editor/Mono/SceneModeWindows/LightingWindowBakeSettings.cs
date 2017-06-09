@@ -307,7 +307,10 @@ namespace UnityEditor
                 {
                     using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
                     {
+                        EditorGUI.BeginChangeCheck();
                         EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
+                        if (EditorGUI.EndChangeCheck())
+                            InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
                         if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
                         {
                             EditorGUI.indentLevel++;

@@ -195,6 +195,10 @@ public partial class PlayableDirector : Behaviour, IExposedPropertyTable
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public Object GetGenericBinding (Object key) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal bool HasGenericBinding (Object key) ;
+
 }
 
 }

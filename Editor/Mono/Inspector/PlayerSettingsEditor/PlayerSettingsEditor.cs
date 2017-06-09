@@ -1613,17 +1613,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    // The latest runtime version for some platforms can only be supported when using IL2CPP
-                    if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest &&
-                        (targetGroup == BuildTargetGroup.PS4 || targetGroup == BuildTargetGroup.PSP2))
-                    {
-                        newBackend = ScriptingImplementation.IL2CPP;
-                        PlayerSettingsEditor.BuildDisabledEnumPopup(Styles.scriptingIL2CPP, Styles.scriptingBackend);
-                    }
-                    else
-                    {
-                        newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
-                    }
+                    newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                 }
                 if (newBackend != currBackend)
                     PlayerSettings.SetScriptingBackend(targetGroup, newBackend);

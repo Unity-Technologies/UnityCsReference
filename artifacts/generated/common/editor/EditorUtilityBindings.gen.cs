@@ -510,10 +510,33 @@ public static bool BuildResourceFile(Object[] selection, string pathName)
         }
     
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void FocusProjectWindow () ;
+    [RequiredByNativeCode] public static void FocusProjectWindow()
+        {
+            ProjectBrowser prjBrowser = null;
+            var focusedView = GUIView.focusedView as HostView;
+            if (focusedView != null && focusedView.actualView is ProjectBrowser)
+            {
+                prjBrowser = focusedView.actualView as ProjectBrowser;
+            }
 
+            if (prjBrowser == null)
+            {
+                UnityEngine.Object[] wins = Resources.FindObjectsOfTypeAll(typeof(ProjectBrowser));
+                if (wins.Length > 0)
+                {
+                    prjBrowser = wins[0] as ProjectBrowser;
+                }
+            }
+
+            if (prjBrowser != null)
+            {
+                prjBrowser.Focus(); 
+                var commandEvent = EditorGUIUtility.CommandEvent("FocusProjectWindow");
+                prjBrowser.SendEvent(commandEvent);
+            }
+        }
+    
+    
     public static string FormatBytes(int bytes)
         {
             return FormatBytes((long)bytes);

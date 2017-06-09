@@ -115,9 +115,21 @@ namespace UnityEditor.IMGUI.Controls
                 }
             }
 
-            // exit before drawing control handles if holding alt, since alt-click will rotate scene view
+            // unless holding alt while already manipulating a control, exit before drawing control handles when holding alt, since alt-click will rotate scene view
             if (Event.current.alt)
-                return;
+            {
+                bool exit = true;
+                foreach (var id in m_RadiusHandleControlIDs)
+                {
+                    if (id == GUIUtility.hotControl)
+                    {
+                        exit = false;
+                        break;
+                    }
+                }
+                if (exit && GUIUtility.hotControl != m_AngleHandleControlID)
+                    return;
+            }
 
             using (new Handles.DrawingScope(Handles.color * radiusHandleColor))
             {
