@@ -5,6 +5,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.VisualStudioIntegration;
 using UnityEditorInternal;
@@ -18,6 +19,8 @@ namespace UnityEditor
             AboutWindow w = EditorWindow.GetWindowWithRect<AboutWindow>(new Rect(100, 100, 570, 340), true, "About Unity");
             w.position = new Rect(100, 100, 570, 340);
             w.m_Parent.window.m_DontSaveToLayout = true;
+
+            AboutWindowNames.ParseCredits();
         }
 
         private static GUIContent s_MonoLogo, s_AgeiaLogo, s_Header;
@@ -125,7 +128,7 @@ namespace UnityEditor
 
             Rect scrollAreaRect = GUILayoutUtility.GetRect(10, m_TextInitialYPos);
             GUI.BeginGroup(scrollAreaRect);
-            foreach (string nameChunk in AboutWindowNames.nameChunks)
+            foreach (string nameChunk in AboutWindowNames.Names(null, true))
                 chunkOffset = DoCreditsNameChunk(nameChunk, creditsWidth, chunkOffset);
             chunkOffset = DoCreditsNameChunk(kSpecialThanksNames, creditsWidth, chunkOffset);
             m_TotalCreditsHeight = chunkOffset - m_TextYPos;

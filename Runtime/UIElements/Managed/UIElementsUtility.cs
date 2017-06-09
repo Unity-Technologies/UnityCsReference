@@ -43,6 +43,10 @@ namespace UnityEngine.Experimental.UIElements
             if (s_ContainerStack.Count > 0)
             {
                 var topmostContainer = s_ContainerStack.Peek();
+
+                if (topmostContainer.GUIDepth != GUIUtility.Internal_GetGUIDepth())
+                    return;
+
                 if (eventDispatcher.capture != null && eventDispatcher.capture != topmostContainer)
                 {
                     Debug.Log(string.Format("Should not grab hot control with an active capture (current={0} new={1}",

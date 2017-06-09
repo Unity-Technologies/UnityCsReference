@@ -136,6 +136,23 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        public bool DoubleSidedGIField()
+        {
+            Rect r = GetControlRectForSingleLine();
+            if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
+            {
+                EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
+                serializedObject.ApplyModifiedProperties();
+                return true;
+            }
+            else
+            {
+                using (new EditorGUI.DisabledScope(LightmapEditorSettings.giBakeBackend != LightmapEditorSettings.GIBakeBackend.PathTracer))
+                    EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
+            }
+            return false;
+        }
+
         private int CalculateClosestQueueIndexToValue(int requestedValue)
         {
             int bestCloseByDiff = int.MaxValue;

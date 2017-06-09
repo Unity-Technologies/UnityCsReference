@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    class PreviewScene : IDisposable
+    internal class PreviewScene : IDisposable
     {
         private readonly Scene m_Scene;
         private readonly List<GameObject> m_GameObjects = new List<GameObject>();
@@ -93,11 +93,11 @@ namespace UnityEditor
             m_PreviewScene = new PreviewScene("Preview Scene");
 
             var l0 = CreateLight();
-            m_PreviewScene.AddGameObject(l0);
+            previewScene.AddGameObject(l0);
             Light0 = l0.GetComponent<Light>();
 
             var l1 = CreateLight();
-            m_PreviewScene.AddGameObject(l1);
+            previewScene.AddGameObject(l1);
             Light1 = l1.GetComponent<Light>();
 
             Light0.color = SceneView.kSceneViewFrontLight;
@@ -110,7 +110,7 @@ namespace UnityEditor
 
         public Camera camera
         {
-            get { return m_PreviewScene.camera; }
+            get { return previewScene.camera; }
         }
 
         [Obsolete("Use the property cameraFieldOfView (UnityUpgradable) -> cameraFieldOfView", false)]
@@ -144,6 +144,11 @@ namespace UnityEditor
             get { return m_RenderTexture; }
         }
 
+        internal PreviewScene previewScene
+        {
+            get { return m_PreviewScene; }
+        }
+
         public void Cleanup()
         {
             if (m_RenderTexture)
@@ -158,12 +163,12 @@ namespace UnityEditor
                 m_InvisibleMaterial = null;
             }
 
-            m_PreviewScene.Dispose();
+            previewScene.Dispose();
         }
 
-        private void BeginPreview(Rect r, GUIStyle previewBackground, bool hdr)
+        public void BeginPreview(Rect r, GUIStyle previewBackground)
         {
-            InitPreview(r, hdr);
+            InitPreview(r);
 
             if (previewBackground == null || previewBackground == GUIStyle.none)
                 return;
@@ -179,9 +184,9 @@ namespace UnityEditor
                 );
         }
 
-        private void BeginStaticPreview(Rect r, bool hdr)
+        public void BeginStaticPreview(Rect r)
         {
-            InitPreview(r, hdr);
+            InitPreview(r);
             var color = new Color(82 / 255f, 82 / 255f, 82 / 255f, 1.0f);
             var darkGreyBackground = new Texture2D(1, 1, TextureFormat.RGBA32, true, true);
             darkGreyBackground.SetPixel(0, 0, color);
@@ -190,7 +195,7 @@ namespace UnityEditor
             Object.DestroyImmediate(darkGreyBackground);
         }
 
-        private void InitPreview(Rect r, bool hdr)
+        private void InitPreview(Rect r)
         {
             m_TargetRect = r;
             float scaleFac = GetScaleFactor(r.width, r.height);
@@ -208,10 +213,14 @@ namespace UnityEditor
                 // Do not use GetTemporary to manage render textures. Temporary RTs are only
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, hdr ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+                RenderTextureFormat format = camera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format, RenderTextureReadWrite.Default);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;
+
+                foreach (var light in lights)
+                    light.enabled = true;
             }
 
             m_SavedState = new SavedRenderTargetState();
@@ -220,7 +229,7 @@ namespace UnityEditor
             GL.LoadPixelMatrix(0, m_RenderTexture.width, m_RenderTexture.height, 0);
             ShaderUtil.rawViewportRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
             ShaderUtil.rawScissorRect = new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height);
-            GL.Clear(true, true, new Color(0, 0, 0, 0));
+            GL.Clear(true, true, camera.backgroundColor);
 
             foreach (var light in lights)
                 light.enabled = true;
@@ -233,24 +242,16 @@ namespace UnityEditor
             return Mathf.Min(scaleFacX, scaleFacY) * EditorGUIUtility.pixelsPerPoint;
         }
 
-        public void BeginStaticPreview(Rect r)
-        {
-            BeginStaticPreview(r, false);
-        }
-
+        [Obsolete("This method has been marked obsolete, use BeginStaticPreview() instead (UnityUpgradable) -> BeginStaticPreview(*)", false)]
         public void BeginStaticPreviewHDR(Rect r)
         {
-            BeginStaticPreview(r, true);
+            BeginStaticPreview(r);
         }
 
-        public void BeginPreview(Rect r, GUIStyle previewBackground)
-        {
-            BeginPreview(r, previewBackground, false);
-        }
-
+        [Obsolete("This method has been marked obsolete, use BeginPreview() instead (UnityUpgradable) -> BeginPreview(*)", false)]
         public void BeginPreviewHDR(Rect r, GUIStyle previewBackground)
         {
-            BeginPreview(r, previewBackground, true);
+            BeginPreview(r, previewBackground);
         }
 
         public Texture EndPreview()
@@ -260,10 +261,10 @@ namespace UnityEditor
             return m_RenderTexture;
         }
 
-        private void FinishFrame()
+        internal void FinishFrame()
         {
             foreach (var go in m_TempGameObjects)
-                m_PreviewScene.DestroyGameObject(go);
+                previewScene.DestroyGameObject(go);
 
             m_TempGameObjects.Clear();
 
@@ -300,7 +301,7 @@ namespace UnityEditor
         public void AddSingleGO(GameObject go, bool instantiateAtZero = false)
         {
             var copy = instantiateAtZero ? Object.Instantiate(go, Vector3.zero, Quaternion.identity) : Object.Instantiate(go);
-            m_PreviewScene.AddGameObject(copy);
+            previewScene.AddGameObject(copy);
             m_TempGameObjects.Add(copy);
         }
 
@@ -373,7 +374,7 @@ namespace UnityEditor
             renderer.probeAnchor = probeAnchor;
             renderer.lightProbeUsage = useLightProbe ? LightProbeUsage.BlendProbes : LightProbeUsage.Off;
 
-            m_PreviewScene.AddGameObject(meshGo);
+            previewScene.AddGameObject(meshGo);
             m_TempGameObjects.Add(meshGo);
 
             if (probeAnchor != null)
@@ -384,7 +385,7 @@ namespace UnityEditor
                 previewProbe.customBakedTexture = probeAnchor.GetComponent<ReflectionProbe>().texture;
                 previewProbe.transform.position = Vector3.zero;
 
-                m_PreviewScene.AddGameObject(probe);
+                previewScene.AddGameObject(probe);
                 m_TempGameObjects.Add(probe);
             }
         }
@@ -412,19 +413,27 @@ namespace UnityEditor
             return lightGO;
         }
 
-        public void Render(bool allowScriptableRenderPipeline = false)
+        public void Render(bool allowScriptableRenderPipeline = false, bool updatefov = true)
         {
-            Unsupported.SetOverrideRenderSettings(m_PreviewScene.scene);
-            RenderSettings.ambientLight = ambientColor;
+            foreach (var light in lights)
+                light.enabled = true;
+
+            var oldProbe = RenderSettings.ambientProbe;
+            Unsupported.SetOverrideRenderSettings(previewScene.scene);
+            RenderSettings.ambientProbe = oldProbe;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
             Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
 
             float saveFieldOfView = camera.fieldOfView;
 
-            // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
-            float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
-            // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
-            camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
+
+            if (updatefov)
+            {
+                // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
+                float viewMultiplier = (m_RenderTexture.width <= 0 ? 1.0f : Mathf.Max(1.0f, (float)m_RenderTexture.height / m_RenderTexture.width));
+                // Multiply the viewing area by the viewMultiplier - it requires some conversions since the camera view is expressed as an angle.
+                camera.fieldOfView = Mathf.Atan(viewMultiplier * Mathf.Tan(camera.fieldOfView * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg * 2.0f;
+            }
 
             camera.Render();
 

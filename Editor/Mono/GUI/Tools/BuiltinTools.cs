@@ -36,6 +36,11 @@ namespace UnityEditor
             minDragDifference = Vector3.one * (HandleUtility.GetHandleSize(position) / 80f);
         }
 
+        public static void SetMinDragDifferenceForPos(Vector3 position, float multiplier)
+        {
+            minDragDifference = Vector3.one * (HandleUtility.GetHandleSize(position) * multiplier / 80f);
+        }
+
         public static void DisableMinDragDifference()
         {
             minDragDifference = Vector3.zero;
@@ -441,7 +446,13 @@ namespace UnityEditor
 
                         if (EditorGUI.EndChangeCheck())
                         {
-                            ManipulationToolUtility.SetMinDragDifferenceForPos(curPos);
+                            // Resize handles require more fine grained rounding of values than other tools.
+                            // With other tools, the slight rounding is not notizable as long as it's just sub-pixel,
+                            // because the manipulated object is being moved at the same time.
+                            // However, with resize handles, when dragging one edge or corner,
+                            // the opposite is standing still, and even slight rounding can cause shaking/vibration.
+                            // At a fraction of the normal rounding, the shaking is very unlikely to happen though.
+                            ManipulationToolUtility.SetMinDragDifferenceForPos(curPos, 0.1f);
 
                             if (supportsRectSnapping)
                             {

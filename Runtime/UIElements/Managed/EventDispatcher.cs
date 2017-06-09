@@ -247,7 +247,7 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     // do the old behavior here, propagate to all IMGUI Container widgets
-                    if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                    if (SendEventToIMGUIContainers(panel.visualTree, e, panel.focusedElement) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
 
@@ -292,7 +292,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     invokedHandleEvent = true;
                     // do the old behavior here, propagate to all IMGUI Container widgets
-                    if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                    if (SendEventToIMGUIContainers(panel.visualTree, e, null) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
             }
@@ -309,7 +309,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // do the old behavior here, propagate to all IMGUI Container widgets
-                if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                if (SendEventToIMGUIContainers(panel.visualTree, e, panel.focusedElement) == EventPropagation.Stop)
                     return EventPropagation.Stop;
             }
 
@@ -318,24 +318,24 @@ namespace UnityEngine.Experimental.UIElements
             if (e.type == EventType.Used)
             {
                 invokedHandleEvent = true;
-                if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                if (SendEventToIMGUIContainers(panel.visualTree, e, null) == EventPropagation.Stop)
                     return EventPropagation.Stop;
             }
 
             // Fallback on IMGUI propagation if we don't recognize this event
             if (!invokedHandleEvent)
             {
-                if (PropagateToIMGUIContainer(panel.visualTree, e) == EventPropagation.Stop)
+                if (SendEventToIMGUIContainers(panel.visualTree, e, null) == EventPropagation.Stop)
                     return EventPropagation.Stop;
             }
 
             return EventPropagation.Continue;
         }
 
-        private EventPropagation PropagateToIMGUIContainer(VisualElement root, Event evt)
+        private EventPropagation SendEventToIMGUIContainers(VisualElement root, Event evt, VisualElement skipElement)
         {
             var imContainer = root as IMGUIContainer;
-            if (imContainer != null)
+            if (imContainer != null && imContainer != skipElement)
             {
                 // only dispatches to IMGUIContainer, and returns if one handles
                 // do not enter container to dispatch to children
@@ -349,7 +349,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 for (int i = 0; i < container.childrenCount; i++)
                 {
-                    if (PropagateToIMGUIContainer(container.GetChildAt(i), evt) == EventPropagation.Stop)
+                    if (SendEventToIMGUIContainers(container.GetChildAt(i), evt, skipElement) == EventPropagation.Stop)
                         return EventPropagation.Stop;
                 }
             }

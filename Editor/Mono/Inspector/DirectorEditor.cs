@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Audio;
+using UnityEditorInternal;
 using UnityEngine.Playables;
 
 namespace UnityEditor
@@ -32,11 +32,22 @@ namespace UnityEditor
         private SerializedProperty m_WrapMode;
         private SerializedProperty m_InitialTime;
         private SerializedProperty m_UpdateMethod;
+        private SerializedProperty m_SceneBindings;
 
         private GUIContent m_AnimatorContent;
         private GUIContent m_AudioContent;
         private GUIContent m_ScriptContent;
         private Texture    m_DefaultScriptContentTexture;
+
+        private struct BindingPropertyPair
+        {
+            public PlayableBinding binding;
+            public SerializedProperty property;
+        }
+
+        private List<BindingPropertyPair> m_BindingPropertiesCache = new List<BindingPropertyPair>();
+
+        private PlayableBinding[] m_SynchedPlayableBindings = null;
 
         public void OnEnable()
         {
@@ -45,6 +56,7 @@ namespace UnityEditor
             m_WrapMode = serializedObject.FindProperty("m_WrapMode");
             m_UpdateMethod = serializedObject.FindProperty("m_DirectorUpdateMode");
             m_InitialTime = serializedObject.FindProperty("m_InitialTime");
+            m_SceneBindings = serializedObject.FindProperty("m_SceneBindings");
 
             m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
             m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioSource)));
@@ -54,9 +66,20 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (PlayableAssetOutputsChanged())
+                SynchSceneBindings();
+
             serializedObject.Update();
 
-            PlayableAssetField(m_PlayableAsset, Styles.PlayableText);
+            if (PropertyFieldAsObject(m_PlayableAsset, Styles.PlayableText, typeof(PlayableAsset), false))
+            {
+                serializedObject.ApplyModifiedProperties();
+                SynchSceneBindings();
+
+                // some editors (like Timeline) needs to repaint when the playable asset changes
+                InternalEditorUtility.RepaintAllViews();
+            }
+
             EditorGUILayout.PropertyField(m_UpdateMethod, Styles.UpdateMethod);
 
             var rect = EditorGUILayout.GetControlRect(true);
@@ -95,116 +118,122 @@ namespace UnityEditor
 
             if (targets.Length == 1)
             {
-                DoDirectorPerChannelInspector(target as PlayableDirector, m_PlayableAsset.objectReferenceValue as PlayableAsset);
+                var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;
+                if (playableAsset != null)
+                    DoDirectorBindingInspector();
             }
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void BindingInspector(PlayableBinding binding, PlayableDirector director)
+        private bool PlayableAssetOutputsChanged()
+        {
+            var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;
+
+            if (m_SynchedPlayableBindings == null)
+                return playableAsset != null;
+
+            if (playableAsset == null)
+                return true;
+
+            if (playableAsset.outputs.Count() != m_SynchedPlayableBindings.Length)
+                return true;
+
+            return playableAsset.outputs.Where((t, i) => t.sourceObject != m_SynchedPlayableBindings[i].sourceObject).Any();
+        }
+
+        private void BindingInspector(SerializedProperty bindingProperty, PlayableBinding binding)
         {
             if (binding.sourceObject == null)
-            {
                 return;
-            }
+
+            var source = bindingProperty.objectReferenceValue;
 
             if (binding.streamType == DataStreamType.Audio)
             {
-                AudioSource source = director.GetGenericBinding(binding.sourceObject) as AudioSource;
                 m_AudioContent.text = binding.streamName;
-                m_AudioContent.tooltip = (source == null) ? Styles.NoBindingsContent.text : string.Empty;
-                EditorGUI.BeginChangeCheck();
-                source = EditorGUILayout.ObjectField(m_AudioContent, source, typeof(AudioSource), false) as AudioSource;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SetBinding(director, binding.sourceObject, source);
-                }
+                m_AudioContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
+                PropertyFieldAsObject(bindingProperty, m_AudioContent, typeof(AudioSource), false);
             }
             else if (binding.streamType == DataStreamType.Animation)
             {
-                GameObject gameObject = director.GetGenericBinding(binding.sourceObject) as GameObject;
                 m_AnimatorContent.text = binding.streamName;
-                m_AnimatorContent.tooltip = (gameObject == null) ? Styles.NoBindingsContent.text : string.Empty;
-                EditorGUI.BeginChangeCheck();
-                Animator animator = EditorGUILayout.ObjectField(m_AnimatorContent, gameObject, typeof(Animator), true) as Animator;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SetBinding(director, binding.sourceObject, (animator == null) ? null : animator.gameObject);
-                }
+                m_AnimatorContent.tooltip = source is GameObject ? Styles.NoBindingsContent.text : string.Empty;
+                PropertyFieldAsObject(bindingProperty, m_AnimatorContent, typeof(Animator), true, true);
             }
             else if (binding.streamType == DataStreamType.None)
             {
-                Type objectType = typeof(UnityEngine.Object);
-                if (binding.sourceBindingType != null && objectType.IsAssignableFrom(binding.sourceBindingType))
-                {
-                    var obj = director.GetGenericBinding(binding.sourceObject) as UnityEngine.Object;
-                    m_ScriptContent.text = binding.streamName;
-                    m_ScriptContent.tooltip = (obj == null) ? Styles.NoBindingsContent.text : string.Empty;
-                    m_ScriptContent.image = AssetPreview.GetMiniTypeThumbnail(binding.sourceBindingType) ?? m_DefaultScriptContentTexture;
-                    EditorGUI.BeginChangeCheck();
-                    obj = EditorGUILayout.ObjectField(m_ScriptContent, obj, binding.sourceBindingType, true);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        SetBinding(director, binding.sourceObject, obj);
-                    }
-                }
+                m_ScriptContent.text = binding.streamName;
+                m_ScriptContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
+                m_ScriptContent.image = AssetPreview.GetMiniTypeThumbnail(binding.sourceBindingType) ?? m_DefaultScriptContentTexture;
+
+                if (binding.sourceBindingType != null && typeof(UnityEngine.Object).IsAssignableFrom(binding.sourceBindingType))
+                    PropertyFieldAsObject(bindingProperty, m_ScriptContent, binding.sourceBindingType, true);
             }
         }
 
-        private void SetBinding(PlayableDirector director, UnityEngine.Object bindTo, UnityEngine.Object objectToBind)
+        private void DoDirectorBindingInspector()
         {
-            if (director == null || bindTo == null)
+            if (!m_BindingPropertiesCache.Any())
                 return;
 
-            director.SetGenericBinding(bindTo, objectToBind);
-            if (!Application.isPlaying)
+            m_SceneBindings.isExpanded = EditorGUILayout.Foldout(m_SceneBindings.isExpanded, Styles.BindingsTitleContent);
+            if (m_SceneBindings.isExpanded)
             {
-                director.Stop();
+                EditorGUI.indentLevel++;
+
+                foreach (var bindingPropertyPair in m_BindingPropertiesCache)
+                {
+                    BindingInspector(bindingPropertyPair.property, bindingPropertyPair.binding);
+                }
+
+                EditorGUI.indentLevel--;
             }
         }
 
-        private void DoDirectorPerChannelInspector(PlayableDirector thisPlayer, PlayableAsset playableAsset)
+        private void SynchSceneBindings()
         {
-            if (thisPlayer == null || playableAsset == null)
+            if (targets.Length > 1)
+                return;
+
+            var director = (PlayableDirector)target;
+            var playableAsset = m_PlayableAsset.objectReferenceValue as PlayableAsset;
+
+            m_BindingPropertiesCache.Clear();
+            m_SynchedPlayableBindings = null;
+
+            if (playableAsset == null)
                 return;
 
             var bindings = playableAsset.outputs;
-            if (!bindings.Any())
-                return;
+            m_SynchedPlayableBindings = bindings.ToArray();
 
-            EditorGUILayout.LabelField(Styles.BindingsTitleContent);
-            EditorGUI.indentLevel++;
-            foreach (var binding in bindings)
+            foreach (var binding in m_SynchedPlayableBindings)
             {
-                BindingInspector(binding, thisPlayer);
+                if (!director.HasGenericBinding(binding.sourceObject))
+                    director.SetGenericBinding(binding.sourceObject, null);
             }
-            EditorGUI.indentLevel--;
+
+            serializedObject.Update();
+
+            foreach (var binding in m_SynchedPlayableBindings)
+            {
+                for (int i = 0; i < m_SceneBindings.arraySize; ++i)
+                {
+                    var prop = m_SceneBindings.GetArrayElementAtIndex(i);
+                    if (prop.FindPropertyRelative("key").objectReferenceValue == binding.sourceObject)
+                    {
+                        m_BindingPropertiesCache.Add(new BindingPropertyPair { binding = binding, property = prop.FindPropertyRelative("value")});
+                        break;
+                    }
+                }
+            }
         }
 
         // To show the current time field in play mode
         public override bool RequiresConstantRepaint()
         {
             return Application.isPlaying;
-        }
-
-        private static void PlayableAssetField(SerializedProperty property, GUIContent title)
-        {
-            Rect rect = EditorGUILayout.GetControlRect();
-            title = EditorGUI.BeginProperty(rect, title, property);
-
-            // We don't use the serialized property version because the property is UnityEngine.Object,
-            // and the selection filter in the dialog uses Object instead of PlayableAsset in that version
-            EditorGUI.BeginChangeCheck();
-            var prop = EditorGUI.ObjectField(rect, title, property.objectReferenceValue, typeof(PlayableAsset), false);
-
-            if (EditorGUI.EndChangeCheck())
-            {
-                property.objectReferenceValue = prop;
-                // some editors (like Timeline) needs to repaint when the playable asset changes
-                InternalEditorUtility.RepaintAllViews();
-            }
-
-            EditorGUI.EndProperty();
         }
 
         private static void PropertyFieldAsFloat(SerializedProperty property, GUIContent title)
@@ -220,17 +249,43 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
+        private static bool PropertyFieldAsObject(SerializedProperty property, GUIContent title, Type objType, bool allowSceneObjects, bool useBehaviourGameObject = false)
+        {
+            Rect rect = EditorGUILayout.GetControlRect();
+            var label = EditorGUI.BeginProperty(rect, title, property);
+            EditorGUI.BeginChangeCheck();
+            var result = EditorGUI.ObjectField(rect, label, property.objectReferenceValue, objType, allowSceneObjects);
+            bool changed = EditorGUI.EndChangeCheck();
+
+            if (changed)
+            {
+                if (useBehaviourGameObject)
+                {
+                    var behaviour = result as Behaviour;
+                    property.objectReferenceValue = behaviour != null ? behaviour.gameObject : null;
+                }
+                else
+                {
+                    property.objectReferenceValue = result;
+                }
+            }
+
+            EditorGUI.EndProperty();
+
+            return changed;
+        }
+
         // Does not use Properties because time is not a serialized property
         private void CurrentTimeField()
         {
             if (targets.Length == 1)
             {
-                var thisPlayer = target as PlayableDirector;
+                var director = (PlayableDirector)target;
                 EditorGUI.BeginChangeCheck();
-                float t = EditorGUILayout.FloatField(Styles.TimeContent, (float)thisPlayer.time);
+                float t = EditorGUILayout.FloatField(Styles.TimeContent, (float)director.time);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    thisPlayer.time = t;
+                    director.time = t;
                 }
             }
             else
