@@ -137,7 +137,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (customScriptAssemblyData == null)
                 return null;
 
-            var pathPrefix = Path.GetDirectoryName(path);
+            var pathPrefix = path.Substring(0, path.Length - Path.GetFileName(path).Length);
 
             var customScriptAssembly = new CustomScriptAssembly();
 

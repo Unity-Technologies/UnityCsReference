@@ -274,6 +274,10 @@ public enum HierarchyDropMode
         get;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  string[] GetLayersWithId () ;
+
     public static LayerMask ConcatenatedLayersMaskToLayerMask (int concatenatedLayersMask) {
         LayerMask result;
         INTERNAL_CALL_ConcatenatedLayersMaskToLayerMask ( concatenatedLayersMask, out result );

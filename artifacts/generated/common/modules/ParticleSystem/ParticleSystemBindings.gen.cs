@@ -372,13 +372,15 @@ public enum ParticleSystemSubEmitterProperties
     
     InheritNothing = 0,
     
-    InheritEverything = InheritColor | InheritSize | InheritRotation,
+    InheritEverything = InheritColor | InheritSize | InheritRotation | InheritLifetime,
     
     InheritColor = 1 << 0,
     
     InheritSize = 1 << 1,
     
     InheritRotation = 1 << 2,
+    
+    InheritLifetime = 1 << 3,
 }
 
 public enum ParticleSystemTrailTextureMode

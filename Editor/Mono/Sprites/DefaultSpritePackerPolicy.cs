@@ -24,6 +24,7 @@ namespace UnityEditor.Sprites
         private const uint kDefaultPaddingPower = 3; // Good for base and two mip levels.
 
         public virtual int GetVersion() { return 1; }
+        public virtual bool AllowSequentialPacking { get { return false; } }
 
         protected virtual string TagPrefix { get { return "[TIGHT]"; } }
         protected virtual bool AllowTightWhenTagged { get { return true; } }

@@ -1707,7 +1707,16 @@ namespace UnityEditor
             // Scripting Runtime Version
             var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
             var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
-            var newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+            var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
+            if (EditorApplication.isPlaying)
+            {
+                var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? Styles.scriptingRuntimeVersionLegacy : Styles.scriptingRuntimeVersionLatest;
+                BuildDisabledEnumPopup(current, Styles.scriptingRuntimeVersion);
+            }
+            else
+            {
+                newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+            }
 
             if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
             {

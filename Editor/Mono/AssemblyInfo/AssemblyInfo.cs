@@ -48,6 +48,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 
 
 [assembly: AssemblyIsEditorAssembly]

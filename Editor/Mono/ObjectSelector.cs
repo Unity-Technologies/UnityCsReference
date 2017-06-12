@@ -12,6 +12,12 @@ using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
+    internal abstract class ObjectSelectorReceiver : ScriptableObject
+    {
+        public abstract void OnSelectionChanged(Object selection);
+        public abstract void OnSelectionClosed(Object selection);
+    }
+
     internal class ObjectSelector : EditorWindow
     {
         // Styles used in the object selector
@@ -40,6 +46,7 @@ namespace UnityEditor
 
         // Misc
         internal int    objectSelectorID = 0;
+        ObjectSelectorReceiver m_ObjectSelectorReceiver;
         int             m_ModalUndoGroup = -1;
         Object          m_OriginalSelection;
         EditorCache     m_EditorCache;
@@ -133,6 +140,10 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            if (m_ObjectSelectorReceiver != null)
+            {
+                m_ObjectSelectorReceiver.OnSelectionClosed(GetCurrentObject());
+            }
             SendEvent("ObjectSelectorClosed", false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
@@ -164,6 +175,10 @@ namespace UnityEditor
             else
             {
                 m_FocusSearchFilter = false;
+                if (m_ObjectSelectorReceiver != null)
+                {
+                    m_ObjectSelectorReceiver.OnSelectionChanged(GetCurrentObject());
+                }
                 SendEvent("ObjectSelectorUpdated", true);
             }
         }
@@ -199,6 +214,12 @@ namespace UnityEditor
                 m_SearchFilter = value;
                 FilterSettingsChanged();
             }
+        }
+
+        public ObjectSelectorReceiver objectSelectorReceiver
+        {
+            get { return m_ObjectSelectorReceiver; }
+            set { m_ObjectSelectorReceiver = value; }
         }
 
         Scene GetSceneFromObject(Object obj)
@@ -249,6 +270,7 @@ namespace UnityEditor
 
         internal void Show(Object obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
         {
+            m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
             m_AllowedIDs = allowedInstanceIDs;
@@ -360,6 +382,10 @@ namespace UnityEditor
 
         void TreeViewSelection(TreeViewItem item)
         {
+            if (m_ObjectSelectorReceiver != null)
+            {
+                m_ObjectSelectorReceiver.OnSelectionChanged(GetCurrentObject());
+            }
             SendEvent("ObjectSelectorUpdated", true);
         }
 

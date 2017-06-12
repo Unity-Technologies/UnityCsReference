@@ -3001,7 +3001,8 @@ namespace UnityEditor
                     }
                 }
 
-                string[] layers = InternalEditorUtility.layers;
+                string[] layers = InternalEditorUtility.GetLayersWithId();
+
                 ArrayUtility.Add(ref layers, "");
                 ArrayUtility.Add(ref layers, "Add Layer...");
 

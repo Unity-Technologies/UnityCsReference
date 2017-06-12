@@ -159,6 +159,11 @@ namespace UnityEditor
 
         void GenerateSelectionMesh()
         {
+            if (cloth.vertices.Length == 0)
+            {
+                return;
+            }
+
             SkinnedMeshRenderer smr = cloth.GetComponent<SkinnedMeshRenderer>();
             Vector3[] vertices = cloth.vertices;
 
@@ -308,6 +313,11 @@ namespace UnityEditor
 
         void SetupSelectionMeshColors()
         {
+            if (cloth.vertices.Length == 0)
+            {
+                return;
+            }
+
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             int length = coefficients.Length;
             Color[] colors = new Color[length * m_MeshVerticesPerSelectionVertex];
@@ -349,6 +359,11 @@ namespace UnityEditor
 
         void SetupSelectedMeshColors()
         {
+            if (cloth.vertices.Length == 0)
+            {
+                return;
+            }
+
             int length = cloth.coefficients.Length;
             Color[] colors = new Color[length * m_MeshVerticesPerSelectionVertex];
             for (int i = 0; i < length; i++)
@@ -943,6 +958,12 @@ namespace UnityEditor
             Tools.current = Tool.None;
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
+
+            if (m_Selection == null)
+            {
+                GenerateSelectionMesh();
+                SetupSelectedMeshColors();
+            }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
             if (m_Selection.Length != coefficients.Length && m_Selection.Length != s_MaxVertices)

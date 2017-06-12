@@ -63,6 +63,7 @@ public enum VerticalWrapMode
     Overflow = 1
 }
 
+[System.Obsolete ("This component is part of the legacy UI system and will be removed in a future release.")]
 public sealed partial class GUIText : GUIElement
 {
     public extern  string text

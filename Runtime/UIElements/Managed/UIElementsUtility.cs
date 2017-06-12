@@ -159,7 +159,7 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.s_SkinMode == 0 ? ContextType.Player : ContextType.Editor;
         }
 
-        static EventBase CreateEvent(Event systemEvent)
+        static internal EventBase CreateEvent(Event systemEvent)
         {
             switch (systemEvent.type)
             {

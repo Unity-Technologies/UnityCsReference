@@ -39,7 +39,7 @@ namespace UnityEditor
             internal override void Reset(PluginImporterInspector inspector)
             {
                 string valueString = inspector.importer.GetEditorData(key);
-                ParseStringValue(valueString);
+                ParseStringValue(inspector, valueString);
             }
 
             internal override void Apply(PluginImporterInspector inspector)

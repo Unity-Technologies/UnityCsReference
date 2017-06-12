@@ -25,25 +25,6 @@ namespace UnityEditor.Connect
         private UnityConnectServiceCollection()
         {
             m_Services = new Dictionary<string, UnityConnectServiceData>();
-            UnityConnect.instance.StateChanged += InstanceStateChanged;
-        }
-
-        protected void InstanceStateChanged(ConnectInfo state)
-        {
-            // Do not show anything until state is ready
-            if (isDrawerOpen && state.ready)
-            {
-                string serviceName = GetActualServiceName(m_CurrentServiceName, state);
-                // If the service is different then the one currently shown, then call ShowService.
-                // Note that this can include similarly-named services, such as 'Hub' and 'ErrorHub'.
-                if (serviceName != m_CurrentServiceName ||
-                    (s_UnityConnectEditorWindow != null && m_Services[serviceName].serviceUrl != s_UnityConnectEditorWindow.currentUrl))
-                {
-                    bool forceFocus = s_UnityConnectEditorWindow && s_UnityConnectEditorWindow.webView && s_UnityConnectEditorWindow.webView.HasApplicationFocus();
-                    if (forceFocus)
-                        ShowService(serviceName, forceFocus, "instance_state_changed");
-                }
-            }
         }
 
         private void Init()

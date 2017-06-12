@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
+[assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 
 [assembly: InternalsVisibleTo("UnityEngine.Physics")]
 [assembly: InternalsVisibleTo("UnityEngine.Terrain")]

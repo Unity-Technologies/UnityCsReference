@@ -170,5 +170,23 @@ namespace UnityEngine.Playables
         {
             return playable.GetHandle().GetInputWeight(inputIndex);
         }
+
+        public static void ConnectInput<U, V>(this U playable, int inputIndex, V sourcePlayable, int sourceOutputIndex)
+            where U : struct, IPlayable
+            where V : struct, IPlayable
+        {
+            playable.GetGraph().Connect(sourcePlayable, sourceOutputIndex, playable, inputIndex);
+        }
+
+        public static int AddInput<U, V>(this U playable, V sourcePlayable, int sourceOutputIndex, float weight = 0.0f)
+            where U : struct, IPlayable
+            where V : struct, IPlayable
+        {
+            var inputIndex = playable.GetInputCount();
+            playable.SetInputCount(inputIndex + 1);
+            playable.SetInputWeight(inputIndex, weight);
+            playable.ConnectInput(inputIndex, sourcePlayable, sourceOutputIndex);
+            return inputIndex;
+        }
     }
 }

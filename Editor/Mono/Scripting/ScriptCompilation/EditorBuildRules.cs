@@ -140,6 +140,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (customScriptAssemblies == null)
                 return null;
 
+
+            foreach (var customAssembly in customScriptAssemblies)
+            {
+                if (predefinedTargetAssemblies.Any(p => Path.GetFileNameWithoutExtension(p.Filename) == customAssembly.Name))
+                {
+                    throw new Exception(string.Format("Assembly cannot be have reserved name '{0}'. Defined in '{1}'", customAssembly.Name, customAssembly.FilePath));
+                }
+            }
+
             var targetAssemblies = new List<TargetAssembly>();
             var nameToTargetAssembly = new Dictionary<string, TargetAssembly>();
 
@@ -646,11 +655,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return resultAssembly;
-        }
-
-        public static string[] AssemblyFirstPassDirectories
-        {
-            get { return new[] {"Plugins", "Standard Assets", "Pro Standard Assets", "iPhone Standard Assets"}; }
         }
 
         static int FilterAssemblyInFirstpassFolder(string pathName)

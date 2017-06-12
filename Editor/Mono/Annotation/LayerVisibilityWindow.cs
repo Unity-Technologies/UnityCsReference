@@ -62,7 +62,7 @@ namespace UnityEditor
                 var s = InternalEditorUtility.GetLayerName(i);
                 if (s == string.Empty)
                     continue;
-                s_LayerNames.Add(s);
+                s_LayerNames.Add(string.Format("{0}: {1}", i, s));
                 s_LayerMasks.Add(i);
                 m_AllLayersMask |= (1 << i);
             }

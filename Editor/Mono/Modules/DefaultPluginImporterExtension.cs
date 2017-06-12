@@ -43,10 +43,10 @@ namespace UnityEditor.Modules
             internal virtual void Reset(PluginImporterInspector inspector)
             {
                 string valueString = inspector.importer.GetPlatformData(platformName, key);
-                ParseStringValue(valueString);
+                ParseStringValue(inspector, valueString);
             }
 
-            protected void ParseStringValue(string valueString)
+            protected void ParseStringValue(PluginImporterInspector inspector, string valueString, bool muteWarnings = false)
             {
                 try
                 {
@@ -55,8 +55,13 @@ namespace UnityEditor.Modules
                 catch
                 {
                     value = defaultValue;
-                    if (!string.IsNullOrEmpty(valueString))
-                        Debug.LogWarning("Failed to parse value ('" + valueString + "') for " + key + ", platform: " + platformName + ", type: " + type + ". Default value will be set '" + defaultValue + "'");
+
+                    if (!muteWarnings && !string.IsNullOrEmpty(valueString))
+                    {
+                        // We mute warnings for properties that are on disabled platforms to avoid unnecessary spam for deprecated values, case 909247
+                        if (inspector.importer.GetCompatibleWithPlatform(platformName))
+                            Debug.LogWarning("Failed to parse value ('" + valueString + "') for " + key + ", platform: " + platformName + ", type: " + type + ". Default value will be set '" + defaultValue + "'");
+                    }
                 }
             }
 

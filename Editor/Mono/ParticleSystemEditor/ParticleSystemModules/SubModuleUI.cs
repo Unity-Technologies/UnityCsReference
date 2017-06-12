@@ -30,7 +30,7 @@ namespace UnityEditor
 
             public GUIContent inherit = EditorGUIUtility.TextContent("Inherit");
             public string[] subEmitterTypeTexts = new string[] { "Birth", "Collision", "Death" };
-            public string[] propertyStrings = new string[] { "Color", "Size", "Rotation" }; // Keep in sync with SubModule::InheritedProperties
+            public string[] propertyStrings = new string[] { "Color", "Size", "Rotation", "Lifetime" }; // Keep in sync with SubModule::InheritedProperties
         }
         private static Texts s_Texts;
 

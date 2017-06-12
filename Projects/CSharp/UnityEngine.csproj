@@ -851,9 +851,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\RecorderBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\RecorderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WindZoneBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WindZoneBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\TransformBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\TransformBindings.gen.cs</Link>
 </Compile>
@@ -1054,12 +1051,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarMaskBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AvatarMaskBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\TextRendering\Managed\FontStyle.cs" >
 <Link>Runtime\TextRendering\Managed\FontStyle.cs</Link>
 </Compile>
@@ -1218,9 +1209,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\UnityWebRequestWWW\WebRequestWWWBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UnityWebRequestWWW\WebRequestWWWBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Networking\Managed\UNETInterface.cs" >
 <Link>Runtime\Networking\Managed\UNETInterface.cs</Link>
@@ -1558,6 +1546,12 @@
 <Compile Include="..\..\artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs</Link>
 </Compile>
@@ -1572,6 +1566,12 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs" >
 <Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs</Link>

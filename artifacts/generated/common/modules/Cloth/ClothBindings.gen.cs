@@ -187,7 +187,18 @@ public sealed partial class Cloth : Component
         set;
     }
 
+    [Obsolete("useContinuousCollision is no longer supported, use enableContinuousCollision instead")]
     public extern float useContinuousCollision
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern bool enableContinuousCollision
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -254,7 +265,15 @@ public sealed partial class Cloth : Component
         SetEnabledFading ( enabled, interpolationTime );
     }
 
-    public extern bool solverFrequency
+    [System.Obsolete ("Parameter solverFrequency is obsolete and no longer supported. Please use clothSolverFrequency instead.")]
+    public bool solverFrequency
+        {
+            get { return clothSolverFrequency > 0.0f ? true : false; }
+            set { clothSolverFrequency = value == true ? 120f : 0.0f; }  
+        }
+    
+    
+    public extern float clothSolverFrequency
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

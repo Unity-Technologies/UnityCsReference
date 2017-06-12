@@ -48,6 +48,30 @@ namespace UnityEngine
             s_MouseUsed = true;
         }
 
+#pragma warning disable 0618
+        private static void HitTestLegacyGUI(Camera camera, Vector3 mousePosition, ref HitInfo hitInfo)
+        {
+            // Did we hit any gui elements?
+            var layer = camera.GetComponent<GUILayer>();
+            if (layer)
+            {
+                var element = layer.HitTest(mousePosition);
+                if (element)
+                {
+                    hitInfo.target = element.gameObject;
+                    hitInfo.camera = camera;
+                }
+                else
+                {
+                    // We did not hit any object, so clear current hit
+                    hitInfo.target = null;
+                    hitInfo.camera = null;
+                }
+            }
+        }
+
+#pragma warning restore 0618
+
         [RequiredByNativeCode]
         static void DoSendMouseEvents(int skipRTCameras)
         {
@@ -79,23 +103,7 @@ namespace UnityEngine
                     if (!rect.Contains(mousePosition))
                         continue;
 
-                    // Did we hit any gui elements?
-                    var layer = camera.GetComponent<GUILayer>();
-                    if (layer)
-                    {
-                        var element = layer.HitTest(mousePosition);
-                        if (element)
-                        {
-                            m_CurrentHit[m_HitIndexGUI].target = element.gameObject;
-                            m_CurrentHit[m_HitIndexGUI].camera = camera;
-                        }
-                        else
-                        {
-                            // We did not hit any object, so clear current hit
-                            m_CurrentHit[m_HitIndexGUI].target = null;
-                            m_CurrentHit[m_HitIndexGUI].camera = null;
-                        }
-                    }
+                    HitTestLegacyGUI(camera, mousePosition, ref m_CurrentHit[m_HitIndexGUI]);
 
                     // There is no need to continue if the camera shouldn't be sending out events
                     if (camera.eventMask == 0)

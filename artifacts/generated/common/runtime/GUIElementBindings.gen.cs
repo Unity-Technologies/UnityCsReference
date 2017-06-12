@@ -138,6 +138,7 @@ public partial class GUIElement : Behaviour
     private extern static void INTERNAL_CALL_GetScreenRect (GUIElement self, Camera camera, out Rect value);
 }
 
+[System.Obsolete ("This component is part of the legacy UI system and will be removed in a future release.")]
 public sealed partial class GUITexture : GUIElement
 {
     public Color color
@@ -191,6 +192,7 @@ public sealed partial class GUITexture : GUIElement
 }
 
 [RequireComponent(typeof(Camera))]
+[System.Obsolete ("This component is part of the legacy UI system and will be removed in a future release.")]
 public sealed partial class GUILayer : Behaviour
 {
     public GUIElement HitTest (Vector3 screenPosition) {

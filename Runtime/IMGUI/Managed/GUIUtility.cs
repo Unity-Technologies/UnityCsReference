@@ -159,6 +159,7 @@ namespace UnityEngine
         internal static void EndContainer()
         {
             Internal_EndContainer();
+            Internal_ExitGUI();
         }
 
 

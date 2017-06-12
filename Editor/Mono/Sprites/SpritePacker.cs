@@ -113,6 +113,15 @@ namespace UnityEditor.Sprites
             return versionString;
         }
 
+        internal static bool AllowSequentialPacking()
+        {
+            RegenerateList();
+
+            Type t = m_policyTypeCache[m_selectedPolicy];
+            IPackerPolicy policy = Activator.CreateInstance(t) as IPackerPolicy;
+            return policy.AllowSequentialPacking;
+        }
+
         internal static void ExecuteSelectedPolicy(BuildTarget target, int[] textureImporterInstanceIDs)
         {
             RegenerateList();
@@ -146,6 +155,7 @@ namespace UnityEditor.Sprites
 
     public interface IPackerPolicy
     {
+        bool AllowSequentialPacking { get; }
         void OnGroupAtlases(BuildTarget target, PackerJob job, int[] textureImporterInstanceIDs);
         int GetVersion();
     }

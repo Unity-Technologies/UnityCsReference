@@ -187,5 +187,13 @@ namespace UnityEditor
                 return colorSkin.color;
             }
         }
+
+        internal static void ShowObjectPicker<T>(Object obj, bool allowSceneObjects, string searchFilter, ObjectSelectorReceiver objectSelectorReceiver) where T : Object
+        {
+            System.Type objType = typeof(T);
+            ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
+            ObjectSelector.get.objectSelectorReceiver = objectSelectorReceiver;
+            ObjectSelector.get.searchFilter = searchFilter;
+        }
     }
 }
