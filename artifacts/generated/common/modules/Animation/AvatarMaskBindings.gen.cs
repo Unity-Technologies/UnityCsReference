@@ -16,7 +16,7 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
 {
-[MovedFrom("UnityEditor.Animations")]
+[MovedFrom("UnityEditor.Animations", true)]
 public enum AvatarMaskBodyPart
 {
     Root = 0,
@@ -35,7 +35,7 @@ public enum AvatarMaskBodyPart
     LastBodyPart = 13
 }
 
-[MovedFrom("UnityEditor.Animations")]
+[MovedFrom("UnityEditor.Animations", true)]
 public sealed partial class AvatarMask : Object
 {
     public AvatarMask()

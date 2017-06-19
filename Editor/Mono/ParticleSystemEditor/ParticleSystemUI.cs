@@ -123,23 +123,6 @@ namespace UnityEditor
             return Selection.activeGameObject.GetComponent<ParticleSystem>();
         }
 
-        private void DrawRigidBodyInfo()
-        {
-            foreach (ParticleSystem ps in m_ParticleSystems)
-            {
-                var rbs = ps.GetComponentInParent<Rigidbody>();
-                var rbs2D = ps.GetComponentInParent<Rigidbody2D>();
-                if (rbs != null && !rbs.isKinematic)
-                {
-                    EditorGUILayout.HelpBox("A RigidBody(" + rbs.name + ") has been detected. The Particle System will use this for velocity calculations.", MessageType.Info, true);
-                }
-                else if (rbs2D != null && rbs2D.bodyType == RigidbodyType2D.Dynamic)
-                {
-                    EditorGUILayout.HelpBox("A RigidBody2D(" + rbs2D.name + ") has been detected. The Particle System will use this for velocity calculations.", MessageType.Info, true);
-                }
-            }
-        }
-
         public void OnGUI(float width, bool fixedWidth)
         {
             bool isRepaintEvent = Event.current.type == EventType.repaint;
@@ -208,10 +191,6 @@ namespace UnityEditor
                                 moduleSize.y -= 4; // pull background 'up' behind title to fill rounded corners.
                                 moduleSize.height += 4;
                                 GUI.Label(moduleSize, GUIContent.none, ParticleSystemStyles.Get().moduleBgStyle);
-
-                                if (initialModule)
-                                    DrawRigidBodyInfo();
-
                                 module.OnInspectorGUI(initial);
                             }
                             EditorGUILayout.EndVertical();

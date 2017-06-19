@@ -16,6 +16,9 @@ namespace UnityEditor.Connect
 
     public static class UnityOAuth
     {
+        public static event Action UserLoggedIn;
+        public static event Action UserLoggedOut;
+
         public struct AuthCodeResponse
         {
             public string AuthCode { get; set; }
@@ -79,6 +82,18 @@ namespace UnityEditor.Connect
                     callback(response);
                 };
             client.Begin();
+        }
+
+        private static void OnUserLoggedIn()
+        {
+            if (UserLoggedIn != null)
+                UserLoggedIn();
+        }
+
+        private static void OnUserLoggedOut()
+        {
+            if (UserLoggedOut != null)
+                UserLoggedOut();
         }
     }
 

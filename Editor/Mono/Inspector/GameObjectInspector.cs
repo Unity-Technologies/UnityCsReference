@@ -72,6 +72,7 @@ namespace UnityEditor
         Vector2 previewDir;
 
         PreviewRenderUtility m_PreviewUtility;
+        List<GameObject> m_PreviewInstances;
 
         bool m_HasInstance = false;
         bool m_AllOfSamePrefabType = true;
@@ -570,10 +571,22 @@ namespace UnityEditor
                 go.layer = layer;
         }
 
-        public static void SetEnabledRecursive(GameObject go, bool enabled)
+        public override void ReloadPreviewInstances()
         {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
+            CreatePreviewInstances();
+        }
+
+        void CreatePreviewInstances()
+        {
+            if (m_PreviewInstances == null)
+                m_PreviewInstances = new List<GameObject>(targets.Length);
+
+            for (int i = 0; i < targets.Length; ++i)
+            {
+                GameObject instance = EditorUtility.InstantiateForAnimatorPreview(targets[i]);
+                m_PreviewInstances.Add(instance);
+                m_PreviewUtility.AddSingleGO(instance);
+            }
         }
 
         void InitPreview()
@@ -582,6 +595,7 @@ namespace UnityEditor
             {
                 m_PreviewUtility = new PreviewRenderUtility();
                 m_PreviewUtility.camera.fieldOfView = 30.0f;
+                CreatePreviewInstances();
             }
         }
 
@@ -591,6 +605,7 @@ namespace UnityEditor
             {
                 m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
+                m_PreviewInstances.Clear();
             }
         }
 
@@ -779,12 +794,10 @@ namespace UnityEditor
 
         private void DoRenderPreview()
         {
-            var toDraw = target as GameObject;
-            if (toDraw == null)
-                return;
+            GameObject go = m_PreviewInstances[referenceTargetIndex];
 
-            Bounds bounds = new Bounds(toDraw.transform.position, Vector3.zero);
-            GetRenderableBoundsRecurse(ref bounds, toDraw);
+            Bounds bounds = new Bounds(go.transform.position, Vector3.zero);
+            GetRenderableBoundsRecurse(ref bounds, go);
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
@@ -803,8 +816,7 @@ namespace UnityEditor
 
             m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
 
-            m_PreviewUtility.AddSingleGO(toDraw);
-            var prefabType = PrefabUtility.GetPrefabType(toDraw);
+            var prefabType = PrefabUtility.GetPrefabType(go);
             var allowSRP = !(prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.ModelPrefab);
             m_PreviewUtility.Render(allowSRP);
         }

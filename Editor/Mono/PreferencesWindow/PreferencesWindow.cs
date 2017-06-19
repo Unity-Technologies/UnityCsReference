@@ -347,7 +347,7 @@ namespace UnityEditor
             if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
                 GUILayout.Label("Changing this setting requires a restart to take effect.", EditorStyles.helpBox);
 
-            if (GetSelectedScriptEditor() == InternalEditorUtility.ScriptEditor.VisualStudioExpress)
+            if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
                 GUILayout.Label("", constants.warningIcon);
@@ -393,13 +393,13 @@ namespace UnityEditor
             bool isConfigurable = false;
             bool value = false;
 
-            InternalEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
+            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
 
-            if (scriptEditor == InternalEditorUtility.ScriptEditor.Internal)
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Internal)
             {
                 value = true;
             }
-            else if (scriptEditor == InternalEditorUtility.ScriptEditor.MonoDevelop)
+            else if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
             {
                 isConfigurable = true;
                 value = m_ExternalEditorSupportsUnityProj;
@@ -416,24 +416,24 @@ namespace UnityEditor
 
         private bool IsSelectedScriptEditorSpecial()
         {
-            return InternalEditorUtility.IsScriptEditorSpecial(m_ScriptEditorPath.str);
+            return ScriptEditorUtility.IsScriptEditorSpecial(m_ScriptEditorPath.str);
         }
 
-        private InternalEditorUtility.ScriptEditor GetSelectedScriptEditor()
+        private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
         {
-            return InternalEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
+            return ScriptEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
         }
 
         private void OnScriptEditorChanged()
         {
-            InternalEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            m_ScriptEditorArgs = InternalEditorUtility.GetExternalScriptEditorArgs();
+            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
+            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
             UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
         }
 
         private void OnScriptEditorArgsChanged()
         {
-            InternalEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
         }
 
         private void ShowUnityConnectPrefs()
@@ -918,8 +918,8 @@ namespace UnityEditor
 
         private void WritePreferences()
         {
-            InternalEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            InternalEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
+            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
             EditorPrefs.SetBool("kExternalEditorSupportsUnityProj", m_ExternalEditorSupportsUnityProj);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
@@ -972,8 +972,8 @@ namespace UnityEditor
 
         private void ReadPreferences()
         {
-            m_ScriptEditorPath.str = InternalEditorUtility.GetExternalScriptEditor();
-            m_ScriptEditorArgs = InternalEditorUtility.GetExternalScriptEditorArgs();
+            m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
+            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
 
             m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
@@ -997,6 +997,14 @@ namespace UnityEditor
                             m_ScriptAppsEditions[index] = vsPath.Edition;
                         }
                     }
+            }
+
+            var foundScriptEditorPaths = ScriptEditorUtility.GetFoundScriptEditorPaths(Application.platform);
+
+            foreach (var scriptEditorPath in foundScriptEditorPaths)
+            {
+                ArrayUtility.Add(ref m_ScriptApps, scriptEditorPath);
+                ArrayUtility.Add(ref m_ScriptAppsEditions, null);
             }
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");

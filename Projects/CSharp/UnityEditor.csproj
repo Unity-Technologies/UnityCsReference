@@ -192,6 +192,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\Editor\Mono\DropInfo.cs" >
 <Link>Editor\Mono\DropInfo.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs" >
+<Link>Editor\Mono\ScriptEditorUtility.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\EditorGUI.cs" >
 <Link>Editor\Mono\EditorGUI.cs</Link>
 </Compile>

@@ -957,16 +957,24 @@ namespace UnityEditor
             InitController();
 
             AnimationClipSettings animationClipSettings = AnimationUtility.GetAnimationClipSettings(m_Clip);
+
+            m_StartFrame = m_DraggingRange ? m_StartFrame : animationClipSettings.startTime * m_Clip.frameRate;
+            m_StopFrame = m_DraggingRange ? m_StopFrame : animationClipSettings.stopTime * m_Clip.frameRate;
+            m_AdditivePoseFrame = m_DraggingRange ? m_AdditivePoseFrame : animationClipSettings.additiveReferencePoseTime * m_Clip.frameRate;
+
+            float startTime = m_StartFrame / m_Clip.frameRate;
+            float stopTime = m_StopFrame / m_Clip.frameRate;
+            float additivePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
+
+            MuscleClipQualityInfo clipQualityInfo = MuscleClipEditorUtilities.GetMuscleClipQualityInfo(m_Clip, startTime,
+                    stopTime);
+
             bool IsHumanClip = (target as Motion).isHumanMotion;
             bool hasMotionCurves = AnimationUtility.HasMotionCurves(m_Clip);
             bool hasRootCurves = AnimationUtility.HasRootCurves(m_Clip);
             bool hasGenericRootTransform = AnimationUtility.HasGenericRootTransform(m_Clip);
             bool hasMotionFloatCurves = AnimationUtility.HasMotionFloatCurves(m_Clip);
             bool hasAnyRootCurves = hasRootCurves || hasMotionCurves;
-
-            m_StartFrame = m_DraggingRange ? m_StartFrame : animationClipSettings.startTime * m_Clip.frameRate;
-            m_StopFrame = m_DraggingRange ? m_StopFrame : animationClipSettings.stopTime * m_Clip.frameRate;
-            m_AdditivePoseFrame = m_DraggingRange ? m_AdditivePoseFrame : animationClipSettings.additiveReferencePoseTime * m_Clip.frameRate;
 
             bool changedStart = false;
             bool changedStop = false;
@@ -990,10 +998,6 @@ namespace UnityEditor
                 ClipRangeGUI(ref m_StartFrame, ref m_StopFrame, out changedStart, out changedStop, animationClipSettings.hasAdditiveReferencePose, ref m_AdditivePoseFrame, out changedAdditivePoseFrame);
             }
 
-            float startTime = m_StartFrame / m_Clip.frameRate;
-            float stopTime = m_StopFrame / m_Clip.frameRate;
-            float additivePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
-
             // Update range info
             if (!m_DraggingRange)
             {
@@ -1016,8 +1020,7 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 0;
             EditorGUIUtility.fieldWidth = 0;
 
-            MuscleClipQualityInfo clipQualityInfo = MuscleClipEditorUtilities.GetMuscleClipQualityInfo(m_Clip, startTime,
-                    stopTime);
+
             // Loop time
             // Toggle
             Rect toggleLoopTimeRect = EditorGUILayout.GetControlRect();

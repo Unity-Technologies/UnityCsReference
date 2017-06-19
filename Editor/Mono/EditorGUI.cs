@@ -167,7 +167,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static bool IsEditingTextField()
         {
-            return RecycledTextEditor.s_ActuallyEditing;
+            return RecycledTextEditor.s_ActuallyEditing && activeEditor != null;
         }
 
         internal static void EndEditingActiveTextField()
