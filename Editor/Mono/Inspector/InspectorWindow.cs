@@ -80,6 +80,7 @@ namespace UnityEditor
             public GUIStyle stickyNoteArrow = new GUIStyle("VCS_StickyNoteArrow");
             public GUIStyle stickyNotePerforce = new GUIStyle("VCS_StickyNoteP4");
             public GUIStyle stickyNoteLabel = new GUIStyle("VCS_StickyNoteLabel");
+            public readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TextContent("VCS Plugin {0} is enabled but not connected");
 
             public Styles()
             {
@@ -824,7 +825,7 @@ namespace UnityEditor
 
         private void DrawVCSShortInfo()
         {
-            if (Provider.isActive &&
+            if (Provider.enabled &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.Disabled &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.Generic)
@@ -839,6 +840,13 @@ namespace UnityEditor
 
                 string currentState = asset.StateToString();
                 string currentMetaState = metaAsset == null ? String.Empty : metaAsset.StateToString();
+
+                //We also need to take into account the global VCS state here, as it being offline (or not connected)
+                //can also cause IsOpenForEdit to return false for checkout-enabled or lock-enabled VCS
+                if (currentState == string.Empty && Provider.onlineState != OnlineState.Online)
+                {
+                    currentState = String.Format(s_Styles.VCS_NotConnectedMessage.text, Provider.GetActivePlugin().name);
+                }
 
                 bool showMetaState = metaAsset != null && (metaAsset.state & ~Asset.States.MetaFile) != asset.state;
                 bool showAssetState = currentState != "";
@@ -878,15 +886,18 @@ namespace UnityEditor
                 bool openForEdit = Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message);
                 if (!openForEdit)
                 {
-                    float buttonWidth = 80;
-                    Rect buttonRect = new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height);
-                    if (GUI.Button(buttonRect, "Check out", styles.lockedHeaderButton))
+                    if (Provider.isActive)  //Only ofer a checkout button if we think we're in a state to open the file for edit
                     {
-                        EditorPrefs.SetBool("vcssticky", true);
-                        // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
-                        Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
-                        task.Wait();
-                        Repaint();
+                        float buttonWidth = 80;
+                        Rect buttonRect = new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height);
+                        if (GUI.Button(buttonRect, "Check out", styles.lockedHeaderButton))
+                        {
+                            EditorPrefs.SetBool("vcssticky", true);
+                            // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
+                            Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
+                            task.Wait();
+                            Repaint();
+                        }
                     }
                     DrawVCSSticky(rect.height / 2);
                 }

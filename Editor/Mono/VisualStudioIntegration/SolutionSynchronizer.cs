@@ -194,7 +194,7 @@ namespace UnityEditor.VisualStudioIntegration
                 foreach (MonoIsland island in RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()))
                     SyncProject(island, otherAssetsProjectPart, responseFileDefines);
 
-                if (InternalEditorUtility.GetScriptEditorFromPreferences() == InternalEditorUtility.ScriptEditor.VisualStudioCode)
+                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                     WriteVSCodeSettingsFiles();
             }
 
@@ -373,7 +373,7 @@ namespace UnityEditor.VisualStudioIntegration
                 targetframeworkversion = "v4.6";
                 targetLanguageVersion = "6";
             }
-            else if (InternalEditorUtility.GetScriptEditorFromPreferences() == InternalEditorUtility.ScriptEditor.Rider)
+            else if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.Rider)
             {
                 targetframeworkversion = "v4.5";
             }
@@ -413,14 +413,14 @@ namespace UnityEditor.VisualStudioIntegration
 
         private static Mode ModeForCurrentExternalEditor()
         {
-            var scriptEditor = InternalEditorUtility.GetScriptEditorFromPreferences();
+            var scriptEditor = ScriptEditorUtility.GetScriptEditorFromPreferences();
 
-            if (scriptEditor == InternalEditorUtility.ScriptEditor.VisualStudio ||
-                scriptEditor == InternalEditorUtility.ScriptEditor.VisualStudioExpress ||
-                scriptEditor == InternalEditorUtility.ScriptEditor.VisualStudioCode)
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudio ||
+                scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioExpress ||
+                scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                 return Mode.UnityScriptAsPrecompiledAssembly;
 
-            if (scriptEditor == InternalEditorUtility.ScriptEditor.Internal) // Bundled MonoDevelop
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Internal) // Bundled MonoDevelop
                 return Mode.UnityScriptAsUnityProj;
 
             return EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false) ? Mode.UnityScriptAsUnityProj : Mode.UnityScriptAsPrecompiledAssembly;

@@ -33,6 +33,7 @@ namespace UnityEditor
         public SerializedMinMaxCurve m_RotationZ;
         public SerializedProperty m_RandomizeRotationDirection;
         public SerializedMinMaxCurve m_GravityModifier;
+        public SerializedProperty m_EmitterVelocity;
         public SerializedProperty m_MaxNumParticles;
         public SerializedProperty m_AutoRandomSeed;
         public SerializedProperty m_RandomSeed;
@@ -61,6 +62,7 @@ namespace UnityEditor
             public GUIContent deltaTime = EditorGUIUtility.TextContent("Delta Time|Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.");
             public GUIContent autoRandomSeed = EditorGUIUtility.TextContent("Auto Random Seed|Simulate differently each time the effect is played.");
             public GUIContent randomSeed = EditorGUIUtility.TextContent("Random Seed|Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
+            public GUIContent emitterVelocity = EditorGUIUtility.TextContent("Emitter Velocity|When the Particle System is moving, should we use its Transform, or Rigidbody Component, to calculate its velocity?");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
@@ -99,6 +101,7 @@ namespace UnityEditor
             m_SimulationSpeed = GetProperty0("simulationSpeed");
             m_UseUnscaledTime = GetProperty0("useUnscaledTime");
             m_ScalingMode = GetProperty0("scalingMode");
+            m_EmitterVelocity = GetProperty0("useRigidbodyForVelocity");
             m_AutoRandomSeed = GetProperty0("autoRandomSeed");
             m_RandomSeed = GetProperty0("randomSeed");
 
@@ -247,6 +250,8 @@ namespace UnityEditor
             bool newPlayOnAwake = GUIToggle(s_Texts.autoplay, m_PlayOnAwake);
             if (oldPlayOnAwake != newPlayOnAwake)
                 m_ParticleSystemUI.m_ParticleEffectUI.PlayOnAwakeChanged(newPlayOnAwake);
+
+            GUIBoolAsPopup(s_Texts.emitterVelocity, m_EmitterVelocity, new string[] { "Transform", "Rigidbody" });
 
             GUIInt(s_Texts.maxParticles, m_MaxNumParticles);
 

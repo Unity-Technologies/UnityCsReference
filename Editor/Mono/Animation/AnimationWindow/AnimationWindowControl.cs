@@ -284,7 +284,7 @@ namespace UnityEditorInternal
             if (!canPlay)
                 return false;
 
-            if (!AnimationMode.InAnimationPlaybackMode())
+            if (!playing)
             {
                 AnimationMode.StartAnimationPlaybackMode();
 

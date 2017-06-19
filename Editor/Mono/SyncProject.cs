@@ -83,7 +83,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    var vs = InternalEditorUtility.GetExternalScriptEditor();
+                    var vs = ScriptEditorUtility.GetExternalScriptEditor();
                     if (InstalledVisualStudios.ContainsKey(UnityEditor.VisualStudioVersion.VisualStudio2008) &&
                         (vs != String.Empty) &&
                         PathsAreEquivalent(InstalledVisualStudios[UnityEditor.VisualStudioVersion.VisualStudio2008].Last().Path, vs))

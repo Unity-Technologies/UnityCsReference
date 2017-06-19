@@ -121,33 +121,18 @@ namespace UnityEditor
         }
         private static Styles s_Styles;
 
-        void ShowHidePreviewProxies(bool enabled)
+        private static void SetEnabledRecursive(GameObject go, bool enabled)
         {
-            if (m_PreviewInstance != null)
-                GameObjectInspector.SetEnabledRecursive(m_PreviewInstance, enabled);
-
-            GameObjectInspector.SetEnabledRecursive(m_ReferenceInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_DirectionInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_PivotInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_RootInstance, enabled);
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
         }
 
-        void AddPreviewProxiesForRender(bool showReference)
+        void ShowReferences(bool showReference)
         {
-            if (m_PreviewUtility == null)
-                return;
-
-
-            if (m_PreviewInstance != null)
-                m_PreviewUtility.AddSingleGO(m_PreviewInstance);
-
-            if (!showReference)
-                return;
-
-            m_PreviewUtility.AddSingleGO(m_ReferenceInstance);
-            m_PreviewUtility.AddSingleGO(m_DirectionInstance);
-            m_PreviewUtility.AddSingleGO(m_PivotInstance);
-            m_PreviewUtility.AddSingleGO(m_RootInstance);
+            SetEnabledRecursive(m_ReferenceInstance, showReference);
+            SetEnabledRecursive(m_DirectionInstance, showReference);
+            SetEnabledRecursive(m_PivotInstance, showReference);
+            SetEnabledRecursive(m_RootInstance, showReference);
         }
 
         static AnimationClip GetFirstAnimationClipFromMotion(Motion motion)
@@ -279,6 +264,7 @@ namespace UnityEditor
             if (go != null)
             {
                 m_PreviewInstance = EditorUtility.InstantiateForAnimatorPreview(go);
+                previewUtility.AddSingleGO(m_PreviewInstance);
 
                 Bounds bounds = new Bounds(m_PreviewInstance.transform.position, Vector3.zero);
                 GameObjectInspector.GetRenderableBoundsRecurse(ref bounds, m_PreviewInstance);
@@ -314,6 +300,7 @@ namespace UnityEditor
                 GameObject referenceGO = (GameObject)EditorGUIUtility.Load("Avatar/dial_flat.prefab");
                 m_ReferenceInstance = (GameObject)Object.Instantiate(referenceGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_ReferenceInstance);
+                previewUtility.AddSingleGO(m_ReferenceInstance);
             }
 
             if (m_DirectionInstance == null)
@@ -321,6 +308,7 @@ namespace UnityEditor
                 GameObject directionGO = (GameObject)EditorGUIUtility.Load("Avatar/arrow.fbx");
                 m_DirectionInstance = (GameObject)Object.Instantiate(directionGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_DirectionInstance);
+                previewUtility.AddSingleGO(m_DirectionInstance);
             }
 
             if (m_PivotInstance == null)
@@ -328,6 +316,7 @@ namespace UnityEditor
                 GameObject pivotGO = (GameObject)EditorGUIUtility.Load("Avatar/root.fbx");
                 m_PivotInstance = (GameObject)Object.Instantiate(pivotGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_PivotInstance);
+                previewUtility.AddSingleGO(m_PivotInstance);
             }
 
             if (m_RootInstance == null)
@@ -335,14 +324,13 @@ namespace UnityEditor
                 GameObject rootGO = (GameObject)EditorGUIUtility.Load("Avatar/root.fbx");
                 m_RootInstance = (GameObject)Object.Instantiate(rootGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_RootInstance);
+                previewUtility.AddSingleGO(m_RootInstance);
             }
 
             // Load preview settings from prefs
             m_IKOnFeet = EditorPrefs.GetBool(kIkPref, false);
             m_ShowReference = EditorPrefs.GetBool(kReferencePref, true);
             timeControl.playbackSpeed = EditorPrefs.GetFloat(kSpeedPref, 1f);
-
-            ShowHidePreviewProxies(false);
         }
 
         private PreviewRenderUtility previewUtility
@@ -410,21 +398,11 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
-            if (previewUtility != null)
+            if (m_PreviewUtility != null)
             {
-                previewUtility.Cleanup();
+                m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
             }
-
-            Object.DestroyImmediate(m_PreviewInstance);
-            Object.DestroyImmediate(m_FloorMaterial);
-            Object.DestroyImmediate(m_FloorMaterialSmall);
-            Object.DestroyImmediate(m_ShadowMaskMaterial);
-            Object.DestroyImmediate(m_ShadowPlaneMaterial);
-            Object.DestroyImmediate(m_ReferenceInstance);
-            Object.DestroyImmediate(m_RootInstance);
-            Object.DestroyImmediate(m_PivotInstance);
-            Object.DestroyImmediate(m_DirectionInstance);
 
             if (timeControl != null)
                 timeControl.OnDisable();
@@ -512,12 +490,9 @@ namespace UnityEditor
             rt.wrapMode = TextureWrapMode.Clamp;
             rt.filterMode = FilterMode.Bilinear;
             cam.targetTexture = rt;
-
+            //ShowReferences(false);
             // Enable character and render with camera into the shadowmap
-            ShowHidePreviewProxies(true);
-            AddPreviewProxiesForRender(false);
-            previewUtility.Render(false, false);
-            previewUtility.FinishFrame();
+            m_PreviewUtility.camera.Render();
 
             // Draw a quad, with shader that will produce white color everywhere
             // where something was rendered (via inverted depth test)
@@ -641,7 +616,6 @@ namespace UnityEditor
             previewUtility.camera.nearClipPlane = 0.5f * m_ZoomFactor;
             previewUtility.camera.farClipPlane = 100.0f * m_AvatarScale;
             Quaternion camRot = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
-
             // Add panning offset
             Vector3 camPos = camRot * (Vector3.forward * -5.5f * m_ZoomFactor) + bodyPos + m_PivotPositionOffset;
             previewUtility.camera.transform.position = camPos;
@@ -679,11 +653,8 @@ namespace UnityEditor
                 Matrix4x4 matrix = Matrix4x4.TRS(floorPos, floorRot, Vector3.one * kFloorScaleSmall * m_AvatarScale);
                 Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
             }
-
-            ShowHidePreviewProxies(true);
-            AddPreviewProxiesForRender(m_ShowReference);
+            ShowReferences(m_ShowReference);
             previewUtility.Render();
-            ShowHidePreviewProxies(false);
 
             RenderTexture.ReleaseTemporary(shadowMap);
         }

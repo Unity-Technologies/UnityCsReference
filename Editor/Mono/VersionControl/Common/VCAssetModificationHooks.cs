@@ -20,7 +20,10 @@ namespace UnityEditorInternal.VersionControl
                 // Fetch status
                 Task statusTask = Provider.Status(from, false);
                 statusTask.Wait();
-                asset = Provider.CacheStatus(from);
+                if (statusTask.success)
+                    asset = Provider.CacheStatus(from);
+                else
+                    asset = null;
             }
             return asset;
         }
@@ -99,6 +102,8 @@ namespace UnityEditorInternal.VersionControl
 
             if (asset == null)
             {
+                if (Provider.onlineState == OnlineState.Offline && Provider.offlineReason != string.Empty)
+                    message = Provider.offlineReason;
                 return false;
             }
 
