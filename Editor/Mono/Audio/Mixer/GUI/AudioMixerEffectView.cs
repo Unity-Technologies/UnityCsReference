@@ -371,11 +371,14 @@ namespace UnityEditor
                 {
                     menu.AddItem(new GUIContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate()
                         {
+                            Undo.RecordObject(effect, "Enable Wet Mixing");
                             effect.enableWetMix = !effect.enableWetMix;
                         });
                     menu.AddItem(new GUIContent("Bypass"), effect.bypass, delegate()
                         {
+                            Undo.RecordObject(effect, "Bypass Effect");
                             effect.bypass = !effect.bypass;
+
                             controller.UpdateBypass();
                             AudioMixerUtility.RepaintAudioMixerAndInspectors();
                         });

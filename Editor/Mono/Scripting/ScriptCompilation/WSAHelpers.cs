@@ -12,34 +12,27 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class WSAHelpers
     {
-        public static bool IsCSharpAssembly(string assemblyName, EditorBuildRules.TargetAssembly[] customTargetAssemblies)
+        public static bool IsCSharpAssembly(ScriptAssembly scriptAssembly)
         {
-            if (assemblyName.ToLower().Contains("firstpass"))
+            if (scriptAssembly.Filename.ToLower().Contains("firstpass"))
                 return false;
 
-            var csLang = ScriptCompilers.CSharpSupportedLanguage;
-            var assemblies = EditorBuildRules.GetTargetAssemblies(csLang, customTargetAssemblies).Where(a => a.Flags != AssemblyFlags.EditorOnly);
-
-            return assemblies.Any(a => a.Filename == assemblyName);
+            return scriptAssembly.Language == ScriptCompilers.CSharpSupportedLanguage;
         }
 
-        public static bool IsCSharpFirstPassAssembly(string assemblyName, EditorBuildRules.TargetAssembly[] customTargetAssemblies)
+        public static bool IsCSharpFirstPassAssembly(ScriptAssembly scriptAssembly)
         {
-            if (!assemblyName.ToLower().Contains("firstpass"))
+            if (!scriptAssembly.Filename.ToLower().Contains("firstpass"))
                 return false;
 
-            var csLang = ScriptCompilers.CSharpSupportedLanguage;
-            var assemblies = EditorBuildRules.GetTargetAssemblies(csLang, customTargetAssemblies).Where(a => a.Flags != AssemblyFlags.EditorOnly);
-
-            return assemblies.Any(a => a.Filename == assemblyName);
+            return scriptAssembly.Language == ScriptCompilers.CSharpSupportedLanguage;
         }
 
-        public static bool UseDotNetCore(string path, BuildTarget buildTarget, EditorBuildRules.TargetAssembly[] customTargetAssemblies)
+        public static bool UseDotNetCore(ScriptAssembly scriptAssembly)
         {
             var metroCompilationOverrides = PlayerSettings.WSA.compilationOverrides;
-            bool dotNetCoreEnabled = buildTarget == BuildTarget.WSAPlayer && metroCompilationOverrides != PlayerSettings.WSACompilationOverrides.None;
-            var assemblyName = Path.GetFileName(path);
-            bool useDotNetCore = dotNetCoreEnabled && (IsCSharpAssembly(path, customTargetAssemblies) || (metroCompilationOverrides != PlayerSettings.WSACompilationOverrides.UseNetCorePartially && IsCSharpFirstPassAssembly(assemblyName, customTargetAssemblies)));
+            bool dotNetCoreEnabled = scriptAssembly.BuildTarget == BuildTarget.WSAPlayer && metroCompilationOverrides != PlayerSettings.WSACompilationOverrides.None;
+            bool useDotNetCore = dotNetCoreEnabled && (IsCSharpAssembly(scriptAssembly) || (metroCompilationOverrides != PlayerSettings.WSACompilationOverrides.UseNetCorePartially && IsCSharpFirstPassAssembly(scriptAssembly)));
 
             return useDotNetCore;
         }

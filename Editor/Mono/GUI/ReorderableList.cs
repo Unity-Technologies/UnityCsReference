@@ -82,7 +82,6 @@ namespace UnityEditorInternal
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
             public GUIStyle elementBackground = new GUIStyle("RL Element");
-            const int buttonWidth = 25;
             public const int padding = 6;
             public const int dragHandleWidth = 20;
 

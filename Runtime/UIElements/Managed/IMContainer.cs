@@ -46,7 +46,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             style = GUIStyle.none;
             translation = Vector2.zero;
-            position = new Rect(0, 0, 0, 0);
+            layout = new Rect(0, 0, 0, 0);
         }
 
         public virtual bool OnGUI(Event evt)

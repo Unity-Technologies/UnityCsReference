@@ -59,7 +59,15 @@ public enum SerializedPropertyType
     Quaternion = 17,
     ExposedReference = 18,
     
-    FixedBufferSize = 19
+    FixedBufferSize = 19,
+    
+    Vector2Int = 20,
+    
+    Vector3Int = 21,
+    
+    RectInt = 22,
+    
+    BoundsInt = 23,
 }
 
 public sealed partial class SerializedObject : IDisposable
@@ -557,6 +565,34 @@ public sealed partial class SerializedProperty : IDisposable
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private  void INTERNAL_set_vector4Value (ref Vector4 value) ;
 
+    public  Vector2Int vector2IntValue
+    {
+        get { Vector2Int tmp; INTERNAL_get_vector2IntValue(out tmp); return tmp;  }
+        set { INTERNAL_set_vector2IntValue(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_vector2IntValue (out Vector2Int value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_vector2IntValue (ref Vector2Int value) ;
+
+    public  Vector3Int vector3IntValue
+    {
+        get { Vector3Int tmp; INTERNAL_get_vector3IntValue(out tmp); return tmp;  }
+        set { INTERNAL_set_vector3IntValue(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_vector3IntValue (out Vector3Int value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_vector3IntValue (ref Vector3Int value) ;
+
     public  Quaternion quaternionValue
     {
         get { Quaternion tmp; INTERNAL_get_quaternionValue(out tmp); return tmp;  }
@@ -585,6 +621,20 @@ public sealed partial class SerializedProperty : IDisposable
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private  void INTERNAL_set_rectValue (ref Rect value) ;
 
+    public  RectInt rectIntValue
+    {
+        get { RectInt tmp; INTERNAL_get_rectIntValue(out tmp); return tmp;  }
+        set { INTERNAL_set_rectIntValue(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_rectIntValue (out RectInt value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_rectIntValue (ref RectInt value) ;
+
     public  Bounds boundsValue
     {
         get { Bounds tmp; INTERNAL_get_boundsValue(out tmp); return tmp;  }
@@ -598,6 +648,20 @@ public sealed partial class SerializedProperty : IDisposable
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private  void INTERNAL_set_boundsValue (ref Bounds value) ;
+
+    public  BoundsInt boundsIntValue
+    {
+        get { BoundsInt tmp; INTERNAL_get_boundsIntValue(out tmp); return tmp;  }
+        set { INTERNAL_set_boundsIntValue(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_boundsIntValue (out BoundsInt value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_boundsIntValue (ref BoundsInt value) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

@@ -426,7 +426,7 @@ namespace UnityEditor
                 Toggle(m_PackageImportView.packageItems, pitem, toggleRect);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    // Only change selection if we already have singleselection (Keep multi-selection when toggling)
+                    // Only change selection if we already have single selection (Keep multi-selection when toggling)
                     if (m_TreeView.GetSelection().Length <= 1 || !m_TreeView.GetSelection().Contains(pitem.id))
                     {
                         m_TreeView.SetSelection(new int[] { pitem.id }, false);
@@ -468,6 +468,7 @@ namespace UnityEditor
                 EditorGUIUtility.SetIconSize(new Vector2(k_IconWidth, k_IconWidth)); // If not set we see icons scaling down if text is being cropped
                 GUIStyle lineStyle = Styles.lineStyle;
                 lineStyle.padding.left = 0; // padding could have been set by other tree views
+                contentRect.height += 5; // with the default row height, underscore and lower parts of characters like g, p, etc. were not visible
                 if (Event.current.type == EventType.Repaint)
                     lineStyle.Draw(contentRect, GUIContent.Temp(item.displayName, GetIconForItem(item)), false, false, selected, focused);
                 EditorGUIUtility.SetIconSize(Vector2.zero);

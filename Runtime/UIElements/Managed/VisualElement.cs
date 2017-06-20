@@ -69,14 +69,29 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        Rect m_Position;
+        Rect m_Layout;
 
-        // origin and size relative to parent
+        // Temporary obsolete so that we can use position with the transform property.
+        [Obsolete("Use the property layout instead (UnityUpgradable) -> layout", false)]
         public Rect position
         {
             get
             {
-                var result = m_Position;
+                return layout;
+            }
+            set
+            {
+                layout = value;
+            }
+        }
+
+        // This will replace the Rect position
+        // origin and size relative to parent
+        public Rect layout
+        {
+            get
+            {
+                var result = m_Layout;
                 if (cssNode != null && positionType != PositionType.Manual)
                 {
                     result.x = cssNode.LayoutX;
@@ -94,11 +109,11 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // Same position value while type is already manual should not trigger any layout change, return early
-                if (positionType == PositionType.Manual && m_Position == value)
+                if (positionType == PositionType.Manual && m_Layout == value)
                     return;
 
                 // set results so we can read straight back in get without waiting for a pass
-                m_Position = value;
+                m_Layout = value;
 
                 // set styles
                 cssNode.SetPosition(CSSEdge.Left, value.x);
@@ -146,7 +161,7 @@ namespace UnityEngine.Experimental.UIElements
                         borderWidth,
                         borderWidth);
 
-                return position - spacing;
+                return layout - spacing;
             }
         }
 
@@ -156,8 +171,8 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var g = globalTransform;
-                var min = g.MultiplyPoint3x4(position.min);
-                var max = g.MultiplyPoint3x4(position.max);
+                var min = g.MultiplyPoint3x4(layout.min);
+                var max = g.MultiplyPoint3x4(layout.max);
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
@@ -167,8 +182,8 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var g = transform;
-                var min = g.MultiplyPoint3x4(position.min);
-                var max = g.MultiplyPoint3x4(position.max);
+                var min = g.MultiplyPoint3x4(layout.min);
+                var max = g.MultiplyPoint3x4(layout.max);
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
@@ -182,7 +197,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         if (parent != null)
                         {
-                            renderData.worldTransForm = parent.globalTransform * Matrix4x4.Translate(new Vector3(parent.position.x, parent.position.y, 0)) * transform;
+                            renderData.worldTransForm = parent.globalTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform;
                         }
                         else
                         {
@@ -293,10 +308,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(width, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.width = Style<float>.Create(value);
                 cssNode.Width = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -308,10 +325,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(height, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.height = Style<float>.Create(value);
                 cssNode.Height = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -323,10 +342,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(maxWidth, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.maxWidth = Style<float>.Create(value);
                 cssNode.MaxWidth = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -338,10 +359,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(maxHeight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.maxHeight = Style<float>.Create(value);
                 cssNode.MaxHeight = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -353,10 +376,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(minWidth, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.minWidth = Style<float>.Create(value);
                 cssNode.MinWidth = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -368,10 +393,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(minHeight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.minHeight = Style<float>.Create(value);
                 cssNode.MinHeight = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -383,10 +410,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(flex, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.flex = Style<float>.Create(value);
                 cssNode.Flex = value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -398,10 +427,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(positionLeft, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.positionLeft = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Left, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -413,10 +444,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(positionTop, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.positionTop = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Top, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -428,10 +461,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(positionRight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.positionRight = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Right, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -443,10 +478,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(positionBottom, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.positionBottom = Style<float>.Create(value);
                 cssNode.SetPosition(CSSEdge.Bottom, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -458,10 +495,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(marginLeft, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.marginLeft = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Left, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -473,10 +512,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(marginTop, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.marginTop = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Top, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -488,10 +529,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(marginRight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.marginRight = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Right, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -503,10 +546,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(marginBottom, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.marginBottom = Style<float>.Create(value);
                 cssNode.SetMargin(CSSEdge.Bottom, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -518,10 +563,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(borderLeft, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.borderLeft = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Left, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -533,10 +580,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(borderTop, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.borderTop = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Top, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -548,10 +597,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(borderRight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.borderRight = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Right, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -563,10 +614,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(borderBottom, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.borderBottom = Style<float>.Create(value);
                 cssNode.SetBorder(CSSEdge.Bottom, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -578,10 +631,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(paddingLeft, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.paddingLeft = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Left, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -593,10 +648,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(paddingTop, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.paddingTop = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Top, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -608,10 +665,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(paddingRight, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.paddingRight = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Right, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -623,10 +682,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(paddingBottom, value))
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.paddingBottom = Style<float>.Create(value);
                 cssNode.SetPadding(CSSEdge.Bottom, value);
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -638,10 +699,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || positionType != value)
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.positionType = Style<int>.Create((int)value);
                 cssNode.PositionType = (CSSPositionType)value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -666,10 +729,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || alignSelf != value)
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.alignSelf = Style<int>.Create((int)value);
                 cssNode.AlignSelf = (CSSAlign)value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -837,10 +902,12 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || overflow != value)
+                {
+                    Dirty(ChangeType.Layout);
+                }
                 m_Styles.overflow = Style<int>.Create((int)value);
                 cssNode.Overflow = (CSSOverflow)value;
-                Dirty(ChangeType.Layout);
             }
         }
 
@@ -853,9 +920,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                EnsureInlineStyles();
+                if (EnsureInlineStyles() || !Mathf.Approximately(opacity, value))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
                 m_Styles.opacity = Style<float>.Create(value);
-                Dirty(ChangeType.Repaint);
             }
         }
 
@@ -1086,16 +1155,16 @@ namespace UnityEngine.Experimental.UIElements
             var painter = elementPanel.stylePainter;
             if (backgroundImage != null)
             {
-                painter.DrawTexture(position, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
+                painter.DrawTexture(layout, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
             }
             else if (backgroundColor != Color.clear)
             {
-                painter.DrawRect(position, backgroundColor, 0.0f, borderRadius);
+                painter.DrawRect(layout, backgroundColor, 0.0f, borderRadius);
             }
 
             if (borderColor != Color.clear && borderWidth > 0.0f)
             {
-                painter.DrawRect(position, borderColor, borderWidth, borderRadius);
+                painter.DrawRect(layout, borderColor, borderWidth, borderRadius);
             }
 
             if (!string.IsNullOrEmpty(text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
@@ -1117,7 +1186,7 @@ namespace UnityEngine.Experimental.UIElements
         // override to customize intersection between point and shape
         public virtual bool ContainsPoint(Vector2 localPoint)
         {
-            return position.Contains(localPoint);
+            return layout.Contains(localPoint);
         }
 
         public virtual bool ContainsPointToLocal(Vector2 point)
@@ -1127,7 +1196,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual bool Overlaps(Rect rectangle)
         {
-            return position.Overlaps(rectangle, true);
+            return layout.Overlaps(rectangle, true);
         }
 
         public enum MeasureMode
@@ -1183,10 +1252,10 @@ namespace UnityEngine.Experimental.UIElements
 
         public void SetSize(Vector2 size)
         {
-            var pos = position;
+            var pos = layout;
             pos.width = size.x;
             pos.height = size.y;
-            position = pos;
+            layout = pos;
         }
 
         protected const int DefaultAlignContent = (int)Align.FlexStart;
@@ -1279,12 +1348,15 @@ namespace UnityEngine.Experimental.UIElements
             Dirty(ChangeType.Repaint);
         }
 
-        internal void EnsureInlineStyles()
+        //returns true when this allocated a new object
+        internal bool EnsureInlineStyles()
         {
             if (m_Styles.isShared)
             {
                 m_Styles = new VisualElementStyles(m_Styles, isShared: false);
+                return true;
             }
+            return false;
         }
 
         public void ResetPositionProperties()
@@ -1309,7 +1381,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override string ToString()
         {
-            return name + " " + position + " global rect: " + globalBound;
+            return name + " " + layout + " global rect: " + globalBound;
         }
 
         // WARNING returning the HashSet means it could be modified, be careful
@@ -1358,13 +1430,13 @@ namespace UnityEngine.Experimental.UIElements
         public static Vector2 GlobalToBound(this VisualElement ele, Vector2 p)
         {
             var toLocal = ele.globalTransform.inverse.MultiplyPoint3x4(new Vector3(p.x, p.y, 0));
-            return new Vector2(toLocal.x - ele.position.position.x, toLocal.y - ele.position.position.y);
+            return new Vector2(toLocal.x - ele.layout.position.x, toLocal.y - ele.layout.position.y);
         }
 
         // transforms a point assumed in Panel space to  local referential
         public static Vector2 LocalToGlobal(this VisualElement ele, Vector2 p)
         {
-            var toGlobal = ele.globalTransform.MultiplyPoint3x4((Vector3)(p + ele.position.position));
+            var toGlobal = ele.globalTransform.MultiplyPoint3x4((Vector3)(p + ele.layout.position));
             return new Vector2(toGlobal.x, toGlobal.y);
         }
 
@@ -1373,7 +1445,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             var inv = ele.globalTransform.inverse;
             Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
-            r.position = position - ele.position.position;
+            r.position = position - ele.layout.position;
             r.size = inv.MultiplyPoint3x4(r.size);
             return r;
         }
@@ -1382,7 +1454,7 @@ namespace UnityEngine.Experimental.UIElements
         public static Rect LocalToGlobal(this VisualElement ele, Rect r)
         {
             var toGlobalMatrix = ele.globalTransform;
-            r.position = toGlobalMatrix.MultiplyPoint3x4(ele.position.position + r.position);
+            r.position = toGlobalMatrix.MultiplyPoint3x4(ele.layout.position + r.position);
             r.size = toGlobalMatrix.MultiplyPoint3x4(r.size);
             return r;
         }

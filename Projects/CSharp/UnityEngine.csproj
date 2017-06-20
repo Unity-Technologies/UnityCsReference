@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -53,6 +53,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\BaseClass.cs" >
 <Link>Runtime\Export\BaseClass.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\RectInt.cs" >
+<Link>Runtime\Export\RectInt.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Bounds.cs" >
 <Link>Runtime\Export\Bounds.cs</Link>
@@ -99,6 +102,9 @@
 <Compile Include="..\..\Runtime\Export\UnityEvent_1.cs" >
 <Link>Runtime\Export\UnityEvent_1.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Vector3Int.cs" >
+<Link>Runtime\Export\Vector3Int.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\SelectionBaseAttribute.cs" >
 <Link>Runtime\Export\SelectionBaseAttribute.cs</Link>
 </Compile>
@@ -143,6 +149,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnityAPICompatibilityVersionAttribute.cs" >
 <Link>Runtime\Export\UnityAPICompatibilityVersionAttribute.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\BoundsInt.cs" >
+<Link>Runtime\Export\BoundsInt.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\PropertyAttribute.cs" >
 <Link>Runtime\Export\PropertyAttribute.cs</Link>
@@ -254,6 +263,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Metro.cs" >
 <Link>Runtime\Export\Metro.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Vector2Int.cs" >
+<Link>Runtime\Export\Vector2Int.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\ClassLibraryInitializer.cs" >
 <Link>Runtime\Export\ClassLibraryInitializer.cs</Link>
@@ -1264,6 +1276,21 @@
 <Compile Include="..\..\External\JsonParsers\SimpleJson\SimpleJson.cs" >
 <Link>External\JsonParsers\SimpleJson\SimpleJson.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoConfig.cs" >
+<Link>Runtime\AR\Tango\ScriptBindings\TangoConfig.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs" >
+<Link>Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoDevice.cs" >
+<Link>Runtime\AR\Tango\ScriptBindings\TangoDevice.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\AR\ScriptBindings\ARBackgroundRenderer.cs" >
+<Link>Runtime\AR\ScriptBindings\ARBackgroundRenderer.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\AR\TangoBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\AR\TangoBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\VR\ScriptBindings\InputTracking.cs" >
 <Link>Runtime\VR\ScriptBindings\InputTracking.cs</Link>
 </Compile>
@@ -1383,6 +1410,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\IMToggle.cs" >
 <Link>Runtime\UIElements\Managed\IMToggle.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\HierarchyTraversal.cs" >
+<Link>Runtime\UIElements\Managed\HierarchyTraversal.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Label.cs" >
 <Link>Runtime\UIElements\Managed\Label.cs</Link>
@@ -1531,9 +1561,6 @@
 <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs" >
 <Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\GameCenter\Managed\GameCenterServices.cs" >
 <Link>Modules\GameCenter\Managed\GameCenterServices.cs</Link>
 </Compile>
@@ -1546,8 +1573,20 @@
 <Compile Include="..\..\artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\Grid\Managed\Grid.cs" >
+<Link>Modules\Grid\Managed\Grid.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Grid\GridBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Grid\GridBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Input\Private\Input.cs" >
+<Link>Modules\Input\Private\Input.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Input\InputModuleBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Input\InputModuleBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
@@ -1558,12 +1597,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\Input\Private\Input.cs" >
-<Link>Modules\Input\Private\Input.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Input\InputModuleBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Input\InputModuleBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs</Link>
 </Compile>
@@ -1572,6 +1605,27 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Tilemap\Managed\CustomGridBrushAttribute.cs" >
+<Link>Modules\Tilemap\Managed\CustomGridBrushAttribute.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Tilemap\Managed\GridBrushBase.cs" >
+<Link>Modules\Tilemap\Managed\GridBrushBase.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Tilemap\Managed\ITilemap.cs" >
+<Link>Modules\Tilemap\Managed\ITilemap.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Tilemap\Managed\Tile.cs" >
+<Link>Modules\Tilemap\Managed\Tile.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Tilemap\Managed\TileBase.cs" >
+<Link>Modules\Tilemap\Managed\TileBase.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs" >
 <Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs</Link>

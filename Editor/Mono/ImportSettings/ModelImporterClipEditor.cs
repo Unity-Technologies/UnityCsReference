@@ -901,13 +901,16 @@ namespace UnityEditor
                 if (clipInfo.maskType == ClipAnimationMaskType.CreateFromThisModel && !m_MaskInspector.IsMaskUpToDate() && !m_MaskInspector.IsMaskEmpty())
                 {
                     GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    GUILayout.Label("Mask does not match hierarchy. Animation might not import correctly",
+                    GUILayout.Label("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.",
                         EditorStyles.wordWrappedMiniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.BeginVertical();
                     GUILayout.Space(5);
-                    if (GUILayout.Button("Fix Mask"))
+                    if (GUILayout.Button("Update Mask"))
+                    {
                         SetTransformMaskFromReference(clipInfo);
+                        m_MaskInspector.FillNodeInfos();
+                    }
 
                     GUILayout.EndVertical();
                     GUILayout.EndHorizontal();
@@ -915,7 +918,7 @@ namespace UnityEditor
                 else if (clipInfo.maskType == ClipAnimationMaskType.CopyFromOther && clipInfo.MaskNeedsUpdating())
                 {
                     GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    GUILayout.Label("Source Mask has changed since last import. It must be Updated",
+                    GUILayout.Label("Source Mask has changed since last import and must be updated.",
                         EditorStyles.wordWrappedMiniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.BeginVertical();
@@ -924,6 +927,17 @@ namespace UnityEditor
                     {
                         clipInfo.MaskToClip(clipInfo.maskSource);
                     }
+                    GUILayout.EndVertical();
+                    GUILayout.EndHorizontal();
+                }
+                else if (clipInfo.maskType == ClipAnimationMaskType.CopyFromOther && !m_MaskInspector.IsMaskUpToDate())
+                {
+                    GUILayout.BeginHorizontal(EditorStyles.helpBox);
+                    GUILayout.Label("Source Mask has a path that does not match the transform hierarchy. Animation may not import correctly.",
+                        EditorStyles.wordWrappedMiniLabel);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.BeginVertical();
+                    GUILayout.Space(5);
                     GUILayout.EndVertical();
                     GUILayout.EndHorizontal();
                 }
@@ -955,8 +969,11 @@ namespace UnityEditor
         private void SetTransformMaskFromReference(AnimationClipInfoProperties clipInfo)
         {
             string[] transformPaths = referenceTransformPaths;
-            string[] humanTransforms = animationType == ModelImporterAnimationType.Human ? AvatarMaskUtility.GetAvatarHumanTransform(serializedObject, transformPaths) : null;
-            AvatarMaskUtility.UpdateTransformMask(clipInfo.transformMaskProperty, transformPaths, humanTransforms);
+            string[] humanTransforms = animationType == ModelImporterAnimationType.Human ?
+                AvatarMaskUtility.GetAvatarHumanAndActiveExtraTransforms(serializedObject, clipInfo.transformMaskProperty, transformPaths) :
+                AvatarMaskUtility.GetAvatarInactiveTransformMaskPaths(clipInfo.transformMaskProperty);
+
+            AvatarMaskUtility.UpdateTransformMask(clipInfo.transformMaskProperty, transformPaths, humanTransforms, animationType == ModelImporterAnimationType.Human);
         }
 
         private void SetBodyMaskDefaultValues(AnimationClipInfoProperties clipInfo)

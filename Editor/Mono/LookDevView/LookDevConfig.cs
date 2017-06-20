@@ -28,8 +28,11 @@ namespace UnityEditor
         [SerializeField] private bool                   m_RotateEnvMode = false;
         [SerializeField] private float                  m_ObjRotationSpeed = 1.0f;
         [SerializeField] private bool                   m_AllowDifferentObjects = false;
-        [SerializeField] private GameObject[]           m_CurrentObject = new GameObject[2];    // Those are references to the actual objects contained in m_PreviewObjects. Left and right can actually point to the same Preview object for example.
-        [SerializeField] private GameObject[]           m_PreviewObjects = new GameObject[2];   // Those are the actual preview objects
+        [SerializeField] private GameObject[][]         m_PreviewObjects =
+        {
+            new GameObject[(int)LookDevView.PreviewContext.PreviewContextPass.kCount],
+            new GameObject[(int)LookDevView.PreviewContext.PreviewContextPass.kCount],
+        };// Those are the actual preview objects
         [SerializeField] private LookDevEditionContext  m_CurrentContextEdition = LookDevEditionContext.Left;
         [SerializeField] private int                    m_CurrentEditionContextIndex = 0;
         [SerializeField] private float                  m_DualViewBlendFactor = 0.0f;
@@ -39,7 +42,11 @@ namespace UnityEditor
         [SerializeField] private CameraState            m_CameraStateCommon = new CameraState();
         [SerializeField] private CameraState            m_CameraStateLeft = new CameraState();
         [SerializeField] private CameraState            m_CameraStateRight = new CameraState();
-
+        GameObject[][] m_CurrentObjectInstances =
+        {
+            new GameObject[(int)LookDevView.PreviewContext.PreviewContextPass.kCount],
+            new GameObject[(int)LookDevView.PreviewContext.PreviewContextPass.kCount],
+        };
 
         private LookDevView m_LookDevView = null;
 
@@ -88,9 +95,9 @@ namespace UnityEditor
             get { return m_LookDevContexts[m_CurrentEditionContextIndex]; }
         }
 
-        public GameObject[] currentObject
+        public GameObject[][] currentObjectInstances
         {
-            get { return m_CurrentObject; }
+            get { return m_CurrentObjectInstances; }
         }
 
         public CameraState[] cameraState
@@ -290,9 +297,9 @@ namespace UnityEditor
 
         public int GetObjectLoDCount(LookDevEditionContext context)
         {
-            if (m_CurrentObject[(int)context] != null)
+            if (m_CurrentObjectInstances[(int)context][0] != null)
             {
-                LODGroup lodGroup = m_CurrentObject[(int)context].GetComponent(typeof(LODGroup)) as LODGroup;
+                LODGroup lodGroup = m_CurrentObjectInstances[(int)context][0].GetComponent(typeof(LODGroup)) as LODGroup;
                 if (lodGroup != null)
                 {
                     return lodGroup.lodCount;
@@ -315,13 +322,16 @@ namespace UnityEditor
             }
         }
 
-        private void DestroytCurrentPreviewObject(LookDevEditionContext context)
+        private void DestroyCurrentPreviewObject(LookDevEditionContext context)
         {
-            int index = (int)context;
-            if (m_PreviewObjects[index] != null)
+            var index = (int)context;
+            for (var j = 0; j < m_PreviewObjects[index].Length; j++)
             {
-                UnityEngine.Object.DestroyImmediate(m_PreviewObjects[index]);
-                m_PreviewObjects[index] = null;
+                if (m_PreviewObjects[index][j] != null)
+                {
+                    DestroyImmediate(m_PreviewObjects[index][j]);
+                    m_PreviewObjects[index][j] = null;
+                }
             }
         }
 
@@ -331,16 +341,20 @@ namespace UnityEditor
                 renderer.enabled = enabled;
         }
 
-        private void DisableLightProbes(GameObject go)
+        internal static void DisableRendererProperties(GameObject go)
         {
             foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+            {
                 renderer.lightProbeUsage = LightProbeUsage.Off;
+                renderer.allowOcclusionWhenDynamic = false;
+            }
         }
 
         public void ResynchronizeObjects()
         {
             Undo.RecordObject(this, "Resync objects");
-            SetCurrentPreviewObject(m_OriginalGameObject[m_CurrentEditionContextIndex], (LookDevEditionContext)((m_CurrentEditionContextIndex + 1) % 2));
+            for (int i = 0; i < 2; i++)
+                SetCurrentPreviewObject(m_OriginalGameObject[m_CurrentEditionContextIndex], (LookDevEditionContext)i);
             m_LookDevView.Frame(false);
         }
 
@@ -366,13 +380,19 @@ namespace UnityEditor
         {
             if (allowDifferentObjects)
             {
-                m_CurrentObject[(int)LookDevEditionContext.Left] = m_PreviewObjects[(int)LookDevEditionContext.Left];
-                m_CurrentObject[(int)LookDevEditionContext.Right] = m_PreviewObjects[(int)LookDevEditionContext.Right];
+                for (var i = 0; i < m_PreviewObjects[0].Length; ++i)
+                {
+                    m_CurrentObjectInstances[(int)LookDevEditionContext.Left][i] = m_PreviewObjects[(int)LookDevEditionContext.Left][i];
+                    m_CurrentObjectInstances[(int)LookDevEditionContext.Right][i] = m_PreviewObjects[(int)LookDevEditionContext.Right][i];
+                }
             }
             else
             {
-                m_CurrentObject[m_CurrentEditionContextIndex] = m_PreviewObjects[m_CurrentEditionContextIndex];
-                m_CurrentObject[(m_CurrentEditionContextIndex + 1) % 2] = m_PreviewObjects[m_CurrentEditionContextIndex];
+                for (var i = 0; i < m_PreviewObjects[0].Length; ++i)
+                {
+                    m_CurrentObjectInstances[m_CurrentEditionContextIndex][i] = m_PreviewObjects[m_CurrentEditionContextIndex][i];
+                    m_CurrentObjectInstances[(m_CurrentEditionContextIndex + 1) % 2][i] = m_PreviewObjects[m_CurrentEditionContextIndex][i];
+                }
             }
         }
 
@@ -382,7 +402,7 @@ namespace UnityEditor
             SetCurrentPreviewObject(go, m_CurrentContextEdition);
             // Set other window to the same objects if there isn't one already
             int otherIndex = (m_CurrentEditionContextIndex + 1) % 2;
-            if (m_PreviewObjects[otherIndex] == null || !m_AllowDifferentObjects)
+            if (m_PreviewObjects[otherIndex][0] == null || !m_AllowDifferentObjects)
             {
                 SetCurrentPreviewObject(go, (LookDevEditionContext)otherIndex);
                 return true;
@@ -393,17 +413,25 @@ namespace UnityEditor
 
         public void SetCurrentPreviewObject(GameObject go, LookDevEditionContext context)
         {
-            DestroytCurrentPreviewObject(context);
+            DestroyCurrentPreviewObject(context);
 
             if (go != null)
             {
                 int index = (int)context;
+                if (m_LookDevView == null
+                    || m_LookDevView.previewUtilityContexts == null
+                    || m_LookDevView.previewUtilityContexts[index] == null)
+                    return;
+
                 m_OriginalGameObject[index] = go;
 
-                m_PreviewObjects[index] = UnityEngine.Object.Instantiate(m_OriginalGameObject[index], Vector3.zero, Quaternion.identity) as GameObject;
-                EditorUtility.InitInstantiatedPreviewRecursive(m_PreviewObjects[index]);
-                SetEnabledRecursive(m_PreviewObjects[index], false);
-                DisableLightProbes(m_PreviewObjects[index]); // Avoid light probe influence from the main scene (but still have the default probe lighting)
+                for (var i = 0; i < m_PreviewObjects[index].Length; ++i)
+                {
+                    m_PreviewObjects[index][i] = m_LookDevView.previewUtilityContexts[index].m_PreviewUtility[i].InstantiatePrefabInScene(m_OriginalGameObject[index]);
+                    EditorUtility.InitInstantiatedPreviewRecursive(m_PreviewObjects[index][i]);
+                    DisableRendererProperties(m_PreviewObjects[index][i]); // Avoid light probe influence from the main scene (but still have the default probe lighting)
+                    SetEnabledRecursive(m_PreviewObjects[index][i], false);
+                }
 
                 UpdateCurrentObjectArray();
             }
@@ -419,17 +447,20 @@ namespace UnityEditor
                 }
             }
 
-            for (int i = 0; i < 2; ++i)
-            {
-                if (m_OriginalGameObject[i] != null)
-                {
-                    SetCurrentPreviewObject(m_OriginalGameObject[i], (LookDevEditionContext)i);
-                }
-            }
+            InitializeCurrentObjects();
 
             UpdateCameraArray();
 
             Undo.undoRedoPerformed += OnUndoRedo;
+        }
+
+        void InitializeCurrentObjects()
+        {
+            for (int i = 0; i < 2; ++i)
+            {
+                if (m_OriginalGameObject[i] != null)
+                    SetCurrentPreviewObject(m_OriginalGameObject[i], (LookDevEditionContext)i);
+            }
         }
 
         void OnUndoRedo()
@@ -445,18 +476,25 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
-            DestroytCurrentPreviewObject(LookDevEditionContext.Left);
-            DestroytCurrentPreviewObject(LookDevEditionContext.Right);
+            DestroyCurrentPreviewObject(LookDevEditionContext.Left);
+            DestroyCurrentPreviewObject(LookDevEditionContext.Right);
         }
 
         public void Cleanup()
         {
             m_CurrentEditionContextIndex = 0;
+
+            DestroyCurrentPreviewObject(LookDevEditionContext.Left);
+            DestroyCurrentPreviewObject(LookDevEditionContext.Right);
         }
 
         public void SetLookDevView(LookDevView lookDevView)
         {
-            m_LookDevView = lookDevView;
+            if (m_LookDevView != lookDevView)
+            {
+                m_LookDevView = lookDevView;
+                InitializeCurrentObjects();
+            }
         }
     }
 }

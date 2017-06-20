@@ -390,7 +390,7 @@ namespace UnityEditor
                     if (result.error != null)
                     {
                         m_Purchasing = PurchaseStatus.Declined;
-                        m_Message = "An error occured while completing you purhase.";
+                        m_Message = "An error occurred while completing you purhase.";
                         Close();
                     }
 

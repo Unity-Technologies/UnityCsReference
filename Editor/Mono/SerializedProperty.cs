@@ -148,11 +148,15 @@ namespace UnityEditor
                 case SerializedPropertyType.Vector2: vector2Value = targetProperty.vector2Value; break;
                 case SerializedPropertyType.Vector3: vector3Value = targetProperty.vector3Value; break;
                 case SerializedPropertyType.Vector4: vector4Value = targetProperty.vector4Value; break;
+                case SerializedPropertyType.Vector2Int: vector2IntValue = targetProperty.vector2IntValue; break;
+                case SerializedPropertyType.Vector3Int: vector3IntValue = targetProperty.vector3IntValue; break;
                 case SerializedPropertyType.Rect: rectValue = targetProperty.rectValue; break;
+                case SerializedPropertyType.RectInt: rectIntValue = targetProperty.rectIntValue; break;
                 case SerializedPropertyType.ArraySize: intValue = targetProperty.intValue; break;
                 case SerializedPropertyType.Character: intValue = targetProperty.intValue; break;
                 case SerializedPropertyType.AnimationCurve: animationCurveValue = targetProperty.animationCurveValue; break;
                 case SerializedPropertyType.Bounds: boundsValue = targetProperty.boundsValue; break;
+                case SerializedPropertyType.BoundsInt: boundsIntValue = targetProperty.boundsIntValue; break;
                 case SerializedPropertyType.Gradient: gradientValue = targetProperty.gradientValue; break;
                 case SerializedPropertyType.ExposedReference: exposedReferenceValue = targetProperty.exposedReferenceValue; break;
             }

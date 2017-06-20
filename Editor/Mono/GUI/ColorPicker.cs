@@ -1689,7 +1689,7 @@ namespace UnityEditor
             GL.sRGBWrite = false;
         }
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             // On mouse move/click we remember screen coordinates where we are. Then we'll use that
             // in GetPickedColor to read. The reason is that because GetPickedColor might be called from

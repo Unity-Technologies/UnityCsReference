@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Reflection;
@@ -17,9 +18,11 @@ namespace UnityEditor
         internal static Color kViewColor = new Color(0.76f, 0.76f, 0.76f, 1);
         internal static PrefColor kPlayModeDarken = new PrefColor("Playmode tint", .8f, .8f, .8f, 1);
 
+        internal static event Action<HostView> actualViewChanged;
+
         internal GUIStyle background;
         [SerializeField]
-        protected EditorWindow m_ActualView;
+        private EditorWindow m_ActualView;
 
         [System.NonSerialized]
         private Rect m_BackgroundClearRect = new Rect(0, 0, 0, 0);
@@ -36,6 +39,8 @@ namespace UnityEditor
                 DeregisterSelectedPane(true);
                 m_ActualView = value;
                 RegisterSelectedPane();
+                if (actualViewChanged != null)
+                    actualViewChanged(this);
             }
         }
 
@@ -68,18 +73,20 @@ namespace UnityEditor
             }
         }
 
-        public void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             background = null;
             RegisterSelectedPane();
         }
 
-        public void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             DeregisterSelectedPane(false);
         }
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
@@ -126,7 +133,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        public new void OnDestroy()
+        protected override void OnDestroy()
         {
             if (m_ActualView)
                 UnityEngine.Object.DestroyImmediate(m_ActualView, true);

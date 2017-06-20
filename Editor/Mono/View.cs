@@ -182,7 +182,7 @@ namespace UnityEditor
             return -1;
         }
 
-        public void OnDestroy()
+        protected virtual void OnDestroy()
         {
             foreach (View v in m_Children)
             {

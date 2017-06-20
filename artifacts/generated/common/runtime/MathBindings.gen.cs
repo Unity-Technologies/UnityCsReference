@@ -293,6 +293,30 @@ public partial struct Matrix4x4
     public Matrix4x4 transpose { get { return Matrix4x4.Transpose(this); } }
     
     
+    public  Quaternion rotation
+    {
+        get { Quaternion tmp; INTERNAL_get_rotation(out tmp); return tmp;  }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_rotation (out Quaternion value) ;
+
+
+    public  Vector3 lossyScale
+    {
+        get { Vector3 tmp; INTERNAL_get_lossyScale(out tmp); return tmp;  }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_lossyScale (out Vector3 value) ;
+
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool ValidTRS () ;
+
     public  bool isIdentity
     {
         get {return default(bool);}

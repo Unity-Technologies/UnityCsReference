@@ -118,6 +118,12 @@ namespace UnityEngine
         public float[] coefficients { get { return new float[0]; } set {} }
     }
 
+    partial class TrailRenderer
+    {
+        [Obsolete("Use positionCount instead (UnityUpgradable) -> positionCount", false)]
+        public int numPositions { get { return positionCount; } }
+    }
+
     partial class LineRenderer
     {
         [Obsolete("Use startWidth, endWidth or widthCurve instead.", false)]
@@ -134,11 +140,14 @@ namespace UnityEngine
             endColor = end;
         }
 
-        [Obsolete("Use numPositions instead.", false)]
+        [Obsolete("Use positionCount instead.", false)]
         public void SetVertexCount(int count)
         {
-            numPositions = count;
+            positionCount = count;
         }
+
+        [Obsolete("Use positionCount instead (UnityUpgradable) -> positionCount", false)]
+        public int numPositions { get { return positionCount; } set { positionCount = value; } }
     }
 
     partial class MaterialPropertyBlock

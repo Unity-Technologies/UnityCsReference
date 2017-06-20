@@ -226,6 +226,24 @@ public enum ParticleSystemScalingMode
     Shape = 2
 }
 
+public enum ParticleSystemStopAction
+{
+    
+    None = 0,
+    
+    Disable = 1,
+    
+    Destroy = 2
+}
+
+public enum ParticleSystemEmitterVelocityMode
+{
+    
+    Transform = 0,
+    
+    Rigidbody = 1
+}
+
 public enum ParticleSystemInheritVelocityMode
 {
     
@@ -613,6 +631,8 @@ public sealed partial class ParticleSystem : Component
                     public ParticleSystemScalingMode scalingMode { get { return GetScalingMode(m_ParticleSystem); } set { SetScalingMode(m_ParticleSystem, value); } }
                     public bool playOnAwake { get { return GetPlayOnAwake(m_ParticleSystem); } set { SetPlayOnAwake(m_ParticleSystem, value); } }
                     public int maxParticles { get { return GetMaxParticles(m_ParticleSystem); } set { SetMaxParticles(m_ParticleSystem, value); } }
+                    public ParticleSystemEmitterVelocityMode emitterVelocityMode { get { return GetUseRigidbodyForVelocity(m_ParticleSystem) ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform; } set { SetUseRigidbodyForVelocity(m_ParticleSystem, value == ParticleSystemEmitterVelocityMode.Rigidbody); } }
+                    public ParticleSystemStopAction stopAction { get { return GetStopAction(m_ParticleSystem); } set { SetStopAction(m_ParticleSystem, value); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -894,6 +914,22 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  int GetMaxParticles (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetUseRigidbodyForVelocity (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetUseRigidbodyForVelocity (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetStopAction (ParticleSystem system, ParticleSystemStopAction value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemStopAction GetStopAction (ParticleSystem system) ;
 
     }
 
@@ -1419,6 +1455,10 @@ public sealed partial class ParticleSystem : Component
                     public float dampen { get { return GetDampen(m_ParticleSystem); } set { SetDampen(m_ParticleSystem, value); } }
                     public bool separateAxes { get { return GetSeparateAxes(m_ParticleSystem); } set { SetSeparateAxes(m_ParticleSystem, value); } }
                     public ParticleSystemSimulationSpace space { get { return GetWorldSpace(m_ParticleSystem) ? ParticleSystemSimulationSpace.World : ParticleSystemSimulationSpace.Local; } set { SetWorldSpace(m_ParticleSystem, value == ParticleSystemSimulationSpace.World); } }
+                    public MinMaxCurve drag { set { SetDrag(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetDrag(m_ParticleSystem, ref r); return r; } }
+                    public float dragMultiplier { get { return GetDragMultiplier(m_ParticleSystem); } set { SetDragMultiplier(m_ParticleSystem, value); } }
+                    public bool multiplyDragByParticleSize { get { return GetMultiplyDragByParticleSize(m_ParticleSystem); } set { SetMultiplyDragByParticleSize(m_ParticleSystem, value); } }
+                    public bool multiplyDragByParticleVelocity { get { return GetMultiplyDragByParticleVelocity(m_ParticleSystem); } set { SetMultiplyDragByParticleVelocity(m_ParticleSystem, value); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1516,6 +1556,38 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  bool GetWorldSpace (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetDrag (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetDrag (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetDragMultiplier (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetDragMultiplier (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMultiplyDragByParticleSize (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetMultiplyDragByParticleSize (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMultiplyDragByParticleVelocity (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetMultiplyDragByParticleVelocity (ParticleSystem system) ;
 
     }
 
@@ -4209,6 +4281,16 @@ internal ParticleSystemVertexStreams Internal_GetEnabledVertexStreams(ParticleSy
         }
     
     
+    internal extern  bool editorEnabled
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern SpriteMaskInteraction maskInteraction
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

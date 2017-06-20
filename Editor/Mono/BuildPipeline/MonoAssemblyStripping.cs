@@ -204,7 +204,7 @@ namespace UnityEditor
                 w.WriteLine("<linker>");
                 foreach (var assembly in CollectAllAssemblies(librariesFolder, usedClasses))
                 {
-                    if (assembly.Name.Name == "UnityEngine")
+                    if (AssemblyHelper.IsUnityEngineModule(assembly.Name.Name))
                         continue;
 
                     var typesToPreserve = new HashSet<TypeDefinition>();

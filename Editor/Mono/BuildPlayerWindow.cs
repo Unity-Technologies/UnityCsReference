@@ -126,14 +126,9 @@ namespace UnityEditor
             }
         }
 
-        ListViewState lv = new ListViewState();
-        bool[] selectedLVItems = new bool[] {};
-        bool[] selectedBeforeDrag;
-        int initialSelectedLVItem = -1;
 
         Vector2 scrollPosition = new Vector2(0, 0);
 
-        private const string kAssetsFolder = "Assets/";
 
         private const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
 
@@ -172,206 +167,23 @@ namespace UnityEditor
             titleContent = new GUIContent("Build Settings");
         }
 
+        BuildPlayerSceneTreeView m_TreeView = null;
+        [SerializeField]
+        IMGUI.Controls.TreeViewState m_TreeViewState;
         void ActiveScenesGUI()
         {
-            int i, index;
-            int enabledCounter = 0;
-            int prevSelectedRow = lv.row;
-            bool shiftIsDown = Event.current.shift;
-            bool ctrlIsDown = EditorGUI.actionKey;
-
-            Event evt = Event.current;
-
+            if (m_TreeView == null)
+            {
+                if (m_TreeViewState == null)
+                    m_TreeViewState = new IMGUI.Controls.TreeViewState();
+                m_TreeView = new BuildPlayerSceneTreeView(m_TreeViewState);
+                m_TreeView.Reload();
+            }
             Rect scenesInBuildRect = GUILayoutUtility.GetRect(styles.scenesInBuild, styles.title);
-            List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
-
-            lv.totalRows = scenes.Count;
-
-            if (selectedLVItems.Length != scenes.Count)
-            {
-                System.Array.Resize(ref selectedLVItems, scenes.Count);
-            }
-
-            int[] enabledCount = new int[scenes.Count];
-            for (i = 0; i < enabledCount.Length; i++)
-            {
-                EditorBuildSettingsScene scene = scenes[i];
-                enabledCount[i] = enabledCounter;
-                if (scene.enabled)
-                    enabledCounter++;
-            }
-
-            foreach (ListViewElement el in ListViewGUILayout.ListView(lv,
-                         ListViewOptions.wantsReordering | ListViewOptions.wantsExternalFiles, styles.box))
-            {
-                EditorBuildSettingsScene scene = scenes[el.row];
-
-                var sceneExists = File.Exists(scene.path);
-                using (new EditorGUI.DisabledScope(!sceneExists))
-                {
-                    bool selected = selectedLVItems[el.row];
-                    if (selected && evt.type == EventType.Repaint)
-                        styles.selected.Draw(el.position, false, false, false, false);
-
-                    if (!sceneExists)
-                        scene.enabled = false;
-                    Rect toggleRect = new Rect(el.position.x + 4, el.position.y, styles.toggleSize.x, styles.toggleSize.y);
-                    EditorGUI.BeginChangeCheck();
-                    scene.enabled = GUI.Toggle(toggleRect, scene.enabled, "");
-                    if (EditorGUI.EndChangeCheck() && selected)
-                    {
-                        // Set all selected scenes to the same state as current scene
-                        for (int j = 0; j < scenes.Count; ++j)
-                            if (selectedLVItems[j])
-                                scenes[j].enabled = scene.enabled;
-                    }
-
-                    GUILayout.Space(styles.toggleSize.x);
-
-                    string nicePath = scene.path;
-                    if (nicePath.StartsWith(kAssetsFolder))
-                        nicePath = nicePath.Substring(kAssetsFolder.Length);
-
-                    const string unityExtension = ".unity";
-                    if (nicePath.EndsWith(unityExtension, StringComparison.InvariantCultureIgnoreCase))
-                        nicePath = nicePath.Substring(0, nicePath.Length - unityExtension.Length);
-
-                    Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(nicePath), styles.levelString);
-                    if (Event.current.type == EventType.Repaint)
-                        styles.levelString.Draw(r, EditorGUIUtility.TempContent(nicePath), false, false, selected, false);
-
-                    GUILayout.Label(scene.enabled ? enabledCount[el.row].ToString() : "", styles.levelStringCounter, GUILayout.MaxWidth(36));
-                }
-
-                if (ListViewGUILayout.HasMouseUp(el.position) && !shiftIsDown && !ctrlIsDown)
-                {
-                    if (!shiftIsDown && !ctrlIsDown)
-                        ListViewGUILayout.MultiSelection(prevSelectedRow, el.row, ref initialSelectedLVItem, ref selectedLVItems);
-                }
-                else if (ListViewGUILayout.HasMouseDown(el.position))
-                {
-                    if (!selectedLVItems[el.row] || shiftIsDown || ctrlIsDown)
-                        ListViewGUILayout.MultiSelection(prevSelectedRow, el.row, ref initialSelectedLVItem, ref selectedLVItems);
-
-                    lv.row = el.row;
-
-                    selectedBeforeDrag = new bool[selectedLVItems.Length];
-                    selectedLVItems.CopyTo(selectedBeforeDrag, 0);
-                    selectedBeforeDrag[lv.row] = true;
-                }
-            }
-
             GUI.Label(scenesInBuildRect, styles.scenesInBuild, styles.title);
 
-            // "Select All"
-            if (GUIUtility.keyboardControl == lv.ID)
-            {
-                if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == "SelectAll")
-                {
-                    Event.current.Use();
-                }
-                else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "SelectAll")
-                {
-                    for (i = 0; i < selectedLVItems.Length; i++)
-                        selectedLVItems[i] = true;
-
-                    lv.selectionChanged = true;
-
-                    Event.current.Use();
-                    GUIUtility.ExitGUI();
-                }
-            }
-
-            if (lv.selectionChanged)
-            {
-                ListViewGUILayout.MultiSelection(prevSelectedRow, lv.row, ref initialSelectedLVItem, ref selectedLVItems);
-            }
-
-            // external file(s) is dragged in
-            if (lv.fileNames != null)
-            {
-                System.Array.Sort(lv.fileNames);
-                int k = 0;
-                for (i = 0; i < lv.fileNames.Length; i++)
-                {
-                    if (lv.fileNames[i].EndsWith("unity", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        string scenePath = FileUtil.GetProjectRelativePath(lv.fileNames[i]);
-                        if (scenePath == string.Empty) // it was relative already
-                            scenePath = lv.fileNames[i];
-
-                        if (scenes.Any(s => s.path == scenePath))
-                            continue;
-
-                        GUID newGUID;
-                        GUID.TryParse(AssetDatabase.AssetPathToGUID(scenePath), out newGUID);
-                        var newScene = (newGUID == default(GUID)) ?
-                            new EditorBuildSettingsScene(scenePath, true) :
-                            new EditorBuildSettingsScene(newGUID, true);
-                        scenes.Insert(lv.draggedTo + (k++), newScene);
-                    }
-                }
-
-
-                if (k != 0)
-                {
-                    System.Array.Resize(ref selectedLVItems, scenes.Count);
-
-                    for (i = 0; i < selectedLVItems.Length; i++)
-                        selectedLVItems[i] = (i >= lv.draggedTo) && (i < lv.draggedTo + k);
-                }
-
-                lv.draggedTo = -1;
-            }
-
-            if (lv.draggedTo != -1)
-            {
-                List<EditorBuildSettingsScene> selectedScenes = new List<EditorBuildSettingsScene>();
-
-                // First pick out selected items from array
-                index = 0;
-                for (i = 0; i < selectedLVItems.Length; i++, index++)
-                {
-                    if (selectedBeforeDrag[i])
-                    {
-                        selectedScenes.Add(scenes[index]);
-                        scenes.RemoveAt(index);
-                        index--;
-
-                        if (lv.draggedTo >= i)
-                            lv.draggedTo--;
-                    }
-                }
-
-                lv.draggedTo = (lv.draggedTo > scenes.Count) || (lv.draggedTo < 0) ? scenes.Count : lv.draggedTo;
-
-                // Add selected items into dragged position
-                scenes.InsertRange(lv.draggedTo, selectedScenes);
-
-                for (i = 0; i < selectedLVItems.Length; i++)
-                    selectedLVItems[i] = (i >= lv.draggedTo) && (i < lv.draggedTo + selectedScenes.Count);
-            }
-
-            if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Backspace || evt.keyCode == KeyCode.Delete) && GUIUtility.keyboardControl == lv.ID)
-            {
-                index = 0;
-                for (i = 0; i < selectedLVItems.Length; i++, index++)
-                {
-                    if (selectedLVItems[i])
-                    {
-                        scenes.RemoveAt(index);
-                        index--;
-                    }
-
-                    selectedLVItems[i] = false;
-                }
-
-                lv.row = 0;
-
-                evt.Use();
-            }
-
-            EditorBuildSettings.scenes = scenes.ToArray();
+            Rect rect = GUILayoutUtility.GetRect(0, position.width, 0, position.height);
+            m_TreeView.OnGUI(rect);
         }
 
         void AddOpenScenes()
@@ -401,6 +213,7 @@ namespace UnityEditor
                 return;
 
             EditorBuildSettings.scenes = list.ToArray();
+            m_TreeView.Reload();
             Repaint();
             GUIUtility.ExitGUI();
         }
@@ -540,7 +353,6 @@ namespace UnityEditor
             {
                 styles = new Styles();
                 styles.toggleSize = styles.toggle.CalcSize(new GUIContent("X"));
-                lv.rowHeight = (int)styles.levelString.CalcHeight(new GUIContent("X"), 100);
             }
 
             if (!UnityConnect.instance.canBuildWithUPID)
@@ -645,6 +457,11 @@ namespace UnityEditor
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                     hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                     hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
+                }
+                else if (platform.targetGroup == BuildTargetGroup.WebGL)
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
 
                 return hasMinGraphicsAPI && hasMinOSVersion;

@@ -19,8 +19,7 @@ namespace UnityEditor
 
         internal enum Language
         {
-            CSharp = 0,
-            JavaScript = 1
+            CSharp = 0
         }
 
         const Language kDefaultLanguage = Language.CSharp;
@@ -209,8 +208,6 @@ namespace UnityEditor
                     {
                         case Language.CSharp:
                             return "cs";
-                        case Language.JavaScript:
-                            return "js";
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
@@ -224,8 +221,6 @@ namespace UnityEditor
                     string basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
                     switch (s_Lang)
                     {
-                        case Language.JavaScript:
-                            return Path.Combine(basePath, "82-Javascript-NewBehaviourScript.js.txt");
                         case Language.CSharp:
                             return Path.Combine(basePath, "81-C# Script-NewBehaviourScript.cs.txt");
                         default:

@@ -224,7 +224,7 @@ namespace UnityEditor
 
             // Look up the type in UnityEngine.dll or UnityEditor.dll
             Assembly builtinAssembly = null;
-            if (type.Scope.Name == "UnityEngine")
+            if (type.Scope.Name == "UnityEngine" || type.Scope.Name == "UnityEngine.CoreModule")
                 builtinAssembly = typeof(MonoBehaviour).Assembly;
             else if (type.Scope.Name == "UnityEditor")
                 builtinAssembly = typeof(EditorWindow).Assembly;

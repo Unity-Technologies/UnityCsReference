@@ -52,7 +52,7 @@ namespace UnityEngine.Experimental.UIElements
         public void SetProperties(Rect pos, Vector2 scrollPos, Rect viewRect, bool alwaysShowHorizontal,
             bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, GUIStyle background)
         {
-            position = pos;
+            layout = pos;
 
             scrollPosition = scrollPos;
             this.viewRect = viewRect;
@@ -68,7 +68,7 @@ namespace UnityEngine.Experimental.UIElements
             GUIStyle horizLeftStyle = m_HorizontalScrollbar != GUIStyle.none ? GUI.skin.GetStyle(m_HorizontalScrollbar.name + "leftbutton") : GUIStyle.none;
             GUIStyle horizRightStyle = m_HorizontalScrollbar != GUIStyle.none ? GUI.skin.GetStyle(m_HorizontalScrollbar.name + "rightbutton") : GUIStyle.none;
 
-            m_HorizontalScroller.SetProperties(new Rect(position.x, position.yMax - m_HorizontalScrollbar.fixedHeight, m_ClipRect.width, m_HorizontalScrollbar.fixedHeight),
+            m_HorizontalScroller.SetProperties(new Rect(layout.x, layout.yMax - m_HorizontalScrollbar.fixedHeight, m_ClipRect.width, m_HorizontalScrollbar.fixedHeight),
                 scrollPosition.x, Mathf.Min(m_ClipRect.width, this.viewRect.width), 0, this.viewRect.width,
                 m_HorizontalScrollbar, horizThumbStyle, horizLeftStyle, horizRightStyle, true);
 
@@ -118,7 +118,7 @@ namespace UnityEngine.Experimental.UIElements
                 default:
                     if (evt.type == EventType.Repaint && m_Background != GUIStyle.none)
                     {
-                        m_Background.Draw(position, position.Contains(evt.mousePosition), false, m_NeedsHorizontal && m_NeedsVertical, false);
+                        m_Background.Draw(layout, layout.Contains(evt.mousePosition), false, m_NeedsHorizontal && m_NeedsVertical, false);
                     }
 
                     if (m_NeedsHorizontal && m_HorizontalScrollbar != GUIStyle.none)
@@ -131,7 +131,7 @@ namespace UnityEngine.Experimental.UIElements
                         if (m_HorizontalScrollbar != GUIStyle.none)
                             scrollPositionHorizontal = 0;
                         else
-                            scrollPositionHorizontal = Mathf.Clamp(scrollPositionHorizontal, 0, Mathf.Max(viewRect.width - position.width, 0));
+                            scrollPositionHorizontal = Mathf.Clamp(scrollPositionHorizontal, 0, Mathf.Max(viewRect.width - layout.width, 0));
                     }
 
                     if (m_NeedsVertical && m_VerticalScrollbar != GUIStyle.none)
@@ -144,7 +144,7 @@ namespace UnityEngine.Experimental.UIElements
                         if (m_VerticalScrollbar != GUIStyle.none)
                             scrollPositionVertical = 0;
                         else
-                            scrollPositionVertical = Mathf.Clamp(scrollPositionVertical, 0, Mathf.Max(viewRect.height - position.height, 0));
+                            scrollPositionVertical = Mathf.Clamp(scrollPositionVertical, 0, Mathf.Max(viewRect.height - layout.height, 0));
                     }
 
                     break;
@@ -187,31 +187,31 @@ namespace UnityEngine.Experimental.UIElements
                 scrollPosition = m_State.scrollPosition;
                 m_State.apply = false;
             }
-            m_State.position = position;
+            m_State.position = layout;
             m_State.scrollPosition = scrollPosition;
             m_State.viewRect = viewRect;
             m_State.visibleRect = viewRect;
-            m_State.visibleRect.width = position.width;
-            m_State.visibleRect.height = position.height;
+            m_State.visibleRect.width = layout.width;
+            m_State.visibleRect.height = layout.height;
 
-            m_ClipRect = new Rect(position);
+            m_ClipRect = new Rect(layout);
 
             // Check if we need a horizontal scrollbar
             if (m_NeedsHorizontal || viewRect.width > m_ClipRect.width)
             {
-                m_State.visibleRect.height = position.height - m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
+                m_State.visibleRect.height = layout.height - m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
                 m_ClipRect.height -= m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
                 m_NeedsHorizontal = true;
             }
 
             if (m_NeedsVertical || viewRect.height > m_ClipRect.height)
             {
-                m_State.visibleRect.width = position.width - m_VerticalScrollbar.fixedWidth + m_VerticalScrollbar.margin.left;
+                m_State.visibleRect.width = layout.width - m_VerticalScrollbar.fixedWidth + m_VerticalScrollbar.margin.left;
                 m_ClipRect.width -= m_VerticalScrollbar.fixedWidth + m_VerticalScrollbar.margin.left;
                 m_NeedsVertical = true;
                 if (!m_NeedsHorizontal && viewRect.width > m_ClipRect.width)
                 {
-                    m_State.visibleRect.height = position.height - m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
+                    m_State.visibleRect.height = layout.height - m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
                     m_ClipRect.height -= m_HorizontalScrollbar.fixedHeight + m_HorizontalScrollbar.margin.top;
                     m_NeedsHorizontal = true;
                 }
@@ -220,14 +220,14 @@ namespace UnityEngine.Experimental.UIElements
 
         bool DoDragUpdated(MouseEventArgs args)
         {
-            if (position.Contains(args.mousePosition))
+            if (layout.Contains(args.mousePosition))
             {
-                if (Mathf.Abs(args.mousePosition.y - position.y) < 8)
+                if (Mathf.Abs(args.mousePosition.y - layout.y) < 8)
                 {
                     scrollPositionVertical -= 16;
                     GUI.InternalRepaintEditorWindow();
                 }
-                else if (Mathf.Abs(args.mousePosition.y - position.yMax) < 8)
+                else if (Mathf.Abs(args.mousePosition.y - layout.yMax) < 8)
                 {
                     scrollPositionVertical += 16;
                     GUI.InternalRepaintEditorWindow();

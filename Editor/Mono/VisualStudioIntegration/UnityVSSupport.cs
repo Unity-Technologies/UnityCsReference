@@ -34,7 +34,7 @@ namespace UnityEditor.VisualStudioIntegration
 
         public static void Initialize(string editorPath)
         {
-            var externalEditor = editorPath ?? InternalEditorUtility.GetExternalScriptEditor();
+            var externalEditor = editorPath ?? ScriptEditorUtility.GetExternalScriptEditor();
 
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
@@ -156,7 +156,7 @@ namespace UnityEditor.VisualStudioIntegration
             {
                 externalEditor = SyncVS.FindBestVisualStudio();
                 if (externalEditor != null)
-                    InternalEditorUtility.SetExternalScriptEditor(externalEditor);
+                    ScriptEditorUtility.SetExternalScriptEditor(externalEditor);
             }
 
             VisualStudioVersion vsVersion;

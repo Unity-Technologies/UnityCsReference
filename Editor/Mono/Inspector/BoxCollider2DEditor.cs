@@ -86,10 +86,8 @@ namespace UnityEditor
             handleMatrix.SetRow(2, new Vector4(0f, 0f, 1f, collider.transform.position.z));
             if (collider.usedByComposite && collider.composite != null)
             {
-                // composite offset ignores lossy scale of composite's transform
-                Matrix4x4 compositeMatrix =
-                    Matrix4x4.TRS(collider.composite.transform.position, collider.composite.transform.rotation, Vector3.one);
-                Vector3 compositeOffset = compositeMatrix.MultiplyPoint3x4(collider.composite.offset);
+                // composite offset is rotated by composite's transformation matrix and projected back onto 2D plane
+                var compositeOffset = collider.composite.transform.rotation * collider.composite.offset;
                 compositeOffset.z = 0f;
                 handleMatrix = Matrix4x4.TRS(compositeOffset, Quaternion.identity, Vector3.one) * handleMatrix;
             }

@@ -14,8 +14,9 @@ namespace UnityEditor
         static GUIContent[] s_StatusWheel;
         string m_LastMiniMemoryOverview = "";
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             s_AppStatusBar = this;
             s_StatusWheel = new GUIContent[12];
             for (int i = 0; i < 12; i++)
@@ -41,7 +42,7 @@ namespace UnityEditor
 
         static GUIStyle background, resize;
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             ConsoleWindow.LoadIcons();
             if (background == null)

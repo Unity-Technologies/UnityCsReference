@@ -288,7 +288,7 @@ namespace UnityEditor
                 else
                 {
                     // Only show Force Stop when using the PathTracer backend
-                    if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer &&
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer &&
                         LightModeUtil.Get().AreBakedLightmapsEnabled() &&
                         GUILayout.Button("Force Stop", GUILayout.Width(kButtonWidth)))
                     {
@@ -403,7 +403,7 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Occupied texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);

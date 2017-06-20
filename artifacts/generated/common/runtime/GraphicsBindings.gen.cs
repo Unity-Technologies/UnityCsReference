@@ -1474,14 +1474,6 @@ public sealed partial class TrailRenderer : Renderer
         get;
     }
 
-    [System.Obsolete ("Use positionCount property (UnityUpgradable) -> positionCount")]
-    public extern int numPositions
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
     public Vector3 GetPosition (int index) {
         Vector3 result;
         INTERNAL_CALL_GetPosition ( this, index, out result );
@@ -1578,17 +1570,6 @@ public sealed partial class LineRenderer : Renderer
     }
 
     public extern int positionCount
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    [System.Obsolete ("Use positionCount property (UnityUpgradable) -> positionCount")]
-    public extern int numPositions
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

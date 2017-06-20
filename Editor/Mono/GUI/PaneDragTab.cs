@@ -142,7 +142,7 @@ namespace UnityEditor
             m_Window.position = screenPosition;
         }
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             if (s_PaneStyle == null)
             {

@@ -14,6 +14,30 @@ namespace UnityEngine.Experimental.UIElements
             this.scaleMode = ScaleMode.ScaleAndCrop;
         }
 
+        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        {
+            float measuredWidth = float.NaN;
+            float measuredHeight = float.NaN;
+            if (image == null)
+                return new Vector2(measuredWidth, measuredHeight);
+
+            // covers the MeasureMode.Exactly case
+            measuredWidth = image.width;
+            measuredHeight = image.height;
+
+            if (widthMode == MeasureMode.AtMost)
+            {
+                measuredWidth = Mathf.Min(measuredWidth, width);
+            }
+
+            if (heightMode == MeasureMode.AtMost)
+            {
+                measuredHeight = Mathf.Min(measuredHeight, height);
+            }
+
+            return new Vector2(measuredWidth, measuredHeight);
+        }
+
         internal override void DoRepaint(IStylePainter painter)
         {
             if (image == null)

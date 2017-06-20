@@ -16,6 +16,9 @@ namespace UnityEditor
         SerializedProperty m_SeparateAxes;
         SerializedProperty m_InWorldSpace;
         SerializedProperty m_Dampen;
+        SerializedMinMaxCurve m_Drag;
+        SerializedProperty m_MultiplyDragByParticleSize;
+        SerializedProperty m_MultiplyDragByParticleVelocity;
 
         class Texts
         {
@@ -27,6 +30,9 @@ namespace UnityEditor
             public GUIContent separateAxes = EditorGUIUtility.TextContent("Separate Axes|If enabled, you can control the velocity limit separately for each axis.");
             public GUIContent space = EditorGUIUtility.TextContent("Space|Specifies if the velocity values are in local space (rotated with the transform) or world space.");
             public string[] spaces = { "Local", "World" };
+            public GUIContent drag = EditorGUIUtility.TextContent("Drag|Apply drag to particles.");
+            public GUIContent multiplyDragByParticleSize = EditorGUIUtility.TextContent("Multiply by Size|Adjust the drag based on the size of the particles.");
+            public GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TextContent("Multiply by Velocity|Adjust the drag based on the velocity of the particles.");
         }
         static Texts s_Texts;
 
@@ -52,6 +58,9 @@ namespace UnityEditor
             m_SeparateAxes = GetProperty("separateAxis");
             m_InWorldSpace = GetProperty("inWorldSpace");
             m_Dampen = GetProperty("dampen");
+            m_Drag = new SerializedMinMaxCurve(this, s_Texts.drag, "drag");
+            m_MultiplyDragByParticleSize = GetProperty("multiplyDragByParticleSize");
+            m_MultiplyDragByParticleVelocity = GetProperty("multiplyDragByParticleVelocity");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -74,23 +83,33 @@ namespace UnityEditor
             }
 
             // Keep states in sync
-            if (!m_Z.stateHasMultipleDifferentValues)
+            if (!m_X.stateHasMultipleDifferentValues)
             {
-                m_X.SetMinMaxState(m_Z.state, true);
-                m_Y.SetMinMaxState(m_Y.state, true);
+                m_Y.SetMinMaxState(m_X.state, separateAxes);
+                m_Z.SetMinMaxState(m_X.state, separateAxes);
             }
 
             if (separateAxes)
             {
                 GUITripleMinMaxCurve(GUIContent.none, s_Texts.x, m_X, s_Texts.y, m_Y, s_Texts.z, m_Z, null);
+                EditorGUI.indentLevel++;
                 GUIBoolAsPopup(s_Texts.space, m_InWorldSpace, s_Texts.spaces);
+                EditorGUI.indentLevel--;
             }
             else
             {
                 GUIMinMaxCurve(s_Texts.magnitude, m_Magnitude);
             }
 
+            EditorGUI.indentLevel++;
             GUIFloat(s_Texts.dampen, m_Dampen);
+            EditorGUI.indentLevel--;
+
+            GUIMinMaxCurve(s_Texts.drag, m_Drag);
+            EditorGUI.indentLevel++;
+            GUIToggle(s_Texts.multiplyDragByParticleSize, m_MultiplyDragByParticleSize);
+            GUIToggle(s_Texts.multiplyDragByParticleVelocity, m_MultiplyDragByParticleVelocity);
+            EditorGUI.indentLevel--;
         }
 
         override public void UpdateCullingSupportedString(ref string text)

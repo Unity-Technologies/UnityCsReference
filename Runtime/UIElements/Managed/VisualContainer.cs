@@ -51,12 +51,16 @@ namespace UnityEngine.Experimental.UIElements
 
         private List<VisualElement> m_Children = new List<VisualElement>();
 
-        internal List<StyleSheet> m_StyleSheets;
+        private List<StyleSheet> m_StyleSheets;
 
         internal IEnumerable<StyleSheet> styleSheets
         {
             get
             {
+                if (m_StyleSheets == null && m_StyleSheetPaths != null)
+                {
+                    LoadStyleSheetsFromPaths();
+                }
                 return m_StyleSheets;
             }
         }
@@ -163,7 +167,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (p == panel) return;
             base.ChangePanel(p);
-            LoadStyleSheetsFromPaths();
+            Dirty(ChangeType.Styles);
             for (int i = 0; i < m_Children.Count; i++)
             {
                 // make sure the child enters and leaves panel too
@@ -270,6 +274,8 @@ namespace UnityEngine.Experimental.UIElements
                 m_StyleSheetPaths = new List<string>();
             }
             m_StyleSheetPaths.Add(sheetPath);
+            //will trigger a reload on next access
+            m_StyleSheets = null;
             Dirty(ChangeType.Styles);
         }
 
@@ -277,10 +283,12 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (m_StyleSheetPaths == null)
             {
-                Debug.LogWarning("Attempting to remove from null style shee path list");
+                Debug.LogWarning("Attempting to remove from null style sheet path list");
                 return;
             }
             m_StyleSheetPaths.Remove(sheetPath);
+            //will trigger a reload on next access
+            m_StyleSheets = null;
             Dirty(ChangeType.Styles);
         }
 

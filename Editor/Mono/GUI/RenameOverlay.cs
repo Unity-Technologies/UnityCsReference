@@ -71,7 +71,6 @@ namespace UnityEditor
         {
             if (m_IsRenaming)
             {
-                Debug.LogError("BeginRename fail: already renaming");
                 return false;
             }
 

@@ -58,7 +58,7 @@ namespace UnityEngine.Experimental.UIElements
             SaveBackup();
 
             style = textField.style;
-            position = textField.position;
+            position = textField.layout;
             maxLength = textField.maxLength;
             multiline = textField.multiline;
             isPasswordField = textField.isPasswordField;

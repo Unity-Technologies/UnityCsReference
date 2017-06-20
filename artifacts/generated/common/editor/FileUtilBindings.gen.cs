@@ -15,8 +15,6 @@ using System.IO;
 
 namespace UnityEditor
 {
-
-
 public sealed partial class FileUtil
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -25,16 +23,84 @@ public sealed partial class FileUtil
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void CopyFileOrDirectory (string from, string to) ;
+    extern private static  bool PathExists (string path) ;
 
+    public static void CopyFileOrDirectory(string source, string dest)
+        {
+            CheckForValidSourceAndDestinationArgumentsAndRaiseAnExceptionWhenNullOrEmpty(source, dest);
+
+            if (PathExists(dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+            }
+
+            if (!CopyFileOrDirectoryInternal(source, dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
+            }
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void CopyFileOrDirectoryFollowSymlinks (string from, string to) ;
+    extern private static  bool CopyFileOrDirectoryInternal (string source, string dest) ;
 
+    public static void CopyFileOrDirectoryFollowSymlinks(string source, string dest)
+        {
+            CheckForValidSourceAndDestinationArgumentsAndRaiseAnExceptionWhenNullOrEmpty(source, dest);
+
+            if (PathExists(dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+            }
+
+            if (!CopyFileOrDirectoryFollowSymlinksInternal(source, dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
+            }
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void MoveFileOrDirectory (string from, string to) ;
+    extern private static  bool CopyFileOrDirectoryFollowSymlinksInternal (string source, string dest) ;
 
+    public static void MoveFileOrDirectory(string source, string dest)
+        {
+            CheckForValidSourceAndDestinationArgumentsAndRaiseAnExceptionWhenNullOrEmpty(source, dest);
+
+            if (PathExists(dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+            }
+
+            if (!MoveFileOrDirectoryInternal(source, dest))
+            {
+                throw new System.IO.IOException(string.Format(
+                        "Failed to Move File / Directory from '{0}' to '{1}'.", source, dest));
+            }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool MoveFileOrDirectoryInternal (string source, string dest) ;
+
+    private static void CheckForValidSourceAndDestinationArgumentsAndRaiseAnExceptionWhenNullOrEmpty(string source, string dest)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            if (dest == null) throw new ArgumentNullException("dest");
+
+            if (source == string.Empty) throw new ArgumentException("source", "The source path cannot be empty.");
+            if (dest == string.Empty) throw new ArgumentException("dest", "The destination path cannot be empty.");
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string GetUniqueTempPathInProject () ;

@@ -94,18 +94,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             predefinedTargetAssemblies = CreatePredefinedTargetAssemblies();
         }
 
-        public static IEnumerable<TargetAssembly> GetTargetAssemblies(SupportedLanguage language, TargetAssembly[] customTargetAssemblies)
-        {
-            var predefined = predefinedTargetAssemblies.Where(a => a.Language.GetLanguageName() == language.GetLanguageName());
-
-            if (customTargetAssemblies == null)
-                return predefined;
-
-            // TODO: Figure out what to do here. We do not know the script language for a custom script assembly
-            // because it depends on extensions of the scripts inside the folder. So we just return them all for now.
-            return predefined.Concat(customTargetAssemblies);
-        }
-
         public static TargetAssembly[] GetPredefinedTargetAssemblies()
         {
             return predefinedTargetAssemblies;
@@ -410,9 +398,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return scriptAssemblies;
         }
 
-        static bool IsCompiledAssemblyCompatibleWithTargetAssembly(PrecompiledAssembly compiledAssembly, TargetAssembly targetAssembly, BuildTarget buildTarget, TargetAssembly[] customTargetAssemblies)
+        static bool IsPrecompiledAssemblyCompatibleWithScriptAssembly(PrecompiledAssembly compiledAssembly, ScriptAssembly scriptAssembly)
         {
-            bool useDotNet = WSAHelpers.UseDotNetCore(targetAssembly.Filename, buildTarget, customTargetAssemblies);
+            bool useDotNet = WSAHelpers.UseDotNetCore(scriptAssembly);
 
             if (useDotNet)
             {
@@ -432,30 +420,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var references = new List<string>();
 
             bool buildingForEditor = settings.BuildingForEditor;
-            bool targetAssemblyEditorOnly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
-            if (assemblies.UnityAssemblies != null)
-                foreach (var unityAssembly in assemblies.UnityAssemblies)
-                {
-                    // Add Unity editor assemblies (UnityEditor.dll) to all assemblies when building inside the editor
-                    if (buildingForEditor || targetAssemblyEditorOnly)
-                    {
-                        if ((unityAssembly.Flags & AssemblyFlags.UseForMono) != 0)
-                            references.Add(unityAssembly.Path);
-                    }
-                    else
-                    {
-                        bool unityAssemblyEditorOnly = (unityAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions);
 
-                        // Add Unity runtime assemblies (UnityEngine.dll) to all assemblies
-                        if (!unityAssemblyEditorOnly)
-                        {
-                            if (IsCompiledAssemblyCompatibleWithTargetAssembly(unityAssembly, targetAssembly, settings.BuildTarget, assemblies.CustomTargetAssemblies))
-                                references.Add(unityAssembly.Path);
-                        }
-                    }
-                }
+            references.AddRange(unityReferences);
 
             // Setup target assembly references
             foreach (var reference in targetAssembly.References)
@@ -501,24 +470,89 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // Add pre-compiled assemblies as references
-            if (assemblies.PrecompiledAssemblies != null)
-                foreach (var precompiledAssembly in assemblies.PrecompiledAssemblies)
-                {
-                    bool compiledAssemblyEditorOnly = (precompiledAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            var precompiledReferences = GetPrecompiledReferences(scriptAssembly, assemblies.PrecompiledAssemblies);
 
-                    // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
-                    if (!compiledAssemblyEditorOnly || targetAssemblyEditorOnly)
-                    {
-                        if (IsCompiledAssemblyCompatibleWithTargetAssembly(precompiledAssembly, targetAssembly, settings.BuildTarget, assemblies.CustomTargetAssemblies))
-                            references.Add(precompiledAssembly.Path);
-                    }
-                }
+            references.AddRange(precompiledReferences);
 
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();
+        }
+
+        public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, PrecompiledAssembly[] unityAssemblies, EditorScriptCompilationOptions options)
+        {
+            var references = new List<string>();
+
+            bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor)  == EditorScriptCompilationOptions.BuildingForEditor;
+
+            // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
+            if (unityAssemblies != null)
+                foreach (var unityAssembly in unityAssemblies)
+                {
+                    // Add Unity editor assemblies (UnityEditor.dll) to all assemblies when building inside the editor
+                    if (buildingForEditor || assemblyEditorOnly)
+                    {
+                        if ((unityAssembly.Flags & AssemblyFlags.UseForMono) != 0)
+                            references.Add(unityAssembly.Path);
+                    }
+                    else
+                    {
+                        bool unityAssemblyEditorOnly = (unityAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+
+                        // Add Unity runtime assemblies (UnityEngine.dll) to all assemblies
+                        if (!unityAssemblyEditorOnly)
+                        {
+                            if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(unityAssembly, scriptAssembly))
+                                references.Add(unityAssembly.Path);
+                        }
+                    }
+                }
+
+            return references;
+        }
+
+        public static List<string> GetPrecompiledReferences(ScriptAssembly scriptAssembly, PrecompiledAssembly[] precompiledAssemblies)
+        {
+            var references = new List<string>();
+
+            bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+
+            if (precompiledAssemblies != null)
+                foreach (var precompiledAssembly in precompiledAssemblies)
+                {
+                    bool compiledAssemblyEditorOnly = (precompiledAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+
+                    // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
+                    if (!compiledAssemblyEditorOnly || assemblyEditorOnly)
+                    {
+                        if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(precompiledAssembly, scriptAssembly))
+                            references.Add(precompiledAssembly.Path);
+                    }
+                }
+
+            return references;
+        }
+
+        public static List<string> GetCompiledCustomAssembliesReferences(ScriptAssembly scriptAssembly, TargetAssembly[] customTargetAssemblies, string outputDirectory, string filenameSuffix)
+        {
+            var references = new List<string>();
+
+            if (customTargetAssemblies != null)
+            {
+                foreach (var customTargetAssembly in customTargetAssemblies)
+                {
+                    var customTargetAssemblyPath = customTargetAssembly.FullPath(outputDirectory, filenameSuffix);
+
+                    // File might not exist if there are no scripts in the custom target assembly folder.
+                    if (File.Exists(customTargetAssemblyPath))
+                        references.Add(customTargetAssemblyPath);
+                }
+            }
+
+            return references;
         }
 
         static bool IsCompatibleWithEditor(BuildTarget buildTarget, EditorScriptCompilationOptions options)

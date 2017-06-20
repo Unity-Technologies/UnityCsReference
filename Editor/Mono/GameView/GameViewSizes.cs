@@ -254,11 +254,25 @@ namespace UnityEditor
             m_HMD.AddBuiltinSizes(kFree, m_Remote);
         }
 
+        internal static bool DefaultLowResolutionSettingForStandalone()
+        {
+            switch (EditorUserBuildSettings.activeBuildTarget)
+            {
+                case BuildTarget.StandaloneOSXIntel:
+                case BuildTarget.StandaloneOSXIntel64:
+                case BuildTarget.StandaloneOSXUniversal:
+                    return !PlayerSettings.macRetinaSupport; // if retina support enabled -> expecting LowRes setting disabled by default
+                default:
+                    return true;
+            }
+        }
+
         internal static bool DefaultLowResolutionSettingForSizeGroupType(GameViewSizeGroupType sizeGroupType)
         {
             switch (sizeGroupType)
             {
                 case GameViewSizeGroupType.Standalone:
+                    return DefaultLowResolutionSettingForStandalone();
                 case GameViewSizeGroupType.WiiU:
                 case GameViewSizeGroupType.N3DS:
                     return true;

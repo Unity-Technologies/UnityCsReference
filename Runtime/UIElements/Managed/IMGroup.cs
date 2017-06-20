@@ -17,7 +17,7 @@ namespace UnityEngine.Experimental.UIElements
                         DoRepaint(new StylePainter(evt.mousePosition));
                         break;
                     default:
-                        if (position.Contains(evt.mousePosition))
+                        if (layout.Contains(evt.mousePosition))
                         {
                             GUIUtility.mouseUsed = true;
                         }
@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
         internal override void DoRepaint(IStylePainter args)
         {
             // TODO: Same as box. Should move in common base class?
-            style.Draw(position, GUIContent.Temp(text), id);
+            style.Draw(layout, GUIContent.Temp(text), id);
         }
     }
 }

@@ -146,9 +146,17 @@ namespace UnityEngine.Bindings
         }
     }
 
+    enum TargetType
+    {
+        Function,
+        Field
+    }
+
     [AttributeUsage(AttributeTargets.Property)]
     class NativePropertyAttribute : NativeMethodAttribute
     {
+        public TargetType TargetType { get; set; }
+
         public NativePropertyAttribute()
         {
         }
@@ -157,12 +165,19 @@ namespace UnityEngine.Bindings
         {
         }
 
-        public NativePropertyAttribute(string name, bool isFreeFunction) : base(name, isFreeFunction)
+        public NativePropertyAttribute(string name, TargetType targetType) : base(name)
         {
+            TargetType = targetType;
         }
 
-        public NativePropertyAttribute(string name, bool isFreeFunction, bool isThreadSafe) : base(name, isFreeFunction, isThreadSafe)
+        public NativePropertyAttribute(string name, bool isFree, TargetType targetType) : base(name, isFree)
         {
+            TargetType = targetType;
+        }
+
+        public NativePropertyAttribute(string name, bool isFree, TargetType targetType, bool isThreadSafe) : base(name, isFree, isThreadSafe)
+        {
+            TargetType = targetType;
         }
     }
 

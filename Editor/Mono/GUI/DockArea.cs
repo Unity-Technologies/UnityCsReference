@@ -48,8 +48,6 @@ namespace UnityEditor
 
         bool m_IsBeingDestroyed;
 
-        IMGUIContainer m_DAOnGUIContainer;
-
         public int selected
         {
             get { return m_Selected; }
@@ -80,7 +78,7 @@ namespace UnityEditor
             m_Panes = result;
         }
 
-        public new void OnDestroy()
+        protected override void OnDestroy()
         {
             // Prevents double-destroy that may be indirectly caused if Close() is called by OnLostFocus()
             m_IsBeingDestroyed = true;
@@ -95,7 +93,7 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
-        public new void OnEnable()
+        protected override void OnEnable()
         {
             if (m_Panes != null)
             {
@@ -111,12 +109,7 @@ namespace UnityEditor
 
             base.OnEnable();
 
-            m_DAOnGUIContainer = new IMGUIContainer(OldOnGUI)
-            {
-                name = VisualElementUtils.GetUniqueName("Dockarea")
-            };
-            m_DAOnGUIContainer.StretchToParentSize();
-            visualTree.InsertChild(0, m_DAOnGUIContainer);
+            imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
         }
 
         protected override void UpdateViewMargins(EditorWindow view)
@@ -136,18 +129,6 @@ namespace UnityEditor
         }
 
 
-        public new void OnDisable()
-        {
-            base.OnDisable();
-
-            if (m_DAOnGUIContainer.HasCapture())
-            {
-                m_DAOnGUIContainer.RemoveCapture();
-            }
-
-            visualTree.RemoveChild(m_DAOnGUIContainer);
-        }
-
         public void AddTab(EditorWindow pane)
         {
             AddTab(m_Panes.Count, pane);
@@ -157,11 +138,7 @@ namespace UnityEditor
         {
             DeregisterSelectedPane(true);
             m_Panes.Insert(idx, pane);
-            m_ActualView = pane;
-            m_Panes[idx] = pane;
             selected = idx;
-
-            RegisterSelectedPane();
 
             var sp = parent as SplitView;
             if (sp)
@@ -173,7 +150,7 @@ namespace UnityEditor
         public void RemoveTab(EditorWindow pane) { RemoveTab(pane, true); }
         public void RemoveTab(EditorWindow pane, bool killIfEmpty)
         {
-            if (m_ActualView == pane)
+            if (actualView == pane)
                 DeregisterSelectedPane(true);
             int idx = m_Panes.IndexOf(pane);
             if (idx == -1)
@@ -193,7 +170,7 @@ namespace UnityEditor
             if (idx == m_Selected)
                 m_Selected = m_LastSelected;
             else
-                m_Selected = m_Panes.IndexOf(m_ActualView);
+                m_Selected = m_Panes.IndexOf(actualView);
 
             if (m_Selected >= 0 && m_Selected < m_Panes.Count)
                 actualView = m_Panes[m_Selected];
@@ -269,12 +246,11 @@ namespace UnityEditor
             return true;
         }
 
+        // without leaving this in here for HostView.Invoke(), commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
         void OnGUI()
-        {
-            // declare empty to mask HostView.OnGUI()
-        }
+        {}
 
-        public void OldOnGUI()
+        protected override void OldOnGUI()
         {
             ClearBackground();
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
@@ -382,7 +358,11 @@ namespace UnityEditor
                 Rect p = borderSize.Remove(position);
                 p.x = basePos.x;
                 p.y = basePos.y;
-                m_Panes[selected].m_Pos = p;
+
+                if (selected >= 0 && selected < m_Panes.Count)
+                {
+                    m_Panes[selected].m_Pos = p;
+                }
 
                 EndOffsetArea();
             }
@@ -790,7 +770,7 @@ namespace UnityEditor
 
     internal class MaximizedHostView : HostView
     {
-        public void OnGUI()
+        protected override void OldOnGUI()
         {
             ClearBackground();
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.

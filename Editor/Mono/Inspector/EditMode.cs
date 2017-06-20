@@ -73,6 +73,14 @@ namespace UnityEditorInternal
             LightProbeGroup,
             ParticleSystemCollisionModulePlanesMove,
             ParticleSystemCollisionModulePlanesRotate,
+            JointAngularLimits,
+            GridPainting,
+            GridPicking,
+            GridEraser,
+            GridFloodFill,
+            GridBox,
+            GridSelect,
+            GridMove,
         }
 
         private static Tool toolBeforeEnteringEditMode
@@ -145,7 +153,7 @@ namespace UnityEditorInternal
 
         static void EndSceneViewEditing()
         {
-            ChangeEditMode(SceneViewEditMode.None, new Bounds(), null);
+            ChangeEditMode(SceneViewEditMode.None, new Bounds(Vector3.zero, Vector3.positiveInfinity), null);
         }
 
         public static void OnSelectionChange()
@@ -259,6 +267,11 @@ namespace UnityEditorInternal
         public static void ChangeEditMode(SceneViewEditMode mode, Bounds bounds, Editor caller)
         {
             ChangeEditMode(mode, bounds, (IToolModeOwner)caller);
+        }
+
+        internal static void ChangeEditMode(SceneViewEditMode mode, IToolModeOwner owner)
+        {
+            ChangeEditMode(mode, owner.GetWorldBoundsOfTargets(), owner);
         }
 
         internal static void ChangeEditMode(SceneViewEditMode mode, Bounds bounds, IToolModeOwner owner)

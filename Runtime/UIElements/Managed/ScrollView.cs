@@ -19,12 +19,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool needsHorizontal
         {
-            get { return showHorizontal || (contentView.position.width - position.width > 0); }
+            get { return showHorizontal || (contentView.layout.width - layout.width > 0); }
         }
 
         public bool needsVertical
         {
-            get { return showVertical || (contentView.position.height - position.height > 0); }
+            get { return showVertical || (contentView.layout.height - layout.height > 0); }
         }
 
         Vector2 m_ScrollOffset;
@@ -48,8 +48,8 @@ namespace UnityEngine.Experimental.UIElements
             normalizedOffset.y /= (verticalScroller.highValue - verticalScroller.lowValue);
 
             // Adjust contentView's position
-            float scrollableWidth = contentView.position.width - contentViewport.position.width;
-            float scrollableHeight = contentView.position.height - contentViewport.position.height;
+            float scrollableWidth = contentView.layout.width - contentViewport.layout.width;
+            float scrollableHeight = contentView.layout.height - contentViewport.layout.height;
 
             var t = contentView.transform;
             t.m03 = -(normalizedOffset.x * scrollableWidth);
@@ -104,14 +104,14 @@ namespace UnityEngine.Experimental.UIElements
             if (!hasNewLayout)
                 return;
 
-            if (contentView.position.width > Mathf.Epsilon)
-                horizontalScroller.Adjust(contentViewport.position.width / contentView.position.width);
-            if (contentView.position.height > Mathf.Epsilon)
-                verticalScroller.Adjust(contentViewport.position.height / contentView.position.height);
+            if (contentView.layout.width > Mathf.Epsilon)
+                horizontalScroller.Adjust(contentViewport.layout.width / contentView.layout.width);
+            if (contentView.layout.height > Mathf.Epsilon)
+                verticalScroller.Adjust(contentViewport.layout.height / contentView.layout.height);
 
             // Set availability
-            horizontalScroller.enabled = (contentView.position.width - position.width > 0);
-            verticalScroller.enabled = (contentView.position.height - position.height > 0);
+            horizontalScroller.enabled = (contentView.layout.width - layout.width > 0);
+            verticalScroller.enabled = (contentView.layout.height - layout.height > 0);
 
             // Set visibility
             horizontalScroller.visible = needsHorizontal;
@@ -124,7 +124,7 @@ namespace UnityEngine.Experimental.UIElements
         // as Web browsers, which give back event to parent if not consumed
         void OnScrollWheel(WheelEvent evt)
         {
-            if (contentView.position.height - position.height > 0)
+            if (contentView.layout.height - layout.height > 0)
             {
                 if (evt.delta.y < 0)
                     verticalScroller.ScrollPageUp();

@@ -421,6 +421,8 @@ namespace UnityEditor
 
         public static readonly int[] kNormalFormatsValueDefault =
         {
+            (int)TextureImporterFormat.BC5,
+            (int)TextureImporterFormat.BC7,
             (int)TextureImporterFormat.DXT5,
             (int)TextureImporterFormat.ARGB16,
             (int)TextureImporterFormat.RGBA32,

@@ -740,6 +740,10 @@ static public bool ResetToPrefabState(Object source)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool EventHasDragMoveModifierPressed (Event evt) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  string GetInternalEditorPath () ;
+
 }
 
 public sealed partial class SceneAsset : Object

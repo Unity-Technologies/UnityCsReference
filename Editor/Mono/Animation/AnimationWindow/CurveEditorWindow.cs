@@ -260,7 +260,8 @@ namespace UnityEditor
 
         void OnDestroy()
         {
-            m_CurvePresets.GetPresetLibraryEditor().UnloadUsedLibraries();
+            if (m_CurvePresets != null)
+                m_CurvePresets.GetPresetLibraryEditor().UnloadUsedLibraries();
         }
 
         void OnDisable()

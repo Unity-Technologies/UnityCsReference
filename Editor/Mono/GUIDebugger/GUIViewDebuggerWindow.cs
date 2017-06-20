@@ -17,6 +17,8 @@ namespace UnityEditor
             Draw,
             Clip,
             Layout,
+            NamedControl,
+            Property,
             Unified,
         }
 
@@ -152,6 +154,12 @@ namespace UnityEditor
                             break;
                         case InstructionType.Layout:
                             m_InstructionModeView = new GUILayoutInspectView(this);
+                            break;
+                        case InstructionType.NamedControl:
+                            m_InstructionModeView = new GUINamedControlInspectView(this);
+                            break;
+                        case InstructionType.Property:
+                            m_InstructionModeView = new GUIPropertyInspectView(this);
                             break;
                         case InstructionType.Unified:
                             m_InstructionModeView = new UnifiedInspectView(this);

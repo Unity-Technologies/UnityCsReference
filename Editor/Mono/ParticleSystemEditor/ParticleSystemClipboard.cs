@@ -101,7 +101,7 @@ namespace UnityEditor
 
     internal class GradientContextMenu
     {
-        SerializedProperty m_Prop1;
+        readonly SerializedProperty m_Prop1;
 
 
         static internal void Show(SerializedProperty prop)
@@ -144,11 +144,11 @@ namespace UnityEditor
 
     internal class AnimationCurveContextMenu
     {
-        SerializedProperty m_Prop1;
-        SerializedProperty m_Prop2;
-        SerializedProperty m_Scalar;
-        ParticleSystemCurveEditor m_ParticleSystemCurveEditor;
-        Rect m_CurveRanges;
+        readonly SerializedProperty m_Prop1;
+        readonly SerializedProperty m_Prop2;
+        readonly SerializedProperty m_Scalar;
+        readonly ParticleSystemCurveEditor m_ParticleSystemCurveEditor;
+        readonly Rect m_CurveRanges;
 
         static internal void Show(Rect position, SerializedProperty property, SerializedProperty property2, SerializedProperty scalar, Rect curveRanges, ParticleSystemCurveEditor curveEditor)
         {

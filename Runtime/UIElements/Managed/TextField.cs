@@ -113,7 +113,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
                     drawText = "".PadRight(touchScreenEditor.secureText.Length, maskChar);
 
-                style.Draw(position, GUIContent.Temp(drawText), 0, false);
+                style.Draw(layout, GUIContent.Temp(drawText), 0, false);
 
                 return;
             }
@@ -125,7 +125,7 @@ namespace UnityEngine.Experimental.UIElements
                 string passwordText = "".PadRight(text.Length, maskChar);
 
                 if (!hasFocus)
-                    style.Draw(position, GUIContent.Temp(passwordText), 0, false);
+                    style.Draw(layout, GUIContent.Temp(passwordText), 0, false);
                 else
                     DrawCursor(passwordText);
 
@@ -133,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             if (!hasFocus)
-                style.Draw(position, GUIContent.Temp(text), 0, false);
+                style.Draw(layout, GUIContent.Temp(text), 0, false);
             else
                 DrawCursor(text);
         }
@@ -161,12 +161,12 @@ namespace UnityEngine.Experimental.UIElements
             GUIContent editorContent = new GUIContent(keyboardTextEditor.text);
 
             if (!string.IsNullOrEmpty(Input.compositionString))
-                style.DrawWithTextSelection(position, editorContent, this.HasCapture(), hasFocus, cursorIndex, cursorIndex + Input.compositionString.Length, true);
+                style.DrawWithTextSelection(layout, editorContent, this.HasCapture(), hasFocus, cursorIndex, cursorIndex + Input.compositionString.Length, true);
             else
-                style.DrawWithTextSelection(position, editorContent, this.HasCapture(), hasFocus, cursorIndex, selectIndex, false);
+                style.DrawWithTextSelection(layout, editorContent, this.HasCapture(), hasFocus, cursorIndex, selectIndex, false);
 
             if (keyboardTextEditor.altCursorPosition != -1)
-                style.DrawCursor(position, editorContent, 0, keyboardTextEditor.altCursorPosition);
+                style.DrawCursor(layout, editorContent, 0, keyboardTextEditor.altCursorPosition);
 
             // reset
             style.contentOffset = originalContentOffset;

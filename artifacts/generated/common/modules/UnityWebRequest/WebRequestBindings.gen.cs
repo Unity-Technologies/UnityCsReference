@@ -161,15 +161,24 @@ public sealed partial class UnityWebRequest : IDisposable
     
     ~UnityWebRequest()
         {
+            DisposeHandlers();
             InternalDestroy();
         }
     
     
     public void Dispose()
         {
+            DisposeHandlers();
+            InternalDestroy();
+            GC.SuppressFinalize(this);
+        }
+    
+    
+    private void DisposeHandlers()
+        {
             if (disposeDownloadHandlerOnDispose)
             {
-                DownloadHandler dh = this.downloadHandler;
+                DownloadHandler dh = this.GetDownloadHandler();
                 if (dh != null)
                 {
                     dh.Dispose();
@@ -178,15 +187,12 @@ public sealed partial class UnityWebRequest : IDisposable
 
             if (disposeUploadHandlerOnDispose)
             {
-                UploadHandler uh = this.uploadHandler;
+                UploadHandler uh = this.GetUploadHandler();
                 if (uh != null)
                 {
                     uh.Dispose();
                 }
             }
-
-            InternalDestroy();
-            GC.SuppressFinalize(this);
         }
     
     
@@ -457,6 +463,11 @@ public sealed partial class UnityWebRequest : IDisposable
         }
     
     
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private UploadHandler GetUploadHandler () ;
+
     public extern  UploadHandler uploadHandler
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -466,6 +477,11 @@ public sealed partial class UnityWebRequest : IDisposable
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
     }
+
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private DownloadHandler GetDownloadHandler () ;
 
     public extern  DownloadHandler downloadHandler
     {

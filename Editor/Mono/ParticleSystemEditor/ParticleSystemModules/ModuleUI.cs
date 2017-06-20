@@ -78,16 +78,16 @@ namespace UnityEditor
         public ModuleUI(ParticleSystemUI owner, SerializedObject o, string name, string displayName)
             : base(o, name)
         {
-            Setup(owner, o, name, displayName, VisibilityState.NotVisible);
+            Setup(owner, o, displayName, VisibilityState.NotVisible);
         }
 
         public ModuleUI(ParticleSystemUI owner, SerializedObject o, string name, string displayName, VisibilityState initialVisibilityState)
             : base(o, name)
         {
-            Setup(owner, o, name, displayName, initialVisibilityState);
+            Setup(owner, o, displayName, initialVisibilityState);
         }
 
-        private void Setup(ParticleSystemUI owner, SerializedObject o, string name, string displayName, VisibilityState defaultVisibilityState)
+        private void Setup(ParticleSystemUI owner, SerializedObject o, string displayName, VisibilityState defaultVisibilityState)
         {
             m_ParticleSystemUI = owner;
             m_DisplayName = displayName;

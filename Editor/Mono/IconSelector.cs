@@ -189,6 +189,7 @@ namespace UnityEditor
             {
                 // Map to new icon
                 Texture2D largeIcon = ConvertSmallIconToLargeIcon((Texture2D)content.image, labelIcon);
+                Undo.RecordObject(m_TargetObject, "Set Icon On GameObject");
                 EditorGUIUtility.SetIconForObject(m_TargetObject, largeIcon);
 
                 // We assume that we are setting icon in an inspector or annotation window (todo: make repaint delegate)
@@ -337,6 +338,7 @@ namespace UnityEditor
                     if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id)
                     {
                         Texture2D icon =  ObjectSelector.GetCurrentObject() as Texture2D;
+                        Undo.RecordObject(m_TargetObject, "Set Icon On GameObject");
                         EditorGUIUtility.SetIconForObject(m_TargetObject, icon);
 
                         GUI.changed = true;

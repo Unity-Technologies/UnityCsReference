@@ -3,37 +3,36 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using System.Collections;
 
 namespace UnityEditorInternal
 {
     internal class Chart
     {
-        static int s_ChartHash = "Charts".GetHashCode();
-        public const float kSideWidth = 170.0f;
-        const int kDistFromTopToFirstLabel = 20;
+        public delegate void ChangedEventHandler(Chart sender);
+
+        private static int s_ChartHash = "Charts".GetHashCode();
+        public const float kSideWidth = 180.0f;
+        const int kDistFromTopToFirstLabel = 38;
         const int kLabelHeight = 11;
         const int kCloseButtonSize = 13;
-        const float kLabelXOffset = 40.0f;
+        const float kLabelOffset = 5f;
         const float kWarningLabelHeightOffset = 43.0f;
-        Vector3[] m_CachedLineData;
+        const float kChartMinHeight = 130;
+        private const float k_LineWidth = 2f;
+        private Vector3[] m_LineDrawingPoints;
+        private float[] m_StackedSampleSums;
+        private static readonly Color s_OverlayBackgroundDimFactor = new Color(0.9f, 0.9f, 0.9f, 0.4f);
 
         string m_ChartSettingsName;
         int m_chartControlID;
 
-        public void LoadAndBindSettings(string chartSettingsName, ChartData cdata)
+        public void LoadAndBindSettings(string chartSettingsName, ChartViewData cdata)
         {
             m_ChartSettingsName = chartSettingsName;
             LoadChartsSettings(cdata);
-        }
-
-        internal enum ChartAction
-        {
-            None,
-            Activated,
-            Closed
         }
 
         internal enum ChartType
@@ -42,48 +41,51 @@ namespace UnityEditorInternal
             Line,
         }
 
-        internal class Styles
+        static class Styles
         {
-            public GUIContent performanceWarning = new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), "Collecting GPU Profiler data might have overhead. Close graph if you don't need its data");
+            public static readonly GUIStyle background = "OL Box";
+            public static readonly GUIStyle legendHeaderLabel = EditorStyles.label;
+            public static readonly GUIStyle legendBackground = "ProfilerLeftPane";
+            public static readonly GUIStyle rightPane = "ProfilerRightPane";
+            public static readonly GUIStyle seriesLabel = "ProfilerPaneSubLabel";
+            public static readonly GUIStyle seriesDragHandle = "RL DragHandle";
+            public static readonly GUIStyle closeButton = "WinBtnClose";
+            public static readonly GUIStyle whiteLabel = "ProfilerBadge";
+            public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
 
-            public GUIStyle background = "OL Box";
-            public GUIStyle leftPane = "ProfilerLeftPane";
-            public GUIStyle rightPane = "ProfilerRightPane";
-            public GUIStyle paneSubLabel = "ProfilerPaneSubLabel";
-            public GUIStyle closeButton = "WinBtnClose";
-            public GUIStyle whiteLabel = "ProfilerBadge";
-            public GUIStyle selectedLabel = "ProfilerSelectedLabel";
-
-            public Color selectedFrameColor1 = new Color(1, 1, 1, 0.6f);
-            public Color selectedFrameColor2 = new Color(1, 1, 1, 0.7f);
+            public static readonly Color selectedFrameColor1 = new Color(1, 1, 1, 0.6f);
+            public static readonly Color selectedFrameColor2 = new Color(1, 1, 1, 0.7f);
         }
 
-        private static Styles ms_Styles = null;
+        public event ChangedEventHandler closed;
+        public event ChangedEventHandler selected;
+
+        public GUIContent legendHeaderLabel { get; set; }
 
         int m_DragItemIndex = -1;
         Vector2 m_DragDownPos;
-        int[] m_ChartOrderBackup;
-        int m_MouseDownIndex = -1;
+        int[] m_OldChartOrder;
         public string m_NotSupportedWarning = null;
 
-        private int MoveSelectedFrame(int selectedFrame, ChartData cdata, int direction)
+        private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
         {
-            int length = cdata.NumberOfFrames;
+            Vector2 domain = cdata.GetDataDomain();
+            int length = (int)(domain.y - domain.x);
             int newSelectedFrame = selectedFrame + direction;
-            if (newSelectedFrame < cdata.firstSelectableFrame || newSelectedFrame > cdata.firstFrame + length)
+            if (newSelectedFrame < cdata.firstSelectableFrame || newSelectedFrame > cdata.chartDomainOffset + length)
                 return selectedFrame;
 
             return newSelectedFrame;
         }
 
-        private int DoFrameSelectionDrag(float x, Rect r, ChartData cdata, int len)
+        private int DoFrameSelectionDrag(float x, Rect r, ChartViewData cdata, int len)
         {
             int frame = Mathf.RoundToInt((x - r.x) / r.width * len - 0.5f);
             GUI.changed = true;
-            return Mathf.Clamp(frame + cdata.firstFrame, cdata.firstSelectableFrame, cdata.firstFrame + len);
+            return Mathf.Clamp(frame + cdata.chartDomainOffset, cdata.firstSelectableFrame, cdata.chartDomainOffset + len);
         }
 
-        private int HandleFrameSelectionEvents(int selectedFrame, int chartControlID, Rect chartFrame, ChartData cdata, int len)
+        private int HandleFrameSelectionEvents(int selectedFrame, int chartControlID, Rect chartFrame, ChartViewData cdata)
         {
             Event evt = Event.current;
             switch (evt.type)
@@ -93,6 +95,8 @@ namespace UnityEditorInternal
                     {
                         GUIUtility.keyboardControl = chartControlID;
                         GUIUtility.hotControl = chartControlID;
+                        Vector2 domain = cdata.GetDataDomain();
+                        int len = (int)(domain.y - domain.x);
                         selectedFrame = DoFrameSelectionDrag(evt.mousePosition.x, chartFrame, cdata, len);
                         evt.Use();
                     }
@@ -101,6 +105,8 @@ namespace UnityEditorInternal
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == chartControlID)
                     {
+                        Vector2 domain = cdata.GetDataDomain();
+                        int len = (int)(domain.y - domain.x);
                         selectedFrame = DoFrameSelectionDrag(evt.mousePosition.x, chartFrame, cdata, len);
                         evt.Use();
                     }
@@ -141,21 +147,42 @@ namespace UnityEditorInternal
             m_chartControlID = 0;
         }
 
-        public int DoGUI(ChartType type, int selectedFrame, ChartData cdata, ProfilerArea area, bool active, GUIContent icon, out ChartAction action)
+        protected virtual void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
-            action = ChartAction.None;
+            if (Event.current.type == EventType.Repaint)
+                Styles.legendBackground.Draw(position, GUIContent.none, false, false, active, false);
+
+            Rect headerRect = position;
+            GUIContent headerLabel = legendHeaderLabel ?? GUIContent.none;
+            headerRect.height = Styles.legendHeaderLabel.CalcSize(headerLabel).y;
+            GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
+
+            position.yMin += headerRect.height;
+            position.xMin += kLabelOffset;
+            position.xMax -= kLabelOffset;
+            DoSeriesList(position, m_chartControlID, type, cdata);
+
+            Rect closeButtonRect = headerRect;
+            closeButtonRect.xMax -= Styles.legendHeaderLabel.padding.right;
+            closeButtonRect.xMin = closeButtonRect.xMax - kCloseButtonSize;
+            closeButtonRect.yMin += Styles.legendHeaderLabel.padding.top;
+            closeButtonRect.yMax = closeButtonRect.yMin + kCloseButtonSize;
+
+            if (GUI.Button(closeButtonRect, GUIContent.none, Styles.closeButton) && closed != null)
+                closed(this);
+        }
+
+        public int DoGUI(ChartType type, int selectedFrame, ChartViewData cdata, bool active)
+        {
             if (cdata == null)
                 return selectedFrame;
 
-            int len = cdata.NumberOfFrames;
-
-            if (ms_Styles == null)
-                ms_Styles = new Styles();
-
             m_chartControlID = GUIUtility.GetControlID(s_ChartHash, FocusType.Keyboard);
 
-            Rect chartRect = GUILayoutUtility.GetRect(GUIContent.none, ms_Styles.background, GUILayout.MinHeight(120.0f));
-
+            var chartHeight = GUILayout.MinHeight(
+                    Math.Max(kLabelOffset + ((cdata.numSeries + 1) * kLabelHeight) + kDistFromTopToFirstLabel, kChartMinHeight)
+                    );
+            Rect chartRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.background, chartHeight);
 
             Rect r = chartRect;
 
@@ -165,25 +192,22 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             EventType evtType = evt.GetTypeForControl(m_chartControlID);
 
-            if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition))
-                action = ChartAction.Activated;
+            if (evtType == EventType.MouseDown && chartRect.Contains(evt.mousePosition) && selected != null)
+                selected(this);
 
             // if we are not dragging labels, handle graph frame selection
             if (m_DragItemIndex == -1)
-                selectedFrame = HandleFrameSelectionEvents(selectedFrame, m_chartControlID, r, cdata, len);
+                selectedFrame = HandleFrameSelectionEvents(selectedFrame, m_chartControlID, r, cdata);
 
             Rect sideRect = r;
             sideRect.x -= kSideWidth;
             sideRect.width = kSideWidth;
 
-
-            // tooltip
-            GUI.Label(new Rect(sideRect.x, sideRect.y, sideRect.width, 20), GUIContent.Temp("", icon.tooltip));
+            DoLegendGUI(sideRect, type, cdata, evtType, active);
 
             if (evt.type == EventType.Repaint)
             {
-                ms_Styles.rightPane.Draw(r, false, false, active, false);
-                ms_Styles.leftPane.Draw(sideRect, EditorGUIUtility.TempContent(icon.text), false, false, active, false);
+                Styles.rightPane.Draw(r, false, false, active, false);
 
                 if (m_NotSupportedWarning == null)
                 {
@@ -200,69 +224,49 @@ namespace UnityEditorInternal
                     labelRect.y += kWarningLabelHeightOffset;
                     GUI.Label(labelRect, m_NotSupportedWarning, EditorStyles.boldLabel);
                 }
-
-                sideRect.x += 10;
-                sideRect.y += 10;
-
-                GUIStyle.none.Draw(sideRect, EditorGUIUtility.TempContent(icon.image), false, false, false, false);
-
-                sideRect.x += kLabelXOffset;
-
-                DrawLabelDragger(type, sideRect, cdata);
             }
-            else
-            {
-                sideRect.y += 10;
-                LabelDraggerDrag(m_chartControlID, type, cdata, sideRect, active);
-            }
-
-            if (area == ProfilerArea.GPU)
-            {
-                GUI.Label(new Rect(chartRect.x + kSideWidth - ms_Styles.performanceWarning.image.width, chartRect.yMax - ms_Styles.performanceWarning.image.height - 2,
-                        ms_Styles.performanceWarning.image.width, ms_Styles.performanceWarning.image.height), ms_Styles.performanceWarning);
-            }
-
-            if (GUI.Button(new Rect(chartRect.x + kSideWidth - kCloseButtonSize - 2, chartRect.y + 2, kCloseButtonSize, kCloseButtonSize), GUIContent.none, ms_Styles.closeButton))
-                action = ChartAction.Closed;
 
             return selectedFrame;
         }
 
-        private void DrawSelectedFrame(int selectedFrame, ChartData cdata, Rect r)
+        private void DrawSelectedFrame(int selectedFrame, ChartViewData cdata, Rect r)
         {
             if (cdata.firstSelectableFrame != -1 && selectedFrame - cdata.firstSelectableFrame >= 0)
-                DrawVerticalLine(selectedFrame, cdata, r, ms_Styles.selectedFrameColor1, ms_Styles.selectedFrameColor2, 1.0f);
+                DrawVerticalLine(selectedFrame, cdata, r, Styles.selectedFrameColor1, Styles.selectedFrameColor2, 1.0f);
         }
 
-        internal static void DrawVerticalLine(int frame, ChartData cdata, Rect r, Color color1, Color color2, float widthFactor)
+        internal static void DrawVerticalLine(int frame, ChartViewData cdata, Rect r, Color color1, Color color2, float widthFactor)
         {
             if (Event.current.type != EventType.repaint)
                 return;
 
-            frame -= cdata.firstFrame;
+            frame -= cdata.chartDomainOffset;
             if (frame < 0)
                 return;
-            float len = cdata.NumberOfFrames;
+
+
+            Vector2 domain = cdata.GetDataDomain();
+            float domainSize = domain.y - domain.x;
             HandleUtility.ApplyWireMaterial();
             GL.Begin(GL.QUADS);
             GL.Color(color1);
-            GL.Vertex3(r.x + r.width / len * frame, r.y + 1, 0);
-            GL.Vertex3(r.x + r.width / len * frame + r.width / len, r.y + 1, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame, r.y + 1, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame + r.width / domainSize, r.y + 1, 0);
 
             GL.Color(color2);
-            GL.Vertex3(r.x + r.width / len * frame + r.width / len, r.yMax, 0);
-            GL.Vertex3(r.x + r.width / len * frame, r.yMax, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame + r.width / domainSize, r.yMax, 0);
+            GL.Vertex3(r.x + r.width / domainSize * frame, r.yMax, 0);
             GL.End();
         }
 
-        private void DrawMaxValueScale(ChartData cdata, Rect r)
+        private void DrawMaxValueScale(ChartViewData cdata, Rect r)
         {
             Handles.Label(new Vector3(r.x + r.width / 2 - 20, r.yMin + 2, 0), "Scale: " + cdata.maxValue);
         }
 
-        private void DrawChartLine(int selectedFrame, ChartData cdata, Rect r)
+        private void DrawChartLine(int selectedFrame, ChartViewData cdata, Rect r)
         {
-            for (int i = 0; i < cdata.charts.Length; i++)
+            for (int i = 0; i < cdata.numSeries; i++)
             {
                 DrawChartItemLine(r, cdata, i);
             }
@@ -276,17 +280,25 @@ namespace UnityEditorInternal
             DrawLabelsLine(selectedFrame, cdata, r);
         }
 
-        private void DrawChartStacked(int selectedFrame, ChartData cdata, Rect r)
+        private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r)
         {
             HandleUtility.ApplyWireMaterial();
 
-            float[] sumbuf = new float[cdata.NumberOfFrames];
+            Vector2 domain = cdata.GetDataDomain();
+            int numSamples = (int)(domain.y - domain.x);
+            if (numSamples <= 0)
+                return;
 
-            for (int i = 0; i < cdata.charts.Length; i++)
+            if (m_StackedSampleSums == null || m_StackedSampleSums.Length < numSamples)
+                m_StackedSampleSums = new float[numSamples];
+            for (int i = 0; i < numSamples; ++i)
+                m_StackedSampleSums[i] = 0f;
+
+            for (int i = 0; i < cdata.numSeries; i++)
             {
                 if (cdata.hasOverlay)
-                    DrawChartItemStackedOverlay(r, i, cdata, sumbuf);
-                DrawChartItemStacked(r, i, cdata, sumbuf);
+                    DrawChartItemStackedOverlay(r, i, cdata, m_StackedSampleSums);
+                DrawChartItemStacked(r, i, cdata, m_StackedSampleSums);
             }
 
             DrawSelectedFrame(selectedFrame, cdata, r);
@@ -310,7 +322,7 @@ namespace UnityEditorInternal
                 GUIContent content = EditorGUIUtility.TempContent("Selected: " + selectedName);
                 Vector2 size = EditorStyles.whiteBoldLabel.CalcSize(content);
                 EditorGUI.DropShadowLabel(new Rect(r.x + r.width - size.x - 3.0f, r.y + 3.0f, size.x, size.y), content,
-                    ms_Styles.selectedLabel);
+                    Styles.selectedLabel);
             }
         }
 
@@ -320,10 +332,10 @@ namespace UnityEditorInternal
                 return;
 
             GUIContent content = new GUIContent(text);
-            Vector2 size = ms_Styles.whiteLabel.CalcSize(content);
+            Vector2 size = Styles.whiteLabel.CalcSize(content);
             Rect r = new Rect(x + size.x * alignment, y, size.x, size.y);
 
-            EditorGUI.DoDropShadowLabel(r, content, ms_Styles.whiteLabel, .3f);
+            EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, .3f);
         }
 
         // Pushes labels away from each other (so they do not overlap)
@@ -377,49 +389,52 @@ namespace UnityEditorInternal
         private static float GetLabelHeight(string text)
         {
             GUIContent content = new GUIContent(text);
-            Vector2 size = ms_Styles.whiteLabel.CalcSize(content);
+            Vector2 size = Styles.whiteLabel.CalcSize(content);
 
             return size.y;
         }
 
-        private void DrawLabelsStacked(int selectedFrame, ChartData cdata, Rect r)
+        private void DrawLabelsStacked(int selectedFrame, ChartViewData cdata, Rect r)
         {
             if (cdata.selectedLabels == null)
                 return;
 
-            int length = cdata.NumberOfFrames;
-            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.firstFrame + length)
+            Vector2 domain = cdata.GetDataDomain();
+            int length = (int)(domain.y - domain.x);
+
+            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.chartDomainOffset + length)
                 return;
-            selectedFrame -= cdata.firstFrame;
+            selectedFrame -= cdata.chartDomainOffset;
 
             float frameWidth = r.width / length;
             float xpos = r.x + frameWidth * selectedFrame;
-            float scale = cdata.scale[0] * r.height;
+            float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
+                0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
 
-            float[] ypositions = new float[cdata.charts.Length];
-            float[] heights = new float[ypositions.Length];
+            float[] ypositions = new float[cdata.numSeries];
+            float[] heights = new float[cdata.numSeries];
 
             float accum = 0.0f;
-            for (int s = 0; s < cdata.charts.Length; ++s)
+            for (int s = 0; s < cdata.numSeries; ++s)
             {
                 ypositions[s] = -1;
                 heights[s] = 0;
 
-                int index = cdata.chartOrder[s];
+                int index = cdata.order[s];
 
-                if (!cdata.charts[index].enabled)
+                if (!cdata.series[index].enabled)
                     continue;
 
-                float value = cdata.charts[index].data[selectedFrame];
+                float value = cdata.series[index].yValues[selectedFrame];
                 if (value == -1.0f)
                     continue;
 
-                float labelValue = cdata.hasOverlay ? cdata.charts[index].overlayData[selectedFrame] : value;
+                float labelValue = cdata.hasOverlay ? cdata.overlays[index].yValues[selectedFrame] : value;
                 // only draw labels for large enough stacks
-                if (labelValue * scale > 5.0f)
+                if ((labelValue - cdata.series[0].rangeAxis.x) * rangeScale > 5f)
                 {
                     // place value in the middle of this stack vertically
-                    ypositions[s] = (accum + labelValue * 0.5f) * scale;
+                    ypositions[s] = (accum + labelValue * 0.5f) * rangeScale;
                     heights[s] = GetLabelHeight(cdata.selectedLabels[index]);
                 }
 
@@ -429,14 +444,14 @@ namespace UnityEditorInternal
 
             CorrectLabelPositions(ypositions, heights, r.height);
 
-            for (int s = 0; s < cdata.charts.Length; ++s)
+            for (int s = 0; s < cdata.numSeries; ++s)
             {
                 if (heights[s] > 0)
                 {
-                    int index = cdata.chartOrder[s];
+                    int index = cdata.order[s];
 
                     // tint color slightly towards white
-                    Color clr = cdata.charts[index].color;
+                    Color clr = cdata.series[index].color;
                     GUI.contentColor = clr * 0.8f + Color.white * 0.2f;
 
                     // Place odd labels on one side, even labels on another side.
@@ -450,7 +465,7 @@ namespace UnityEditorInternal
             GUI.contentColor = Color.white;
         }
 
-        private void DrawGridStacked(Rect r, ChartData cdata)
+        private void DrawGridStacked(Rect r, ChartViewData cdata)
         {
             if (Event.current.type != EventType.repaint ||
                 cdata.grid == null || cdata.gridLabels == null)
@@ -458,9 +473,12 @@ namespace UnityEditorInternal
 
             GL.Begin(GL.LINES);
             GL.Color(new Color(1, 1, 1, 0.2f));
+            float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
+                0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
+            float rectBottom = r.y + r.height;
             for (int i = 0; i < cdata.grid.Length; ++i)
             {
-                float y = r.y + r.height - cdata.grid[i] * cdata.scale[0] * r.height;
+                float y = rectBottom - (cdata.grid[i] - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y > r.y)
                 {
                     GL.Vertex3(r.x + 80, y, 0.0f);
@@ -471,7 +489,7 @@ namespace UnityEditorInternal
 
             for (int i = 0; i < cdata.grid.Length; ++i)
             {
-                float y = r.y + r.height - cdata.grid[i] * cdata.scale[0] * r.height;
+                float y = rectBottom - (cdata.grid[i] - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y > r.y)
                 {
                     DoLabel(r.x + 5, y - 8, cdata.gridLabels[i], 0.0f);
@@ -479,28 +497,30 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawLabelsLine(int selectedFrame, ChartData cdata, Rect r)
+        private void DrawLabelsLine(int selectedFrame, ChartViewData cdata, Rect r)
         {
             if (cdata.selectedLabels == null)
                 return;
-            int length = cdata.NumberOfFrames;
 
-            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.firstFrame + length)
+            Vector2 domain = cdata.GetDataDomain();
+            int length = (int)(domain.y - domain.x);
+
+            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.chartDomainOffset + length)
                 return;
-            selectedFrame -= cdata.firstFrame;
+            selectedFrame -= cdata.chartDomainOffset;
 
-            float[] ypositions = new float[cdata.charts.Length];
-            float[] heights = new float[ypositions.Length];
+            float[] ypositions = new float[cdata.numSeries];
+            float[] heights = new float[cdata.numSeries];
 
-            for (int s = 0; s < cdata.charts.Length; ++s)
+            for (int s = 0; s < cdata.numSeries; ++s)
             {
                 ypositions[s] = -1;
                 heights[s] = 0;
 
-                float value = cdata.charts[s].data[selectedFrame];
+                float value = cdata.series[s].yValues[selectedFrame];
                 if (value != -1)
                 {
-                    ypositions[s] = value * cdata.scale[s] * r.height;
+                    ypositions[s] = (value - cdata.series[s].rangeAxis.x) / (cdata.series[s].rangeAxis.y - cdata.series[s].rangeAxis.x) * r.height;
                     heights[s] = GetLabelHeight(cdata.selectedLabels[s]);
                 }
             }
@@ -510,12 +530,12 @@ namespace UnityEditorInternal
             float frameWidth = r.width / length;
             float xpos = r.x + frameWidth * selectedFrame;
 
-            for (int s = 0; s < cdata.charts.Length; ++s)
+            for (int s = 0; s < cdata.numSeries; ++s)
             {
                 if (heights[s] > 0)
                 {
                     // color the label slightly (half way between line color and white)
-                    Color clr = cdata.charts[s].color;
+                    Color clr = cdata.series[s].color;
                     GUI.contentColor = (clr + Color.white) * 0.5f;
 
                     // Place odd labels on one side, even labels on another side.
@@ -528,286 +548,233 @@ namespace UnityEditorInternal
             GUI.contentColor = Color.white;
         }
 
-        private void DrawChartItemLine(Rect r, ChartData cdata, int index)
+        private void DrawChartItemLine(Rect r, ChartViewData cdata, int index)
         {
-            if (!cdata.charts[index].enabled)
+            ChartSeriesViewData series = cdata.series[index];
+
+            if (!series.enabled)
                 return;
 
-            Color clr = cdata.charts[index].color;
+            if (m_LineDrawingPoints == null || series.numDataPoints > m_LineDrawingPoints.Length)
+                m_LineDrawingPoints = new Vector3[series.numDataPoints];
 
-            int total = cdata.NumberOfFrames;
-            int start = -cdata.firstFrame;
-            start = Mathf.Clamp(start, 0, total);
-            int len = total - start;
-            if (len <= 0)
+            Vector2 domain = cdata.GetDataDomain();
+            float domainSize = domain.y - domain.x;
+            if (domainSize <= 0f)
                 return;
 
-            if (m_CachedLineData == null || total > m_CachedLineData.Length)
-                m_CachedLineData = new Vector3[total];
-
-            float step = r.width / total;
-            float x = r.x + step * 0.5f + start * step;
-            float rectHeight = r.height;
-            float rectY = r.y;
-            for (int i = start; i < total; i++, x += step)
+            float domainScale = 1f / domainSize * r.width;
+            float rangeScale = cdata.series[index].rangeAxis.sqrMagnitude == 0f ?
+                0f : 1f / (cdata.series[index].rangeAxis.y - cdata.series[index].rangeAxis.x) * r.height;
+            float rectBottom = r.y + r.height;
+            for (int i = 0; i < series.numDataPoints; ++i)
             {
-                float y = 0;
-                y = rectY + rectHeight;
-                if (cdata.charts[index].data[i] != -1)
-                {
-                    float val = cdata.charts[index].data[i] * cdata.scale[index] * rectHeight;
-                    y -= val;
-                }
-                m_CachedLineData[i - start].Set(x, y, 0.0f);
+                m_LineDrawingPoints[i].Set(
+                    (series.xValues[i] - domain.x) * domainScale + r.x,
+                    rectBottom - (series.yValues[i] - series.rangeAxis.x) * rangeScale,
+                    0f
+                    );
             }
 
-            /*
-            if (index != 0)
-                return;
-            pts = new Vector3[6];
-            pts[0] = new Vector3 (r.x + 105, r.y + 5, 0);
-            pts[1] = new Vector3 (r.x + 155, r.y + 10, 0);
-            pts[2] = new Vector3 (r.x + 165, r.y + 63, 0);
-            pts[3] = new Vector3 (r.x + 200, r.y + 7, 0);
-            pts[4] = new Vector3 (r.x + 300, r.y + 7, 0);
-            pts[5] = new Vector3 (r.x + 300, r.y + 100, 0);
-            */
-
-            Handles.color = clr;
-            Handles.DrawAAPolyLine(2.0F, len, m_CachedLineData);
+            using (new Handles.DrawingScope(cdata.series[index].color))
+                Handles.DrawAAPolyLine(k_LineWidth, series.numDataPoints, m_LineDrawingPoints);
         }
 
-        private void DrawChartItemStacked(Rect r, int index, ChartData cdata, float[] sumbuf)
+        private void DrawChartItemStacked(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
-            if (Event.current.type != EventType.repaint)
+            Vector2 domain = cdata.GetDataDomain();
+            int numSamples = (int)(domain.y - domain.x);
+
+            float step = r.width / numSamples;
+
+            index = cdata.order[index];
+
+            if (!cdata.series[index].enabled)
                 return;
 
-            int len = cdata.NumberOfFrames;
-            float step = r.width / len;
-
-            index = cdata.chartOrder[index];
-
-            if (!cdata.charts[index].enabled)
-                return;
-
-            Color clr = cdata.charts[index].color;
+            Color color = cdata.series[index].color;
             if (cdata.hasOverlay)
-            {
-                clr.r *= 0.9f;
-                clr.g *= 0.9f;
-                clr.b *= 0.9f;
-                clr.a *= 0.4f;
-            }
-            Color clr2 = clr;
-
-            clr2.r *= 0.8f;
-            clr2.g *= 0.8f;
-            clr2.b *= 0.8f;
-            clr2.a *= 0.8f;
+                color *= s_OverlayBackgroundDimFactor;
 
             GL.Begin(GL.TRIANGLE_STRIP);
 
             float x = r.x + step * 0.5f;
-            float rectHeight = r.height;
-            float rectY = r.y;
-            for (int i = 0; i < len; i++, x += step)
+            float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
+                0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
+            float rectBottom = r.y + r.height;
+            for (int i = 0; i < numSamples; i++, x += step)
             {
-                float y = rectY + rectHeight - sumbuf[i];
+                float y = rectBottom - stackedSampleSums[i];
 
-                float value = cdata.charts[index].data[i];
-                if (value == -1.0f)
+                float value = cdata.series[index].yValues[i];
+                if (value == -1f)
                     continue;
 
-                float val = value * cdata.scale[0] * rectHeight;
+                float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
                 if (y - val < r.yMin)
                     val = y - r.yMin; // Clamp the values to be inside drawrect
-                GL.Color(clr);
-                GL.Vertex3(x, y - val, 0); // clip chart top
-                GL.Color(clr2);
-                GL.Vertex3(x, y, 0);
+                GL.Color(color);
+                GL.Vertex3(x, y - val, 0f); // clip chart top
+                GL.Vertex3(x, y, 0f);
 
-                sumbuf[i] += val;
+                stackedSampleSums[i] += val;
             }
             GL.End();
         }
 
-        private void DrawChartItemStackedOverlay(Rect r, int index, ChartData cdata, float[] sumbuf)
+        private void DrawChartItemStackedOverlay(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
-            if (Event.current.type != EventType.repaint)
+            Vector2 domain = cdata.GetDataDomain();
+            int numSamples = (int)(domain.y - domain.x);
+            float step = r.width / numSamples;
+
+            int orderIdx = cdata.order[index];
+
+            if (!cdata.series[orderIdx].enabled)
                 return;
 
-            int len = cdata.NumberOfFrames;
-            float step = r.width / len;
-
-            index = cdata.chartOrder[index];
-
-            if (!cdata.charts[index].enabled)
-                return;
-
-            Color clr = cdata.charts[index].color;
-            Color clr2 = clr;
-
-            clr2.r *= 0.8f;
-            clr2.g *= 0.8f;
-            clr2.b *= 0.8f;
-            clr2.a *= 0.8f;
+            Color color = cdata.series[orderIdx].color;
 
             GL.Begin(GL.TRIANGLE_STRIP);
 
             float x = r.x + step * 0.5f;
-            float rectHeight = r.height;
-            float rectY = r.y;
-            for (int i = 0; i < len; i++, x += step)
+            float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
+                0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
+            float rectBottom = r.y + r.height;
+            for (int i = 0; i < numSamples; i++, x += step)
             {
-                float y = rectY + rectHeight - sumbuf[i];
+                float y = rectBottom - stackedSampleSums[i];
 
-                float value = cdata.charts[index].overlayData[i];
-                if (value == -1.0f)
+                float value = cdata.overlays[orderIdx].yValues[i];
+                if (value == -1f)
                     continue;
 
-                float val = value * cdata.scale[0] * rectHeight;
-                GL.Color(clr);
-                GL.Vertex3(x, y - val, 0);
-                GL.Color(clr2);
-                GL.Vertex3(x, y, 0);
+                float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
+                GL.Color(color);
+                GL.Vertex3(x, y - val, 0f);
+                GL.Vertex3(x, y, 0f);
             }
             GL.End();
         }
 
-        protected virtual void DrawLabelDragger(ChartType type, Rect r, ChartData cdata)
+        protected virtual Rect DoSeriesList(Rect position, int chartControlID, ChartType chartType, ChartViewData cdata)
         {
-            Vector2 mousePos = Event.current.mousePosition;
-            if (type == ChartType.StackedFill)
-            {
-                int idx = 0;
-                for (int i = cdata.charts.Length - 1; i >= 0; --i, ++idx)
-                {
-                    Rect pos = (m_DragItemIndex == i) ?
-                        new Rect(r.x, mousePos.y - m_DragDownPos.y, kSideWidth, kLabelHeight) :
-                        new Rect(r.x, r.y + kDistFromTopToFirstLabel + idx * kLabelHeight, kSideWidth, kLabelHeight);
-                    if (cdata.charts[cdata.chartOrder[i]].enabled)
-                        GUI.backgroundColor = cdata.charts[cdata.chartOrder[i]].color;
-                    else
-                        GUI.backgroundColor = Color.black;
-                    GUI.Label(pos, cdata.charts[cdata.chartOrder[i]].name, ms_Styles.paneSubLabel);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < cdata.charts.Length; ++i)
-                {
-                    GUI.backgroundColor = cdata.charts[i].color;
-                    var name = cdata.charts[i].name;
-                    DrawSubLabel(r, i, name);
-                }
-            }
-            GUI.backgroundColor = Color.white;
-        }
-
-        protected static void DrawSubLabel(Rect r, int i, string name)
-        {
-            Rect pos;
-            pos = new Rect(r.x, r.y + kDistFromTopToFirstLabel + i * kLabelHeight, kSideWidth, kLabelHeight);
-            GUI.Label(pos, name, ms_Styles.paneSubLabel);
-        }
-
-        protected internal virtual void LabelDraggerDrag(int chartControlID, ChartType chartType, ChartData cdata, Rect r, bool active)
-        {
-            // Line charts don't need label reordering.
-            // Inactive charts also don't need that.
-            if (chartType == ChartType.Line || !active)
-                return;
-
+            Rect elementPosition = position;
             Event evt = Event.current;
-            EventType type = evt.GetTypeForControl(chartControlID);
+            EventType eventType = evt.GetTypeForControl(chartControlID);
+            Vector2 mousePosition = evt.mousePosition;
 
-            if ((type != EventType.MouseDown && type != EventType.MouseUp && type != EventType.KeyDown && type != EventType.MouseDrag))
-                return;
-
-            if (type == EventType.KeyDown && evt.keyCode == KeyCode.Escape && m_DragItemIndex != -1)
+            if (m_DragItemIndex != -1)
             {
-                GUIUtility.hotControl = 0;
-                System.Array.Copy(m_ChartOrderBackup, cdata.chartOrder, m_ChartOrderBackup.Length);
-                m_DragItemIndex = -1;
-                evt.Use();
-            }
-
-            int idx = 0;
-            for (int i = cdata.charts.Length - 1; i >= 0; --i, ++idx)
-            {
-                if ((evt.type == EventType.MouseUp && m_MouseDownIndex != -1) || evt.type == EventType.MouseDown)
+                switch (eventType)
                 {
-                    var togglePos = GetToggleRect(r, idx);
-                    if (togglePos.Contains(evt.mousePosition))
-                    {
-                        m_DragItemIndex = -1;
-                        if (evt.type == EventType.MouseUp && m_MouseDownIndex == i)
+                    case EventType.MouseUp:
+                        if (GUIUtility.hotControl == chartControlID)
                         {
-                            m_MouseDownIndex = -1;
-                            cdata.charts[cdata.chartOrder[i]].enabled = !cdata.charts[cdata.chartOrder[i]].enabled;
-
-                            if (chartType == ChartType.StackedFill)
-                                SaveChartsSettingsEnabled(cdata);
+                            GUIUtility.hotControl = 0;
+                            m_DragItemIndex = -1;
+                            evt.Use();
                         }
-                        else
+                        break;
+                    case EventType.KeyDown:
+                        if (evt.keyCode == KeyCode.Escape)
                         {
-                            m_MouseDownIndex = i;
+                            GUIUtility.hotControl = 0;
+                            System.Array.Copy(m_OldChartOrder, cdata.order, m_OldChartOrder.Length);
+                            m_DragItemIndex = -1;
+                            evt.Use();
                         }
-                        evt.Use();
-                    }
-                }
-                if (evt.type == EventType.MouseDown)
-                {
-                    Rect pos = new Rect(r.x, r.y + kDistFromTopToFirstLabel + idx * kLabelHeight, kSideWidth, kLabelHeight);
-                    if (pos.Contains(evt.mousePosition))
-                    {
-                        m_MouseDownIndex = -1;
-                        m_DragItemIndex = i;
-                        m_DragDownPos = evt.mousePosition;
-                        m_DragDownPos.x -= pos.x;
-                        m_DragDownPos.y -= pos.y;
-
-                        m_ChartOrderBackup = new int[cdata.chartOrder.Length];
-                        System.Array.Copy(cdata.chartOrder, m_ChartOrderBackup, m_ChartOrderBackup.Length);
-
-                        GUIUtility.hotControl = chartControlID;
-                        Event.current.Use();
-                    }
-                }
-                else if (m_DragItemIndex != -1 && type == EventType.MouseDrag && i != m_DragItemIndex)
-                {
-                    float mouseY = evt.mousePosition.y;
-                    float y = r.y + kDistFromTopToFirstLabel + idx * kLabelHeight;
-                    if (mouseY >= y && mouseY < y + kLabelHeight)
-                    {
-                        int foo = cdata.chartOrder[i];
-                        cdata.chartOrder[i] = cdata.chartOrder[m_DragItemIndex];
-                        cdata.chartOrder[m_DragItemIndex] = foo;
-
-                        m_DragItemIndex = i;
-
-                        SaveChartsSettingsOrder(cdata);
-                    }
+                        break;
                 }
             }
 
-            if (type == EventType.MouseDrag && m_DragItemIndex != -1)
-                evt.Use(); // repaint when dragging
-
-            if (type == EventType.MouseUp && GUIUtility.hotControl == chartControlID)
+            for (int i = cdata.numSeries - 1; i >= 0; --i)
             {
-                GUIUtility.hotControl = 0;
-                m_DragItemIndex = -1;
-                evt.Use();
+                int orderIdx = cdata.order[i];
+
+                GUIContent elementLabel = EditorGUIUtility.TempContent(cdata.series[orderIdx].name);
+                elementPosition.height = Styles.seriesLabel.CalcHeight(elementLabel, elementPosition.width);
+
+                Rect controlPosition = elementPosition;
+                if (i == m_DragItemIndex)
+                    controlPosition.y = mousePosition.y - m_DragDownPos.y;
+
+                if (chartType == ChartType.StackedFill)
+                {
+                    Rect dragHandlePosition = controlPosition;
+                    dragHandlePosition.xMin = dragHandlePosition.xMax - elementPosition.height;
+                    switch (eventType)
+                    {
+                        case EventType.Repaint:
+                            Styles.seriesDragHandle.Draw(dragHandlePosition, false, false, false, false);
+                            break;
+                        case EventType.MouseDown:
+                            if (dragHandlePosition.Contains(mousePosition))
+                            {
+                                m_DragItemIndex = i;
+                                m_DragDownPos = mousePosition;
+                                m_DragDownPos.x -= elementPosition.x;
+                                m_DragDownPos.y -= elementPosition.y;
+
+                                m_OldChartOrder = new int[cdata.numSeries];
+                                System.Array.Copy(cdata.order, m_OldChartOrder, m_OldChartOrder.Length);
+
+                                GUIUtility.hotControl = chartControlID;
+                                evt.Use();
+                            }
+                            break;
+                        case EventType.MouseDrag:
+                            if (i == m_DragItemIndex)
+                            {
+                                bool moveDn = mousePosition.y > elementPosition.yMax;
+                                bool moveUp = mousePosition.y < elementPosition.yMin;
+                                if (moveDn || moveUp)
+                                {
+                                    int draggedItemOrder = cdata.order[i];
+                                    int targetIdx = moveUp ?
+                                        Mathf.Min(cdata.numSeries - 1, i + 1) : Mathf.Max(0, i - 1);
+
+                                    cdata.order[i] = cdata.order[targetIdx];
+                                    cdata.order[targetIdx] = draggedItemOrder;
+
+                                    m_DragItemIndex = targetIdx;
+
+                                    SaveChartsSettingsOrder(cdata);
+                                }
+                                evt.Use();
+                            }
+                            break;
+                        case EventType.MouseUp:
+                            if (m_DragItemIndex == i)
+                                evt.Use();
+                            m_DragItemIndex = -1;
+                            break;
+                    }
+                }
+
+                DoSeriesToggle(controlPosition, elementLabel, ref cdata.series[orderIdx].enabled, cdata.series[orderIdx].color, cdata);
+
+                elementPosition.y += elementPosition.height + EditorGUIUtility.standardVerticalSpacing;
             }
+
+            return elementPosition;
         }
 
-        protected static Rect GetToggleRect(Rect r, int idx)
+        protected void DoSeriesToggle(Rect position, GUIContent label, ref bool enabled, Color color, ChartViewData cdata)
         {
-            return new Rect(r.x + 10 + kLabelXOffset, r.y + kDistFromTopToFirstLabel + idx * kLabelHeight, 9, 9);
+            Color oldColor = GUI.backgroundColor;
+
+            GUI.backgroundColor = enabled ? color : Color.black;
+
+            EditorGUI.BeginChangeCheck();
+            enabled = GUI.Toggle(position, enabled, label, Styles.seriesLabel);
+            if (EditorGUI.EndChangeCheck())
+                SaveChartsSettingsEnabled(cdata);
+
+            GUI.backgroundColor = oldColor;
         }
 
-        private void LoadChartsSettings(ChartData cdata)
+        private void LoadChartsSettings(ChartViewData cdata)
         {
             if (string.IsNullOrEmpty(m_ChartSettingsName))
                 return;
@@ -818,112 +785,130 @@ namespace UnityEditorInternal
                 try
                 {
                     var values = str.Split(',');
-                    if (values.Length == cdata.charts.Length)
-                        for (var i = 0; i < cdata.charts.Length; i++)
-                            cdata.chartOrder[i] = int.Parse(values[i]);
+                    if (values.Length == cdata.numSeries)
+                    {
+                        for (var i = 0; i < cdata.numSeries; i++)
+                            cdata.order[i] = int.Parse(values[i]);
+                    }
                 }
                 catch (FormatException) {}
             }
 
             str = EditorPrefs.GetString(m_ChartSettingsName + "Visible");
 
-            for (var i = 0; i < cdata.charts.Length; i++)
+            for (var i = 0; i < cdata.numSeries; i++)
+            {
                 if (i < str.Length && str[i] == '0')
-                    cdata.charts[i].enabled = false;
+                    cdata.series[i].enabled = false;
+            }
         }
 
-        private void SaveChartsSettingsOrder(ChartData cdata)
+        private void SaveChartsSettingsOrder(ChartViewData cdata)
         {
             if (string.IsNullOrEmpty(m_ChartSettingsName))
                 return;
 
             var str = string.Empty;
 
-            for (var i = 0; i < cdata.charts.Length; i++)
+            for (var i = 0; i < cdata.numSeries; i++)
             {
                 if (str.Length != 0)
                     str += ",";
-                str += cdata.chartOrder[i];
+                str += cdata.order[i];
             }
 
             EditorPrefs.SetString(m_ChartSettingsName + "Order", str);
         }
 
-        protected void SaveChartsSettingsEnabled(ChartData cdata)
+        protected void SaveChartsSettingsEnabled(ChartViewData cdata)
         {
             var str = string.Empty;
 
-            for (var i = 0; i < cdata.charts.Length; i++)
-                str += cdata.charts[i].enabled ? '1' : '0';
+            for (var i = 0; i < cdata.numSeries; i++)
+                str += cdata.series[i].enabled ? '1' : '0';
 
             EditorPrefs.SetString(m_ChartSettingsName + "Visible", str);
         }
     }
 
-    internal class ChartSeries
+    internal class ChartSeriesViewData
     {
-        public string identifierName;
-        public string name;
-        public float[] data;
-        public float[] overlayData;
-        public Color color;
+        public string name { get; private set; }
+        public Color color { get; private set; }
         public bool enabled;
+        public float[] xValues { get; private set; }
+        public float[] yValues { get; private set; }
+        public Vector2 rangeAxis { get; set; }
+        public int numDataPoints { get; private set; }
 
-        public ChartSeries(string name, int len, Color clr)
+        public ChartSeriesViewData(string name, int numDataPoints, Color color)
         {
             this.name = name;
-            this.identifierName = name;
-            data = new float[len];
-            overlayData = null;
-            color = clr;
+            this.color = color;
+            this.numDataPoints = numDataPoints;
+            xValues = new float[numDataPoints];
+            yValues = new float[numDataPoints];
             enabled = true;
-        }
-
-        public void CreateOverlayData()
-        {
-            overlayData = new float[data.Length];
         }
     }
 
-    internal class ChartData
+    internal class ChartViewData
     {
-        public ChartSeries[] charts;
-        public int[] chartOrder;
-        public float[] scale;
-        public float[] grid;
-        public string[] gridLabels;
-        public string[] selectedLabels;
-        public int firstFrame;
-        public int firstSelectableFrame;
-        public bool hasOverlay;
-        public float maxValue;
+        public ChartSeriesViewData[] series { get; private set; }
+        public ChartSeriesViewData[] overlays { get; private set; }
+        public int[] order { get; private set; }
+        public float[] grid { get; private set; }
+        public string[] gridLabels { get; private set; }
+        public string[] selectedLabels { get; private set; }
+        public int firstSelectableFrame { get; private set; }
+        public bool hasOverlay { get; set; }
+        public float maxValue { get; set; }
+        public int numSeries { get; private set; }
+        public int chartDomainOffset { get; private set; }
 
-        public int NumberOfFrames { get { return charts[0].data.Length; } }
-
-
-        public void Assign(ChartSeries[] items, int firstFrame, int firstSelectableFrame)
+        public void Assign(ChartSeriesViewData[] series, int firstFrame, int firstSelectableFrame)
         {
-            this.charts = items;
-            this.firstFrame = firstFrame;
+            this.series = series;
+            this.chartDomainOffset = firstFrame;
             this.firstSelectableFrame = firstSelectableFrame;
+            numSeries = series.Length;
 
-            if (chartOrder == null || chartOrder.Length != items.Length)
+            if (order == null || order.Length != numSeries)
             {
-                chartOrder = new int[items.Length];
-                for (int i = 0; i < chartOrder.Length; i++)
-                    chartOrder[i] = chartOrder.Length - 1 - i;
+                order = new int[numSeries];
+                for (int i = 0, count = order.Length; i < count; ++i)
+                    order[i] = order.Length - 1 - i;
             }
+
+            if (overlays == null || overlays.Length != numSeries)
+                overlays = new ChartSeriesViewData[numSeries];
         }
 
-        public void AssignScale(float[] scale)
+        public void AssignSelectedLabels(string[] selectedLabels)
         {
-            this.scale = scale;
+            this.selectedLabels = selectedLabels;
         }
 
         public void SetGrid(float[] grid, string[] labels)
         {
             this.grid = grid;
             this.gridLabels = labels;
+        }
+
+        public Vector2 GetDataDomain()
+        {
+            // TODO: this currently assumes data points are in order and first series has at least one data point
+            if (series == null || numSeries == 0 || series[0].numDataPoints == 0)
+                return Vector2.zero;
+            Vector2 result = Vector2.one * series[0].xValues[0];
+            for (int i = 0; i < numSeries; ++i)
+            {
+                if (series[i].numDataPoints == 0)
+                    continue;
+                result.x = Mathf.Min(result.x, series[i].xValues[0]);
+                result.y = Mathf.Max(result.y, series[i].xValues[series[i].numDataPoints - 1]);
+            }
+            return result;
         }
     }
 }

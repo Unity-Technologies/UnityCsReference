@@ -11,11 +11,9 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIStyle toolbar = "toolbar";
             public GUIStyle toggle = "OL Toggle";
             public GUIStyle listEvenBg = "ObjectPickerResultsOdd";//"ObjectPickerResultsEven";//
             public GUIStyle listOddBg = "ObjectPickerResultsEven";//"ObjectPickerResultsEven";//
-            public GUIStyle listSectionHeaderBg = "ObjectPickerResultsEven";
             public GUIStyle background = "grey_border";
             public GUIStyle seperator = "sv_iconselector_sep";
             public GUIStyle iconDropDown = "IN dropdown";
@@ -56,7 +54,6 @@ namespace UnityEditor
         List<AInfo> m_BuiltinAnnotations;
         List<AInfo> m_ScriptAnnotations;
         Vector2 m_ScrollPosition;
-        const float k_AnimDuration = 0.4f;
         bool m_SyncWithState;
         string m_LastScriptThatHasShownTheIconSelector;
         List<MonoScript> m_MonoScriptIconsChanged;
@@ -320,7 +317,7 @@ namespace UnityEditor
             float rowHeight = EditorGUI.kSingleLineHeight + 2 * EditorGUI.kControlVerticalSpacing;
 
             // Toggle 3D gizmos
-            Rect toggleRect = new Rect(margin - 2, curY, labelWidth, rowHeight);
+            Rect toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
             AnnotationUtility.use3dGizmos = GUI.Toggle(toggleRect, AnnotationUtility.use3dGizmos, icon3dGizmoContent);
 
             // Texel world size
@@ -336,7 +333,7 @@ namespace UnityEditor
                 // Slider
                 float sliderWidth = position.width - margin - labelWidth;
                 float iconSize01 = ConvertTexelWorldSizeTo01(texelWorldSize);
-                Rect sliderRect = new Rect(position.width - margin - sliderWidth , curY, sliderWidth, rowHeight);
+                Rect sliderRect = new Rect(labelWidth + margin, curY, sliderWidth - margin, rowHeight);
                 iconSize01 = GUI.HorizontalSlider(sliderRect, iconSize01, 0.0f, 1.0f);
                 if (GUI.changed)
                 {
@@ -350,12 +347,12 @@ namespace UnityEditor
             // Show Grid
             using (new EditorGUI.DisabledScope(m_IsGameView))
             {
-                toggleRect = new Rect(margin - 2, curY, labelWidth, rowHeight);
+                toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 AnnotationUtility.showGrid = GUI.Toggle(toggleRect, AnnotationUtility.showGrid, showGridContent);
-                curY += rowHeight;
+
                 toggleRect.y += rowHeight;
                 AnnotationUtility.showSelectionOutline = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionOutline, showOutlineContent);
-                curY += rowHeight;
+
                 toggleRect.y += rowHeight;
                 AnnotationUtility.showSelectionWire = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionWire, showWireframeContent);
             }

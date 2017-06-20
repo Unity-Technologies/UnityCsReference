@@ -122,18 +122,23 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 background.Draw(r, false, false, false, false);
 
-            // Compensate spatial quality zooming, if any.
-            float widthZoomToOrig = 1.0F;
-            float heightZoomToOrig = 1.0F;
+            float previewWidth = image.width;
+            float previewHeight = image.height;
 
-            float zoomLevel = Mathf.Min(new float[] {
-                widthZoomToOrig * r.width / image.width,
-                heightZoomToOrig * r.height / image.height,
-                widthZoomToOrig,
-                heightZoomToOrig
-            });
+            if (m_PlayingClip.pixelAspectRatioDenominator > 0)
+                previewWidth *= (float)m_PlayingClip.pixelAspectRatioNumerator /
+                    (float)m_PlayingClip.pixelAspectRatioDenominator;
 
-            Rect wantedRect = useVideoTexture ? new Rect(r.x, r.y, image.width * zoomLevel, image.height * zoomLevel) : r;
+            float zoomLevel = 1.0f;
+
+            if ((r.width / previewWidth * previewHeight) > r.height)
+                zoomLevel = r.height / previewHeight;
+            else
+                zoomLevel = r.width / previewWidth;
+
+            zoomLevel = Mathf.Clamp01(zoomLevel);
+
+            Rect wantedRect = useVideoTexture ? new Rect(r.x, r.y, previewWidth * zoomLevel, image.height * zoomLevel) : r;
 
             PreviewGUI.BeginScrollView(
                 r, m_Position, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");

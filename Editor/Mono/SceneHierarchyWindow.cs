@@ -592,7 +592,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             CreateGameObjectPopup();
 
-            //Search feild GUI
+            //Search field GUI
             GUILayout.Space(6);
 
             if (s_Debug)
@@ -1046,20 +1046,6 @@ namespace UnityEditor
                 }
             }
             return selectedSceneHandles;
-        }
-
-        List<int> GetSelectedGameObjects()
-        {
-            var selectedGameObjects = new List<int>();
-            int[] instanceIDs = m_TreeView.GetSelection();
-            foreach (int id in instanceIDs)
-            {
-                if (!IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(id)))
-                {
-                    selectedGameObjects.Add(id);
-                }
-            }
-            return selectedGameObjects;
         }
 
         void ContextClickOutsideItems()

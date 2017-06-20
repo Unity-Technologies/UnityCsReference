@@ -148,8 +148,9 @@ namespace UnityEditor
             public static readonly GUIStyle appToolbar = "AppToolbar";
         }
 
-        public void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             EditorApplication.modifierKeysChanged += Repaint;
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;
@@ -169,8 +170,9 @@ namespace UnityEditor
             }
         }
 
-        public void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             EditorApplication.modifierKeysChanged -= Repaint;
             Undo.undoRedoPerformed -= OnSelectionChange;
             UnityConnect.instance.StateChanged -= OnUnityConnectStateChanged;
@@ -259,7 +261,7 @@ namespace UnityEditor
             pos.y += height;
         }
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             float space = 10;
             float largeSpace = 20;

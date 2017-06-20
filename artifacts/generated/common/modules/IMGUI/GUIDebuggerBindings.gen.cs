@@ -38,6 +38,17 @@ internal partial class GUIDebugger
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void LogLayoutEndGroup () ;
 
+    public static void LogBeginProperty (string path, Rect position) {
+        INTERNAL_CALL_LogBeginProperty ( path, ref position );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_LogBeginProperty (string path, ref Rect position);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void LogEndProperty () ;
+
 }
 
 

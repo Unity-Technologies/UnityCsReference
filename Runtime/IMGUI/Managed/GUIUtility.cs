@@ -244,12 +244,17 @@ namespace UnityEngine
             GUI.changed = false;
         }
 
-        internal static bool ShouldRethrowException(Exception exception)
+        internal static bool IsExitGUIException(Exception exception)
         {
             while (exception is TargetInvocationException && exception.InnerException != null)
                 exception = exception.InnerException;
 
             return exception is ExitGUIException;
+        }
+
+        internal static bool ShouldRethrowException(Exception exception)
+        {
+            return IsExitGUIException(exception);
         }
 
         // Only allow calling GUI functions from inside OnGUI

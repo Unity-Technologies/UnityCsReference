@@ -18,7 +18,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             get { return editorCompilation; }
         }
 
-        [RequiredByNativeCodeAttribute]
+        [RequiredByNativeCode]
         public static void SetAssemblySuffix(string suffix)
         {
             editorCompilation.SetAssemblySuffix(suffix);
@@ -48,7 +48,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             editorCompilation.DirtyScript(path);
         }
 
-        [RequiredByNativeCodeAttribute]
+        [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             editorCompilation.RunScriptUpdaterOnAssembly(assemblyFilename);
@@ -82,6 +82,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
             editorCompilation.SetAllCustomScriptAssemblyJsons(allAssemblyJsons);
+        }
+
+        [RequiredByNativeCode]
+        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
+        {
+            return editorCompilation.GetAllCompiledAndResolvedCustomTargetAssemblies();
         }
 
         [RequiredByNativeCode]

@@ -12,6 +12,7 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEditor.Connect;
 using UnityEditor.Collaboration;
 using UnityEditor.Web;
@@ -250,7 +251,18 @@ namespace UnityEditor
 
                         OnGUIDelegate callback = Delegate.CreateDelegate(typeof(OnGUIDelegate), methodInfo) as OnGUIDelegate;
                         if (callback != null)
-                            m_Sections.Add(new Section(attr.name, callback));
+                        {
+                            // Group Preference sections with the same name
+                            int idx = m_Sections.FindIndex(section => section.content.text.Equals(attr.name));
+                            if (idx >= 0)
+                            {
+                                m_Sections[idx].guiFunc += callback;
+                            }
+                            else
+                            {
+                                m_Sections.Add(new Section(attr.name, callback));
+                            }
+                        }
                     }
                 }
             }
@@ -274,8 +286,10 @@ namespace UnityEditor
 
             HandleKeys();
 
-            GUILayout.BeginHorizontal(); {
-                m_SectionScrollPos = GUILayout.BeginScrollView(m_SectionScrollPos, constants.sectionScrollView, GUILayout.Width(120f)); {
+            GUILayout.BeginHorizontal();
+            {
+                m_SectionScrollPos = GUILayout.BeginScrollView(m_SectionScrollPos, constants.sectionScrollView, GUILayout.Width(120f));
+                {
                     GUILayout.Space(40f);
                     for (int i = 0; i < m_Sections.Count; i++)
                     {
@@ -292,18 +306,22 @@ namespace UnityEditor
                         if (EditorGUI.EndChangeCheck())
                             GUIUtility.keyboardControl = 0;
                     }
-                } GUILayout.EndScrollView();
+                }
+                GUILayout.EndScrollView();
 
                 GUILayout.Space(10.0f);
 
-                GUILayout.BeginVertical(); {
+                GUILayout.BeginVertical();
+                {
                     GUILayout.Label(selectedSection.content, constants.sectionHeader);
                     GUILayout.Space(10f);
                     s_ScrollPosition = EditorGUILayout.BeginScrollView(s_ScrollPosition);
                     selectedSection.guiFunc();
                     EditorGUILayout.EndScrollView();
-                } GUILayout.EndVertical();
-            } GUILayout.EndHorizontal();
+                }
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndHorizontal();
         }
 
         private void HandleKeys()
@@ -324,6 +342,45 @@ namespace UnityEditor
             }
         }
 
+        static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
+                RegexOptions.Compiled);
+        private String GetMonoDevelopInstallerURL()
+        {
+            string fullVersion = InternalEditorUtility.GetFullUnityVersion();
+            string revision = "";
+            Match versionMatch = s_VersionPattern.Match(fullVersion);
+            if (!versionMatch.Success || !versionMatch.Groups["suffix"].Success)
+                Debug.LogWarningFormat("Error parsing version '{0}'", fullVersion);
+
+            if (versionMatch.Groups["revision"].Success)
+                revision = versionMatch.Groups["revision"].Value;
+
+            string prefix = "download";
+            string suffix = "download_unity";
+            string folder = "Unknown";
+
+            if (versionMatch.Groups["alphabeta"].Success)
+            {
+                // These releases are hosted on the beta site
+                prefix = "beta";
+                suffix = "download";
+            }
+
+            string moduleName = "Unsupported";
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                folder = "WindowsMonoDevelopInstaller";
+                moduleName = "UnityMonoDevelopSetup.exe";
+            }
+            else if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                folder = "MacMonoDevelopInstaller";
+                moduleName = "UnityMonoDevelop.pkg";
+            }
+
+            return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/{4}", prefix, suffix, revision, folder, moduleName);
+        }
+
         private void ShowExternalApplications()
         {
             // Applications
@@ -334,6 +391,19 @@ namespace UnityEditor
                 m_ScriptEditorArgs = EditorGUILayout.TextField("External Script Editor Args", m_ScriptEditorArgs);
                 if (oldEditorArgs != m_ScriptEditorArgs)
                     OnScriptEditorArgsChanged();
+            }
+            else
+            {
+                String monodevPath = EditorUtility.GetInternalEditorPath();
+                // path is a directory on Mac, but a file on Windows, so have to check both
+                if (monodevPath != null && !(Directory.Exists(monodevPath) || File.Exists(monodevPath)))
+                {
+                    if (GUILayout.Button("Download MonoDevelop Installer", GUILayout.Width(220)))
+                    {
+                        var url = GetMonoDevelopInstallerURL();
+                        Help.BrowseURL(url);
+                    }
+                }
             }
 
             DoUnityProjCheckbox();
@@ -347,7 +417,7 @@ namespace UnityEditor
             if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
                 GUILayout.Label("Changing this setting requires a restart to take effect.", EditorStyles.helpBox);
 
-            if (GetSelectedScriptEditor() == InternalEditorUtility.ScriptEditor.VisualStudioExpress)
+            if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
                 GUILayout.Label("", constants.warningIcon);
@@ -393,13 +463,13 @@ namespace UnityEditor
             bool isConfigurable = false;
             bool value = false;
 
-            InternalEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
+            ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
 
-            if (scriptEditor == InternalEditorUtility.ScriptEditor.Internal)
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Internal)
             {
                 value = true;
             }
-            else if (scriptEditor == InternalEditorUtility.ScriptEditor.MonoDevelop)
+            else if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
             {
                 isConfigurable = true;
                 value = m_ExternalEditorSupportsUnityProj;
@@ -416,24 +486,24 @@ namespace UnityEditor
 
         private bool IsSelectedScriptEditorSpecial()
         {
-            return InternalEditorUtility.IsScriptEditorSpecial(m_ScriptEditorPath.str);
+            return ScriptEditorUtility.IsScriptEditorSpecial(m_ScriptEditorPath.str);
         }
 
-        private InternalEditorUtility.ScriptEditor GetSelectedScriptEditor()
+        private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
         {
-            return InternalEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
+            return ScriptEditorUtility.GetScriptEditorFromPath(m_ScriptEditorPath.str);
         }
 
         private void OnScriptEditorChanged()
         {
-            InternalEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            m_ScriptEditorArgs = InternalEditorUtility.GetExternalScriptEditorArgs();
+            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
+            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
             UnityEditor.VisualStudioIntegration.UnityVSSupport.ScriptEditorChanged(m_ScriptEditorPath.str);
         }
 
         private void OnScriptEditorArgsChanged()
         {
-            InternalEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
         }
 
         private void ShowUnityConnectPrefs()
@@ -487,7 +557,7 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!pro))
             {
                 int newSkin = EditorGUILayout.Popup("Editor Skin", !EditorGUIUtility.isProSkin ? 0 : 1,
-                        new string[] {"Personal", "Professional"}
+                        new string[] { "Personal", "Professional" }
                         );
                 if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
                     InternalEditorUtility.SwitchSkinAndRepaintAllViews();
@@ -526,7 +596,7 @@ namespace UnityEditor
 
                 int sel = EditorGUILayout.Popup("Language", idx, m_EditorLanguageNames);
 
-                m_SelectedLanguage = (sel == 0) ?   LocalizationDatabase.GetDefaultEditorLanguage() :
+                m_SelectedLanguage = (sel == 0) ? LocalizationDatabase.GetDefaultEditorLanguage() :
                     editorLanguages[sel - k_LangListMenuOffset];
 
                 if (EditorGUI.EndChangeCheck() && oldLanguage != m_SelectedLanguage)
@@ -692,7 +762,7 @@ namespace UnityEditor
                         if (kvp.Value.KeyboardEvent.Equals(e) && (toolName == selectedToolName && kvp.Key != m_SelectedKey.Name))
                         {
                             m_ValidKeyChange = false;
-                            StringBuilder sb =  new StringBuilder();
+                            StringBuilder sb = new StringBuilder();
                             if (Application.platform == RuntimePlatform.OSXEditor && e.command)
                                 sb.Append("Command+");
                             if (e.control)
@@ -918,8 +988,8 @@ namespace UnityEditor
 
         private void WritePreferences()
         {
-            InternalEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
-            InternalEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
+            ScriptEditorUtility.SetExternalScriptEditor(m_ScriptEditorPath);
+            ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
             EditorPrefs.SetBool("kExternalEditorSupportsUnityProj", m_ExternalEditorSupportsUnityProj);
 
             EditorPrefs.SetString("kImagesDefaultApp", m_ImageAppPath);
@@ -972,8 +1042,8 @@ namespace UnityEditor
 
         private void ReadPreferences()
         {
-            m_ScriptEditorPath.str = InternalEditorUtility.GetExternalScriptEditor();
-            m_ScriptEditorArgs = InternalEditorUtility.GetExternalScriptEditorArgs();
+            m_ScriptEditorPath.str = ScriptEditorUtility.GetExternalScriptEditor();
+            m_ScriptEditorArgs = ScriptEditorUtility.GetExternalScriptEditorArgs();
 
             m_ExternalEditorSupportsUnityProj = EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false);
             m_ImageAppPath.str = EditorPrefs.GetString("kImagesDefaultApp");
@@ -997,6 +1067,14 @@ namespace UnityEditor
                             m_ScriptAppsEditions[index] = vsPath.Edition;
                         }
                     }
+            }
+
+            var foundScriptEditorPaths = ScriptEditorUtility.GetFoundScriptEditorPaths(Application.platform);
+
+            foreach (var scriptEditorPath in foundScriptEditorPaths)
+            {
+                ArrayUtility.Add(ref m_ScriptApps, scriptEditorPath);
+                ArrayUtility.Add(ref m_ScriptAppsEditions, null);
             }
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");

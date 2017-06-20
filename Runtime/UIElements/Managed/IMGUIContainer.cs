@@ -69,6 +69,7 @@ namespace UnityEngine.Experimental.UIElements
             public Color backgroundColor;
             public bool enabled;
             public bool changed;
+            public int displayIndex;
         }
 
         private GUIGlobals m_GUIGlobals;
@@ -81,6 +82,7 @@ namespace UnityEngine.Experimental.UIElements
             m_GUIGlobals.backgroundColor = GUI.backgroundColor;
             m_GUIGlobals.enabled = GUI.enabled;
             m_GUIGlobals.changed = GUI.changed;
+            m_GUIGlobals.displayIndex = Event.current.displayIndex;
         }
 
         private void RestoreGlobals()
@@ -91,6 +93,7 @@ namespace UnityEngine.Experimental.UIElements
             GUI.backgroundColor = m_GUIGlobals.backgroundColor;
             GUI.enabled = m_GUIGlobals.enabled;
             GUI.changed = m_GUIGlobals.changed;
+            Event.current.displayIndex = m_GUIGlobals.displayIndex;
         }
 
         private bool DoOnGUI(Event evt)
@@ -101,12 +104,17 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
             }
 
+            // Save the GUIClip count to make sanity checks after calling the OnGUI handler
+            int guiClipCount = GUIClip.Internal_GetCount();
+
             SaveGlobals();
             int ctx = executionContext != 0 ? executionContext : elementPanel.instanceID;
             UIElementsUtility.BeginContainerGUI(cache, ctx, evt, this);
 
             GUIDepth = GUIUtility.Internal_GetGUIDepth();
             EventType originalEventType = Event.current.type;
+
+            bool isExitGUIException = false;
 
             try
             {
@@ -117,8 +125,8 @@ namespace UnityEngine.Experimental.UIElements
                 // only for layout events: we always intercept any exceptions to not interrupt event processing
                 if (originalEventType == EventType.Layout)
                 {
-                    // really this means: don't log ExitGUIException's
-                    if (!GUIUtility.ShouldRethrowException(exception))
+                    isExitGUIException = GUIUtility.IsExitGUIException(exception);
+                    if (!isExitGUIException)
                     {
                         Debug.LogException(exception);
                     }
@@ -138,11 +146,29 @@ namespace UnityEngine.Experimental.UIElements
             UIElementsUtility.EndContainerGUI();
             RestoreGlobals();
 
+            if (!isExitGUIException)
+            {
+                // This is the same logic as GUIClipState::EndOnGUI
+                if (eventType != EventType.Ignore && eventType != EventType.Used)
+                {
+                    int currentCount = GUIClip.Internal_GetCount();
+                    if (currentCount > guiClipCount)
+                        Debug.LogError("GUI Error: You are pushing more GUIClips than you are popping. Make sure they are balanced)");
+                    else if (currentCount < guiClipCount)
+                        Debug.LogError("GUI Error: You are popping more GUIClips than you are pushing. Make sure they are balanced)");
+                }
+            }
+
+            // Clear extraneous GUIClips
+            while (GUIClip.Internal_GetCount() > guiClipCount)
+                GUIClip.Internal_Pop();
+
             if (eventType == EventType.Used)
             {
                 Dirty(ChangeType.Repaint);
                 return true;
             }
+
             return false;
         }
 
@@ -168,6 +194,7 @@ namespace UnityEngine.Experimental.UIElements
 
             EventType originalEventType = evt.imguiEvent.type;
             evt.imguiEvent.type = EventType.Layout;
+
             // layout event
             bool ret = DoOnGUI(evt.imguiEvent);
             // the actual event

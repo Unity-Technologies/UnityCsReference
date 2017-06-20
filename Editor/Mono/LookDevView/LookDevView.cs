@@ -52,7 +52,7 @@ namespace UnityEditor
         static Styles s_Styles = null;
         public static Styles styles { get { if (s_Styles == null) s_Styles = new Styles(); return s_Styles; } }
 
-        class PreviewContextCB
+        internal class PreviewContextCB
         {
             public CommandBuffer m_drawBallCB;
             public CommandBuffer m_patchGBufferCB;
@@ -68,7 +68,7 @@ namespace UnityEditor
             }
         };
 
-        class PreviewContext
+        internal class PreviewContext
         {
             public enum PreviewContextPass
             {
@@ -88,7 +88,21 @@ namespace UnityEditor
                 for (int i = 0; i < (int)PreviewContextPass.kCount; ++i)
                 {
                     m_PreviewUtility[i] = new PreviewRenderUtility();
+                    m_PreviewUtility[i].camera.fieldOfView = 30.0f;
+                    m_PreviewUtility[i].camera.cullingMask = 1 << Camera.PreviewCullingLayer;
                     m_PreviewCB[i] = new PreviewContextCB();
+                }
+            }
+
+            public void Cleanup()
+            {
+                for (int contextIndex = 0; contextIndex < (int)PreviewContext.PreviewContextPass.kCount; ++contextIndex)
+                {
+                    if (m_PreviewUtility[contextIndex] != null)
+                    {
+                        m_PreviewUtility[contextIndex].Cleanup();
+                        m_PreviewUtility[contextIndex] = null;
+                    }
                 }
             }
         }
@@ -166,6 +180,8 @@ namespace UnityEditor
 
 
         private CameraControllerStandard                m_CameraController = new CameraControllerStandard();
+        internal PreviewContext[] previewUtilityContexts { get { return m_PreviewUtilityContexts; } }
+
 
         public int hotControl
         {
@@ -244,34 +260,9 @@ namespace UnityEditor
         {
             LookDevResources.Initialize();
 
+            InitializePreviewUtilities();
+
             LoadLookDevConfig();
-
-            if (m_PreviewUtilityContexts[0] == null)
-            {
-                for (int i = 0; i < 2; ++i)
-                {
-                    m_PreviewUtilityContexts[i] = new PreviewContext();
-                    for (int contextIndex = 0; contextIndex < (int)PreviewContext.PreviewContextPass.kCount; ++contextIndex)
-                    {
-                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].camera.fieldOfView = 30.0f;
-                        m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].camera.cullingMask = 1 << Camera.PreviewCullingLayer;
-                    }
-                }
-
-                // Do this check only the first time
-                if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
-                {
-                    Debug.LogWarning("Look Dev is designed for linear color space. Currently project is set to gamma color space. This can be changed in player settings.");
-                }
-                if (Rendering.EditorGraphicsSettings.GetCurrentTierSettings().renderingPath != RenderingPath.DeferredShading)
-                {
-                    Debug.LogWarning("Look Dev switched rendering mode to deferred shading for display.");
-                }
-                if (Camera.main.allowHDR == false)
-                {
-                    Debug.LogWarning("Look Dev switched HDR mode on for display.");
-                }
-            }
 
             // When we reload the scene the pointer like m_DefaultHDRI can become null but the list of HDRI is not null
             // so test it to be sure we don't add two time default HDRI.
@@ -286,6 +277,23 @@ namespace UnityEditor
             }
         }
 
+        void InitializePreviewUtilities()
+        {
+            if (m_PreviewUtilityContexts[0] == null)
+            {
+                // Do this check only the first time
+                if (QualitySettings.activeColorSpace == ColorSpace.Gamma)
+                    Debug.LogWarning("Look Dev is designed for linear color space. Currently project is set to gamma color space. This can be changed in player settings.");
+                if (Rendering.EditorGraphicsSettings.GetCurrentTierSettings().renderingPath != RenderingPath.DeferredShading)
+                    Debug.LogWarning("Look Dev switched rendering mode to deferred shading for display.");
+                if (Camera.main.allowHDR == false)
+                    Debug.LogWarning("Look Dev switched HDR mode on for display.");
+
+                for (int i = 0; i < 2; ++i)
+                    m_PreviewUtilityContexts[i] = new PreviewContext();
+            }
+        }
+
         private void Cleanup()
         {
             LookDevResources.Cleanup();
@@ -294,17 +302,9 @@ namespace UnityEditor
 
             for (int i = 0; i < 2; ++i)
             {
-                for (int contextIndex = 0; contextIndex < (int)PreviewContext.PreviewContextPass.kCount; ++contextIndex)
-                {
-                    if (m_PreviewUtilityContexts[i] != null)
-                    {
-                        if (m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex] != null)
-                        {
-                            m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex].Cleanup();
-                            m_PreviewUtilityContexts[i].m_PreviewUtility[contextIndex] = null;
-                        }
-                    }
-                }
+                if (m_PreviewUtilityContexts[i] != null)
+                    m_PreviewUtilityContexts[i].Cleanup();
+                m_PreviewUtilityContexts[i] = null;
             }
 
             if (m_FinalCompositionTexture)
@@ -379,7 +379,7 @@ namespace UnityEditor
             }
         }
 
-        private void RenderScene(Rect previewRect, LookDevContext lookDevContext, PreviewContext previewUtilityContext, GameObject currentObject, CameraState originalCameraState, bool secondView)
+        private void RenderScene(Rect previewRect, LookDevContext lookDevContext, PreviewContext previewUtilityContext, GameObject[] currentObjectByPasses, CameraState originalCameraState, bool secondView)
         {
             // Explanation of how this work:
             // To simulate the shadow of a directional light, we want to interpolate between two environments. One with a skybox without sun for shadowed area and the other with the sun.
@@ -393,12 +393,12 @@ namespace UnityEditor
             bool needNeutralMask = !m_LookDevConfig.enableShadowCubemap || (m_LookDevConfig.enableShadowCubemap && ((DrawCameraMode)lookDevContext.shadingMode != DrawCameraMode.Normal) && ((DrawCameraMode)lookDevContext.shadingMode != DrawCameraMode.TexturedWire));
             previewUtilityContext.m_PreviewResult[(int)PreviewContext.PreviewContextPass.kShadow] = needNeutralMask ?
                 Texture2D.whiteTexture :
-                RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObject, originalCameraState, null, PreviewContext.PreviewContextPass.kShadow, secondView);
+                RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObjectByPasses[(int)PreviewContext.PreviewContextPass.kShadow], originalCameraState, null, PreviewContext.PreviewContextPass.kShadow, secondView);
             // Render the scene normally.
             CubemapInfo cubemapInfo = m_LookDevEnvLibrary.hdriList[lookDevContext.currentHDRIIndex];
-            previewUtilityContext.m_PreviewResult[(int)PreviewContext.PreviewContextPass.kView] = RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObject, originalCameraState, cubemapInfo, PreviewContext.PreviewContextPass.kView, secondView);
+            previewUtilityContext.m_PreviewResult[(int)PreviewContext.PreviewContextPass.kView] = RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObjectByPasses[(int)PreviewContext.PreviewContextPass.kView], originalCameraState, cubemapInfo, PreviewContext.PreviewContextPass.kView, secondView);
             // Render the scene with the environment without the sun
-            previewUtilityContext.m_PreviewResult[(int)PreviewContext.PreviewContextPass.kViewWithShadow] = RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObject, originalCameraState, cubemapInfo.cubemapShadowInfo, PreviewContext.PreviewContextPass.kViewWithShadow, secondView);
+            previewUtilityContext.m_PreviewResult[(int)PreviewContext.PreviewContextPass.kViewWithShadow] = RenderScene(previewRect, lookDevContext, previewUtilityContext, currentObjectByPasses[(int)PreviewContext.PreviewContextPass.kViewWithShadow], originalCameraState, cubemapInfo.cubemapShadowInfo, PreviewContext.PreviewContextPass.kViewWithShadow, secondView);
         }
 
         private Texture RenderScene(Rect previewRect, LookDevContext lookDevContext, PreviewContext previewUtilityContext, GameObject currentObject, CameraState originalCameraState, CubemapInfo cubemapInfo, PreviewContext.PreviewContextPass contextPass, bool secondView)
@@ -587,8 +587,6 @@ namespace UnityEditor
                 currentObject.transform.Rotate(0.0f, envRotation, 0.0f);
                 currentObject.transform.Translate(-originalCameraState.pivot.value);
                 currentObject.transform.Rotate(0.0f, m_CurrentObjRotationOffset, 0.0f);
-
-                previewUtility.AddSingleGO(currentObject);
             }
 
             // Specific drawing pass for TexturedWire
@@ -599,7 +597,7 @@ namespace UnityEditor
             }
             else
             {
-                previewUtility.Render(true);
+                previewUtility.Render(true, false);
             }
 
             if (currentObject != null)
@@ -1141,6 +1139,8 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            InitializePreviewUtilities();
+
             m_FirstViewGizmoColor = EditorGUIUtility.isProSkin ? new Color32(0, 204, 204, 255) : new Color32(0, 127, 255, 255);
             m_SecondViewGizmoColor = EditorGUIUtility.isProSkin ? new Color32(255, 107, 33, 255) : new Color32(255, 127, 0, 255);
 
@@ -1170,6 +1170,7 @@ namespace UnityEditor
 
             Undo.undoRedoPerformed += OnUndoRedo;
             EditorApplication.editorApplicationQuit += OnQuit;
+            EditorApplication.update += EditorUpdate;
         }
 
         public void OnDisable()
@@ -1178,6 +1179,7 @@ namespace UnityEditor
 
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.editorApplicationQuit -= OnQuit;
+            EditorApplication.update -= EditorUpdate;
         }
 
         void OnQuit()
@@ -1191,7 +1193,7 @@ namespace UnityEditor
 
             UpdateRenderTexture(m_PreviewRects[2]);
 
-            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[index], m_PreviewUtilityContexts[index], m_LookDevConfig.currentObject[index], m_LookDevConfig.cameraState[index], false);
+            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[index], m_PreviewUtilityContexts[index], m_LookDevConfig.currentObjectInstances[index], m_LookDevConfig.cameraState[index], false);
             RenderCompositing(m_PreviewRects[2], m_PreviewUtilityContexts[index], m_PreviewUtilityContexts[index], false);
         }
 
@@ -1199,8 +1201,8 @@ namespace UnityEditor
         {
             UpdateRenderTexture(m_PreviewRects[2]);
 
-            RenderScene(m_PreviewRects[0], m_LookDevConfig.lookDevContexts[0], m_PreviewUtilityContexts[0], m_LookDevConfig.currentObject[0], m_LookDevConfig.cameraState[0], false);
-            RenderScene(m_PreviewRects[1], m_LookDevConfig.lookDevContexts[1], m_PreviewUtilityContexts[1], m_LookDevConfig.currentObject[1], m_LookDevConfig.cameraState[1], true);
+            RenderScene(m_PreviewRects[0], m_LookDevConfig.lookDevContexts[0], m_PreviewUtilityContexts[0], m_LookDevConfig.currentObjectInstances[0], m_LookDevConfig.cameraState[0], false);
+            RenderScene(m_PreviewRects[1], m_LookDevConfig.lookDevContexts[1], m_PreviewUtilityContexts[1], m_LookDevConfig.currentObjectInstances[1], m_LookDevConfig.cameraState[1], true);
 
             RenderCompositing(m_PreviewRects[2], m_PreviewUtilityContexts[0], m_PreviewUtilityContexts[1], true);
         }
@@ -1209,8 +1211,8 @@ namespace UnityEditor
         {
             UpdateRenderTexture(m_PreviewRects[2]);
 
-            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[0], m_PreviewUtilityContexts[0], m_LookDevConfig.currentObject[0], m_LookDevConfig.cameraState[0], false);
-            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[1], m_PreviewUtilityContexts[1], m_LookDevConfig.currentObject[1], m_LookDevConfig.cameraState[1], false);
+            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[0], m_PreviewUtilityContexts[0], m_LookDevConfig.currentObjectInstances[0], m_LookDevConfig.cameraState[0], false);
+            RenderScene(m_PreviewRects[2], m_LookDevConfig.lookDevContexts[1], m_PreviewUtilityContexts[1], m_LookDevConfig.currentObjectInstances[1], m_LookDevConfig.cameraState[1], false);
 
             RenderCompositing(m_PreviewRects[2], m_PreviewUtilityContexts[0], m_PreviewUtilityContexts[1], true);
         }
@@ -1300,6 +1302,39 @@ namespace UnityEditor
             GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GUI.DrawTexture(previewRect, m_FinalCompositionTexture, ScaleMode.StretchToFill, false);
             GL.sRGBWrite = false;
+        }
+
+        void EditorUpdate()
+        {
+            for (var i = 0; i < 2; ++i)
+            {
+                var lookDevContext = m_LookDevConfig.currentLookDevContext;
+                var cubemapOffset = lookDevContext.currentHDRIIndex >= 0 && lookDevContext.currentHDRIIndex < m_LookDevEnvLibrary.hdriCount
+                    ? m_LookDevEnvLibrary.hdriList[lookDevContext.currentHDRIIndex].angleOffset
+                    : 0;
+                var envRotation = -(lookDevContext.envRotation + cubemapOffset);
+                var originalCameraState = m_LookDevConfig.cameraState[i];
+
+                for (var j = 0; j < m_LookDevConfig.currentObjectInstances[i].Length; j++)
+                {
+                    var currentObject = m_LookDevConfig.currentObjectInstances[i][j];
+                    if (currentObject == null)
+                        continue;
+
+                    EditorUtility.InitInstantiatedPreviewRecursive(currentObject);
+
+                    currentObject.transform.position = new Vector3(0.0f, kDefaultSceneHeight, 0.0f);
+                    currentObject.transform.rotation = Quaternion.identity;
+
+                    // Applies inverse transform from camera pivot + environment rotation.
+                    currentObject.transform.Rotate(0.0f, envRotation, 0.0f);
+                    currentObject.transform.Translate(-originalCameraState.pivot.value);
+                    currentObject.transform.Rotate(0.0f, m_CurrentObjRotationOffset, 0.0f);
+
+                    LookDevConfig.DisableRendererProperties(currentObject);
+                    m_LookDevConfig.SetEnabledRecursive(currentObject, false);
+                }
+            }
         }
 
         private void RenderPreview()
@@ -1508,7 +1543,7 @@ namespace UnityEditor
 
         private void Frame(LookDevEditionContext context, bool animate)
         {
-            GameObject currentObject = m_LookDevConfig.currentObject[(int)context];
+            GameObject currentObject = m_LookDevConfig.currentObjectInstances[(int)context][0];
             if (currentObject != null)
             {
                 Bounds bounds = new Bounds(currentObject.transform.position, Vector3.zero);
@@ -1530,7 +1565,6 @@ namespace UnityEditor
                     cameraState.viewSize.value = Mathf.Abs(newSize * 2.2f);
                 }
             }
-
             m_CurrentObjRotationOffset = 0.0f;
         }
 
@@ -2002,7 +2036,7 @@ namespace UnityEditor
             HandleKeyboardShortcut();
 
             // Draw text to say that we need to drag and drop an object
-            if (m_LookDevConfig.currentObject[0] == null && m_LookDevConfig.currentObject[1] == null)
+            if (m_LookDevConfig.currentObjectInstances[0][0] == null && m_LookDevConfig.currentObjectInstances[1][0] == null)
             {
                 Color oldColor = GUI.color;
                 GUI.color = Color.gray;

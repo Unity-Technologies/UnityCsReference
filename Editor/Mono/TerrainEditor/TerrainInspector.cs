@@ -446,7 +446,6 @@ namespace UnityEditor
         {
             public GUIStyle gridList = "GridList";
             public GUIStyle gridListText = "GridListText";
-            public GUIStyle label = "RightLabel";
             public GUIStyle largeSquare = "Button";
             public GUIStyle command = "Command";
             public Texture settingsIcon = EditorGUIUtility.IconContent("SettingsIcon").image;
@@ -515,9 +514,7 @@ namespace UnityEditor
             public GUIContent exportRaw = EditorGUIUtility.TextContent("Export Raw...");
             public GUIContent flatten = EditorGUIUtility.TextContent("Flatten");
 
-            public GUIContent overrideSmoothness = EditorGUIUtility.TextContent("Override Smoothness|If checked, the smoothness value specified below will be used for all splat layers, otherwise smoothness of each individual splat layer will be controlled by the alpha channel of the splat texture.");
             public GUIContent bakeLightProbesForTrees = EditorGUIUtility.TextContent("Bake Light Probes For Trees|If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.");
-            public GUIContent resolution = EditorGUIUtility.TextContent("Resolution");
             public GUIContent refresh = EditorGUIUtility.TextContent("Refresh");
         }
         static Styles styles;
@@ -785,12 +782,6 @@ namespace UnityEditor
                 m_SelectedTool.value = (int)value;
                 s_activeTerrainInspector = GetInstanceID();
             }
-        }
-
-        static string IntString(float p)
-        {
-            int i = (int)p;
-            return i.ToString();
         }
 
         public void MenuButton(GUIContent title, string menuName, int userData)

@@ -22,17 +22,19 @@ namespace UnityEditor
         ContainerWindow m_tooltipContainer;
         static TooltipView s_guiView;
 
-        void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             s_guiView = this;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             s_guiView = null;
         }
 
-        void OnGUI()
+        protected override void OldOnGUI()
         {
             if (m_tooltipContainer != null)
             {

@@ -8,19 +8,20 @@ using UnityEditor;
 
 namespace UnityEditorInternal
 {
-    internal class ProfilerChart
+    internal class ProfilerChart : Chart
     {
         const string kPrefCharts = "ProfilerChart";
+
+        private static readonly GUIContent performanceWarning =
+            new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), "Collecting GPU Profiler data might have overhead. Close graph if you don't need its data");
 
         private bool m_Active;
 
         public ProfilerArea m_Area;
         public Chart.ChartType m_Type;
         public float m_DataScale;
-        public Chart m_Chart;
-        public ChartData m_Data;
-        public ChartSeries[] m_Series;
-        public GUIContent m_Icon;
+        public ChartViewData m_Data;
+        public ChartSeriesViewData[] m_Series;
 
         private static string[] s_LocalizedChartNames = null;
 
@@ -46,9 +47,8 @@ namespace UnityEditorInternal
             m_Area = area;
             m_Type = type;
             m_DataScale = dataScale;
-            m_Chart = new Chart();
-            m_Data = new ChartData();
-            m_Series = new ChartSeries[seriesCount];
+            m_Data = new ChartViewData();
+            m_Series = new ChartSeriesViewData[seriesCount];
             m_Active = ReadActiveState();
             ApplyActiveState();
         }
@@ -70,13 +70,26 @@ namespace UnityEditorInternal
                     LocalizationDatabase.GetLocalizedString("Network Operations"),
                     LocalizationDatabase.GetLocalizedString("UI"),
                     LocalizationDatabase.GetLocalizedString("UI Details"),
+                    LocalizationDatabase.GetLocalizedString("Global Illumination|Graph of the Precomputed Realtime Global Illumination system resource usage."),
                 };
             }
             UnityEngine.Debug.Assert(s_LocalizedChartNames.Length == (int)ProfilerArea.AreaCount);
             return s_LocalizedChartNames[(int)m_Area];
         }
 
-        public virtual int DoChartGUI(int currentFrame, ProfilerArea currentArea, out Chart.ChartAction action)
+        protected override void DoLegendGUI(Rect position, ChartType type, ChartViewData cdata, EventType evtType, bool active)
+        {
+            Rect warningIconRect = position;
+            warningIconRect.xMin = warningIconRect.xMax - performanceWarning.image.width;
+            warningIconRect.yMin = warningIconRect.yMax - performanceWarning.image.height;
+
+            base.DoLegendGUI(position, type, cdata, evtType, active);
+
+            if (m_Area == ProfilerArea.GPU)
+                GUI.Label(warningIconRect, performanceWarning);
+        }
+
+        public virtual int DoChartGUI(int currentFrame, ProfilerArea currentArea)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -85,26 +98,26 @@ namespace UnityEditorInternal
                 {
                     string name =
                         m_Data.hasOverlay ?
-                        "Selected" + m_Series[s].identifierName :
-                        m_Series[s].identifierName;
+                        "Selected" + m_Series[s].name :
+                        m_Series[s].name;
                     int identifier = ProfilerDriver.GetStatisticsIdentifier(name);
                     labels[s] = ProfilerDriver.GetFormattedStatisticsValue(currentFrame, identifier);
                 }
-                m_Data.selectedLabels = labels;
+                m_Data.AssignSelectedLabels(labels);
             }
 
-            if (m_Icon == null)
+            if (legendHeaderLabel == null)
             {
-                string iconName = "Profiler." + System.Enum.GetName(typeof(ProfilerArea), m_Area);
-                m_Icon = EditorGUIUtility.TextContentWithIcon(GetLocalizedChartName(), iconName);
+                string iconName = string.Format("Profiler.{0}", System.Enum.GetName(typeof(ProfilerArea), m_Area));
+                legendHeaderLabel = EditorGUIUtility.TextContentWithIcon(GetLocalizedChartName(), iconName);
             }
 
-            return m_Chart.DoGUI(m_Type, currentFrame, m_Data, m_Area, currentArea == m_Area, m_Icon, out action);
+            return DoGUI(m_Type, currentFrame, m_Data, currentArea == m_Area);
         }
 
         public void LoadAndBindSettings()
         {
-            m_Chart.LoadAndBindSettings(kPrefCharts + m_Area, m_Data);
+            LoadAndBindSettings(kPrefCharts + m_Area, m_Data);
         }
 
         private void ApplyActiveState()

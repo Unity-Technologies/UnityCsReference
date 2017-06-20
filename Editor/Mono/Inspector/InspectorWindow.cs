@@ -1270,6 +1270,12 @@ namespace UnityEditor
             HandleComponentScreenshot(contentRect, editor);
         }
 
+        internal void RepaintImmediately(bool rebuildOptimizedGUIBlocks)
+        {
+            m_InvalidateGUIBlockCache = rebuildOptimizedGUIBlocks;
+            RepaintImmediately();
+        }
+
         public bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
         {
             var target = trackerActiveEditors[editorIndex].target;

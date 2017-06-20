@@ -101,15 +101,22 @@ namespace UnityEditor
         private static string kEnabledPropertyName = "m_Enabled";
 
         private static float[] s_Vector2Floats = {0, 0};
+        private static int[] s_Vector2Ints = { 0, 0 };
         private static GUIContent[] s_XYLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y")};
 
         private static float[] s_Vector3Floats = {0, 0, 0};
+        private static int[] s_Vector3Ints = { 0, 0, 0 };
         private static GUIContent[] s_XYZLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z")};
 
         private static float[] s_Vector4Floats = {0, 0, 0, 0};
         private static GUIContent[] s_XYZWLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z"), EditorGUIUtility.TextContent("W")};
 
         private static GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
+
+        private static GUIContent s_CenterLabel = EditorGUIUtility.TextContent("Center");
+        private static GUIContent s_ExtentLabel = EditorGUIUtility.TextContent("Extent");
+        private static GUIContent s_PositionLabel = EditorGUIUtility.TextContent("Position");
+        private static GUIContent s_SizeLabel = EditorGUIUtility.TextContent("Size");
 
         internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TextContent("Clipping Planes");
         internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TextContent("Near"), EditorGUIUtility.TextContent("Far") };
@@ -167,7 +174,7 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static bool IsEditingTextField()
         {
-            return RecycledTextEditor.s_ActuallyEditing;
+            return RecycledTextEditor.s_ActuallyEditing && activeEditor != null;
         }
 
         internal static void EndEditingActiveTextField()
@@ -3482,6 +3489,92 @@ namespace UnityEditor
             return value;
         }
 
+        // Make an X & Y int field for entering a [[Vector2Int]].
+        public static Vector2Int Vector2IntField(Rect position, string label, Vector2Int value)
+        {
+            return Vector2IntField(position, EditorGUIUtility.TempContent(label), value);
+        }
+
+        // Make an X & Y int field for entering a [[Vector2Int]].
+        public static Vector2Int Vector2IntField(Rect position, GUIContent label, Vector2Int value)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 2);
+            position.height = kSingleLineHeight;
+            return Vector2IntField(position, value);
+        }
+
+        // Make an X & Y int field for entering a [[Vector2Int]].
+        private static Vector2Int Vector2IntField(Rect position, Vector2Int value)
+        {
+            s_Vector2Ints[0] = value.x;
+            s_Vector2Ints[1] = value.y;
+            position.height = kSingleLineHeight;
+            BeginChangeCheck();
+            MultiIntField(position, s_XYLabels, s_Vector2Ints);
+            if (EndChangeCheck())
+            {
+                value.x = s_Vector2Ints[0];
+                value.y = s_Vector2Ints[1];
+            }
+            return value;
+        }
+
+        // Make an X, Y int field - not public (use PropertyField instead)
+        private static void Vector2IntField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 2);
+            position.height = kSingleLineHeight;
+            SerializedProperty cur = property.Copy();
+            cur.NextVisible(true);
+            MultiPropertyField(position, s_XYLabels, cur);
+        }
+
+        // Make an X, Y and Z int field for entering a [[Vector3Int]].
+        public static Vector3Int Vector3IntField(Rect position, string label, Vector3Int value)
+        {
+            return Vector3IntField(position, EditorGUIUtility.TempContent(label), value);
+        }
+
+        // Make an X, Y and Z int field for entering a [[Vector3Int]].
+        public static Vector3Int Vector3IntField(Rect position, GUIContent label, Vector3Int value)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            position.height = kSingleLineHeight;
+            return Vector3IntField(position, value);
+        }
+
+        // Make an X, Y and Z int field for entering a [[Vector3Int]].
+        private static Vector3Int Vector3IntField(Rect position, Vector3Int value)
+        {
+            s_Vector3Ints[0] = value.x;
+            s_Vector3Ints[1] = value.y;
+            s_Vector3Ints[2] = value.z;
+            position.height = kSingleLineHeight;
+            BeginChangeCheck();
+            MultiIntField(position, s_XYZLabels, s_Vector3Ints);
+            if (EndChangeCheck())
+            {
+                value.x = s_Vector3Ints[0];
+                value.y = s_Vector3Ints[1];
+                value.z = s_Vector3Ints[2];
+            }
+            return value;
+        }
+
+        // Make an X, Y and Z int field - not public (use PropertyField instead)
+        private static void Vector3IntField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            position.height = kSingleLineHeight;
+            SerializedProperty cur = property.Copy();
+            cur.NextVisible(true);
+            MultiPropertyField(position, s_XYZLabels, cur);
+        }
+
         /// *listonly*
         public static Rect RectField(Rect position, Rect value)
         {
@@ -3542,16 +3635,72 @@ namespace UnityEditor
             MultiPropertyField(position, s_WHLabels, cur);
         }
 
-        private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside)
+        /// *listonly*
+        public static RectInt RectIntField(Rect position, RectInt value)
+        {
+            position.height = kSingleLineHeight;
+            s_Vector2Ints[0] = value.x;
+            s_Vector2Ints[1] = value.y;
+            BeginChangeCheck();
+            MultiIntField(position, s_XYLabels, s_Vector2Ints);
+            if (EndChangeCheck())
+            {
+                value.x = s_Vector2Ints[0];
+                value.y = s_Vector2Ints[1];
+            }
+            position.y += kSingleLineHeight;
+            s_Vector2Ints[0] = value.width;
+            s_Vector2Ints[1] = value.height;
+            BeginChangeCheck();
+            MultiIntField(position, s_WHLabels, s_Vector2Ints);
+            if (EndChangeCheck())
+            {
+                value.width = s_Vector2Ints[0];
+                value.height = s_Vector2Ints[1];
+            }
+            return value;
+        }
+
+        /// *listonly*
+        public static RectInt RectIntField(Rect position, string label, RectInt value)
+        {
+            return RectIntField(position, EditorGUIUtility.TempContent(label), value);
+        }
+
+        // Make an X, Y, W & H field for entering a [[Rect]].
+        public static RectInt RectIntField(Rect position, GUIContent label, RectInt value)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 2);
+            position.height = kSingleLineHeight;
+            return RectIntField(position, value);
+        }
+
+        // Make an X, Y, W & H for RectInt using SerializedProperty (not public)
+        private static void RectIntField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 2);
+            position.height = kSingleLineHeight;
+
+            SerializedProperty cur = property.Copy();
+            cur.NextVisible(true);
+            MultiPropertyField(position, s_XYLabels, cur);
+            position.y += kSingleLineHeight + kVerticalSpacingMultiField;
+
+            MultiPropertyField(position, s_WHLabels, cur);
+        }
+
+        private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside, GUIContent firstContent, GUIContent secondContent)
         {
             const float kBoundsTextWidth = 53;
 
             if (drawOutside)
                 position.xMin -= kBoundsTextWidth;
 
-            GUI.Label(position, "Center:", EditorStyles.label);
+            GUI.Label(position, firstContent, EditorStyles.label);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            GUI.Label(position, "Extents:", EditorStyles.label);
+            GUI.Label(position, secondContent, EditorStyles.label);
 
             position.y -= kSingleLineHeight + kVerticalSpacingMultiField;
             position.xMin += kBoundsTextWidth;
@@ -3587,7 +3736,7 @@ namespace UnityEditor
         private static Bounds BoundsFieldNoIndent(Rect position, Bounds value, bool isBelowLabel)
         {
             position.height = kSingleLineHeight;
-            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && isBelowLabel);
+            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && isBelowLabel, s_CenterLabel, s_ExtentLabel);
 
             value.center = Vector3Field(position, value.center);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
@@ -3607,7 +3756,65 @@ namespace UnityEditor
                     position.y += kSingleLineHeight + kVerticalSpacingMultiField;
             }
             position.height = kSingleLineHeight;
-            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel);
+            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_CenterLabel, s_ExtentLabel);
+
+            SerializedProperty cur = property.Copy();
+            cur.NextVisible(true);
+            cur.NextVisible(true);
+            MultiPropertyField(position, s_XYZLabels, cur);
+            cur.NextVisible(true);
+            position.y += kSingleLineHeight + kVerticalSpacingMultiField;
+            MultiPropertyField(position, s_XYZLabels, cur);
+        }
+
+        /// *listonly*
+        public static BoundsInt BoundsIntField(Rect position, BoundsInt value)
+        {
+            return BoundsIntFieldNoIndent(IndentedRect(position), value, false);
+        }
+
+        public static BoundsInt BoundsIntField(Rect position, string label, BoundsInt value)
+        {
+            return BoundsIntField(position, EditorGUIUtility.TempContent(label), value);
+        }
+
+        public static BoundsInt BoundsIntField(Rect position, GUIContent label, BoundsInt value)
+        {
+            if (!LabelHasContent(label))
+                return BoundsIntFieldNoIndent(IndentedRect(position), value, false);
+
+            int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+            position = MultiFieldPrefixLabel(position, id, label, 3);
+            if (EditorGUIUtility.wideMode)
+                position.y += kSingleLineHeight + kVerticalSpacingMultiField;
+
+            return BoundsIntFieldNoIndent(position, value, true);
+        }
+
+        private static BoundsInt BoundsIntFieldNoIndent(Rect position, BoundsInt value, bool isBelowLabel)
+        {
+            position.height = kSingleLineHeight;
+            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && isBelowLabel, s_PositionLabel, s_SizeLabel);
+
+            value.position = Vector3IntField(position, value.position);
+            position.y += kSingleLineHeight + kVerticalSpacingMultiField;
+            value.size = Vector3IntField(position, value.size);
+            return value;
+        }
+
+        // private (use PropertyField)
+        private static void BoundsIntField(Rect position, SerializedProperty property, GUIContent label)
+        {
+            bool hasLabel = LabelHasContent(label);
+            if (hasLabel)
+            {
+                int id = GUIUtility.GetControlID(s_FoldoutHash, FocusType.Keyboard, position);
+                position = MultiFieldPrefixLabel(position, id, label, 3);
+                if (EditorGUIUtility.wideMode)
+                    position.y += kSingleLineHeight + kVerticalSpacingMultiField;
+            }
+            position.height = kSingleLineHeight;
+            position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_PositionLabel, s_SizeLabel);
 
             SerializedProperty cur = property.Copy();
             cur.NextVisible(true);
@@ -3644,6 +3851,30 @@ namespace UnityEditor
             for (int i = 0; i < values.Length; i++)
             {
                 values[i] = EditorGUI.FloatField(nr, subLabels[i], values[i]);
+                nr.x += w + kSpacingSubLabel;
+            }
+            EditorGUIUtility.labelWidth = t;
+            EditorGUI.indentLevel = l;
+        }
+
+        public static void MultiIntField(Rect position, GUIContent[] subLabels, int[] values)
+        {
+            MultiIntField(position, subLabels, values, kMiniLabelW);
+        }
+
+        internal static void MultiIntField(Rect position, GUIContent[] subLabels, int[] values, float labelWidth)
+        {
+            int eCount = values.Length;
+            float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
+            Rect nr = new Rect(position);
+            nr.width = w;
+            float t = EditorGUIUtility.labelWidth;
+            int l = EditorGUI.indentLevel;
+            EditorGUIUtility.labelWidth = labelWidth;
+            EditorGUI.indentLevel = 0;
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = EditorGUI.IntField(nr, subLabels[i], values[i]);
                 nr.x += w + kSpacingSubLabel;
             }
             EditorGUIUtility.labelWidth = t;
@@ -4458,7 +4689,7 @@ namespace UnityEditor
         internal static bool HelpIconButton(Rect position, Object obj)
         {
             bool isDevBuild = Unsupported.IsDeveloperBuild();
-            // For efficiency, only check in development builds if this scipt is a user script.
+            // For efficiency, only check in development builds if this script is a user script.
             bool monoBehaviourFallback = !isDevBuild;
             if (!monoBehaviourFallback)
             {
@@ -4877,6 +5108,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
+            GUIDebugger.LogBeginProperty(property.propertyPath, totalPosition);
             showMixedValue = property.hasMultipleDifferentValues;
 
             if (property.isAnimated)
@@ -4899,6 +5131,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Ends a Property wrapper started with ::ref::BeginProperty.
         public static void EndProperty()
         {
+            GUIDebugger.LogEndProperty();
+
             showMixedValue = false;
             PropertyGUIData data = s_PropertyStack.Pop();
             // Context menu
@@ -5117,13 +5351,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
             if (t == null) return null;
 
             TextureUsageMode usage = TextureUtil.GetUsageMode(t);
+            TextureFormat format = TextureUtil.GetTextureFormat(t);
             if (usage == TextureUsageMode.LightmapRGBM || usage == TextureUsageMode.RGBMEncoded)
                 return lightmapRGBMMaterial;
             else if (usage == TextureUsageMode.LightmapDoubleLDR)
                 return lightmapDoubleLDRMaterial;
-            else if (usage == TextureUsageMode.NormalmapDXT5nm)
+            else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
                 return normalmapMaterial;
-            else if (TextureUtil.IsAlphaOnlyTextureFormat(TextureUtil.GetTextureFormat(t)))
+            else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
                 return alphaMaterial;
             return null;
         }
@@ -5195,19 +5430,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Get the height needed for a simple builtin control type.
         public static float GetPropertyHeight(SerializedPropertyType type, GUIContent label)
         {
-            if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4)
+            if (type == SerializedPropertyType.Vector3 || type == SerializedPropertyType.Vector2 || type == SerializedPropertyType.Vector4 ||
+                type == SerializedPropertyType.Vector3Int || type == SerializedPropertyType.Vector2Int)
             {
                 return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight;
             }
 
-            if (type == SerializedPropertyType.Rect)
+            if (type == SerializedPropertyType.Rect || type == SerializedPropertyType.RectInt)
             {
                 return (!LabelHasContent(label) || EditorGUIUtility.wideMode ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField;
             }
 
             // Bounds field has label on its own line even in wide mode because the words "center" and "extends"
             // would otherwise eat too much of the label space.
-            if (type == SerializedPropertyType.Bounds)
+            if (type == SerializedPropertyType.Bounds || type == SerializedPropertyType.BoundsInt)
             {
                 return (!LabelHasContent(label) ? 0f : kStructHeaderLineHeight) + kSingleLineHeight * 2 + kVerticalSpacingMultiField;
             }
@@ -5227,8 +5463,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
             {
                 case SerializedPropertyType.Vector3:
                 case SerializedPropertyType.Vector2:
+                case SerializedPropertyType.Vector3Int:
+                case SerializedPropertyType.Vector2Int:
                 case SerializedPropertyType.Rect:
+                case SerializedPropertyType.RectInt:
                 case SerializedPropertyType.Bounds:
+                case SerializedPropertyType.BoundsInt:
                     return false;
             }
             return property.hasVisibleChildren;
@@ -5391,14 +5631,34 @@ This warning only shows up in development builds.", helpTopic, pageName);
                         Vector2Field(position, property, label);
                         break;
                     }
+                    case SerializedPropertyType.Vector2Int:
+                    {
+                        Vector2IntField(position, property, label);
+                        break;
+                    }
+                    case SerializedPropertyType.Vector3Int:
+                    {
+                        Vector3IntField(position, property, label);
+                        break;
+                    }
                     case SerializedPropertyType.Rect:
                     {
                         RectField(position, property, label);
                         break;
                     }
+                    case SerializedPropertyType.RectInt:
+                    {
+                        RectIntField(position, property, label);
+                        break;
+                    }
                     case SerializedPropertyType.Bounds:
                     {
                         BoundsField(position, property, label);
+                        break;
+                    }
+                    case SerializedPropertyType.BoundsInt:
+                    {
+                        BoundsIntField(position, property, label);
                         break;
                     }
                     default:
@@ -6920,6 +7180,32 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         /// *listonly*
+        public static Vector2Int Vector2IntField(string label, Vector2Int value, params GUILayoutOption[] options)
+        {
+            return Vector2IntField(EditorGUIUtility.TempContent(label), value, options);
+        }
+
+        // Make an X & Y field for entering a [[Vector2Int]].
+        public static Vector2Int Vector2IntField(GUIContent label, Vector2Int value, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2Int, label), EditorStyles.numberField, options);
+            return EditorGUI.Vector2IntField(r, label, value);
+        }
+
+        /// *listonly*
+        public static Vector3Int Vector3IntField(string label, Vector3Int value, params GUILayoutOption[] options)
+        {
+            return Vector3IntField(EditorGUIUtility.TempContent(label), value, options);
+        }
+
+        // Make an X, Y & Z field for entering a [[Vector3Int]].
+        public static Vector3Int Vector3IntField(GUIContent label, Vector3Int value, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector3Int, label), EditorStyles.numberField, options);
+            return EditorGUI.Vector3IntField(r, label, value);
+        }
+
+        /// *listonly*
         public static Rect RectField(Rect value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.GetPropertyHeight(SerializedPropertyType.Rect, GUIContent.none), EditorStyles.numberField, options);
@@ -6942,6 +7228,28 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         /// *listonly*
+        public static RectInt RectIntField(RectInt value, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(false, EditorGUI.GetPropertyHeight(SerializedPropertyType.RectInt, GUIContent.none), EditorStyles.numberField, options);
+            return EditorGUI.RectIntField(r, value);
+        }
+
+        /// *listonly*
+        public static RectInt RectIntField(string label, RectInt value, params GUILayoutOption[] options)
+        {
+            return RectIntField(EditorGUIUtility.TempContent(label), value, options);
+        }
+
+        // Make an X, Y, W & H field for entering a [[RectInt]].
+        public static RectInt RectIntField(GUIContent label, RectInt value, params GUILayoutOption[] options)
+        {
+            bool hasLabel = EditorGUI.LabelHasContent(label);
+            float height = EditorGUI.GetPropertyHeight(SerializedPropertyType.RectInt, label);
+            Rect r = s_LastRect = GetControlRect(hasLabel, height, EditorStyles.numberField, options);
+            return EditorGUI.RectIntField(r, label, value);
+        }
+
+        /// *listonly*
         public static Bounds BoundsField(Bounds value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(false, EditorGUI.GetPropertyHeight(SerializedPropertyType.Bounds, GUIContent.none), EditorStyles.numberField, options);
@@ -6961,6 +7269,28 @@ This warning only shows up in development builds.", helpTopic, pageName);
             float height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Bounds, label);
             Rect r = s_LastRect = GetControlRect(hasLabel, height, EditorStyles.numberField, options);
             return EditorGUI.BoundsField(r, label, value);
+        }
+
+        /// *listonly*
+        public static BoundsInt BoundsIntField(BoundsInt value, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(false, EditorGUI.GetPropertyHeight(SerializedPropertyType.BoundsInt, GUIContent.none), EditorStyles.numberField, options);
+            return EditorGUI.BoundsIntField(r, value);
+        }
+
+        /// *listonly*
+        public static BoundsInt BoundsIntField(string label, BoundsInt value, params GUILayoutOption[] options)
+        {
+            return BoundsIntField(EditorGUIUtility.TempContent(label), value, options);
+        }
+
+        // Make Center & Extents field for entering a [[BoundsInt]].
+        public static BoundsInt BoundsIntField(GUIContent label, BoundsInt value, params GUILayoutOption[] options)
+        {
+            bool hasLabel = EditorGUI.LabelHasContent(label);
+            float height = EditorGUI.GetPropertyHeight(SerializedPropertyType.BoundsInt, label);
+            Rect r = s_LastRect = GetControlRect(hasLabel, height, EditorStyles.numberField, options);
+            return EditorGUI.BoundsIntField(r, label, value);
         }
 
         // Make a property field that look like a multi property field (but is made up of individual properties)

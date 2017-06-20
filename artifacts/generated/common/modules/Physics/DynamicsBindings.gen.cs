@@ -20,6 +20,7 @@ namespace UnityEngine
 
 public partial class Physics
 {
+    internal const float k_MaxFloatMinusEpsilon = 340282326356119260000000000000000000000f;
     public const int IgnoreRaycastLayer = 1 << 2;
     [System.Obsolete ("Please use Physics.IgnoreRaycastLayer instead. (UnityUpgradable) -> IgnoreRaycastLayer", true)]
     public const int kIgnoreRaycastLayer = IgnoreRaycastLayer;
@@ -1200,6 +1201,20 @@ public static bool BoxCast(Vector3 center, Vector3 halfExtents, Vector3 directio
         set;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SyncTransforms () ;
+
+    public extern static bool autoSyncTransforms
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
 }
 
 [UsedByNativeCode]
@@ -1934,6 +1949,15 @@ public partial class Joint : Component
         set;
     }
 
+    internal Matrix4x4 GetJointFrame () {
+        Matrix4x4 result;
+        INTERNAL_CALL_GetJointFrame ( this, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetJointFrame (Joint self, out Matrix4x4 value);
 }
 
 public sealed partial class HingeJoint : Joint

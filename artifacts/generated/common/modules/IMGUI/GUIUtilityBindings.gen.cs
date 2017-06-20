@@ -153,6 +153,10 @@ internal sealed partial class GUIClip
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void Internal_Pop () ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  int Internal_GetCount () ;
+
     internal static Rect GetTopRect () {
         Rect result;
         INTERNAL_CALL_GetTopRect ( out result );

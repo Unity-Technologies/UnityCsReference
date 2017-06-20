@@ -226,6 +226,12 @@ public static Editor CreateEditor(Object[] targetObjects, [uei.DefaultValue("nul
     
     internal bool GetOptimizedGUIBlockImplementation(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
         {
+            if (isDirty && m_OptimizedBlock != null)
+            {
+                m_OptimizedBlock.Dispose();
+                m_OptimizedBlock = null;
+            }
+
             if (m_OptimizedBlock == null)
                 m_OptimizedBlock = new OptimizedGUIBlock();
 

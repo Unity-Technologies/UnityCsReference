@@ -22,14 +22,14 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   <NoWarn>0169;0649;0626</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Boo.Lang">
@@ -178,6 +178,9 @@
 <Compile Include="..\..\Editor\Mono\DropInfo.cs" >
 <Link>Editor\Mono\DropInfo.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs" >
+<Link>Editor\Mono\ScriptEditorUtility.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\EditorGUI.cs" >
 <Link>Editor\Mono\EditorGUI.cs</Link>
 </Compile>
@@ -295,6 +298,9 @@
 <Compile Include="..\..\Editor\Mono\RetainedMode.cs" >
 <Link>Editor\Mono\RetainedMode.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\BuildPlayerSceneTreeView.cs" >
+<Link>Editor\Mono\BuildPlayerSceneTreeView.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ProjectBrowserColumnOne.cs" >
 <Link>Editor\Mono\ProjectBrowserColumnOne.cs</Link>
 </Compile>
@@ -339,6 +345,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\AssetPipeline\ScriptedImporter.cs" >
 <Link>Editor\Mono\AssetPipeline\ScriptedImporter.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\AssetPipeline\ModelImporter.bindings.cs" >
+<Link>Editor\Mono\AssetPipeline\ModelImporter.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs" >
 <Link>Editor\Mono\VisualStudioIntegration\SolutionSynchronizationSettings.cs</Link>
@@ -547,6 +556,9 @@
 <Compile Include="..\..\Editor\Mono\SceneView\RectSelection.cs" >
 <Link>Editor\Mono\SceneView\RectSelection.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\SceneView\SceneViewGridManager.cs" >
+<Link>Editor\Mono\SceneView\SceneViewGridManager.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\SceneView\SceneView.cs" >
 <Link>Editor\Mono\SceneView\SceneView.cs</Link>
 </Compile>
@@ -610,6 +622,9 @@
 <Compile Include="..\..\Editor\Mono\EditorHandles\PositionHandle.cs" >
 <Link>Editor\Mono\EditorHandles\PositionHandle.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorHandles\JointAngularLimitHandle.cs" >
+<Link>Editor\Mono\EditorHandles\JointAngularLimitHandle.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\EditorHandles\RadiusHandle.cs" >
 <Link>Editor\Mono\EditorHandles\RadiusHandle.cs</Link>
 </Compile>
@@ -651,6 +666,12 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\EditorHandles\BoundsHandle\BoxBoundsHandle.cs" >
 <Link>Editor\Mono\EditorHandles\BoundsHandle\BoxBoundsHandle.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs" >
+<Link>Editor\Mono\Grid\GridSnapping.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Grid\GridEditorUtility.cs" >
+<Link>Editor\Mono\Grid\GridEditorUtility.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs" >
 <Link>Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs</Link>
@@ -1483,11 +1504,17 @@
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyFlags.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyFlags.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs" >
+<Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyBuilder.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EditorCompilation.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\EditorCompilation.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\WSAHelpers.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\WSAHelpers.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs" >
+<Link>Editor\Mono\Scripting\ScriptCompilation\CompilerMessage.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs</Link>
@@ -1897,6 +1924,9 @@
 <Compile Include="..\..\Editor\Mono\GUIDebugger\UnifiedInspectView.cs" >
 <Link>Editor\Mono\GUIDebugger\UnifiedInspectView.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\GUIDebugger\GUIPropertyInspectView.cs" >
+<Link>Editor\Mono\GUIDebugger\GUIPropertyInspectView.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\GUIDebugger\GUILayoutInspectView.cs" >
 <Link>Editor\Mono\GUIDebugger\GUILayoutInspectView.cs</Link>
 </Compile>
@@ -1905,6 +1935,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUIDebugger\InstructionOverlayWindow.cs" >
 <Link>Editor\Mono\GUIDebugger\InstructionOverlayWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUIDebugger\GUINamedControlInspectView.cs" >
+<Link>Editor\Mono\GUIDebugger\GUINamedControlInspectView.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUIDebugger\StyleDrawInspectView.cs" >
 <Link>Editor\Mono\GUIDebugger\StyleDrawInspectView.cs</Link>
@@ -2218,6 +2251,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\MeshColliderEditor.cs" >
 <Link>Editor\Mono\Inspector\MeshColliderEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\JointEditor.cs" >
+<Link>Editor\Mono\Inspector\JointEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\TransformInspector.cs" >
 <Link>Editor\Mono\Inspector\TransformInspector.cs</Link>
 </Compile>
@@ -2277,6 +2313,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioSourceInspector.cs" >
 <Link>Editor\Mono\Inspector\AudioSourceInspector.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\CharacterJointEditor.cs" >
+<Link>Editor\Mono\Inspector\CharacterJointEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\CanvasEditor.cs" >
 <Link>Editor\Mono\Inspector\CanvasEditor.cs</Link>
@@ -2374,6 +2413,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\AudioChorusFilterEditor.cs" >
 <Link>Editor\Mono\Inspector\AudioChorusFilterEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\StandardRoughnessShaderGUI.cs" >
+<Link>Editor\Mono\Inspector\StandardRoughnessShaderGUI.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\RenderTextureEditor.cs" >
 <Link>Editor\Mono\Inspector\RenderTextureEditor.cs</Link>
 </Compile>
@@ -2421,6 +2463,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\CompositeCollider2DEditor.cs" >
 <Link>Editor\Mono\Inspector\CompositeCollider2DEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\ConfigurableJointEditor.cs" >
+<Link>Editor\Mono\Inspector\ConfigurableJointEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\ClothInspector.cs" >
 <Link>Editor\Mono\Inspector\ClothInspector.cs</Link>
@@ -2475,6 +2520,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs" >
 <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\Grid\GridEditor.cs" >
+<Link>Editor\Mono\Inspector\Grid\GridEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Enlighten\LightmapParameters.cs" >
 <Link>Editor\Mono\Inspector\Enlighten\LightmapParameters.cs</Link>
@@ -2532,9 +2580,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\CloudBuild\CloudBuild.cs" >
 <Link>Editor\Mono\CloudBuild\CloudBuild.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\2D\Utility2D.cs" >
-<Link>Editor\Mono\2D\Utility2D.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\2D\Common\TexturePlatformSettingsFormatHelper.cs" >
 <Link>Editor\Mono\2D\Common\TexturePlatformSettingsFormatHelper.cs</Link>
@@ -3272,6 +3317,9 @@
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\Managed\CoreStats.cs" >
 <Link>Editor\Src\CloudServicesSettings\Managed\CoreStats.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Src\CloudServicesSettings\CrashReporting\Managed\CrashReporting.cs" >
+<Link>Editor\Src\CloudServicesSettings\CrashReporting\Managed\CrashReporting.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\CloudServicesSettings\AdvertisementSettingsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\CloudServicesSettings\AdvertisementSettingsBindings.gen.cs</Link>
 </Compile>
@@ -3325,6 +3373,78 @@
 </Compile>
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TileEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\TileEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TileUtility.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\TileUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TilemapCollider2DEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\TilemapCollider2DEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TilemapEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\TilemapEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\TilemapRendererEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\TilemapRendererEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrush.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrush.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalette.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteAddPopup.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteAddPopup.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteBrushes.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteBrushes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteUtility.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaletteUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridSelectionEditor.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridSelectionEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\PaintableGrid.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\PaintableGrid.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\PaintableSceneViewGrid.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\PaintableSceneViewGrid.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\TileDragAndDrop.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\TileDragAndDrop.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\TileDragAndDropManager.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\TileDragAndDropManager.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\TilemapEditor\TilemapEditorBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\TilemapEditor\TilemapEditorBindings.gen.cs</Link>
 </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -125,7 +125,7 @@ namespace UnityEngine.Experimental.UIElements
                 clippingRect = container.globalBound;
             }
 
-            var translate = Matrix4x4.TRS(new Vector3(container.position.x, container.position.y, 0.0f), Quaternion.identity, Vector3.one);
+            var translate = Matrix4x4.TRS(new Vector3(container.layout.x, container.layout.y, 0.0f), Quaternion.identity, Vector3.one);
             GUIClip.SetTransform(container.globalTransform * translate, clippingRect);
         }
 
@@ -136,7 +136,7 @@ namespace UnityEngine.Experimental.UIElements
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)
             {
-                var r = s_ContainerStack.Peek().position;
+                var r = s_ContainerStack.Peek().layout;
                 GUILayoutUtility.LayoutFromContainer(r.width, r.height);
             }
             // restore cache

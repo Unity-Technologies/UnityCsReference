@@ -91,6 +91,7 @@ namespace UnityEditor
             var originalWidth = importer.GetResizeWidth(VideoResizeMode.OriginalSize);
             var originalHeight = importer.GetResizeHeight(VideoResizeMode.OriginalSize);
             ShowProperty(ref labelRect, ref valueRect, "Pixels", originalWidth + "x" + originalHeight);
+            ShowProperty(ref labelRect, ref valueRect, "PAR", importer.pixelAspectRatioNumerator + ":" + importer.pixelAspectRatioDenominator);
             ShowProperty(ref labelRect, ref valueRect, "Alpha", importer.sourceHasAlpha ? "Yes" : "No");
 
             var audioTrackCount = importer.sourceAudioTrackCount;
@@ -834,22 +835,30 @@ namespace UnityEditor
                 return;
 
             // Compensate spatial quality zooming, if any.
-            float widthZoomToOrig = 1.0F;
-            float heightZoomToOrig = 1.0F;
+            float previewWidth = image.width;
+            float previewHeight = image.height;
             if (importer.defaultTargetSettings.enableTranscoding)
             {
                 VideoResizeMode resizeMode = importer.defaultTargetSettings.resizeMode;
-                widthZoomToOrig  = importer.GetResizeWidth(resizeMode)  / image.width;
-                heightZoomToOrig = importer.GetResizeHeight(resizeMode) / image.height;
+                previewWidth = importer.GetResizeWidth(resizeMode);
+                previewHeight = importer.GetResizeHeight(resizeMode);
             }
 
-            float zoomLevel = Mathf.Min(new float[] {
-                widthZoomToOrig * r.width / image.width,
-                heightZoomToOrig * r.height / image.height,
-                widthZoomToOrig,
-                heightZoomToOrig
-            });
-            Rect wantedRect = new Rect(r.x, r.y, image.width * zoomLevel, image.height * zoomLevel);
+            if (importer.pixelAspectRatioDenominator > 0)
+                previewWidth *= (float)importer.pixelAspectRatioNumerator /
+                    (float)importer.pixelAspectRatioDenominator;
+
+            float zoomLevel = 1.0f;
+
+            if ((r.width / previewWidth * previewHeight) > r.height)
+                zoomLevel = r.height / previewHeight;
+            else
+                zoomLevel = r.width / previewWidth;
+
+            zoomLevel = Mathf.Clamp01(zoomLevel);
+
+            Rect wantedRect = new Rect(r.x, r.y, previewWidth * zoomLevel, previewHeight * zoomLevel);
+
             PreviewGUI.BeginScrollView(
                 r, m_Position, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
 

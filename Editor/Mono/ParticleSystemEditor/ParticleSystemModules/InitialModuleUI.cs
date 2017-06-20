@@ -33,9 +33,11 @@ namespace UnityEditor
         public SerializedMinMaxCurve m_RotationZ;
         public SerializedProperty m_RandomizeRotationDirection;
         public SerializedMinMaxCurve m_GravityModifier;
+        public SerializedProperty m_EmitterVelocity;
         public SerializedProperty m_MaxNumParticles;
         public SerializedProperty m_AutoRandomSeed;
         public SerializedProperty m_RandomSeed;
+        public SerializedProperty m_StopAction;
 
         class Texts
         {
@@ -61,6 +63,8 @@ namespace UnityEditor
             public GUIContent deltaTime = EditorGUIUtility.TextContent("Delta Time|Use either the Delta Time or the Unscaled Delta Time. Useful for playing effects whilst paused.");
             public GUIContent autoRandomSeed = EditorGUIUtility.TextContent("Auto Random Seed|Simulate differently each time the effect is played.");
             public GUIContent randomSeed = EditorGUIUtility.TextContent("Random Seed|Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
+            public GUIContent emitterVelocity = EditorGUIUtility.TextContent("Emitter Velocity|When the Particle System is moving, should we use its Transform, or Rigidbody Component, to calculate its velocity?");
+            public GUIContent stopAction = EditorGUIUtility.TextContent("Stop Action|When the Particle System is stopped and all particles have died, should the GameObject automatically disable/destroy itself?");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
@@ -99,8 +103,10 @@ namespace UnityEditor
             m_SimulationSpeed = GetProperty0("simulationSpeed");
             m_UseUnscaledTime = GetProperty0("useUnscaledTime");
             m_ScalingMode = GetProperty0("scalingMode");
+            m_EmitterVelocity = GetProperty0("useRigidbodyForVelocity");
             m_AutoRandomSeed = GetProperty0("autoRandomSeed");
             m_RandomSeed = GetProperty0("randomSeed");
+            m_StopAction = GetProperty0("stopAction");
 
             // module properties
             m_LifeTime = new SerializedMinMaxCurve(this, s_Texts.lifetime, "startLifetime");
@@ -248,6 +254,8 @@ namespace UnityEditor
             if (oldPlayOnAwake != newPlayOnAwake)
                 m_ParticleSystemUI.m_ParticleEffectUI.PlayOnAwakeChanged(newPlayOnAwake);
 
+            GUIBoolAsPopup(s_Texts.emitterVelocity, m_EmitterVelocity, new string[] { "Transform", "Rigidbody" });
+
             GUIInt(s_Texts.maxParticles, m_MaxNumParticles);
 
             bool autoRandomSeed = GUIToggle(s_Texts.autoRandomSeed, m_AutoRandomSeed);
@@ -269,6 +277,8 @@ namespace UnityEditor
                         m_RandomSeed.intValue = (int)m_ParticleSystemUI.m_ParticleSystems[0].GenerateRandomSeed();
                 }
             }
+
+            GUIPopup(s_Texts.stopAction, m_StopAction, new string[] { "None", "Disable", "Destroy" });
         }
 
         override public void UpdateCullingSupportedString(ref string text)

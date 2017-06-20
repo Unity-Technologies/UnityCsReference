@@ -16,13 +16,17 @@ namespace UnityEditor
         readonly List<IMGUIInstruction> m_Instructions = new List<IMGUIInstruction>();
         BaseInspectView m_InstructionClipView;
         BaseInspectView m_InstructionStyleView;
+        BaseInspectView m_InstructionPropertyView;
         BaseInspectView m_InstructionLayoutView;
+        private BaseInspectView m_InstructionNamedControlView;
 
         public UnifiedInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
             m_InstructionClipView = new GUIClipInspectView(guiViewDebuggerWindow);
             m_InstructionStyleView = new StyleDrawInspectView(guiViewDebuggerWindow);
             m_InstructionLayoutView = new GUILayoutInspectView(guiViewDebuggerWindow);
+            m_InstructionPropertyView = new GUIPropertyInspectView(guiViewDebuggerWindow);
+            m_InstructionNamedControlView = new GUINamedControlInspectView(guiViewDebuggerWindow);
         }
 
         public override void UpdateInstructions()
@@ -30,6 +34,8 @@ namespace UnityEditor
             m_InstructionClipView.UpdateInstructions();
             m_InstructionStyleView.UpdateInstructions();
             m_InstructionLayoutView.UpdateInstructions();
+            m_InstructionPropertyView.UpdateInstructions();
+            m_InstructionNamedControlView.UpdateInstructions();
 
             /*
             This is an expensive operation, it will resolve the callstacks for all instructions.
@@ -145,7 +151,11 @@ namespace UnityEditor
                 case InstructionType.kLayoutEndGroup:
                 case InstructionType.kLayoutEntry:
                     return m_InstructionLayoutView;
-
+                case InstructionType.kPropertyBegin:
+                case InstructionType.kPropertyEnd:
+                    return m_InstructionPropertyView;
+                case InstructionType.kLayoutNamedControl:
+                    return m_InstructionNamedControlView;
                 default:
                     throw new NotImplementedException("Unhandled InstructionType");
             }

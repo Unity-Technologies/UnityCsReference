@@ -23,14 +23,62 @@ namespace UnityEditor
             if (humanBoneArray == null || !humanBoneArray.isArray)
                 return null;
 
-            string[] humanTransforms = new string[0];
+            List<string> humanTransforms = new List<string>();
             for (int i = 0; i < humanBoneArray.arraySize; i++)
             {
                 SerializedProperty transformNameP = humanBoneArray.GetArrayElementAtIndex(i).FindPropertyRelative(sBoneName);
-                ArrayUtility.Add(ref humanTransforms, transformNameP.stringValue);
+                humanTransforms.Add(transformNameP.stringValue);
             }
 
-            return TokeniseHumanTransformsPath(refTransformsPath, humanTransforms);
+            return TokeniseHumanTransformsPath(refTransformsPath, humanTransforms.ToArray());
+        }
+
+        static public string[] GetAvatarHumanAndActiveExtraTransforms(SerializedObject so, SerializedProperty transformMaskProperty, string[] refTransformsPath)
+        {
+            SerializedProperty humanBoneArray = so.FindProperty(sHuman);
+            if (humanBoneArray == null || !humanBoneArray.isArray)
+                return null;
+
+            List<string> humanTransforms = new List<string>();
+            for (int i = 0; i < humanBoneArray.arraySize; i++)
+            {
+                SerializedProperty transformNameP = humanBoneArray.GetArrayElementAtIndex(i).FindPropertyRelative(sBoneName);
+                humanTransforms.Add(transformNameP.stringValue);
+            }
+
+            List<string> values = new List<string>(TokeniseHumanTransformsPath(refTransformsPath, humanTransforms.ToArray()));
+
+            for (int i = 0; i < transformMaskProperty.arraySize; i++)
+            {
+                float weight = transformMaskProperty.GetArrayElementAtIndex(i).FindPropertyRelative("m_Weight").floatValue;
+                string transformName = transformMaskProperty.GetArrayElementAtIndex(i).FindPropertyRelative("m_Path").stringValue;
+
+                if (weight > 0.0f &&  !values.Contains(transformName))
+                {
+                    values.Add(transformName);
+                }
+            }
+
+            return values.ToArray();
+        }
+
+        static public string[] GetAvatarInactiveTransformMaskPaths(SerializedProperty transformMaskProperty)
+        {
+            if (transformMaskProperty == null || !transformMaskProperty.isArray)
+                return null;
+
+            List<string> transformPaths = new List<string>();
+            for (int i = 0; i < transformMaskProperty.arraySize; i++)
+            {
+                SerializedProperty weight = transformMaskProperty.GetArrayElementAtIndex(i).FindPropertyRelative("m_Weight");
+                if (weight.floatValue < 0.5f)
+                {
+                    SerializedProperty transformNameP = transformMaskProperty.GetArrayElementAtIndex(i).FindPropertyRelative("m_Path");
+                    transformPaths.Add(transformNameP.stringValue);
+                }
+            }
+
+            return transformPaths.ToArray();
         }
 
         static public void UpdateTransformMask(AvatarMask mask, string[] refTransformsPath, string[] humanTransforms)
@@ -42,25 +90,28 @@ namespace UnityEditor
 
                 bool isActiveTransform = humanTransforms == null
                     ? true
-                    : ArrayUtility.FindIndex(humanTransforms,
-                        delegate(string s) { return refTransformsPath[i] == s; }) != -1;
+                    : ArrayUtility.FindIndex(humanTransforms, s => refTransformsPath[i] == s) != -1;
                 mask.SetTransformActive(i, isActiveTransform);
             }
         }
 
-        static public void UpdateTransformMask(SerializedProperty transformMask, string[] refTransformsPath, string[] humanTransforms)
+        static public void UpdateTransformMask(SerializedProperty transformMask, string[] refTransformsPath, string[] currentPaths, bool areActivePaths = true)
         {
+            // if areActivePaths=true, currentPaths is treated as the list of active transform paths
+            // else, currentPaths is treated as the list of inactive transform paths
             AvatarMask refMask = new AvatarMask();
 
             refMask.transformCount = refTransformsPath.Length;
 
-
             for (int i = 0; i < refTransformsPath.Length; i++)
             {
-                bool isActiveTransform = humanTransforms == null
-                    ? true
-                    : ArrayUtility.FindIndex(humanTransforms,
-                        delegate(string s) { return refTransformsPath[i] == s; }) != -1;
+                bool isActiveTransform;
+                if (currentPaths == null)
+                    isActiveTransform = true;
+                else if (areActivePaths)
+                    isActiveTransform = ArrayUtility.FindIndex(currentPaths, s => refTransformsPath[i] == s) != -1;
+                else
+                    isActiveTransform = ArrayUtility.FindIndex(currentPaths, s => refTransformsPath[i] == s) == -1;
 
                 refMask.SetTransformPath(i, refTransformsPath[i]);
                 refMask.SetTransformActive(i, isActiveTransform);
@@ -73,7 +124,7 @@ namespace UnityEditor
             for (int i = 0; i < mask.transformCount; i++)
             {
                 string path = mask.GetTransformPath(i);
-                if (ArrayUtility.FindIndex(humanTransforms, delegate(string s) { return path == s; }) != -1)
+                if (ArrayUtility.FindIndex(humanTransforms, s => path == s) != -1)
                     mask.SetTransformActive(i, true);
             }
         }
@@ -88,7 +139,7 @@ namespace UnityEditor
 
             for (int i = 0; i < humanTransforms.Length; i++)
             {
-                int index1 = ArrayUtility.FindIndex(refTransformsPath, delegate(string s) { return humanTransforms[i] == FileUtil.GetLastPathNameComponent(s); });
+                int index1 = ArrayUtility.FindIndex(refTransformsPath, s => humanTransforms[i] == FileUtil.GetLastPathNameComponent(s));
                 if (index1 != -1)
                 {
                     int insertIndex = tokeniseTransformsPath.Length;
@@ -96,7 +147,7 @@ namespace UnityEditor
                     string path = refTransformsPath[index1];
                     while (path.Length > 0)
                     {
-                        int index2 = ArrayUtility.FindIndex(tokeniseTransformsPath, delegate(string s) { return path == s; });
+                        int index2 = ArrayUtility.FindIndex(tokeniseTransformsPath, s => path == s);
                         if (index2 == -1)
                             ArrayUtility.Insert(ref tokeniseTransformsPath, insertIndex, path);
 

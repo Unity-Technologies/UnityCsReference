@@ -195,6 +195,11 @@ namespace UnityEditor
         Camera m_Camera;
 
         [SerializeField]
+        bool m_ShowGlobalGrid = true;
+        internal bool showGlobalGrid { get { return m_ShowGlobalGrid; } set { m_ShowGlobalGrid = value; } }
+        internal bool drawGlobalGrid { get { return AnnotationUtility.showGrid && showGlobalGrid; } }
+
+        [SerializeField]
         private Quaternion m_LastSceneViewRotation;
         public Quaternion lastSceneViewRotation
         {
@@ -419,6 +424,7 @@ namespace UnityEditor
             m_Ortho.valueChanged.AddListener(Repaint);
 
             wantsMouseMove = true;
+            wantsMouseEnterLeaveWindow = true;
             dontClearBackground = true;
             s_SceneViews.Add(this);
 
@@ -511,7 +517,6 @@ namespace UnityEditor
             }
 
             CleanupEditorDragFunctions();
-
             base.OnDisable();
         }
 
@@ -1068,7 +1073,8 @@ namespace UnityEditor
             pushedGUIClip = false;
             if (!m_Camera.gameObject.activeInHierarchy)
                 return;
-            DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, m_Size.value, m_Ortho.target, AnnotationUtility.showGrid);
+
+            DrawGridParameters gridParam = grid.PrepareGridRender(camera, pivot, m_Rotation.target, m_Size.value, m_Ortho.target, drawGlobalGrid);
 
             Event evt = Event.current;
             if (UseSceneFiltering())

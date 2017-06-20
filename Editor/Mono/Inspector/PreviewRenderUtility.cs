@@ -58,6 +58,11 @@ namespace UnityEditor
             m_GameObjects.Add(go);
         }
 
+        public void AddManagedGO(GameObject go)
+        {
+            SceneManager.MoveGameObjectToScene(go, m_Scene);
+        }
+
         public void DestroyGameObject(GameObject go)
         {
             m_GameObjects.Remove(go);
@@ -83,10 +88,16 @@ namespace UnityEditor
         private Rect m_TargetRect;
         private SavedRenderTargetState m_SavedState;
         private readonly List<GameObject> m_TempGameObjects = new List<GameObject>();
+        private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
 
         public PreviewRenderUtility(bool renderFullScene) : this()
         {}
+
+        public PreviewRenderUtility(bool renderFullScene, bool pixelPerfect) : this()
+        {
+            m_PixelPerfect = pixelPerfect;
+        }
 
         public PreviewRenderUtility()
         {
@@ -103,6 +114,8 @@ namespace UnityEditor
             Light0.color = SceneView.kSceneViewFrontLight;
             Light1.transform.rotation = Quaternion.Euler(340, 218, 177);
             Light1.color = new Color(.4f, .4f, .45f, 0f) * .7f;
+
+            m_PixelPerfect = false;
         }
 
         [Obsolete("Use the property camera instead (UnityUpgradable) -> camera", false)]
@@ -239,7 +252,10 @@ namespace UnityEditor
         {
             float scaleFacX = Mathf.Max(Mathf.Min(width * 2, 1024), width) / width;
             float scaleFacY = Mathf.Max(Mathf.Min(height * 2, 1024), height) / height;
-            return Mathf.Min(scaleFacX, scaleFacY) * EditorGUIUtility.pixelsPerPoint;
+            float result = Mathf.Min(scaleFacX, scaleFacY) * EditorGUIUtility.pixelsPerPoint;
+            if (m_PixelPerfect)
+                result = Mathf.Max(Mathf.Round(result), 1f);
+            return result;
         }
 
         [Obsolete("This method has been marked obsolete, use BeginStaticPreview() instead (UnityUpgradable) -> BeginStaticPreview(*)", false)]
@@ -305,6 +321,12 @@ namespace UnityEditor
             m_TempGameObjects.Add(copy);
         }
 
+        public GameObject InstantiatePrefabInScene(GameObject prefab)
+        {
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, m_PreviewScene.scene);
+            return instance;
+        }
+
         private Material GetInvisibleMaterial()
         {
             if (m_InvisibleMaterial == null)
@@ -317,6 +339,11 @@ namespace UnityEditor
             }
 
             return m_InvisibleMaterial;
+        }
+
+        internal void AddManagedGO(GameObject go)
+        {
+            m_PreviewScene.AddManagedGO(go);
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex)

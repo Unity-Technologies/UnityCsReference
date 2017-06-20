@@ -131,7 +131,7 @@ namespace UnityEditor
             bool anyAdded = false;
 
             ParticleSystem[] allSystems = systems.ToArray();
-            bool multiEdit = (allSystems.Count() > 1);
+            bool usingMultiEdit = (allSystems.Count() > 1);
 
             bool initializeRequired = false;
             ParticleSystem mainSystem = null;
@@ -139,7 +139,7 @@ namespace UnityEditor
             foreach (ParticleSystem shuriken in allSystems)
             {
                 ParticleSystem[] shurikens;
-                if (!multiEdit)
+                if (!usingMultiEdit)
                 {
                     ParticleSystem root = ParticleSystemEditorUtils.GetRoot(shuriken);
                     if (root == null)
@@ -156,6 +156,10 @@ namespace UnityEditor
                             {
                                 m_SelectedParticleSystems = new List<ParticleSystem>();
                                 m_SelectedParticleSystems.Add(shuriken);
+
+                                if (IsShowOnlySelectedMode())
+                                    RefreshShowOnlySelected(); // always refresh
+
                                 continue;
                             }
                         }
@@ -176,7 +180,7 @@ namespace UnityEditor
 
                 // Now initialize
                 initializeRequired = true;
-                if (anyAdded == false)
+                if (!anyAdded)
                 {
                     m_SelectedParticleSystems = new List<ParticleSystem>();
                     anyAdded = true;
@@ -184,7 +188,7 @@ namespace UnityEditor
                 m_SelectedParticleSystems.Add(shuriken);
 
                 // Single edit emitter setup
-                if (!multiEdit)
+                if (!usingMultiEdit)
                 {
                     // Init CurveEditor before modules (they may add curves during construction)
                     m_ParticleSystemCurveEditor = new ParticleSystemCurveEditor();
@@ -209,7 +213,7 @@ namespace UnityEditor
             if (initializeRequired)
             {
                 // Multi-edit emitter setup
-                if (multiEdit)
+                if (usingMultiEdit)
                 {
                     // Init CurveEditor before modules (they may add curves during construction)
                     m_ParticleSystemCurveEditor = new ParticleSystemCurveEditor();
@@ -241,7 +245,7 @@ namespace UnityEditor
                 m_CurveEditorAreaHeight = EditorPrefs.GetFloat("ParticleSystemCurveEditorAreaHeight", k_MinCurveAreaSize.y);
 
                 // For now only allow ShowOnlySelectedMode for ParticleSystemWindow
-                m_ShowOnlySelectedMode = (m_Owner is ParticleSystemWindow) ? SessionState.GetBool(k_ShowSelectedId + mainSystem.GetInstanceID(), false) : false;
+                SetShowOnlySelectedMode((m_Owner is ParticleSystemWindow) ? SessionState.GetBool(k_ShowSelectedId + mainSystem.GetInstanceID(), false) : false);
 
                 m_EmitterAreaScrollPos.x = SessionState.GetFloat("CurrentEmitterAreaScroll", 0.0f);
 
@@ -854,7 +858,7 @@ namespace UnityEditor
             m_ParticleSystemCurveEditor.OnGUI(rect);
         }
 
-        Rect ResizeHandling(bool verticalLayout)
+        void ResizeHandling(bool verticalLayout)
         {
             Rect dragRect;
             const float dragWidth = 5f;
@@ -891,7 +895,6 @@ namespace UnityEditor
                 if (Event.current.type == EventType.Repaint)
                     EditorGUIUtility.AddCursorRect(dragRect, MouseCursor.SplitResizeLeftRight);
             }
-            return dragRect;
         }
 
         void ClampWindowContentSizes()
@@ -1017,6 +1020,36 @@ namespace UnityEditor
         internal void SetShowOnlySelectedMode(bool enable)
         {
             m_ShowOnlySelectedMode = enable;
+            RefreshShowOnlySelected();
+        }
+
+        internal void RefreshShowOnlySelected()
+        {
+            if (IsShowOnlySelectedMode())
+            {
+                int[] selectedInstanceIDs = Selection.instanceIDs;
+                foreach (ParticleSystemUI psUI in m_Emitters)
+                {
+                    if (psUI.m_ParticleSystems[0] != null)
+                    {
+                        ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+                        if (psRenderer != null)
+                            psRenderer.editorEnabled = selectedInstanceIDs.Contains(psRenderer.gameObject.GetInstanceID());
+                    }
+                }
+            }
+            else
+            {
+                foreach (ParticleSystemUI psUI in m_Emitters)
+                {
+                    if (psUI.m_ParticleSystems[0] != null)
+                    {
+                        ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+                        if (psRenderer != null)
+                            psRenderer.editorEnabled = true;
+                    }
+                }
+            }
         }
     }
 } // namespace UnityEditor

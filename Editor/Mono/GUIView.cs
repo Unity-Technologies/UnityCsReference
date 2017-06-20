@@ -22,6 +22,8 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     internal partial class GUIView : View
     {
+        internal static event Action<GUIView> positionChanged = null;
+
 
         DataWatchService s_DataWatch = new DataWatchService();
 
@@ -41,7 +43,6 @@ namespace UnityEditor
                     {
                         p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
                     }
-                    p.visualTree.LoadStyleSheetsFromPaths();
                 }
                 return p;
             }
@@ -54,6 +55,8 @@ namespace UnityEditor
                 return panel.visualTree;
             }
         }
+
+        protected IMGUIContainer imguiContainer { get; private set; }
 
         int m_DepthBufferBits = 0;
         EventInterests m_EventInterests;
@@ -159,6 +162,24 @@ namespace UnityEditor
             set {}
         }
 
+        protected virtual void OnEnable()
+        {
+            imguiContainer = new IMGUIContainer(OldOnGUI);
+            imguiContainer.StretchToParentSize();
+            visualTree.InsertChild(0, imguiContainer);
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (imguiContainer.HasCapture())
+                imguiContainer.RemoveCapture();
+            visualTree.RemoveChild(imguiContainer);
+        }
+
+        protected virtual void OldOnGUI()
+        {
+        }
+
         protected override void SetPosition(Rect newPos)
         {
             Rect oldWinPos = windowPosition;
@@ -175,10 +196,12 @@ namespace UnityEditor
             m_BackgroundValid = false;
 
             panel.visualTree.SetSize(windowPosition.size);
+            if (positionChanged != null)
+                positionChanged(this);
             Repaint();
         }
 
-        public new void OnDestroy()
+        protected override void OnDestroy()
         {
             Internal_Close();
             base.OnDestroy();

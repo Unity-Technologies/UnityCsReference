@@ -73,6 +73,26 @@ namespace UnityEditor
     }
 
 
+[RequiredByNativeCode]
+    internal struct IMGUINamedControlInstruction
+    {
+        public string name;
+        public Rect rect;
+        public int id;
+    }
+
+
+[RequiredByNativeCode]
+    internal struct IMGUIPropertyInstruction
+    {
+        public string path;
+        public Rect rect;
+        public StackFrame[] beginStacktrace;
+        public StackFrame[] endStacktrace;
+    };
+
+
+
 internal enum InstructionType
 {
     kStyleDraw = 1,
@@ -80,7 +100,10 @@ internal enum InstructionType
     kClipPop = 3,
     kLayoutBeginGroup = 4,
     kLayoutEndGroup = 5,
-    kLayoutEntry = 6
+    kLayoutEntry = 6,
+    kPropertyBegin = 7,
+    kPropertyEnd = 8,
+    kLayoutNamedControl = 9
 }
 
 [RequiredByNativeCode]
@@ -141,6 +164,26 @@ internal partial class GUIViewDebuggerHelper
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void GetClipInstructionsInternal (object clipInstructions) ;
+
+    internal static void GetNamedControlInstructions(List<IMGUINamedControlInstruction> namedControlInstructions)
+        {
+            GetNamedControlInstructionsInternal(namedControlInstructions);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void GetNamedControlInstructionsInternal (object namedControlInstructions) ;
+
+    internal static void GetPropertyInstructions(List<IMGUIPropertyInstruction> namedControlInstructions)
+        {
+            GetPropertyInstructionsInternal(namedControlInstructions);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void GetPropertyInstructionsInternal (object propertyInstructions) ;
 
     internal static void GetLayoutInstructions(List<IMGUILayoutInstruction> layoutInstructions)
         {

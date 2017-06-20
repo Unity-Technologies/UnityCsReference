@@ -510,7 +510,7 @@ namespace UnityEditor
             rect = PrefixLabel(rect, label);
 
             EditorGUI.BeginChangeCheck();
-            int newValue = EditorGUI.Popup(rect, boolProp.boolValue ? 1 : 0, options, ParticleSystemStyles.Get().popup);
+            int newValue = EditorGUI.Popup(rect, null, boolProp.boolValue ? 1 : 0, EditorGUIUtility.TempContent(options), ParticleSystemStyles.Get().popup);
             if (EditorGUI.EndChangeCheck())
                 boolProp.boolValue = newValue > 0 ? true : false;
 

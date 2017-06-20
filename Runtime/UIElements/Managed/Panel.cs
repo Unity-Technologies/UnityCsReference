@@ -189,7 +189,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // reset ref to upper left
-                localPoint = localPoint - new Vector3(container.position.position.x, container.position.position.y, 0);
+                localPoint = localPoint - new Vector3(container.layout.position.x, container.layout.position.y, 0);
 
                 for (int i = container.childrenCount - 1; i >= 0; i--)
                 {
@@ -329,7 +329,7 @@ namespace UnityEngine.Experimental.UIElements
                 // update clip
                 if (container.clipChildren)
                 {
-                    var worldBound = ComputeAAAlignedBound(root.position, offset * root.globalTransform);
+                    var worldBound = ComputeAAAlignedBound(root.layout, offset * root.globalTransform);
                     // are we and our children clipped?
                     if (!worldBound.Overlaps(currentGlobalClip))
                     {
@@ -430,7 +430,7 @@ namespace UnityEngine.Experimental.UIElements
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
                 GUIClip.SetTransform(root.globalTransform, currentGlobalClip);
-                painter.DrawTexture(root.position, root.renderData.pixelCache, Color.white, ScaleMode.ScaleAndCrop);
+                painter.DrawTexture(root.layout, root.renderData.pixelCache, Color.white, ScaleMode.ScaleAndCrop);
             }
             else
             {
@@ -467,11 +467,11 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter.repaintEvent = e;
 
             // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.position);
+            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.layout);
 
             if (panelDebug != null)
             {
-                GUIClip.Internal_Push(visualTree.position, Vector2.zero, Vector2.zero, true);
+                GUIClip.Internal_Push(visualTree.layout, Vector2.zero, Vector2.zero, true);
                 if (panelDebug.EndRepaint())
                     this.visualTree.Dirty(ChangeType.Repaint);
                 GUIClip.Internal_Pop();

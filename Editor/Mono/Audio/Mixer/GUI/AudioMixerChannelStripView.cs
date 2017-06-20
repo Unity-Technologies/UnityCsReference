@@ -396,6 +396,7 @@ namespace UnityEditor
                 // Handle mouse input is first, rendering is further down (to render on top).
                 if (GUI.Button(bypassRect, bypassButtonContent, GUIStyle.none))
                 {
+                    Undo.RecordObject(effect, "Bypass Effect");
                     effect.bypass = !effect.bypass;
                     m_Controller.UpdateBypass();
                     InspectorWindow.RepaintAllInspectors();

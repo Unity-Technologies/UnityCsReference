@@ -23,7 +23,8 @@ namespace UnityEditor
             Lightmapping = 200,
             NavMesh = 300,
             PhysicsDebug = 350,
-            ParticleEffect = 400
+            ParticleEffect = 400,
+            TilemapRenderer = 450,
         }
 
         public enum WindowDisplayOption

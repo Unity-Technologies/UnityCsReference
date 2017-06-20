@@ -83,7 +83,8 @@ public enum ProfilerArea
     NetworkOperations,
     UI,
     UIDetails,
-    AreaCount,
+    GlobalIllumination,
+    AreaCount
 }
 
 [Flags]

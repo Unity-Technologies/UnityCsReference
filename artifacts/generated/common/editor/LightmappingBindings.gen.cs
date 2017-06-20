@@ -395,7 +395,7 @@ internal partial struct LightingStats
 
 public sealed partial class LightmapEditorSettings
 {
-    public enum GIBakeBackend    
+    public enum Lightmapper    
     {
         
         Radiosity = 0,
@@ -403,7 +403,7 @@ public sealed partial class LightmapEditorSettings
         PathTracer = 1
     }
 
-    public enum PathTracerSampling    
+    public enum Sampling    
     {
         
         Auto = 0,
@@ -411,7 +411,7 @@ public sealed partial class LightmapEditorSettings
         Fixed = 1
     }
 
-    public enum PathTracerFilterMode    
+    public enum FilterMode    
     {
         
         None = 0,
@@ -421,15 +421,17 @@ public sealed partial class LightmapEditorSettings
         Advanced = 2,
     }
 
-    public enum PathTracerFilter    
+    public enum FilterType    
     {
         
         Gaussian = 0,
         
-        ATrous = 1
+        ATrous = 1,
+        
+        None = 2
     }
 
-    public extern static GIBakeBackend giBakeBackend
+    public extern static Lightmapper lightmapper
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -439,7 +441,7 @@ public sealed partial class LightmapEditorSettings
         set;
     }
 
-    public extern static PathTracerSampling giPathTracerSampling
+    public extern static Sampling sampling
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -449,7 +451,27 @@ public sealed partial class LightmapEditorSettings
         set;
     }
 
-    public extern static PathTracerFilter giPathTracerFilter
+    public extern static FilterType filterTypeDirect
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static FilterType filterTypeIndirect
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static FilterType filterTypeAO
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

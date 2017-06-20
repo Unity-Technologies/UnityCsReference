@@ -38,8 +38,8 @@ namespace UnityEditor
         {
             public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
 
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TextContent("On Android, linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API and 'Minimum API Level' must be at least Android 4.3");
-            public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TextContent("On WebGL, linear colorspace is not supported");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API and 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'minimum iOS version' set to 8.0 at least");
             public static readonly GUIContent colorSpaceTVOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API.");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TextContent("Reordering the list will switch editor to the first available platform");
@@ -88,6 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TextContent("Default Screen Height");
+            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support (Experimental)");
             public static readonly GUIContent runInBackground = EditorGUIUtility.TextContent("Run In Background*");
             public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TextContent("Default Orientation*");
             public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TextContent("Portrait");
@@ -286,6 +287,7 @@ namespace UnityEditor
         SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsFullScreen;
         SerializedProperty m_DefaultIsNativeResolution;
+        SerializedProperty m_MacRetinaSupport;
 
         SerializedProperty m_UsePlayerLog;
         SerializedProperty m_KeepLoadedShadersAlive;
@@ -439,6 +441,7 @@ namespace UnityEditor
 
             m_DefaultIsFullScreen           = FindPropertyAssert("defaultIsFullScreen");
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
+            m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
             m_DisplayResolutionDialog       = FindPropertyAssert("displayResolutionDialog");
             m_SupportedAspectRatios         = FindPropertyAssert("m_SupportedAspectRatios");
@@ -811,6 +814,7 @@ namespace UnityEditor
                     }
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
+                        EditorGUILayout.PropertyField(m_MacRetinaSupport, Styles.macRetinaSupport);
                         EditorGUILayout.PropertyField(m_RunInBackground, Styles.runInBackground);
                     }
 
@@ -1460,7 +1464,11 @@ namespace UnityEditor
 
                     if (targetGroup == BuildTargetGroup.WebGL)
                     {
-                        EditorGUILayout.HelpBox(Styles.colorSpaceWebGLWarning.text, MessageType.Error);
+                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
+                        var hasMinAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+
+                        if (!hasMinAPI)
+                            EditorGUILayout.HelpBox(Styles.colorSpaceWebGLWarning.text, MessageType.Error);
                     }
                 }
             }

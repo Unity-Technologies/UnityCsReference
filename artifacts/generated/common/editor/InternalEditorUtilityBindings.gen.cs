@@ -726,6 +726,12 @@ public enum HierarchyDropMode
             {
                 return ((SpriteMask)renderer).GetSpriteBounds();
             }
+            if (renderer is UnityEngine.Tilemaps.TilemapRenderer)
+            {
+                UnityEngine.Tilemaps.Tilemap tilemap = renderer.GetComponent<UnityEngine.Tilemaps.Tilemap>();
+                if (tilemap != null)
+                    return tilemap.localBounds;
+            }
             return new Bounds(Vector3.zero, Vector3.zero);
         }
     

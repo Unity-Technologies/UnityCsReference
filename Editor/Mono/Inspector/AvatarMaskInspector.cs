@@ -176,6 +176,14 @@ namespace UnityEditor
 
             public static GUIContent BodyMask = EditorGUIUtility.TextContent("Humanoid|Define which body part are active. Also define which animation curves will be imported for an Animation Clip.");
             public static GUIContent TransformMask = EditorGUIUtility.TextContent("Transform|Define which transform are active. Also define which animation curves will be imported for an Animation Clip.");
+
+            public static GUIStyle foldoutStyle = new GUIStyle(EditorStyles.foldout);
+            public static GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
+
+            static Styles()
+            {
+                foldoutStyle.richText = labelStyle.richText = true;
+            }
         }
 
 
@@ -190,9 +198,11 @@ namespace UnityEditor
         /// </summary>
         struct NodeInfo
         {
+            public enum State { disabled, enabled, invalid };
+
             public bool m_Expanded;
             public bool m_Show;
-            public bool m_Enabled;
+            public State m_State;
             public int m_ParentIndex;
             public List<int> m_ChildIndices;
             public int m_Depth;
@@ -426,7 +436,7 @@ namespace UnityEditor
                 for (int i = 1; i < m_NodeInfos.Length; i++)
                 {
                     string path = m_NodeInfos[i].m_Path.stringValue;
-                    int index = ArrayUtility.FindIndex(m_TransformPaths, delegate(string s) { return s == path; });
+                    int index = ArrayUtility.FindIndex(m_TransformPaths, s => s == path);
                     if (index == -1)
                         return false;
 
@@ -560,14 +570,12 @@ namespace UnityEditor
                             GUILayoutUtility.GetRect(10, 15, GUILayout.ExpandWidth(false));
                             toggleRect.x += 15;
 
-                            bool enabled = GUI.enabled;
-                            GUI.enabled = m_NodeInfos[i].m_Enabled;
+                            EditorGUI.BeginDisabledGroup(m_NodeInfos[i].m_State == NodeInfo.State.disabled || m_NodeInfos[i].m_State == NodeInfo.State.invalid);
                             bool rightClick = Event.current.button == 1;
 
                             bool isActive = m_NodeInfos[i].m_Weight.floatValue > 0.0f;
                             isActive = GUI.Toggle(toggleRect, isActive, "");
 
-                            GUI.enabled = enabled;
                             if (EditorGUI.EndChangeCheck())
                             {
                                 m_NodeInfos[i].m_Weight.floatValue = isActive ? 1.0f : 0.0f;
@@ -575,11 +583,18 @@ namespace UnityEditor
                                     CheckChildren(i, isActive);
                             }
 
-                            if (m_NodeInfos[i].m_ChildIndices.Count > 0)
-                                m_NodeInfos[i].m_Expanded = EditorGUILayout.Foldout(m_NodeInfos[i].m_Expanded, m_NodeInfos[i].m_Name, true);
+                            string textValue;
+                            if (m_NodeInfos[i].m_State == NodeInfo.State.invalid)
+                                textValue = "<color=#FF0000AA>" + m_NodeInfos[i].m_Name + "</color>";
                             else
-                                EditorGUILayout.LabelField(m_NodeInfos[i].m_Name);
+                                textValue = m_NodeInfos[i].m_Name;
 
+                            if (m_NodeInfos[i].m_ChildIndices.Count > 0)
+                                m_NodeInfos[i].m_Expanded = EditorGUILayout.Foldout(m_NodeInfos[i].m_Expanded, textValue, true, Styles.foldoutStyle);
+                            else
+                                EditorGUILayout.LabelField(textValue, Styles.labelStyle);
+
+                            EditorGUI.EndDisabledGroup();
                             if (i == 1)
                             {
                                 top = toggleRect.yMin;
@@ -615,7 +630,7 @@ namespace UnityEditor
         private void SetAllTransformActive(bool active)
         {
             for (int i = 0; i < m_NodeInfos.Length; i++)
-                if (m_NodeInfos[i].m_Enabled)
+                if (m_NodeInfos[i].m_State == NodeInfo.State.enabled)
                     m_NodeInfos[i].m_Weight.floatValue = active ? 1.0f : 0.0f;
         }
 
@@ -640,7 +655,7 @@ namespace UnityEditor
                 AvatarMaskUtility.UpdateTransformMask(m_TransformMask, m_RefImporter.transformPaths, null);
         }
 
-        private void FillNodeInfos()
+        public void FillNodeInfos()
         {
             m_NodeInfos = new NodeInfo[m_TransformMask.arraySize];
             if (m_TransformMask.arraySize == 0)
@@ -658,11 +673,36 @@ namespace UnityEditor
 
                 paths[i] = m_NodeInfos[i].m_Path.stringValue;
                 string fullPath = paths[i];
-                // Enable only transform that are not human, human transform in this case are handled my muscle curve and cannot be imported.
-                if (humanTransforms != null)
-                    m_NodeInfos[i].m_Enabled = ArrayUtility.FindIndex(humanTransforms, delegate(string s) { return fullPath == s; }) == -1;
+                if (m_CanImport)
+                {
+                    // in avatar mask inspector UI,everything is enabled.
+                    m_NodeInfos[i].m_State = NodeInfo.State.enabled;
+                }
+                else if (humanTransforms != null)
+                {
+                    //  Enable only transforms that are not human. Human transforms in this case are handled by muscle curves and cannot be imported.
+                    if (ArrayUtility.FindIndex(humanTransforms, s => fullPath == s) == -1)
+                    {
+                        if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => fullPath == s) == -1)
+                            m_NodeInfos[i].m_State = NodeInfo.State.invalid;
+                        else
+                            m_NodeInfos[i].m_State = NodeInfo.State.enabled;
+                    }
+                    else
+                    {
+                        m_NodeInfos[i].m_State = NodeInfo.State.disabled;
+                    }
+                }
+                else if (m_TransformPaths != null && ArrayUtility.FindIndex(m_TransformPaths, s => fullPath == s) == -1)
+                {
+                    // mask does not map to an existing hierarchy node. It's invalid.
+                    m_NodeInfos[i].m_State = NodeInfo.State.invalid;
+                }
                 else
-                    m_NodeInfos[i].m_Enabled = true;
+                {
+                    m_NodeInfos[i].m_State = NodeInfo.State.enabled;
+                }
+
 
                 m_NodeInfos[i].m_Expanded = true;
                 m_NodeInfos[i].m_ParentIndex = -1;
@@ -715,7 +755,7 @@ namespace UnityEditor
         {
             foreach (int childIndex in m_NodeInfos[index].m_ChildIndices)
             {
-                if (m_NodeInfos[childIndex].m_Enabled)
+                if (m_NodeInfos[childIndex].m_State == NodeInfo.State.enabled)
                     m_NodeInfos[childIndex].m_Weight.floatValue = value ? 1.0f : 0.0f;
                 CheckChildren(childIndex, value);
             }

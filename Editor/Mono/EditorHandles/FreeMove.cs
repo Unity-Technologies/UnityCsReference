@@ -79,7 +79,7 @@ namespace UnityEditorInternal
                         if (!rayDrag)
                         {
                             // normal drag
-                            s_CurrentMousePosition += new Vector2(evt.delta.x, -evt.delta.y);
+                            s_CurrentMousePosition += new Vector2(evt.delta.x, -evt.delta.y) * EditorGUIUtility.pixelsPerPoint;
                             Vector3 screenPos = Camera.current.WorldToScreenPoint(Handles.matrix.MultiplyPoint(s_StartPosition));
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));
@@ -219,7 +219,7 @@ namespace UnityEditorInternal
                         if (!rayDrag)
                         {
                             // normal drag
-                            s_CurrentMousePosition += new Vector2(evt.delta.x, -evt.delta.y);
+                            s_CurrentMousePosition += new Vector2(evt.delta.x, -evt.delta.y) * EditorGUIUtility.pixelsPerPoint;
                             Vector3 screenPos = Camera.current.WorldToScreenPoint(Handles.matrix.MultiplyPoint(s_StartPosition));
                             screenPos += (Vector3)(s_CurrentMousePosition - s_StartMousePosition);
                             position = Handles.inverseMatrix.MultiplyPoint(Camera.current.ScreenToWorldPoint(screenPos));

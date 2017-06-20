@@ -29,8 +29,8 @@ namespace UnityEditor
         const float lineHeight = 18f;
         const float seperatorHeight = 8f;
         const float leftMargin = 25f;
-        int maxIndex { get {return m_ShowAddNewPresetItem ? m_ItemProvider.Count() : m_ItemProvider.Count() - 1; }}
-        public int selectedIndex {get; set; }
+        int maxIndex { get { return m_ShowAddNewPresetItem ? m_ItemProvider.Count() : m_ItemProvider.Count() - 1; } }
+        public int selectedIndex { get; set; }
 
         // itemClickedCallback arguments is clicked index, clicked item object
         public FlexibleMenu(IFlexibleMenuItemProvider itemProvider, int selectionIndex, FlexibleMenuModifyItemUI modifyItemUi, Action<int, object> itemClickedCallback)

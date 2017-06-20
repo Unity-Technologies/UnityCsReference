@@ -61,7 +61,7 @@ namespace UnityEngine.Experimental.UIElements
             IMGroup group;
             cache.NextView(out group);
             group.GenerateControlID();
-            group.position = position;
+            group.layout = position;
             group.text = content.text;
             group.style = style;
             return group;

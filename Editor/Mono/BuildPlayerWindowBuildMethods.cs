@@ -284,6 +284,14 @@ namespace UnityEditor
 
             static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
             {
+                bool initializeDefaultBuildPath = false;
+                if (EditorUserBuildSettings.GetBuildLocation(target) == String.Empty
+                    || EditorUserBuildSettings.GetBuildLocation(target) == Application.dataPath)
+                {
+                    EditorUserBuildSettings.SetBuildLocation(target, Application.dataPath);
+                    initializeDefaultBuildPath = true;
+                }
+
                 updateExistingBuild = false;
                 var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
 
@@ -304,6 +312,9 @@ namespace UnityEditor
                 string defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
                 string defaultName = FileUtil.GetLastPathNameComponent(previousPath);
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
+
+                if (initializeDefaultBuildPath)
+                    defaultName = String.Empty;
 
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 

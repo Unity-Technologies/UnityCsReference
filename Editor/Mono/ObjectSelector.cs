@@ -5,6 +5,7 @@
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
@@ -28,7 +29,6 @@ namespace UnityEditor
             public GUIStyle toolbarBack = "ObjectPickerToolbar";
             public GUIStyle tab = "ObjectPickerTab";
             public GUIStyle bottomResize = "WindowBottomResize";
-            public GUIStyle background = "ObjectPickerBackground";
             public GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
             public GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
         }
@@ -198,12 +198,7 @@ namespace UnityEditor
             if (checkGameObject && requiredClassName == "GameObject")
                 return true;
 
-            for (int i = 0; i < requiredClassNames.Length; i++)
-            {
-                if (requiredClassNames[i] == requiredClassName)
-                    return true;
-            }
-            return false;
+            return requiredClassNames.Contains(requiredClassName);
         }
 
         internal string searchFilter

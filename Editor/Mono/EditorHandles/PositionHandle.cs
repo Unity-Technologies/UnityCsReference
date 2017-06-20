@@ -99,7 +99,7 @@ namespace UnityEditor
             if (xCameraViewLerp <= kCameraViewThreshold)
             {
                 color = Color.Lerp(color, Color.clear, xCameraViewLerp);
-                position = Slider(xId, position, rotation * Vector3.right, size, ArrowHandleCap, SnapSettings.move.x);
+                position = Slider(xId, position, rotation * Vector3.right, size, ArrowHandleCap, GridSnapping.active ? 0f : SnapSettings.move.x);
             }
 
             color = isStatic ? Color.Lerp(yAxisColor, staticColor, staticBlend) : yAxisColor;
@@ -107,7 +107,7 @@ namespace UnityEditor
             if (yCameraViewLerp <= kCameraViewThreshold)
             {
                 color = Color.Lerp(color, Color.clear, yCameraViewLerp);
-                position = Slider(yId, position, rotation * Vector3.up, size, ArrowHandleCap, SnapSettings.move.y);
+                position = Slider(yId, position, rotation * Vector3.up, size, ArrowHandleCap, GridSnapping.active ? 0f : SnapSettings.move.y);
             }
 
             color = isStatic ? Color.Lerp(zAxisColor, staticColor, staticBlend) : zAxisColor;
@@ -115,14 +115,14 @@ namespace UnityEditor
             if (zCameraViewLerp <= kCameraViewThreshold)
             {
                 color = Color.Lerp(color, Color.clear, zCameraViewLerp);
-                position = Slider(zId, position, rotation * Vector3.forward, size, ArrowHandleCap, SnapSettings.move.z);
+                position = Slider(zId, position, rotation * Vector3.forward, size, ArrowHandleCap, GridSnapping.active ? 0f : SnapSettings.move.z);
             }
 
             if (s_FreeMoveMode)
             {
                 color = centerColor;
                 GUI.SetNextControlName("FreeMoveAxis");
-                position = FreeMoveHandle(freeMoveId, position, rotation, size * kFreeMoveHandleSizeFactor, SnapSettings.move, RectangleHandleCap);
+                position = FreeMoveHandle(freeMoveId, position, rotation, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : SnapSettings.move, RectangleHandleCap);
             }
             else
             {
@@ -139,6 +139,9 @@ namespace UnityEditor
             }
 
             color = temp;
+
+            if (GridSnapping.active)
+                position = GridSnapping.Snap(position);
 
             return position;
         }
@@ -246,7 +249,7 @@ namespace UnityEditor
                     axis1, axis2,
                     handleSize * 0.5f,
                     RectangleHandleCap,
-                    new Vector2(SnapSettings.move[axis1index], SnapSettings.move[axis2index]));
+                    GridSnapping.active ? Vector2.zero : new Vector2(SnapSettings.move[axis1index], SnapSettings.move[axis2index]));
 
             Handles.color = prevColor;
 

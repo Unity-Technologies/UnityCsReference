@@ -16,12 +16,16 @@ namespace Unity.SerializationLogic
             "Vector2",
             "Vector4",
             "Rect",
+            "RectInt",
             "Quaternion",
             "Matrix4x4",
             "Color",
             "Color32",
             "LayerMask",
             "Bounds",
+            "BoundsInt",
+            "Vector3Int",
+            "Vector2Int",
         };
 
         private const string AnimationCurve = "UnityEngine.AnimationCurve";

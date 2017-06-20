@@ -344,7 +344,13 @@ public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 sli
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void Internal_FinishDrawingCamera (Camera cam) ;
+    extern private static  void Internal_FinishDrawingCamera (Camera cam, [uei.DefaultValue("true")]  bool renderGizmos ) ;
+
+    [uei.ExcludeFromDocs]
+    private static void Internal_FinishDrawingCamera (Camera cam) {
+        bool renderGizmos = true;
+        Internal_FinishDrawingCamera ( cam, renderGizmos );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -662,12 +668,11 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
             DrawWireArc(center, normal, tangent, 360, radius);
         }
     
-    
+            private static readonly Vector3[] s_WireArcPoints = new Vector3[60];
     public static void DrawWireArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
-            Vector3[] points = new Vector3[60];
-            SetDiscSectionPoints(points, center, normal, from, angle, radius);
-            Handles.DrawPolyLine(points);
+            SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
+            Handles.DrawPolyLine(s_WireArcPoints);
         }
     
     
@@ -743,8 +748,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
         {
             if (Event.current.type != EventType.repaint)
                 return;
-            Vector3[] points = new Vector3[60];
-            SetDiscSectionPoints(points, center, normal, from, angle, radius);
+            SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
 
             Shader.SetGlobalColor("_HandleColor", color * new Color(1, 1, 1, .5f));
             Shader.SetGlobalFloat("_HandleSize", 1);
@@ -754,15 +758,15 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
             GL.PushMatrix();
             GL.MultMatrix(matrix);
             GL.Begin(GL.TRIANGLES);
-            for (int i = 1; i < points.Length; i++)
+            for (int i = 1, count = s_WireArcPoints.Length; i < count; ++i)
             {
                 GL.Color(color);
                 GL.Vertex(center);
-                GL.Vertex(points[i - 1]);
-                GL.Vertex(points[i]);
+                GL.Vertex(s_WireArcPoints[i - 1]);
+                GL.Vertex(s_WireArcPoints[i]);
                 GL.Vertex(center);
-                GL.Vertex(points[i]);
-                GL.Vertex(points[i - 1]);
+                GL.Vertex(s_WireArcPoints[i]);
+                GL.Vertex(s_WireArcPoints[i - 1]);
             }
             GL.End();
             GL.PopMatrix();
@@ -887,9 +891,14 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
         }
     
     
-    internal static void DrawCameraImpl(Rect position, Camera camera,
-            DrawCameraMode drawMode, bool drawGrid, DrawGridParameters gridParam, bool finish
-            )
+    [uei.ExcludeFromDocs]
+internal static void DrawCameraImpl (Rect position, Camera camera, DrawCameraMode drawMode, bool drawGrid, DrawGridParameters gridParam, bool finish) {
+    bool renderGizmos = true;
+    DrawCameraImpl ( position, camera, drawMode, drawGrid, gridParam, finish, renderGizmos );
+}
+
+internal static void DrawCameraImpl(Rect position, Camera camera,
+            DrawCameraMode drawMode, bool drawGrid, DrawGridParameters gridParam, bool finish, [uei.DefaultValue("true")]  bool renderGizmos )
         {
             Event evt = Event.current;
 
@@ -919,12 +928,13 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
                     else
                         Internal_DrawCamera(camera, (int)drawMode);
                     if (finish)
-                        Internal_FinishDrawingCamera(camera);
+                        Internal_FinishDrawingCamera(camera, renderGizmos);
                 }
             }
             else
                 Internal_SetCurrentCamera(camera);
         }
+
     
     
     internal static void DrawCamera(Rect position, Camera camera, DrawCameraMode drawMode, DrawGridParameters gridParam)

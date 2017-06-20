@@ -82,7 +82,7 @@ namespace UnityEditor
 
         // internal
         private Material m_Material;
-        Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(
+        private static readonly Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(
                 Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one
                 );
         private ArcHandle m_ArcHandle = new ArcHandle();
@@ -343,16 +343,8 @@ namespace UnityEditor
                 break;
 
                 case ParticleSystemShapeType.Sphere:
-                {
-                    // sphere
-                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
-                }
-                break;
-
                 case ParticleSystemShapeType.Hemisphere:
                 {
-                    // sphere
                     GUIFloat(s_Texts.radius, m_Radius.m_Value);
                     GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
                 }

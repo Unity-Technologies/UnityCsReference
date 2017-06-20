@@ -175,9 +175,9 @@ namespace UnityEngine.Experimental.UIElements
     internal class RepeatButtonAsset : VisualElementAsset<RepeatButton>
     {
         [SerializeField]
-        private long m_Delay;
+        internal long m_Delay;
         [SerializeField]
-        private long m_Interval;
+        internal long m_Interval;
         protected override RepeatButton CreateElementInstance()
         {
             return new RepeatButton(null, m_Delay, m_Interval);
@@ -188,11 +188,11 @@ namespace UnityEngine.Experimental.UIElements
     internal class ScrollerAsset : VisualElementAsset<Scroller>
     {
         [SerializeField]
-        private Slider.Direction m_Direction;
+        internal Slider.Direction m_Direction;
         [SerializeField]
-        private float m_LowValue;
+        internal float m_LowValue;
         [SerializeField]
-        private float m_HighValue;
+        internal float m_HighValue;
 
         protected override Scroller CreateElementInstance()
         {
@@ -204,9 +204,9 @@ namespace UnityEngine.Experimental.UIElements
     internal class ScrollerButtonAsset : VisualElementAsset<ScrollerButton>
     {
         [SerializeField]
-        private long m_Delay;
+        internal long m_Delay;
         [SerializeField]
-        private long m_Interval;
+        internal long m_Interval;
 
         protected override ScrollerButton CreateElementInstance()
         {
@@ -227,11 +227,11 @@ namespace UnityEngine.Experimental.UIElements
     internal class SliderAsset : VisualElementAsset<Slider>
     {
         [SerializeField]
-        private float m_Start;
+        internal float m_Start;
         [SerializeField]
-        private float m_End;
+        internal float m_End;
         [SerializeField]
-        private Slider.Direction m_Direction;
+        internal Slider.Direction m_Direction;
 
         protected override Slider CreateElementInstance()
         {

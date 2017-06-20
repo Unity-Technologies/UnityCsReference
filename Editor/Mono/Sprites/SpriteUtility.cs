@@ -16,6 +16,21 @@ namespace UnityEditor
 {
     internal static class SpriteUtility
     {
+        private static Material s_PreviewSpriteDefaultMaterial;
+
+        internal static Material previewSpriteDefaultMaterial
+        {
+            get
+            {
+                if (s_PreviewSpriteDefaultMaterial == null)
+                {
+                    Shader shader = Shader.Find("Sprites/Default");
+                    s_PreviewSpriteDefaultMaterial = new Material(shader);
+                }
+                return s_PreviewSpriteDefaultMaterial;
+            }
+        }
+
         static List<Object> s_SceneDragObjects;
         static DragType s_DragType;
         enum DragType { NotInitialized, SpriteAnimation, CreateMultiple }
@@ -156,6 +171,16 @@ namespace UnityEditor
                 {
                     RaycastHit rh = (RaycastHit)hit;
                     position = rh.point;
+                }
+            }
+
+            if (Selection.activeGameObject != null)
+            {
+                Grid grid = Selection.activeGameObject.GetComponentInParent<Grid>();
+                if (grid != null)
+                {
+                    Vector3Int cell = grid.WorldToCell(position);
+                    position = grid.GetCellCenterWorld(cell);
                 }
             }
 
@@ -486,6 +511,73 @@ namespace UnityEditor
                 ext == "pct" ||
                 ext == "exr" ||
                 ext == "hdr";
+        }
+
+        public static UnityTexture2D RenderStaticPreview(Sprite sprite, Color color, int width, int height)
+        {
+            return RenderStaticPreview(sprite, color, width, height, Matrix4x4.identity);
+        }
+
+        public static UnityTexture2D RenderStaticPreview(Sprite sprite, Color color, int width, int height, Matrix4x4 transform)
+        {
+            if (sprite == null)
+                return null;
+
+            PreviewHelpers.AdjustWidthAndHeightForStaticPreview((int)sprite.rect.width, (int)sprite.rect.height, ref width, ref height);
+
+            SavedRenderTargetState savedRTState = new SavedRenderTargetState();
+
+            RenderTexture tmp = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+            RenderTexture.active = tmp;
+            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
+            GL.Clear(true, true, new Color(0f, 0f, 0f, 0.1f));
+
+            previewSpriteDefaultMaterial.mainTexture = sprite.texture;
+            previewSpriteDefaultMaterial.SetPass(0);
+
+            RenderSpriteImmediate(sprite, color, transform);
+
+            GL.sRGBWrite = false;
+            UnityTexture2D copy = new UnityTexture2D(width, height, TextureFormat.ARGB32, false);
+            copy.hideFlags = HideFlags.HideAndDontSave;
+            copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            copy.Apply();
+            RenderTexture.ReleaseTemporary(tmp);
+
+            savedRTState.Restore();
+            return copy;
+        }
+
+        internal static void RenderSpriteImmediate(Sprite sprite, Color color, Matrix4x4 transform)
+        {
+            float spriteWidth = sprite.rect.width;
+            float spriteHeight = sprite.rect.height;
+
+            float pixelsToUnits = sprite.rect.width / sprite.bounds.size.x;
+            Vector2[] vertices = sprite.vertices;
+            Vector2[] uvs = sprite.uv;
+            ushort[] triangles = sprite.triangles;
+            Vector2 pivot = sprite.pivot;
+
+            GL.PushMatrix();
+            GL.LoadOrtho();
+            GL.Begin(GL.TRIANGLES);
+            for (int i = 0; i < sprite.triangles.Length; ++i)
+            {
+                ushort index = triangles[i];
+                Vector2 spriteVertex = vertices[index];
+                Vector2 uv = uvs[index];
+                Vector3 vertex = new Vector3(spriteVertex.x, spriteVertex.y, 0);
+                vertex = transform.MultiplyPoint(vertex);
+                vertex.x = (vertex.x * pixelsToUnits + pivot.x) / spriteWidth;
+                vertex.y = (vertex.y * pixelsToUnits + pivot.y) / spriteHeight;
+                GL.Color(color);
+                GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+                GL.Vertex3(vertex.x, vertex.y, vertex.z);
+            }
+            GL.End();
+            GL.PopMatrix();
+            GL.sRGBWrite = false;
         }
 
         public static UnityTexture2D CreateTemporaryDuplicate(UnityTexture2D original, int width, int height)
