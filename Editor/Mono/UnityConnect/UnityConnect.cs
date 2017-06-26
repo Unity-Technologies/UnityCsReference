@@ -142,7 +142,7 @@ namespace UnityEditor.Connect
 
         public void GoToHub(string page)
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true);
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, page, true, "goto_hub_method");
         }
 
 

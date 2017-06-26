@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -127,12 +128,14 @@ namespace UnityEditor
                 renderer.enabled = enabled;
         }
 
-        void ShowReferences(bool showReference)
+        void SetPreviewCharacterEnabled(bool enabled, bool showReference)
         {
-            SetEnabledRecursive(m_ReferenceInstance, showReference);
-            SetEnabledRecursive(m_DirectionInstance, showReference);
-            SetEnabledRecursive(m_PivotInstance, showReference);
-            SetEnabledRecursive(m_RootInstance, showReference);
+            if (m_PreviewInstance != null)
+                SetEnabledRecursive(m_PreviewInstance, enabled);
+            SetEnabledRecursive(m_ReferenceInstance, showReference && enabled);
+            SetEnabledRecursive(m_DirectionInstance, showReference && enabled);
+            SetEnabledRecursive(m_PivotInstance, showReference && enabled);
+            SetEnabledRecursive(m_RootInstance, showReference && enabled);
         }
 
         static AnimationClip GetFirstAnimationClipFromMotion(Motion motion)
@@ -331,6 +334,8 @@ namespace UnityEditor
             m_IKOnFeet = EditorPrefs.GetBool(kIkPref, false);
             m_ShowReference = EditorPrefs.GetBool(kReferencePref, true);
             timeControl.playbackSpeed = EditorPrefs.GetFloat(kSpeedPref, 1f);
+
+            SetPreviewCharacterEnabled(false, false);
         }
 
         private PreviewRenderUtility previewUtility
@@ -490,8 +495,9 @@ namespace UnityEditor
             rt.wrapMode = TextureWrapMode.Clamp;
             rt.filterMode = FilterMode.Bilinear;
             cam.targetTexture = rt;
-            //ShowReferences(false);
+
             // Enable character and render with camera into the shadowmap
+            SetPreviewCharacterEnabled(true, false);
             m_PreviewUtility.camera.Render();
 
             // Draw a quad, with shader that will produce white color everywhere
@@ -539,6 +545,7 @@ namespace UnityEditor
 
         public void DoRenderPreview(Rect previewRect, GUIStyle background)
         {
+            var probe = RenderSettings.ambientProbe;
             previewUtility.BeginPreview(previewRect, background);
 
             Quaternion bodyRot;
@@ -575,7 +582,7 @@ namespace UnityEditor
                 pivotPos = Vector3.zero;
             }
 
-            SetupPreviewLightingAndFx();
+            SetupPreviewLightingAndFx(probe);
 
             Vector3 direction = bodyRot * Vector3.forward;
             direction[1] = 0;
@@ -653,18 +660,22 @@ namespace UnityEditor
                 Matrix4x4 matrix = Matrix4x4.TRS(floorPos, floorRot, Vector3.one * kFloorScaleSmall * m_AvatarScale);
                 Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
             }
-            ShowReferences(m_ShowReference);
+
+            SetPreviewCharacterEnabled(true, m_ShowReference);
             previewUtility.Render();
+            SetPreviewCharacterEnabled(false, false);
 
             RenderTexture.ReleaseTemporary(shadowMap);
         }
 
-        private void SetupPreviewLightingAndFx()
+        private void SetupPreviewLightingAndFx(SphericalHarmonicsL2 probe)
         {
             previewUtility.lights[0].intensity = 1.4f;
             previewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
             previewUtility.lights[1].intensity = 1.4f;
-            previewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
+            RenderSettings.ambientMode = AmbientMode.Custom;
+            RenderSettings.ambientLight = new Color(0.1f, 0.1f, 0.1f, 1.0f);
+            RenderSettings.ambientProbe = probe;
         }
 
         private float m_LastNormalizedTime = -1000;

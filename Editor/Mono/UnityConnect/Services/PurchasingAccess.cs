@@ -41,9 +41,14 @@ namespace UnityEditor.Web
             return PurchasingSettings.enabled;
         }
 
+        public struct PurchasingServiceState { public bool iap; }
         override public void EnableService(bool enabled)
         {
-            PurchasingSettings.enabled = enabled;
+            if (PurchasingSettings.enabled != enabled)
+            {
+                PurchasingSettings.enabled = enabled;
+                EditorAnalytics.SendEventServiceInfo(new PurchasingServiceState() {iap = enabled});
+            }
         }
 
         static PurchasingAccess()

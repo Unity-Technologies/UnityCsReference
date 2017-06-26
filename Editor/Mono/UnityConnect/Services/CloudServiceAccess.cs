@@ -41,12 +41,12 @@ namespace UnityEditor.Web
 
         public void ShowServicePage()
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(GetServiceName(), true);
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(GetServiceName(), true, "show_service_page");
         }
 
         public void GoBackToHub()
         {
-            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, true);
+            UnityEditor.Connect.UnityConnectServiceCollection.instance.ShowService(UnityEditor.Web.HubAccess.kServiceName, true, "go_back_to_hub");
         }
     }
 }

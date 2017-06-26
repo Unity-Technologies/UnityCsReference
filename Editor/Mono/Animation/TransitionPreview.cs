@@ -157,7 +157,8 @@ namespace UnityEditor
 
         private bool MustResample(TransitionInfo info)
         {
-            return mustResample || !info.IsEqual(m_RefTransitionInfo);
+            bool isInPlayback = m_AvatarPreview != null  && m_AvatarPreview.Animator != null && m_AvatarPreview.Animator.recorderMode == AnimatorRecorderMode.Playback;
+            return mustResample || !info.IsEqual(m_RefTransitionInfo) || !isInPlayback;
         }
 
         private void WriteParametersInController()

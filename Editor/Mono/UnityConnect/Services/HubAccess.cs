@@ -40,7 +40,7 @@ namespace UnityEditor.Web
 
         public void ShowService(string name)
         {
-            UnityConnectServiceCollection.instance.ShowService(name, true);
+            UnityConnectServiceCollection.instance.ShowService(name, true, "show_service_method");
         }
 
         public void EnableCloudService(string name, bool enabled)
@@ -58,7 +58,7 @@ namespace UnityEditor.Web
         [MenuItem("Window/Services %0", false, 1999)]
         private static void ShowMyWindow()
         {
-            UnityConnectServiceCollection.instance.ShowService(kServiceName, true);
+            UnityConnectServiceCollection.instance.ShowService(kServiceName, true, "window_menu_item");
         }
     }
 }

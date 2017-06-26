@@ -348,6 +348,7 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.reflectionProbeBlending);
                 EditorGUILayout.LabelField(Styles.detailNormalMap);
                 EditorGUILayout.LabelField(Styles.semitransparentShadows);
+                EditorGUILayout.LabelField(Styles.enableLPPV);
 
                 if (!vertical)
                 {
@@ -421,6 +422,7 @@ namespace UnityEditor
                 ts.reflectionProbeBlending      = EditorGUILayout.Toggle(ts.reflectionProbeBlending);
                 ts.detailNormalMap              = EditorGUILayout.Toggle(ts.detailNormalMap);
                 ts.semitransparentShadows       = EditorGUILayout.Toggle(ts.semitransparentShadows);
+                ts.enableLPPV                   = EditorGUILayout.Toggle(ts.enableLPPV);
 
                 if (!vertical)
                 {
@@ -554,6 +556,7 @@ namespace UnityEditor
                 public static readonly GUIContent cascadedShadowMaps = EditorGUIUtility.TextContent("Cascaded Shadows");
                 public static readonly GUIContent prefer32BitShadowMaps = EditorGUIUtility.TextContent("Prefer 32 bit shadow maps");
                 public static readonly GUIContent semitransparentShadows = EditorGUIUtility.TextContent("Enable Semitransparent Shadows");
+                public static readonly GUIContent enableLPPV = EditorGUIUtility.TextContent("Enable Light Probe Proxy Volume");
                 public static readonly GUIContent renderingPath = EditorGUIUtility.TextContent("Rendering Path");
                 public static readonly GUIContent useHDR = EditorGUIUtility.TextContent("Use HDR");
                 public static readonly GUIContent hdrMode = EditorGUIUtility.TextContent("HDR Mode");

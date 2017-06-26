@@ -22,5 +22,10 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("GetNextAnimationClipState is obsolete. Use GetNextAnimatorClipInfo instead (UnityUpgradable) -> GetNextAnimatorClipInfo(*)", true)]
         public AnimationInfo[] GetNextAnimationClipState(int layerIndex) { return null; }
+
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Stop is obsolete. Use Animator.enabled = false instead", true)]
+        public void Stop() {}
     }
 }
