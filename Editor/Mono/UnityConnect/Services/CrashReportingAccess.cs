@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
+using System;
 using UnityEditor.Connect;
 using UnityEngine;
 using UnityEditor.CrashReporting;
@@ -31,9 +32,15 @@ namespace UnityEditor.Web
             return CrashReportingSettings.enabled;
         }
 
+        [Serializable]
+        public struct CrashReportingServiceState { public bool crash_reporting; }
         override public void EnableService(bool enabled)
         {
-            CrashReportingSettings.enabled = enabled;
+            if (CrashReportingSettings.enabled != enabled)
+            {
+                CrashReportingSettings.enabled = enabled;
+                EditorAnalytics.SendEventServiceInfo(new CrashReportingServiceState() { crash_reporting = enabled });
+            }
         }
 
         static CrashReportingAccess()

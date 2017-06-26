@@ -178,6 +178,13 @@ namespace UnityEditor
                 new Color(.5f, .5f, .5f, 1),
                 null
                 );
+
+
+            if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+            }
         }
 
         public void BeginStaticPreview(Rect r)
@@ -374,9 +381,6 @@ namespace UnityEditor
             foreach (var light in lights)
                 light.enabled = true;
 
-            var oldProbe = RenderSettings.ambientProbe;
-            Unsupported.SetOverrideRenderSettings(previewScene.scene);
-            RenderSettings.ambientProbe = oldProbe;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
             Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
 

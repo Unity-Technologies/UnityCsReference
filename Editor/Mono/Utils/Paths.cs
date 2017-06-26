@@ -77,6 +77,11 @@ namespace UnityEditor.Utils
             return path.Replace('\\', Path.DirectorySeparatorChar);
         }
 
+        public static string ConvertSeparatorsToUnity(this string path)
+        {
+            return path.Replace('\\', '/');
+        }
+
         public static string UnifyDirectorySeparator(string path)
         {
             return path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);

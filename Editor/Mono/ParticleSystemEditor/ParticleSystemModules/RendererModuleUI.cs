@@ -43,7 +43,6 @@ namespace UnityEditor
         SerializedProperty m_Pivot;
         SerializedProperty m_UseCustomVertexStreams;
         SerializedProperty m_VertexStreams;
-
         SerializedProperty m_MaskInteraction;
 
         ReorderableList m_VertexStreamsList;

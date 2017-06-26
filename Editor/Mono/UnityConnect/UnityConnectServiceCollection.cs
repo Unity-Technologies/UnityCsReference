@@ -8,6 +8,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Web;
 using UnityEditorInternal;
+using UnityEditor;
 
 namespace UnityEditor.Connect
 {
@@ -34,7 +35,7 @@ namespace UnityEditor.Connect
 
             // We want to show the service window when we create a project, but not every time we open one.
             if (Application.HasARGV("createProject"))
-                ShowService(HubAccess.kServiceName, true);
+                ShowService(HubAccess.kServiceName, true, "init_create_project");
         }
 
         public bool isDrawerOpen
@@ -134,12 +135,20 @@ namespace UnityEditor.Connect
             return m_Services.ContainsKey(serviceName);
         }
 
-        public bool ShowService(string serviceName, bool forceFocus)
+        public bool ShowService(string serviceName, bool forceFocus, string atReferrer)
         {
-            return ShowService(serviceName, "", forceFocus);
+            return ShowService(serviceName, "", forceFocus, atReferrer);
         }
 
-        public bool ShowService(string serviceName, string atPage, bool forceFocus)
+        [Serializable]
+        public struct ShowServiceState
+        {
+            public string service;
+            public string page;
+            public string referrer;
+        }
+
+        public bool ShowService(string serviceName, string atPage, bool forceFocus, string atReferrer)
         {
             if (!m_Services.ContainsKey(serviceName))
             {
@@ -149,6 +158,7 @@ namespace UnityEditor.Connect
             ConnectInfo state = UnityConnect.instance.connectInfo;
             m_CurrentServiceName = GetActualServiceName(serviceName, state);
             m_CurrentPageName = atPage;
+            EditorAnalytics.SendEventShowService(new ShowServiceState() { service = m_CurrentServiceName, page = atPage, referrer = atReferrer});
             EnsureDrawerIsVisible(forceFocus);
             return true;
         }

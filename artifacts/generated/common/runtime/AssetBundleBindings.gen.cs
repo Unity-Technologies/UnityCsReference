@@ -59,6 +59,20 @@ public sealed partial class AssetBundle : Object
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void UnloadAllAssetBundles (bool unloadAllObjects) ;
+
+    public static IEnumerable<AssetBundle> GetAllLoadedAssetBundles()
+        {
+            return (IEnumerable<AssetBundle>)GetAllLoadedAssetBundles_Internal();
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  AssetBundle[] GetAllLoadedAssetBundles_Internal () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  AssetBundleCreateRequest LoadFromFileAsync (string path, [uei.DefaultValue("0")]  uint crc , [uei.DefaultValue("0")]  ulong offset ) ;
 
     [uei.ExcludeFromDocs]

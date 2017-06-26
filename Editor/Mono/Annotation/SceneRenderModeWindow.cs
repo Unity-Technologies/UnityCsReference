@@ -63,7 +63,6 @@ namespace UnityEditor
         BakedTexelValidity = 28,
         BakedIndices = 29,
         BakedCharting = 30,
-
         SpriteMask = 31,
     }
 

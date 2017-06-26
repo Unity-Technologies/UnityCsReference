@@ -31,6 +31,7 @@ namespace UnityEditor.Rendering
 
         public bool             cascadedShadowMaps;
         public bool             prefer32BitShadowMaps;
+        public bool             enableLPPV;
         public bool             semitransparentShadows;
 
         public RenderingPath    renderingPath;

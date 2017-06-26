@@ -107,6 +107,7 @@ namespace UnityEditorInternal
         {
             var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
             var assemblies = GetUserAssemblies(rcr, managedAssemblyFolderPath);
+            assemblies.AddRange(Directory.GetFiles(managedAssemblyFolderPath, "I18N*.dll", SearchOption.TopDirectoryOnly));
             var assembliesToStrip = assemblies.ToArray();
 
             var searchDirs = new[]

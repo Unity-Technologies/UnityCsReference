@@ -3047,9 +3047,6 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\artifacts\generated\common\editor\AsyncProgressBarBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\AsyncProgressBarBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\UsabilityAnalyticsBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\UsabilityAnalyticsBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\OSColorPickerBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\OSColorPickerBindings.gen.cs</Link>
 </Compile>
@@ -3276,6 +3273,12 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\UnityEditorAnalytics\EditorAnalyticsBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\UnityEditorAnalytics\EditorAnalyticsBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\CloudServicesSettings\AdvertisementSettingsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\CloudServicesSettings\AdvertisementSettingsBindings.gen.cs</Link>

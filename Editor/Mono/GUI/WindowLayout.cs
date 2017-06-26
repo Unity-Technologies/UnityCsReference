@@ -608,7 +608,7 @@ namespace UnityEditor
                 {
                     if (UnityConnect.instance.online && UnityConnect.instance.loggedIn && UnityConnect.instance.shouldShowServicesWindow)
                     {
-                        UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true);
+                        UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "new_project_created");
                     }
                     else
                     {

@@ -34,7 +34,6 @@ namespace UnityEditor
 
         float m_TotalLogosDuration;
 
-        static readonly Color k_DarkLogoColor = new Color(0.13f, 0.17f, 0.21f);
         static readonly float k_MinLogoTime = 2;
         static readonly float k_MaxLogoTime = 10.0f;
         static readonly float k_DefaultLogoTime = 2.0f;
@@ -138,7 +137,7 @@ namespace UnityEditor
             float logoHeight = logoWidth / (s_UnityLogo.texture.width / (float)s_UnityLogo.texture.height);
             var logoRect = new Rect(rect.x, rect.y + (rect.height - logoHeight) / 2.0f, k_LogoListUnityLogoMaxWidth, logoHeight);
             var oldCol = GUI.color;
-            GUI.color = (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight ? k_DarkLogoColor : Color.white);
+            GUI.color = (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight ? Color.black : Color.white);
             GUI.Label(logoRect, s_UnityLogo.texture);
             GUI.color = oldCol;
 
