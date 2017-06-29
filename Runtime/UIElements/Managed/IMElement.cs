@@ -24,7 +24,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private GUIStyle m_GUIStyle;
         // IMElements have their GUIStyle set directly, and don't use UIElements Style Sheet at the moment
-        public GUIStyle style
+        public GUIStyle guiStyle
         {
             get { return m_GUIStyle; }
             set
@@ -40,7 +40,7 @@ namespace UnityEngine.Experimental.UIElements
         protected IMElement() :
             base()
         {
-            this.style = GUIStyle.none;
+            this.guiStyle = GUIStyle.none;
             this.focusType = FocusType.Passive;
             this.id = NonInteractiveControlID;
         }
@@ -54,7 +54,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void OnReuse()
         {
-            style = GUIStyle.none;
+            guiStyle = GUIStyle.none;
             position = new Rect(0, 0, 0, 0);
             enabled = true;
             id = NonInteractiveControlID;

@@ -9,12 +9,11 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using System.IO;
-using System.Collections;
-using System.Reflection;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.BuildReporting;
 using Object = UnityEngine.Object;
+using Mono.Cecil;
 
 
 namespace UnityEditor
@@ -67,6 +66,7 @@ public enum BuildOptions
     ForceEnableAssertions = 1 << 17,
     
     CompressWithLz4 = 1 << 18,
+    CompressWithLz4HC = 1 << 19,
     
     [System.Obsolete ("Specify IL2CPP optimization level in Player Settings.")]
     ForceOptimizeScriptCompilation = 0,
@@ -640,6 +640,38 @@ public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBund
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool IsUnityScriptEvalSupported (BuildTarget target) ;
+
+    internal static string[] GetReferencingPlayerAssembliesForDLL(string dllPath)
+        {
+            DefaultAssemblyResolver resolverRoot = new DefaultAssemblyResolver();
+            resolverRoot.AddSearchDirectory(Path.GetDirectoryName(dllPath));
+            AssemblyDefinition assemblyRoot = AssemblyDefinition.ReadAssembly(dllPath, new ReaderParameters { AssemblyResolver = resolverRoot });
+
+            string[] assemblyPaths = BuildPipeline.GetManagedPlayerDllPaths();
+            List<string> referencingAssemblies = new List<string>();
+
+            foreach (string assemblyPath in assemblyPaths)
+            {
+                DefaultAssemblyResolver resolver = new DefaultAssemblyResolver();
+                resolver.AddSearchDirectory(Path.GetDirectoryName(assemblyPath));
+                AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(assemblyPath, new ReaderParameters { AssemblyResolver = resolver });
+
+                foreach (AssemblyNameReference anr in assembly.MainModule.AssemblyReferences)
+                {
+                    if (anr.FullName == assemblyRoot.Name.FullName)
+                    {
+                        referencingAssemblies.Add(assemblyPath);
+                    }
+                }
+            }
+
+            return referencingAssemblies.ToArray();
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  string[] GetManagedPlayerDllPaths () ;
 
 }
 

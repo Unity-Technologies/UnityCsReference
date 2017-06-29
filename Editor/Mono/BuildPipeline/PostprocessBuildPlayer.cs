@@ -130,6 +130,14 @@ namespace UnityEditor
             }
         }
 
+        static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            if (postprocessor != null)
+                return postprocessor.SupportsLz4Compression();
+            return false;
+        }
+
         private class NoTargetsFoundException : Exception
         {
             public NoTargetsFoundException() : base() {}

@@ -90,6 +90,14 @@ namespace UnityEditor
         }
 
         static GUIContent[] s_ToolIcons;
+        static readonly string[] s_ToolControlNames = new[]
+        {
+            "ToolbarPersistentToolsPan",
+            "ToolbarPersistentToolsTranslate",
+            "ToolbarPersistentToolsRotate",
+            "ToolbarPersistentToolsScale",
+            "ToolbarPersistentToolsRect",
+        };
         static GUIContent[] s_ViewToolIcons;
         static GUIContent[] s_PivotIcons;
         static GUIContent[] s_PivotRotation;
@@ -397,7 +405,7 @@ namespace UnityEditor
             }
             s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? 4 : 0)];
 
-            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, "Command");
+            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, "Command");
             if (GUI.changed)
             {
                 Tools.current = (Tool)displayTool;
@@ -407,9 +415,11 @@ namespace UnityEditor
 
         void DoPivotButtons(Rect rect)
         {
+            GUI.SetNextControlName("ToolbarToolPivotPositionButton");
             Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, "ButtonLeft");
             if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
                 GUI.enabled = false;
+            GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
             PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, "ButtonRight");
             if (Tools.pivotRotation != tempPivot)
             {
@@ -435,6 +445,7 @@ namespace UnityEditor
 
             Color c = GUI.color + new Color(.01f, .01f, .01f, .01f);
             GUI.contentColor = new Color(1.0f / c.r, 1.0f / c.g, 1.0f / c.g, 1.0f / c.a);
+            GUI.SetNextControlName("ToolbarPlayModePlayButton");
             GUILayout.Toggle(isOrWillEnterPlaymode, s_PlayIcons[buttonOffset], "CommandLeft");
             GUI.backgroundColor = Color.white;
             if (GUI.changed)
@@ -446,6 +457,7 @@ namespace UnityEditor
             // Pause game
             GUI.changed = false;
 
+            GUI.SetNextControlName("ToolbarPlayModePauseButton");
             bool isPaused = GUILayout.Toggle(EditorApplication.isPaused, s_PlayIcons[buttonOffset + 1], "CommandMid");
             if (GUI.changed)
             {
@@ -454,6 +466,7 @@ namespace UnityEditor
             }
 
             // Step playmode
+            GUI.SetNextControlName("ToolbarPlayModeStepButton");
             if (GUILayout.Button(s_PlayIcons[buttonOffset + 2], "CommandRight"))
             {
                 EditorApplication.Step();
@@ -566,7 +579,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    bool collabEnable = CollabAccess.Instance.IsServiceEnabled();
+                    bool collabEnable = Collab.instance.IsCollabEnabledForCurrentProject();
 
                     if (UnityConnect.instance.projectInfo.projectBound == false || !collabEnable)
                     {

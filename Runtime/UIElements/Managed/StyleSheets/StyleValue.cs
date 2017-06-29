@@ -34,7 +34,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         MaxWidth,
         MaxHeight,
         Flex,
-        BorderWidth,
+        BorderLeftWidth,
+        BorderTopWidth,
+        BorderRightWidth,
+        BorderBottomWidth,
         BorderRadius,
         // All enum values
         FlexDirection,
@@ -67,29 +70,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         Custom
     }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-    internal class StylePropertyAttribute : Attribute
-    {
-        // Specify a custom property name (otherwise field name is used)
-        internal string propertyName;
-
-        internal StylePropertyID propertyID;
-
-        internal StylePropertyAttribute(string propertyName, StylePropertyID propertyID)
-        {
-            this.propertyName = propertyName;
-            this.propertyID = propertyID;
-        }
-
-        public StylePropertyAttribute(string propertyName) : this(propertyName, StylePropertyID.Custom)
-        {
-        }
-
-        public StylePropertyAttribute() : this(string.Empty)
-        {
-        }
-    }
-
     internal enum StylePropertyApplyMode
     {
         Copy,
@@ -97,25 +77,34 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         CopyIfNotInline
     }
 
+    [Obsolete("Style<T> is deprecated, use StyleValue<T> instead", false)]
     public struct Style<T>
+    {
+        public T GetSpecifiedValueOrDefault(T defaultValue)
+        {
+            return default(T);
+        }
+    }
+
+    public struct StyleValue<T>
     {
         internal int specificity;
         public T value;
 
-        static readonly Style<T> defaultStyle = default(Style<T>);
+        static readonly StyleValue<T> defaultStyle = default(StyleValue<T>);
 
-        public static Style<T> nil
+        public static StyleValue<T> nil
         {
             get { return defaultStyle; }
         }
 
-        public Style(T value)
+        public StyleValue(T value)
         {
             this.value = value;
             this.specificity = 0;
         }
 
-        internal Style(T value, int specifity)
+        internal StyleValue(T value, int specifity)
         {
             this.value = value;
             this.specificity = specifity;
@@ -130,12 +119,12 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             return defaultValue;
         }
 
-        public static implicit operator T(Style<T> sp)
+        public static implicit operator T(StyleValue<T> sp)
         {
             return sp.value;
         }
 
-        internal void Apply(Style<T> other, StylePropertyApplyMode mode)
+        internal void Apply(StyleValue<T> other, StylePropertyApplyMode mode)
         {
             switch (mode)
             {
@@ -160,14 +149,14 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
-        public static implicit operator Style<T>(T value)
+        public static implicit operator StyleValue<T>(T value)
         {
-            return new Style<T>(value);
+            return Create(value);
         }
 
-        public static Style<T> Create(T value)
+        public static StyleValue<T> Create(T value)
         {
-            return new Style<T>(value, int.MaxValue);
+            return new StyleValue<T>(value, int.MaxValue);
         }
 
         public override string ToString()

@@ -14,7 +14,8 @@ namespace UnityEditor
         static ColorPicker s_SharedColorPicker;
         public static string presetsEditorPrefID { get {return "Color"; }}
 
-        private readonly static ColorPickerHDRConfig m_DefaultHDRConfig = new ColorPickerHDRConfig(0f, 99f, 1 / 99f, 3f);
+        private const float kMaxfp16 = 65536f; // Clamp to a value that fits into fp16.
+        private readonly static ColorPickerHDRConfig m_DefaultHDRConfig = new ColorPickerHDRConfig(0f, kMaxfp16, 1 / kMaxfp16, 3f);
         public static ColorPickerHDRConfig defaultHDRConfig { get { return m_DefaultHDRConfig; } }
 
         [SerializeField]
@@ -151,7 +152,7 @@ namespace UnityEditor
         const int kColorBoxHeight = 162;
         const int kPresetsHeight = 300;
         const float kFixedWindowWidth = 233;
-        const float kHDRFieldWidth = 40f;
+        const float kHDRFieldWidth = 45f;
         const float kLDRFieldWidth = 30f;
 
         private float fieldWidth

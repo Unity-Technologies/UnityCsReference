@@ -31,14 +31,14 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\..\..\External\Mono.Cecil\builds\lib\net35\Mono.Cecil.dll</HintPath>
+    <Reference Include="Unity.Cecil">
+      <HintPath>..\..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil.Mdb">
-      <HintPath>..\..\..\External\Mono.Cecil\builds\lib\net35\Mono.Cecil.Mdb.dll</HintPath>
+    <Reference Include="Unity.Cecil.Mdb">
+      <HintPath>..\..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.Mdb.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil.Pdb">
-      <HintPath>..\..\..\External\Mono.Cecil\builds\lib\net35\Mono.Cecil.Pdb.dll</HintPath>
+    <Reference Include="Unity.Cecil.Pdb">
+      <HintPath>..\..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.Pdb.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

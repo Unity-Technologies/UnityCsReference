@@ -275,10 +275,10 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        public void SplashSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        public void SplashSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 2)
         {
             GUI.changed = false;
-            if (m_Owner.BeginSettingsBox(2, k_Texts.title))
+            if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
             {
                 if (targetGroup == BuildTargetGroup.Standalone)
                 {

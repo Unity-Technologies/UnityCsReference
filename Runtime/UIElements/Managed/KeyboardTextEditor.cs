@@ -206,10 +206,14 @@ namespace UnityEngine.Experimental.UIElements
                 char c = evt.character;
 
                 if (c == '\n' && !multiline && !evt.altKey)
+                {
+                    textField.TextFieldChangeValidated();
                     return;
+                }
 
                 // Simplest test: only allow the character if the display font supports it.
-                if ((textField.font != null && textField.font.HasCharacter(c)) || c == '\n')
+                Font font = textField.guiStyle.font;
+                if ((font != null && font.HasCharacter(c)) || c == '\n')
                 {
                     Insert(c);
                     m_Changed = true;
@@ -233,6 +237,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (maxLength >= 0 && text != null && text.Length > maxLength)
                     text = text.Substring(0, maxLength);
                 textField.text = text;
+                textField.TextFieldChanged();
                 evt.StopPropagation();
             }
 

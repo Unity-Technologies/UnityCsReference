@@ -172,7 +172,7 @@ namespace UnityEditor.Collaboration
                 throw new ArgumentNullException("assetGuid");
             }
 
-            if (!CollabAccess.Instance.IsServiceEnabled() || assetGuid.Length == 0)
+            if (!Collab.instance.IsCollabEnabledForCurrentProject() || assetGuid.Length == 0)
             {
                 softLocks = new List<SoftLock>();
                 return false;

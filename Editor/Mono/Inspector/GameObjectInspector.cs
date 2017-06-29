@@ -334,7 +334,9 @@ namespace UnityEditor
                                     // untill we also make the prefab changes undoable. The problem with the prefab is that Apply might add
                                     // new objects which RegisterFullObjectHierarchyUndo can't handle.
                                     // So for now we simply mark the scene dirty (case 757027)
-                                    EditorSceneManager.MarkSceneDirty(rootUploadGameObject.scene);
+                                    // We cannot mark scenes as dirty during playmode (case 839124)
+                                    if (!Application.isPlaying)
+                                        EditorSceneManager.MarkSceneDirty(rootUploadGameObject.scene);
 
                                     // This is necessary because ReplacePrefab can potentially destroy game objects and components
                                     // In that case the Editor classes would be destroyed but still be invoked. (case 468434)

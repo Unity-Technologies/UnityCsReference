@@ -101,35 +101,44 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
-        private static bool Match(VisualElement element, ref RuleMatcher matcher)
+        protected virtual bool MatchSelectorPart(VisualElement element, StyleSelector selector, StyleSelectorPart part)
+        {
+            bool match = true;
+
+            switch (part.type)
+            {
+                case StyleSelectorType.Wildcard:
+                    break;
+                case StyleSelectorType.Class:
+                    match = element.ClassListContains(part.value);
+                    break;
+                case StyleSelectorType.ID:
+                    match = (element.name == part.value);
+                    break;
+                case StyleSelectorType.Type:
+                    //TODO: This tests fails to capture instances of sub-classes
+                    match = element.typeName == part.value;
+                    break;
+                case StyleSelectorType.PseudoClass:
+                    int pseudoStates = (int)element.pseudoStates;
+                    match = (selector.pseudoStateMask & pseudoStates) == selector.pseudoStateMask;
+                    match &= (selector.negatedPseudoStateMask & ~pseudoStates) == selector.negatedPseudoStateMask;
+                    break;
+                default: // ignore, all errors should have been warned before hand
+                    match = false;
+                    break;
+            }
+            return match;
+        }
+
+        public virtual bool Match(VisualElement element, ref RuleMatcher matcher)
         {
             bool match = true;
             StyleSelector selector = matcher.complexSelector.selectors[matcher.simpleSelectorIndex];
             int count = selector.parts.Length;
             for (int i = 0; i < count && match; i++)
             {
-                switch (selector.parts[i].type)
-                {
-                    case StyleSelectorType.Wildcard:
-                        break;
-                    case StyleSelectorType.Class:
-                        match = element.ClassListContains(selector.parts[i].value);
-                        break;
-                    case StyleSelectorType.ID:
-                        match = (element.name == selector.parts[i].value);
-                        break;
-                    case StyleSelectorType.Type:
-                        match = (element.typeName == selector.parts[i].value);
-                        break;
-                    case StyleSelectorType.PseudoClass:
-                        int pseudoStates = (int)element.pseudoStates;
-                        match = (selector.pseudoStateMask & pseudoStates) == selector.pseudoStateMask;
-                        match &= (selector.negatedPseudoStateMask & ~pseudoStates) == selector.negatedPseudoStateMask;
-                        break;
-                    default: // ignore, all errors should have been warned before hand
-                        match = false;
-                        break;
-                }
+                match = MatchSelectorPart(element, selector, selector.parts[i]);
             }
             return match;
         }

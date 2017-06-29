@@ -2,10 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Scripting.Compilers;
-using UnityEditor.Scripting.ScriptCompilation;
 using System.Linq;
-using System.IO;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -132,12 +129,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return IncludePlatforms.Any(p => p.BuildTarget == buildTarget);
         }
 
+        public static CustomScriptAssembly Create(string name, string directory)
+        {
+            var customScriptAssembly = new CustomScriptAssembly();
+
+            var modifiedDirectory = AssetPath.ReplaceSeparators(directory);
+
+            if (modifiedDirectory.Last() != AssetPath.Separator)
+                modifiedDirectory += AssetPath.Separator;
+
+            customScriptAssembly.Name = name;
+            customScriptAssembly.FilePath = modifiedDirectory;
+            customScriptAssembly.PathPrefix = modifiedDirectory;
+            customScriptAssembly.References = new string[0];
+
+            return customScriptAssembly;
+        }
+
         public static CustomScriptAssembly FromCustomScriptAssemblyData(string path, CustomScriptAssemblyData customScriptAssemblyData)
         {
             if (customScriptAssemblyData == null)
                 return null;
 
-            var pathPrefix = path.Substring(0, path.Length - Path.GetFileName(path).Length);
+            var pathPrefix = path.Substring(0, path.Length - AssetPath.GetFileName(path).Length);
 
             var customScriptAssembly = new CustomScriptAssembly();
 

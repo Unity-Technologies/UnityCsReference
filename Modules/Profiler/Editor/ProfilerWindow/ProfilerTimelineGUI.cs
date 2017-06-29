@@ -653,7 +653,7 @@ namespace UnityEditorInternal
             {
                 NativeProfilerTimeline_InitializeArgs args = new NativeProfilerTimeline_InitializeArgs();
                 args.Reset();
-                args.profilerColors = ProfilerColors.colors;
+                args.profilerColors = ProfilerColors.currentColors;
                 args.allocationSampleColor = ProfilerColors.allocationSample;
                 args.internalSampleColor = ProfilerColors.internalSample;
                 args.ghostAlpha = 0.3f;

@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         // hash of a set of rules to a resolved style
         // the same set of rules will give the same resolved style, caching the hash of the matching rules before
         // resolving styles allows to skip the resolve part when an existing resolved style already exists
-        private static Dictionary<Int64, VisualElementStyles> s_StyleCache = new Dictionary<Int64, VisualElementStyles>();
+        private static Dictionary<Int64, VisualElementStylesData> s_StyleCache = new Dictionary<Int64, VisualElementStylesData>();
 
         private static StyleContextHierarchyTraversal s_StyleContextHierarchyTraversal = new StyleContextHierarchyTraversal();
 
@@ -128,7 +128,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
             public override void ProcessMatchedRules(VisualElement element)
             {
-                VisualElementStyles resolvedStyles;
+                VisualElementStylesData resolvedStyles;
                 if (s_StyleCache.TryGetValue(m_MatchingRulesHash, out resolvedStyles))
                 {
                     // we should not new it in StyleTree
@@ -136,7 +136,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 }
                 else
                 {
-                    resolvedStyles = new VisualElementStyles(isShared: true);
+                    resolvedStyles = new VisualElementStylesData(isShared: true);
 
                     for (int i = 0, ruleCount = m_MatchedRules.Count; i < ruleCount; i++)
                     {

@@ -12,10 +12,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
 #pragma warning disable 649
 
-namespace UnityEngine.VR.WSA.WebCam
+namespace UnityEngine.XR.WSA.WebCam
 {
 
 

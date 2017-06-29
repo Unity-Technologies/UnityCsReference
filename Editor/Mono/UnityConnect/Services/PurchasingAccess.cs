@@ -47,7 +47,7 @@ namespace UnityEditor.Web
             if (PurchasingSettings.enabled != enabled)
             {
                 PurchasingSettings.enabled = enabled;
-                UsabilityAnalytics.SendEventParam("service_state", new PurchasingServiceState() {iap = enabled});
+                EditorAnalytics.SendEventServiceInfo(new PurchasingServiceState() {iap = enabled});
             }
         }
 

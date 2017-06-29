@@ -30,7 +30,7 @@ namespace UnityEditor
         {
             if (!isInstructionSelected)
             {
-                debuggerWindow.CloseInstructionOverlayWindow();
+                debuggerWindow.ClearInstructionHighlighter();
                 return;
             }
 
@@ -68,15 +68,15 @@ namespace UnityEditor
             var rect = el.position;
             rect.xMin += instruction.level * 10;
 
-            GUIViewDebuggerWindow.styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
-            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
+            GUIViewDebuggerWindow.Styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.Styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
         }
 
         protected override void DrawInspectedStacktrace()
         {
             IMGUILayoutInstruction instruction = m_LayoutInstructions[listViewState.row];
 
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
             DrawStackFrameList(instruction.stack);
             EditorGUILayout.EndScrollView();
         }

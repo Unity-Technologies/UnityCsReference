@@ -104,6 +104,44 @@ namespace UnityEditor
             "Off", "Premerge", "Ask"
         };
 
+        private PopupElement[] etcTextureCompressorPopupList =
+        {
+            new PopupElement("Legacy"),
+            new PopupElement("Default"),
+            new PopupElement("Custom"),
+        };
+
+        private PopupElement[] etcTextureFastCompressorPopupList =
+        {
+            new PopupElement("etcpak"),
+            new PopupElement("ETCPACK Fast"),
+        };
+
+        private PopupElement[] etcTextureNormalCompressorPopupList =
+        {
+            new PopupElement("etcpak"),
+            new PopupElement("ETCPACK Fast"),
+            new PopupElement("Etc2Comp Fast"),
+            new PopupElement("Etc2Comp Best"),
+        };
+
+        private PopupElement[] etcTextureBestCompressorPopupList =
+        {
+            new PopupElement("Etc2Comp Fast"),
+            new PopupElement("Etc2Comp Best"),
+            new PopupElement("ETCPACK Best"),
+        };
+
+        private PopupElement[] etcTexturePresetCompressorPopupList =
+        {
+            new PopupElement("Allegorithmic"),       // Legacy Fast
+            new PopupElement("ETCPACK Fast"),        // Legacy Normal
+            new PopupElement("ETCPACK Best"),        // Legacy Best
+            new PopupElement("etcpak"),              // Default Fast
+            new PopupElement("ETCPACK Fast"),        // Default Normal
+            new PopupElement("Etc2Comp Best"),       // Default Best
+        };
+
         public void OnEnable()
         {
             Plugin[] availvc = Plugin.availablePlugins;
@@ -169,7 +207,7 @@ namespace UnityEditor
             ShowUnityRemoteGUI(editorEnabled);
 
             GUILayout.Space(10);
-            bool collabEnabled = CollabAccess.Instance.IsServiceEnabled();
+            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
             using (new EditorGUI.DisabledScope(!collabEnabled))
             {
                 GUI.enabled = !collabEnabled;
@@ -333,6 +371,7 @@ namespace UnityEditor
             CreatePopupMenu("Padding Power", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
 
             DoProjectGenerationSettings();
+            DoEtcTextureCompressionSettings(editorEnabled);
             DoInternalSettings();
         }
 
@@ -364,6 +403,53 @@ namespace UnityEditor
             string newvalue = EditorGUILayout.DelayedTextField("Assembly suffix", old);
             if (newvalue != old)
                 EditorSettings.Internal_UserGeneratedProjectSuffix = newvalue;
+        }
+
+        private void DoEtcTextureCompressionSettings(bool editorEnabled)
+        {
+            GUILayout.Space(10);
+
+            GUI.enabled = true;
+            GUILayout.Label("ETC Texture Compressor", EditorStyles.boldLabel);
+            GUI.enabled = editorEnabled;
+
+            int index = Mathf.Clamp((int)EditorSettings.etcTextureCompressorBehavior, 0, etcTextureCompressorPopupList.Length - 1);
+            CreatePopupMenu("Behavior", etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
+
+            EditorGUI.indentLevel++;
+
+            if (index > 1)  // Custom behavior
+            {
+                index = Mathf.Clamp((int)EditorSettings.etcTextureFastCompressor, 0, etcTextureFastCompressorPopupList.Length - 1);
+                CreatePopupMenu("Fast", etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
+
+                index = Mathf.Clamp((int)EditorSettings.etcTextureNormalCompressor, 0, etcTextureNormalCompressorPopupList.Length - 1);
+                CreatePopupMenu("Normal", etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
+
+                index = Mathf.Clamp((int)EditorSettings.etcTextureBestCompressor, 0, etcTextureBestCompressorPopupList.Length - 1);
+                CreatePopupMenu("Best", etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
+            }
+            else
+            {
+                GUI.enabled = false;
+
+                if (index == 0)     // Legacy behavior
+                {
+                    CreatePopupMenu("Fast", etcTexturePresetCompressorPopupList, 0, null);
+                    CreatePopupMenu("Normal", etcTexturePresetCompressorPopupList, 1, null);
+                    CreatePopupMenu("Best", etcTexturePresetCompressorPopupList, 2, null);
+                }
+                else                // Default behavior
+                {
+                    CreatePopupMenu("Fast", etcTexturePresetCompressorPopupList, 3, null);
+                    CreatePopupMenu("Normal", etcTexturePresetCompressorPopupList, 4, null);
+                    CreatePopupMenu("Best", etcTexturePresetCompressorPopupList, 5, null);
+                }
+
+                GUI.enabled = editorEnabled;
+            }
+
+            EditorGUI.indentLevel--;
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
@@ -503,7 +589,7 @@ namespace UnityEditor
 
         private bool VersionControlSystemHasGUI()
         {
-            bool collabEnabled = CollabAccess.Instance.IsServiceEnabled();
+            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
             if (!collabEnabled)
             {
             ExternalVersionControl system = EditorSettings.externalVersionControl;
@@ -587,6 +673,36 @@ namespace UnityEditor
             int popupIndex = (int)data;
 
             EditorSettings.spritePackerPaddingPower = popupIndex + 1;
+        }
+
+        private void SetEtcTextureCompressorBehavior(object data)
+        {
+            int newValue = (int)data;
+
+            if (EditorSettings.etcTextureCompressorBehavior == newValue)
+                return;
+
+            EditorSettings.etcTextureCompressorBehavior = newValue;
+
+            if (newValue == 0)
+                EditorSettings.SetEtcTextureCompressorLegacyBehavior();
+            else
+                EditorSettings.SetEtcTextureCompressorDefaultBehavior();
+        }
+
+        private void SetEtcTextureFastCompressor(object data)
+        {
+            EditorSettings.etcTextureFastCompressor = (int)data;
+        }
+
+        private void SetEtcTextureNormalCompressor(object data)
+        {
+            EditorSettings.etcTextureNormalCompressor = (int)data;
+        }
+
+        private void SetEtcTextureBestCompressor(object data)
+        {
+            EditorSettings.etcTextureBestCompressor = (int)data;
         }
     }
 }

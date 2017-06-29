@@ -452,6 +452,11 @@ namespace UnityEngineInternal
 
         internal static string MakeInitialUrl(string targetUrl, string localUrl)
         {
+            // Uri class leaves only one slash for protocol for this case, prevent that
+            // i.e. we report streaming assets folder on Android as jar:file:///blabla, keep it that way
+            if (targetUrl.StartsWith("jar:file://"))
+                return targetUrl;
+
             var localUri = new System.Uri(localUrl);
 
             if (targetUrl.StartsWith("//"))
@@ -490,6 +495,10 @@ namespace UnityEngineInternal
                     throw e1;
                 }
             }
+
+            // for file://protocol pass in unescaped string so we can pass it to VFS
+            if (targetUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                return targetUrl.Contains("%") ? UnityEngine.WWWTranscoder.URLDecode(targetUrl, System.Text.Encoding.UTF8) : targetUrl;
 
             // if URL contains '%', assume it is properly escaped, otherwise '%2f' gets unescaped as '/' (which may not be correct)
             // otherwise escape it, i.e. replaces spaces by '%20'

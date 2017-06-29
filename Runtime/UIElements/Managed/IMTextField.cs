@@ -27,7 +27,7 @@ namespace UnityEngine.Experimental.UIElements
             editor.text = text;
             editor.SaveBackup();
             editor.position = position;
-            editor.style = style;
+            editor.style = guiStyle;
             editor.multiline = multiline;
             editor.controlID = id;
             editor.DetectFocusChange();
@@ -97,7 +97,7 @@ namespace UnityEngine.Experimental.UIElements
             // TODO:    check if this OpenGL view has keyboard focus
             if (GUIUtility.keyboardControl != id)
             {
-                style.Draw(position, GUIContent.Temp(text), id, false);
+                guiStyle.Draw(position, GUIContent.Temp(text), id, false);
             }
             else
             {
@@ -178,7 +178,7 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
 
             // Simplest test: only allow the character if the display font supports it.
-            Font font = style.font;
+            Font font = guiStyle.font;
             if (font == null)
                 font = GUI.skin.font;
 
@@ -296,7 +296,7 @@ namespace UnityEngine.Experimental.UIElements
             if (!string.IsNullOrEmpty(secureText))
                 text = GUI.PasswordFieldGetStrToShow(clearText, maskChar);
 
-            style.Draw(position, GUIContent.Temp(text), id, false);
+            guiStyle.Draw(position, GUIContent.Temp(text), id, false);
             text = clearText;
         }
 

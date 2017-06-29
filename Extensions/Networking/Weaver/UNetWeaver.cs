@@ -464,9 +464,9 @@ namespace Unity.UNetWeaver
 
             readerFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkReaderType)));
 
-            readerFunc.Body.Variables.Add(new VariableDefinition("v0", int32Type));
-            readerFunc.Body.Variables.Add(new VariableDefinition("v1", variable));
-            readerFunc.Body.Variables.Add(new VariableDefinition("v2", int32Type));
+            readerFunc.Body.Variables.Add(new VariableDefinition(int32Type));
+            readerFunc.Body.Variables.Add(new VariableDefinition(variable));
+            readerFunc.Body.Variables.Add(new VariableDefinition(int32Type));
             readerFunc.Body.InitLocals = true;
 
             ILProcessor worker = readerFunc.Body.GetILProcessor();
@@ -548,8 +548,8 @@ namespace Unity.UNetWeaver
             writerFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkWriterType)));
             writerFunc.Parameters.Add(new ParameterDefinition("value", ParameterAttributes.None, scriptDef.MainModule.ImportReference(variable)));
 
-            writerFunc.Body.Variables.Add(new VariableDefinition("v0", uint16Type));
-            writerFunc.Body.Variables.Add(new VariableDefinition("v1", uint16Type));
+            writerFunc.Body.Variables.Add(new VariableDefinition(uint16Type));
+            writerFunc.Body.Variables.Add(new VariableDefinition(uint16Type));
             writerFunc.Body.InitLocals = true;
 
             ILProcessor worker = writerFunc.Body.GetILProcessor();
@@ -707,7 +707,7 @@ namespace Unity.UNetWeaver
                     variable);
 
             // create local for return value
-            readerFunc.Body.Variables.Add(new VariableDefinition("result", variable));
+            readerFunc.Body.Variables.Add(new VariableDefinition(variable));
             readerFunc.Body.InitLocals = true;
 
             readerFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkReaderType)));
@@ -930,7 +930,7 @@ namespace Unity.UNetWeaver
                     }
                     else
                     {
-                        md.Body.Variables.Add(new VariableDefinition("__out" + index, elementType));
+                        md.Body.Variables.Add(new VariableDefinition(elementType));
                         md.Body.InitLocals = true;
 
                         worker.InsertBefore(top, worker.Create(OpCodes.Ldarg, index + offset));
@@ -954,7 +954,7 @@ namespace Unity.UNetWeaver
                 }
                 else
                 {
-                    md.Body.Variables.Add(new VariableDefinition("__ret", md.ReturnType));
+                    md.Body.Variables.Add(new VariableDefinition(md.ReturnType));
                     md.Body.InitLocals = true;
 
                     worker.InsertBefore(top, worker.Create(OpCodes.Ldloca_S, (byte)(md.Body.Variables.Count - 1)));

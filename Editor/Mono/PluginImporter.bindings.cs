@@ -2,16 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 using System.Collections.Generic;
-using System.IO;
-using UnityEditorInternal;
+using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEditor.Modules;
-using Object = UnityEngine.Object;
+using UnityEditorInternal;
 using UnityEngine.Bindings;
 
 namespace UnityEditor
@@ -135,6 +130,9 @@ namespace UnityEditor
         extern public void SetExcludeFromAnyPlatform(string platformName, bool excludedFromAny);
 
         extern public bool GetExcludeFromAnyPlatform(string platformName);
+
+        public delegate bool IncludeInBuildDelegate(string path);
+        extern public void SetIncludeInBuildDelegate(IncludeInBuildDelegate includeInBuildDelegate);
 
         public void SetExcludeFromAnyPlatform(BuildTarget platform, bool excludedFromAny)
         {

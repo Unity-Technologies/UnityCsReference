@@ -5,12 +5,14 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
-using UnityEngine.VR.WSA;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.XR.WSA;
 
 
-namespace UnityEngine.VR.WSA
+namespace UnityEngine.XR.WSA
 {
     // This is mirrored in native code.
+    [MovedFrom("UnityEngine.VR.WSA")]
     public enum SurfaceChange
     {
         Added = 0,
@@ -21,6 +23,7 @@ namespace UnityEngine.VR.WSA
     //
     // A container for the surface ID handle.
     //
+    [MovedFrom("UnityEngine.VR.WSA")]
     public struct SurfaceId
     {
         public int handle;
@@ -30,6 +33,7 @@ namespace UnityEngine.VR.WSA
     // A container for submitting surface mesh bake requests and for receiving
     // baked data back from the system.
     //
+    [MovedFrom("UnityEngine.VR.WSA")]
     public struct SurfaceData
     {
         public SurfaceData(SurfaceId _id, MeshFilter _outputMesh, WorldAnchor _outputAnchor, MeshCollider _outputCollider, float _trianglesPerCubicMeter, bool _bakeCollider)
@@ -54,6 +58,7 @@ namespace UnityEngine.VR.WSA
     // A single observer updating surfaces within a single user specified
     // volume.  This volume can be changed at runtime.
     //
+    [MovedFrom("UnityEngine.VR.WSA")]
     sealed public partial class SurfaceObserver : IDisposable
     {
         public delegate void SurfaceChangedDelegate(SurfaceId surfaceId, SurfaceChange changeType, Bounds bounds, DateTime updateTime);

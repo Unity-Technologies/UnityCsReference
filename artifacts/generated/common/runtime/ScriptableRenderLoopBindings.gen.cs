@@ -187,24 +187,24 @@ public partial struct CullResults
             internal IntPtr                 cullResults;
     
     
-    unsafe public static bool GetCullingParameters(Camera camera, out CullingParameters cullingParameters)
+    unsafe public static bool GetCullingParameters(Camera camera, out ScriptableCullingParameters cullingParameters)
         {
-            return GetCullingParameters_Internal(camera, out cullingParameters, sizeof(CullingParameters));
+            return GetCullingParameters_Internal(camera, out cullingParameters, sizeof(ScriptableCullingParameters));
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool GetCullingParameters_Internal (Camera camera, out CullingParameters cullingParameters, int managedCullingParametersSize) ;
+    extern private static  bool GetCullingParameters_Internal (Camera camera, out ScriptableCullingParameters cullingParameters, int managedCullingParametersSize) ;
 
-    internal static void Internal_Cull (ref CullingParameters parameters, ScriptableRenderContext renderLoop, out CullResults results) {
+    internal static void Internal_Cull (ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, out CullResults results) {
         INTERNAL_CALL_Internal_Cull ( ref parameters, ref renderLoop, out results );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_Internal_Cull (ref CullingParameters parameters, ref ScriptableRenderContext renderLoop, out CullResults results);
-    public static CullResults Cull(ref CullingParameters parameters, ScriptableRenderContext renderLoop)
+    private extern static void INTERNAL_CALL_Internal_Cull (ref ScriptableCullingParameters parameters, ref ScriptableRenderContext renderLoop, out CullResults results);
+    public static CullResults Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop)
         {
             CullResults res;
             Internal_Cull(ref parameters, renderLoop, out res);
@@ -219,7 +219,7 @@ public partial struct CullResults
             results.visibleOffscreenVertexLights = null;
             results.visibleReflectionProbes = null;
 
-            CullingParameters cullingParams;
+            ScriptableCullingParameters cullingParams;
             if (!GetCullingParameters(camera, out cullingParams))
                 return false;
 

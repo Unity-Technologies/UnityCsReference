@@ -15,13 +15,14 @@ namespace UnityEditorInternal
 
         private static int s_ChartHash = "Charts".GetHashCode();
         public const float kSideWidth = 180.0f;
-        const int kDistFromTopToFirstLabel = 38;
-        const int kLabelHeight = 11;
-        const int kCloseButtonSize = 13;
-        const float kLabelOffset = 5f;
-        const float kWarningLabelHeightOffset = 43.0f;
-        const float kChartMinHeight = 130;
+        private const int kDistFromTopToFirstLabel = 38;
+        private const int kLabelHeight = 11;
+        private const int kCloseButtonSize = 13;
+        private const float kLabelOffset = 5f;
+        private const float kWarningLabelHeightOffset = 43f;
+        private const float kChartMinHeight = 130;
         private const float k_LineWidth = 2f;
+        private const int k_LabelLayoutMaxIterations = 5;
         private Vector3[] m_LineDrawingPoints;
         private float[] m_StackedSampleSums;
         private static readonly Color s_OverlayBackgroundDimFactor = new Color(0.9f, 0.9f, 0.9f, 0.4f);
@@ -53,6 +54,9 @@ namespace UnityEditorInternal
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
 
+            public static readonly float labelDropShadowOpacity = 0.3f;
+            public static readonly float labelLerpToWhiteAmount = 0.5f;
+
             public static readonly Color selectedFrameColor1 = new Color(1, 1, 1, 0.6f);
             public static readonly Color selectedFrameColor2 = new Color(1, 1, 1, 0.7f);
         }
@@ -61,11 +65,17 @@ namespace UnityEditorInternal
         public event ChangedEventHandler selected;
 
         public GUIContent legendHeaderLabel { get; set; }
+        public Vector2 labelRange { get; set; }
 
         int m_DragItemIndex = -1;
         Vector2 m_DragDownPos;
         int[] m_OldChartOrder;
         public string m_NotSupportedWarning = null;
+
+        public Chart()
+        {
+            labelRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
+        }
 
         private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
         {
@@ -277,7 +287,7 @@ namespace UnityEditorInternal
             }
             DrawSelectedFrame(selectedFrame, cdata, r);
 
-            DrawLabelsLine(selectedFrame, cdata, r);
+            DrawLabels(r, cdata, selectedFrame, ChartType.Line);
         }
 
         private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r)
@@ -304,7 +314,7 @@ namespace UnityEditorInternal
             DrawSelectedFrame(selectedFrame, cdata, r);
 
             DrawGridStacked(r, cdata);
-            DrawLabelsStacked(selectedFrame, cdata, r);
+            DrawLabels(r, cdata, selectedFrame, ChartType.StackedFill);
 
             // Show selected property name
             //@TODO: not the best place to put this code.
@@ -331,138 +341,11 @@ namespace UnityEditorInternal
             if (string.IsNullOrEmpty(text))
                 return;
 
-            GUIContent content = new GUIContent(text);
+            GUIContent content = EditorGUIUtility.TempContent(text);
             Vector2 size = Styles.whiteLabel.CalcSize(content);
             Rect r = new Rect(x + size.x * alignment, y, size.x, size.y);
 
-            EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, .3f);
-        }
-
-        // Pushes labels away from each other (so they do not overlap)
-        private static void CorrectLabelPositions(float[] ypositions, float[] heights, float maxHeight)
-        {
-            // arbitrary iteration count
-            int iterationCount = 5;
-            for (int it = 0; it < iterationCount; ++it)
-            {
-                bool corrected = false;
-
-                for (int i = 0; i < ypositions.Length; ++i)
-                {
-                    if (heights[i] <= 0)
-                        continue;
-
-                    float halfHeight = heights[i] / 2;
-
-                    // we skip every second, because labels are on different sides of the vertical line
-                    for (int j = i + 2; j < ypositions.Length; j += 2)
-                    {
-                        if (heights[j] <= 0)
-                            continue;
-
-                        float delta = ypositions[i] - ypositions[j];
-                        float minDistance = (heights[i] + heights[j]) / 2;
-
-                        if (Mathf.Abs(delta) < minDistance)
-                        {
-                            delta = (minDistance - Mathf.Abs(delta)) / 2 * Mathf.Sign(delta);
-
-                            ypositions[i] += delta;
-                            ypositions[j] -= delta;
-
-                            corrected = true;
-                        }
-                    }
-
-                    // fitting into graph boundaries
-                    if (ypositions[i] + halfHeight > maxHeight)
-                        ypositions[i] = maxHeight - halfHeight;
-                    if (ypositions[i] - halfHeight < 0)
-                        ypositions[i] = halfHeight;
-                }
-
-                if (!corrected)
-                    break;
-            }
-        }
-
-        private static float GetLabelHeight(string text)
-        {
-            GUIContent content = new GUIContent(text);
-            Vector2 size = Styles.whiteLabel.CalcSize(content);
-
-            return size.y;
-        }
-
-        private void DrawLabelsStacked(int selectedFrame, ChartViewData cdata, Rect r)
-        {
-            if (cdata.selectedLabels == null)
-                return;
-
-            Vector2 domain = cdata.GetDataDomain();
-            int length = (int)(domain.y - domain.x);
-
-            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.chartDomainOffset + length)
-                return;
-            selectedFrame -= cdata.chartDomainOffset;
-
-            float frameWidth = r.width / length;
-            float xpos = r.x + frameWidth * selectedFrame;
-            float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
-                0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
-
-            float[] ypositions = new float[cdata.numSeries];
-            float[] heights = new float[cdata.numSeries];
-
-            float accum = 0.0f;
-            for (int s = 0; s < cdata.numSeries; ++s)
-            {
-                ypositions[s] = -1;
-                heights[s] = 0;
-
-                int index = cdata.order[s];
-
-                if (!cdata.series[index].enabled)
-                    continue;
-
-                float value = cdata.series[index].yValues[selectedFrame];
-                if (value == -1.0f)
-                    continue;
-
-                float labelValue = cdata.hasOverlay ? cdata.overlays[index].yValues[selectedFrame] : value;
-                // only draw labels for large enough stacks
-                if ((labelValue - cdata.series[0].rangeAxis.x) * rangeScale > 5f)
-                {
-                    // place value in the middle of this stack vertically
-                    ypositions[s] = (accum + labelValue * 0.5f) * rangeScale;
-                    heights[s] = GetLabelHeight(cdata.selectedLabels[index]);
-                }
-
-                // accumulate stacked value
-                accum += value;
-            }
-
-            CorrectLabelPositions(ypositions, heights, r.height);
-
-            for (int s = 0; s < cdata.numSeries; ++s)
-            {
-                if (heights[s] > 0)
-                {
-                    int index = cdata.order[s];
-
-                    // tint color slightly towards white
-                    Color clr = cdata.series[index].color;
-                    GUI.contentColor = clr * 0.8f + Color.white * 0.2f;
-
-                    // Place odd labels on one side, even labels on another side.
-                    // Do not tweak to e.g. -1.05f! It will give different offsets depending on text length.
-                    float alignment = (index & 1) == 0 ? -1 : 0;
-                    float offset = (index & 1) == 0 ? -1 : frameWidth + 1;
-                    DoLabel(xpos + offset, r.y + r.height - ypositions[s] - 8, cdata.selectedLabels[index], alignment);
-                }
-            }
-
-            GUI.contentColor = Color.white;
+            EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, Styles.labelDropShadowOpacity);
         }
 
         private void DrawGridStacked(Rect r, ChartViewData cdata)
@@ -497,55 +380,277 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawLabelsLine(int selectedFrame, ChartViewData cdata, Rect r)
+        private struct LabelLayoutData
         {
-            if (cdata.selectedLabels == null)
+            public Rect position;
+            public float desiredYPosition;
+        }
+
+        private readonly List<LabelLayoutData> m_LabelData = new List<LabelLayoutData>(16);
+        private readonly List<int> m_LabelOrder = new List<int>(16);
+        private readonly List<int> m_MostOverlappingLabels = new List<int>(16);
+        private readonly List<int> m_OverlappingLabels = new List<int>(16);
+        private readonly List<float> m_SelectedFrameValues = new List<float>(16);
+
+        private void DrawLabels(Rect chartPosition, ChartViewData data, int selectedFrame, ChartType chartType)
+        {
+            if (data.selectedLabels == null || Event.current.type != EventType.Repaint)
                 return;
 
-            Vector2 domain = cdata.GetDataDomain();
-            int length = (int)(domain.y - domain.x);
-
-            if (selectedFrame < cdata.firstSelectableFrame || selectedFrame >= cdata.chartDomainOffset + length)
+            // exit early if the selected frame is outside the domain of the chart
+            var domain = data.GetDataDomain();
+            if (
+                selectedFrame < data.firstSelectableFrame ||
+                selectedFrame > data.chartDomainOffset + (int)(domain.y - domain.x) ||
+                domain.y - domain.x == 0f
+                )
                 return;
-            selectedFrame -= cdata.chartDomainOffset;
 
-            float[] ypositions = new float[cdata.numSeries];
-            float[] heights = new float[cdata.numSeries];
+            var selectedIndex = selectedFrame - data.chartDomainOffset;
 
-            for (int s = 0; s < cdata.numSeries; ++s)
+            m_LabelOrder.Clear();
+            m_LabelOrder.AddRange(data.order);
+
+            // get values of all series and cumulative value of all enabled stacks
+            m_SelectedFrameValues.Clear();
+            var cumulativeValueOfAllEnabledSeries = 0f;
+            var stacked = chartType == ChartType.StackedFill;
+            var numLabels = 0;
+            for (int s = 0, count = data.numSeries; s < count; ++s)
             {
-                ypositions[s] = -1;
-                heights[s] = 0;
-
-                float value = cdata.series[s].yValues[selectedFrame];
-                if (value != -1)
+                var value = data.series[s].yValues[selectedIndex];
+                m_SelectedFrameValues.Add(value);
+                if (data.series[s].enabled)
                 {
-                    ypositions[s] = (value - cdata.series[s].rangeAxis.x) / (cdata.series[s].rangeAxis.y - cdata.series[s].rangeAxis.x) * r.height;
-                    heights[s] = GetLabelHeight(cdata.selectedLabels[s]);
+                    cumulativeValueOfAllEnabledSeries += value;
+                    ++numLabels;
                 }
             }
 
-            CorrectLabelPositions(ypositions, heights, r.height);
+            if (numLabels == 0)
+                return;
 
-            float frameWidth = r.width / length;
-            float xpos = r.x + frameWidth * selectedFrame;
-
-            for (int s = 0; s < cdata.numSeries; ++s)
+            // populate layout data array with default data
+            m_LabelData.Clear();
+            var selectedFrameMidline =
+                chartPosition.x + chartPosition.width * ((selectedIndex + 0.5f) / (domain.y - domain.x));
+            var maxLabelWidth = 0f;
+            numLabels = 0;
+            for (int s = 0, count = data.numSeries; s < count; ++s)
             {
-                if (heights[s] > 0)
-                {
-                    // color the label slightly (half way between line color and white)
-                    Color clr = cdata.series[s].color;
-                    GUI.contentColor = (clr + Color.white) * 0.5f;
+                var labelData = new LabelLayoutData();
 
-                    // Place odd labels on one side, even labels on another side.
-                    // Do not tweak to e.g. -1.05f! It will give different offsets depending on text length.
-                    float alignment = (s & 1) == 0 ? -1 : 0;
-                    float offset = (s & 1) == 0 ? -1 : frameWidth + 1;
-                    DoLabel(xpos + offset, r.y + r.height - ypositions[s] - 8, cdata.selectedLabels[s], alignment);
+                var value = m_SelectedFrameValues[s];
+
+                if (data.series[s].enabled && value >= labelRange.x && value <= labelRange.y)
+                {
+                    var rangeAxis = data.series[s].rangeAxis;
+                    var rangeSize = rangeAxis.sqrMagnitude == 0f ? 1f : rangeAxis.y - rangeAxis.x;
+
+                    // convert stacked series to cumulative value of enabled series
+                    if (stacked)
+                    {
+                        var accumulatedValues = 0f;
+                        for (int i = 0; i < count; ++i)
+                        {
+                            var otherSeriesIdx = data.order[i];
+                            if (otherSeriesIdx < s && data.series[otherSeriesIdx].enabled)
+                                accumulatedValues += data.series[otherSeriesIdx].yValues[selectedIndex];
+                        }
+                        // labels for stacked series will be in the middle of their stacks
+                        value = cumulativeValueOfAllEnabledSeries - accumulatedValues - 0.5f * value;
+                    }
+
+                    // default position is left aligned to midline
+                    var position = new Vector2(
+                            // offset by half a point so there is a 1-point gap down the midline if labels are on both sides
+                            selectedFrameMidline + 0.5f,
+                            chartPosition.y + chartPosition.height * (1f - (value - rangeAxis.x) / rangeSize)
+                            );
+                    var size = Styles.whiteLabel.CalcSize(EditorGUIUtility.TempContent(data.selectedLabels[s]));
+                    position.y -= 0.5f * size.y;
+                    position.y = Mathf.Clamp(position.y, chartPosition.yMin, chartPosition.yMax - size.y);
+
+                    labelData.position = new Rect(position, size);
+                    labelData.desiredYPosition = labelData.position.center.y;
+
+                    ++numLabels;
+                }
+
+                m_LabelData.Add(labelData);
+
+                maxLabelWidth = Mathf.Max(maxLabelWidth, labelData.position.width);
+            }
+
+            if (numLabels == 0)
+                return;
+
+            // line charts order labels based on series values
+            if (!stacked)
+                m_LabelOrder.Sort(SortLineLabelIndices);
+
+            // right align labels to the selected frame midline if approaching right border
+            if (selectedFrameMidline > chartPosition.x + chartPosition.width - maxLabelWidth)
+            {
+                for (int s = 0, count = data.numSeries; s < count; ++s)
+                {
+                    var label = m_LabelData[s];
+                    label.position.x -= label.position.width;
+                    m_LabelData[s] = label;
                 }
             }
-            GUI.contentColor = Color.white;
+            // alternate right/left alignment if in the middle
+            else if (selectedFrameMidline > chartPosition.x + maxLabelWidth)
+            {
+                var processed = 0;
+                for (int s = 0, count = data.numSeries; s < count; ++s)
+                {
+                    var labelIndex = m_LabelOrder[s];
+
+                    if (m_LabelData[labelIndex].position.size.sqrMagnitude == 0f)
+                        continue;
+
+                    if ((processed & 1) == 0)
+                    {
+                        var label = m_LabelData[labelIndex];
+                        // ensure there is a 1-point gap down the midline
+                        label.position.x -= label.position.width + 1f;
+                        m_LabelData[labelIndex] = label;
+                    }
+
+                    ++processed;
+                }
+            }
+
+            // separate overlapping labels
+            for (int it = 0; it < k_LabelLayoutMaxIterations; ++it)
+            {
+                m_MostOverlappingLabels.Clear();
+
+                // work on the biggest cluster of overlapping rects
+                for (int s1 = 0, count = data.numSeries; s1 < count; ++s1)
+                {
+                    m_OverlappingLabels.Clear();
+                    m_OverlappingLabels.Add(s1);
+
+                    if (m_LabelData[s1].position.size.sqrMagnitude == 0f)
+                        continue;
+
+                    for (int s2 = 0; s2 < count; ++s2)
+                    {
+                        if (m_LabelData[s2].position.size.sqrMagnitude == 0f)
+                            continue;
+
+                        if (s1 != s2 && m_LabelData[s1].position.Overlaps(m_LabelData[s2].position))
+                            m_OverlappingLabels.Add(s2);
+                    }
+
+                    if (m_OverlappingLabels.Count > m_MostOverlappingLabels.Count)
+                    {
+                        m_MostOverlappingLabels.Clear();
+                        m_MostOverlappingLabels.AddRange(m_OverlappingLabels);
+                    }
+                }
+
+                // finish if there are no more overlapping rects
+                if (m_MostOverlappingLabels.Count == 1)
+                    break;
+
+                float totalHeight;
+                var geometricCenter = GetGeometricCenter(m_MostOverlappingLabels, m_LabelData, out totalHeight);
+
+                // account for other rects that will overlap after expanding
+                var foundOverlaps = true;
+                while (foundOverlaps)
+                {
+                    foundOverlaps = false;
+                    var minY = geometricCenter - 0.5f * totalHeight;
+                    var maxY = geometricCenter + 0.5f * totalHeight;
+                    for (int s = 0, count = data.numSeries; s < count; ++s)
+                    {
+                        if (m_MostOverlappingLabels.Contains(s))
+                            continue;
+
+                        var testRect = m_LabelData[s].position;
+
+                        if (testRect.size.sqrMagnitude == 0f)
+                            continue;
+
+                        var x = testRect.xMax < selectedFrameMidline ? testRect.xMax : testRect.xMin;
+                        if (
+                            testRect.Contains(new Vector2(x, minY)) ||
+                            testRect.Contains(new Vector2(x, maxY))
+                            )
+                        {
+                            m_MostOverlappingLabels.Add(s);
+                            foundOverlaps = true;
+                        }
+                    }
+
+                    GetGeometricCenter(m_MostOverlappingLabels, m_LabelData, out totalHeight);
+
+                    // keep labels inside chart rect
+                    if (geometricCenter - 0.5f * totalHeight < chartPosition.yMin)
+                        geometricCenter = chartPosition.yMin + 0.5f * totalHeight;
+                    else if (geometricCenter + 0.5f * totalHeight > chartPosition.yMax)
+                        geometricCenter = chartPosition.yMax - 0.5f * totalHeight;
+                }
+
+                // separate overlapping rects and distribute them away from their geometric center
+                m_MostOverlappingLabels.Sort(SortOverlappingRectIndices);
+                var heightAllotted = 0f;
+                for (int i = 0, count = m_MostOverlappingLabels.Count; i < count; ++i)
+                {
+                    var labelIndex = m_MostOverlappingLabels[i];
+                    var label = m_LabelData[labelIndex];
+                    label.position.y = geometricCenter - totalHeight * 0.5f + heightAllotted;
+                    m_LabelData[labelIndex] = label;
+                    heightAllotted += label.position.height;
+                }
+            }
+
+            // draw the labels
+            var oldContentColor = GUI.contentColor;
+            for (int s = 0; s < data.numSeries; ++s)
+            {
+                var labelIndex = m_LabelOrder[s];
+
+                if (m_LabelData[labelIndex].position.size.sqrMagnitude == 0f)
+                    continue;
+
+                GUI.contentColor = Color.Lerp(data.series[labelIndex].color, Color.white, Styles.labelLerpToWhiteAmount);
+                var layoutData = m_LabelData[labelIndex];
+                EditorGUI.DoDropShadowLabel(
+                    layoutData.position,
+                    EditorGUIUtility.TempContent(data.selectedLabels[labelIndex]),
+                    Styles.whiteLabel,
+                    Styles.labelDropShadowOpacity
+                    );
+            }
+            GUI.contentColor = oldContentColor;
+        }
+
+        private int SortLineLabelIndices(int index1, int index2)
+        {
+            return -m_LabelData[index1].desiredYPosition.CompareTo(m_LabelData[index2].desiredYPosition);
+        }
+
+        private int SortOverlappingRectIndices(int index1, int index2)
+        {
+            return -m_LabelOrder.IndexOf(index1).CompareTo(m_LabelOrder.IndexOf(index2));
+        }
+
+        private float GetGeometricCenter(List<int> overlappingRects, List<LabelLayoutData> labelData, out float totalHeight)
+        {
+            var geometricCenter = 0f;
+            totalHeight = 0f;
+            for (int i = 0, count = overlappingRects.Count; i < count; ++i)
+            {
+                var labelIndex = overlappingRects[i];
+                geometricCenter += labelData[labelIndex].desiredYPosition;
+                totalHeight += labelData[labelIndex].position.height;
+            }
+            return geometricCenter / overlappingRects.Count;
         }
 
         private void DrawChartItemLine(Rect r, ChartViewData cdata, int index)

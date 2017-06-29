@@ -681,27 +681,20 @@ namespace UnityEditor
                     Rect halfRect = controlRect;
                     halfRect.width = (controlRect.width - kDragSpace) * 0.5f;
 
-                    float minConstant = mmCurve.minConstant;
-                    float maxConstant = mmCurve.maxConstant;
-
                     Rect halfRectWithDragger = halfRect;
                     halfRectWithDragger.xMin -= kDragSpace;
 
                     EditorGUI.BeginChangeCheck();
-                    minConstant = FloatDraggable(halfRectWithDragger, minConstant, mmCurve.m_RemapValue, kDragSpace, "g5");
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        mmCurve.minConstant = minConstant;
-                    }
+                    float newMinValue = FloatDraggable(halfRectWithDragger, mmCurve.minScalar, mmCurve.m_RemapValue, kDragSpace, "g5");
+                    if (EditorGUI.EndChangeCheck() && !mmCurve.signedRange)
+                        mmCurve.minScalar.floatValue = Mathf.Max(newMinValue, 0f);
 
                     halfRectWithDragger.x += halfRect.width + kDragSpace;
 
                     EditorGUI.BeginChangeCheck();
-                    maxConstant = FloatDraggable(halfRectWithDragger, maxConstant, mmCurve.m_RemapValue, kDragSpace, "g5");
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        mmCurve.maxConstant = maxConstant;
-                    }
+                    float newMaxValue = FloatDraggable(halfRectWithDragger, mmCurve.scalar, mmCurve.m_RemapValue, kDragSpace, "g5");
+                    if (EditorGUI.EndChangeCheck() && !mmCurve.signedRange)
+                        mmCurve.scalar.floatValue = Mathf.Max(newMaxValue, 0f);
                 }
                 else
                 {
@@ -714,6 +707,62 @@ namespace UnityEditor
 
             // PopUp minmaxState menu
             GUIMMCurveStateList(popupRect, mmCurve);
+        }
+
+        public static Rect GUIMinMaxCurveInline(Rect rect, SerializedMinMaxCurve mmCurve, float dragWidth)
+        {
+            bool mixedState = mmCurve.stateHasMultipleDifferentValues;
+
+            if (mixedState)
+            {
+                Label(rect, GUIContent.Temp("-"));
+            }
+            else
+            {
+                MinMaxCurveState state = mmCurve.state;
+
+                // Scalar field
+                if (state == MinMaxCurveState.k_Scalar)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    float newValue = FloatDraggable(rect, mmCurve.scalar, mmCurve.m_RemapValue, dragWidth, "n0");
+                    if (EditorGUI.EndChangeCheck() && !mmCurve.signedRange)
+                        mmCurve.scalar.floatValue = Mathf.Max(newValue, 0f);
+                }
+                else if (state == MinMaxCurveState.k_TwoScalars)
+                {
+                    Rect halfRect = rect;
+                    halfRect.width = (rect.width * 0.5f);
+
+                    Rect halfRectWithDragger = halfRect;
+
+                    EditorGUI.BeginChangeCheck();
+                    float newMinValue = FloatDraggable(halfRectWithDragger, mmCurve.minScalar, mmCurve.m_RemapValue, dragWidth, "n0");
+                    if (EditorGUI.EndChangeCheck() && !mmCurve.signedRange)
+                        mmCurve.minScalar.floatValue = Mathf.Max(newMinValue, 0f);
+
+                    halfRectWithDragger.x += halfRect.width;
+
+                    EditorGUI.BeginChangeCheck();
+                    float newMaxValue = FloatDraggable(halfRectWithDragger, mmCurve.scalar, mmCurve.m_RemapValue, dragWidth, "n0");
+                    if (EditorGUI.EndChangeCheck() && !mmCurve.signedRange)
+                        mmCurve.scalar.floatValue = Mathf.Max(newMaxValue, 0f);
+                }
+                else
+                {
+                    // Curve field
+                    Rect previewRange = mmCurve.signedRange ? kSignedRange : kUnsignedRange;
+                    SerializedProperty minCurve = (state == MinMaxCurveState.k_TwoCurves) ? mmCurve.minCurve : null;
+                    GUICurveField(rect, mmCurve.maxCurve, minCurve, GetColor(mmCurve), previewRange, mmCurve.OnCurveAreaMouseDown);
+                }
+            }
+
+            // PopUp minmaxState menu
+            rect.width += k_minMaxToggleWidth;
+            Rect popupRect = GetPopupRect(rect);
+            GUIMMCurveStateList(popupRect, mmCurve);
+
+            return rect;
         }
 
         public void GUIMinMaxGradient(GUIContent label, SerializedMinMaxGradient minMaxGradient, bool hdr, params GUILayoutOption[] layoutOptions)

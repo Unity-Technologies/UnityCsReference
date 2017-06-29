@@ -93,9 +93,10 @@ namespace UnityEditor
         {
             // generate the Interal Call Summary file
             var icallSummaryPath = Path.Combine(stagingAreaDataManaged, "ICallSummary.txt");
+            var dlls = Directory.GetFiles(stagingAreaDataManaged, "UnityEngine.*Module.dll").Concat(new[] {Path.Combine(stagingAreaDataManaged, "UnityEngine.dll")});
             var exe = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Tools/InternalCallRegistrationWriter/InternalCallRegistrationWriter.exe");
             var args = string.Format("-assembly=\"{0}\" -summary=\"{1}\"",
-                    Path.Combine(stagingAreaDataManaged, "UnityEngine.dll"), icallSummaryPath
+                    dlls.Aggregate((dllArg, next) => dllArg + ";" + next), icallSummaryPath
                     );
             Runner.RunManagedProgram(exe, args);
 
@@ -212,17 +213,18 @@ namespace UnityEditor
                 w.WriteLine("}");
                 w.WriteLine("");
 
-                AssemblyDefinition unityEngineAssemblyDefinition = null;
-                for (int i = 0; i < fileNames.Length; i++)
-                {
-                    if (fileNames[i] == "UnityEngine.dll")
-                        unityEngineAssemblyDefinition = assemblies[i];
-                }
 
                 if (buildTarget == BuildTarget.iOS)
                 {
-                    AssemblyDefinition[] inputAssemblies = { unityEngineAssemblyDefinition };
-                    GenerateRegisterInternalCalls(inputAssemblies, w);
+                    var inputAssemblies = new List<AssemblyDefinition>();
+
+                    for (int i = 0; i < assemblies.Length; i++)
+                    {
+                        if (AssemblyHelper.IsUnityEngineModule(assemblies[i].Name.Name))
+                            inputAssemblies.Add(assemblies[i]);
+                    }
+
+                    GenerateRegisterInternalCalls(inputAssemblies.ToArray(), w);
 
                     GenerateRegisterModules(nativeClasses, nativeModules, w, stripping);
 

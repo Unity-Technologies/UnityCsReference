@@ -97,7 +97,7 @@ namespace UnityEditor
         // user has Collaborate permissions.
         private bool HasSoftlockSupport(Editor editor)
         {
-            if (!CollabAccess.Instance.IsServiceEnabled() || editor == null || editor.targets.Length > 1)
+            if (!Collab.instance.IsCollabEnabledForCurrentProject() || editor == null || editor.targets.Length > 1)
             {
                 return false;
             }
@@ -121,7 +121,7 @@ namespace UnityEditor
 
         private bool HasSoftlocks(string assetGUID)
         {
-            if (!CollabAccess.Instance.IsServiceEnabled())
+            if (!Collab.instance.IsCollabEnabledForCurrentProject())
             {
                 return false;
             }

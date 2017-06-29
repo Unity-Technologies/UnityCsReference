@@ -34,8 +34,8 @@ namespace UnityEditor
 
             var rect = el.position;
 
-            GUIViewDebuggerWindow.styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
-            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
+            GUIViewDebuggerWindow.Styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.Styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
         }
 
         internal override string GetInstructionListName(int index)
@@ -74,7 +74,7 @@ namespace UnityEditor
         {
             if (!isInstructionSelected)
             {
-                debuggerWindow.CloseInstructionOverlayWindow();
+                debuggerWindow.ClearInstructionHighlighter();
                 return;
             }
 

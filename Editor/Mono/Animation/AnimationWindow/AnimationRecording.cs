@@ -346,7 +346,8 @@ namespace UnityEditorInternal
                 {
                     // TODO@mecanim keyframing of transform driven by an animator is disabled until we can figure out
                     // how to rebind partially a controller at each sampling.
-                    if (animator != null && animator.isHuman && binding.type == typeof(Transform) && animator.IsBoneTransform(prop.target as Transform))
+                    if (animator != null && animator.isHuman && binding.type == typeof(Transform)
+                        && animator.gameObject.transform != prop.target && animator.IsBoneTransform(prop.target as Transform))
                     {
                         Debug.LogWarning("Keyframing for humanoid rig is not supported!", prop.target as Transform);
                         continue;

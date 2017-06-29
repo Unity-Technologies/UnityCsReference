@@ -97,7 +97,7 @@ namespace UnityEditor.Collaboration
         // For each iteration, returns the pair (scene name : list of other users' names).
         public static IEnumerable<KeyValuePair<string, List<string>>> GetLockNamesOnOpenScenes()
         {
-            if (CollabAccess.Instance.IsServiceEnabled())
+            if (Collab.instance.IsCollabEnabledForCurrentProject())
             {
                 for (int sceneIndex = 0; sceneIndex < EditorSceneManager.sceneCount; sceneIndex++)
                 {

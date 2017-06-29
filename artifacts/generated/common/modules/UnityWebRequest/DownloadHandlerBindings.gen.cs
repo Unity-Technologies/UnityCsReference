@@ -45,6 +45,10 @@ public partial class DownloadHandler : IDisposable
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_InternalCreateAssetBundleCached (DownloadHandler self, string url, string name, ref Hash128 hash, uint crc);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal void InternalCreateVFS (string path) ;
+
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -281,6 +285,41 @@ public sealed partial class DownloadHandlerAssetBundle : DownloadHandler
         }
     
     
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public sealed partial class DownloadHandlerFile : DownloadHandler
+{
+    public DownloadHandlerFile(string path)
+        {
+            InternalCreateVFS(path);
+        }
+    
+    
+    
+    protected override byte[] GetData()
+        {
+            throw new System.NotSupportedException("Raw data access is not supported");
+        }
+    
+    
+    
+    protected override string GetText()
+        {
+            throw new System.NotSupportedException("String access is not supported");
+        }
+    
+    
+    public extern  bool removeFileOnAbort
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
 }
 
 

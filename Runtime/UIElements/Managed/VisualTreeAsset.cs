@@ -75,9 +75,9 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     StyleRule r = inlineSheet.rules[root.ruleIndex];
-                    var style = new VisualElementStyles(false);
-                    ve.SetInlineStyles(style);
-                    style.ApplyRule(inlineSheet, Int32.MaxValue, r,
+                    var stylesData = new VisualElementStylesData(true);
+                    ve.SetInlineStyles(stylesData);
+                    stylesData.ApplyRule(inlineSheet, Int32.MaxValue, r,
                         StyleSheetCache.GetPropertyIDs(inlineSheet, root.ruleIndex), Resources.Load);
                 }
             }

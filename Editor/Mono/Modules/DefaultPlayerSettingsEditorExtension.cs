@@ -91,6 +91,13 @@ namespace UnityEditor.Modules
             return false;
         }
 
+        public string FixTargetOSVersion(string version)
+        {
+            if (version.IndexOf('.') < 0)
+                return (version + ".0").Trim();
+            return version.Trim();
+        }
+
         public virtual bool SupportsMultithreadedRendering()
         {
             return false;

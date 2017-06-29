@@ -404,7 +404,7 @@ namespace UnityEditor
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogFormat("Field '{0}' from '{1}', exception {2}", field.FullName, field.Module.FullyQualifiedName, ex.Message);
+                UnityEngine.Debug.LogFormat("Field '{0}' from '{1}', exception {2}", field.FullName, field.Module.FileName, ex.Message);
                 // If assembly has unknown reference (for ex., see tests VariousPlugins, where Metro plugins are used), skip field
                 return false;
             }

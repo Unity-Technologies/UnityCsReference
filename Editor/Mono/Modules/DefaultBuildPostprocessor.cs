@@ -25,6 +25,11 @@ namespace UnityEditor.Modules
             return false;
         }
 
+        public virtual bool SupportsLz4Compression()
+        {
+            return false;
+        }
+
         public virtual void PostProcessScriptsOnly(BuildPostProcessArgs args)
         {
             if (!SupportsScriptsOnlyBuild())

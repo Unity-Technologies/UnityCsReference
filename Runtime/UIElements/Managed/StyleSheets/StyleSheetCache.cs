@@ -47,23 +47,62 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         static Dictionary<SheetHandleKey, StylePropertyID[]> s_RulePropertyIDsCache = new Dictionary<SheetHandleKey, StylePropertyID[]>(s_Comparer);
 
         // cache of builtin properties (e.g. "margin-left" to their enum equivalent)
-        // never changes even after style sheet reload
-        static Dictionary<string, StylePropertyID> s_NameToIDCache = new Dictionary<string, StylePropertyID>();
-
-        static StyleSheetCache()
+        // this is static data and never changes at runtime
+        static Dictionary<string, StylePropertyID> s_NameToIDCache = new Dictionary<string, StylePropertyID>()
         {
-
-            var members = typeof(VisualElementStyles).GetFields();
-            foreach (System.Reflection.FieldInfo field in members)
-            {
-                StylePropertyAttribute attribute = (StylePropertyAttribute)Attribute.GetCustomAttribute(field, typeof(StylePropertyAttribute));
-
-                if (attribute != null)
-                {
-                    s_NameToIDCache.Add(attribute.propertyName, attribute.propertyID);
-                }
-            }
-        }
+            {"width", StylePropertyID.Width},
+            {"height", StylePropertyID.Height},
+            {"max-width", StylePropertyID.MaxWidth},
+            {"max-height", StylePropertyID.MaxHeight},
+            {"min-width", StylePropertyID.MinWidth},
+            {"min-height", StylePropertyID.MinHeight},
+            {"flex", StylePropertyID.Flex},
+            {"overflow", StylePropertyID.Overflow},
+            {"position-left", StylePropertyID.PositionLeft},
+            {"position-top", StylePropertyID.PositionTop},
+            {"position-right", StylePropertyID.PositionRight},
+            {"position-bottom", StylePropertyID.PositionBottom},
+            {"margin-left", StylePropertyID.MarginLeft},
+            {"margin-top", StylePropertyID.MarginTop},
+            {"margin-right", StylePropertyID.MarginRight},
+            {"margin-bottom", StylePropertyID.MarginBottom},
+            {"border-left", StylePropertyID.BorderLeft},
+            {"border-top", StylePropertyID.BorderTop},
+            {"border-right", StylePropertyID.BorderRight},
+            {"border-bottom", StylePropertyID.BorderBottom},
+            {"padding-left", StylePropertyID.PaddingLeft},
+            {"padding-top", StylePropertyID.PaddingTop},
+            {"padding-right", StylePropertyID.PaddingRight},
+            {"padding-bottom", StylePropertyID.PaddingBottom},
+            {"position-type", StylePropertyID.PositionType},
+            {"align-self", StylePropertyID.AlignSelf},
+            {"text-alignment", StylePropertyID.TextAlignment},
+            {"font-style", StylePropertyID.FontStyle},
+            {"text-clipping", StylePropertyID.TextClipping},
+            {"font", StylePropertyID.Font},
+            {"font-size", StylePropertyID.FontSize},
+            {"word-wrap", StylePropertyID.WordWrap},
+            {"text-color", StylePropertyID.TextColor},
+            {"flex-direction", StylePropertyID.FlexDirection},
+            {"background-color", StylePropertyID.BackgroundColor},
+            {"border-color", StylePropertyID.BorderColor},
+            {"background-image", StylePropertyID.BackgroundImage},
+            {"background-size", StylePropertyID.BackgroundSize},
+            {"align-items", StylePropertyID.AlignItems},
+            {"align-content", StylePropertyID.AlignContent},
+            {"justify-content", StylePropertyID.JustifyContent},
+            {"flex-wrap", StylePropertyID.FlexWrap},
+            {"border-left-width", StylePropertyID.BorderLeftWidth},
+            {"border-top-width", StylePropertyID.BorderTopWidth},
+            {"border-right-width", StylePropertyID.BorderRightWidth},
+            {"border-bottom-width", StylePropertyID.BorderBottomWidth},
+            {"border-radius", StylePropertyID.BorderRadius},
+            {"slice-left", StylePropertyID.SliceLeft},
+            {"slice-top", StylePropertyID.SliceTop},
+            {"slice-right", StylePropertyID.SliceRight},
+            {"slice-bottom", StylePropertyID.SliceBottom},
+            {"opacity", StylePropertyID.Opacity}
+        };
 
         internal static void ClearCaches()
         {

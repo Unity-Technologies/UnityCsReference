@@ -170,5 +170,16 @@ namespace UnityEngineInternal.Input
             if (callback != null)
                 callback(deviceInfo);
         }
+
+        public static bool SendOutput(int deviceId, byte[] data, int length)
+        {
+            unsafe
+            {
+                fixed(byte* dataPtr = data)
+                {
+                    return SendOutput(deviceId, new IntPtr(dataPtr), length);
+                }
+            }
+        }
     }
 }

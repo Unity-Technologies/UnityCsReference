@@ -49,6 +49,21 @@ namespace UnityEngine.Experimental.UIElements
                 clickCount = systemEvent.clickCount;
             }
         }
+
+        public override IEventHandler currentTarget
+        {
+            get { return base.currentTarget; }
+            internal set
+            {
+                base.currentTarget = value;
+
+                var element = currentTarget as VisualElement;
+                if (element != null)
+                {
+                    localMousePosition = element.GlobalToBound(mousePosition);
+                }
+            }
+        }
     }
 
     public class MouseDownEvent : MouseEventBase

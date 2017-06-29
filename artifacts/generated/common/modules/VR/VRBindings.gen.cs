@@ -9,22 +9,10 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.VR
+namespace UnityEngine.XR
 {
-[System.Obsolete ("VRDeviceType is deprecated. Use VRSettings.supportedDevices instead.")]
-public enum VRDeviceType
-{
-    [Obsolete("Enum member VRDeviceType.Morpheus has been deprecated. Use VRDeviceType.PlayStationVR instead (UnityUpgradable) -> PlayStationVR", true)]
-    Morpheus = -1,
-    None,
-    Stereo,
-    Split,
-    Oculus,
-    PlayStationVR,
-    Unknown
-}
-
 public enum TrackingSpaceType
 {
     Stationary,
@@ -39,7 +27,7 @@ public enum UserPresenceState
     Unknown = 2,
 }
 
-public static partial class VRSettings
+public static partial class XRSettings
 {
     public extern static bool enabled
     {
@@ -68,7 +56,18 @@ public static partial class VRSettings
         set;
     }
 
+    [System.Obsolete ("renderScale is deprecated, use XRSettings.eyeTextureResolutionScale instead (UnityUpgradable) -> eyeTextureResolutionScale")]
     public extern static float renderScale
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static float eyeTextureResolutionScale
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -128,23 +127,6 @@ public static partial class VRSettings
         set;
     }
 
-    [System.Obsolete ("loadedDevice is deprecated.  Use loadedDeviceName and LoadDeviceByName instead.")]
-    public static VRDeviceType loadedDevice
-        {
-            get
-            {
-                VRDeviceType ret = VRDeviceType.Unknown;
-                try
-                {
-                    ret = (VRDeviceType)Enum.Parse(typeof(VRDeviceType), loadedDeviceName, true);
-                }
-                catch (Exception) {}
-                return ret;
-            }
-            set { LoadDeviceByName(value.ToString()); }
-        }
-    
-    
     public extern static string loadedDeviceName
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -171,7 +153,7 @@ public static partial class VRSettings
 
 }
 
-public static partial class VRDevice
+public static partial class XRDevice
 {
     public extern static bool isPresent
     {
@@ -187,7 +169,7 @@ public static partial class VRDevice
         get;
     }
 
-    [System.Obsolete ("family is deprecated.  Use VRSettings.loadedDeviceName instead.")]
+    [System.Obsolete ("family is deprecated.  Use XRSettings.loadedDeviceName instead.")]
     public extern static string family
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -226,21 +208,21 @@ public static partial class VRDevice
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetNativePtr (out IntPtr value);
-    public static void DisableAutoVRCameraTracking(Camera camera, bool disabled)
+    public static void DisableAutoXRCameraTracking(Camera camera, bool disabled)
         {
             if (camera == null)
                 throw new ArgumentNullException("camera");
-            DisableAutoVRCameraTrackingInternal(camera, disabled);
+            DisableAutoXRCameraTrackingInternal(camera, disabled);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void DisableAutoVRCameraTrackingInternal (Camera camera, bool disabled) ;
+    extern private static  void DisableAutoXRCameraTrackingInternal (Camera camera, bool disabled) ;
 
 }
 
-public static partial class VRStats
+public static partial class XRStats
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -254,7 +236,7 @@ public static partial class VRStats
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool TryGetFramePresentCount (out int framePresentCount) ;
 
-    [System.Obsolete ("gpuTimeLastFrame is deprecated. Use VRStats.TryGetGPUTimeLastFrame instead.")]
+    [System.Obsolete ("gpuTimeLastFrame is deprecated. Use XRStats.TryGetGPUTimeLastFrame instead.")]
     public static float gpuTimeLastFrame
         {
             get
@@ -271,7 +253,7 @@ public static partial class VRStats
 
 public static partial class InputTracking
 {
-    public static Vector3 GetLocalPosition (VRNode node) {
+    public static Vector3 GetLocalPosition (XRNode node) {
         Vector3 result;
         INTERNAL_CALL_GetLocalPosition ( node, out result );
         return result;
@@ -279,8 +261,8 @@ public static partial class InputTracking
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetLocalPosition (VRNode node, out Vector3 value);
-    public static Quaternion GetLocalRotation (VRNode node) {
+    private extern static void INTERNAL_CALL_GetLocalPosition (XRNode node, out Vector3 value);
+    public static Quaternion GetLocalRotation (XRNode node) {
         Quaternion result;
         INTERNAL_CALL_GetLocalRotation ( node, out result );
         return result;
@@ -288,7 +270,7 @@ public static partial class InputTracking
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetLocalRotation (VRNode node, out Quaternion value);
+    private extern static void INTERNAL_CALL_GetLocalRotation (XRNode node, out Quaternion value);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Recenter () ;
@@ -301,7 +283,7 @@ public static partial class InputTracking
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void GetNodeStatesInternal (object nodeStates) ;
 
-    static public void GetNodeStates(List<VRNodeState> nodeStates)
+    static public void GetNodeStates(List<XRNodeState> nodeStates)
         {
             if (null == nodeStates)
             {
@@ -330,10 +312,11 @@ public static partial class InputTracking
 
 }
 
-namespace UnityEngine.Experimental.VR
+namespace UnityEngine.Experimental.XR
 {
 
 
+[MovedFrom("UnityEngine.Experimental.VR")]
 public static partial class Boundary
 {
     public enum Type    

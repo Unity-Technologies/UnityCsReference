@@ -83,6 +83,77 @@ public partial class AssetImporter : Object
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int LocalFileIDToClassID (long fileId) ;
 
+    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct SourceAssetIdentifier
+    {
+        public SourceAssetIdentifier(Object asset)
+            {
+                if (asset == null)
+                {
+                    throw new ArgumentNullException("asset");
+                }
+
+                this.type = asset.GetType();
+                this.name = asset.name;
+            }
+        
+        
+        public SourceAssetIdentifier(Type type, string name)
+            {
+                if (type == null)
+                {
+                    throw new ArgumentNullException("type");
+                }
+
+                if (name == null)
+                {
+                    throw new ArgumentNullException("name");
+                }
+
+                if (string.IsNullOrEmpty(name))
+                {
+                    throw new ArgumentException("The name is empty", "name");
+                }
+
+                this.type = type;
+                this.name = name;
+            }
+        
+        
+        
+                    public Type   type;
+                    public string name;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void AddRemap (SourceAssetIdentifier identifier, Object externalObject) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool RemoveRemap (SourceAssetIdentifier identifier) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void GetExternalObjects (out SourceAssetIdentifier[] identifiers, out Object[] externalObjects) ;
+
+    public Dictionary<SourceAssetIdentifier, Object> GetExternalObjectMap()
+        {
+            SourceAssetIdentifier[] identifiers = null;
+            Object[] externalObjects = null;
+            GetExternalObjects(out identifiers, out externalObjects);
+
+            Dictionary<SourceAssetIdentifier, Object> map = new Dictionary<SourceAssetIdentifier, Object>();
+
+            for (int i = 0; i < identifiers.Length; ++i)
+            {
+                map.Add(identifiers[i], externalObjects[i]);
+            }
+
+            return map;
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void RegisterImporter (Type importer, int importerVersion, int queuePos, string fileExt) ;

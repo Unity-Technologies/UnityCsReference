@@ -71,14 +71,14 @@ namespace UnityEditor
             string listDisplayName = GetInstructionListName(el.row);
             GUIContent tempContent = GUIContent.Temp(listDisplayName);
 
-            GUIViewDebuggerWindow.styles.listItemBackground.Draw(el.position, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.Styles.listItemBackground.Draw(el.position, false, false, listViewState.row == el.row, false);
 
-            GUIViewDebuggerWindow.styles.listItem.Draw(el.position, tempContent, id, listViewState.row == el.row);
+            GUIViewDebuggerWindow.Styles.listItem.Draw(el.position, tempContent, id, listViewState.row == el.row);
         }
 
         protected override void DrawInspectedStacktrace()
         {
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
             DrawStackFrameList(m_Instruction.stackframes);
             EditorGUILayout.EndScrollView();
         }
@@ -152,7 +152,7 @@ namespace UnityEditor
             {
                 m_CachedInstructionInfo = null;
 
-                debuggerWindow.CloseInstructionOverlayWindow();
+                debuggerWindow.ClearInstructionHighlighter();
             }
         }
 

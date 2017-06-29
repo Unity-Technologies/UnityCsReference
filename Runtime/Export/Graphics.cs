@@ -325,7 +325,7 @@ namespace UnityEngine
         public Rect screenRect, sourceRect;
         public int leftBorder, rightBorder, topBorder, bottomBorder;
         public Color32 color;
-        public float borderWidth;
+        public Vector4 borderWidths;
         public float cornerRadius;
         public int pass;
         public Texture texture;

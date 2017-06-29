@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor
 {
@@ -121,11 +122,12 @@ namespace UnityEditor
 
             RectOffset margins = GetBorderSize();
 
-            view.rootVisualContainer.positionTop = margins.top;
-            view.rootVisualContainer.positionBottom = margins.bottom;
-            view.rootVisualContainer.positionLeft = margins.left;
-            view.rootVisualContainer.positionRight = margins.right;
-            view.rootVisualContainer.positionType = PositionType.Absolute;
+            IStyle style = view.rootVisualContainer.style;
+            style.positionTop = margins.top;
+            style.positionBottom = margins.bottom;
+            style.positionLeft = margins.left;
+            style.positionRight = margins.right;
+            style.positionType = PositionType.Absolute;
         }
 
 

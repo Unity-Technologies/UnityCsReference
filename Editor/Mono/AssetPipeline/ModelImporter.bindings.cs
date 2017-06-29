@@ -800,5 +800,16 @@ namespace UnityEditor
             else
                 Debug.LogError("Cannot create default mask because the current importer doesn't have any animation information");
         }
+
+        [NativeName("ExtractTextures")]
+        private extern bool ExtractTexturesInternal(string folderPath);
+
+        public bool ExtractTextures(string folderPath)
+        {
+            if (string.IsNullOrEmpty(folderPath))
+                throw new ArgumentException("The path cannot be empty", folderPath);
+
+            return ExtractTexturesInternal(folderPath);
+        }
     }
 }

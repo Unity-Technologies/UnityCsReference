@@ -515,7 +515,7 @@ namespace UnityEditor
         private void ShowGeneral()
         {
             // Options
-            bool collabEnabled = CollabAccess.Instance.IsServiceEnabled();
+            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
             using (new EditorGUI.DisabledScope(collabEnabled))
             {
                 if (collabEnabled)

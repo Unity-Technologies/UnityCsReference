@@ -83,74 +83,68 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Children.Count; }
         }
 
-
+        [Obsolete("VisualElement.flexDirection will be removed. Use VisualElement.styles.flexDirection instead", false)]
         public FlexDirection flexDirection
         {
             get
             {
-                return (FlexDirection)m_Styles.flexDirection.value;
+                return style.flexDirection;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.flexDirection = Style<int>.Create((int)value);
-                cssNode.FlexDirection = (CSSFlexDirection)value;
+                style.flexDirection = value;
             }
         }
 
+        [Obsolete("VisualElement.alignItems will be removed. Use VisualElement.styles.alignItems instead", false)]
         public Align alignItems
         {
             get
             {
-                return (Align)m_Styles.alignItems.value;
+                return style.alignItems;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.alignItems = Style<int>.Create((int)value);
-                cssNode.AlignItems = (CSSAlign)value;
+                style.alignItems = value;
             }
         }
 
+        [Obsolete("VisualElement.alignContent will be removed. Use VisualElement.styles.alignContent instead", false)]
         public Align alignContent
         {
             get
             {
-                return (Align)m_Styles.alignContent.value;
+                return style.alignContent.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.alignContent = Style<int>.Create((int)value);
-                cssNode.AlignContent = (CSSAlign)value;
+                style.alignContent = value;
             }
         }
 
+        [Obsolete("VisualElement.justifyContent will be removed. Use VisualElement.styles.justifyContent instead", false)]
         public Justify justifyContent
         {
             get
             {
-                return (Justify)m_Styles.justifyContent.value;
+                return style.justifyContent.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.justifyContent = Style<int>.Create((int)value);
-                cssNode.JustifyContent = (CSSJustify)value;
+                style.justifyContent = value;
             }
         }
 
+        [Obsolete("VisualElement.flexWrap will be removed. Use VisualElement.styles.flexWrap instead", false)]
         public Wrap flexWrap
         {
             get
             {
-                return (Wrap)m_Styles.flexWrap.value;
+                return style.flexWrap.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.flexWrap = Style<int>.Create((int)value);
-                cssNode.Wrap = (CSSWrap)value;
+                style.flexWrap = value;
             }
         }
 

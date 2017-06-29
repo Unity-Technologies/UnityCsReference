@@ -7,7 +7,7 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-using UnityEngine.VR;
+using UnityEngine.XR;
 
 namespace UnityEngine.Internal.VR
 {
@@ -21,15 +21,15 @@ public static partial class VRTestMock
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void AddTrackedDevice (VRNode nodeType) ;
+    extern public static  void AddTrackedDevice (XRNode nodeType) ;
 
-    public static void UpdateTrackedDevice (VRNode nodeType, Vector3 position, Quaternion rotation) {
+    public static void UpdateTrackedDevice (XRNode nodeType, Vector3 position, Quaternion rotation) {
         INTERNAL_CALL_UpdateTrackedDevice ( nodeType, ref position, ref rotation );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_UpdateTrackedDevice (VRNode nodeType, ref Vector3 position, ref Quaternion rotation);
+    private extern static void INTERNAL_CALL_UpdateTrackedDevice (XRNode nodeType, ref Vector3 position, ref Quaternion rotation);
     public static void UpdateLeftEye (Vector3 position, Quaternion rotation) {
         INTERNAL_CALL_UpdateLeftEye ( ref position, ref rotation );
     }

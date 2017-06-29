@@ -20,7 +20,6 @@ namespace UnityEngine
         private static readonly int s_BoxHash               = "Box".GetHashCode();
         private static readonly int s_RepeatButtonHash      = "repeatButton".GetHashCode();
         private static readonly int s_ToggleHash            = "Toggle".GetHashCode();
-        private static readonly int s_ButtonGridHash        = "ButtonGrid".GetHashCode();
         private static readonly int s_SliderHash            = "Slider".GetHashCode();
         private static readonly int s_BeginGroupHash        = "BeginGroup".GetHashCode();
         private static readonly int s_ScrollviewHash        = "scrollView".GetHashCode();
@@ -184,6 +183,13 @@ namespace UnityEngine
         // Draw a texture within a rectangle.
         public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, float borderWidth, float cornerRadius)
         {
+            var borderWidths = new Vector4(borderWidth, borderWidth, borderWidth, borderWidth);
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, borderWidths, cornerRadius);
+        }
+
+        // Draw a texture within a rectangle.
+        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, Vector4 borderWidths, float cornerRadius)
+        {
             GUIUtility.CheckOnGUI();
             if (Event.current.type == EventType.Repaint)
             {
@@ -197,15 +203,19 @@ namespace UnityEngine
                     imageAspect = (float)image.width / image.height;
 
                 Material mat = null;
-                if (borderWidth > Mathf.Epsilon || cornerRadius > Mathf.Epsilon)
+                if (borderWidths != Vector4.zero || cornerRadius > Mathf.Epsilon)
+                {
                     mat = roundedRectMaterial;
+                }
                 else
+                {
                     mat = alphaBlend ? blendMaterial : blitMaterial;
+                }
 
                 Internal_DrawTextureArguments arguments = new Internal_DrawTextureArguments();
                 arguments.leftBorder = 0; arguments.rightBorder = 0; arguments.topBorder = 0; arguments.bottomBorder = 0;
                 arguments.color = color;
-                arguments.borderWidth = borderWidth;
+                arguments.borderWidths = borderWidths;
                 arguments.cornerRadius = cornerRadius;
                 arguments.texture = image;
                 arguments.mat = mat;
@@ -867,13 +877,18 @@ namespace UnityEngine
         // Make a toolbar
         public static int Toolbar(Rect position, int selected, GUIContent[] contents, GUIStyle style)
         {
+            return Toolbar(position, selected, contents, null, style);
+        }
+
+        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style)
+        {
             GUIUtility.CheckOnGUI();
 
             // Get the styles here
             GUIStyle firstStyle, midStyle, lastStyle;
             FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
 
-            return DoButtonGrid(position, selected, contents, contents.Length, style, firstStyle, midStyle, lastStyle);
+            return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle);
         }
 
         /// *listonly*
@@ -910,7 +925,7 @@ namespace UnityEngine
         public static int SelectionGrid(Rect position, int selected, GUIContent[] contents, int xCount, GUIStyle style)
         {
             if (style == null) style = s_Skin.button;
-            return DoButtonGrid(position, selected, contents, xCount, style, style, style, style);
+            return DoButtonGrid(position, selected, contents, null, xCount, style, style, style, style);
         }
 
         // Find many GUIStyles from style.name permutations (Helper function for toolbars).
@@ -943,7 +958,7 @@ namespace UnityEngine
 
 
         // Make a button grid
-        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle)
+        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle)
         {
             GUIUtility.CheckOnGUI();
             int count = contents.Length;
@@ -954,7 +969,6 @@ namespace UnityEngine
                 Debug.LogWarning("You are trying to create a SelectionGrid with zero or less elements to be displayed in the horizontal direction. Set xCount to a positive value.");
                 return selected;
             }
-            int id = GUIUtility.GetControlID(s_ButtonGridHash, FocusType.Passive, position);
 
             // Figure out how large each element should be
             int rows = count / xCount;
@@ -970,85 +984,74 @@ namespace UnityEngine
             if (style.fixedHeight != 0)
                 elemHeight = style.fixedHeight;
 
-            Rect[] buttonRects;
-            switch (Event.current.GetTypeForControl(id))
+            Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
+            GUIStyle selectedButtonStyle = null;
+            int selectedButtonID = 0;
+            for (int buttonIndex = 0; buttonIndex < count; ++buttonIndex)
             {
-                case EventType.MouseDown:
-                    if (position.Contains(Event.current.mousePosition))
-                    {
-                        //Check if the mouse is over a button (nobody says the grid is filled out)
-                        buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
-                        if (GetButtonGridMouseSelection(buttonRects, Event.current.mousePosition, true) != -1)
+                var buttonRect = buttonRects[buttonIndex];
+                var content = contents[buttonIndex];
+
+                if (controlNames != null)
+                    GUI.SetNextControlName(controlNames[buttonIndex]);
+                var id = GUIUtility.GetControlID(content, FocusType.Passive, buttonRect);
+                if (buttonIndex == selected)
+                    selectedButtonID = id;
+
+                switch (Event.current.GetTypeForControl(id))
+                {
+                    case EventType.MouseDown:
+                        if (buttonRect.Contains(Event.current.mousePosition))
                         {
                             GUIUtility.hotControl = id;
                             Event.current.Use();
                         }
-                    }
-                    break;
-                case EventType.MouseDrag:
-                    if (GUIUtility.hotControl == id)
-                        Event.current.Use();
-                    break;
-                case EventType.MouseUp:
-                    if (GUIUtility.hotControl == id)
-                    {
-                        GUIUtility.hotControl = 0;
-                        Event.current.Use();
-
-                        buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
-                        int mouseSel = GetButtonGridMouseSelection(buttonRects, Event.current.mousePosition, true);
-
-                        GUI.changed = true;
-                        return mouseSel;
-                    }
-                    break;
-                case EventType.Repaint:
-                    GUIStyle selStyle = null;
-
-                    GUIClip.Push(position, Vector2.zero, Vector2.zero, false);
-                    position = new Rect(0, 0, position.width, position.height);
-
-                    buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
-                    int mouseOverSel = GetButtonGridMouseSelection(buttonRects, Event.current.mousePosition, id == GUIUtility.hotControl);
-
-                    bool mouseInside = position.Contains(Event.current.mousePosition);
-                    GUIUtility.mouseUsed |= mouseInside;
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        // Figure out the style
-                        GUIStyle s = null;
-                        if (i != 0)
-                            s = midStyle;
-                        else
-                            s = firstStyle;
-                        if (i == count - 1)
-                            s = lastStyle;
-                        if (count == 1)
-                            s = style;
-
-                        if (i != selected) // We draw the selected one last, so it overflows nicer
+                        break;
+                    case EventType.MouseDrag:
+                        if (GUIUtility.hotControl == id)
+                            Event.current.Use();
+                        break;
+                    case EventType.MouseUp:
+                        if (GUIUtility.hotControl == id)
                         {
-                            s.Draw(buttonRects[i], contents[i], i == mouseOverSel && (enabled || id == GUIUtility.hotControl) && (id == GUIUtility.hotControl || GUIUtility.hotControl == 0), id == GUIUtility.hotControl && GUI.enabled, false, false);
+                            GUIUtility.hotControl = 0;
+                            Event.current.Use();
+
+                            GUI.changed = true;
+                            return buttonIndex;
                         }
+                        break;
+                    case EventType.Repaint:
+                        var buttonStyle = count == 1 ? style : (buttonIndex == 0 ? firstStyle : (buttonIndex == count - 1 ? lastStyle : midStyle));
+                        var isMouseOver = buttonRect.Contains(Event.current.mousePosition);
+                        var isHotControl = GUIUtility.hotControl == id;
+                        var isSelected = selected == buttonIndex;
+
+                        if (!isSelected)
+                            buttonStyle.Draw(buttonRect, content, isMouseOver && (enabled || isHotControl) && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, false, false);
                         else
+                            selectedButtonStyle = buttonStyle;
+
+                        if (isMouseOver)
                         {
-                            selStyle = s;
+                            GUIUtility.mouseUsed = true;
+                            if (!string.IsNullOrEmpty(content.tooltip))
+                                GUIStyle.SetMouseTooltip(content.tooltip, buttonRect);
                         }
-                    }
-
-                    // Draw it at the end
-                    if (selected < count && selected > -1)
-                    {
-                        selStyle.Draw(buttonRects[selected], contents[selected], selected == mouseOverSel && (enabled || id == GUIUtility.hotControl) && (id == GUIUtility.hotControl || GUIUtility.hotControl == 0), id == GUIUtility.hotControl, true, false);
-                    }
-
-                    if (mouseOverSel >= 0 && !String.IsNullOrEmpty(contents[mouseOverSel].tooltip))
-                        GUIStyle.SetMouseTooltip(contents[mouseOverSel].tooltip, buttonRects[mouseOverSel]);
-
-                    GUIClip.Pop();
-                    break;
+                        break;
+                }
             }
+
+            // draw selected button at the end so it overflows nicer
+            if (selectedButtonStyle != null)
+            {
+                var buttonRect = buttonRects[selected];
+                var content = contents[selected];
+                var isMouseOver = buttonRect.Contains(Event.current.mousePosition);
+                var isHotControl = GUIUtility.hotControl == selectedButtonID;
+                selectedButtonStyle.Draw(buttonRect, content, isMouseOver && (enabled || isHotControl) && (isHotControl || GUIUtility.hotControl == 0), enabled && isHotControl, true, false);
+            }
+
             return selected;
         }
 
@@ -1094,36 +1097,6 @@ namespace UnityEngine
                 }
             }
             return retval;
-        }
-
-        // Helper function: Get the index of the element under the mouse position
-        private static int GetButtonGridMouseSelection(Rect[] buttonRects, Vector2 mousePos, bool findNearest)
-        {
-            // This could be implemented faster, but for now this is not supposed to be used for a gazillion elements :)
-
-            for (int i = 0; i < buttonRects.Length; i++)
-            {
-                if (buttonRects[i].Contains(mousePos))
-                    return i;
-            }
-            if (!findNearest)
-                return -1;
-            // We haven't found any we're over, so we need to find the closest button.
-            float minDist = 10000000;
-            int minIndex = -1;
-            for (int i = 0; i < buttonRects.Length; i++)
-            {
-                Rect r = buttonRects[i];
-                Vector2 v = new Vector2(Mathf.Clamp(mousePos.x, r.xMin, r.xMax), Mathf.Clamp(mousePos.y, r.yMin, r.yMax));
-                float dSqr = (mousePos - v).sqrMagnitude;
-                if (dSqr < minDist)
-                {
-                    minIndex = i;
-                    minDist = dSqr;
-                }
-            }
-
-            return minIndex;
         }
 
 

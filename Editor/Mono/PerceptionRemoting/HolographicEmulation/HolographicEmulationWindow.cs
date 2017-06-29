@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditorInternal.VR;
 using UnityEngine;
-using UnityEngine.VR;
+using UnityEngine.XR;
 
 namespace UnityEditorInternal.VR
 {
@@ -296,7 +296,7 @@ namespace UnityEditorInternal.VR
             if (!PlayerSettings.virtualRealitySupported)
                 return false;
 
-            if (Array.IndexOf(VRSettings.supportedDevices, "HoloLens") < 0)
+            if (Array.IndexOf(XRSettings.supportedDevices, "HoloLens") < 0)
                 return false;
 
             return true;

@@ -6,13 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
-using UnityEngine.VR.WSA.Input;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.XR.WSA.Input;
 
 
-namespace UnityEngine.VR.WSA.Input
+namespace UnityEngine.XR.WSA.Input
 {
     // These are mirrors of those in windows.perception.h, specifically the
     // ABI::Windows::UI::Input::Spatial::SpatialGestureSettings enum.
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
     public enum GestureSettings
     {
         None = 0,
@@ -28,41 +30,265 @@ namespace UnityEngine.VR.WSA.Input
         NavigationRailsZ = 512
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct HoldCompletedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+
+        public HoldCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct HoldCanceledEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+
+        public HoldCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct HoldStartedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+
+        public HoldStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct TappedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public int tapCount { get; private set; }
+
+        public TappedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, int tapCount) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.tapCount = tapCount;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct ManipulationCanceledEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 cumulativeDelta { get; private set; }
+
+        public ManipulationCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.cumulativeDelta = cumulativeDelta;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct ManipulationCompletedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 cumulativeDelta { get; private set; }
+
+        public ManipulationCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.cumulativeDelta = cumulativeDelta;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct ManipulationStartedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 cumulativeDelta { get; private set; }
+
+        public ManipulationStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.cumulativeDelta = cumulativeDelta;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct ManipulationUpdatedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 cumulativeDelta { get; private set; }
+
+        public ManipulationUpdatedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.cumulativeDelta = cumulativeDelta;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct NavigationCanceledEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 normalizedOffset { get; private set; }
+
+        public NavigationCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.normalizedOffset = normalizedOffset;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct NavigationCompletedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 normalizedOffset { get; private set; }
+
+        public NavigationCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.normalizedOffset = normalizedOffset;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct NavigationStartedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 normalizedOffset { get; private set; }
+
+        public NavigationStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.normalizedOffset = normalizedOffset;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct NavigationUpdatedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+        public Vector3 normalizedOffset { get; private set; }
+
+        public NavigationUpdatedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+            this.normalizedOffset = normalizedOffset;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct RecognitionEndedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+
+        public RecognitionEndedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct RecognitionStartedEventArgs
+    {
+        public InteractionSource source { get; private set; }
+        public InteractionSourceLocation pose { get; private set; }
+        public InteractionSourceRay headRay { get; private set; }
+
+        public RecognitionStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
+        {
+            this.source = source;
+            this.pose = pose;
+            this.headRay = headRay;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
+    public struct GestureErrorEventArgs
+    {
+        public string error { get; private set; }
+        public int hresult { get; private set; }
+
+        public GestureErrorEventArgs(string error, int hresult) : this()
+        {
+            this.error = error;
+            this.hresult = hresult;
+        }
+    }
+
+    [MovedFrom("UnityEngine.VR.WSA.Input")]
     sealed public partial class GestureRecognizer : IDisposable
     {
-        //
-        // public facing delegates and events
-        //
-        public delegate void HoldCanceledEventDelegate(InteractionSourceKind source, Ray headRay);
-        public delegate void HoldCompletedEventDelegate(InteractionSourceKind source, Ray headRay);
-        public delegate void HoldStartedEventDelegate(InteractionSourceKind source, Ray headRay);
-        public delegate void TappedEventDelegate(InteractionSourceKind source, int tapCount, Ray headRay);
-        public delegate void ManipulationCanceledEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
-        public delegate void ManipulationCompletedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
-        public delegate void ManipulationStartedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
-        public delegate void ManipulationUpdatedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
-        public delegate void NavigationCanceledEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
-        public delegate void NavigationCompletedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
-        public delegate void NavigationStartedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
-        public delegate void NavigationUpdatedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
-        public delegate void RecognitionEndedEventDelegate(InteractionSourceKind source, Ray headRay);
-        public delegate void RecognitionStartedEventDelegate(InteractionSourceKind source, Ray headRay);
-        public delegate void GestureErrorDelegate([MarshalAs(UnmanagedType.LPStr)] string error, int hresult);
-        public event HoldCanceledEventDelegate HoldCanceledEvent;
-        public event HoldCompletedEventDelegate HoldCompletedEvent;
-        public event HoldStartedEventDelegate HoldStartedEvent;
-        public event TappedEventDelegate TappedEvent;
-        public event ManipulationCanceledEventDelegate ManipulationCanceledEvent;
-        public event ManipulationCompletedEventDelegate ManipulationCompletedEvent;
-        public event ManipulationStartedEventDelegate ManipulationStartedEvent;
-        public event ManipulationUpdatedEventDelegate ManipulationUpdatedEvent;
-        public event NavigationCanceledEventDelegate NavigationCanceledEvent;
-        public event NavigationCompletedEventDelegate NavigationCompletedEvent;
-        public event NavigationStartedEventDelegate NavigationStartedEvent;
-        public event NavigationUpdatedEventDelegate NavigationUpdatedEvent;
-        public event RecognitionEndedEventDelegate RecognitionEndedEvent;
-        public event RecognitionStartedEventDelegate RecognitionStartedEvent;
-        public event GestureErrorDelegate GestureErrorEvent;
+        public event Action<HoldCanceledEventArgs> OnHoldCanceledEvent;
+        public event Action<HoldCompletedEventArgs> OnHoldCompletedEvent;
+        public event Action<HoldStartedEventArgs> OnHoldStartedEvent;
+        public event Action<TappedEventArgs> OnTappedEvent;
+        public event Action<ManipulationCanceledEventArgs> OnManipulationCanceledEvent;
+        public event Action<ManipulationCompletedEventArgs> OnManipulationCompletedEvent;
+        public event Action<ManipulationStartedEventArgs> OnManipulationStartedEvent;
+        public event Action<ManipulationUpdatedEventArgs> OnManipulationUpdatedEvent;
+        public event Action<NavigationCanceledEventArgs> OnNavigationCanceledEvent;
+        public event Action<NavigationCompletedEventArgs> OnNavigationCompletedEvent;
+        public event Action<NavigationStartedEventArgs> OnNavigationStartedEvent;
+        public event Action<NavigationUpdatedEventArgs> OnNavigationUpdatedEvent;
+        public event Action<RecognitionEndedEventArgs> OnRecognitionEndedEvent;
+        public event Action<RecognitionStartedEventArgs> OnRecognitionStartedEvent;
+        public event Action<GestureErrorEventArgs> OnGestureErrorEvent;
 
         //
         // startup and shutdown
@@ -152,10 +378,11 @@ namespace UnityEngine.VR.WSA.Input
             NavigationUpdated,
             RecognitionStarted,
             RecognitionEnded
-        };
+        }
 
+#pragma warning disable 0618
         [RequiredByNativeCode]
-        private void InvokeHoldEvent(GestureEventType eventType, InteractionSourceKind source, Ray headRay)
+        private void InvokeHoldEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay)
         {
             switch (eventType)
             {
@@ -164,8 +391,14 @@ namespace UnityEngine.VR.WSA.Input
                     var holdCanceledEvent = HoldCanceledEvent;
                     if (holdCanceledEvent != null)
                     {
-                        holdCanceledEvent(source, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        holdCanceledEvent(sourceKind, ray);
                     }
+
+                    var onHoldCanceledEvent = OnHoldCanceledEvent;
+                    if (onHoldCanceledEvent != null)
+                        onHoldCanceledEvent(new HoldCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
                 }
                 break;
 
@@ -174,8 +407,14 @@ namespace UnityEngine.VR.WSA.Input
                     var holdCompletedEvent = HoldCompletedEvent;
                     if (holdCompletedEvent != null)
                     {
-                        holdCompletedEvent(source, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        holdCompletedEvent(sourceKind, ray);
                     }
+
+                    var onHoldCompletedEvent = OnHoldCompletedEvent;
+                    if (onHoldCompletedEvent != null)
+                        onHoldCompletedEvent(new HoldCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
                 }
                 break;
 
@@ -184,8 +423,14 @@ namespace UnityEngine.VR.WSA.Input
                     var holdStartedEvent = HoldStartedEvent;
                     if (holdStartedEvent != null)
                     {
-                        holdStartedEvent(source, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        holdStartedEvent(sourceKind, ray);
                     }
+
+                    var onHoldStartedEvent = OnHoldStartedEvent;
+                    if (onHoldStartedEvent != null)
+                        onHoldStartedEvent(new HoldStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
                 }
                 break;
 
@@ -198,17 +443,23 @@ namespace UnityEngine.VR.WSA.Input
         }
 
         [RequiredByNativeCode]
-        private void InvokeTapEvent(InteractionSourceKind source, Ray headRay, int tapCount)
+        private void InvokeTapEvent(uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, int tapCount)
         {
             var tappedEvent = TappedEvent;
             if (tappedEvent != null)
             {
-                tappedEvent(source, tapCount, headRay);
+                Ray ray;
+                headRay.TryGetRay(out ray);
+                tappedEvent(sourceKind, tapCount, ray);
             }
+
+            var onTappedEvent = OnTappedEvent;
+            if (onTappedEvent != null)
+                onTappedEvent(new TappedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, tapCount));
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationEvent(GestureEventType eventType, InteractionSourceKind source, Vector3 position, Ray headRay)
+        private void InvokeManipulationEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta)
         {
             switch (eventType)
             {
@@ -217,8 +468,14 @@ namespace UnityEngine.VR.WSA.Input
                     var manipulationCanceledEvent = ManipulationCanceledEvent;
                     if (manipulationCanceledEvent != null)
                     {
-                        manipulationCanceledEvent(source, position, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        manipulationCanceledEvent(sourceKind, cumulativeDelta, ray);
                     }
+
+                    var onManipulationCanceledEvent = OnManipulationCanceledEvent;
+                    if (onManipulationCanceledEvent != null)
+                        onManipulationCanceledEvent(new ManipulationCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
                 }
                 break;
 
@@ -227,8 +484,14 @@ namespace UnityEngine.VR.WSA.Input
                     var manipulationCompletedEvent = ManipulationCompletedEvent;
                     if (manipulationCompletedEvent != null)
                     {
-                        manipulationCompletedEvent(source, position, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        manipulationCompletedEvent(sourceKind, cumulativeDelta, ray);
                     }
+
+                    var onManipulationCompletedEvent = OnManipulationCompletedEvent;
+                    if (onManipulationCompletedEvent != null)
+                        onManipulationCompletedEvent(new ManipulationCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
                 }
                 break;
 
@@ -237,8 +500,14 @@ namespace UnityEngine.VR.WSA.Input
                     var manipulationStartedEvent = ManipulationStartedEvent;
                     if (manipulationStartedEvent != null)
                     {
-                        manipulationStartedEvent(source, position, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        manipulationStartedEvent(sourceKind, cumulativeDelta, ray);
                     }
+
+                    var onManipulationStartedEvent = OnManipulationStartedEvent;
+                    if (onManipulationStartedEvent != null)
+                        onManipulationStartedEvent(new ManipulationStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
                 }
                 break;
 
@@ -247,8 +516,14 @@ namespace UnityEngine.VR.WSA.Input
                     var manipulationUpdatedEvent = ManipulationUpdatedEvent;
                     if (manipulationUpdatedEvent != null)
                     {
-                        manipulationUpdatedEvent(source, position, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        manipulationUpdatedEvent(sourceKind, cumulativeDelta, ray);
                     }
+
+                    var onManipulationUpdatedEvent = OnManipulationUpdatedEvent;
+                    if (onManipulationUpdatedEvent != null)
+                        onManipulationUpdatedEvent(new ManipulationUpdatedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
                 }
                 break;
 
@@ -258,7 +533,7 @@ namespace UnityEngine.VR.WSA.Input
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationEvent(GestureEventType eventType, InteractionSourceKind source, Vector3 relativePosition, Ray headRay)
+        private void InvokeNavigationEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset)
         {
             switch (eventType)
             {
@@ -267,8 +542,14 @@ namespace UnityEngine.VR.WSA.Input
                     var navigationCanceledEvent = NavigationCanceledEvent;
                     if (navigationCanceledEvent != null)
                     {
-                        navigationCanceledEvent(source, relativePosition, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        navigationCanceledEvent(sourceKind, normalizedOffset, ray);
                     }
+
+                    var onNavigationCanceledEvent = OnNavigationCanceledEvent;
+                    if (onNavigationCanceledEvent != null)
+                        onNavigationCanceledEvent(new NavigationCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
                 }
                 break;
 
@@ -277,8 +558,14 @@ namespace UnityEngine.VR.WSA.Input
                     var navigationCompletedEvent = NavigationCompletedEvent;
                     if (navigationCompletedEvent != null)
                     {
-                        navigationCompletedEvent(source, relativePosition, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        navigationCompletedEvent(sourceKind, normalizedOffset, ray);
                     }
+
+                    var onNavigationCompletedEvent = OnNavigationCompletedEvent;
+                    if (onNavigationCompletedEvent != null)
+                        onNavigationCompletedEvent(new NavigationCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
                 }
                 break;
 
@@ -287,8 +574,14 @@ namespace UnityEngine.VR.WSA.Input
                     var navigationStartedEvent = NavigationStartedEvent;
                     if (navigationStartedEvent != null)
                     {
-                        navigationStartedEvent(source, relativePosition, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        navigationStartedEvent(sourceKind, normalizedOffset, ray);
                     }
+
+                    var onNavigationStartedEvent = OnNavigationStartedEvent;
+                    if (onNavigationStartedEvent != null)
+                        onNavigationStartedEvent(new NavigationStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
                 }
                 break;
 
@@ -297,8 +590,14 @@ namespace UnityEngine.VR.WSA.Input
                     var navigationUpdatedEvent = NavigationUpdatedEvent;
                     if (navigationUpdatedEvent != null)
                     {
-                        navigationUpdatedEvent(source, relativePosition, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        navigationUpdatedEvent(sourceKind, normalizedOffset, ray);
                     }
+
+                    var onNavigationUpdatedEvent = OnNavigationUpdatedEvent;
+                    if (onNavigationUpdatedEvent != null)
+                        onNavigationUpdatedEvent(new NavigationUpdatedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
                 }
                 break;
 
@@ -308,7 +607,7 @@ namespace UnityEngine.VR.WSA.Input
         }
 
         [RequiredByNativeCode]
-        private void InvokeRecognitionEvent(GestureEventType eventType, InteractionSourceKind source, Ray headRay)
+        private void InvokeRecognitionEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay)
         {
             switch (eventType)
             {
@@ -317,8 +616,14 @@ namespace UnityEngine.VR.WSA.Input
                     var recognitionEndedEvent = RecognitionEndedEvent;
                     if (recognitionEndedEvent != null)
                     {
-                        recognitionEndedEvent(source, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        recognitionEndedEvent(sourceKind, ray);
                     }
+
+                    var onRecognitionEndedEvent = OnRecognitionEndedEvent;
+                    if (onRecognitionEndedEvent != null)
+                        onRecognitionEndedEvent(new RecognitionEndedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
                 }
                 break;
 
@@ -327,8 +632,14 @@ namespace UnityEngine.VR.WSA.Input
                     var recognitionStartedEvent = RecognitionStartedEvent;
                     if (recognitionStartedEvent != null)
                     {
-                        recognitionStartedEvent(source, headRay);
+                        Ray ray;
+                        headRay.TryGetRay(out ray);
+                        recognitionStartedEvent(sourceKind, ray);
                     }
+
+                    var onRecognitionStartedEvent = OnRecognitionStartedEvent;
+                    if (onRecognitionStartedEvent != null)
+                        onRecognitionStartedEvent(new RecognitionStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
                 }
                 break;
 
@@ -345,10 +656,14 @@ namespace UnityEngine.VR.WSA.Input
         {
             var gestureErrorEvent = GestureErrorEvent;
             if (gestureErrorEvent != null)
-            {
                 gestureErrorEvent(error, hresult);
-            }
+
+            var onGestureErrorEvent = OnGestureErrorEvent;
+            if (onGestureErrorEvent != null)
+                onGestureErrorEvent(new GestureErrorEventArgs(error, hresult));
         }
-    };
+
+#pragma warning restore 0618
+    }
 }
 

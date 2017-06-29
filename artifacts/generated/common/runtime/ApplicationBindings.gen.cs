@@ -173,17 +173,17 @@ public sealed partial class Application
     
     
     
-    [System.Obsolete("Application.CaptureScreenshot is obsolete. Use ImageConversion.CaptureScreenshot instead (UnityUpgradable) -> [UnityEngine] UnityEngine.ScreenCapture.CaptureScreenshot(*)", true)]
+    [System.Obsolete("Application.CaptureScreenshot is obsolete. Use ScreenCapture.CaptureScreenshot instead (UnityUpgradable) -> [UnityEngine] UnityEngine.ScreenCapture.CaptureScreenshot(*)", true)]
     static public void CaptureScreenshot(string filename, int superSize)
     {
-        throw new NotSupportedException("Application.CaptureScreenshot is obsolete. Use ImageConversion.CaptureScreenshot instead.");
+        throw new NotSupportedException("Application.CaptureScreenshot is obsolete. Use ScreenCapture.CaptureScreenshot instead.");
     }
     
     
-    [System.Obsolete("Application.CaptureScreenshot is obsolete. Use ImageConversion.CaptureScreenshot instead (UnityUpgradable) -> [UnityEngine] UnityEngine.ScreenCapture.CaptureScreenshot(*)", true)]
+    [System.Obsolete("Application.CaptureScreenshot is obsolete. Use ScreenCapture.CaptureScreenshot instead (UnityUpgradable) -> [UnityEngine] UnityEngine.ScreenCapture.CaptureScreenshot(*)", true)]
     static public void CaptureScreenshot(string filename)
     {
-        throw new NotSupportedException("Application.CaptureScreenshot is obsolete. Use ImageConversion.CaptureScreenshot instead.");
+        throw new NotSupportedException("Application.CaptureScreenshot is obsolete. Use ScreenCapture.CaptureScreenshot instead.");
     }
     
     

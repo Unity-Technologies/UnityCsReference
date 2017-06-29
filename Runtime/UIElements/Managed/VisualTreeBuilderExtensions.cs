@@ -13,7 +13,7 @@ namespace UnityEngine.Experimental.UIElements
             box.GenerateControlID();
             box.position = position;
             box.text = content.text;
-            box.style = style;
+            box.guiStyle = style;
             return box;
         }
 
@@ -24,7 +24,7 @@ namespace UnityEngine.Experimental.UIElements
             button.GenerateControlID();
             button.position = position;
             button.text = content.text;
-            button.style = style;
+            button.guiStyle = style;
             return button;
         }
 
@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
             grid.GenerateControlID();
             grid.position = position;
             grid.contents = contents;
-            grid.style = style;
+            grid.guiStyle = style;
             grid.xCount = xCount;
             grid.selected = selected;
             grid.firstStyle = firstStyle;
@@ -63,7 +63,7 @@ namespace UnityEngine.Experimental.UIElements
             group.GenerateControlID();
             group.layout = position;
             group.text = content.text;
-            group.style = style;
+            group.guiStyle = style;
             return group;
         }
 
@@ -73,7 +73,7 @@ namespace UnityEngine.Experimental.UIElements
             cache.NextElement(out label);
             label.position = position;
             label.text = content.text;
-            label.style = style;
+            label.guiStyle = style;
             return label;
         }
 
@@ -94,7 +94,7 @@ namespace UnityEngine.Experimental.UIElements
             cache.NextElement(out button);
             button.GenerateControlID();
             button.position = position;
-            button.style = style;
+            button.guiStyle = style;
             button.text = content.text;
             button.focusType = focusType;
             return button;
@@ -146,7 +146,7 @@ namespace UnityEngine.Experimental.UIElements
                     textField.GenerateControlID();
                 textField.position = position;
                 textField.text = content.text;
-                textField.style = style;
+                textField.guiStyle = style;
                 textField.maxLength = maxLength;
                 textField.multiline = multiline;
                 textField.secureText = secureText;
@@ -163,7 +163,7 @@ namespace UnityEngine.Experimental.UIElements
                     textField.GenerateControlID();
                 textField.position = position;
                 textField.text = content.text;
-                textField.style = style;
+                textField.guiStyle = style;
                 textField.maxLength = maxLength;
                 textField.multiline = multiline;
                 return textField;
@@ -180,7 +180,7 @@ namespace UnityEngine.Experimental.UIElements
                 toggle.GenerateControlID();
             toggle.position = position;
             toggle.text = content.text;
-            toggle.style = style;
+            toggle.guiStyle = style;
             toggle.value = value;
             return toggle;
         }

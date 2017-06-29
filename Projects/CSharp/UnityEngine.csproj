@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -895,15 +895,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\Physics\DynamicsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Physics\DynamicsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Physics2D\ScriptBindings\Physics2D.cs" >
-<Link>Runtime\Physics2D\ScriptBindings\Physics2D.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Physics2D\ScriptBindings\Physics2D.deprecated.cs" >
-<Link>Runtime\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Vehicles\VehiclesBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Vehicles\VehiclesBindings.gen.cs</Link>
 </Compile>
@@ -945,6 +936,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs" >
 <Link>Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioExtensions.cs" >
+<Link>Runtime\Audio\ScriptBindings\AudioExtensions.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Audio\AudioBindings.gen.cs</Link>
@@ -1279,6 +1273,9 @@
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoConfig.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\TangoConfig.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoMeshReconstructionServer.cs" >
+<Link>Runtime\AR\Tango\ScriptBindings\TangoMeshReconstructionServer.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs</Link>
 </Compile>
@@ -1300,8 +1297,20 @@
 <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNodeState.cs" >
 <Link>Runtime\VR\ScriptBindings\VRNodeState.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\VR\ScriptBindings\VR.deprecated.cs" >
+<Link>Runtime\VR\ScriptBindings\VR.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\ScriptBindings\VRNode.deprecated.cs" >
+<Link>Runtime\VR\ScriptBindings\VRNode.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs" >
+<Link>Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WebCam.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\WebCam.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureSource.deprecated.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\GestureSource.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\TransformLock.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\TransformLock.cs</Link>
@@ -1309,8 +1318,14 @@
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\VR\VRBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\VR\VRBindings.gen.cs</Link>
@@ -1338,12 +1353,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Button.cs" >
 <Link>Runtime\UIElements\Managed\Button.cs</Link>
@@ -1411,6 +1420,9 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\IMToggle.cs" >
 <Link>Runtime\UIElements\Managed\IMToggle.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\IStyle.cs" >
+<Link>Runtime\UIElements\Managed\IStyle.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\HierarchyTraversal.cs" >
 <Link>Runtime\UIElements\Managed\HierarchyTraversal.cs</Link>
 </Compile>
@@ -1474,11 +1486,17 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\Toggle.cs" >
 <Link>Runtime\UIElements\Managed\Toggle.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\UQuery.cs" >
+<Link>Runtime\UIElements\Managed\UQuery.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualContainer.cs" >
 <Link>Runtime\UIElements\Managed\VisualContainer.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElement.cs" >
 <Link>Runtime\UIElements\Managed\VisualElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementStyleAccess.cs" >
+<Link>Runtime\UIElements\Managed\VisualElementStyleAccess.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElementUtils.cs" >
 <Link>Runtime\UIElements\Managed\VisualElementUtils.cs</Link>
@@ -1513,8 +1531,8 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\UIEvent.cs" >
 <Link>Runtime\UIElements\Managed\Events\UIEvent.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\Style.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\Style.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleValue.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\StyleValue.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleComplexSelectorExtensions.cs" >
 <Link>Runtime\UIElements\Managed\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
@@ -1525,8 +1543,11 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs" >
 <Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\VisualElementStyles.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\VisualElementStyles.cs</Link>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetExtensions.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\VisualElementStylesData.cs" >
+<Link>Runtime\UIElements\Managed\StyleSheets\VisualElementStylesData.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs" >
 <Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
@@ -1594,6 +1615,15 @@
 <Compile Include="..\..\artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.cs" >
+<Link>Modules\Physics2D\ScriptBindings\Physics2D.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs" >
+<Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ScreenCapture\ScreenCaptureBindings.gen.cs</Link>
 </Compile>
@@ -1623,6 +1653,12 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>

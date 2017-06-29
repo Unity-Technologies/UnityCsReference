@@ -35,9 +35,14 @@ namespace UnityEditorInternal.VR
                 new GUIContent("Multi Pass"),
                 new GUIContent("Single Pass (Preview)"),
             };
+
+            public static readonly GUIContent xrSettingsTitle = EditorGUIUtility.TextContent("XR Settings");
+
+            public static readonly GUIContent supportedCheckbox = EditorGUIUtility.TextContent("Virtual Reality Supported");
+            public static readonly GUIContent listHeader = EditorGUIUtility.TextContent("Virtual Reality SDKs");
         }
 
-        private SerializedObject m_Settings;
+        private PlayerSettingsEditor m_Settings;
 
         private Dictionary<BuildTargetGroup, VRDeviceInfoEditor[]> m_AllVRDevicesForBuildTarget = new Dictionary<BuildTargetGroup, VRDeviceInfoEditor[]>();
         private Dictionary<BuildTargetGroup, ReorderableList> m_VRDeviceActiveUI = new Dictionary<BuildTargetGroup, ReorderableList>();
@@ -46,10 +51,21 @@ namespace UnityEditorInternal.VR
         private Dictionary<string, string> m_MapVRUIStringToDeviceKey = new Dictionary<string, string>();
 
         private Dictionary<string, VRCustomOptions> m_CustomOptions = new Dictionary<string, VRCustomOptions>();
+        private SerializedProperty m_StereoRenderingPath;
 
-        public PlayerSettingsEditorVR(SerializedObject settingsEditor)
+        private SerializedProperty m_AndroidEnableTango;
+        private SerializedProperty m_AndroidTangoUsesCamera;
+
+
+        internal int GUISectionIndex { get; set; }
+
+        public PlayerSettingsEditorVR(PlayerSettingsEditor settingsEditor)
         {
             m_Settings = settingsEditor;
+            m_StereoRenderingPath = m_Settings.serializedObject.FindProperty("m_StereoRenderingPath");
+
+            m_AndroidEnableTango = m_Settings.FindPropertyAssert("AndroidEnableTango");
+            m_AndroidTangoUsesCamera = m_Settings.FindPropertyAssert("AndroidTangoUsesCamera");
         }
 
         private void RefreshVRDeviceList(BuildTargetGroup targetGroup)
@@ -77,7 +93,7 @@ namespace UnityEditorInternal.VR
                     {
                         customOptions = new VRCustomOptionsNone();
                     }
-                    customOptions.Initialize(m_Settings);
+                    customOptions.Initialize(m_Settings.serializedObject);
                     m_CustomOptions.Add(deviceInfo.deviceNameKey, customOptions);
                 }
             }
@@ -95,14 +111,54 @@ namespace UnityEditorInternal.VR
             return supportedDevices.Length > 0;
         }
 
-        internal void DevicesGUI(BuildTargetGroup targetGroup)
+        internal void XRSectionGUI(BuildTargetGroup targetGroup, int sectionIndex)
+        {
+            GUISectionIndex = sectionIndex;
+            if (!TargetGroupSupportsVirtualReality(targetGroup))
+                return;
+
+            if (m_Settings.BeginSettingsBox(sectionIndex, Styles.xrSettingsTitle))
+            {
+                if (targetGroup == BuildTargetGroup.Android)
+                {
+                    // Google Tango settings
+                    EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("Tango Supported"));
+
+                    if (PlayerSettings.Android.androidTangoEnabled)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(m_AndroidTangoUsesCamera, EditorGUIUtility.TextContent("Tango Uses Camera"));
+
+                        if ((int)PlayerSettings.Android.minSdkVersion < 23)
+                        {
+                            GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 6.0");
+                            EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
+                        }
+                        EditorGUI.indentLevel--;
+                    }
+
+                    EditorGUILayout.Space();
+                }
+
+                DevicesGUI(targetGroup);
+
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
+                {
+                    SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
+                }
+            }
+
+            m_Settings.EndSettingsBox();
+        }
+
+        private void DevicesGUI(BuildTargetGroup targetGroup)
         {
             if (TargetGroupSupportsVirtualReality(targetGroup))
             {
                 bool vrSupported = VREditor.GetVREnabledOnTargetGroup(targetGroup);
 
                 EditorGUI.BeginChangeCheck();
-                vrSupported = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Virtual Reality Supported"), vrSupported);
+                vrSupported = EditorGUILayout.Toggle(Styles.supportedCheckbox, vrSupported);
                 if (EditorGUI.EndChangeCheck())
                 {
                     VREditor.SetVREnabledOnTargetGroup(targetGroup, vrSupported);
@@ -145,7 +201,7 @@ namespace UnityEditorInternal.VR
             return (targetGroup == BuildTargetGroup.Android) ? Styles.kAndroidStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
         }
 
-        internal void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
+        private void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
         {
             if (!PlayerSettings.virtualRealitySupported)
                 return;
@@ -328,7 +384,7 @@ namespace UnityEditorInternal.VR
                 rlist.onRemoveCallback = (list) => RemoveVRDeviceElement(targetGroup, list);
                 rlist.onReorderCallback = (list) => ReorderVRDeviceElement(targetGroup, list);
                 rlist.drawElementCallback = (rect, index, isActive, isFocused) => DrawVRDeviceElement(targetGroup, rect, index, isActive, isFocused);
-                rlist.drawHeaderCallback = (rect) => GUI.Label(rect, "Virtual Reality SDKs", EditorStyles.label);
+                rlist.drawHeaderCallback = (rect) => GUI.Label(rect, Styles.listHeader, EditorStyles.label);
                 rlist.elementHeightCallback = (index) => GetVRDeviceElementHeight(targetGroup, index);
                 rlist.onSelectCallback = (list) => SelectVRDeviceElement(targetGroup, list);
                 m_VRDeviceActiveUI.Add(targetGroup, rlist);

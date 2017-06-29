@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
+using File = System.IO.File;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -52,14 +52,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Type = type;
             }
 
-            public string FullPath(String outputDirectory, string filenameSuffix)
+            public string FilenameWithSuffix(string filenameSuffix)
             {
-                var assemblyPath = Path.Combine(outputDirectory, Filename);
-
                 if (!string.IsNullOrEmpty(filenameSuffix))
-                    assemblyPath = assemblyPath.Replace(".dll", filenameSuffix + ".dll");
+                    return Filename.Replace(".dll", filenameSuffix + ".dll");
 
-                return assemblyPath;
+                return Filename;
+            }
+
+            public string FullPath(string outputDirectory, string filenameSuffix)
+            {
+                return AssetPath.Combine(outputDirectory, FilenameWithSuffix(filenameSuffix));
             }
         }
 
@@ -131,7 +134,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var customAssembly in customScriptAssemblies)
             {
-                if (predefinedTargetAssemblies.Any(p => Path.GetFileNameWithoutExtension(p.Filename) == customAssembly.Name))
+                if (predefinedTargetAssemblies.Any(p => AssetPath.GetFileNameWithoutExtension(p.Filename) == customAssembly.Name))
                 {
                     throw new Exception(string.Format("Assembly cannot be have reserved name '{0}'. Defined in '{1}'", customAssembly.Name, customAssembly.FilePath));
                 }
@@ -186,7 +189,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (allSourceFiles == null || allSourceFiles.Count() == 0)
                 return new ScriptAssembly[0];
 
-            bool buildingForEditor = settings.BuildingForEditor;
             var targetAssemblyFiles = new Dictionary<TargetAssembly, HashSet<string>>();
 
             foreach (var scriptFile in allSourceFiles)
@@ -204,7 +206,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     targetAssemblyFiles[targetAssembly] = assemblySourceFiles;
                 }
 
-                assemblySourceFiles.Add(Path.Combine(projectDirectory, scriptFile));
+                assemblySourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
             return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, null);
@@ -212,8 +214,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public static ScriptAssembly[] GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
         {
-            bool buildingForEditor = args.Settings.BuildingForEditor;
-
             var dirtyTargetAssemblies = new Dictionary<TargetAssembly, HashSet<string>>();
 
             var allTargetAssemblies = args.Assemblies.CustomTargetAssemblies == null ?
@@ -224,7 +224,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (args.RunUpdaterAssemblies != null)
                 foreach (var assemblyFilename in args.RunUpdaterAssemblies)
                 {
-                    var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
+                    var targetAssembly = allTargetAssemblies.First(a => a.FilenameWithSuffix(args.Settings.FilenameSuffix) == assemblyFilename);
                     dirtyTargetAssemblies[targetAssembly] = new HashSet<string>();
                 }
 
@@ -250,7 +250,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         targetAssembly.Language = scriptLanguage;
                 }
 
-                assemblySourceFiles.Add(Path.Combine(args.ProjectDirectory, dirtySourceFile));
+                assemblySourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, dirtySourceFile));
 
                 // If there are mixed languages in a custom script folder, mark the assembly to not be compiled.
                 if (scriptLanguage != targetAssembly.Language)
@@ -321,7 +321,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     args.NotCompiledTargetAssemblies.Add(targetAssembly);
 
                 if (dirtyTargetAssemblies.TryGetValue(targetAssembly, out assemblySourceFiles))
-                    assemblySourceFiles.Add(Path.Combine(args.ProjectDirectory, sourceFile));
+                    assemblySourceFiles.Add(AssetPath.Combine(args.ProjectDirectory, sourceFile));
             }
 
             // Remove any target assemblies which have no source files associated with them.
@@ -370,8 +370,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 if (!string.IsNullOrEmpty(settings.FilenameSuffix))
                 {
-                    var basename = Path.GetFileNameWithoutExtension(targetAssembly.Filename);
-                    var extension = Path.GetExtension(targetAssembly.Filename);
+                    var basename = AssetPath.GetFileNameWithoutExtension(targetAssembly.Filename);
+                    var extension = AssetPath.GetExtension(targetAssembly.Filename);
                     scriptAssembly.Filename = string.Concat(basename, settings.FilenameSuffix, extension);
                 }
                 else
@@ -638,7 +638,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             TargetAssembly resultAssembly = null;
 
-            var extension = Path.GetExtension(scriptPath).Substring(1).ToLower();
+            var extension = AssetPath.GetExtension(scriptPath).Substring(1).ToLower();
             var lowerPath = "/" + scriptPath.ToLower();
             int highestPathDepth = -1;
 
@@ -674,8 +674,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             TargetAssembly resultAssembly = null;
 
             // CustomScriptAssembly paths are absolute, so we convert the scriptPath to an absolute path, if necessary.
-            bool isPathAbsolute = Path.IsPathRooted(scriptPath);
-            var lowerFullPath = isPathAbsolute ? scriptPath.ToLower() : Path.Combine(projectDirectory, scriptPath).ToLower();
+            bool isPathAbsolute = AssetPath.IsPathRooted(scriptPath);
+            var lowerFullPath = isPathAbsolute ? AssetPath.GetFullPath(scriptPath).ToLower() : AssetPath.Combine(projectDirectory, scriptPath).ToLower();
 
             foreach (var assembly in customTargetAssemblies)
             {

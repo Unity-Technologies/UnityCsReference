@@ -39,7 +39,7 @@ namespace UnityEditor.Web
             if (CrashReportingSettings.enabled != enabled)
             {
                 CrashReportingSettings.enabled = enabled;
-                UsabilityAnalytics.SendEventParam("service_state", new CrashReportingServiceState() { crash_reporting = enabled });
+                EditorAnalytics.SendEventServiceInfo(new CrashReportingServiceState() { crash_reporting = enabled });
             }
         }
 

@@ -39,7 +39,7 @@ namespace UnityEditor
                 for (int index = 0; index < m_Markers.Length; index++)
                 {
                     var marker = m_Markers[index];
-                    Color color = ProfilerColors.colors[(uint)m_Series.Length % ProfilerColors.colors.Length];
+                    Color color = ProfilerColors.currentColors[(uint)m_Series.Length % ProfilerColors.currentColors.Length];
                     Chart.DrawVerticalLine(marker.frame, m_Data, rect, color.AlphaMultiplied(0.3f), color.AlphaMultiplied(0.4f), 1.0f);
                 }
                 DrawMarkerLabels(m_Data, rect, m_Markers, m_MarkerNames);
@@ -70,7 +70,7 @@ namespace UnityEditor
                         {
                             float xpos = r.x + frameWidth * frame;
                             // color the label slightly (half way between line color and white)
-                            Color color = ProfilerColors.colors[(uint)m_Series.Length % ProfilerColors.colors.Length];
+                            Color color = ProfilerColors.currentColors[(uint)m_Series.Length % ProfilerColors.currentColors.Length];
                             GUI.contentColor = (color + Color.white) * 0.5f;
 
                             const float offset = -1;
@@ -87,7 +87,7 @@ namespace UnityEditor
         {
             Rect elementPosition = base.DoSeriesList(position, chartControlID, chartType, cdata);
             GUIContent label = EditorGUIUtility.TempContent("Markers");
-            Color color = ProfilerColors.colors[cdata.numSeries % ProfilerColors.colors.Length];
+            Color color = ProfilerColors.currentColors[cdata.numSeries % ProfilerColors.currentColors.Length];
             DoSeriesToggle(elementPosition, label, ref showMarkers, color, cdata);
 
             elementPosition.y += elementPosition.height;

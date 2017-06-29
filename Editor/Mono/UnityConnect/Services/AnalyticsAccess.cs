@@ -7,6 +7,7 @@ using System;
 using UnityEditor.Connect;
 using UnityEngine;
 using UnityEditor.Analytics;
+using UnityEditor;
 
 namespace UnityEditor.Web
 {
@@ -39,7 +40,7 @@ namespace UnityEditor.Web
             if (AnalyticsSettings.enabled != enabled)
             {
                 AnalyticsSettings.enabled = enabled;
-                UsabilityAnalytics.SendEventParam("service_state", new AnalyticsServiceState() { analytics = enabled });
+                EditorAnalytics.SendEventServiceInfo(new AnalyticsServiceState() { analytics = enabled });
             }
         }
 

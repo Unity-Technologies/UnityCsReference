@@ -200,7 +200,12 @@ namespace UnityEngine.Experimental.UIElements
                 panel.ValidateLayout();
 
                 EventBase evt = CreateEvent(s_EventInstance);
+
+                // DispatchEvent changes mousePosition.
+                Vector2 savedMousePosition = s_EventInstance.mousePosition;
                 s_EventDispatcher.DispatchEvent(evt, panel);
+                s_EventInstance.mousePosition = savedMousePosition;
+
                 if (evt.isPropagationStopped)
                 {
                     panel.visualTree.Dirty(ChangeType.Repaint);

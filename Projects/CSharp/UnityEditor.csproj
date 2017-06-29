@@ -22,14 +22,14 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   <NoWarn>0169;0649;0626</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Boo.Lang">
@@ -44,8 +44,8 @@
     <Reference Include="UnityScript">
       <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\UnityScript.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\..\External\Mono.Cecil\builds\lib\net35\Mono.Cecil.dll</HintPath>
+    <Reference Include="Unity.Cecil">
+      <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Legacy.NRefactory">
       <HintPath>..\..\External\NRefactory\builds\3.2.1\net35\Unity.Legacy.NRefactory.dll</HintPath>
@@ -526,8 +526,14 @@
 <Compile Include="..\..\Editor\Mono\ImportSettings\ModelImporterRigEditor.cs" >
 <Link>Editor\Mono\ImportSettings\ModelImporterRigEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ImportSettings\ModelImporterMaterialEditor.cs" >
+<Link>Editor\Mono\ImportSettings\ModelImporterMaterialEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ImportSettings\BaseAssetImporterTabUI.cs" >
 <Link>Editor\Mono\ImportSettings\BaseAssetImporterTabUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\ImportSettings\PrefabUtility.cs" >
+<Link>Editor\Mono\ImportSettings\PrefabUtility.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ImportSettings\AudioImporterInspector.cs" >
 <Link>Editor\Mono\ImportSettings\AudioImporterInspector.cs</Link>
@@ -1390,6 +1396,12 @@
 <Compile Include="..\..\Editor\Mono\Sprites\SpritePackerWindow.cs" >
 <Link>Editor\Mono\Sprites\SpritePackerWindow.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\ContextualMenu.cs" >
+<Link>Editor\Mono\UIElements\ContextualMenu.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\EditorTextField.cs" >
+<Link>Editor\Mono\UIElements\EditorTextField.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs" >
 <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
 </Compile>
@@ -1518,6 +1530,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs" >
+<Link>Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\EditorBuildRules.cs</Link>
@@ -1681,6 +1696,15 @@
 <Compile Include="..\..\Editor\Mono\Modules\DefaultBuildWindowExtension.cs" >
 <Link>Editor\Mono\Modules\DefaultBuildWindowExtension.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Audio\WaveformPreviewFactory.cs" >
+<Link>Editor\Mono\Audio\WaveformPreviewFactory.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Audio\WaveformPreview.cs" >
+<Link>Editor\Mono\Audio\WaveformPreview.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs" >
+<Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Audio\WaveformStreamer.bindings.cs" >
 <Link>Editor\Mono\Audio\WaveformStreamer.bindings.cs</Link>
 </Compile>
@@ -1803,6 +1827,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\PresetLibraries\PresetLibraryEditor.cs" >
 <Link>Editor\Mono\PresetLibraries\PresetLibraryEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs" >
+<Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Utils\UnityEventTools.cs" >
 <Link>Editor\Mono\Utils\UnityEventTools.cs</Link>
@@ -1933,9 +1960,6 @@
 <Compile Include="..\..\Editor\Mono\GUIDebugger\BaseInspectView.cs" >
 <Link>Editor\Mono\GUIDebugger\BaseInspectView.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\GUIDebugger\InstructionOverlayWindow.cs" >
-<Link>Editor\Mono\GUIDebugger\InstructionOverlayWindow.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\GUIDebugger\GUINamedControlInspectView.cs" >
 <Link>Editor\Mono\GUIDebugger\GUINamedControlInspectView.cs</Link>
 </Compile>
@@ -1962,12 +1986,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\SpriteEditor\SpriteEditorWindow.cs" >
 <Link>Editor\Mono\SpriteEditor\SpriteEditorWindow.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\RMGUI\ContextualMenu.cs" >
-<Link>Editor\Mono\RMGUI\ContextualMenu.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\RMGUI\EditorTextField.cs" >
-<Link>Editor\Mono\RMGUI\EditorTextField.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\AssetDatabase\AssetDatabase.cs" >
 <Link>Editor\Mono\AssetDatabase\AssetDatabase.cs</Link>
@@ -2086,6 +2104,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\WheelJoint2DEditor.cs" >
 <Link>Editor\Mono\Inspector\WheelJoint2DEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AudioListenerInspector.cs" >
+<Link>Editor\Mono\Inspector\AudioListenerInspector.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\CharacterControllerEditor.cs" >
 <Link>Editor\Mono\Inspector\CharacterControllerEditor.cs</Link>
 </Compile>
@@ -2142,6 +2163,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\CustomPreviewAttribute.cs" >
 <Link>Editor\Mono\Inspector\CustomPreviewAttribute.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AudioExtensionEditor.cs" >
+<Link>Editor\Mono\Inspector\AudioExtensionEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioClipInspector.cs" >
 <Link>Editor\Mono\Inspector\AudioClipInspector.cs</Link>
@@ -2428,6 +2452,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\RectHandles.cs" >
 <Link>Editor\Mono\Inspector\RectHandles.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AudioSourceExtensionEditor.cs" >
+<Link>Editor\Mono\Inspector\AudioSourceExtensionEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\CustomRenderTextureEditor.cs" >
 <Link>Editor\Mono\Inspector\CustomRenderTextureEditor.cs</Link>
 </Compile>
@@ -2505,6 +2532,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\EdgeCollider2DEditor.cs" >
 <Link>Editor\Mono\Inspector\EdgeCollider2DEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AudioListenerExtensionEditor.cs" >
+<Link>Editor\Mono\Inspector\AudioListenerExtensionEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\LightProbeGroupInspector.cs" >
 <Link>Editor\Mono\Inspector\LightProbeGroupInspector.cs</Link>
@@ -3084,9 +3114,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\AsyncProgressBarBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\AsyncProgressBarBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\UsabilityAnalyticsBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\UsabilityAnalyticsBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\OSColorPickerBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\OSColorPickerBindings.gen.cs</Link>
 </Compile>
@@ -3314,6 +3341,12 @@
 <Compile Include="..\..\artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Src\UnityEditorAnalytics\Managed\EditorAnalytics.bindings.cs" >
+<Link>Editor\Src\UnityEditorAnalytics\Managed\EditorAnalytics.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\Managed\CoreStats.cs" >
 <Link>Editor\Src\CloudServicesSettings\Managed\CoreStats.cs</Link>
 </Compile>
@@ -3373,6 +3406,12 @@
 </Compile>
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PackageManager\Editor\PackageManager.cs" >
+<Link>Modules\PackageManager\Editor\PackageManager.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\PackageManager\PackageManagerBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\PackageManager\PackageManagerBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>

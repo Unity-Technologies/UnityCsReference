@@ -28,7 +28,7 @@ namespace UnityEditor.Collaboration
 
         private static void DrawProjectBrowserIconOverlay(Rect iconRect, string guid, bool isListMode)
         {
-            if (CollabAccess.Instance.IsServiceEnabled())
+            if (Collab.instance.IsCollabEnabledForCurrentProject())
             {
                 Collab.CollabStates assetState = GetAssetState(guid);
                 Overlay.DrawOverlays(assetState, iconRect, isListMode);
@@ -37,7 +37,7 @@ namespace UnityEditor.Collaboration
 
         public static Collab.CollabStates GetAssetState(String assetGuid)
         {
-            if (!CollabAccess.Instance.IsServiceEnabled())
+            if (!Collab.instance.IsCollabEnabledForCurrentProject())
             {
                 return Collab.CollabStates.kCollabNone;
             }

@@ -37,7 +37,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (ComputeElemDimensions(out count, out elemWidth, out elemHeight))
                 {
                     //Check if the mouse is over a button (nobody says the grid is filled out)
-                    Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
+                    Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, guiStyle, firstStyle, midStyle, lastStyle, false);
                     if (GetButtonGridMouseSelection(buttonRects, args.mousePosition, true) != -1)
                     {
                         GUIUtility.hotControl = id;
@@ -66,7 +66,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     GUIUtility.hotControl = 0;
 
-                    Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
+                    Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, guiStyle, firstStyle, midStyle, lastStyle, false);
                     int mouseSel = GetButtonGridMouseSelection(buttonRects, args.mousePosition, true);
 
                     GUI.changed = true;
@@ -90,7 +90,7 @@ namespace UnityEngine.Experimental.UIElements
                 GUIClip.Internal_Push(position, Vector2.zero, Vector2.zero, false);
                 var localPosition = new Rect(0, 0, position.width, position.height);
 
-                Rect[] buttonRects = CalcMouseRects(localPosition, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
+                Rect[] buttonRects = CalcMouseRects(localPosition, count, xCount, elemWidth, elemHeight, guiStyle, firstStyle, midStyle, lastStyle, false);
                 var mousePosition = args.mousePosition - position.position;
                 int mouseOverSel = GetButtonGridMouseSelection(buttonRects, mousePosition, id == GUIUtility.hotControl);
 
@@ -110,7 +110,7 @@ namespace UnityEngine.Experimental.UIElements
                         s = lastStyle;
 
                     if (count == 1)
-                        s = style;
+                        s = guiStyle;
 
                     if (i != selected) // We draw the selected one last, so it overflows nicer
                     {
@@ -248,15 +248,15 @@ namespace UnityEngine.Experimental.UIElements
                 rows++;
 
             float totalHorizSpacing = CalcTotalHorizSpacing();
-            float totalVerticalSpacing = Mathf.Max(style.margin.top, style.margin.bottom) * (rows - 1);
+            float totalVerticalSpacing = Mathf.Max(guiStyle.margin.top, guiStyle.margin.bottom) * (rows - 1);
             elemWidth = (position.width - totalHorizSpacing) / xCount;
             elemHeight = (position.height - totalVerticalSpacing) / rows;
 
-            if (style.fixedWidth != 0)
-                elemWidth = style.fixedWidth;
+            if (guiStyle.fixedWidth != 0)
+                elemWidth = guiStyle.fixedWidth;
 
-            if (style.fixedHeight != 0)
-                elemHeight = style.fixedHeight;
+            if (guiStyle.fixedHeight != 0)
+                elemHeight = guiStyle.fixedHeight;
 
             return true;
         }

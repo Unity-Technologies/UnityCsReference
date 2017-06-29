@@ -12,13 +12,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
 #pragma warning disable 649
 
-namespace UnityEngine.VR.WSA
+namespace UnityEngine.XR.WSA
 {
 
 
+[MovedFrom("UnityEngine.VR.WSA")]
 public enum PositionalLocatorState
 {
     Unavailable       = 0,
@@ -28,6 +30,7 @@ public enum PositionalLocatorState
     Inhibited         = 4
 }
 
+[MovedFrom("UnityEngine.VR.WSA")]
 public sealed partial class WorldManager
 {
     public delegate void OnPositionalLocatorStateChangedDelegate(PositionalLocatorState oldState, PositionalLocatorState newState);

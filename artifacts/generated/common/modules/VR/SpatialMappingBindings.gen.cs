@@ -10,9 +10,10 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.VR.WSA;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.XR.WSA;
 
-namespace UnityEngine.VR.WSA
+namespace UnityEngine.XR.WSA
 {
 
 

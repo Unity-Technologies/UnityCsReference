@@ -33,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
         internal override void DoRepaint(IStylePainter args)
         {
             // Same as box but for tooltip
-            style.Draw(position, GUIContent.Temp(text),
+            guiStyle.Draw(position, GUIContent.Temp(text),
                 // We need to do something about these values. Can we get them from C# of something?
                 false, // IsHover
                 false, // IsActive

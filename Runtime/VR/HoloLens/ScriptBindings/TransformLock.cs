@@ -6,11 +6,13 @@
 using System;
 using UnityEngine;
 using UnityEngine.Scripting;
-using UnityEngine.VR.WSA;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.XR.WSA;
 
 
-namespace UnityEngine.VR.WSA.Persistence
+namespace UnityEngine.XR.WSA.Persistence
 {
+    [MovedFrom("UnityEngine.VR.WSA.Persistence")]
     public partial class WorldAnchorStore
     {
         public delegate void GetAsyncDelegate(WorldAnchorStore store);
@@ -97,8 +99,9 @@ namespace UnityEngine.VR.WSA.Persistence
     }
 }
 
-namespace UnityEngine.VR.WSA.Sharing
+namespace UnityEngine.XR.WSA.Sharing
 {
+    [MovedFrom("UnityEngine.VR.WSA.Sharing")]
     public enum SerializationCompletionReason
     {
         Succeeded = 0,
@@ -107,6 +110,7 @@ namespace UnityEngine.VR.WSA.Sharing
         UnknownError = 3
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.Sharing")]
     public partial class WorldAnchorTransferBatch : IDisposable
     {
         public delegate void SerializationDataAvailableDelegate(byte[] data);

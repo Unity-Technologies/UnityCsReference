@@ -96,30 +96,47 @@ namespace UnityEngine.Experimental.UIElements
             capture = handler;
         }
 
-        private VisualElement m_ElementUnderMouse;
-        private VisualElement elementUnderMouse
+        private HashSet<VisualElement> m_ElementsUnderMouse;
+        private void ClearHoverOnElementsUnderMouse()
         {
-            get { return m_ElementUnderMouse; }
-            set
+            if (m_ElementsUnderMouse == null)
             {
-                if (m_ElementUnderMouse == value)
-                    return;
+                return;
+            }
 
-                if (m_ElementUnderMouse != null)
-                {
-                    // let element know
-                    m_ElementUnderMouse.pseudoStates = m_ElementUnderMouse.pseudoStates & ~PseudoStates.Hover;
-                    // TODO send mouse enter event
-                }
+            foreach (var element in m_ElementsUnderMouse)
+            {
+                // if we set/unset the hover state on the PanelContainer, when the mouse exits
+                // the panel window, all hover states are unset as expected but after the draw
+                // of the panel so the hover states "look" still active until the panel redraws
+                if (element.parent == null)
+                    continue;
 
-                m_ElementUnderMouse = value;
+                // let element know
+                element.pseudoStates = element.pseudoStates & ~PseudoStates.Hover;
+                // TODO send mouse enter event
+            }
+            m_ElementsUnderMouse.Clear();
+        }
 
-                if (m_ElementUnderMouse != null)
-                {
-                    // let element know
-                    m_ElementUnderMouse.pseudoStates = m_ElementUnderMouse.pseudoStates | PseudoStates.Hover;
-                    // TODO send mouse leave event
-                }
+        private void SetHoverOnElementsUnderMouse()
+        {
+            if (m_ElementsUnderMouse == null)
+            {
+                return;
+            }
+
+            foreach (var element in m_ElementsUnderMouse)
+            {
+                // if we set/unset the hover state on the PanelContainer, when the mouse exits
+                // the panel window, all hover states are unset as expected but after the draw
+                // of the panel so the hover states "look" still active until the panel redraws
+                if (element.parent == null)
+                    continue;
+
+                // let element know
+                element.pseudoStates = element.pseudoStates | PseudoStates.Hover;
+                // TODO send mouse leave event
             }
         }
 
@@ -134,8 +151,6 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             bool invokedHandleEvent = false;
-            var savedMousePosition = e.mousePosition;
-
 
             if (panel.panelDebug != null && panel.panelDebug.enabled && panel.panelDebug.interceptEvents != null)
                 if (panel.panelDebug.interceptEvents(e))
@@ -159,17 +174,6 @@ namespace UnityEngine.Experimental.UIElements
 
                 invokedHandleEvent = true;
 
-                var ve = capture as VisualElement;
-                if (ve != null)
-                {
-                    e.mousePosition = ve.GlobalToBound(e.mousePosition);
-                    MouseEventBase mouseEvent = evt as MouseEventBase;
-                    if (mouseEvent != null)
-                    {
-                        mouseEvent.localMousePosition = ve.GlobalToBound(mouseEvent.mousePosition);
-                    }
-                }
-
                 evt.dispatch = true;
                 evt.target = capture;
                 evt.currentTarget = capture;
@@ -181,7 +185,6 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (evt.isPropagationStopped)
                 {
-                    e.mousePosition = savedMousePosition;
                     return;
                 }
             }
@@ -207,29 +210,45 @@ namespace UnityEngine.Experimental.UIElements
                      || e.type == EventType.DragPerform
                      || e.type == EventType.DragExited)
             {
+                VisualElement topElementUnderMouse;
+
                 // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
                 // this is a problem in itself but it could leave some elements as "hover"
                 if (e.type == EventType.MouseLeaveWindow)
                 {
-                    elementUnderMouse = null;
+                    ClearHoverOnElementsUnderMouse();
+                    topElementUnderMouse = null;
                 }
                 // update element under mouse and fire necessary events
                 else
                 {
-                    elementUnderMouse = panel.Pick(e.mousePosition);
+                    if (m_ElementsUnderMouse == null)
+                    {
+                        m_ElementsUnderMouse = new HashSet<VisualElement>();
+                    }
+
+                    var picked = new List<VisualElement>();
+                    topElementUnderMouse = panel.PickAll(e.mousePosition, picked);
+
+                    if (!m_ElementsUnderMouse.SetEquals(picked))
+                    {
+                        ClearHoverOnElementsUnderMouse();
+                        m_ElementsUnderMouse.UnionWith(picked);
+                        SetHoverOnElementsUnderMouse();
+                    }
                 }
 
                 if (e.type == EventType.MouseDown
-                    && elementUnderMouse != null
-                    && elementUnderMouse.enabled)
+                    && topElementUnderMouse != null
+                    && topElementUnderMouse.enabled)
                 {
-                    SetFocusedElement(panel, elementUnderMouse);
+                    SetFocusedElement(panel, topElementUnderMouse);
                 }
 
-                if (elementUnderMouse != null)
+                if (topElementUnderMouse != null)
                 {
                     invokedHandleEvent = true;
-                    PropagateEvent(elementUnderMouse, evt);
+                    PropagateEvent(topElementUnderMouse, evt);
                 }
             }
             else if (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand)
@@ -246,8 +265,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 SendEventToIMGUIContainers(panel.visualTree, evt);
             }
-
-            e.mousePosition = savedMousePosition;
         }
 
         private void SendEventToIMGUIContainers(VisualElement root, EventBase evt)
@@ -296,8 +313,6 @@ namespace UnityEngine.Experimental.UIElements
             evt.dispatch = true;
             evt.target = target;
 
-            var worldMouse = evt.imguiEvent.mousePosition;
-
             // Phase 1: Capture phase
             // Propagate event from root to target.parent
             evt.propagationPhase = PropagationPhase.Capture;
@@ -309,13 +324,6 @@ namespace UnityEngine.Experimental.UIElements
                 var currentTarget = path[i];
                 if (currentTarget.enabled)
                 {
-                    evt.imguiEvent.mousePosition = currentTarget.GlobalToBound(worldMouse);
-                    MouseEventBase mouseEvent = evt as MouseEventBase;
-                    if (mouseEvent != null)
-                    {
-                        mouseEvent.localMousePosition = currentTarget.GlobalToBound(mouseEvent.mousePosition);
-                    }
-
                     evt.currentTarget = currentTarget;
                     evt.currentTarget.HandleEvent(evt);
                 }
@@ -324,13 +332,6 @@ namespace UnityEngine.Experimental.UIElements
             // Phase 2: Target
             if (!evt.isPropagationStopped && target.enabled)
             {
-                evt.imguiEvent.mousePosition = target.GlobalToBound(worldMouse);
-                MouseEventBase mouseEvent = evt as MouseEventBase;
-                if (mouseEvent != null)
-                {
-                    mouseEvent.localMousePosition = target.GlobalToBound(mouseEvent.mousePosition);
-                }
-
                 evt.propagationPhase = PropagationPhase.AtTarget;
                 evt.currentTarget = target;
                 evt.currentTarget.HandleEvent(evt);
@@ -350,14 +351,7 @@ namespace UnityEngine.Experimental.UIElements
                     var currentTarget = path[i];
                     if (currentTarget.enabled)
                     {
-                        evt.imguiEvent.mousePosition = currentTarget.GlobalToBound(worldMouse);
-                        MouseEventBase mouseEvent = evt as MouseEventBase;
-                        if (mouseEvent != null)
-                        {
-                            mouseEvent.localMousePosition = currentTarget.GlobalToBound(mouseEvent.mousePosition);
-                        }
-
-                        evt.currentTarget = path[i];
+                        evt.currentTarget = currentTarget;
                         evt.currentTarget.HandleEvent(evt);
                     }
                 }

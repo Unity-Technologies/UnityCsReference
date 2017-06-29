@@ -7,11 +7,69 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
+    internal struct TextureStylePainterParameters
+    {
+        public Rect layout;
+        public Color color;
+        public Texture texture;
+        public ScaleMode scaleMode;
+        public float borderLeftWidth;
+        public float borderTopWidth;
+        public float borderRightWidth;
+        public float borderBottomWidth;
+        public float borderRadius;
+        public int sliceLeft;
+        public int sliceTop;
+        public int sliceRight;
+        public int sliceBottom;
+    }
+
+    internal struct RectStylePainterParameters
+    {
+        public Rect layout;
+        public Color color;
+        public float borderLeftWidth;
+        public float borderTopWidth;
+        public float borderRightWidth;
+        public float borderBottomWidth;
+        public float borderRadius;
+    }
+
+    internal struct TextStylePainterParameters
+    {
+        public Rect layout;
+        public string text;
+        public Font font;
+        public int fontSize;
+        public FontStyle fontStyle;
+        public Color fontColor;
+        public TextAnchor anchor;
+        public bool wordWrap;
+        public float wordWrapWidth;
+        public bool richText;
+        public TextClipping clipping;
+    }
+
+    internal struct CursorPositionStylePainterParameters
+    {
+        public Rect layout;
+        public string text;
+        public Font font;
+        public int fontSize;
+        public FontStyle fontStyle;
+        public TextAnchor anchor;
+        public float wordWrapWidth;
+        public bool richText;
+        public int cursorIndex;
+    }
+
     interface IStylePainter
     {
-        void DrawRect(Rect screenRect, Color color, float borderWidth = 0.0f, float borderRadius = 0.0f);
-        void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f, int leftBorder = 0, int rightBorder = 0, int topBorder = 0, int bottomBorder = 0);
-        void DrawText(Rect screenRect, string text, Font font, int fontSize, FontStyle fontStyle, Color fontColor, TextAnchor anchor, bool wordWrap, float wordWrapWidth, bool richText, TextClipping clipping);
+        void DrawRect(RectStylePainterParameters painterParams);
+        void DrawTexture(TextureStylePainterParameters painterParams);
+        void DrawText(TextStylePainterParameters painterParams);
+
+        Vector2 GetCursorPosition(CursorPositionStylePainterParameters painterParams);
 
         Rect currentWorldClip { get; set; }
         Vector2 mousePosition { get; set; }
@@ -19,8 +77,8 @@ namespace UnityEngine
         Event repaintEvent { get; set; }
         float opacity { get; set; }
 
-        float ComputeTextWidth(string text, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);
-        float ComputeTextHeight(string text, float width, bool wordWrap, Font font, int fontSize, FontStyle fontStyle, TextAnchor anchor, bool richText);
+        float ComputeTextWidth(TextStylePainterParameters painterParams);
+        float ComputeTextHeight(TextStylePainterParameters painterParams);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -40,8 +98,33 @@ namespace UnityEngine
             mousePosition = pos;
         }
 
-        public void DrawTexture(Rect screenRect, Texture texture, Color color, ScaleMode scaleMode = ScaleMode.StretchToFill, float borderWidth = 0.0f, float borderRadius = 0.0f, int leftBorder = 0, int topBorder = 0, int rightBorder = 0, int bottomBorder = 0)
+        public void DrawRect(RectStylePainterParameters painterParams)
         {
+            Rect screenRect = painterParams.layout;
+            Color color = painterParams.color;
+            float borderRadius = painterParams.borderRadius;
+
+            var borderWidths = new Vector4(
+                    painterParams.borderLeftWidth,
+                    painterParams.borderTopWidth,
+                    painterParams.borderRightWidth,
+                    painterParams.borderBottomWidth);
+
+            DrawRect_Internal(screenRect, color, borderWidths, borderRadius);
+        }
+
+        public void DrawTexture(TextureStylePainterParameters painterParams)
+        {
+            Rect screenRect = painterParams.layout;
+            Texture texture = painterParams.texture;
+            Color color = painterParams.color;
+            ScaleMode scaleMode = painterParams.scaleMode;
+            float borderRadius = painterParams.borderRadius;
+            int sliceLeft = painterParams.sliceLeft;
+            int sliceTop = painterParams.sliceTop;
+            int sliceRight = painterParams.sliceRight;
+            int sliceBottom = painterParams.sliceBottom;
+
             Rect textureRect = screenRect;
             Rect sourceRect = new Rect(0, 0, 1, 1);
             float textureAspect = (float)texture.width / texture.height;
@@ -78,17 +161,73 @@ namespace UnityEngine
                     break;
             }
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidth, borderRadius, leftBorder, topBorder, rightBorder, bottomBorder);
+            var borderWidths = new Vector4(
+                    painterParams.borderLeftWidth,
+                    painterParams.borderTopWidth,
+                    painterParams.borderRightWidth,
+                    painterParams.borderBottomWidth);
+
+            DrawTexture_Internal(textureRect, texture, sourceRect, color, borderWidths, borderRadius, sliceLeft, sliceTop, sliceRight, sliceBottom);
         }
 
-        public void DrawRect(Rect screenRect, Color color, float borderWidth = 0.0f, float borderRadius = 0.0f)
+        public void DrawText(TextStylePainterParameters painterParams)
         {
-            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidth, borderRadius);
+            Rect screenRect = painterParams.layout;
+            string text = painterParams.text;
+            Font font = painterParams.font;
+            int fontSize = painterParams.fontSize;
+            FontStyle fontStyle = painterParams.fontStyle;
+            Color fontColor = painterParams.fontColor;
+            TextAnchor anchor = painterParams.anchor;
+            bool wordWrap = painterParams.wordWrap;
+            float wordWrapWidth = painterParams.wordWrapWidth;
+            bool richText = painterParams.richText;
+            TextClipping clipping = painterParams.clipping;
+
+            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
-        public void DrawText(Rect screenRect, string text, Font font, int fontSize, FontStyle fontStyle, Color fontColor, TextAnchor anchor, bool wordWrap, float wordWrapWidth, bool richText, TextClipping clipping)
+        public Vector2 GetCursorPosition(CursorPositionStylePainterParameters painterParams)
         {
-            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
+            string text = painterParams.text;
+            Font font = painterParams.font;
+            int fontSize = painterParams.fontSize;
+            FontStyle fontStyle = painterParams.fontStyle;
+            TextAnchor anchor = painterParams.anchor;
+            float wordWrapWidth = painterParams.wordWrapWidth;
+            bool richText = painterParams.richText;
+            Rect layout = painterParams.layout;
+            int cursorIndex = painterParams.cursorIndex;
+
+            return GetCursorPosition_Internal(text, font, fontSize, fontStyle, anchor, wordWrapWidth, richText, layout, cursorIndex);
+        }
+
+        public float ComputeTextWidth(TextStylePainterParameters painterParams)
+        {
+            string text = painterParams.text;
+            float wordWrapWidth = painterParams.wordWrapWidth;
+            bool wordWrap = painterParams.wordWrap;
+            Font font = painterParams.font;
+            int fontSize = painterParams.fontSize;
+            FontStyle fontStyle = painterParams.fontStyle;
+            TextAnchor anchor = painterParams.anchor;
+            bool richText = painterParams.richText;
+
+            return ComputeTextWidth_Internal(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
+        }
+
+        public float ComputeTextHeight(TextStylePainterParameters painterParams)
+        {
+            string text = painterParams.text;
+            float wordWrapWidth = painterParams.wordWrapWidth;
+            bool wordWrap = painterParams.wordWrap;
+            Font font = painterParams.font;
+            int fontSize = painterParams.fontSize;
+            FontStyle fontStyle = painterParams.fontStyle;
+            TextAnchor anchor = painterParams.anchor;
+            bool richText = painterParams.richText;
+
+            return ComputeTextHeight_Internal(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
         }
 
         public Vector2 mousePosition { get; set; }

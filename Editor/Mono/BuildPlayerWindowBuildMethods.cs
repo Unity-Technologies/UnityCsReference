@@ -198,9 +198,14 @@ namespace UnityEditor
                 bool installInBuildFolder = EditorUserBuildSettings.installInBuildFolder && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) && (Unsupported.IsDeveloperBuild()
                                                                                                                                                                                    || IsMetroPlayer(buildTarget));
 
-                // Android build compresses data with lz4 by default when building from a Build Window.
-                if (buildTarget == BuildTarget.Android)
-                    options.options |= BuildOptions.CompressWithLz4;
+                //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be
+                if (PostprocessBuildPlayer.SupportsLz4Compression(buildTargetGroup, buildTarget))
+                {
+                    if (EditorUserBuildSettings.GetCompressionType(buildTargetGroup) == Compression.Lz4)
+                        options.options |= BuildOptions.CompressWithLz4;
+                    else if (EditorUserBuildSettings.GetCompressionType(buildTargetGroup) == Compression.Lz4HC)
+                        options.options |= BuildOptions.CompressWithLz4HC;
+                }
 
                 bool developmentBuild = EditorUserBuildSettings.development;
                 if (developmentBuild)

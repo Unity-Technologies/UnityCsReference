@@ -433,22 +433,27 @@ public sealed partial class ParticleSystem : Component
     {
         
                     private float m_Time;
-                    private short m_MinCount;
-                    private short m_MaxCount;
+                    private MinMaxCurve m_Count;
                     private int m_RepeatCount; 
                     private float m_RepeatInterval;
         
-                    public Burst(float _time, short _count) { m_Time = _time; m_MinCount = _count; m_MaxCount = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
+                    public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
         
-                    public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_MinCount = _minCount; m_MaxCount = _maxCount; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
+                    public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
         
-                    public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_MinCount = _minCount; m_MaxCount = _maxCount; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
+                    public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
+        
+                    public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
+        
+                    public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = _count; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
         
                     public float time { get { return m_Time; } set { m_Time = value; } }
         
-                    public short minCount { get { return m_MinCount; } set { m_MinCount = value; } }
+                    public MinMaxCurve count { get { return m_Count; } set { m_Count = value; } }
         
-                    public short maxCount { get { return m_MaxCount; } set { m_MaxCount = value; } }
+                    public short minCount { get { return (short)m_Count.constantMin; } set { m_Count.constantMin = (short)value; } }
+        
+                    public short maxCount { get { return (short)m_Count.constantMax; } set { m_Count.constantMax = (short)value; } }
         
                     public int cycleCount { get { return m_RepeatCount + 1; } set { m_RepeatCount = value - 1; } }
         
@@ -946,10 +951,38 @@ public sealed partial class ParticleSystem : Component
                     public MinMaxCurve rateOverDistance { set { SetRateOverDistance(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetRateOverDistance(m_ParticleSystem, ref r); return r; } }
                     public float rateOverDistanceMultiplier { get { return GetRateOverDistanceMultiplier(m_ParticleSystem); } set { SetRateOverDistanceMultiplier(m_ParticleSystem, value); } }
         
-        public void SetBursts(Burst[] bursts) { SetBursts(m_ParticleSystem, bursts, bursts.Length); }
-        public void SetBursts(Burst[] bursts, int size) { SetBursts(m_ParticleSystem, bursts, size); }
-        public int GetBursts(Burst[] bursts) { return GetBursts(m_ParticleSystem, bursts); }
-                    public int burstCount { get { return GetBurstCount(m_ParticleSystem); } }
+        public void SetBursts(Burst[] bursts)
+            {
+                SetBursts(bursts, bursts.Length);
+            }
+        
+        public void SetBursts(Burst[] bursts, int size)
+            {
+                burstCount = size;
+                for (int i = 0; i < size; i++)
+                {
+                    SetBurst(m_ParticleSystem, i, bursts[i]);
+                }
+            }
+        
+        public int GetBursts(Burst[] bursts)
+            {
+                int returnValue = burstCount;
+                for (int i = 0; i < returnValue; i++)
+                {
+                    bursts[i] = GetBurst(m_ParticleSystem, i);
+                }
+                return returnValue;
+            }
+        
+        public void SetBurst(int index, Burst burst) { SetBurst(m_ParticleSystem, index, burst); }
+        public Burst GetBurst(int index) { return GetBurst(m_ParticleSystem, index); }
+        
+                    public int burstCount
+            {
+                get { return GetBurstCount(m_ParticleSystem); }
+                set { SetBurstCount(m_ParticleSystem, value); }
+            }
         
         
         [System.Obsolete ("ParticleSystemEmissionType no longer does anything. Time and Distance based emission are now both always active.")]
@@ -1006,12 +1039,24 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetBursts (ParticleSystem system, Burst[] bursts, int size) ;
+        extern private static  void SetBurstCount (ParticleSystem system, int value) ;
+
+        private static void SetBurst (ParticleSystem system, int index, ParticleSystem.Burst burst) {
+            INTERNAL_CALL_SetBurst ( system, index, ref burst );
+        }
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetBursts (ParticleSystem system, Burst[] bursts) ;
+        private extern static void INTERNAL_CALL_SetBurst (ParticleSystem system, int index, ref ParticleSystem.Burst burst);
+        private static ParticleSystem.Burst GetBurst (ParticleSystem system, int index) {
+            ParticleSystem.Burst result;
+            INTERNAL_CALL_GetBurst ( system, index, out result );
+            return result;
+        }
 
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_GetBurst (ParticleSystem system, int index, out ParticleSystem.Burst value);
     }
 
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -99,9 +100,9 @@ namespace UnityEngine.Experimental.UIElements
             var delta = clampedDragger.delta;
 
             if (direction == Direction.Horizontal)
-                ComputeValueAndDirectionFromDrag(layout.width, dragElement.width, m_DragElementStartPos.x + delta.x);
+                ComputeValueAndDirectionFromDrag(layout.width, dragElement.style.width, m_DragElementStartPos.x + delta.x);
             else
-                ComputeValueAndDirectionFromDrag(layout.height, dragElement.height, m_DragElementStartPos.y + delta.y);
+                ComputeValueAndDirectionFromDrag(layout.height, dragElement.style.height, m_DragElementStartPos.y + delta.y);
         }
 
         void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
@@ -125,30 +126,30 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     // Jump drag element to current mouse position when user clicks on slider and pageSize == 0
                     var x = (direction == Direction.Horizontal) ?
-                        clampedDragger.startMousePosition.x - (dragElement.width / 2f) : dragElement.positionLeft;
+                        clampedDragger.startMousePosition.x - (dragElement.style.width / 2f) : dragElement.style.positionLeft.value;
                     var y = (direction == Direction.Horizontal) ?
-                        dragElement.positionTop : clampedDragger.startMousePosition.y - (dragElement.height / 2f);
+                        dragElement.style.positionTop.value : clampedDragger.startMousePosition.y - (dragElement.style.height / 2f);
 
-                    dragElement.positionLeft = x;
-                    dragElement.positionTop = y;
-                    m_DragElementStartPos = new Rect(x, y, dragElement.width, dragElement.height);
+                    dragElement.style.positionLeft = x;
+                    dragElement.style.positionTop = y;
+                    m_DragElementStartPos = new Rect(x, y, dragElement.style.width, dragElement.style.height);
 
                     // Manipulation becomes a free form drag
                     clampedDragger.dragDirection = ClampedDragger.DragDirection.Free;
                     if (direction == Direction.Horizontal)
-                        ComputeValueAndDirectionFromDrag(layout.width, dragElement.width, m_DragElementStartPos.x);
+                        ComputeValueAndDirectionFromDrag(layout.width, dragElement.style.width, m_DragElementStartPos.x);
                     else
-                        ComputeValueAndDirectionFromDrag(layout.height, dragElement.height, m_DragElementStartPos.y);
+                        ComputeValueAndDirectionFromDrag(layout.height, dragElement.style.height, m_DragElementStartPos.y);
                     return;
                 }
 
-                m_DragElementStartPos = new Rect(dragElement.positionLeft, dragElement.positionTop, dragElement.width, dragElement.height);
+                m_DragElementStartPos = new Rect(dragElement.style.positionLeft, dragElement.style.positionTop, dragElement.style.width, dragElement.style.height);
             }
 
             if (direction == Direction.Horizontal)
-                ComputeValueAndDirectionFromClick(layout.width, dragElement.width, dragElement.positionLeft, clampedDragger.lastMousePosition.x);
+                ComputeValueAndDirectionFromClick(layout.width, dragElement.style.width, dragElement.style.positionLeft, clampedDragger.lastMousePosition.x);
             else
-                ComputeValueAndDirectionFromClick(layout.height, dragElement.height, dragElement.positionTop, clampedDragger.lastMousePosition.y);
+                ComputeValueAndDirectionFromClick(layout.height, dragElement.style.height, dragElement.style.positionTop, clampedDragger.lastMousePosition.y);
         }
 
         void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
@@ -179,7 +180,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (needsElement)
             {
-                StyleSheets.VisualElementStyles elemStyles = dragElement.styles;
+                IStyle elemStyles = dragElement.style;
                 dragElement.visible = true;
 
                 // Any factor smaller than 1f will necessitate a drag element
@@ -187,13 +188,13 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     // Make sure the minimum width of drag element is honoured
                     float elemMinWidth = elemStyles.minWidth.GetSpecifiedValueOrDefault(0.0f);
-                    dragElement.width = Mathf.Max(layout.width * factor, elemMinWidth);
+                    elemStyles.width = Mathf.Max(layout.width * factor, elemMinWidth);
                 }
                 else
                 {
                     // Make sure the minimum height of drag element is honoured
                     float elemMinHeight = elemStyles.minHeight.GetSpecifiedValueOrDefault(0.0f);
-                    dragElement.height = Mathf.Max(layout.height * factor, elemMinHeight);
+                    elemStyles.height = Mathf.Max(layout.height * factor, elemMinHeight);
                 }
             }
         }
@@ -206,18 +207,18 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             float pos = m_Value - lowValue;
-            float dragElementWidth = dragElement.width;
-            float dragElementHeight = dragElement.height;
+            float dragElementWidth = dragElement.style.width;
+            float dragElementHeight = dragElement.style.height;
 
             if (direction == Direction.Horizontal)
             {
                 float totalWidth = layout.width - dragElementWidth;
-                dragElement.positionLeft = ((pos / range) * totalWidth);
+                dragElement.style.positionLeft = ((pos / range) * totalWidth);
             }
             else
             {
                 float totalHeight = layout.height - dragElementHeight;
-                dragElement.positionTop = ((pos / range) * totalHeight);
+                dragElement.style.positionTop = ((pos / range) * totalHeight);
             }
         }
 

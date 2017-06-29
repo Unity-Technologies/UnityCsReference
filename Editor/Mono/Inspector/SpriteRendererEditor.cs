@@ -49,7 +49,6 @@ namespace UnityEditor
         private AnimBool m_ShowDrawMode;
         private AnimBool m_ShowTileMode;
         private AnimBool m_ShowAdaptiveThreshold;
-
         private SerializedProperty m_MaskInteraction;
 
         public override void OnEnable()
@@ -72,7 +71,6 @@ namespace UnityEditor
             m_ShowDrawMode.valueChanged.AddListener(Repaint);
             m_ShowTileMode.valueChanged.AddListener(Repaint);
             m_ShowAdaptiveThreshold.valueChanged.AddListener(Repaint);
-
             m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
         }
 

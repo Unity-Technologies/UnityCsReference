@@ -1342,6 +1342,8 @@ namespace UnityEditor
             ShowAndHideFolderTreeSelectionAsNeeded();
 
             var hierarchyType = HierarchyType.Assets;
+            if (m_SearchFilter.folders.Any(AssetDatabase.IsPackagedAssetPath))
+                hierarchyType = HierarchyType.Packages;
             m_ListArea.Init(m_ListAreaRect, hierarchyType, m_SearchFilter, false);
             m_ListArea.InitSelection(Selection.instanceIDs);
         }
@@ -1988,6 +1990,14 @@ namespace UnityEditor
             InternalEditorUtility.RequestScriptReload();
         }
 
+        void ToggleShowPackagesInAssetsFolder()
+        {
+            bool showPackagesInAssetsFolder = EditorPrefs.GetBool("ShowPackagesFolder", false);
+            EditorPrefs.SetBool("ShowPackagesFolder", !showPackagesInAssetsFolder);
+            EditorApplication.projectWindowChanged();
+        }
+
+
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             if (m_EnableOldAssetTree)
@@ -2003,6 +2013,7 @@ namespace UnityEditor
 
                 if (Unsupported.IsDeveloperBuild())
                 {
+                    menu.AddItem(new GUIContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
                     menu.AddItem(new GUIContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
                     menu.AddItem(new GUIContent("DEVELOPER/Use TreeView Expansion Animation"), EditorPrefs.GetBool(TreeViewController.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
                 }
@@ -2292,6 +2303,11 @@ namespace UnityEditor
 
                 string[] folderNames = path.Split('/');
                 string folderPath = "";
+                if (folderNames.Length > 0 && folderNames[0] == AssetDatabase.GetPackagesMountPoint())
+                {
+                    // Translate the packages root mount point
+                    folderNames[0] = "Packages";
+                }
                 foreach (string folderName in folderNames)
                 {
                     if (!string.IsNullOrEmpty(folderPath))

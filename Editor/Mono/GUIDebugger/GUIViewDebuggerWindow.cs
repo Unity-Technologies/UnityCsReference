@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -22,21 +23,24 @@ namespace UnityEditor
             Unified,
         }
 
-        internal class Styles
+        internal static class Styles
         {
-            public readonly string defaultWindowPopupText = "<Please Select>";
+            public static readonly string defaultWindowPopupText = "<Please Select>";
 
-            public readonly GUIContent inspectedWindowLabel = new GUIContent("Inspected View: ");
+            public static readonly GUIContent inspectedWindowLabel = new GUIContent("Inspected View: ");
 
-            public readonly GUIStyle listItem = new GUIStyle("PR Label");
-            public readonly GUIStyle listItemBackground = new GUIStyle("CN EntryBackOdd");
-            public readonly GUIStyle listBackgroundStyle = new GUIStyle("CN Box");
-            public readonly GUIStyle boxStyle = new GUIStyle("CN Box");
-            public readonly GUIStyle stackframeStyle = new GUIStyle(EditorStyles.label);
-            public readonly GUIStyle stacktraceBackground = new GUIStyle("CN Box");
-            public readonly GUIStyle centeredText = new GUIStyle("PR Label");
+            public static readonly GUIStyle listItem = new GUIStyle("PR Label");
+            public static readonly GUIStyle listItemBackground = new GUIStyle("CN EntryBackOdd");
+            public static readonly GUIStyle listBackgroundStyle = new GUIStyle("CN Box");
+            public static readonly GUIStyle boxStyle = new GUIStyle("CN Box");
+            public static readonly GUIStyle stackframeStyle = new GUIStyle(EditorStyles.label);
+            public static readonly GUIStyle stacktraceBackground = new GUIStyle("CN Box");
+            public static readonly GUIStyle centeredText = new GUIStyle("PR Label");
 
-            public Styles()
+            public static readonly Color contentHighlighterColor = new Color(0.62f, 0.77f, 0.90f, 0.5f);
+            public static readonly Color paddingHighlighterColor = new Color(0.76f, 0.87f, 0.71f, 0.5f);
+
+            static Styles()
             {
                 stackframeStyle.margin = new RectOffset(0, 0, 0, 0);
                 stackframeStyle.padding = new RectOffset(0, 0, 0, 0);
@@ -47,9 +51,6 @@ namespace UnityEditor
                 centeredText.stretchWidth = true;
             }
         }
-
-        public static Styles styles { get { return s_Styles = s_Styles == null ? new Styles() : s_Styles; } }
-        static Styles s_Styles;
 
         static GUIViewDebuggerWindow s_ActiveInspector;
 
@@ -84,7 +85,7 @@ namespace UnityEditor
             {
                 if (m_Inspected != value)
                 {
-                    CloseInstructionOverlayWindow();
+                    ClearInstructionHighlighter();
 
                     m_Inspected = value;
                     if (m_Inspected != null)
@@ -116,24 +117,37 @@ namespace UnityEditor
             m_InstructionModeView = new StyleDrawInspectView(this);
         }
 
-        public void CloseInstructionOverlayWindow()
+        public void ClearInstructionHighlighter()
         {
-            if (m_InstructionOverlayWindow != null)
-                m_InstructionOverlayWindow.Close();
+            if (m_PaddingHighlighter != null && m_PaddingHighlighter.parent != null)
+            {
+                var parent = m_PaddingHighlighter.parent;
+                parent.RemoveChild(m_PaddingHighlighter);
+                parent.RemoveChild(m_ContentHighlighter);
+                parent.Dirty(ChangeType.Repaint);
+            }
         }
 
         public void HighlightInstruction(GUIView view, Rect instructionRect, GUIStyle style)
         {
-            /*if (m_ListViewState.row < 0)
-                return;
-                */
-            if (!m_ShowOverlay)
+            if (!m_ShowHighlighter)
                 return;
 
-            if (m_InstructionOverlayWindow == null)
-                m_InstructionOverlayWindow = CreateInstance<InstructionOverlayWindow>();
-            m_InstructionOverlayWindow.Show(view, instructionRect, style);
-            Focus();
+            ClearInstructionHighlighter();
+
+            if (m_PaddingHighlighter == null)
+            {
+                m_PaddingHighlighter = new VisualElement();
+                m_PaddingHighlighter.style.backgroundColor = Styles.paddingHighlighterColor;
+                m_ContentHighlighter = new VisualElement();
+                m_ContentHighlighter.style.backgroundColor = Styles.contentHighlighterColor;
+            }
+            m_PaddingHighlighter.layout = instructionRect;
+            view.visualTree.AddChild(m_PaddingHighlighter);
+            if (style != null)
+                instructionRect = style.padding.Remove(instructionRect);
+            m_ContentHighlighter.layout = instructionRect;
+            view.visualTree.AddChild(m_ContentHighlighter);
         }
 
         InstructionType instructionType
@@ -172,8 +186,9 @@ namespace UnityEditor
         [SerializeField]
         InstructionType m_InstructionType = InstructionType.Draw;
 
-        InstructionOverlayWindow m_InstructionOverlayWindow;
-        bool m_ShowOverlay = true;
+        VisualElement m_ContentHighlighter;
+        VisualElement m_PaddingHighlighter;
+        bool m_ShowHighlighter = true;
 
         [NonSerialized]
         int m_LastSelectedRow;
@@ -215,7 +230,17 @@ namespace UnityEditor
         {
             GUIViewDebuggerHelper.onViewInstructionsChanged -= OnInspectedViewChanged;
             GUIViewDebuggerHelper.StopDebugging();
-            CloseInstructionOverlayWindow();
+            ClearInstructionHighlighter();
+        }
+
+        void OnBecameVisible()
+        {
+            OnShowOverlayChanged();
+        }
+
+        void OnBecameInvisible()
+        {
+            ClearInstructionHighlighter();
         }
 
         void OnGUI()
@@ -250,7 +275,7 @@ namespace UnityEditor
             if (editorWindow == null)
                 return true;
 
-            if (editorWindow == this || editorWindow == m_InstructionOverlayWindow)
+            if (editorWindow == this)
                 return false;
 
             return true;
@@ -258,9 +283,9 @@ namespace UnityEditor
 
         void DoWindowPopup()
         {
-            string selectedName = inspected == null ? styles.defaultWindowPopupText : GetViewName(inspected);
+            string selectedName = inspected == null ? Styles.defaultWindowPopupText : GetViewName(inspected);
 
-            GUILayout.Label(styles.inspectedWindowLabel, GUILayout.ExpandWidth(false));
+            GUILayout.Label(Styles.inspectedWindowLabel, GUILayout.ExpandWidth(false));
 
             Rect popupPosition = GUILayoutUtility.GetRect(GUIContent.Temp(selectedName), EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(true));
             if (GUI.Button(popupPosition, GUIContent.Temp(selectedName), EditorStyles.toolbarDropDown))
@@ -306,7 +331,7 @@ namespace UnityEditor
         void DoInstructionOverlayToggle()
         {
             EditorGUI.BeginChangeCheck();
-            m_ShowOverlay = GUILayout.Toggle(m_ShowOverlay, GUIContent.Temp("Show overlay"), EditorStyles.toolbarButton);
+            m_ShowHighlighter = GUILayout.Toggle(m_ShowHighlighter, GUIContent.Temp("Show overlay"), EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
                 OnShowOverlayChanged();
@@ -315,9 +340,9 @@ namespace UnityEditor
 
         void OnShowOverlayChanged()
         {
-            if (m_ShowOverlay == false)
+            if (m_ShowHighlighter == false)
             {
-                CloseInstructionOverlayWindow();
+                ClearInstructionHighlighter();
             }
             else
             {
@@ -343,7 +368,7 @@ namespace UnityEditor
         {
             if (inspected == null)
             {
-                CloseInstructionOverlayWindow();
+                ClearInstructionHighlighter();
                 return;
             }
 

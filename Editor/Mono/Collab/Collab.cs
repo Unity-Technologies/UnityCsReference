@@ -149,19 +149,14 @@ namespace UnityEditor.Collaboration
             JSProxyMgr.GetInstance().AddGlobalObject("unity/collab", s_Instance);
             ObjectListArea.postAssetIconDrawCallback += CollabProjectHook.OnProjectWindowIconOverlay;
             AssetsTreeViewGUI.postAssetIconDrawCallback += CollabProjectHook.OnProjectBrowserNavPanelIconOverlay;
-            if (!InitializeSoftlocksViewController())
-            {
-                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += OnSettingStatusChanged;
-            }
+            InitializeSoftlocksViewController();
+            CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += OnSettingStatusChanged;
+            CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += SoftlockViewController.Instance.softLockFilters.OnSettingStatusChanged;
         }
 
         public static void OnSettingStatusChanged(CollabSettingType type, CollabSettingStatus status)
         {
-            if (InitializeSoftlocksViewController())
-            {
-                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] -= OnSettingStatusChanged;
-                CollabSettingsManager.statusNotifier[CollabSettingType.InProgressEnabled] += SoftlockViewController.Instance.softLockFilters.OnSettingStatusChanged;
-            }
+            InitializeSoftlocksViewController();
         }
 
         public static bool InitializeSoftlocksViewController()

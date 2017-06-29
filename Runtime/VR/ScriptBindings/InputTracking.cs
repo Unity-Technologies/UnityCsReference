@@ -4,8 +4,9 @@
 
 using System;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.VR
+namespace UnityEngine.XR
 {
     [RequiredByNativeCode]
     public static partial class InputTracking
@@ -18,16 +19,16 @@ namespace UnityEngine.VR
             TrackingLost
         }
 
-        public static event Action<VRNodeState> trackingAcquired = null;
-        public static event Action<VRNodeState> trackingLost = null;
-        public static event Action<VRNodeState> nodeAdded = null;
-        public static event Action<VRNodeState> nodeRemoved = null;
+        public static event Action<XRNodeState> trackingAcquired = null;
+        public static event Action<XRNodeState> trackingLost = null;
+        public static event Action<XRNodeState> nodeAdded = null;
+        public static event Action<XRNodeState> nodeRemoved = null;
 
         [RequiredByNativeCode]
-        private static void InvokeTrackingEvent(TrackingStateEventType eventType, VRNode nodeType, long uniqueID, bool tracked)
+        private static void InvokeTrackingEvent(TrackingStateEventType eventType, XRNode nodeType, long uniqueID, bool tracked)
         {
-            Action<VRNodeState> callback = null;
-            VRNodeState callbackParam = new VRNodeState();
+            Action<XRNodeState> callback = null;
+            XRNodeState callbackParam = new XRNodeState();
 
             callbackParam.uniqueID = (ulong)uniqueID;
             callbackParam.nodeType = nodeType;

@@ -32,7 +32,7 @@ namespace UnityEditor.Web
             if (IsServiceEnabled() != enabled)
             {
                 base.EnableService(enabled);
-                UsabilityAnalytics.SendEventParam("service_state", new UnetServiceState() { unet =  enabled });
+                EditorAnalytics.SendEventServiceInfo(new UnetServiceState() { unet =  enabled });
             }
         }
 

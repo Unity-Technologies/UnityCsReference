@@ -12,13 +12,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
 #pragma warning disable 649
 
-namespace UnityEngine.VR.WSA
+namespace UnityEngine.XR.WSA
 {
 
 
+[MovedFrom("UnityEngine.VR.WSA")]
 public sealed partial class HolographicSettings
 {
     static public void SetFocusPointForFrame(Vector3 position)

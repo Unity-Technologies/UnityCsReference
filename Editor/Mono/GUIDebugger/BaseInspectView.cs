@@ -60,11 +60,11 @@ namespace UnityEditor
             Event evt = Event.current;
             m_ListViewState.totalRows = GetInstructionCount();
 
-            EditorGUILayout.BeginVertical(GUIViewDebuggerWindow.styles.listBackgroundStyle);
+            EditorGUILayout.BeginVertical(GUIViewDebuggerWindow.Styles.listBackgroundStyle);
             GUILayout.Label(styles.instructionsLabel);
 
             int id = GUIUtility.GetControlID(FocusType.Keyboard);
-            foreach (var element in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.styles.listBackgroundStyle))
+            foreach (var element in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.Styles.listBackgroundStyle))
             {
                 ListViewElement listViewElement = (ListViewElement)element;
                 if (evt.type == EventType.mouseDown && evt.button == 0 && listViewElement.position.Contains(evt.mousePosition))
@@ -98,7 +98,7 @@ namespace UnityEditor
 
             SplitterGUILayout.BeginVerticalSplit(m_InstructionDetailStacktraceSplitter);
 
-            m_InstructionDetailsScrollPos = EditorGUILayout.BeginScrollView(m_InstructionDetailsScrollPos, GUIViewDebuggerWindow.styles.boxStyle);
+            m_InstructionDetailsScrollPos = EditorGUILayout.BeginScrollView(m_InstructionDetailsScrollPos, GUIViewDebuggerWindow.Styles.boxStyle);
 
             DoDrawSelectedInstructionDetails(m_ListViewState.row);
             EditorGUILayout.EndScrollView();
@@ -138,7 +138,7 @@ namespace UnityEditor
                     if (string.IsNullOrEmpty(stackframe.sourceFile))
                         continue;
 
-                    GUILayout.Label(string.Format("{0} [{1}:{2}]", stackframe.signature, stackframe.sourceFile, stackframe.lineNumber), GUIViewDebuggerWindow.styles.stackframeStyle);
+                    GUILayout.Label(string.Format("{0} [{1}:{2}]", stackframe.signature, stackframe.sourceFile, stackframe.lineNumber), GUIViewDebuggerWindow.Styles.stackframeStyle);
                     //GUILayout.Label(string.Format("{0} - {1}", stackframe.methodName, stackframe.moduleName), stackframeStyle);
                 }
             }
@@ -258,7 +258,7 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
-            GUILayout.Label(styles.emptyViewLabel, GUIViewDebuggerWindow.styles.centeredText);
+            GUILayout.Label(styles.emptyViewLabel, GUIViewDebuggerWindow.Styles.centeredText);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndVertical();
         }

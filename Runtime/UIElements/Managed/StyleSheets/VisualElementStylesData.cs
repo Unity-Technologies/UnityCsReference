@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.StyleSheets;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.Experimental.UIElements.StyleSheets
 {
@@ -16,6 +16,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         public StyleSheet data;
     }
 
+    [Obsolete("ICustomStyles has been deprecated and will be removed. Use ICustomStyle instead", false)]
     public interface ICustomStyles
     {
         void ApplyCustomProperty(string propertyName, ref Style<float> target);
@@ -26,172 +27,83 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         void ApplyCustomProperty(string propertyName, ref Style<string> target);
     }
 
-    internal class VisualElementStyles : ICustomStyles
+    public interface ICustomStyle
     {
-        public static VisualElementStyles none = new VisualElementStyles(isShared: true);
+        void ApplyCustomProperty(string propertyName, ref StyleValue<float> target);
+        void ApplyCustomProperty(string propertyName, ref StyleValue<int> target);
+        void ApplyCustomProperty(string propertyName, ref StyleValue<bool> target);
+        void ApplyCustomProperty(string propertyName, ref StyleValue<Color> target);
+        void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target) where T : Object;
+        void ApplyCustomProperty(string propertyName, ref StyleValue<string> target);
+    }
+
+    internal class VisualElementStylesData : ICustomStyle
+    {
+        public static VisualElementStylesData none = new VisualElementStylesData(true);
 
         internal readonly bool isShared;
 
         Dictionary<string, CustomProperty> m_CustomProperties;
 
-        [StyleProperty("width", StylePropertyID.Width)]
-        public Style<float> width;
+        internal StyleValue<float> width;
+        internal StyleValue<float> height;
+        internal StyleValue<float> maxWidth;
+        internal StyleValue<float> maxHeight;
+        internal StyleValue<float> minWidth;
+        internal StyleValue<float> minHeight;
+        internal StyleValue<float> flex;
+        internal StyleValue<int> overflow;
+        internal StyleValue<float> positionLeft;
+        internal StyleValue<float> positionTop;
+        internal StyleValue<float> positionRight;
+        internal StyleValue<float> positionBottom;
+        internal StyleValue<float> marginLeft;
+        internal StyleValue<float> marginTop;
+        internal StyleValue<float> marginRight;
+        internal StyleValue<float> marginBottom;
+        internal StyleValue<float> borderLeft;
+        internal StyleValue<float> borderTop;
+        internal StyleValue<float> borderRight;
+        internal StyleValue<float> borderBottom;
+        internal StyleValue<float> paddingLeft;
+        internal StyleValue<float> paddingTop;
+        internal StyleValue<float> paddingRight;
+        internal StyleValue<float> paddingBottom;
+        internal StyleValue<int> positionType;
+        internal StyleValue<int> alignSelf;
+        internal StyleValue<int> textAlignment;
+        internal StyleValue<int> fontStyle;
+        internal StyleValue<int> textClipping;
+        internal StyleValue<Font> font;
+        internal StyleValue<int> fontSize;
+        internal StyleValue<bool> wordWrap;
+        internal StyleValue<Color> textColor;
+        internal StyleValue<int> flexDirection;
+        internal StyleValue<Color> backgroundColor;
+        internal StyleValue<Color> borderColor;
+        internal StyleValue<Texture2D> backgroundImage;
+        internal StyleValue<int> backgroundSize;
+        internal StyleValue<int> alignItems;
+        internal StyleValue<int> alignContent;
+        internal StyleValue<int> justifyContent;
+        internal StyleValue<int> flexWrap;
+        internal StyleValue<float> borderLeftWidth;
+        internal StyleValue<float> borderTopWidth;
+        internal StyleValue<float> borderRightWidth;
+        internal StyleValue<float> borderBottomWidth;
+        internal StyleValue<float> borderRadius;
+        internal StyleValue<int> sliceLeft;
+        internal StyleValue<int> sliceTop;
+        internal StyleValue<int> sliceRight;
+        internal StyleValue<int> sliceBottom;
+        internal StyleValue<float> opacity;
 
-        [StyleProperty("height", StylePropertyID.Height)]
-        public Style<float> height;
-
-        [StyleProperty("max-width", StylePropertyID.MaxWidth)]
-        public Style<float> maxWidth;
-
-        [StyleProperty("max-height", StylePropertyID.MaxHeight)]
-        public Style<float> maxHeight;
-
-        [StyleProperty("min-width", StylePropertyID.MinWidth)]
-        public Style<float> minWidth;
-
-        [StyleProperty("min-height", StylePropertyID.MinHeight)]
-        public Style<float> minHeight;
-
-        [StyleProperty("flex", StylePropertyID.Flex)]
-        public Style<float> flex;
-
-        [StyleProperty("overflow", StylePropertyID.Overflow)]
-        public Style<int> overflow;
-
-        [StyleProperty("position-left", StylePropertyID.PositionLeft)]
-        public Style<float> positionLeft;
-
-        [StyleProperty("position-top", StylePropertyID.PositionTop)]
-        public Style<float> positionTop;
-
-        [StyleProperty("position-right", StylePropertyID.PositionRight)]
-        public Style<float> positionRight;
-
-        [StyleProperty("position-bottom", StylePropertyID.PositionBottom)]
-        public Style<float> positionBottom;
-
-        [StyleProperty("margin-left", StylePropertyID.MarginLeft)]
-        public Style<float> marginLeft;
-
-        [StyleProperty("margin-top", StylePropertyID.MarginTop)]
-        public Style<float> marginTop;
-
-        [StyleProperty("margin-right", StylePropertyID.MarginRight)]
-        public Style<float> marginRight;
-
-        [StyleProperty("margin-bottom", StylePropertyID.MarginBottom)]
-        public Style<float> marginBottom;
-
-        [StyleProperty("border-left", StylePropertyID.BorderLeft)]
-        public Style<float> borderLeft;
-
-        [StyleProperty("border-top", StylePropertyID.BorderTop)]
-        public Style<float> borderTop;
-
-        [StyleProperty("border-right", StylePropertyID.BorderRight)]
-        public Style<float> borderRight;
-
-        [StyleProperty("border-bottom", StylePropertyID.BorderBottom)]
-        public Style<float> borderBottom;
-
-        [StyleProperty("padding-left", StylePropertyID.PaddingLeft)]
-        public Style<float> paddingLeft;
-
-        [StyleProperty("padding-top", StylePropertyID.PaddingTop)]
-        public Style<float> paddingTop;
-
-        [StyleProperty("padding-right", StylePropertyID.PaddingRight)]
-        public Style<float> paddingRight;
-
-        [StyleProperty("padding-bottom", StylePropertyID.PaddingBottom)]
-        public Style<float> paddingBottom;
-
-        [StyleProperty("position-type", StylePropertyID.PositionType)]
-        public Style<int> positionType;
-
-        [StyleProperty("align-self", StylePropertyID.AlignSelf)]
-        public Style<int> alignSelf;
-
-        [StyleProperty("text-alignment", StylePropertyID.TextAlignment)]
-        public Style<int> textAlignment;
-
-        [StyleProperty("font-style", StylePropertyID.FontStyle)]
-        public Style<int> fontStyle;
-
-        [StyleProperty("text-clipping", StylePropertyID.TextClipping)]
-        public Style<int> textClipping;
-
-        [StyleProperty("font", StylePropertyID.Font)]
-        public Style<Font> font;
-
-        [StyleProperty("font-size", StylePropertyID.FontSize)]
-        public Style<int> fontSize;
-
-        [StyleProperty("word-wrap", StylePropertyID.WordWrap)]
-        public Style<bool> wordWrap;
-
-        [StyleProperty("text-color", StylePropertyID.TextColor)]
-        public Style<Color> textColor;
-
-        [StyleProperty("flex-direction", StylePropertyID.FlexDirection)]
-        public Style<int> flexDirection;
-
-        [StyleProperty("background-color", StylePropertyID.BackgroundColor)]
-        public Style<Color> backgroundColor;
-
-        [StyleProperty("border-color", StylePropertyID.BorderColor)]
-        public Style<Color> borderColor;
-
-        [StyleProperty("background-image", StylePropertyID.BackgroundImage)]
-        public Style<Texture2D> backgroundImage;
-
-        [StyleProperty("background-size", StylePropertyID.BackgroundSize)]
-        public Style<int> backgroundSize;
-
-        [StyleProperty("align-items", StylePropertyID.AlignItems)]
-        public Style<int> alignItems;
-
-        [StyleProperty("align-content", StylePropertyID.AlignContent)]
-        public Style<int> alignContent;
-
-        [StyleProperty("justify-content", StylePropertyID.JustifyContent)]
-        public Style<int> justifyContent;
-
-        [StyleProperty("flex-wrap", StylePropertyID.FlexWrap)]
-        public Style<int> flexWrap;
-
-        [StyleProperty("border-width", StylePropertyID.BorderWidth)]
-        public Style<float> borderWidth;
-
-        [StyleProperty("border-radius", StylePropertyID.BorderRadius)]
-        public Style<float> borderRadius;
-
-        [StyleProperty("slice-left", StylePropertyID.SliceLeft)]
-        public Style<int> sliceLeft;
-
-        [StyleProperty("slice-top", StylePropertyID.SliceTop)]
-        public Style<int> sliceTop;
-
-        [StyleProperty("slice-right", StylePropertyID.SliceRight)]
-        public Style<int> sliceRight;
-
-        [StyleProperty("slice-bottom", StylePropertyID.SliceBottom)]
-        public Style<int> sliceBottom;
-
-        [StyleProperty("opacity", StylePropertyID.Opacity)]
-        public Style<float> opacity;
-
-        internal VisualElementStyles(bool isShared)
+        public VisualElementStylesData(bool isShared)
         {
             this.isShared = isShared;
         }
 
-        public VisualElementStyles(VisualElementStyles other, bool isShared) : this(isShared)
-        {
-            Apply(other, StylePropertyApplyMode.Copy);
-        }
-
-        internal void Apply(VisualElementStyles other, StylePropertyApplyMode mode)
+        public void Apply(VisualElementStylesData other, StylePropertyApplyMode mode)
         {
             // Always just copy the reference to custom properties, since they can't be overriden per instance
             m_CustomProperties = other.m_CustomProperties;
@@ -238,7 +150,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             alignContent.Apply(other.alignContent, mode);
             justifyContent.Apply(other.justifyContent, mode);
             flexWrap.Apply(other.flexWrap, mode);
-            borderWidth.Apply(other.borderWidth, mode);
+            borderLeftWidth.Apply(other.borderLeftWidth, mode);
+            borderTopWidth.Apply(other.borderTopWidth, mode);
+            borderRightWidth.Apply(other.borderRightWidth, mode);
+            borderBottomWidth.Apply(other.borderBottomWidth, mode);
             borderRadius.Apply(other.borderRadius, mode);
             sliceLeft.Apply(other.sliceLeft, mode);
             sliceTop.Apply(other.sliceTop, mode);
@@ -283,7 +198,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
-        void AssignRect(RectOffset rect, ref Style<int> left, ref Style<int> top, ref Style<int> right, ref Style<int> bottom)
+        void AssignRect(RectOffset rect, ref StyleValue<int> left, ref StyleValue<int> top, ref StyleValue<int> right, ref StyleValue<int> bottom)
         {
             rect.left = left.GetSpecifiedValueOrDefault(rect.left);
             rect.top = top.GetSpecifiedValueOrDefault(rect.top);
@@ -291,7 +206,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             rect.bottom = bottom.GetSpecifiedValueOrDefault(rect.bottom);
         }
 
-        void AssignRect(RectOffset rect, ref Style<float> left, ref Style<float> top, ref Style<float> right, ref Style<float> bottom)
+        void AssignRect(RectOffset rect, ref StyleValue<float> left, ref StyleValue<float> top, ref StyleValue<float> right, ref StyleValue<float> bottom)
         {
             rect.left = (int)left.GetSpecifiedValueOrDefault(rect.left);
             rect.top = (int)top.GetSpecifiedValueOrDefault(rect.top);
@@ -478,8 +393,20 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handle, specificity, ref borderColor);
                         break;
 
-                    case StylePropertyID.BorderWidth:
-                        registry.Apply(handle, specificity, ref borderWidth);
+                    case StylePropertyID.BorderLeftWidth:
+                        registry.Apply(handle, specificity, ref borderLeftWidth);
+                        break;
+
+                    case StylePropertyID.BorderTopWidth:
+                        registry.Apply(handle, specificity, ref borderTopWidth);
+                        break;
+
+                    case StylePropertyID.BorderRightWidth:
+                        registry.Apply(handle, specificity, ref borderRightWidth);
+                        break;
+
+                    case StylePropertyID.BorderBottomWidth:
+                        registry.Apply(handle, specificity, ref borderBottomWidth);
                         break;
 
                     case StylePropertyID.BorderRadius:
@@ -526,10 +453,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
-        public void ApplyCustomProperty(string propertyName, ref Style<float> target)
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<float> target)
         {
             CustomProperty property;
-            Style<float> tmp = new Style<float>(0.0f);
+            StyleValue<float> tmp = new StyleValue<float>(0.0f);
 
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
@@ -545,10 +472,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
-        public void ApplyCustomProperty(string propertyName, ref Style<int> target)
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<int> target)
         {
             CustomProperty property;
-            Style<int> tmp = new Style<int>(0);
+            StyleValue<int> tmp = new StyleValue<int>(0);
 
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
@@ -564,10 +491,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
-        public void ApplyCustomProperty(string propertyName, ref Style<bool> target)
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<bool> target)
         {
             CustomProperty property;
-            Style<bool> tmp = new Style<bool>(false);
+            StyleValue<bool> tmp = new StyleValue<bool>(false);
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
                 if (property.handle.valueType == StyleValueType.Keyword)
@@ -582,10 +509,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
-        public void ApplyCustomProperty(string propertyName, ref Style<Color> target)
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<Color> target)
         {
             CustomProperty property;
-            Style<Color> tmp = new Style<Color>(Color.clear);
+            StyleValue<Color> tmp = new StyleValue<Color>(Color.clear);
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
                 if (property.handle.valueType == StyleValueType.Color)
@@ -600,15 +527,15 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
-        public void ApplyCustomProperty<T>(string propertyName, ref Style<T> target) where T : Object
+        public void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target) where T : Object
         {
             ApplyCustomProperty<T>(propertyName, Resources.Load, ref target);
         }
 
-        public void ApplyCustomProperty<T>(string propertyName, LoadResourceFunction function, ref Style<T> target) where T : Object
+        internal void ApplyCustomProperty<T>(string propertyName, LoadResourceFunction function, ref StyleValue<T> target) where T : Object
         {
             CustomProperty property;
-            Style<T> tmp = new Style<T>(null);
+            StyleValue<T> tmp = new StyleValue<T>(null);
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
                 if (property.handle.valueType == StyleValueType.ResourcePath)
@@ -623,139 +550,16 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
-        public void ApplyCustomProperty(string propertyName, ref Style<string> target)
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<string> target)
         {
             CustomProperty property;
-            Style<string> tmp = new Style<string>(string.Empty);
+            StyleValue<string> tmp = new StyleValue<string>(string.Empty);
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
                 tmp.value = property.data.ReadAsString(property.handle);
                 tmp.specificity = property.specificity;
             }
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
-        }
-    }
-
-    static class StyleSheetExtensions
-    {
-        public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<float> property)
-        {
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                Apply(default(float), specificity, ref property);
-            }
-            else
-            {
-                Apply(sheet.ReadFloat(handle), specificity, ref property);
-            }
-        }
-
-        public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<Color> property)
-        {
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                Apply(default(Color), specificity, ref property);
-            }
-            else
-            {
-                Apply(sheet.ReadColor(handle), specificity, ref property);
-            }
-        }
-
-        public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<int> property)
-        {
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                Apply(default(int), specificity, ref property);
-            }
-            else
-            {
-                Apply((int)sheet.ReadFloat(handle), specificity, ref property);
-            }
-        }
-
-        public static void Apply(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<bool> property)
-        {
-            bool val = sheet.ReadKeyword(handle) == StyleValueKeyword.True;
-
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                Apply(default(bool), specificity, ref property);
-            }
-            else
-            {
-                Apply(val, specificity, ref property);
-            }
-        }
-
-        public static void Apply<T>(this StyleSheet sheet, StyleValueHandle handle, int specificity, ref Style<int> property) where T : struct
-        {
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.Unset)
-            {
-                Apply(default(int), specificity, ref property);
-            }
-            else
-            {
-                Apply(StyleSheetCache.GetEnumValue<T>(sheet, handle), specificity, ref property);
-            }
-        }
-
-        public static void Apply<T>(this StyleSheet sheet, StyleValueHandle handle, int specificity, LoadResourceFunction loadResourceFunc, ref Style<T> property) where T : Object
-        {
-            if (handle.valueType == StyleValueType.Keyword && handle.valueIndex == (int)StyleValueKeyword.None)
-            {
-                Apply((T)null, specificity, ref property);
-                return;
-            }
-
-            string path = sheet.ReadResourcePath(handle);
-            if (!string.IsNullOrEmpty(path))
-            {
-                T resource = loadResourceFunc(path, typeof(T)) as T;
-
-                if (resource != null)
-                {
-                    Apply(resource, specificity, ref property);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("{0} resource not found for path: {1}", typeof(T).Name, path));
-                }
-            }
-        }
-
-        static void Apply<T>(T val, int specificity, ref Style<T> property)
-        {
-            property.Apply(new Style<T>(val, specificity), StylePropertyApplyMode.CopyIfMoreSpecific);
-        }
-
-        public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)
-        {
-            string value = string.Empty;
-            switch (handle.valueType)
-            {
-                case StyleValueType.Float:
-                    value = sheet.ReadFloat(handle).ToString();
-                    break;
-                case StyleValueType.Color:
-                    value = sheet.ReadColor(handle).ToString();
-                    break;
-                case StyleValueType.ResourcePath:
-                    value = sheet.ReadResourcePath(handle);
-                    break;
-                case StyleValueType.String:
-                    value = sheet.ReadString(handle);
-                    break;
-                case StyleValueType.Enum:
-                    value = sheet.ReadEnum(handle);
-                    break;
-                case StyleValueType.Keyword:
-                    value = sheet.ReadKeyword(handle).ToString();
-                    break;
-                default:
-                    throw new ArgumentException("Unhandled type " + handle.valueType);
-            }
-            return value;
         }
     }
 }

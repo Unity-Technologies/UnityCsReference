@@ -6,8 +6,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using UnityEditor.Accessibility;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 
@@ -15,7 +16,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Profiler", useTypeNameAsIconName = true)]
-    internal class ProfilerWindow : EditorWindow, IProfilerWindowController
+    internal class ProfilerWindow : EditorWindow, IProfilerWindowController, IHasCustomMenu
     {
         internal static class Styles
         {
@@ -39,6 +40,8 @@ namespace UnityEditor
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TextContent("Load|Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
             public static readonly GUIContent[] detailedPaneTypes = GetLocalizedDetailedPaneTypes();
+
+            public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TextContent("Color Blind Mode");
 
             internal static GUIContent[] GetLocalizedReasons()
             {
@@ -403,6 +406,7 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             m_ProfilerWindows.Add(this);
 
+            UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
             Initialize();
         }
 
@@ -412,7 +416,7 @@ namespace UnityEditor
 
             m_Charts = new ProfilerChart[(int)ProfilerArea.AreaCount];
 
-            Color[] defaultColors = ProfilerColors.colors;
+            Color[] defaultColors = ProfilerColors.currentColors;
 
             for (ProfilerArea i = 0; i < ProfilerArea.AreaCount; i++)
             {
@@ -508,6 +512,7 @@ namespace UnityEditor
         {
             m_ProfilerWindows.Remove(this);
             m_UISystemProfiler.CurrentAreaChanged(ProfilerArea.AreaCount);
+            UserAccessiblitySettings.colorBlindConditionChanged -= Initialize;
         }
 
         void Awake()
@@ -550,6 +555,21 @@ namespace UnityEditor
                     chart.OnLostFocus();
                 }
             }
+        }
+
+        public virtual void AddItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(
+                Styles.accessibilityModeLabel,
+                UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default,
+                OnToggleColorBlindMode
+                );
+        }
+
+        private void OnToggleColorBlindMode()
+        {
+            UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default ?
+                ColorBlindCondition.Deuteranopia : ColorBlindCondition.Default;
         }
 
         static void ShowProfilerWindow()
@@ -1366,7 +1386,8 @@ namespace UnityEditor
                 timeMax = Mathf.Lerp(m_ChartOldMax[(int)i], timeMax, 0.4f);
             m_ChartOldMax[(int)i] = timeMax;
 
-            chart.m_Data.series[0].rangeAxis = new Vector2(0f, timeMax);
+            for (int k = 0; k < chart.m_Data.numSeries; ++k)
+                chart.m_Data.series[k].rangeAxis = new Vector2(0f, timeMax);
             UpdateChartGrid(timeMax, chart.m_Data);
         }
 

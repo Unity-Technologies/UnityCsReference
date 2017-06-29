@@ -177,6 +177,13 @@ public enum iOSBuildType
     Release = 1,
 }
 
+internal enum Compression
+{
+    None = 0,
+    Lz4 = 2,
+    Lz4HC = 3,
+}
+
 public enum AndroidBuildSystem
 {
     Internal = 0,
@@ -538,6 +545,14 @@ public sealed partial class EditorUserBuildSettings
         set;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Compression GetCompressionType (BuildTargetGroup targetGroup) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void SetCompressionType (BuildTargetGroup targetGroup, Compression type) ;
+
     public extern static AndroidBuildSystem androidBuildSystem
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -569,6 +584,16 @@ public sealed partial class EditorUserBuildSettings
     }
 
     public extern static AndroidMinification androidReleaseMinification
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static string androidDeviceSocketAddress
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

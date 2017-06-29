@@ -130,11 +130,11 @@ namespace UnityEditor
                 RefreshRemoteScreenSize((int)m_LastRemoteScreenSize.x, (int)m_LastRemoteScreenSize.y);
             }
 
-            if (UnityEngine.VR.VRSettings.isDeviceActive &&
-                m_Remote.width != UnityEngine.VR.VRSettings.eyeTextureWidth &&
-                m_Remote.height != UnityEngine.VR.VRSettings.eyeTextureHeight)
+            if (UnityEngine.XR.XRSettings.isDeviceActive &&
+                m_Remote.width != UnityEngine.XR.XRSettings.eyeTextureWidth &&
+                m_Remote.height != UnityEngine.XR.XRSettings.eyeTextureHeight)
             {
-                RefreshRemoteScreenSize(UnityEngine.VR.VRSettings.eyeTextureWidth, UnityEngine.VR.VRSettings.eyeTextureHeight);
+                RefreshRemoteScreenSize(UnityEngine.XR.XRSettings.eyeTextureWidth, UnityEngine.XR.XRSettings.eyeTextureHeight);
             }
         }
 
@@ -296,10 +296,10 @@ namespace UnityEditor
             {
                 int width = 0;
                 int height = 0;
-                if (UnityEngine.VR.VRSettings.isDeviceActive)
+                if (UnityEngine.XR.XRSettings.isDeviceActive)
                 {
-                    width = UnityEngine.VR.VRSettings.eyeTextureWidth;
-                    height = UnityEngine.VR.VRSettings.eyeTextureHeight;
+                    width = UnityEngine.XR.XRSettings.eyeTextureWidth;
+                    height = UnityEngine.XR.XRSettings.eyeTextureHeight;
                 }
                 else
                 {
@@ -491,7 +491,7 @@ namespace UnityEditor
 
         public static GameViewSizeGroupType BuildTargetGroupToGameViewSizeGroup(BuildTargetGroup buildTargetGroup)
         {
-            if (UnityEngine.VR.VRSettings.enabled && UnityEngine.VR.VRSettings.showDeviceView)
+            if (UnityEngine.XR.XRSettings.enabled && UnityEngine.XR.XRSettings.showDeviceView)
                 return GameViewSizeGroupType.HMD;
 
             switch (buildTargetGroup)

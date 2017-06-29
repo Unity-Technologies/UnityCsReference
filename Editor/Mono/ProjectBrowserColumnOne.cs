@@ -272,6 +272,16 @@ namespace UnityEditor
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
             ReadAssetDatabase(HierarchyType.Assets, assetRootItem, depth + 1);
 
+            // Fetch packages
+            TreeViewItem packagesRootItem = null;
+            if (EditorPrefs.GetBool("ShowPackagesFolder"))
+            {
+                var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesRootPath());
+                var packagesFolderInstanceID = AssetDatabase.GetInstanceIDFromGUID(packagesGuid);
+                const string packagesDisplayName = "Packages";
+                packagesRootItem = new TreeViewItem(packagesFolderInstanceID, depth, m_RootItem, packagesDisplayName);
+                ReadAssetDatabase(HierarchyType.Packages, packagesRootItem, depth + 1);
+            }
 
             // Fetch saved filters
             TreeViewItem savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
@@ -281,6 +291,8 @@ namespace UnityEditor
             visibleRoots.Add(savedFiltersRootItem);
             visibleRoots.Add(assetRootItem);
 
+            if (packagesRootItem != null)
+                visibleRoots.Add(packagesRootItem);
 
             m_RootItem.children = visibleRoots;
 

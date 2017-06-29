@@ -46,17 +46,17 @@ namespace UnityEngine.Experimental.UIElements
 
         public Slider.Direction direction
         {
-            get { return flexDirection == FlexDirection.Row ? Slider.Direction.Horizontal : Slider.Direction.Vertical; }
+            get { return style.flexDirection == FlexDirection.Row ? Slider.Direction.Horizontal : Slider.Direction.Vertical; }
             set
             {
                 if (value == Slider.Direction.Horizontal)
                 {
-                    flexDirection = FlexDirection.Row;
+                    style.flexDirection = FlexDirection.Row;
                     AddToClassList("horizontal");
                 }
                 else
                 {
-                    flexDirection = FlexDirection.Column;
+                    style.flexDirection = FlexDirection.Column;
                     AddToClassList("vertical");
                 }
             }

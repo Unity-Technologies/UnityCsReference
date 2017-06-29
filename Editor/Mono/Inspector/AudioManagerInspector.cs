@@ -84,7 +84,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_VirtualVoiceCount, Styles.VirtualVoiceCount);
             EditorGUILayout.PropertyField(m_RealVoiceCount, Styles.RealVoiceCount);
 
-            List<string> plugins = new List<string>(AudioUtil.GetSpatializerPluginNames());
+            List<string> plugins = new List<string>(AudioSettings.GetSpatializerPluginNames());
             plugins.Insert(0, "None");
             string[] pluginsArray = plugins.ToArray();
 

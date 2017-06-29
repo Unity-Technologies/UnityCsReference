@@ -369,10 +369,10 @@ namespace UnityEngine.Experimental.UIElements
 
                 var cache = root.renderData.pixelCache;
                 if (cache != null &&
-                    (cache.width != textureWidth && cache.height != textureHeight))
+                    (cache.width != textureWidth || cache.height != textureHeight))
                 {
                     Object.DestroyImmediate(cache);
-                    root.renderData.pixelCache = null;
+                    cache = root.renderData.pixelCache = null;
                 }
 
                 float oldOpacity = stylePainter.opacity;
@@ -430,7 +430,15 @@ namespace UnityEngine.Experimental.UIElements
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
                 GUIClip.SetTransform(root.globalTransform, currentGlobalClip);
-                painter.DrawTexture(root.layout, root.renderData.pixelCache, Color.white, ScaleMode.ScaleAndCrop);
+
+                var painterParams = new TextureStylePainterParameters
+                {
+                    layout = root.layout,
+                    texture = root.renderData.pixelCache,
+                    color = Color.white,
+                    scaleMode = ScaleMode.ScaleAndCrop
+                };
+                painter.DrawTexture(painterParams);
             }
             else
             {
@@ -439,7 +447,7 @@ namespace UnityEngine.Experimental.UIElements
                 stylePainter.currentWorldClip = currentGlobalClip;
                 stylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
 
-                stylePainter.opacity = root.styles.opacity.GetSpecifiedValueOrDefault(1.0f);
+                stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
                 root.DoRepaint(stylePainter);
                 stylePainter.opacity = 1.0f;
                 root.ClearDirty(ChangeType.Repaint);

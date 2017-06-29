@@ -45,9 +45,9 @@ namespace UnityEngine.Experimental.UIElements
 
             m_Slider.SetProperties(sliderRect, value, size, leftValue, rightValue, slider, thumb, horiz);
             m_LeftButton.position = minRect;
-            m_LeftButton.style = leftButton;
+            m_LeftButton.guiStyle = leftButton;
             m_RightButton.position = maxRect;
-            m_RightButton.style = rightButton;
+            m_RightButton.guiStyle = rightButton;
         }
 
         public override void OnReuse()

@@ -11,7 +11,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal delegate void OnStylesResolved(VisualElementStyles styles);
+    internal delegate void OnStylesResolved(ICustomStyle styles);
 
     // pseudo states are used for common states of a widget
     // they are addressable from CSS via the pseudo state syntax ":selected" for example
@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
-    public class VisualElement : CallbackEventHandler
+    public partial class VisualElement : CallbackEventHandler
     {
         private static uint s_NextId;
 
@@ -92,7 +92,7 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var result = m_Layout;
-                if (cssNode != null && positionType != PositionType.Manual)
+                if (cssNode != null && style.positionType.value != PositionType.Manual)
                 {
                     result.x = cssNode.LayoutX;
                     result.y = cssNode.LayoutY;
@@ -109,31 +109,25 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // Same position value while type is already manual should not trigger any layout change, return early
-                if (positionType == PositionType.Manual && m_Layout == value)
+                if (style.positionType.value == PositionType.Manual && m_Layout == value)
                     return;
 
                 // set results so we can read straight back in get without waiting for a pass
                 m_Layout = value;
 
-                // set styles
-                cssNode.SetPosition(CSSEdge.Left, value.x);
-                cssNode.SetPosition(CSSEdge.Top, value.y);
-                cssNode.Width = value.width;
-                cssNode.Height = value.height;
-
                 // mark as inline so that they do not get overridden if needed.
-                EnsureInlineStyles();
-                m_Styles.positionType = Style<int>.Create((int)PositionType.Manual);
-                m_Styles.marginLeft = Style<float>.Create(0.0f);
-                m_Styles.marginRight = Style<float>.Create(0.0f);
-                m_Styles.marginBottom = Style<float>.Create(0.0f);
-                m_Styles.marginTop = Style<float>.Create(0.0f);
-                m_Styles.positionLeft = Style<float>.Create(value.x);
-                m_Styles.positionTop = Style<float>.Create(value.y);
-                m_Styles.positionRight = Style<float>.Create(float.NaN);
-                m_Styles.positionBottom = Style<float>.Create(float.NaN);
-                m_Styles.width = Style<float>.Create(value.width);
-                m_Styles.height = Style<float>.Create(value.height);
+                IStyle styleAccess = this;
+                styleAccess.positionType = PositionType.Manual;
+                styleAccess.marginLeft = 0.0f;
+                styleAccess.marginRight = 0.0f;
+                styleAccess.marginBottom = 0.0f;
+                styleAccess.marginTop = 0.0f;
+                styleAccess.positionLeft = value.x;
+                styleAccess.positionTop = value.y;
+                styleAccess.positionRight = float.NaN;
+                styleAccess.positionBottom = float.NaN;
+                styleAccess.width = value.width;
+                styleAccess.height = value.height;
 
                 Dirty(ChangeType.Layout);
             }
@@ -143,10 +137,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var spacing = new Spacing(paddingLeft,
-                        paddingTop,
-                        paddingRight,
-                        paddingBottom);
+                var spacing = new Spacing(m_Style.paddingLeft,
+                        m_Style.paddingTop,
+                        m_Style.paddingRight,
+                        m_Style.paddingBottom);
 
                 return paddingRect - spacing;
             }
@@ -156,10 +150,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var spacing = new Spacing(borderWidth,
-                        borderWidth,
-                        borderWidth,
-                        borderWidth);
+                var spacing = new Spacing(borderLeftWidth,
+                        borderTopWidth,
+                        borderRightWidth,
+                        borderBottomWidth);
 
                 return layout - spacing;
             }
@@ -232,8 +226,13 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 m_Parent = value;
+
                 if (value != null)
+                {
                     ChangePanel(m_Parent.elementPanel);
+                    // This is needed because Dirty on the child might have called before setting the parent, which cause the any Dirty on the child after the parent is assigned to not do anything ( because flags are already set on it ).
+                    PropagateChangesToParents();
+                }
                 else
                     ChangePanel(null);
             }
@@ -281,633 +280,599 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // Set and pass in values to be used for layout
-        // Most likely will be replaced by a custom structure when we support CSS
         internal CSSNode cssNode { get; private set; }
 
-        internal VisualElementStyles m_Styles = VisualElementStyles.none;
+        // shared style object, cannot be changed by the user
+        internal VisualElementStylesData m_SharedStyle = VisualElementStylesData.none;
+        // user-defined style object, if not set, is the same reference as m_SharedStyles
+        internal VisualElementStylesData m_Style = VisualElementStylesData.none;
 
-        public virtual void OnStylesResolved(ICustomStyles styles)
+        [Obsolete("OnStylesResolved(ICustomStyles) has been deprecated and will be removed. Use OnStyleResolved(ICustomStyle) instead", false)]
+        public virtual void OnStylesResolved(ICustomStyles style) {}
+
+        public virtual void OnStyleResolved(ICustomStyle style)
         {
             // push all non inlined layout things up
             FinalizeLayout();
         }
 
-        internal VisualElementStyles styles
+        internal VisualElementStylesData sharedStyle
         {
             get
             {
-                return m_Styles;
+                return m_SharedStyle;
             }
         }
 
+        internal VisualElementStylesData effectiveStyle
+        {
+            get
+            {
+                return m_Style;
+            }
+        }
+
+        internal bool hasInlineStyle
+        {
+            get
+            {
+                return m_Style != m_SharedStyle;
+            }
+        }
+
+        VisualElementStylesData inlineStyle
+        {
+            get
+            {
+                if (!hasInlineStyle)
+                {
+                    var inline = new VisualElementStylesData(false);
+                    inline.Apply(m_SharedStyle, StylePropertyApplyMode.Copy);
+                    m_Style = inline;
+                }
+                return m_Style;
+            }
+        }
+
+        [Obsolete("VisualElement.width will be removed. Use VisualElement.style.width instead", false)]
         public float width
         {
             get
             {
-                return m_Styles.width;
+                return style.width;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(width, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.width = Style<float>.Create(value);
-                cssNode.Width = value;
+                style.width = value;
             }
         }
 
+        [Obsolete("VisualElement.height will be removed. Use VisualElement.style.height instead", false)]
         public float height
         {
             get
             {
-                return m_Styles.height;
+                return style.height;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(height, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.height = Style<float>.Create(value);
-                cssNode.Height = value;
+                style.height = value;
             }
         }
 
+        [Obsolete("VisualElement.maxWidth will be removed. Use VisualElement.style.maxWidth instead", false)]
         public float maxWidth
         {
             get
             {
-                return m_Styles.maxWidth;
+                return style.maxWidth;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(maxWidth, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.maxWidth = Style<float>.Create(value);
-                cssNode.MaxWidth = value;
+                style.maxWidth = value;
             }
         }
 
+        [Obsolete("VisualElement.maxHeight will be removed. Use VisualElement.style.maxHeight instead", false)]
         public float maxHeight
         {
             get
             {
-                return m_Styles.maxHeight;
+                return style.maxHeight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(maxHeight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.maxHeight = Style<float>.Create(value);
-                cssNode.MaxHeight = value;
+                style.maxHeight = value;
             }
         }
 
+        [Obsolete("VisualElement.minWidth will be removed. Use VisualElement.style.minWidth instead", false)]
         public float minWidth
         {
             get
             {
-                return m_Styles.minWidth;
+                return style.minWidth;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(minWidth, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.minWidth = Style<float>.Create(value);
-                cssNode.MinWidth = value;
+                style.minWidth = value;
             }
         }
 
+        [Obsolete("VisualElement.minHeight will be removed. Use VisualElement.style.minHeight instead", false)]
         public float minHeight
         {
             get
             {
-                return m_Styles.minHeight;
+                return style.minHeight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(minHeight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.minHeight = Style<float>.Create(value);
-                cssNode.MinHeight = value;
+                style.minHeight = value;
             }
         }
 
+        [Obsolete("VisualElement.flex will be removed. Use VisualElement.style.flex instead", false)]
         public float flex
         {
             get
             {
-                return m_Styles.flex;
+                return style.flex;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(flex, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.flex = Style<float>.Create(value);
-                cssNode.Flex = value;
+                style.flex = value;
             }
         }
 
+        [Obsolete("VisualElement.positionLeft will be removed. Use VisualElement.style.positionLeft instead", false)]
         public float positionLeft
         {
             get
             {
-                return m_Styles.positionLeft;
+                return style.positionLeft;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(positionLeft, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.positionLeft = Style<float>.Create(value);
-                cssNode.SetPosition(CSSEdge.Left, value);
+                style.positionLeft = value;
             }
         }
 
+        [Obsolete("VisualElement.positionTop will be removed. Use VisualElement.style.positionTop instead", false)]
         public float positionTop
         {
             get
             {
-                return m_Styles.positionTop;
+                return style.positionTop;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(positionTop, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.positionTop = Style<float>.Create(value);
-                cssNode.SetPosition(CSSEdge.Top, value);
+                style.positionTop = value;
             }
         }
 
+        [Obsolete("VisualElement.positionRight will be removed. Use VisualElement.style.positionRight instead", false)]
         public float positionRight
         {
             get
             {
-                return m_Styles.positionRight;
+                return style.positionRight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(positionRight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.positionRight = Style<float>.Create(value);
-                cssNode.SetPosition(CSSEdge.Right, value);
+                style.positionRight = value;
             }
         }
 
+        [Obsolete("VisualElement.positionBottom will be removed. Use VisualElement.style.positionBottom instead", false)]
         public float positionBottom
         {
             get
             {
-                return m_Styles.positionBottom;
+                return style.positionBottom;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(positionBottom, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.positionBottom = Style<float>.Create(value);
-                cssNode.SetPosition(CSSEdge.Bottom, value);
+                style.positionBottom = value;
             }
         }
 
+        [Obsolete("VisualElement.marginLeft will be removed. Use VisualElement.style.marginLeft instead", false)]
         public float marginLeft
         {
             get
             {
-                return m_Styles.marginLeft;
+                return style.marginLeft;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(marginLeft, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.marginLeft = Style<float>.Create(value);
-                cssNode.SetMargin(CSSEdge.Left, value);
+                style.marginLeft = value;
             }
         }
 
+        [Obsolete("VisualElement.marginTop will be removed. Use VisualElement.style.marginTop instead", false)]
         public float marginTop
         {
             get
             {
-                return m_Styles.marginTop;
+                return style.marginTop;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(marginTop, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.marginTop = Style<float>.Create(value);
-                cssNode.SetMargin(CSSEdge.Top, value);
+                style.marginTop = value;
             }
         }
 
+        [Obsolete("VisualElement.marginRight will be removed. Use VisualElement.style.marginRight instead", false)]
         public float marginRight
         {
             get
             {
-                return m_Styles.marginRight;
+                return style.marginRight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(marginRight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.marginRight = Style<float>.Create(value);
-                cssNode.SetMargin(CSSEdge.Right, value);
+                style.marginRight = value;
             }
         }
 
+        [Obsolete("VisualElement.marginBottom will be removed. Use VisualElement.style.marginBottom instead", false)]
         public float marginBottom
         {
             get
             {
-                return m_Styles.marginBottom;
+                return style.marginBottom;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(marginBottom, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.marginBottom = Style<float>.Create(value);
-                cssNode.SetMargin(CSSEdge.Bottom, value);
+                style.marginBottom = value;
             }
         }
 
+        [Obsolete("VisualElement.borderLeft will be removed. Use VisualElement.style.borderLeft instead", false)]
         public float borderLeft
         {
             get
             {
-                return m_Styles.borderLeft;
+                return style.borderLeft;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(borderLeft, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.borderLeft = Style<float>.Create(value);
-                cssNode.SetBorder(CSSEdge.Left, value);
+                style.borderLeft = value;
             }
         }
 
+        [Obsolete("VisualElement.borderTop will be removed. Use VisualElement.style.borderTop instead", false)]
         public float borderTop
         {
             get
             {
-                return m_Styles.borderTop;
+                return style.borderTop;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(borderTop, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.borderTop = Style<float>.Create(value);
-                cssNode.SetBorder(CSSEdge.Top, value);
+                style.borderTop = value;
             }
         }
 
+        [Obsolete("VisualElement.borderRight will be removed. Use VisualElement.style.borderRight instead", false)]
         public float borderRight
         {
             get
             {
-                return m_Styles.borderRight;
+                return style.borderRight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(borderRight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.borderRight = Style<float>.Create(value);
-                cssNode.SetBorder(CSSEdge.Right, value);
+                style.borderRight = value;
             }
         }
 
+        [Obsolete("VisualElement.borderBottom will be removed. Use VisualElement.style.borderBottom instead", false)]
         public float borderBottom
         {
             get
             {
-                return m_Styles.borderBottom;
+                return style.borderBottom;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(borderBottom, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.borderBottom = Style<float>.Create(value);
-                cssNode.SetBorder(CSSEdge.Bottom, value);
+                style.borderBottom = value;
             }
         }
 
+        [Obsolete("VisualElement.paddingLeft will be removed. Use VisualElement.style.paddingLeft instead", false)]
         public float paddingLeft
         {
             get
             {
-                return m_Styles.paddingLeft;
+                return style.paddingLeft;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(paddingLeft, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.paddingLeft = Style<float>.Create(value);
-                cssNode.SetPadding(CSSEdge.Left, value);
+                style.paddingLeft = value;
             }
         }
 
+        [Obsolete("VisualElement.paddingTop will be removed. Use VisualElement.style.paddingTop instead", false)]
         public float paddingTop
         {
             get
             {
-                return m_Styles.paddingTop;
+                return style.paddingTop;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(paddingTop, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.paddingTop = Style<float>.Create(value);
-                cssNode.SetPadding(CSSEdge.Top, value);
+                style.paddingTop = value;
             }
         }
 
+        [Obsolete("VisualElement.paddingRight will be removed. Use VisualElement.style.paddingRight instead", false)]
         public float paddingRight
         {
             get
             {
-                return m_Styles.paddingRight;
+                return style.paddingRight;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(paddingRight, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.paddingRight = Style<float>.Create(value);
-                cssNode.SetPadding(CSSEdge.Right, value);
+                style.paddingRight = value;
             }
         }
 
+        [Obsolete("VisualElement.paddingBottom will be removed. Use VisualElement.style.paddingBottom instead", false)]
         public float paddingBottom
         {
             get
             {
-                return m_Styles.paddingBottom;
+                return style.paddingBottom;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(paddingBottom, value))
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.paddingBottom = Style<float>.Create(value);
-                cssNode.SetPadding(CSSEdge.Bottom, value);
+                style.paddingBottom = value;
             }
         }
 
+        [Obsolete("VisualElement.positionType will be removed. Use VisualElement.style.positionType instead", false)]
         public PositionType positionType
         {
             get
             {
-                return (PositionType)m_Styles.positionType.value;
+                return (PositionType)m_Style.positionType.value;
             }
             set
             {
-                if (EnsureInlineStyles() || positionType != value)
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.positionType = Style<int>.Create((int)value);
-                cssNode.PositionType = (CSSPositionType)value;
+                style.positionType = value;
             }
         }
 
-        public ImageScaleMode backgroundSize
+        [Obsolete("VisualElement.backgroundSize will be removed. Use VisualElement.style.backgroundSize instead", false)]
+        public ScaleMode backgroundSize
         {
             get
             {
-                return (ImageScaleMode)m_Styles.backgroundSize.value;
+                return style.backgroundSize.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.backgroundSize = Style<int>.Create((int)value);
+                style.backgroundSize = value;
             }
         }
 
+        [Obsolete("VisualElement.alignSelf will be removed. Use VisualElement.style.alignSelf instead", false)]
         public Align alignSelf
         {
             get
             {
-                return (Align)m_Styles.alignSelf.value;
+                return style.alignSelf.value;
             }
             set
             {
-                if (EnsureInlineStyles() || alignSelf != value)
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.alignSelf = Style<int>.Create((int)value);
-                cssNode.AlignSelf = (CSSAlign)value;
+                style.alignSelf = value;
             }
         }
 
+        [Obsolete("VisualElement.textAlignment will be removed. Use VisualElement.style.textAlignment instead", false)]
         public TextAnchor textAlignment
         {
             get
             {
-                return (TextAnchor)m_Styles.textAlignment.value;
+                return style.textAlignment.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.textAlignment = Style<int>.Create((int)value);
+                style.textAlignment = value;
             }
         }
 
+        [Obsolete("VisualElement.fontStyle will be removed. Use VisualElement.style.fontStyle instead", false)]
         public FontStyle fontStyle
         {
             get
             {
-                return (FontStyle)m_Styles.fontStyle.value;
+                return style.fontStyle.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.fontStyle = Style<int>.Create((int)value);
+                style.fontStyle = value;
             }
         }
 
+        [Obsolete("VisualElement.textClipping will be removed. Use VisualElement.style.textClipping instead", false)]
         public TextClipping textClipping
         {
             get
             {
-                return (TextClipping)m_Styles.textClipping.value;
+                return style.textClipping.value;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.textClipping = Style<int>.Create((int)value);
+                style.textClipping = value;
             }
         }
 
+        [Obsolete("VisualElement.font will be removed. Use VisualElement.style.font instead", false)]
         public Font font
         {
             get
             {
-                return m_Styles.font;
+                return style.font;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.font = Style<Font>.Create(value);
+                style.font = value;
             }
         }
 
+        [Obsolete("VisualElement.fontSize will be removed. Use VisualElement.style.fontSize instead", false)]
         public int fontSize
         {
             get
             {
-                return m_Styles.fontSize;
+                return style.fontSize;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.fontSize = Style<int>.Create(value);
+                style.fontSize = value;
             }
         }
 
+        [Obsolete("VisualElement.wordWrap will be removed. Use VisualElement.style.wordWrap instead", false)]
         public bool wordWrap
         {
             get
             {
-                return m_Styles.wordWrap;
+                return style.wordWrap;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.wordWrap = Style<bool>.Create(value);
+                style.wordWrap = value;
             }
         }
 
+        [Obsolete("VisualElement.backgroundImage will be removed. Use VisualElement.style.backgroundImage instead", false)]
         public Texture2D backgroundImage
         {
             get
             {
-                return m_Styles.backgroundImage;
+                return style.backgroundImage;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.backgroundImage = Style<Texture2D>.Create(value);
+                style.backgroundImage = value;
             }
         }
 
+        [Obsolete("VisualElement.textColor will be removed. Use VisualElement.style.textColor instead", false)]
         public Color textColor
         {
             get
             {
-                return m_Styles.textColor.GetSpecifiedValueOrDefault(Color.black);
+                return style.textColor.GetSpecifiedValueOrDefault(Color.black);
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.textColor = Style<Color>.Create(value);
+                style.textColor = value;
             }
         }
 
+        [Obsolete("VisualElement.backgroundColor will be removed. Use VisualElement.style.backgroundColor instead", false)]
         public Color backgroundColor
         {
             get
             {
-                return m_Styles.backgroundColor;
+                return style.backgroundColor;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.backgroundColor = Style<Color>.Create(value);
+                style.backgroundColor = value;
             }
         }
 
+        [Obsolete("VisualElement.borderColor will be removed. Use VisualElement.style.borderColor instead", false)]
         public Color borderColor
         {
             get
             {
-                return m_Styles.borderColor;
+                return style.borderColor;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.borderColor = Style<Color>.Create(value);
+                style.borderColor = value;
             }
         }
 
-        public float borderWidth
+        public float borderLeftWidth
         {
             get
             {
-                return m_Styles.borderWidth;
+                return style.borderLeftWidth;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.borderWidth = Style<float>.Create(value);
+                style.borderLeftWidth = value;
             }
         }
 
+        public float borderTopWidth
+        {
+            get
+            {
+                return style.borderTopWidth;
+            }
+            set
+            {
+                style.borderTopWidth = value;
+            }
+        }
+
+        public float borderRightWidth
+        {
+            get
+            {
+                return style.borderRightWidth;
+            }
+            set
+            {
+                style.borderRightWidth = value;
+            }
+        }
+
+        public float borderBottomWidth
+        {
+            get
+            {
+                return style.borderBottomWidth;
+            }
+            set
+            {
+                style.borderBottomWidth = value;
+            }
+        }
+
+        [Obsolete("VisualElement.borderRadius will be removed. Use VisualElement.style.borderRadius instead", false)]
         public float borderRadius
         {
             get
             {
-                return m_Styles.borderRadius;
+                return style.borderRadius;
             }
             set
             {
-                EnsureInlineStyles();
-                m_Styles.borderRadius = Style<float>.Create(value);
+                style.borderRadius = value;
             }
         }
 
+        [Obsolete("VisualElement.overflow will be removed. Use VisualElement.style.overflow instead", false)]
         public Overflow overflow
         {
             get
             {
-                return (Overflow)m_Styles.overflow.value;
+                return style.overflow.value;
             }
             set
             {
-                if (EnsureInlineStyles() || overflow != value)
-                {
-                    Dirty(ChangeType.Layout);
-                }
-                m_Styles.overflow = Style<int>.Create((int)value);
-                cssNode.Overflow = (CSSOverflow)value;
+                style.overflow = value;
             }
         }
 
@@ -916,15 +881,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                return m_Styles.opacity.value;
+                return style.opacity.value;
             }
             set
             {
-                if (EnsureInlineStyles() || !Mathf.Approximately(opacity, value))
-                {
-                    Dirty(ChangeType.Repaint);
-                }
-                m_Styles.opacity = Style<float>.Create(value);
+                style.opacity = value;
             }
         }
 
@@ -1117,6 +1078,7 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Tooltip != value) { m_Tooltip = value; Dirty(ChangeType.Layout); } }
         }
 
+
         public virtual bool enabled
         {
             get
@@ -1151,26 +1113,10 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void DoRepaint()
         {
-            ScaleMode scaleMode = (ScaleMode)backgroundSize;
             var painter = elementPanel.stylePainter;
-            if (backgroundImage != null)
-            {
-                painter.DrawTexture(layout, backgroundImage, Color.white, scaleMode, 0.0f, borderRadius, m_Styles.sliceLeft, m_Styles.sliceTop, m_Styles.sliceRight, m_Styles.sliceBottom);
-            }
-            else if (backgroundColor != Color.clear)
-            {
-                painter.DrawRect(layout, backgroundColor, 0.0f, borderRadius);
-            }
-
-            if (borderColor != Color.clear && borderWidth > 0.0f)
-            {
-                painter.DrawRect(layout, borderColor, borderWidth, borderRadius);
-            }
-
-            if (!string.IsNullOrEmpty(text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
-            {
-                painter.DrawText(contentRect, text, font, fontSize, fontStyle, textColor, textAlignment, wordWrap, contentRect.width, false, textClipping);
-            }
+            painter.DrawBackground(this);
+            painter.DrawBorder(this);
+            painter.DrawText(this);
         }
 
         internal virtual void DoRepaint(IStylePainter painter)
@@ -1210,6 +1156,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
+            Font font = style.font;
             if (string.IsNullOrEmpty(text) || font == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
@@ -1219,7 +1166,19 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                measuredWidth = elementPanel.stylePainter.ComputeTextWidth(text, font, fontSize, fontStyle, textAlignment, true);
+                var textParams = new TextStylePainterParameters
+                {
+                    text = text,
+                    wordWrapWidth = 0.0f,
+                    wordWrap = false,
+                    font = style.font,
+                    fontSize = style.fontSize,
+                    fontStyle = style.fontStyle,
+                    anchor = style.textAlignment,
+                    richText = true
+                };
+
+                measuredWidth = elementPanel.stylePainter.ComputeTextWidth(textParams);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -1233,7 +1192,19 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                measuredHeight = elementPanel.stylePainter.ComputeTextHeight(text, measuredWidth, wordWrap, font, fontSize, fontStyle, textAlignment, true);
+                var textParams = new TextStylePainterParameters
+                {
+                    text = text,
+                    wordWrapWidth = measuredWidth,
+                    wordWrap = style.wordWrap,
+                    font = style.font,
+                    fontSize = style.fontSize,
+                    fontStyle = style.fontStyle,
+                    anchor = style.textAlignment,
+                    richText = true
+                };
+
+                measuredHeight = elementPanel.stylePainter.ComputeTextHeight(textParams);
 
                 if (heightMode == MeasureMode.AtMost)
                 {
@@ -1258,32 +1229,32 @@ namespace UnityEngine.Experimental.UIElements
             layout = pos;
         }
 
-        protected const int DefaultAlignContent = (int)Align.FlexStart;
-        protected const int DefaultAlignItems = (int)Align.Stretch;
+        internal const Align DefaultAlignContent = Align.FlexStart;
+        internal const Align DefaultAlignItems = Align.Stretch;
 
-        internal void FinalizeLayout()
+        void FinalizeLayout()
         {
-            cssNode.Flex = styles.flex.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.SetPosition(CSSEdge.Left, styles.positionLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Top, styles.positionTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Right, styles.positionRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Bottom, styles.positionBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Left, styles.marginLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Top, styles.marginTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Right, styles.marginRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Bottom, styles.marginBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Left, styles.paddingLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Top, styles.paddingTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Right, styles.paddingRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Bottom, styles.paddingBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetBorder(CSSEdge.Left, styles.borderLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetBorder(CSSEdge.Top, styles.borderTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetBorder(CSSEdge.Right, styles.borderRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetBorder(CSSEdge.Bottom, styles.borderBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.Width = styles.width.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.Height = styles.height.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.SetPosition(CSSEdge.Left, style.positionLeft.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPosition(CSSEdge.Top, style.positionTop.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPosition(CSSEdge.Right, style.positionRight.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPosition(CSSEdge.Bottom, style.positionBottom.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetMargin(CSSEdge.Left, style.marginLeft.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetMargin(CSSEdge.Top, style.marginTop.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetMargin(CSSEdge.Right, style.marginRight.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetMargin(CSSEdge.Bottom, style.marginBottom.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPadding(CSSEdge.Left, style.paddingLeft.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPadding(CSSEdge.Top, style.paddingTop.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPadding(CSSEdge.Right, style.paddingRight.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetPadding(CSSEdge.Bottom, style.paddingBottom.GetSpecifiedValueOrDefault(float.NaN));
+            cssNode.SetBorder(CSSEdge.Left, style.borderLeft.GetSpecifiedValueOrDefault(style.borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN)));
+            cssNode.SetBorder(CSSEdge.Top, style.borderTop.GetSpecifiedValueOrDefault(style.borderTopWidth.GetSpecifiedValueOrDefault(float.NaN)));
+            cssNode.SetBorder(CSSEdge.Right, style.borderRight.GetSpecifiedValueOrDefault(style.borderRightWidth.GetSpecifiedValueOrDefault(float.NaN)));
+            cssNode.SetBorder(CSSEdge.Bottom, style.borderBottom.GetSpecifiedValueOrDefault(style.borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN)));
+            cssNode.Width = style.width.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.Height = style.height.GetSpecifiedValueOrDefault(float.NaN);
 
-            PositionType posType = (PositionType)styles.positionType.value;
+            PositionType posType = style.positionType;
             switch (posType)
             {
                 case PositionType.Absolute:
@@ -1295,88 +1266,88 @@ namespace UnityEngine.Experimental.UIElements
                     break;
             }
 
-            cssNode.Overflow = (CSSOverflow)(styles.overflow.value);
-            cssNode.AlignSelf = (CSSAlign)(styles.alignSelf.value);
-            cssNode.MaxWidth = styles.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MaxHeight = styles.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MinWidth = styles.minWidth.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MinHeight = styles.minHeight.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.Overflow = (CSSOverflow)(style.overflow.value);
+            cssNode.AlignSelf = (CSSAlign)(style.alignSelf.value);
+            cssNode.MaxWidth = style.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.MaxHeight = style.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.MinWidth = style.minWidth.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.MinHeight = style.minHeight.GetSpecifiedValueOrDefault(float.NaN);
 
             // Note: the following applies to VisualContainer only
             // but it won't cause any trouble and we avoid making this method virtual
-            cssNode.FlexDirection = (CSSFlexDirection)styles.flexDirection.value;
-            cssNode.AlignContent = (CSSAlign)styles.alignContent.GetSpecifiedValueOrDefault(DefaultAlignContent);
-            cssNode.AlignItems = (CSSAlign)styles.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
-            cssNode.JustifyContent = (CSSJustify)styles.justifyContent.value;
-            cssNode.Wrap = (CSSWrap)styles.flexWrap.value;
+            cssNode.FlexDirection = (CSSFlexDirection)style.flexDirection.value;
+            cssNode.AlignContent = (CSSAlign)style.alignContent.GetSpecifiedValueOrDefault(DefaultAlignContent);
+            cssNode.AlignItems = (CSSAlign)style.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
+            cssNode.JustifyContent = (CSSJustify)style.justifyContent.value;
+            cssNode.Wrap = (CSSWrap)style.flexWrap.value;
 
             Dirty(ChangeType.Layout);
         }
 
         internal event OnStylesResolved onStylesResolved;
 
-        internal void SetInlineStyles(VisualElementStyles styles)
+        // for internal use only, used by asset instantiation to push local styles
+        // likely can be replaced by merging VisualContainer and VisualElement
+        // and then storing the inline sheet in the list held by VisualContainer
+        internal void SetInlineStyles(VisualElementStylesData inlineStyle)
         {
-            Debug.Assert(!styles.isShared);
-            m_Styles = styles;
+            Debug.Assert(!inlineStyle.isShared);
+            m_Style = inlineStyle;
         }
 
-        internal void SetSharedStyles(VisualElementStyles styles)
+        internal void SetSharedStyles(VisualElementStylesData sharedStyle)
         {
-            Debug.Assert(styles.isShared);
+            Debug.Assert(sharedStyle.isShared);
 
             ClearDirty(ChangeType.StylesPath | ChangeType.Styles);
-            if (styles == m_Styles)
+            if (sharedStyle == m_SharedStyle)
             {
                 return;
             }
 
-            if (!m_Styles.isShared)
+            if (hasInlineStyle)
             {
-                m_Styles.Apply(styles, StylePropertyApplyMode.CopyIfNotInline);
+                m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
             }
             else
             {
-                m_Styles = styles;
+                m_Style = sharedStyle;
             }
+
+            m_SharedStyle = sharedStyle;
 
             if (onStylesResolved != null)
             {
-                onStylesResolved(m_Styles);
+                onStylesResolved(m_Style);
             }
-            OnStylesResolved(m_Styles);
+            OnStyleResolved(m_Style);
             Dirty(ChangeType.Repaint);
-        }
-
-        //returns true when this allocated a new object
-        internal bool EnsureInlineStyles()
-        {
-            if (m_Styles.isShared)
-            {
-                m_Styles = new VisualElementStyles(m_Styles, isShared: false);
-                return true;
-            }
-            return false;
         }
 
         public void ResetPositionProperties()
         {
-            if (m_Styles == null || m_Styles.isShared)
+            if (!hasInlineStyle)
             {
                 return;
             }
-            m_Styles.positionType = Style<int>.nil;
-            m_Styles.marginLeft = Style<float>.nil;
-            m_Styles.marginRight = Style<float>.nil;
-            m_Styles.marginBottom = Style<float>.nil;
-            m_Styles.marginTop = Style<float>.nil;
-            m_Styles.positionLeft = Style<float>.nil;
-            m_Styles.positionTop = Style<float>.nil;
-            m_Styles.positionRight = Style<float>.nil;
-            m_Styles.positionBottom = Style<float>.nil;
-            m_Styles.width = Style<float>.nil;
-            m_Styles.height = Style<float>.nil;
-            Dirty(ChangeType.Styles);
+            IStyle styleAccess = this.style;
+            styleAccess.positionType = StyleValue<PositionType>.nil;
+            styleAccess.marginLeft = StyleValue<float>.nil;
+            styleAccess.marginRight = StyleValue<float>.nil;
+            styleAccess.marginBottom = StyleValue<float>.nil;
+            styleAccess.marginTop = StyleValue<float>.nil;
+            styleAccess.positionLeft = StyleValue<float>.nil;
+            styleAccess.positionTop = StyleValue<float>.nil;
+            styleAccess.positionRight = StyleValue<float>.nil;
+            styleAccess.positionBottom = StyleValue<float>.nil;
+            styleAccess.width = StyleValue<float>.nil;
+            styleAccess.height = StyleValue<float>.nil;
+
+            // Make sure to retrieve shared styles from the shared style sheet and update CSSNode again
+            m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
+            FinalizeLayout();
+
+            Dirty(ChangeType.Layout);
         }
 
         public override string ToString()
@@ -1473,11 +1444,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public static void StretchToParentSize(this VisualElement elem)
         {
-            elem.positionType = PositionType.Absolute;
-            elem.positionLeft = 0.0f;
-            elem.positionTop = 0.0f;
-            elem.positionRight = 0.0f;
-            elem.positionBottom = 0.0f;
+            IStyle styleAccess = elem.style;
+            styleAccess.positionType = PositionType.Absolute;
+            styleAccess.positionLeft = 0.0f;
+            styleAccess.positionTop = 0.0f;
+            styleAccess.positionRight = 0.0f;
+            styleAccess.positionBottom = 0.0f;
         }
 
         public static T GetFirstOfType<T>(this VisualElement self) where T : class
@@ -1501,6 +1473,92 @@ namespace UnityEngine.Experimental.UIElements
                 ancestor = ancestor.parent;
             }
             return null;
+        }
+    }
+
+    internal static class StylePainterExtensionMethods
+    {
+        internal static void DrawBackground(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+
+            if (style.backgroundColor != Color.clear)
+            {
+                var painterParams = new RectStylePainterParameters
+                {
+                    layout = ve.layout,
+                    color = style.backgroundColor,
+                    borderLeftWidth = 0.0f,
+                    borderTopWidth = 0.0f,
+                    borderRightWidth = 0.0f,
+                    borderBottomWidth = 0.0f,
+                    borderRadius = style.borderRadius,
+                };
+                painter.DrawRect(painterParams);
+            }
+
+            if (style.backgroundImage.value != null)
+            {
+                var painterParams = new TextureStylePainterParameters
+                {
+                    layout = ve.layout,
+                    color = Color.white,
+                    texture = style.backgroundImage,
+                    scaleMode = style.backgroundSize,
+                    borderLeftWidth = 0.0f,
+                    borderTopWidth = 0.0f,
+                    borderRightWidth = 0.0f,
+                    borderBottomWidth = 0.0f,
+                    borderRadius = style.borderRadius,
+                    sliceLeft = style.sliceLeft,
+                    sliceTop = style.sliceTop,
+                    sliceRight = style.sliceRight,
+                    sliceBottom = style.sliceBottom
+                };
+                painter.DrawTexture(painterParams);
+            }
+        }
+
+        internal static void DrawBorder(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+            if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
+            {
+                var painterParams = new RectStylePainterParameters
+                {
+                    layout = ve.layout,
+                    color = ve.style.borderColor,
+                    borderLeftWidth = ve.style.borderLeftWidth,
+                    borderTopWidth = ve.style.borderTopWidth,
+                    borderRightWidth = ve.style.borderRightWidth,
+                    borderBottomWidth = ve.style.borderBottomWidth,
+                    borderRadius = ve.style.borderRadius
+                };
+                painter.DrawRect(painterParams);
+            }
+        }
+
+        internal static void DrawText(this IStylePainter painter, VisualElement ve)
+        {
+            if (!string.IsNullOrEmpty(ve.text) && ve.contentRect.width > 0.0f && ve.contentRect.height > 0.0f)
+            {
+                IStyle style = ve.style;
+                var painterParams = new TextStylePainterParameters
+                {
+                    layout = ve.contentRect,
+                    text = ve.text,
+                    font = style.font,
+                    fontSize = style.fontSize,
+                    fontStyle = style.fontStyle,
+                    fontColor = style.textColor,
+                    anchor = style.textAlignment,
+                    wordWrap = style.wordWrap,
+                    wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                    richText = false,
+                    clipping = style.textClipping
+                };
+                painter.DrawText(painterParams);
+            }
         }
     }
 }

@@ -35,7 +35,6 @@ public sealed partial class UnityWebRequestAsyncOperation : AsyncOperation
 }
 
 [StructLayout(LayoutKind.Sequential)]
-[UsedByNativeCode]
 public sealed partial class UnityWebRequest : IDisposable
 {
     [System.NonSerialized]

@@ -130,7 +130,7 @@ namespace UnityEditor.U2D
 
         static bool IsPackable(Object o)
         {
-            return o != null && (o.GetType() == typeof(Sprite) || o.GetType() == typeof(DefaultAsset) || o.GetType() == typeof(Texture2D));
+            return o != null && (o.GetType() == typeof(Sprite) || o.GetType() == typeof(Texture2D) || (o.GetType() == typeof(DefaultAsset) && ProjectWindowUtil.IsFolder(o.GetInstanceID())));
         }
 
         static Object ValidateObjectForPackableFieldAssignment(Object[] references, System.Type objType, SerializedProperty property, EditorGUI.ObjectFieldValidatorOptions options)
@@ -239,6 +239,7 @@ namespace UnityEditor.U2D
         void AddPackable(ReorderableList list)
         {
             ObjectSelector.get.Show(null, typeof(Object), null, false);
+            ObjectSelector.get.searchFilter = "t:sprite t:texture2d t:folder";
             ObjectSelector.get.objectSelectorID = s_Styles.packableSelectorHash;
         }
 

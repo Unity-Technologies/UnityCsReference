@@ -48,29 +48,34 @@ public partial struct CoordinateFramePair
     [FieldOffset(4)] public CoordinateFrame targetFrame;
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 88)]
+[StructLayout(LayoutKind.Explicit, Size = 92)]
 public partial struct PoseData
 {
     [FieldOffset(0)] public uint version;
-    [FieldOffset(4)] public double timestamp;
-    [FieldOffset(12)] public double orientation_x;
-    [FieldOffset(20)] public double orientation_y;
-    [FieldOffset(28)] public double orientation_z;
-    [FieldOffset(36)] public double orientation_w;
-    [FieldOffset(44)] public double translation_x;
-    [FieldOffset(52)] public double translation_y;
-    [FieldOffset(60)] public double translation_z;
-    [FieldOffset(68)] public PoseStatus statusCode;
-    [FieldOffset(72)] public CoordinateFramePair frame;
-    [FieldOffset(80)] public uint confidence;
-    [FieldOffset(84)] public float accuracy;
-}
-
-[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-public partial struct SimplePoseData
-{
-    public Vector3 position;
-    public Quaternion rotation;
+    [FieldOffset(8)] public double timestamp;
+    [FieldOffset(16)] public double orientation_x;
+    [FieldOffset(24)] public double orientation_y;
+    [FieldOffset(32)] public double orientation_z;
+    [FieldOffset(40)] public double orientation_w;
+    [FieldOffset(48)] public double translation_x;
+    [FieldOffset(56)] public double translation_y;
+    [FieldOffset(64)] public double translation_z;
+    [FieldOffset(72)] public PoseStatus statusCode;
+    [FieldOffset(76)] public CoordinateFramePair frame;
+    [FieldOffset(84)] public uint confidence;
+    [FieldOffset(88)] public float accuracy;
+    
+    
+    public Quaternion rotation
+        {
+            get { return new Quaternion((float)orientation_x, (float)orientation_y, (float)orientation_z, (float)orientation_w); }
+        }
+    
+    
+    public Vector3 position
+        {
+            get { return new Vector3((float)translation_x, (float)translation_y, (float)translation_z); }
+        }
 }
 
 [StructLayout(LayoutKind.Explicit, Size = 24)]
@@ -106,6 +111,16 @@ public static partial class Marshal
 
 public static partial class TangoDevice
 {
+    public extern static CoordinateFrame baseCoordinateFrame
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool Connect (string[] boolKeys, bool[] boolValues,
@@ -154,7 +169,7 @@ public static partial class TangoDevice
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetBackgroundMaterial (Material material) ;
 
-    public static bool TryGetLatestPointCloudTangoCoords(ref PointCloudData pointCloudData)
+    public static bool TryGetLatestPointCloud(ref PointCloudData pointCloudData)
         {
             if (pointCloudData.points == null)
             {
@@ -164,17 +179,7 @@ public static partial class TangoDevice
         }
     
     
-    public static bool TryGetLatestPointCloud(CoordinateFrame baseFrame, CoordinateFrame targetFrame, ref PointCloudData pointCloudData)
-        {
-            if (pointCloudData.points == null)
-            {
-                throw new ArgumentNullException("pointCloudData");
-            }
-            return false;
-        }
-    
-    
-    public static bool TryGetLatestImageDataTangoCoords(ref ImageData imageData)
+    public static bool TryGetLatestImageData(ref ImageData imageData)
         {
             if (imageData.data == null)
             {
@@ -184,51 +189,117 @@ public static partial class TangoDevice
         }
     
     
-    public static bool FindPlane (Vector2 normalizedScreenPos, out Vector3 planeCenter, out Plane plane) {
-        return INTERNAL_CALL_FindPlane ( ref normalizedScreenPos, out planeCenter, out plane );
-    }
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool TryGetLatestPointCloudInternal (object pointCloudData, out uint version, out double timestamp) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_FindPlane (ref Vector2 normalizedScreenPos, out Vector3 planeCenter, out Plane plane);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool TryGetLatestPointCloudTangoCoordsInternal (object pointCloudData, out uint version, out double timestamp) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool TryGetLatestPointCloudInternal (CoordinateFrame baseFrame,
-            CoordinateFrame targetFrame, object pointCloudData, out uint version, out double timestamp) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool TryGetLatestImageDataTangoCoordsInternal (object imageData, out uint width, out uint height,
+    extern private static  bool TryGetLatestImageDataInternal (object imageData, out uint width, out uint height,
             out uint stride, out double timestamp, out long frameNumber, out int format, out long exposureDurationNs) ;
+
+    public extern static bool isServiceConnected
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
 
 }
 
-public static partial class InputTracking
+public static partial class TangoInputTracking
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  bool TryGetSimplePoseAtTime (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out SimplePoseData pose, [uei.DefaultValue("0.0f")]  double time ) ;
+    extern public static  bool TryGetPoseAtTime (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out PoseData pose, [uei.DefaultValue("0.0f")]  double time ) ;
 
     [uei.ExcludeFromDocs]
-    public static bool TryGetSimplePoseAtTime (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out SimplePoseData pose) {
+    public static bool TryGetPoseAtTime (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out PoseData pose) {
         double time = 0.0f;
-        return TryGetSimplePoseAtTime ( baseFrame, targetFrame, out pose, time );
+        return TryGetPoseAtTime ( baseFrame, targetFrame, out pose, time );
+    }
+
+}
+
+public sealed partial class MeshReconstructionServer : IDisposable
+{
+    private IntPtr m_ServerPtr = IntPtr.Zero;
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Internal_ClearMeshes (IntPtr server) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool Internal_GetEnabled (IntPtr server) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Internal_SetEnabled (IntPtr server, bool enabled) ;
+
+    private static IntPtr Internal_GetNativeReconstructionContextPtr (IntPtr server) {
+        IntPtr result;
+        INTERNAL_CALL_Internal_GetNativeReconstructionContextPtr ( server, out result );
+        return result;
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  bool TryGetPoseAtTimeTangoCoords (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out PoseData pose, [uei.DefaultValue("0.0f")]  double time ) ;
+    private extern static void INTERNAL_CALL_Internal_GetNativeReconstructionContextPtr (IntPtr server, out IntPtr value);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  int Internal_GetNumGenerationRequests (IntPtr server) ;
 
-    [uei.ExcludeFromDocs]
-    public static bool TryGetPoseAtTimeTangoCoords (CoordinateFrame baseFrame, CoordinateFrame targetFrame, out PoseData pose) {
-        double time = 0.0f;
-        return TryGetPoseAtTimeTangoCoords ( baseFrame, targetFrame, out pose, time );
+    public void Dispose()
+        {
+            if (m_ServerPtr != IntPtr.Zero)
+            {
+                Destroy(m_ServerPtr);
+                m_ServerPtr = IntPtr.Zero;
+            }
+
+            GC.SuppressFinalize(this);
+        }
+    
+    
+    private IntPtr Internal_Create (MeshReconstructionConfig config) {
+        IntPtr result;
+        INTERNAL_CALL_Internal_Create ( this, ref config, out result );
+        return result;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Internal_Create (MeshReconstructionServer self, ref MeshReconstructionConfig config, out IntPtr value);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Destroy (IntPtr server) ;
+
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void DestroyThreaded (IntPtr server) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Internal_GetChangedSegments (IntPtr serverPtr, SegmentChangedDelegate onSegmentChanged) ;
+
+    private static void Internal_GenerateSegmentAsync (
+            IntPtr serverPtr,
+            GridIndex gridIndex,
+            MeshFilter destinationMeshFilter,
+            MeshCollider destinationMeshCollider,
+            SegmentReadyDelegate onSegmentReady,
+            bool provideNormals,
+            bool provideColors,
+            bool providePhysics) {
+        INTERNAL_CALL_Internal_GenerateSegmentAsync ( serverPtr, ref gridIndex, destinationMeshFilter, destinationMeshCollider, onSegmentReady, provideNormals, provideColors, providePhysics );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Internal_GenerateSegmentAsync (IntPtr serverPtr, ref GridIndex gridIndex, MeshFilter destinationMeshFilter, MeshCollider destinationMeshCollider, SegmentReadyDelegate onSegmentReady, bool provideNormals, bool provideColors, bool providePhysics);
 }
 
 

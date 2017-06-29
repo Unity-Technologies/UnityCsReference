@@ -2,12 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.IO;
-using UnityEngine;
-using System.Linq;
-using UnityEditor.Scripting.Compilers;
-
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class WSAHelpers

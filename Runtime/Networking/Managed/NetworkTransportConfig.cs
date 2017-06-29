@@ -29,7 +29,9 @@ namespace UnityEngine.Networking
         ReliableSequenced = 5,
         StateUpdate = 6,
         ReliableStateUpdate = 7,
-        AllCostDelivery = 8
+        AllCostDelivery = 8,
+        UnreliableFragmentedSequenced = 9,
+        ReliableFragmentedSequenced = 10
     }
 
     public enum NetworkError

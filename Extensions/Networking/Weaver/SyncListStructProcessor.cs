@@ -85,8 +85,8 @@ namespace Unity.UNetWeaver
             readerFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkReaderType)));
             readerFunc.Parameters.Add(new ParameterDefinition("instance", ParameterAttributes.None, m_TypeDef));
 
-            readerFunc.Body.Variables.Add(new VariableDefinition("v0", Weaver.uint16Type));
-            readerFunc.Body.Variables.Add(new VariableDefinition("v1", Weaver.uint16Type));
+            readerFunc.Body.Variables.Add(new VariableDefinition(Weaver.uint16Type));
+            readerFunc.Body.Variables.Add(new VariableDefinition(Weaver.uint16Type));
             readerFunc.Body.InitLocals = true;
 
             ILProcessor worker = readerFunc.Body.GetILProcessor();
@@ -173,8 +173,8 @@ namespace Unity.UNetWeaver
             writerFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
             writerFunc.Parameters.Add(new ParameterDefinition("value", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(m_TypeDef)));
 
-            writerFunc.Body.Variables.Add(new VariableDefinition("v0", Weaver.uint16Type));
-            writerFunc.Body.Variables.Add(new VariableDefinition("v1", Weaver.uint16Type));
+            writerFunc.Body.Variables.Add(new VariableDefinition(Weaver.uint16Type));
+            writerFunc.Body.Variables.Add(new VariableDefinition(Weaver.uint16Type));
             writerFunc.Body.InitLocals = true;
 
             ILProcessor worker = writerFunc.Body.GetILProcessor();
@@ -317,7 +317,7 @@ namespace Unity.UNetWeaver
             ILProcessor serWorker = serializeFunc.Body.GetILProcessor();
 
             serWorker.Body.InitLocals = true;
-            serWorker.Body.Variables.Add(new VariableDefinition("result", m_ItemType));
+            serWorker.Body.Variables.Add(new VariableDefinition(m_ItemType));
 
             // init item instance
             serWorker.Append(serWorker.Create(OpCodes.Ldloca, 0));

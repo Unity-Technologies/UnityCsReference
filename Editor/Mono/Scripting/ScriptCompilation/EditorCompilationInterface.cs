@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Scripting.Compilers;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using System.IO;
-using System.Linq;
+using System;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -16,6 +14,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static EditorCompilation Instance
         {
             get { return editorCompilation; }
+        }
+
+        static void EmitExceptionAsError(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError(e.Message);
+            }
+        }
+
+        static T EmitExceptionAsError<T>(Func<T> func, T returnValue)
+        {
+            try
+            {
+                return func();
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogError(e.Message);
+                return returnValue;
+            }
         }
 
         [RequiredByNativeCode]
@@ -75,31 +98,37 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static string GetCompileScriptsOutputDirectory()
         {
-            return editorCompilation.GetCompileScriptsOutputDirectory();
+            return EmitExceptionAsError(() => editorCompilation.GetCompileScriptsOutputDirectory(), string.Empty);
         }
 
         [RequiredByNativeCode]
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
-            editorCompilation.SetAllCustomScriptAssemblyJsons(allAssemblyJsons);
+            EmitExceptionAsError(() => editorCompilation.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
+        }
+
+        [RequiredByNativeCode]
+        public static void SetAllPackageAssemblies(EditorCompilation.PackageAssembly[] packageAssemblies)
+        {
+            EmitExceptionAsError(() => editorCompilation.SetAllPackageAssemblies(packageAssemblies));
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
         {
-            return editorCompilation.GetAllCompiledAndResolvedCustomTargetAssemblies();
+            return EmitExceptionAsError(() => editorCompilation.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
         }
 
         [RequiredByNativeCode]
         public static void DeleteUnusedAssemblies()
         {
-            editorCompilation.DeleteUnusedAssemblies();
+            EmitExceptionAsError(() => editorCompilation.DeleteUnusedAssemblies());
         }
 
         [RequiredByNativeCode]
         public static bool CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return editorCompilation.CompileScripts(definesOptions, platformGroup, platform);
+            return EmitExceptionAsError(() => editorCompilation.CompileScripts(definesOptions, platformGroup, platform), false);
         }
 
         [RequiredByNativeCode]
@@ -139,9 +168,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus TickCompilationPipeline()
+        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return editorCompilation.TickCompilationPipeline();
+            return EmitExceptionAsError(() => editorCompilation.TickCompilationPipeline(options, platformGroup, platform), EditorCompilation.CompileStatus.Idle);
         }
 
         [RequiredByNativeCode]

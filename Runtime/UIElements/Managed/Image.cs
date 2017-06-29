@@ -46,7 +46,14 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            painter.DrawTexture(contentRect, image, GUI.color, scaleMode);
+            var painterParams = new TextureStylePainterParameters
+            {
+                layout = contentRect,
+                texture = image,
+                color = GUI.color,
+                scaleMode = scaleMode
+            };
+            painter.DrawTexture(painterParams);
         }
     }
 }

@@ -127,14 +127,14 @@ namespace UnityEditor
             ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_ParticleSystemUI.m_ParticleSystems[0]);
             if (root.gameObject.activeInHierarchy && !subEmitter.gameObject.activeInHierarchy)
             {
-                string kReparentText = string.Format("The assigned sub emitter is part of a prefab and can therefore not be assigned.");
+                string kReparentText = "The assigned sub emitter is part of a prefab and can therefore not be assigned.";
                 EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "Ok");
                 return false;
             }
 
             if (!root.gameObject.activeInHierarchy && subEmitter.gameObject.activeInHierarchy)
             {
-                string kReparentText = string.Format("The assigned sub emitter is part of a scene object and can therefore not be assigned to a prefab.");
+                string kReparentText = "The assigned sub emitter is part of a scene object and can therefore not be assigned to a prefab.";
                 EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "Ok");
                 return false;
             }

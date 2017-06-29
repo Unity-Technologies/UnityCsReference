@@ -33,6 +33,7 @@ internal partial struct CollabInfo
     public bool conflict { get { return m_Conflict != 0; } }
     public bool dirty { get { return SceneManager.GetActiveScene().isDirty; } }
     public bool refresh { get { return m_Refresh != 0; } }
+    public bool seat { get { return m_Seat != 0; } }
     public string tip { get { return m_Tip; } }
     
     
@@ -43,6 +44,7 @@ internal partial struct CollabInfo
     int m_Maintenance;
     int m_Conflict;
     int m_Refresh;
+    int m_Seat;
     string m_Tip;
 }
 
@@ -169,6 +171,10 @@ internal sealed partial class Collab : AssetPostprocessor
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void DoInitialCommit () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetSeat (bool value) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

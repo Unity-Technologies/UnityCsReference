@@ -15,5 +15,6 @@ namespace UnityEngine.Experimental.Rendering
         PerObjectLightProbeProxyVolume = (1 << 2),
         PerObjectLightmaps = (1 << 3),
         ProvideLightIndices = (1 << 4),
+        PerObjectMotionVectors = (1 << 5),
     }
 }

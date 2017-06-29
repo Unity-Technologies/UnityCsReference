@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.VR
+namespace UnityEngine.XR
 {
     // Matches UnityVRTrackedNodeType in IUnityVR.h
-    public enum VRNode
+    public enum XRNode
     {
         LeftEye,
         RightEye,

@@ -7,10 +7,12 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
 
-namespace UnityEngine.VR.WSA.WebCam
+namespace UnityEngine.XR.WSA.WebCam
 {
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public enum CapturePixelFormat
     {
         BGRA32 = 0,
@@ -19,12 +21,14 @@ namespace UnityEngine.VR.WSA.WebCam
         PNG = 3
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public enum PhotoCaptureFileOutputFormat
     {
         PNG = 0,
         JPG = 1
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public enum WebCamMode
     {
         None = 0,
@@ -32,6 +36,7 @@ namespace UnityEngine.VR.WSA.WebCam
         VideoMode = 2
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public partial class WebCam
     {
         public static WebCamMode Mode
@@ -43,6 +48,7 @@ namespace UnityEngine.VR.WSA.WebCam
         }
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public struct CameraParameters
     {
         private float m_HologramOpacity;
@@ -85,6 +91,7 @@ namespace UnityEngine.VR.WSA.WebCam
         }
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public partial class VideoCapture : IDisposable
     {
         static readonly long HR_SUCCESS = 0x00000000;
@@ -375,6 +382,7 @@ namespace UnityEngine.VR.WSA.WebCam
         }
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public partial class PhotoCapture : IDisposable
     {
         static readonly long HR_SUCCESS = 0x00000000;
@@ -640,6 +648,7 @@ namespace UnityEngine.VR.WSA.WebCam
         }
     }
 
+    [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public sealed partial class PhotoCaptureFrame : IDisposable
     {
         private IntPtr m_NativePtr;

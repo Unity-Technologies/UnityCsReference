@@ -13,15 +13,17 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.VR.WSA;
+using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.XR.WSA;
 
 #pragma warning disable 649
 
-namespace UnityEngine.VR.WSA
+namespace UnityEngine.XR.WSA
 {
 
 
 
+[MovedFrom("UnityEngine.VR.WSA")]
 [RequireComponent(typeof(Transform))]
 public sealed partial class WorldAnchor : Component
 {
@@ -68,7 +70,7 @@ public sealed partial class WorldAnchor : Component
 
 }
 
-namespace UnityEngine.VR.WSA.Persistence
+namespace UnityEngine.XR.WSA.Persistence
 {
 public sealed partial class WorldAnchorStore
 {
@@ -77,7 +79,7 @@ public sealed partial class WorldAnchorStore
 
 }
 
-namespace UnityEngine.VR.WSA.Sharing
+namespace UnityEngine.XR.WSA.Sharing
 {
 public sealed partial class WorldAnchorTransferBatch
 {

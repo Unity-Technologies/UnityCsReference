@@ -7,6 +7,7 @@ using System;
 using UnityEditor.Connect;
 using UnityEditor.Advertisements;
 using UnityEngine;
+using UnityEditor;
 
 namespace UnityEditor.Web
 {
@@ -39,7 +40,7 @@ namespace UnityEditor.Web
             if (AdvertisementSettings.enabled != enabled)
             {
                 AdvertisementSettings.enabled = enabled;
-                UsabilityAnalytics.SendEventParam("service_state", new AdsServiceState() { ads = enabled });
+                EditorAnalytics.SendEventServiceInfo(new AdsServiceState() { ads = enabled });
             }
         }
 

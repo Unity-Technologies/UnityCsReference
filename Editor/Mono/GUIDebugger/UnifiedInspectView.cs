@@ -52,7 +52,7 @@ namespace UnityEditor
         {
             if (!isInstructionSelected)
             {
-                debuggerWindow.CloseInstructionOverlayWindow();
+                debuggerWindow.ClearInstructionHighlighter();
                 return;
             }
 
@@ -76,16 +76,16 @@ namespace UnityEditor
             var rect = el.position;
             rect.xMin += instruction.level * 10;
 
-            GUIViewDebuggerWindow.styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
+            GUIViewDebuggerWindow.Styles.listItemBackground.Draw(rect, false, false, listViewState.row == el.row, false);
 
-            GUIViewDebuggerWindow.styles.listItem.Draw(rect, tempContent, controlId, listViewState.row == el.row);
+            GUIViewDebuggerWindow.Styles.listItem.Draw(rect, tempContent, controlId, listViewState.row == el.row);
         }
 
         protected override void DrawInspectedStacktrace()
         {
             IMGUIInstruction instruction = m_Instructions[listViewState.row];
 
-            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.styles.stacktraceBackground, GUILayout.ExpandHeight(false));
+            m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
             DrawStackFrameList(instruction.stack);
             EditorGUILayout.EndScrollView();
         }
@@ -124,7 +124,7 @@ namespace UnityEditor
             }
             else
             {
-                debuggerWindow.CloseInstructionOverlayWindow();
+                debuggerWindow.ClearInstructionHighlighter();
             }
         }
 

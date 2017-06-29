@@ -51,7 +51,27 @@ namespace UnityEngine.Experimental.UIElements
 
         // Propagation state
         public PropagationPhase propagationPhase { get; internal set; }
-        public virtual IEventHandler currentTarget { get; internal set; }
+
+        IEventHandler m_CurrentTarget;
+
+        public virtual IEventHandler currentTarget
+        {
+            get { return m_CurrentTarget; }
+            internal set
+            {
+                m_CurrentTarget = value;
+
+                if (imguiEvent != null)
+                {
+                    var element = currentTarget as VisualElement;
+                    if (element != null)
+                    {
+                        imguiEvent.mousePosition = element.GlobalToBound(imguiEvent.mousePosition);
+                    }
+                }
+            }
+        }
+
         public bool dispatch { get; internal set; }
 
         // We aim to make this internal.

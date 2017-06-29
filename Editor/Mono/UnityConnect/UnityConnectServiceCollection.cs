@@ -8,6 +8,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Web;
 using UnityEditorInternal;
+using UnityEditor;
 
 namespace UnityEditor.Connect
 {
@@ -147,7 +148,7 @@ namespace UnityEditor.Connect
             public string referrer;
         }
 
-        public bool ShowService(string serviceName, string atPage, bool forceFocus, string atReferrer = "")
+        public bool ShowService(string serviceName, string atPage, bool forceFocus, string atReferrer)
         {
             if (!m_Services.ContainsKey(serviceName))
             {
@@ -157,7 +158,7 @@ namespace UnityEditor.Connect
             ConnectInfo state = UnityConnect.instance.connectInfo;
             m_CurrentServiceName = GetActualServiceName(serviceName, state);
             m_CurrentPageName = atPage;
-            UsabilityAnalytics.SendEventParam("show_service", new ShowServiceState() { service = m_CurrentServiceName, page = atPage, referrer = atReferrer});
+            EditorAnalytics.SendEventShowService(new ShowServiceState() { service = m_CurrentServiceName, page = atPage, referrer = atReferrer});
             EnsureDrawerIsVisible(forceFocus);
             return true;
         }

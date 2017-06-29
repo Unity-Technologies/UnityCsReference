@@ -13,12 +13,6 @@ namespace UnityEditor
     internal class ModelImporterModelEditor : BaseAssetImporterTabUI
     {
         bool m_SecondaryUVAdvancedOptions = false;
-        bool m_ShowAllMaterialNameOptions = true;
-
-        // Material
-        SerializedProperty m_ImportMaterials;
-        SerializedProperty m_MaterialName;
-        SerializedProperty m_MaterialSearch;
 
         // Model
         SerializedProperty m_GlobalScale;
@@ -51,22 +45,8 @@ namespace UnityEditor
         {
         }
 
-        private void UpdateShowAllMaterialNameOptions()
-        {
-            // We need to display BasedOnTextureName_Or_ModelNameAndMaterialName obsolete option for objects which use this option
-#pragma warning disable 618
-            m_MaterialName = serializedObject.FindProperty("m_MaterialName");
-            m_ShowAllMaterialNameOptions = (m_MaterialName.intValue == (int)ModelImporterMaterialName.BasedOnTextureName_Or_ModelNameAndMaterialName);
-#pragma warning restore 618
-        }
-
         internal override void OnEnable()
         {
-            // Material
-            m_ImportMaterials = serializedObject.FindProperty("m_ImportMaterials");
-            m_MaterialName = serializedObject.FindProperty("m_MaterialName");
-            m_MaterialSearch = serializedObject.FindProperty("m_MaterialSearch");
-
             // Model
             m_GlobalScale = serializedObject.FindProperty("m_GlobalScale");
             m_UseFileScale = serializedObject.FindProperty("m_UseFileScale");
@@ -91,24 +71,11 @@ namespace UnityEditor
             m_KeepQuads = serializedObject.FindProperty("keepQuads");
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
             m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
-
-            UpdateShowAllMaterialNameOptions();
-        }
-
-        internal override void ResetValues()
-        {
-            base.ResetValues();
-            UpdateShowAllMaterialNameOptions();
         }
 
         internal override void PreApply()
         {
             ScaleAvatar();
-        }
-
-        internal override void PostApply()
-        {
-            UpdateShowAllMaterialNameOptions();
         }
 
         class Styles
@@ -184,48 +151,6 @@ namespace UnityEditor
             public GUIContent ImportCameras = EditorGUIUtility.TextContent("Import Cameras");
             public GUIContent ImportLights = EditorGUIUtility.TextContent("Import Lights");
             public GUIContent IsReadable = EditorGUIUtility.TextContent("Read/Write Enabled|Allow vertices and indices to be accessed from script.");
-            public GUIContent Materials = EditorGUIUtility.TextContent("Materials");
-            public GUIContent ImportMaterials = EditorGUIUtility.TextContent("Import Materials");
-            public GUIContent MaterialName = EditorGUIUtility.TextContent("Material Naming");
-            public GUIContent MaterialNameTex = EditorGUIUtility.TextContent("By Base Texture Name");
-            public GUIContent MaterialNameMat = EditorGUIUtility.TextContent("From Model's Material");
-            public GUIContent[] MaterialNameOptMain =
-            {
-                EditorGUIUtility.TextContent("By Base Texture Name"),
-                EditorGUIUtility.TextContent("From Model's Material"),
-                EditorGUIUtility.TextContent("Model Name + Model's Material"),
-            };
-            public GUIContent[] MaterialNameOptAll =
-            {
-                EditorGUIUtility.TextContent("By Base Texture Name"),
-                EditorGUIUtility.TextContent("From Model's Material"),
-                EditorGUIUtility.TextContent("Model Name + Model's Material"),
-                EditorGUIUtility.TextContent("Texture Name or Model Name + Model's Material (Obsolete)"),
-            };
-            public GUIContent MaterialSearch = EditorGUIUtility.TextContent("Material Search");
-            public GUIContent[] MaterialSearchOpt =
-            {
-                EditorGUIUtility.TextContent("Local Materials Folder"),
-                EditorGUIUtility.TextContent("Recursive-Up"),
-                EditorGUIUtility.TextContent("Project-Wide")
-            };
-
-            public GUIContent MaterialHelpStart = EditorGUIUtility.TextContent("For each imported material, Unity first looks for an existing material named %MAT%.");
-            public GUIContent MaterialHelpEnd = EditorGUIUtility.TextContent("If it doesn't exist, a new one is created in the local Materials folder.");
-            public GUIContent MaterialHelpDefault = EditorGUIUtility.TextContent("No new materials are generated. Unity's Default-Diffuse material is used instead.");
-            public GUIContent[] MaterialNameHelp =
-            {
-                EditorGUIUtility.TextContent("[BaseTextureName]"),
-                EditorGUIUtility.TextContent("[MaterialName]"),
-                EditorGUIUtility.TextContent("[ModelFileName]-[MaterialName]"),
-                EditorGUIUtility.TextContent("[BaseTextureName] or [ModelFileName]-[MaterialName] if no base texture can be found"),
-            };
-            public GUIContent[] MaterialSearchHelp =
-            {
-                EditorGUIUtility.TextContent("Unity will look for it in the local Materials folder."),
-                EditorGUIUtility.TextContent("Unity will do a recursive-up search for it in all Materials folders up to the Assets folder."),
-                EditorGUIUtility.TextContent("Unity will search for it anywhere inside the Assets folder.")
-            };
 
             public Styles()
             {
@@ -251,7 +176,6 @@ namespace UnityEditor
 
             MeshesGUI();
             NormalsAndTangentsGUI();
-            MaterialsGUI();
         }
 
         void MeshesGUI()
@@ -327,27 +251,6 @@ namespace UnityEditor
                 }
                 EditorGUI.indentLevel--;
             }
-        }
-
-        void MaterialsGUI()
-        {
-            GUILayout.Label(styles.Materials, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_ImportMaterials, styles.ImportMaterials);
-
-            string materialHelp;
-            if (m_ImportMaterials.boolValue)
-            {
-                EditorGUILayout.Popup(m_MaterialName, m_ShowAllMaterialNameOptions ? styles.MaterialNameOptAll : styles.MaterialNameOptMain, styles.MaterialName);
-                EditorGUILayout.Popup(m_MaterialSearch, styles.MaterialSearchOpt, styles.MaterialSearch);
-
-                materialHelp =
-                    styles.MaterialHelpStart.text.Replace("%MAT%", styles.MaterialNameHelp[m_MaterialName.intValue].text) + "\n" +
-                    styles.MaterialSearchHelp[m_MaterialSearch.intValue].text + "\n" +
-                    styles.MaterialHelpEnd.text;
-            }
-            else
-                materialHelp = styles.MaterialHelpDefault.text;
-            GUILayout.Label(new GUIContent(materialHelp), EditorStyles.helpBox);
         }
 
         void NormalsAndTangentsGUI()

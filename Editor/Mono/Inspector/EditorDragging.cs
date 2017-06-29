@@ -197,16 +197,24 @@ namespace UnityEditor
 
                             if (valid)
                             {
+                                Undo.IncrementCurrentGroup();
+                                var undoGroup = Undo.GetCurrentGroup();
+
                                 // Add script components
+                                var index = 0;
+                                var addedComponents = new Component[targetComponents.Length * scripts.Count()];
                                 foreach (var targetComponent in targetComponents)
                                 {
                                     var gameObject = targetComponent.gameObject;
                                     foreach (var script in scripts)
-                                    {
-                                        var component = Undo.AddComponent(gameObject, script.GetClass());
-                                        if (component != null)
-                                            ComponentUtility.MoveComponentRelativeToComponent(component, targetComponent, m_TargetAbove);
-                                    }
+                                        addedComponents[index++] = Undo.AddComponent(gameObject, script.GetClass());
+                                }
+
+                                // Move added components relative to target components
+                                if (!ComponentUtility.MoveComponentsRelativeToComponents(addedComponents, targetComponents, m_TargetAbove))
+                                {
+                                    // Revert added components if move operation fails (e.g. user aborts when asked to break prefab instance)
+                                    Undo.RevertAllDownToGroup(undoGroup);
                                 }
                             }
                         }

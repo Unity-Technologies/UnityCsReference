@@ -21,24 +21,24 @@ public partial class GridLayout : Behaviour
     public enum CellSwizzle { XYZ = 0, XZY = 1, YXZ = 2, YZX = 3, ZXY = 4, ZYX = 5 }
     
     
-    public Vector3 cellSize
+    public  Vector3 cellSize
     {
         get { Vector3 tmp; INTERNAL_get_cellSize(out tmp); return tmp;  }
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_cellSize (out Vector3 value) ;
+    extern private  void INTERNAL_get_cellSize (out Vector3 value) ;
 
 
-    public Vector3 cellGap
+    public  Vector3 cellGap
     {
         get { Vector3 tmp; INTERNAL_get_cellGap(out tmp); return tmp;  }
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_cellGap (out Vector3 value) ;
+    extern private  void INTERNAL_get_cellGap (out Vector3 value) ;
 
 
     public extern GridLayout.CellLayout cellLayout

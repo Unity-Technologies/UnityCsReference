@@ -31,7 +31,7 @@ namespace UnityEditor
                 {
                     if (m_Icon == null)
                     {
-                        if (type == HierarchyType.Assets)
+                        if (type == HierarchyType.Assets || type == HierarchyType.Packages)
                         {
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
@@ -64,7 +64,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    if (type == HierarchyType.Assets)
+                    if (type == HierarchyType.Assets || type == HierarchyType.Packages)
                     {
                         string path = AssetDatabase.GetAssetPath(instanceID);
                         if (path != null)

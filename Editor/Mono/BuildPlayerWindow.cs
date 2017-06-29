@@ -114,6 +114,21 @@ namespace UnityEditor
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
+            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method");
+
+            public Compression[] compressionTypes =
+            {
+                Compression.None,
+                Compression.Lz4,
+                Compression.Lz4HC
+            };
+
+            public GUIContent[] compressionStrings =
+            {
+                EditorGUIUtility.TextContent("None"),
+                EditorGUIUtility.TextContent("LZ4"),
+                EditorGUIUtility.TextContent("LZ4HC"),
+            };
 
             public Styles()
             {
@@ -733,6 +748,16 @@ namespace UnityEditor
                 GUI.enabled = true;
 
                 GUILayout.FlexibleSpace();
+
+                if (postprocessor.SupportsLz4Compression())
+                {
+                    styles.compressionMethod.tooltip = "Compression method for Asset Bundles";
+                    var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
+                    if (cmpIdx == -1)
+                        cmpIdx = 0;
+                    cmpIdx = EditorGUILayout.Popup(styles.compressionMethod, cmpIdx, styles.compressionStrings);
+                    EditorUserBuildSettings.SetCompressionType(buildTargetGroup, styles.compressionTypes[cmpIdx]);
+                }
 
                 canInstallInBuildFolder = Unsupported.IsDeveloperBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget);
 

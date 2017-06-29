@@ -13,7 +13,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override void DoRepaint(IStylePainter args)
         {
-            style.Draw(position, GUIContent.Temp(text), id);
+            guiStyle.Draw(position, GUIContent.Temp(text), id);
         }
     }
 }

@@ -20,7 +20,26 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             get
             {
-                return string.Format("{0} Import Settings", assetEditor == null ? string.Empty : assetEditor.targetTitle);
+                var title = string.Empty;
+
+                // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
+                // try to get the target from the serialized object
+                if (assetEditor != null && assetEditor.target == null)
+                {
+                    assetEditor.InternalSetTargets(assetEditor.serializedObject.targetObjects);
+                }
+
+                // make this problem easier to find in the future, instead of millions of NullReferenceExceptions :)
+                if (assetEditor == null || assetEditor.target == null)
+                {
+                    Debug.LogError("AssetImporterEditor: assetEditor has null targets!");
+                }
+                else
+                {
+                    title = assetEditor.targetTitle;
+                }
+
+                return string.Format("{0} Import Settings", title);
             }
         }
 

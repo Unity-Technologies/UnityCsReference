@@ -160,8 +160,10 @@ namespace UnityEditor
 
         public void CleanupDeletedHDRI()
         {
-            // When we suppress HDRI we will have null reference, so keep the list clean and delete in the list.
-            while (RemoveHDRI(null)) ;
+            while (RemoveHDRI(null))
+            {
+                // When we suppress HDRI we will have null reference, so keep the list clean and delete in the list
+            }
         }
 
         ShadowInfo GetCurrentShadowInfo()

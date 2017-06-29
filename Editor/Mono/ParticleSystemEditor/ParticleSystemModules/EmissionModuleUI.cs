@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditorInternal;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -17,6 +18,7 @@ namespace UnityEditor
         const float k_BurstDragWidth = 15.0f;
         SerializedProperty m_BurstCount;
         SerializedProperty m_Bursts;
+        List<SerializedMinMaxCurve> m_BurstCountCurves = new List<SerializedMinMaxCurve>();
 
         ReorderableList m_BurstList;
 
@@ -26,8 +28,7 @@ namespace UnityEditor
             public GUIContent rateOverDistance = EditorGUIUtility.TextContent("Rate over Distance|The number of particles emitted per distance unit.");
             public GUIContent burst = EditorGUIUtility.TextContent("Bursts|Emission of extra particles at specific times during the duration of the system.");
             public GUIContent burstTime = EditorGUIUtility.TextContent("Time|When the burst will trigger.");
-            public GUIContent burstMin = EditorGUIUtility.TextContent("Min|The minimum number of particles to emit.");
-            public GUIContent burstMax = EditorGUIUtility.TextContent("Max|The maximum number of particles to emit.");
+            public GUIContent burstCount = EditorGUIUtility.TextContent("Count|The number of particles to emit.");
             public GUIContent burstCycleCount = EditorGUIUtility.TextContent("Cycles|How many times to emit the burst. Use the dropdown to repeat infinitely.");
             public GUIContent burstCycleCountInfinite = EditorGUIUtility.TextContent("Infinite");
             public GUIContent burstRepeatInterval = EditorGUIUtility.TextContent("Interval|Repeat the burst every N seconds.");
@@ -55,7 +56,7 @@ namespace UnityEditor
             m_BurstCount = GetProperty("m_BurstCount");
             m_Bursts = GetProperty("m_Bursts");
 
-            m_BurstList = new ReorderableList(serializedObject, m_Bursts, true, true, true, true);
+            m_BurstList = new ReorderableList(serializedObject, m_Bursts, false, true, true, true);
             m_BurstList.elementHeight = kReorderableListElementHeight;
             m_BurstList.onAddCallback = OnBurstListAddCallback;
             m_BurstList.onRemoveCallback = OnBurstListRemoveCallback;
@@ -73,6 +74,12 @@ namespace UnityEditor
 
         private void DoBurstGUI(InitialModuleUI initial)
         {
+            while (m_BurstList.count > m_BurstCountCurves.Count)
+            {
+                SerializedProperty burst = m_Bursts.GetArrayElementAtIndex(m_BurstCountCurves.Count);
+                m_BurstCountCurves.Add(new SerializedMinMaxCurve(this, s_Texts.burstCount, burst.propertyPath + ".countCurve", false, true));
+            }
+
             EditorGUILayout.Space();
 
             Rect rect = GetControlRect(kSingleLineHeight);
@@ -88,34 +95,40 @@ namespace UnityEditor
             m_BurstCount.intValue++;
 
             SerializedProperty burst = m_Bursts.GetArrayElementAtIndex(list.index);
-            SerializedProperty burstMinCount = burst.FindPropertyRelative("minCount");
-            SerializedProperty burstMaxCount = burst.FindPropertyRelative("maxCount");
+            SerializedProperty burstCountState = burst.FindPropertyRelative("countCurve.minMaxState");
+            SerializedProperty burstCount = burst.FindPropertyRelative("countCurve.scalar");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
 
-            burstMinCount.intValue = 30;
-            burstMaxCount.intValue = 30;
+            burstCountState.intValue = (int)ParticleSystemCurveMode.Constant;
+            burstCount.floatValue = 30.0f;
             burstCycleCount.intValue = 1;
+
+            m_BurstCountCurves.Add(new SerializedMinMaxCurve(this, s_Texts.burstCount, burst.propertyPath + ".countCurve", false, true));
         }
 
         private void OnBurstListRemoveCallback(ReorderableList list)
         {
+            // All subsequent curves must be removed from the curve editor, as their indices will change, which means their SerializedProperty paths will also change
+            for (int i = list.index; i < m_BurstCountCurves.Count; i++)
+                m_BurstCountCurves[i].RemoveCurveFromEditor();
+            m_BurstCountCurves.RemoveRange(list.index, m_BurstCountCurves.Count - list.index);
+            AnimationCurvePreviewCache.ClearCache();
+
+            // Default remove behavior
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             m_BurstCount.intValue--;
         }
 
         private void DrawBurstListHeaderCallback(Rect rect)
         {
-            rect.x += ReorderableList.Defaults.dragHandleWidth + k_BurstDragWidth;
-            rect.width -= ReorderableList.Defaults.dragHandleWidth;
-            rect.width /= 5;
+            rect.width -= k_BurstDragWidth;
+            rect.width /= 4;
+            rect.x += k_BurstDragWidth;
 
             EditorGUI.LabelField(rect, s_Texts.burstTime, ParticleSystemStyles.Get().label);
             rect.x += rect.width;
 
-            EditorGUI.LabelField(rect, s_Texts.burstMin, ParticleSystemStyles.Get().label);
-            rect.x += rect.width;
-
-            EditorGUI.LabelField(rect, s_Texts.burstMax, ParticleSystemStyles.Get().label);
+            EditorGUI.LabelField(rect, s_Texts.burstCount, ParticleSystemStyles.Get().label);
             rect.x += rect.width;
 
             EditorGUI.LabelField(rect, s_Texts.burstCycleCount, ParticleSystemStyles.Get().label);
@@ -129,28 +142,23 @@ namespace UnityEditor
         {
             SerializedProperty burst = m_Bursts.GetArrayElementAtIndex(index);
             SerializedProperty burstTime = burst.FindPropertyRelative("time");
-            SerializedProperty burstMinCount = burst.FindPropertyRelative("minCount");
-            SerializedProperty burstMaxCount = burst.FindPropertyRelative("maxCount");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
             SerializedProperty burstRepeatInterval = burst.FindPropertyRelative("repeatInterval");
 
-            rect.width /= 5;
+            rect.width -= (k_BurstDragWidth * 3);
+            rect.width /= 4;
 
             // Time
             FloatDraggable(rect, burstTime, 1.0f, k_BurstDragWidth, "n2");
             rect.x += rect.width;
 
-            // Min
-            IntDraggable(rect, null, burstMinCount, k_BurstDragWidth);
+            // Count
+            rect = GUIMinMaxCurveInline(rect, m_BurstCountCurves[index], k_BurstDragWidth);
             rect.x += rect.width;
 
-            // Max
-            IntDraggable(rect, null, burstMaxCount, k_BurstDragWidth);
-            rect.x += rect.width;
-
-            // Repeat Count
+            // Cycle Count
             rect.width -= k_minMaxToggleWidth;
-            if (burstCycleCount.intValue == 0)
+            if (!burstCycleCount.hasMultipleDifferentValues && burstCycleCount.intValue == 0)
             {
                 rect.x += k_BurstDragWidth;
                 rect.width -= k_BurstDragWidth;
@@ -209,7 +217,7 @@ namespace UnityEditor
         {
             Init();
 
-            if (m_Distance.scalar.floatValue > 0.0f)
+            if (m_Distance.scalar.hasMultipleDifferentValues || m_Distance.scalar.floatValue > 0.0f)
                 text += "\nDistance-based emission is being used in the Emission module.";
         }
     }

@@ -131,10 +131,10 @@ namespace UnityEditor
 
             private void SetPosition(Vector3 newPosition)
             {
-                SetPositionDelta(newPosition - position);
+                SetPositionDelta(newPosition - position, true);
             }
 
-            public void SetPositionDelta(Vector3 positionDelta)
+            public void SetPositionDelta(Vector3 positionDelta, bool applySmartRounding)
             {
                 Vector3 localPositionDelta = positionDelta;
                 Vector3 minDifference = ManipulationToolUtility.minDragDifference;
@@ -154,23 +154,37 @@ namespace UnityEditor
                 if (rectTransform == null)
                 {
                     Vector3 newLocalPosition = localPosition + localPositionDelta;
-                    newLocalPosition.x = zeroXDelta ? localPosition.x : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.x, minDifference.x);
-                    newLocalPosition.y = zeroYDelta ? localPosition.y : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.y, minDifference.y);
-                    newLocalPosition.z = zeroZDelta ? localPosition.z : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.z, minDifference.z);
+
+                    if (applySmartRounding)
+                    {
+                        newLocalPosition.x = zeroXDelta ? localPosition.x : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.x, minDifference.x);
+                        newLocalPosition.y = zeroYDelta ? localPosition.y : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.y, minDifference.y);
+                        newLocalPosition.z = zeroZDelta ? localPosition.z : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.z, minDifference.z);
+                    }
+
                     transform.localPosition = newLocalPosition;
                 }
                 else
                 {
                     // Set position.z
                     Vector3 newLocalPosition = localPosition + localPositionDelta;
-                    newLocalPosition.z = zeroZDelta ? localPosition.z : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.z, minDifference.z);
+
+                    if (applySmartRounding)
+                        newLocalPosition.z = zeroZDelta ? localPosition.z : MathUtils.RoundBasedOnMinimumDifference(newLocalPosition.z, minDifference.z);
+
                     transform.localPosition = newLocalPosition;
 
                     // Set anchoredPosition
                     Vector2 newAnchoredPosition = anchoredPosition + (Vector2)localPositionDelta;
-                    newAnchoredPosition.x = zeroXDelta ? anchoredPosition.x : MathUtils.RoundBasedOnMinimumDifference(newAnchoredPosition.x, minDifference.x);
-                    newAnchoredPosition.y = zeroYDelta ? anchoredPosition.y : MathUtils.RoundBasedOnMinimumDifference(newAnchoredPosition.y, minDifference.y);
+
+                    if (applySmartRounding)
+                    {
+                        newAnchoredPosition.x = zeroXDelta ? anchoredPosition.x : MathUtils.RoundBasedOnMinimumDifference(newAnchoredPosition.x, minDifference.x);
+                        newAnchoredPosition.y = zeroYDelta ? anchoredPosition.y : MathUtils.RoundBasedOnMinimumDifference(newAnchoredPosition.y, minDifference.y);
+                    }
+
                     rectTransform.anchoredPosition = newAnchoredPosition;
+
                     if (rectTransform.IsDriven())
                         RectTransform.SendReapplyDrivenProperties(rectTransform);
                 }
@@ -335,15 +349,24 @@ namespace UnityEditor
             if (s_MouseDownState == null)
                 return;
 
+            if (positionDelta.magnitude == 0)
+                return;
+
             for (int i = 0; i < s_MouseDownState.Length; i++)
             {
                 var cur = s_MouseDownState[i];
                 Undo.RecordObject((cur.rectTransform != null ? (Object)cur.rectTransform : (Object)cur.transform), "Move");
             }
 
-            for (int i = 0; i < s_MouseDownState.Length; i++)
+            if (s_MouseDownState.Length > 0)
             {
-                s_MouseDownState[i].SetPositionDelta(positionDelta);
+                s_MouseDownState[0].SetPositionDelta(positionDelta, true);
+                Vector3 firstDelta = s_MouseDownState[0].transform.localPosition - s_MouseDownState[0].localPosition;
+
+                for (int i = 1; i < s_MouseDownState.Length; i++)
+                {
+                    s_MouseDownState[i].SetPositionDelta(firstDelta, false);
+                }
             }
         }
 

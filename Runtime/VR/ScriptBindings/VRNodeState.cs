@@ -5,8 +5,9 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEngine.VR
+namespace UnityEngine.XR
 {
     // Matches UnityVRTrackedNodeAttribs in IUnityVR.h
     [Flags]
@@ -24,10 +25,10 @@ namespace UnityEngine.VR
 
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
-    public struct VRNodeState
+    public struct XRNodeState
     {
-        // This sequence of members must match the C++ struct 'VRNodeStateToManaged' in VR.bindings
-        private VRNode m_Type;
+        // This sequence of members must match the C++ struct 'XRNodeStateToManaged' in XR.bindings
+        private XRNode m_Type;
         private AvailableTrackingData m_AvailableFields;
         private Vector3 m_Position;
         private Quaternion m_Rotation;
@@ -51,7 +52,7 @@ namespace UnityEngine.VR
             }
         }
 
-        public VRNode nodeType
+        public XRNode nodeType
         {
             get
             {

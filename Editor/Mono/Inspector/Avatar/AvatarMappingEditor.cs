@@ -838,8 +838,7 @@ namespace UnityEditor
         private void SaveHumanTemplate()
         {
             // Go forward with presenting user a save clip dialog
-            string message = string.Format("Create a new human template");
-            string newTemplatePath = EditorUtility.SaveFilePanelInProject("Create New Human Template", "New Human Template", "ht", message);
+            string newTemplatePath = EditorUtility.SaveFilePanelInProject("Create New Human Template", "New Human Template", "ht", "Create a new human template");
 
             // If user canceled or save path is invalid, we can't create a template
             if (newTemplatePath == "")

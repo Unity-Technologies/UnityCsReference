@@ -13,8 +13,50 @@ namespace UnityEngine.Experimental.UIElements
         Capture = 1
     }
 
+    internal class ListPool<T>
+    {
+        readonly Stack<List<T>> m_Stack = new Stack<List<T>>();
+
+        public List<T> Get(List<T> initializer)
+        {
+            List<T> element;
+            if (m_Stack.Count == 0)
+            {
+                if (initializer != null)
+                    element = new List<T>(initializer);
+                else
+                    element = new List<T>();
+            }
+            else
+            {
+                element = m_Stack.Pop();
+                if (initializer != null)
+                    element.AddRange(initializer);
+            }
+            return element;
+        }
+
+        public void Release(List<T> element)
+        {
+            element.Clear();
+            m_Stack.Push(element);
+        }
+    }
+
     internal class EventCallbackRegistry
     {
+        private static readonly ListPool<EventCallbackFunctorBase> s_ListPool = new ListPool<EventCallbackFunctorBase>();
+
+        private static List<EventCallbackFunctorBase> GetCallbackList(List<EventCallbackFunctorBase> initializer = null)
+        {
+            return s_ListPool.Get(initializer);
+        }
+
+        private static void ReleaseCallbackList(List<EventCallbackFunctorBase> toRelease)
+        {
+            s_ListPool.Release(toRelease);
+        }
+
         private List<EventCallbackFunctorBase> m_Callbacks;
         private List<EventCallbackFunctorBase> m_TemporaryCallbacks;
         int m_IsInvoking;
@@ -32,11 +74,11 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     if (m_Callbacks != null)
                     {
-                        m_TemporaryCallbacks = new List<EventCallbackFunctorBase>(m_Callbacks);
+                        m_TemporaryCallbacks = GetCallbackList(m_Callbacks);
                     }
                     else
                     {
-                        m_TemporaryCallbacks = new List<EventCallbackFunctorBase>();
+                        m_TemporaryCallbacks = GetCallbackList();
                     }
                 }
 
@@ -46,7 +88,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (m_Callbacks == null)
                 {
-                    m_Callbacks = new List<EventCallbackFunctorBase>();
+                    m_Callbacks = GetCallbackList();
                 }
 
                 return m_Callbacks;
@@ -153,8 +195,9 @@ namespace UnityEngine.Experimental.UIElements
                 // If callbacks were modified during callback invocation, update them now.
                 if (m_TemporaryCallbacks != null)
                 {
-                    m_Callbacks.Clear();
-                    m_Callbacks = m_TemporaryCallbacks;
+                    ReleaseCallbackList(m_Callbacks);
+                    m_Callbacks = GetCallbackList(m_TemporaryCallbacks);
+                    ReleaseCallbackList(m_TemporaryCallbacks);
                     m_TemporaryCallbacks = null;
                 }
             }

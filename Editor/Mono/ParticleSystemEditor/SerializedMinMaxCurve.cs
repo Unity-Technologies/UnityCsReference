@@ -33,8 +33,6 @@ namespace UnityEditor
         public bool m_AllowConstant;
         public bool m_AllowRandom;
         public bool m_AllowCurves;
-        public float m_MaxAllowedScalar = Mathf.Infinity;
-
 
         public SerializedMinMaxCurve(ModuleUI m, GUIContent displayName)
         {
@@ -121,20 +119,11 @@ namespace UnityEditor
 
             set
             {
-                value = ClampValueToMaxAllowed(value);
-
                 if (!signedRange)
                     value = Mathf.Max(value, 0f);
 
                 scalar.floatValue = value;
             }
-        }
-
-        float ClampValueToMaxAllowed(float val)
-        {
-            if (Mathf.Abs(val) > m_MaxAllowedScalar)
-                return m_MaxAllowedScalar * Mathf.Sign(val);
-            return val;
         }
 
         public float minConstant
@@ -146,8 +135,6 @@ namespace UnityEditor
 
             set
             {
-                value = ClampValueToMaxAllowed(value);
-
                 if (!signedRange)
                     value = Mathf.Max(value, 0f);
 

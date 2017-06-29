@@ -121,7 +121,7 @@ public sealed partial class Tilemap : GridLayout
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void INTERNAL_set_size (ref Vector3Int value) ;
 
-    public Vector3 tileAnchor
+    public  Vector3 tileAnchor
     {
         get { Vector3 tmp; INTERNAL_get_tileAnchor(out tmp); return tmp;  }
         set { INTERNAL_set_tileAnchor(ref value); }
@@ -129,11 +129,11 @@ public sealed partial class Tilemap : GridLayout
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_tileAnchor (out Vector3 value) ;
+    extern private  void INTERNAL_get_tileAnchor (out Vector3 value) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_tileAnchor (ref Vector3 value) ;
+    extern private  void INTERNAL_set_tileAnchor (ref Vector3 value) ;
 
     public extern Tilemap.Orientation orientation
     {

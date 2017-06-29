@@ -236,9 +236,8 @@ namespace UnityEditor.Scripting
 
         internal static bool MayContainUpdatableReferences(string assemblyPath)
         {
-            using (var stream = File.Open(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var assembly = AssemblyDefinition.ReadAssembly(assemblyPath))
             {
-                var assembly = AssemblyDefinition.ReadAssembly(stream);
                 if (assembly.Name.IsWindowsRuntime)
                     return false;
 

@@ -402,6 +402,16 @@ public sealed partial class Camera : Behaviour
         set;
     }
 
+    public  Matrix4x4 previousViewProjectionMatrix
+    {
+        get { Matrix4x4 tmp; INTERNAL_get_previousViewProjectionMatrix(out tmp); return tmp;  }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_previousViewProjectionMatrix (out Matrix4x4 value) ;
+
+
     public void ResetProjectionMatrix () {
         INTERNAL_CALL_ResetProjectionMatrix ( this );
     }

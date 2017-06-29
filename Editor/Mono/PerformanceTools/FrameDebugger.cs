@@ -184,6 +184,7 @@ namespace UnityEditorInternal
     {
         public CullMode cullMode;
         public int depthBias;
+        public bool depthClip;
         public float slopeScaledDepthBias;
     };
 
@@ -1267,6 +1268,7 @@ namespace UnityEditor
             }
 
             // depth state
+            EditorGUILayout.LabelField("ZClip", rasterState.depthClip.ToString());
             EditorGUILayout.LabelField("ZTest", depthState.depthFunc.ToString());
             EditorGUILayout.LabelField("ZWrite", depthState.depthWrite == 0 ? "Off" : "On");
             EditorGUILayout.LabelField("Cull", rasterState.cullMode.ToString());

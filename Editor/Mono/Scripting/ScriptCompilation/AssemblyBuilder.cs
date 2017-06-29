@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor.Scripting.Compilers;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Compilation

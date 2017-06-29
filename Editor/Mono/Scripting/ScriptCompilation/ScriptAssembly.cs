@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
-using System.IO;
 using UnityEditor.Scripting.Compilers;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -50,7 +49,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Files { get; set; }
         public bool RunUpdater { get; set; }
 
-        public string FullPath { get { return Path.Combine(OutputDirectory, Filename); } }
+        public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
 
         public string[] GetAllReferences()
         {
@@ -62,10 +61,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
-            var references = ScriptAssemblyReferences.Select(a => Path.Combine(a.OutputDirectory, a.Filename));
+            var references = ScriptAssemblyReferences.Select(a => AssetPath.Combine(a.OutputDirectory, a.Filename));
             var referencesArray = references.Concat(References).ToArray();
 
-            var outputPath = Path.Combine(buildOutputDirectory, Filename);
+            var outputPath = AssetPath.Combine(buildOutputDirectory, Filename);
 
             return new MonoIsland(BuildTarget, buildingForEditor, developmentBuild, ApiCompatibilityLevel, Files, referencesArray, Defines, outputPath);
         }

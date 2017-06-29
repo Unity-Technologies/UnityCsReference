@@ -108,7 +108,7 @@ namespace Unity.UNetWeaver
         static void WriteSetupLocals(ILProcessor worker)
         {
             worker.Body.InitLocals = true;
-            worker.Body.Variables.Add(new VariableDefinition("V_0", Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
+            worker.Body.Variables.Add(new VariableDefinition(Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
         }
 
         static void WriteCreateWriter(ILProcessor worker)
@@ -1973,7 +1973,7 @@ namespace Unity.UNetWeaver
             getWorker.Append(getWorker.Create(OpCodes.Ldfld, fd));
             getWorker.Append(getWorker.Create(OpCodes.Ret));
 
-            get.Body.Variables.Add(new VariableDefinition("V_0", fd.FieldType));
+            get.Body.Variables.Add(new VariableDefinition(fd.FieldType));
             get.Body.InitLocals = true;
             get.SemanticsAttributes = MethodSemanticsAttributes.Getter;
 

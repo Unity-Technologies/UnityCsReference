@@ -112,6 +112,12 @@ namespace UnityEditor
                             DragAndDrop.PrepareStartDrag();
                             DragAndDrop.objectReferences = new UnityEngine.Object[] {target};
                             DragAndDrop.StartDrag(ObjectNames.GetDragAndDropTitle(target));
+
+                            // having a hot control set during drag makes the control eat the drag events
+                            // and dragging of bones no longer works over the avatar configure window
+                            // see case 912016
+                            GUIUtility.hotControl = 0;
+
                             evt.Use();
                         }
                         break;
