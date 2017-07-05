@@ -121,9 +121,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.CompileStatus TickCompilationPipeline()
+        public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return editorCompilation.TickCompilationPipeline();
+            return editorCompilation.TickCompilationPipeline(options, platformGroup, platform);
         }
 
         [RequiredByNativeCode]

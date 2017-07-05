@@ -510,12 +510,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        public CompileStatus TickCompilationPipeline()
+        public CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             // If we are not currently compiling and there are dirty scripts, start compilation.
             if (!IsCompilationTaskCompiling() && IsCompilationPending())
             {
-                if (CompileScripts(EditorScriptCompilationOptions.BuildingForEditor, EditorUserBuildSettings.activeBuildTargetGroup, EditorUserBuildSettings.activeBuildTarget))
+                if (CompileScripts(options, platformGroup, platform))
                     return CompileStatus.CompilationStarted;
             }
 

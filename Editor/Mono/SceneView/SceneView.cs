@@ -828,8 +828,6 @@ namespace UnityEditor
 
         internal bool SceneViewIsRenderingHDR()
         {
-            if (UseSceneFiltering())
-                return false;
             return m_Camera != null && m_Camera.allowHDR;
         }
 
