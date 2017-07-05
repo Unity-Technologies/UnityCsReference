@@ -53,6 +53,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 get { return (Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly; }
             }
+
+            public string FilenameWithSuffix(string filenameSuffix)
+            {
+                if (!string.IsNullOrEmpty(filenameSuffix))
+                    return Filename.Replace(".dll", filenameSuffix + ".dll");
+
+                return Filename;
+            }
+
+            public string FullPath(string outputDirectory, string filenameSuffix)
+            {
+                return Path.Combine(outputDirectory, FilenameWithSuffix(filenameSuffix));
+            }
         }
 
         public class CompilationAssemblies
@@ -224,7 +237,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (args.RunUpdaterAssemblies != null)
                 foreach (var assemblyFilename in args.RunUpdaterAssemblies)
                 {
-                    var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
+                    var targetAssembly = allTargetAssemblies.First(a => a.FilenameWithSuffix(args.Settings.FilenameSuffix) == assemblyFilename);
                     dirtyTargetAssemblies[targetAssembly] = new HashSet<string>();
                 }
 

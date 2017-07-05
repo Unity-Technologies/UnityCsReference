@@ -293,10 +293,8 @@ namespace UnityEditor.VisualStudioIntegration
                 match = scriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {
-                    var targetAssembly = EditorCompilationInterface.GetTargetAssemblyDetails(match.Groups["dllname"].Value);
-                    ScriptingLanguage targetLanguage = ScriptingLanguage.None;
-                    if (targetAssembly != null)
-                        targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), targetAssembly.Language.GetLanguageName(), true);
+                    var language = ScriptCompilers.GetLanguageFromExtension(island.GetExtensionOfSourceFiles());
+                    var targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), language.GetLanguageName(), true);
                     if (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == targetLanguage)
                     {
                         projectReferences.Add(match);

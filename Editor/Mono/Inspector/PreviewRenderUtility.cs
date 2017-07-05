@@ -266,6 +266,7 @@ namespace UnityEditor
 
         private void FinishFrame()
         {
+            Unsupported.RestoreOverrideRenderSettings();
             foreach (var light in lights)
                 light.enabled = false;
         }
