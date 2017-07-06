@@ -470,18 +470,18 @@ namespace UnityEngine
             {
                 if (bRegisterAllDefinitions || (AudioSettings.GetSpatializerPluginName() == "GVR Audio Spatializer"))
                 {
-                    AudioExtensionDefinition gvrListenerDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Audio.Google", "GvrAudioListenerExtension");
-                    AudioExtensionDefinition gvrListenerEditorDefinition = new AudioExtensionDefinition("UnityEditor.GoogleAudioSpatializer", "UnityEditor.Audio.Google", "GvrAudioListenerExtensionEditor");
+                    AudioExtensionDefinition gvrListenerDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Experimental.Audio.Google", "GvrAudioListenerExtension");
+                    AudioExtensionDefinition gvrListenerEditorDefinition = new AudioExtensionDefinition("UnityEditor.GoogleAudioSpatializer", "UnityEditor.Experimental.Audio.Google", "GvrAudioListenerExtensionEditor");
                     RegisterListenerSpatializerDefinition("GVR Audio Spatializer", gvrListenerDefinition, gvrListenerEditorDefinition);
 
-                    AudioExtensionDefinition gvrSourceDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Audio.Google", "GvrAudioSourceExtension");
-                    AudioExtensionDefinition gvrSourceEditorDefinition = new AudioExtensionDefinition("UnityEditor.GoogleAudioSpatializer", "UnityEditor.Audio.Google", "GvrAudioSourceExtensionEditor");
+                    AudioExtensionDefinition gvrSourceDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Experimental.Audio.Google", "GvrAudioSourceExtension");
+                    AudioExtensionDefinition gvrSourceEditorDefinition = new AudioExtensionDefinition("UnityEditor.GoogleAudioSpatializer", "UnityEditor.Experimental.Audio.Google", "GvrAudioSourceExtensionEditor");
                     RegisterSourceSpatializerDefinition("GVR Audio Spatializer", gvrSourceDefinition, gvrSourceEditorDefinition);
                 }
 
                 if (bRegisterAllDefinitions || (AudioSettings.GetAmbisonicDecoderPluginName() == "GVR Audio Spatializer"))
                 {
-                    AudioExtensionDefinition gvrSoundfieldDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Audio.Google", "GvrAudioSoundfieldExtension");
+                    AudioExtensionDefinition gvrSoundfieldDefinition = new AudioExtensionDefinition("UnityEngine.GoogleAudioSpatializer", "UnityEngine.Experimental.Audio.Google", "GvrAudioSoundfieldExtension");
                     RegisterSourceAmbisonicDefinition("GVR Audio Spatializer", gvrSoundfieldDefinition);
                 }
 

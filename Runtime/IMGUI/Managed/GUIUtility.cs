@@ -29,7 +29,6 @@ namespace UnityEngine
         internal static int s_SkinMode;
         internal static int s_OriginalID;
 
-
         // IoC callbacks for UIElements
         internal static Action takeCapture;
         internal static Action releaseCapture;
@@ -161,7 +160,6 @@ namespace UnityEngine
             Internal_EndContainer();
             Internal_ExitGUI();
         }
-
 
         internal static void CleanupRoots()
         {
@@ -323,7 +321,6 @@ namespace UnityEngine
         {
             GUIClip.Internal_Push(screenRect, scrollOffset, renderOffset, resetOffset);
         }
-
 
         // Removes the topmost clipping rectangle, undoing the effect of the latest GUIClip.Push
         internal static void Pop()

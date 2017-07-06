@@ -29,6 +29,15 @@ namespace UnityEngine.Experimental.UIElements
         public ContextType contextType { get; set; }
         internal int GUIDepth { get; private set; }
 
+        internal Matrix4x4 imguiTransform
+        {
+            get
+            {
+                var transform = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0.0f));
+                return globalTransform * transform;
+            }
+        }
+
         public IMGUIContainer(Action onGUIHandler)
         {
             m_OnGUIHandler = onGUIHandler;
@@ -37,7 +46,8 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override void DoRepaint(IStylePainter painter)
         {
-            base.DoRepaint(painter);
+            base.DoRepaint();
+
             lastWorldClip = painter.currentWorldClip;
 
             IMGUIEvent genEvent = new IMGUIEvent(painter.repaintEvent);
@@ -182,6 +192,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.HandleEvent(evt);
 
+            if (evt.propagationPhase == PropagationPhase.DefaultAction)
+            {
+                return;
+            }
+
             if (evt.isPropagationStopped)
             {
                 return;
@@ -204,6 +219,7 @@ namespace UnityEngine.Experimental.UIElements
             if (ret)
             {
                 evt.StopPropagation();
+                evt.PreventDefault();
             }
             else if (evt.imguiEvent.type == EventType.MouseUp && this.HasCapture())
             {

@@ -239,12 +239,15 @@ namespace UnityEditor
                 var engineType = builtinAssembly.GetType(typeName);
 
                 // TODO: this "list of classes" should get dynamically filled by the classes them self, thus removing dependency of this class on those classes.
-                if (engineType == typeof(MonoBehaviour) || engineType.IsSubclassOf(typeof(MonoBehaviour)))
-                    return true;
-                if (engineType == typeof(ScriptableObject) || engineType.IsSubclassOf(typeof(ScriptableObject)))
-                    return true;
-                if (engineType == typeof(Experimental.AssetImporters.ScriptedImporter) || engineType.IsSubclassOf(typeof(Experimental.AssetImporters.ScriptedImporter)))
-                    return true;
+                if (engineType != null)
+                {
+                    if (engineType == typeof(MonoBehaviour) || engineType.IsSubclassOf(typeof(MonoBehaviour)))
+                        return true;
+                    if (engineType == typeof(ScriptableObject) || engineType.IsSubclassOf(typeof(ScriptableObject)))
+                        return true;
+                    if (engineType == typeof(Experimental.AssetImporters.ScriptedImporter) || engineType.IsSubclassOf(typeof(Experimental.AssetImporters.ScriptedImporter)))
+                        return true;
+                }
             }
 
             TypeDefinition typeDefinition = null;

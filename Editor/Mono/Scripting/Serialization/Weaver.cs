@@ -45,8 +45,6 @@ namespace UnityEditor.Scripting.Serialization
 
             var assemblyPath = Path.Combine(assemblyDirectory, assembly.Filename);
 
-            Console.WriteLine("WeaveUnetFromEditor " + assemblyPath);
-
             ICompilationExtension compilationExtension = GetCompilationExtension();
             IAssemblyResolver assemblyResolver;
             string[] assemblyPaths;

@@ -67,10 +67,10 @@ namespace UnityEditor
             var property = m_PropertyList[listViewState.row];
 
             using (new EditorGUI.DisabledScope(true))
-            {
                 DrawInspectedRect(property.rect);
-                EditorGUILayout.TextField("Path: ", property.path);
-            }
+
+            DoSelectableInstructionDataField("Target Type Name", property.targetTypeName);
+            DoSelectableInstructionDataField("Path", property.path);
         }
 
         internal override string GetInstructionListName(int index)

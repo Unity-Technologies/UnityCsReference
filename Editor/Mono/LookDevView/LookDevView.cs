@@ -406,6 +406,15 @@ namespace UnityEditor
             PreviewRenderUtility previewUtility = previewUtilityContext.m_PreviewUtility[(int)contextPass];
             PreviewContextCB contextCB          = previewUtilityContext.m_PreviewCB[(int)contextPass];
 
+            // Save several lighting panel parameter as they are not unique to our lookdev but share with the scene view :(
+            UnityEngine.Rendering.DefaultReflectionMode oldReflectionMode = RenderSettings.defaultReflectionMode;
+            UnityEngine.Rendering.AmbientMode oldAmbientMode = RenderSettings.ambientMode;
+            Cubemap oldCubeMap = RenderSettings.customReflection;
+            Material oldSkybox = RenderSettings.skybox;
+            float oldAmbientIntensity = RenderSettings.ambientIntensity;
+            SphericalHarmonicsL2 oldAmbientProbe = RenderSettings.ambientProbe;
+            float oldReflectionIntensity = RenderSettings.reflectionIntensity;
+
             previewUtility.BeginPreview(previewRect, styles.sBigTitleInnerStyle);
             bool shadowPass = contextPass == PreviewContext.PreviewContextPass.kShadow;
 
@@ -492,15 +501,6 @@ namespace UnityEditor
             }
 
             previewUtility.ambientColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
-
-            // Save several lighting panel parameter as they are not unique to our lookdev but share with the scene view :(
-            UnityEngine.Rendering.DefaultReflectionMode oldReflectionMode   = RenderSettings.defaultReflectionMode;
-            UnityEngine.Rendering.AmbientMode oldAmbientMode                = RenderSettings.ambientMode;
-            Cubemap oldCubeMap                                              = RenderSettings.customReflection;
-            Material oldSkybox                                              = RenderSettings.skybox;
-            float oldAmbientIntensity                                       = RenderSettings.ambientIntensity;
-            SphericalHarmonicsL2 oldAmbientProbe                            = RenderSettings.ambientProbe;
-            float oldReflectionIntensity                                    = RenderSettings.reflectionIntensity;
 
             RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
 
@@ -1308,29 +1308,13 @@ namespace UnityEditor
         {
             for (var i = 0; i < 2; ++i)
             {
-                var lookDevContext = m_LookDevConfig.currentLookDevContext;
-                var cubemapOffset = lookDevContext.currentHDRIIndex >= 0 && lookDevContext.currentHDRIIndex < m_LookDevEnvLibrary.hdriCount
-                    ? m_LookDevEnvLibrary.hdriList[lookDevContext.currentHDRIIndex].angleOffset
-                    : 0;
-                var envRotation = -(lookDevContext.envRotation + cubemapOffset);
-                var originalCameraState = m_LookDevConfig.cameraState[i];
-
-                for (var j = 0; j < m_LookDevConfig.currentObjectInstances[i].Length; j++)
+                for (var j = 0; j < m_LookDevConfig.previewObjects[i].Length; j++)
                 {
-                    var currentObject = m_LookDevConfig.currentObjectInstances[i][j];
+                    var currentObject = m_LookDevConfig.previewObjects[i][j];
                     if (currentObject == null)
                         continue;
 
-                    EditorUtility.InitInstantiatedPreviewRecursive(currentObject);
-
-                    currentObject.transform.position = new Vector3(0.0f, kDefaultSceneHeight, 0.0f);
-                    currentObject.transform.rotation = Quaternion.identity;
-
-                    // Applies inverse transform from camera pivot + environment rotation.
-                    currentObject.transform.Rotate(0.0f, envRotation, 0.0f);
-                    currentObject.transform.Translate(-originalCameraState.pivot.value);
-                    currentObject.transform.Rotate(0.0f, m_CurrentObjRotationOffset, 0.0f);
-
+                    EditorUtility.InitInstantiatedPreviewRecursive(currentObject); // hide objects in hierarchy
                     LookDevConfig.DisableRendererProperties(currentObject);
                     m_LookDevConfig.SetEnabledRecursive(currentObject, false);
                 }

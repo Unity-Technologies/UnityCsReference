@@ -1880,10 +1880,7 @@ namespace Unity.UNetWeaver
             fail = false;
             lists = new WeaverLists();
 
-            Console.WriteLine("WeaveAssemblies unityPath= " + unityEngineDLLPath);
             m_UnityAssemblyDefinition = AssemblyDefinition.ReadAssembly(unityEngineDLLPath);
-
-            Console.WriteLine("WeaveAssemblies unetPath= " + unityUNetDLLPath);
             m_UNetAssemblyDefinition = AssemblyDefinition.ReadAssembly(unityUNetDLLPath);
 
             SetupUnityTypes();

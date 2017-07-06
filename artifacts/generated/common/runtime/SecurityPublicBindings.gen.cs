@@ -12,14 +12,14 @@ namespace UnityEngine
 {
 public sealed partial class Security
 {
-    [System.Obsolete ("Security.PrefetchSocketPolicy is no longer supported, since the Unity Web Player is no longer supported by Unity.")]
+    [System.Obsolete ("Security.PrefetchSocketPolicy is no longer supported, since the Unity Web Player is no longer supported by Unity.", true)]
 [uei.ExcludeFromDocs]
 public static bool PrefetchSocketPolicy (string ip, int atPort) {
     int timeout = 3000;
     return PrefetchSocketPolicy ( ip, atPort, timeout );
 }
 
-[System.Obsolete ("Security.PrefetchSocketPolicy is no longer supported, since the Unity Web Player is no longer supported by Unity.")]
+[System.Obsolete ("Security.PrefetchSocketPolicy is no longer supported, since the Unity Web Player is no longer supported by Unity.", true)]
 public static bool PrefetchSocketPolicy(string ip, int atPort, [uei.DefaultValue("3000")]  int timeout )
         {
             return false;

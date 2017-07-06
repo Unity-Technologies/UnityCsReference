@@ -1956,7 +1956,8 @@ namespace UnityEditor
                             draggingLocked = DraggingLockedState.NotDragging;
                         break;
                     case (DraggingLockedState.NotDragging):
-                        Frame(bounds, true);
+                        // Once framed, we only need to lock position rather than all the parameters Frame() sets
+                        m_Position.value = bounds.center;
                         break;
                 }
             }
@@ -2328,7 +2329,7 @@ namespace UnityEditor
             return Frame(bounds, EditorApplication.isPlaying);
         }
 
-        public bool Frame(Bounds bounds, bool instant)
+        public bool Frame(Bounds bounds, bool instant = true)
         {
             float newSize = bounds.extents.magnitude * 1.5f;
             if (newSize == Mathf.Infinity)

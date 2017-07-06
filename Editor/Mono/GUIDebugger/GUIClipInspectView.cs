@@ -69,14 +69,10 @@ namespace UnityEditor
         {
             var clipInstruction = m_ClipList[selectedInstructionIndex];
 
-            GUILayout.Label("RenderOffset:");
-            GUILayout.Label(clipInstruction.renderOffset.ToString());
-            GUILayout.Label("ResetOffset:");
-            GUILayout.Label(clipInstruction.resetOffset.ToString());
-            GUILayout.Label("screenRect:");
-            GUILayout.Label(clipInstruction.screenRect.ToString());
-            GUILayout.Label("scrollOffset:");
-            GUILayout.Label(clipInstruction.scrollOffset.ToString());
+            DoSelectableInstructionDataField("RenderOffset", clipInstruction.renderOffset.ToString());
+            DoSelectableInstructionDataField("ResetOffset", clipInstruction.resetOffset.ToString());
+            DoSelectableInstructionDataField("screenRect", clipInstruction.screenRect.ToString());
+            DoSelectableInstructionDataField("scrollOffset", clipInstruction.scrollOffset.ToString());
         }
 
         internal override string GetInstructionListName(int index)

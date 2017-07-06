@@ -49,6 +49,16 @@ namespace UnityEngine.Experimental.UIElements
             isImmediatePropagationStopped = true;
         }
 
+        public bool isDefaultPrevented { get; private set; }
+
+        public void PreventDefault()
+        {
+            if ((flags & EventFlags.Cancellable) == EventFlags.Cancellable)
+            {
+                isDefaultPrevented = true;
+            }
+        }
+
         // Propagation state
         public PropagationPhase propagationPhase { get; internal set; }
 
@@ -88,6 +98,7 @@ namespace UnityEngine.Experimental.UIElements
 
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;
+            isDefaultPrevented = false;
 
             this.imguiEvent = imguiEvent;
         }

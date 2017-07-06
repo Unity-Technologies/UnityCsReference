@@ -87,6 +87,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (maxLength >= 0 && text != null && text.Length > maxLength)
                     text = text.Substring(0, maxLength);
                 textField.text = text;
+                textField.TextFieldChanged();
                 evt.StopPropagation();
             }
 
@@ -131,6 +132,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (maxLength >= 0 && text != null && text.Length > maxLength)
                     text = text.Substring(0, maxLength);
                 textField.text = text;
+                textField.TextFieldChanged();
                 evt.StopPropagation();
             }
 
@@ -176,6 +178,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (maxLength >= 0 && text != null && text.Length > maxLength)
                     text = text.Substring(0, maxLength);
                 textField.text = text;
+                textField.TextFieldChanged();
                 evt.StopPropagation();
             }
 
@@ -332,6 +335,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (maxLength >= 0 && text != null && text.Length > maxLength)
                     text = text.Substring(0, maxLength);
                 textField.text = text;
+                textField.TextFieldChanged();
                 evt.StopPropagation();
             }
 

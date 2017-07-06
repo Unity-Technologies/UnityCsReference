@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
+    [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
     internal static class UnsafeUtility
     {
         // Copies sizeof(T) bytes from ptr to output
@@ -60,20 +61,20 @@ namespace UnityEngine
             return 4;
         }
 
-        [FreeFunction("UnsafeUtility::Malloc", true)]
+        [ThreadSafe]
         public static extern IntPtr Malloc(int size, int alignment, UnityEngine.Collections.Allocator label);
 
-        [FreeFunction("UnsafeUtility::Free", true)]
+        [ThreadSafe]
         public static extern void Free(IntPtr memory, UnityEngine.Collections.Allocator label);
 
-        [FreeFunction("UnsafeUtility::MemCpy", true)]
+        [ThreadSafe]
         public static extern void MemCpy(IntPtr destination, IntPtr source, int size);
 
-        [FreeFunction("UnsafeUtility::SizeOfStruct", true)]
+        [ThreadSafe]
         public static extern int SizeOfStruct(Type type);
 
         // @TODO : This is probably not the ideal place to have this?
-        [FreeFunction("UnsafeUtility::LogError", true)]
+        [ThreadSafe]
         public static extern void LogError(string msg, string filename, int linenumber);
     }
 }

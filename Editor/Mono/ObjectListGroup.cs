@@ -113,12 +113,13 @@ namespace UnityEditor
             }
 
             // Main draw method of a group that is called from outside
-            public void Draw(float yOffset, Vector2 scrollPos)
+            public void Draw(float yOffset, Vector2 scrollPos, ref int rowsInUse)
             {
                 NeedsRepaint = false;
 
                 // We need to always draw the header as it uses controlIDs (and we cannot cull gui elements using controlID)
                 bool isRepaint = Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout;
+
                 if (!isRepaint)
                     DrawHeader(yOffset, m_Collapsable); // logic here, draw on top below
 
@@ -138,7 +139,21 @@ namespace UnityEditor
                     // Also limit to what can possible be in view in order to limit draws
                     float itemHeight = m_Grid.itemSize.y + m_Grid.verticalSpacing;
                     int rowsInVisibleRect = (int)Math.Ceiling(m_Owner.m_VisibleRect.height / itemHeight);
-                    endItem = Math.Min(endItem, itemIdx + rowsInVisibleRect * m_Grid.columns + m_Grid.columns);
+
+                    //When a row is hidden behind the header, it is still counted as visible, therefore to avoid
+                    //weird popping in and out for the icons, we make sure that a new row will be rendered even if one
+                    //is considered visible, even though it cannot be seen in the window
+                    rowsInVisibleRect += 1;
+
+                    int rowsNotInUse = rowsInVisibleRect - rowsInUse;
+                    if (rowsNotInUse < 0)
+                        rowsNotInUse = 0;
+
+                    rowsInUse = Math.Min(rowsInVisibleRect, Mathf.CeilToInt((endItem - beginItem) / (float)m_Grid.columns));
+
+                    endItem = rowsNotInUse * m_Grid.columns + beginItem;
+                    if (endItem > totalItemCount)
+                        endItem = totalItemCount;
 
                     DrawInternal(itemIdx, endItem, yOffset);
                 }

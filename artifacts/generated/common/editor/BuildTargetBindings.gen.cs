@@ -23,10 +23,10 @@ public enum BuildTarget
     
     StandaloneWindows = 5,
     
-    [System.Obsolete ("WebPlayer has been removed in 5.4")]
+    [System.Obsolete ("WebPlayer has been removed in 5.4", true)]
     WebPlayer = 6,
     
-    [System.Obsolete ("WebPlayerStreamed has been removed in 5.4")]
+    [System.Obsolete ("WebPlayerStreamed has been removed in 5.4", true)]
     WebPlayerStreamed = 7,
     
     iOS = 9,

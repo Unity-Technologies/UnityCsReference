@@ -38,6 +38,14 @@ namespace UnityEditor.Modules
         [NonSerialized]
         static IPlatformSupportModule s_ActivePlatformModule;
 
+        internal static bool EnableLogging
+        {
+            get
+            {
+                return (bool)(Debug.GetDiagnosticSwitch("ModuleManagerLogging") ?? false);
+            }
+        }
+
         internal static IPackageManagerModule packageManager
         {
             get
@@ -183,7 +191,8 @@ namespace UnityEditor.Modules
         {
             foreach (Unity.DataContract.PackageInfo extension in s_PackageManager.unityExtensions)
             {
-                Console.WriteLine("Setting {0} v{1} for Unity v{2} to {3}", extension.name, extension.version, extension.unityVersion, extension.basePath);
+                if (EnableLogging)
+                    Console.WriteLine("Setting {0} v{1} for Unity v{2} to {3}", extension.name, extension.version, extension.unityVersion, extension.basePath);
                 foreach (var file in extension.files.Where(f => f.Value.type == PackageFileType.Dll))
                 {
                     string fullPath = Paths.NormalizePath(Path.Combine(extension.basePath, file.Key));
@@ -192,10 +201,11 @@ namespace UnityEditor.Modules
                     else
                     {
                         bool isExtension = !String.IsNullOrEmpty(file.Value.guid);
-                        Console.WriteLine("  {0} ({1}) GUID: {2}",
-                            file.Key,
-                            isExtension ? "Extension" : "Custom",
-                            file.Value.guid);
+                        if (EnableLogging)
+                            Console.WriteLine("  {0} ({1}) GUID: {2}",
+                                file.Key,
+                                isExtension ? "Extension" : "Custom",
+                                file.Value.guid);
                         if (isExtension)
                             InternalEditorUtility.RegisterExtensionDll(fullPath.Replace('\\', '/'), file.Value.guid);
                         else
@@ -292,10 +302,12 @@ namespace UnityEditor.Modules
             Type locatorType = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name ==  "Unity.Locator").Select(a => a.GetType("Unity.PackageManager.Locator")).FirstOrDefault();
             try
             {
+                string playbackEngineFolders = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "PlaybackEngines");
                 locatorType.InvokeMember("Scan", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null,
                     new object[] {
                     new string[] {
-                        FileUtil.NiceWinPath(EditorApplication.applicationContentsPath)
+                        FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
+                        FileUtil.NiceWinPath(playbackEngineFolders)
                     },
                     Application.unityVersion
                 });
@@ -378,7 +390,8 @@ namespace UnityEditor.Modules
                 if (!TryParseBuildTarget(engine.name, out buildTargetGroup, out target))
                     continue;
 
-                Console.WriteLine("Setting {4}:{0} v{1} for Unity v{2} to {3}", target, engine.version, engine.unityVersion, engine.basePath, buildTargetGroup);
+                if (EnableLogging)
+                    Console.WriteLine("Setting {4}:{0} v{1} for Unity v{2} to {3}", target, engine.version, engine.unityVersion, engine.basePath, buildTargetGroup);
                 foreach (var file in engine.files.Where(f => f.Value.type == PackageFileType.Dll))
                 {
                     string fullPath = Paths.NormalizePath(Path.Combine(engine.basePath, file.Key));

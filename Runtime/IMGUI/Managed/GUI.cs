@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
@@ -798,7 +797,6 @@ namespace UnityEngine
             }
         }
 
-
         /// *listonly*
         public static bool Toggle(Rect position, bool value, string text)
         {
@@ -956,7 +954,6 @@ namespace UnityEngine
             return Mathf.Max(firstStyle.margin.right, midStyle.margin.left) + Mathf.Max(midStyle.margin.right, lastStyle.margin.left) + internalSpace * (xCount - 3);
         }
 
-
         // Make a button grid
         private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle)
         {
@@ -1099,7 +1096,6 @@ namespace UnityEngine
             return retval;
         }
 
-
         /// *listonly*
         public static float HorizontalSlider(Rect position, float value, float leftValue, float rightValue)
         {
@@ -1180,7 +1176,6 @@ namespace UnityEngine
             return changed;
         }
 
-
         /// *listonly*
         public static float VerticalScrollbar(Rect position, float value, float size, float topValue, float bottomValue)
         {
@@ -1197,7 +1192,6 @@ namespace UnityEngine
         {
             GUIUtility.CheckOnGUI();
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Passive, position);
-
 
             Rect sliderRect, minRect, maxRect;
 
@@ -1493,7 +1487,6 @@ namespace UnityEngine
             return null;
         }
 
-
         // Scrolls all enclosing scrollviews so they try to make /position/ visible.
         public static void ScrollTo(Rect position)
         {
@@ -1631,7 +1624,6 @@ namespace UnityEngine
                 GUILayoutUtility.BeginWindow(id, GUIStyle.none, null);
             }
 
-
             skin = _skin;
             func(id);
 
@@ -1641,7 +1633,6 @@ namespace UnityEngine
                 GUILayoutUtility.Layout();
             }
             skin = temp;
-
         }
 
         // If you want to have the entire window background to act as a drag area, use the version of DragWindow that takes no parameters and put it at the end of the window function.
@@ -1658,6 +1649,7 @@ namespace UnityEngine
             UnityEngineInternal.GenericStack oldLayoutGroups = GUILayoutUtility.current.layoutGroups;
             GUILayoutGroup oldWindows = GUILayoutUtility.current.windows;
             Matrix4x4 mat = GUI.matrix;
+
             // Call into C++ land
             Internal_BeginWindows();
 
@@ -1674,6 +1666,7 @@ namespace UnityEngine
             GUILayoutGroup oldTopLevel = GUILayoutUtility.current.topLevel;
             UnityEngineInternal.GenericStack oldLayoutGroups = GUILayoutUtility.current.layoutGroups;
             GUILayoutGroup oldWindows = GUILayoutUtility.current.windows;
+
             // Call Into C++ land
             Internal_EndWindows();
 

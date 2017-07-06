@@ -16,7 +16,6 @@ namespace UnityEngine
         public bool isDragging;
     }
 
-
     // TODO: Make the thumb positioning / sizing be right
     internal struct SliderHandler
     {

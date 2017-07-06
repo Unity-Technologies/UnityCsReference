@@ -122,11 +122,20 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void HandleEvent(EventBase evt)
         {
-            if (m_CallbackRegistry != null)
+            if (evt.propagationPhase != PropagationPhase.DefaultAction)
             {
-                m_CallbackRegistry.InvokeCallbacks(evt);
+                if (m_CallbackRegistry != null)
+                {
+                    m_CallbackRegistry.InvokeCallbacks(evt);
+                }
+            }
+            else
+            {
+                ExecuteDefaultAction(evt);
             }
         }
+
+        protected internal virtual void ExecuteDefaultAction(EventBase evt) {}
 
         public virtual void OnLostCapture()
         {

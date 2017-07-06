@@ -11,6 +11,7 @@ namespace UnityEditor
     internal class AudioSourceExtensionEditor : AudioExtensionEditor
     {
         public virtual void OnAudioSourceGUI() {}
+        public virtual void OnAudioSourceSceneGUI(AudioSource source) {}
 
         protected override int GetNumSerializedExtensionProperties(Object obj)
         {

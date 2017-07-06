@@ -153,7 +153,7 @@ namespace UnityEditor
             {
                 m_AudioContent.text = binding.streamName;
                 m_AudioContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
-                PropertyFieldAsObject(bindingProperty, m_AudioContent, typeof(AudioSource), false);
+                PropertyFieldAsObject(bindingProperty, m_AudioContent, typeof(AudioSource), true);
             }
             else if (binding.streamType == DataStreamType.Animation)
             {

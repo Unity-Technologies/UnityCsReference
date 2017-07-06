@@ -13,19 +13,25 @@ namespace UnityEngine.Experimental.UIElements
         Capture = 1
     }
 
-    internal class ListPool<T>
+    internal enum CallbackPhase
     {
-        readonly Stack<List<T>> m_Stack = new Stack<List<T>>();
+        TargetAndBubbleUp = 1 << 0,
+        CaptureAndTarget = 1 << 1,
+    }
 
-        public List<T> Get(List<T> initializer)
+    internal class EventCallbackListPool
+    {
+        readonly Stack<EventCallbackList> m_Stack = new Stack<EventCallbackList>();
+
+        public EventCallbackList Get(EventCallbackList initializer)
         {
-            List<T> element;
+            EventCallbackList element;
             if (m_Stack.Count == 0)
             {
                 if (initializer != null)
-                    element = new List<T>(initializer);
+                    element = new EventCallbackList(initializer);
                 else
-                    element = new List<T>();
+                    element = new EventCallbackList();
             }
             else
             {
@@ -36,29 +42,62 @@ namespace UnityEngine.Experimental.UIElements
             return element;
         }
 
-        public void Release(List<T> element)
+        public void Release(EventCallbackList element)
         {
             element.Clear();
             m_Stack.Push(element);
         }
     }
 
+    internal class EventCallbackList : List<EventCallbackFunctorBase>
+    {
+        public EventCallbackList() {}
+
+        public EventCallbackList(EventCallbackList source)
+            : base(source) {}
+
+        public bool Contains(long eventTypeId, Delegate callback, CallbackPhase phase)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                if (this[i].IsEquivalentTo(eventTypeId, callback, phase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool Remove(long eventTypeId, Delegate callback, CallbackPhase phase)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                if (this[i].IsEquivalentTo(eventTypeId, callback, phase))
+                {
+                    RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     internal class EventCallbackRegistry
     {
-        private static readonly ListPool<EventCallbackFunctorBase> s_ListPool = new ListPool<EventCallbackFunctorBase>();
+        private static readonly EventCallbackListPool s_ListPool = new EventCallbackListPool();
 
-        private static List<EventCallbackFunctorBase> GetCallbackList(List<EventCallbackFunctorBase> initializer = null)
+        private static EventCallbackList GetCallbackList(EventCallbackList initializer = null)
         {
             return s_ListPool.Get(initializer);
         }
 
-        private static void ReleaseCallbackList(List<EventCallbackFunctorBase> toRelease)
+        private static void ReleaseCallbackList(EventCallbackList toRelease)
         {
             s_ListPool.Release(toRelease);
         }
 
-        private List<EventCallbackFunctorBase> m_Callbacks;
-        private List<EventCallbackFunctorBase> m_TemporaryCallbacks;
+        private EventCallbackList m_Callbacks;
+        private EventCallbackList m_TemporaryCallbacks;
         int m_IsInvoking;
 
         public EventCallbackRegistry()
@@ -66,7 +105,7 @@ namespace UnityEngine.Experimental.UIElements
             m_IsInvoking = 0;
         }
 
-        List<EventCallbackFunctorBase> GetCallbackListForWriting()
+        EventCallbackList GetCallbackListForWriting()
         {
             if (m_IsInvoking > 0)
             {
@@ -95,7 +134,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        List<EventCallbackFunctorBase> GetCallbackListForReading()
+        EventCallbackList GetCallbackListForReading()
         {
             if (m_TemporaryCallbacks != null)
             {
@@ -105,21 +144,17 @@ namespace UnityEngine.Experimental.UIElements
             return m_Callbacks;
         }
 
-        bool ShouldRegisterCallback(long eventTypeId, Delegate callback, Capture useCapture)
+        bool ShouldRegisterCallback(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
             if (callback == null)
             {
                 return false;
             }
 
-            List<EventCallbackFunctorBase> callbackList = GetCallbackListForReading();
+            EventCallbackList callbackList = GetCallbackListForReading();
             if (callbackList != null)
             {
-                EventCallbackFunctorBase found = callbackList.Find(ftor => ftor.IsEquivalentTo(eventTypeId, callback, useCapture));
-                if (found != null)
-                {
-                    return false;
-                }
+                return !callbackList.Contains(eventTypeId, callback, phase);
             }
 
             return true;
@@ -132,27 +167,30 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
             }
 
-            List<EventCallbackFunctorBase> callbackList = GetCallbackListForWriting();
-            return callbackList.RemoveAll(ftor => ftor.IsEquivalentTo(eventTypeId, callback, useCapture)) > 0;
+            EventCallbackList callbackList = GetCallbackListForWriting();
+            var callbackPhase = useCapture == Capture.Capture ? CallbackPhase.CaptureAndTarget : CallbackPhase.TargetAndBubbleUp;
+            return callbackList.Remove(eventTypeId, callback, callbackPhase);
         }
 
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
         {
             long eventTypeId = new TEventType().GetEventTypeId();
-            if (ShouldRegisterCallback(eventTypeId, callback, useCapture))
+            var callbackPhase = useCapture == Capture.Capture ? CallbackPhase.CaptureAndTarget : CallbackPhase.TargetAndBubbleUp;
+            if (ShouldRegisterCallback(eventTypeId, callback, callbackPhase))
             {
-                List<EventCallbackFunctorBase> callbackList = GetCallbackListForWriting();
-                callbackList.Add(new EventCallbackFunctor<TEventType>(callback, useCapture));
+                EventCallbackList callbackList = GetCallbackListForWriting();
+                callbackList.Add(new EventCallbackFunctor<TEventType>(callback, callbackPhase));
             }
         }
 
         public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
         {
             long eventTypeId = new TEventType().GetEventTypeId();
-            if (ShouldRegisterCallback(eventTypeId, callback, useCapture))
+            var callbackPhase = useCapture == Capture.Capture ? CallbackPhase.CaptureAndTarget : CallbackPhase.TargetAndBubbleUp;
+            if (ShouldRegisterCallback(eventTypeId, callback, callbackPhase))
             {
-                List<EventCallbackFunctorBase> callbackList = GetCallbackListForWriting();
-                callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, useCapture));
+                EventCallbackList callbackList = GetCallbackListForWriting();
+                callbackList.Add(new EventCallbackFunctor<TEventType, TCallbackArgs>(callback, userArgs, callbackPhase));
             }
         }
 

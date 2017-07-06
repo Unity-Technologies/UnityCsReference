@@ -74,7 +74,13 @@ public partial struct DrivenRectTransformTracker
         }
     
     
-    public void Clear()
+    [uei.ExcludeFromDocs]
+public void Clear () {
+    bool revertValues = true;
+    Clear ( revertValues );
+}
+
+public void Clear( [uei.DefaultValue("true")] bool revertValues )
         {
             if (m_Tracked != null)
             {
@@ -82,13 +88,14 @@ public partial struct DrivenRectTransformTracker
                 {
                     if (m_Tracked[i] != null)
                     {
-                        m_Tracked[i].ClearDrivenProperties(m_Driver);
+                        m_Tracked[i].ClearDrivenProperties(m_Driver, revertValues);
                     }
                 }
                 m_Driver = null;
                 m_Tracked.Clear();
             }
         }
+
     
     
 }
@@ -197,7 +204,7 @@ public sealed partial class RectTransform : Transform
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void ClearDrivenProperties (Object driver) ;
+    extern internal void ClearDrivenProperties (Object driver, bool revertValues) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

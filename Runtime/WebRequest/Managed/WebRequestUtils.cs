@@ -443,7 +443,7 @@ namespace UnityEngineInternal
             else
                 redirectURI = new Uri(redirectUri, UriKind.RelativeOrAbsolute);
             if (redirectURI.IsAbsoluteUri)
-                return redirectUri;
+                return redirectURI.AbsoluteUri;
 
             var baseURI = new Uri(baseUri, UriKind.Absolute);
             var finalUri = new Uri(baseURI, redirectURI);

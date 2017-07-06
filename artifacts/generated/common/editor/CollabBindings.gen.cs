@@ -114,6 +114,10 @@ internal sealed partial class Collab : AssetPostprocessor
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public string GetProjectPath () ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public string GetProjectGUID () ;
+
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -143,15 +147,28 @@ internal sealed partial class Collab : AssetPostprocessor
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public ProgressInfo GetJobProgressByType (int jobType) ;
 
-    public void CancelJob(int jobId)
+    [uei.ExcludeFromDocs]
+public void CancelJob (int jobId) {
+    bool forceCancel = false;
+    CancelJob ( jobId, forceCancel );
+}
+
+public void CancelJob(int jobId, [uei.DefaultValue("false")]  bool forceCancel )
         {
-            CancelJobByType(jobId);
+            CancelJobByType(jobId, forceCancel);
         }
+
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CancelJobByType (int jobType) ;
+    extern public void CancelJobByType (int jobType, [uei.DefaultValue("false")]  bool forceCancel ) ;
+
+    [uei.ExcludeFromDocs]
+    public void CancelJobByType (int jobType) {
+        bool forceCancel = false;
+        CancelJobByType ( jobType, forceCancel );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -360,6 +377,14 @@ internal sealed partial class Collab : AssetPostprocessor
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void NewGUIDForTests () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void TestPostSoftLockAsCollaborator (string projectGuid, string projectPath, string machineGuid, string assetGuid) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void TestClearSoftLockAsCollaborator (string projectGuid, string projectPath, string machineGuid, string softLockHash) ;
 
 }
 

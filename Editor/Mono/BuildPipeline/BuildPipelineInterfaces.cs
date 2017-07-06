@@ -96,9 +96,15 @@ namespace UnityEditor.Build
             }
         }
 
+        //this variable is reinitialized on domain reload so any calls to Init after a domain reload will set things up correctly
+        static BuildCallbacks previousFlags = BuildCallbacks.None;
         [RequiredByNativeCode]
         internal static void InitializeBuildCallbacks(BuildCallbacks findFlags)
         {
+            if (findFlags == previousFlags)
+                return;
+            previousFlags = findFlags;
+
             CleanupBuildCallbacks();
             var excludedAssemblies = new HashSet<string>();
             excludedAssemblies.Add("UnityEditor");

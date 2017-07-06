@@ -30,10 +30,12 @@ internal partial class UnityAdsSettings
         set;
     }
 
+    [System.Obsolete ("No longer supported and will always return true")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool IsPlatformEnabled (RuntimePlatform platform) ;
 
+    [System.Obsolete ("No longer supported and will do nothing")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetPlatformEnabled (RuntimePlatform platform, bool value) ;

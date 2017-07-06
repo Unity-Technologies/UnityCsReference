@@ -4,8 +4,6 @@
 
 using System.Runtime.CompilerServices;
 
-//TODO: Think about if this is secure or not, and if we should be using UnityEditor's public key instead.
-//I think we're cool, because we ifdef it out in the version of UnityEngine.dll that we ship with the webplayer.
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
@@ -22,6 +20,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
+[assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 
 [assembly: InternalsVisibleTo("UnityEngine.Physics")]
 [assembly: InternalsVisibleTo("UnityEngine.Terrain")]
@@ -33,6 +32,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEngine.Timeline")]
+[assembly: InternalsVisibleTo("UnityEngine.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]

@@ -51,12 +51,13 @@ namespace UnityEngine
         // In the player on Windows.
         WindowsPlayer = 2,
         //*undocumented*
-        [System.Obsolete("WebPlayer export is no longer supported in Unity 5.4+.")]
+        [System.Obsolete("WebPlayer export is no longer supported in Unity 5.4+.", true)]
         OSXWebPlayer = 3,
         // In the Dashboard widget on Mac OS X.
+        [System.Obsolete("Dashboard widget on Mac OS X export is no longer supported in Unity 5.4+.", true)]
         OSXDashboardPlayer = 4,
         //*undocumented*
-        [System.Obsolete("WebPlayer export is no longer supported in Unity 5.4+.")]
+        [System.Obsolete("WebPlayer export is no longer supported in Unity 5.4+.", true)]
         WindowsWebPlayer = 5,
         // In the Unity editor on Windows.
         WindowsEditor = 7,

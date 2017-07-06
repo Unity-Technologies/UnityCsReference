@@ -100,7 +100,7 @@ namespace UnityEditor
             DragAndDrop.StartDrag(title);
         }
 
-        public override bool DragElement(TreeViewItem targetItem, Rect targetItemRect, bool firstItem)
+        public override bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row)
         {
             // First ensure we are dragging AudioMixers (and not some other objects)
             var dragData = DragAndDrop.GetGenericData(k_AudioMixerDraggingID) as DragData;
@@ -133,7 +133,7 @@ namespace UnityEditor
             }
 
             // Normal handling when over dragging over items
-            return base.DragElement(targetItem, targetItemRect, firstItem);
+            return base.DragElement(targetItem, targetItemRect, row);
         }
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentNode, TreeViewItem targetNode, bool perform, DropPosition dragPos)

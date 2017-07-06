@@ -99,6 +99,10 @@ namespace UnityEditor
         {
             get { return m_CurrentObjectInstances; }
         }
+        public GameObject[][] previewObjects
+        {
+            get { return m_PreviewObjects; }
+        }
 
         public CameraState[] cameraState
         {
@@ -428,6 +432,8 @@ namespace UnityEditor
                 for (var i = 0; i < m_PreviewObjects[index].Length; ++i)
                 {
                     m_PreviewObjects[index][i] = m_LookDevView.previewUtilityContexts[index].m_PreviewUtility[i].InstantiatePrefabInScene(m_OriginalGameObject[index]);
+                    m_PreviewObjects[index][i].transform.position = new Vector3(0.0f, 0.0f, 0.0f);
+                    m_PreviewObjects[index][i].transform.rotation = Quaternion.identity;
                     EditorUtility.InitInstantiatedPreviewRecursive(m_PreviewObjects[index][i]);
                     DisableRendererProperties(m_PreviewObjects[index][i]); // Avoid light probe influence from the main scene (but still have the default probe lighting)
                     SetEnabledRecursive(m_PreviewObjects[index][i], false);

@@ -16,6 +16,7 @@ namespace UnityEditor.Web
     {
         private const string kServiceName = "Analytics";
         private const string kServiceDisplayName = "Analytics";
+        private const string kServicePackageName = "com.unity.analytics";
         private const string kServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/analytics";
 
         public override string GetServiceName()
@@ -26,6 +27,11 @@ namespace UnityEditor.Web
         public override string GetServiceDisplayName()
         {
             return kServiceDisplayName;
+        }
+
+        public override string GetPackageName()
+        {
+            return kServicePackageName;
         }
 
         override public bool IsServiceEnabled()

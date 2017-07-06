@@ -73,7 +73,7 @@ namespace UnityEngine.Bindings
     }
 
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.Parameter, AllowMultiple = true)]
     class NativeHeaderAttribute : Attribute, IBindingsHeaderProviderAttribute
     {
         public string Header { get; set; }
@@ -188,6 +188,17 @@ namespace UnityEngine.Bindings
         Force
     }
 
+    [AttributeUsage(AttributeTargets.Class)]
+    class NativeAsStructAttribute : Attribute, IBindingsAttribute
+    {
+        public string StructName { get; set; }
+
+        public NativeAsStructAttribute(string name)
+        {
+            StructName = name;
+        }
+    }
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
     class NativeTypeAttribute : Attribute, IBindingsHeaderProviderAttribute, IBindingsGenerateMarshallingTypeAttribute
     {
@@ -269,11 +280,18 @@ namespace UnityEngine.Bindings
         }
     }
 
+    enum StaticAccessorType
+    {
+        Dot,
+        Arrow,
+        DoubleColon
+    }
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]
     class StaticAccessorAttribute : Attribute, IBindingsAttribute
     {
         public string Name { get; set; }
-        public bool Pointer { get; set; }
+        public StaticAccessorType Type { get; set; }
 
         public StaticAccessorAttribute()
         {
@@ -284,15 +302,15 @@ namespace UnityEngine.Bindings
             Name = name;
         }
 
-        public StaticAccessorAttribute(bool pointer)
+        public StaticAccessorAttribute(StaticAccessorType type)
         {
-            Pointer = pointer;
+            Type = type;
         }
 
-        public StaticAccessorAttribute(string name, bool pointer)
+        public StaticAccessorAttribute(string name, StaticAccessorType type)
         {
             Name = name;
-            Pointer = pointer;
+            Type = type;
         }
     }
 

@@ -107,8 +107,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RootContainer; }
         }
 
-        public VisualContainer defaultIMRoot { get; set; }
-
         public override IDispatcher dispatcher { get; protected set; }
 
         public override IDataWatchService dataWatch { get; protected set; }
@@ -153,14 +151,6 @@ namespace UnityEngine.Experimental.UIElements
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
-            // this really should be an IMGUI container with the EditorWindow OnGUI on it.
-            defaultIMRoot = new IMContainer()
-            {
-                name = "DefaultOnGUI",
-                pickingMode = PickingMode.Ignore,
-            };
-            defaultIMRoot.StretchToParentSize();
-            visualTree.InsertChild(0, defaultIMRoot);
 
             allowPixelCaching = true;
         }

@@ -111,6 +111,7 @@ public sealed partial class Application
         get;
     }
 
+    [System.Obsolete ("This property is deprecated and will be removed in a future version of Unity, Webplayer support has been removed since Unity 5.4", true)]
     public extern static bool isWebPlayer
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -278,6 +279,7 @@ public sealed partial class Application
         get;
     }
 
+    [System.Obsolete ("Application.srcValue is obsolete and has no effect. It will be removed in a subsequent Unity release.", true)]
     public extern static string srcValue
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -353,7 +355,8 @@ public sealed partial class Application
     }
     
     
-    public static void ExternalCall(string functionName, params object[] args)
+    [System.Obsolete ("Application.ExternalCall is deprecated. See https://docs.unity3d.com/Manual/webgl-interactingwithbrowserscripting.html for alternatives.")]
+public static void ExternalCall(string functionName, params object[] args)
     {
         Internal_ExternalCall(BuildInvocationForArguments(functionName, args));
     }
@@ -377,7 +380,8 @@ public sealed partial class Application
     }
     
     
-    public static void ExternalEval(string script)
+    [System.Obsolete ("Application.ExternalEval is deprecated. See https://docs.unity3d.com/Manual/webgl-interactingwithbrowserscripting.html for alternatives.")]
+public static void ExternalEval(string script)
     {
         if (script.Length > 0 && script[script.Length - 1] != ';')
             script += ';';
@@ -466,7 +470,7 @@ public sealed partial class Application
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool RequestAdvertisingIdentifierAsync (AdvertisingIdentifierCallback delegateMethod) ;
 
-    [System.Obsolete ("Application.webSecurityEnabled is no longer supported, since the Unity Web Player is no longer supported by Unity.")]
+    [System.Obsolete ("Application.webSecurityEnabled is no longer supported, since the Unity Web Player is no longer supported by Unity.", true)]
     [ThreadAndSerializationSafe ()]
     public extern static bool webSecurityEnabled
     {
@@ -475,7 +479,7 @@ public sealed partial class Application
         get;
     }
 
-    [System.Obsolete ("Application.webSecurityHostUrl is no longer supported, since the Unity Web Player is no longer supported by Unity.")]
+    [System.Obsolete ("Application.webSecurityHostUrl is no longer supported, since the Unity Web Player is no longer supported by Unity.", true)]
     [ThreadAndSerializationSafe ()]
     public extern static string webSecurityHostUrl
     {

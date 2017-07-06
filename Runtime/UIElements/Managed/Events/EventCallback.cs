@@ -12,21 +12,44 @@ namespace UnityEngine.Experimental.UIElements
 
     internal abstract class EventCallbackFunctorBase
     {
+        protected CallbackPhase m_Phase;
+
+        public EventCallbackFunctorBase(CallbackPhase phase)
+        {
+            m_Phase = phase;
+        }
+
         public abstract void Invoke(EventBase evt);
 
-        public abstract bool IsEquivalentTo(long eventTypeId, Delegate callback, Capture useCapture);
+        public abstract bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase);
+
+        protected bool PhaseMatches(EventBase evt)
+        {
+            switch (m_Phase)
+            {
+                case CallbackPhase.CaptureAndTarget:
+                    if (evt.propagationPhase != PropagationPhase.Capture && evt.propagationPhase != PropagationPhase.AtTarget)
+                        return false;
+                    break;
+
+                case CallbackPhase.TargetAndBubbleUp:
+                    if (evt.propagationPhase != PropagationPhase.AtTarget && evt.propagationPhase != PropagationPhase.BubbleUp)
+                        return false;
+                    break;
+            }
+
+            return true;
+        }
     }
 
     internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase where TEventType : EventBase, new()
     {
         EventCallback<TEventType> m_Callback;
-        bool m_UseCapture;
         long m_EventTypeId;
 
-        public EventCallbackFunctor(EventCallback<TEventType> callback, Capture useCapture)
+        public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase) : base(phase)
         {
             m_Callback = callback;
-            m_UseCapture = useCapture == Capture.Capture;
             m_EventTypeId = new TEventType().GetEventTypeId();
         }
 
@@ -38,18 +61,15 @@ namespace UnityEngine.Experimental.UIElements
             if (evt.GetEventTypeId() != m_EventTypeId)
                 return;
 
-            if (evt.propagationPhase == PropagationPhase.Capture && !m_UseCapture)
-                return;
-
-            if (evt.propagationPhase == PropagationPhase.BubbleUp && m_UseCapture)
-                return;
-
-            m_Callback(evt as TEventType);
+            if (PhaseMatches(evt))
+            {
+                m_Callback(evt as TEventType);
+            }
         }
 
-        public override bool IsEquivalentTo(long eventTypeId, Delegate callback, Capture useCapture)
+        public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_UseCapture == (useCapture == Capture.Capture)));
+            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_Phase == phase));
         }
     }
 
@@ -57,14 +77,12 @@ namespace UnityEngine.Experimental.UIElements
     {
         EventCallback<TEventType, TCallbackArgs> m_Callback;
         TCallbackArgs m_UserArgs;
-        bool m_UseCapture;
         long m_EventTypeId;
 
-        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, Capture useCapture)
+        public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, CallbackPhase phase) : base(phase)
         {
             m_Callback = callback;
             m_UserArgs = userArgs;
-            m_UseCapture = useCapture == Capture.Capture;
             m_EventTypeId = new TEventType().GetEventTypeId();
         }
 
@@ -76,18 +94,15 @@ namespace UnityEngine.Experimental.UIElements
             if (evt.GetEventTypeId() != m_EventTypeId)
                 return;
 
-            if (evt.propagationPhase == PropagationPhase.Capture && !m_UseCapture)
-                return;
-
-            if (evt.propagationPhase == PropagationPhase.BubbleUp && m_UseCapture)
-                return;
-
-            m_Callback(evt as TEventType, m_UserArgs);
+            if (PhaseMatches(evt))
+            {
+                m_Callback(evt as TEventType, m_UserArgs);
+            }
         }
 
-        public override bool IsEquivalentTo(long eventTypeId, Delegate callback, Capture useCapture)
+        public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_UseCapture == (useCapture == Capture.Capture)));
+            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_Phase == phase));
         }
     }
 }

@@ -930,6 +930,9 @@ namespace UnityEditor
             }
 
             Handles.color = tempColor;
+
+            if (m_Spatialize.boolValue && (m_SpatializerEditor != null))
+                m_SpatializerEditor.OnAudioSourceSceneGUI(source);
         }
     }
 }

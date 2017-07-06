@@ -235,11 +235,11 @@ namespace UnityEditor
             public GUIContent spatialQualityContent = EditorGUIUtility.TextContent(
                     "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
             public GUIContent importerVersionContent = EditorGUIUtility.TextContent(
-                    "Importer Version|Selects the type of asset produced (legacy MovieTexture or new VideoClip).");
+                    "Importer Version|Selects the type of video asset produced.");
             public GUIContent[] importerVersionOptions =
             {
-                EditorGUIUtility.TextContent("MovieTexture (Legacy)|Produce MovieTexture asset (old version)"),
-                EditorGUIUtility.TextContent("VideoClip|Produce VideoClip asset (for use with VideoPlayer)")
+                EditorGUIUtility.TextContent("VideoClip|Produce VideoClip asset (for use with VideoPlayer)"),
+                EditorGUIUtility.TextContent("MovieTexture (Deprecated)|Produce MovieTexture asset (deprecated in factor of VideoClip)"),
             };
             public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
                     "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
@@ -720,12 +720,12 @@ namespace UnityEditor
             var originalLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 100;
             int selectionIndex = EditorGUILayout.Popup(
-                    s_Styles.importerVersionContent, m_UseLegacyImporter.boolValue ? 0 : 1,
+                    s_Styles.importerVersionContent, m_UseLegacyImporter.boolValue ? 1 : 0,
                     s_Styles.importerVersionOptions, EditorStyles.popup, GUILayout.MaxWidth(230));
             EditorGUIUtility.labelWidth = originalLabelWidth;
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
-                m_UseLegacyImporter.boolValue = selectionIndex == 0;
+                m_UseLegacyImporter.boolValue = selectionIndex == 1;
 
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open", EditorStyles.miniButton))

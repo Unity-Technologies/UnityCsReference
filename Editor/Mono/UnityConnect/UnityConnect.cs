@@ -135,7 +135,7 @@ namespace UnityEditor.Connect
 
         private UnityConnect()
         {
-            // Nothing to do
+            PackageUtils.instance.RetrievePackageInfo();
         }
 
         public void GoToHub(string page)

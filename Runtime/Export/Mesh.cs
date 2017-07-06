@@ -62,7 +62,7 @@ namespace UnityEngine
             }
             else
             {
-                PrintErrorCantAccessMesh(channel);
+                PrintErrorCantAccessChannel(channel);
             }
             return new T[0];
         }
@@ -81,7 +81,7 @@ namespace UnityEngine
             if (canAccess)
                 SetArrayForChannelImpl(channel, format, dim, values, valuesCount);
             else
-                PrintErrorCantAccessMesh(channel);
+                PrintErrorCantAccessChannel(channel);
         }
 
         private void SetArrayForChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim, T[] values)
@@ -115,7 +115,7 @@ namespace UnityEngine
 
             if (!canAccess)
             {
-                PrintErrorCantAccessMesh(channel);
+                PrintErrorCantAccessChannel(channel);
                 return;
             }
 
@@ -301,17 +301,25 @@ namespace UnityEngine
             GetUVsImpl(channel, uvs, 4);
         }
 
+        //
+        // triangles/indices
+        //
+
+        private void PrintErrorCantAccessIndices()
+        {
+            Debug.LogError(String.Format("Not allowed to access triangles/indices on mesh '{0}' (isReadable is false; Read/Write must be enabled in import settings)", name));
+        }
+
         private bool CheckCanAccessSubmesh(int submesh, bool errorAboutTriangles)
         {
             if (!canAccess)
             {
-                PrintErrorCantAccessMeshForIndices();
+                PrintErrorCantAccessIndices();
                 return false;
             }
             if (submesh < 0 || submesh >= subMeshCount)
             {
-                if (errorAboutTriangles) PrintErrorBadSubmeshIndexTriangles();
-                else                    PrintErrorBadSubmeshIndexIndices();
+                Debug.LogError(String.Format("Failed getting {0}. Submesh index is out of bounds.", errorAboutTriangles ? "triangles" : "indices"), this);
                 return false;
             }
             return true;
@@ -324,14 +332,14 @@ namespace UnityEngine
         {
             get
             {
-                if (canAccess)   return GetTrianglesImpl(-1);
-                else            PrintErrorCantAccessMeshForIndices();
+                if (canAccess) return GetTrianglesImpl(-1);
+                else           PrintErrorCantAccessIndices();
                 return new int[0];
             }
             set
             {
-                if (canAccess)   SetTrianglesImpl(-1, value, SafeLength(value));
-                else            PrintErrorCantAccessMeshForIndices();
+                if (canAccess)  SetTrianglesImpl(-1, value, SafeLength(value));
+                else            PrintErrorCantAccessIndices();
             }
         }
 
@@ -372,6 +380,22 @@ namespace UnityEngine
             GetIndicesNonAllocImpl(indices, submesh);
         }
 
+        public UInt32 GetIndexStart(int submesh)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+            return GetIndexStartImpl(submesh);
+        }
+
+        public UInt32 GetIndexCount(int submesh)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+            return GetIndexCountImpl(submesh);
+        }
+
+        //
+
         public void GetBindposes(List<Matrix4x4> bindposes)
         {
             if (bindposes == null)
@@ -390,6 +414,45 @@ namespace UnityEngine
             PrepareUserBuffer(boneWeights, vertexCount);
 
             GetBoneWeightsNonAllocImpl(boneWeights);
+        }
+
+        //
+        //
+        //
+
+        public void Clear(bool keepVertexLayout = true)
+        {
+            ClearImpl(keepVertexLayout);
+        }
+
+        public void RecalculateBounds()
+        {
+            if (canAccess)  RecalculateBoundsImpl();
+            else            Debug.LogError(String.Format("Not allowed to call RecalculateBounds() on mesh '{0}'", name));
+        }
+
+        public void RecalculateNormals()
+        {
+            if (canAccess)  RecalculateNormalsImpl();
+            else            Debug.LogError(String.Format("Not allowed to call RecalculateNormals() on mesh '{0}'", name));
+        }
+
+        public void RecalculateTangents()
+        {
+            if (canAccess)  RecalculateTangentsImpl();
+            else            Debug.LogError(String.Format("Not allowed to call RecalculateTangents() on mesh '{0}'", name));
+        }
+
+        public void MarkDynamic()
+        {
+            if (canAccess)
+                MarkDynamicImpl();
+        }
+
+        public void UploadMeshData(bool markNoLogerReadable)
+        {
+            if (canAccess)
+                UploadMeshDataImpl(markNoLogerReadable);
         }
     }
 

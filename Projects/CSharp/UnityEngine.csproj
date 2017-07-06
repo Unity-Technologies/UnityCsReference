@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -45,11 +45,11 @@
 <Compile Include="..\..\Runtime\Export\Matrix4x4.cs" >
 <Link>Runtime\Export\Matrix4x4.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Mesh.bindings.cs" >
+<Link>Runtime\Export\Mesh.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Component.deprecated.cs" >
 <Link>Runtime\Export\Component.deprecated.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Export\Application.deprecated.cs" >
-<Link>Runtime\Export\Application.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\BaseClass.cs" >
 <Link>Runtime\Export\BaseClass.cs</Link>
@@ -83,9 +83,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnitySynchronizationContext.cs" >
 <Link>Runtime\Export\UnitySynchronizationContext.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Export\Caching.deprecated.cs" >
-<Link>Runtime\Export\Caching.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Random.cs" >
 <Link>Runtime\Export\Random.cs</Link>
@@ -498,17 +495,17 @@
 <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs" >
 <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\iOS\iOSInput.deprecated.cs" >
-<Link>Runtime\Export\iOS\iOSInput.deprecated.cs</Link>
+<Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs" >
+<Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\iOS\iOSNotifications.deprecated.cs" >
-<Link>Runtime\Export\iOS\iOSNotifications.deprecated.cs</Link>
+<Compile Include="..\..\Runtime\Export\iOS\iOS.deprecated.cs" >
+<Link>Runtime\Export\iOS\iOS.deprecated.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\iOS\iAD.deprecated.cs" >
-<Link>Runtime\Export\iOS\iAD.deprecated.cs</Link>
+<Compile Include="..\..\Runtime\Export\iOS\iOSDevice.bindings.cs" >
+<Link>Runtime\Export\iOS\iOSDevice.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\iOS\iOSDevice.deprecated.cs" >
-<Link>Runtime\Export\iOS\iOSDevice.deprecated.cs</Link>
+<Compile Include="..\..\Runtime\Export\iOS\TV.bindings.cs" >
+<Link>Runtime\Export\iOS\TV.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Logger\ILogger.cs" >
 <Link>Runtime\Export\Logger\ILogger.cs</Link>
@@ -659,6 +656,9 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs" >
+<Link>artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\SpeechBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SpeechBindings.gen.cs</Link>
 </Compile>
@@ -770,9 +770,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\iOSDeviceBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\iOSDeviceBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\iOSReplayKitBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\iOSReplayKitBindings.gen.cs</Link>
 </Compile>
@@ -781,12 +778,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\iOSNotificationsBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\iOSNotificationsBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TVBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TVBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\iOSInputBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\iOSInputBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\InputBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\InputBindings.gen.cs</Link>
@@ -877,6 +868,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs" >
 <Link>Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests2.bindings.cs" >
+<Link>Runtime\Scripting\Marshalling\Test\MarshallingTests2.bindings.cs</Link>
 </Compile><Compile Include="..\..\Runtime\Accessibility\Managed\VisionUtility.cs" >
 <Link>Runtime\Accessibility\Managed\VisionUtility.cs</Link>
 </Compile>
@@ -924,51 +918,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Audio\Managed\Audio.deprecated.cs" >
-<Link>Runtime\Audio\Managed\Audio.deprecated.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioPlayableOutput.cs" >
-<Link>Runtime\Audio\ScriptBindings\AudioPlayableOutput.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioClipPlayable.cs" >
-<Link>Runtime\Audio\ScriptBindings\AudioClipPlayable.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs" >
-<Link>Runtime\Audio\ScriptBindings\AudioMixerPlayable.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Audio\ScriptBindings\AudioExtensions.cs" >
-<Link>Runtime\Audio\ScriptBindings\AudioExtensions.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerPlayableBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerPlayableBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioClipPlayableBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioClipPlayableBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\Managed\AnimationPlayableUtilities.cs" >
 <Link>Runtime\Animation\Managed\AnimationPlayableUtilities.cs</Link>
@@ -1375,50 +1324,8 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\Image.cs" >
 <Link>Runtime\UIElements\Managed\Image.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMBox.cs" >
-<Link>Runtime\UIElements\Managed\IMBox.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMButton.cs" >
-<Link>Runtime\UIElements\Managed\IMButton.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMButtonGrid.cs" >
-<Link>Runtime\UIElements\Managed\IMButtonGrid.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMContainer.cs" >
-<Link>Runtime\UIElements\Managed\IMContainer.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\IMGUIContainer.cs" >
 <Link>Runtime\UIElements\Managed\IMGUIContainer.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMElement.cs" >
-<Link>Runtime\UIElements\Managed\IMElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMGroup.cs" >
-<Link>Runtime\UIElements\Managed\IMGroup.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMImage.cs" >
-<Link>Runtime\UIElements\Managed\IMImage.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMLabel.cs" >
-<Link>Runtime\UIElements\Managed\IMLabel.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMRepeatButton.cs" >
-<Link>Runtime\UIElements\Managed\IMRepeatButton.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMScroller.cs" >
-<Link>Runtime\UIElements\Managed\IMScroller.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMScrollView.cs" >
-<Link>Runtime\UIElements\Managed\IMScrollView.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMSlider.cs" >
-<Link>Runtime\UIElements\Managed\IMSlider.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMTextField.cs" >
-<Link>Runtime\UIElements\Managed\IMTextField.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMToggle.cs" >
-<Link>Runtime\UIElements\Managed\IMToggle.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\IStyle.cs" >
 <Link>Runtime\UIElements\Managed\IStyle.cs</Link>
@@ -1443,9 +1350,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Panel.cs" >
 <Link>Runtime\UIElements\Managed\Panel.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Recycler.cs" >
-<Link>Runtime\UIElements\Managed\Recycler.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\RepeatButton.cs" >
 <Link>Runtime\UIElements\Managed\RepeatButton.cs</Link>
@@ -1503,12 +1407,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualTreeAsset.cs" >
 <Link>Runtime\UIElements\Managed\VisualTreeAsset.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualTreeBuilder.cs" >
-<Link>Runtime\UIElements\Managed\VisualTreeBuilder.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualTreeBuilderExtensions.cs" >
-<Link>Runtime\UIElements\Managed\VisualTreeBuilderExtensions.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\EventBase.cs" >
 <Link>Runtime\UIElements\Managed\Events\EventBase.cs</Link>
@@ -1582,6 +1480,51 @@
 <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs" >
 <Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\Audio\Public\Managed\Audio.deprecated.cs" >
+<Link>Modules\Audio\Public\Managed\Audio.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioPlayableOutput.cs" >
+<Link>Modules\Audio\Public\ScriptBindings\AudioPlayableOutput.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipPlayable.cs" >
+<Link>Modules\Audio\Public\ScriptBindings\AudioClipPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.cs" >
+<Link>Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioExtensions.cs" >
+<Link>Modules\Audio\Public\ScriptBindings\AudioExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerPlayableBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioMixerPlayableBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioClipPlayableBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioClipPlayableBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioPlayableGraphBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\AudioPlayableOutputBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\GameCenter\Managed\GameCenterServices.cs" >
 <Link>Modules\GameCenter\Managed\GameCenterServices.cs</Link>
 </Compile>
@@ -1629,6 +1572,9 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\SpriteMask\SpriteMaskBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs" >
+<Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs</Link>

@@ -30,7 +30,10 @@ namespace UnityEngine.Experimental.UIElements
         AtTarget,
 
         // After the target has gotten the chance to handle the event, the event walks back up the parent hierarchy back to root.
-        BubbleUp
+        BubbleUp,
+
+        // At last, execute the default action(s).
+        DefaultAction
     }
 
     // With the following VisualElement tree existing
@@ -265,6 +268,11 @@ namespace UnityEngine.Experimental.UIElements
             {
                 SendEventToIMGUIContainers(panel.visualTree, evt);
             }
+            if (evt.target == null)
+            {
+                evt.target = panel.visualTree;
+            }
+            ExecuteDefaultAction(evt);
         }
 
         private void SendEventToIMGUIContainers(VisualElement root, EventBase evt)
@@ -360,6 +368,22 @@ namespace UnityEngine.Experimental.UIElements
             evt.dispatch = false;
             evt.propagationPhase = PropagationPhase.None;
             evt.currentTarget = null;
+        }
+
+        private static void ExecuteDefaultAction(EventBase evt)
+        {
+            if (!evt.isDefaultPrevented && evt.target != null)
+            {
+                evt.dispatch = true;
+                evt.currentTarget = evt.target;
+                evt.propagationPhase = PropagationPhase.DefaultAction;
+
+                evt.currentTarget.HandleEvent(evt);
+
+                evt.propagationPhase = PropagationPhase.None;
+                evt.currentTarget = null;
+                evt.dispatch = false;
+            }
         }
 
         void SetFocusedElement(BaseVisualElementPanel panel, VisualElement element)

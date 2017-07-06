@@ -17,6 +17,7 @@ namespace UnityEditor.Collaboration
         private string m_MachineID;
         private string m_DisplayName;
         private ulong m_TimeStamp;
+        private string m_Hash;
 
         private SoftLock() {}
 
@@ -24,6 +25,7 @@ namespace UnityEditor.Collaboration
         public string machineID { get { return m_MachineID;  } }
         public string displayName { get { return m_DisplayName;  } }
         public ulong timeStamp { get { return m_TimeStamp;  } }
+        public string hash { get { return m_Hash;  } }
     }
 }
 

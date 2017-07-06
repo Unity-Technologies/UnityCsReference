@@ -315,10 +315,10 @@ public static string GetAssetPath(Object asset)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void UnloadUnusedAssetsImmediateInternal (bool includeMonoReferencesAsRoots) ;
 
-    [System.Obsolete ("Use BuildPipeline.BuildAssetBundle instead")]
+    [System.Obsolete ("Use BuildPipeline.BuildAssetBundle instead", true)]
 public static bool BuildResourceFile(Object[] selection, string pathName)
         {
-            return BuildPipeline.BuildAssetBundle(null, selection, pathName, BuildAssetBundleOptions.CompleteAssets);
+            return false;
         }
     
     

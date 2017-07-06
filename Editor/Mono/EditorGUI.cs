@@ -3429,8 +3429,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z field - not public (use PropertyField instead)
@@ -3440,8 +3440,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
@@ -3451,8 +3451,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 4);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZWLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZWLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z & W field for entering a [[Vector4]].
@@ -3527,8 +3527,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z int field for entering a [[Vector3Int]].
@@ -3571,8 +3571,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3628,11 +3628,11 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur);
+            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3684,11 +3684,11 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur);
+            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
         }
 
         private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside, GUIContent firstContent, GUIContent secondContent)
@@ -3759,12 +3759,12 @@ namespace UnityEditor
             position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_CenterLabel, s_ExtentLabel);
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
-            cur.NextVisible(true);
+            cur.Next(true);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3817,12 +3817,12 @@ namespace UnityEditor
             position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_PositionLabel, s_SizeLabel);
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
-            cur.NextVisible(true);
+            cur.Next(true);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         public static void MultiFloatField(Rect position, GUIContent label, GUIContent[] subLabels, float[] values)
@@ -3891,10 +3891,21 @@ namespace UnityEditor
 
         public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator)
         {
-            MultiPropertyField(position, subLabels, valuesIterator, kMiniLabelW, null);
+            MultiPropertyField(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
         }
 
-        internal static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, float labelWidth, bool[] disabledMask)
+        internal enum PropertyVisibility
+        {
+            All,
+            OnlyVisible
+        }
+
+        private static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility)
+        {
+            MultiPropertyField(position, subLabels, valuesIterator, visibility, kMiniLabelW, null);
+        }
+
+        internal static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility, float labelWidth, bool[] disabledMask)
         {
             int eCount = subLabels.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
@@ -3912,7 +3923,17 @@ namespace UnityEditor
                 if (disabledMask != null)
                     EndDisabled();
                 nr.x += w + kSpacingSubLabel;
-                valuesIterator.NextVisible(false);
+
+                switch (visibility)
+                {
+                    case PropertyVisibility.All:
+                        valuesIterator.Next(false);
+                        break;
+
+                    case PropertyVisibility.OnlyVisible:
+                        valuesIterator.NextVisible(false);
+                        break;
+                }
             }
             EditorGUIUtility.labelWidth = t;
             EditorGUI.indentLevel = l;
@@ -5108,7 +5129,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
-            GUIDebugger.LogBeginProperty(property.propertyPath, totalPosition);
+            var targetObjectTypeName = property.serializedObject.targetObject != null ?
+                property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
+            GUIDebugger.LogBeginProperty(targetObjectTypeName, property.propertyPath, totalPosition);
             showMixedValue = property.hasMultipleDifferentValues;
 
             if (property.isAnimated)
