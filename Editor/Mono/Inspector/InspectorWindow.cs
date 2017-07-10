@@ -1047,7 +1047,9 @@ namespace UnityEditor
             // inspector onGui starts, fetch ActiveEditorTrackers - this includes a MaterialEditor created with a canvasRenderer material
             // then, disabling a Mask component deletes this material
             // after that, either Active Editors are fetched again and the count is different OR the material is invalid and crashes the whole app
-            if (!target)
+            // The target is considered invalid if the MonoBehaviour is missing, to ensure that the missing monobheaviour field is drawn
+            // we only do not draw an editor if the target is invalid and it is not a MonoBehaviour. case: 917810
+            if (!target && target.GetType() != typeof(UnityEngine.MonoBehaviour))
                 return;
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();

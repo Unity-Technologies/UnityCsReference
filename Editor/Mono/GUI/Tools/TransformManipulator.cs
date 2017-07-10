@@ -361,7 +361,7 @@ namespace UnityEditor
             if (s_MouseDownState.Length > 0)
             {
                 s_MouseDownState[0].SetPositionDelta(positionDelta, true);
-                Vector3 firstDelta = s_MouseDownState[0].transform.localPosition - s_MouseDownState[0].localPosition;
+                Vector3 firstDelta = s_MouseDownState[0].transform.position - s_MouseDownState[0].position;
 
                 for (int i = 1; i < s_MouseDownState.Length; i++)
                 {
