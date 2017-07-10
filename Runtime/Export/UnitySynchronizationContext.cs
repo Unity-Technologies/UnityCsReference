@@ -56,8 +56,9 @@ namespace UnityEngine
         [RequiredByNativeCode]
         private static void ExecuteTasks()
         {
-            if (UnitySynchronizationContext.Current != null)
-                ((UnitySynchronizationContext)(SynchronizationContext.Current)).Exec();
+            var context = SynchronizationContext.Current as UnitySynchronizationContext;
+            if (context != null)
+                context.Exec();
         }
 
         private struct WorkRequest

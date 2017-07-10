@@ -71,7 +71,7 @@ namespace UnityEditor
 
         public static AnimationCurve curve
         {
-            get { return CurveEditorWindow.instance.m_Curve; }
+            get { return visible ? CurveEditorWindow.instance.m_Curve : null; }
             set
             {
                 CurveEditorWindow.instance.m_Property = null;
@@ -91,7 +91,7 @@ namespace UnityEditor
         {
             get
             {
-                return CurveEditorWindow.instance.m_Property;
+                return visible ? CurveEditorWindow.instance.m_Property : null;
             }
             set
             {
