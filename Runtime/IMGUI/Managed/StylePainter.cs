@@ -189,8 +189,14 @@ namespace UnityEngine
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters painterParams)
         {
-            string text = painterParams.text;
             Font font = painterParams.font;
+            if (font == null)
+            {
+                Debug.LogError("StylePainter: Can't process a null font.");
+                return Vector2.zero;
+            }
+
+            string text = painterParams.text;
             int fontSize = painterParams.fontSize;
             FontStyle fontStyle = painterParams.fontStyle;
             TextAnchor anchor = painterParams.anchor;

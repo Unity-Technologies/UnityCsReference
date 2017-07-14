@@ -1070,15 +1070,6 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
         }
 
-        [SerializeField]
-        private string m_Tooltip;
-        public string tooltip
-        {
-            get { return m_Tooltip ?? String.Empty; }
-            set { if (m_Tooltip != value) { m_Tooltip = value; Dirty(ChangeType.Layout); } }
-        }
-
-
         public virtual bool enabled
         {
             get
@@ -1154,11 +1145,8 @@ namespace UnityEngine.Experimental.UIElements
 
         protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
-            float measuredWidth = float.NaN;
-            float measuredHeight = float.NaN;
-            Font font = style.font;
-            if (string.IsNullOrEmpty(text) || font == null)
-                return new Vector2(measuredWidth, measuredHeight);
+            float measuredWidth;
+            float measuredHeight;
 
             if (widthMode == MeasureMode.Exactly)
             {

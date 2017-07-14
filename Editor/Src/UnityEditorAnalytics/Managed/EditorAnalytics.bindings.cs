@@ -23,5 +23,11 @@ namespace UnityEditor
         }
 
         extern private static bool SendEvent(string eventName, object parameters);
+
+
+        public static bool SendEventTimelineInfo(object parameters)
+        {
+            return EditorAnalytics.SendEvent("timelineInfo", parameters);
+        }
     }
 }

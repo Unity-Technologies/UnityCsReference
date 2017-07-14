@@ -142,6 +142,7 @@ namespace UnityEditor.U2D
             var rectCache = spriteEditorWindow.spriteRects;
             if (rectCache != null)
             {
+                bool needApply = false;
                 for (int i = 0; i < rectCache.Count; ++i)
                 {
                     var rect = rectCache.RectAt(i);
@@ -152,9 +153,14 @@ namespace UnityEditor.U2D
                             (float)(i) / rectCache.Count);
 
                         SetupShapeEditorOutline(rect);
+                        needApply = true;
                     }
                 }
-                spriteEditorWindow.ClearProgressBar();
+                if (needApply)
+                {
+                    spriteEditorWindow.ClearProgressBar();
+                    spriteEditorWindow.ApplyOrRevertModification(true);
+                }
             }
         }
 
@@ -455,7 +461,6 @@ namespace UnityEditor.U2D
                         }
                     };
                 }
-                spriteEditorWindow.SetDataModified();
             }
         }
 

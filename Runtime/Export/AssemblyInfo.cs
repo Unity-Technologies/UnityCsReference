@@ -37,6 +37,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Timeline")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]

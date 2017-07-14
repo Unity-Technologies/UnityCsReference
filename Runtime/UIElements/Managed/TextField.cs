@@ -295,7 +295,7 @@ namespace UnityEngine.Experimental.UIElements
             painter.DrawText(this);
 
             // Draw the cursor
-            if (cursorIndex == selectionEndIndex)
+            if (cursorIndex == selectionEndIndex && (Font)style.font != null)
             {
                 cursorParams = new CursorPositionStylePainterParameters
                 {
