@@ -24,7 +24,13 @@ namespace UnityEditor
         {
             public GUIContent mode = EditorGUIUtility.TextContent("Mode|Select the type of data to populate this stream with.");
             public GUIContent vectorComponentCount = EditorGUIUtility.TextContent("Number of Components|How many of the components (XYZW) to fill.");
-            public string[] modes = { "Disabled", "Vector", "Color" };
+
+            public GUIContent[] modes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Disabled"),
+                EditorGUIUtility.TextContent("Vector"),
+                EditorGUIUtility.TextContent("Color")
+            };
         }
         static Texts s_Texts;
 
@@ -39,7 +45,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_Modes[0] != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -59,9 +64,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             for (int i = 0; i < k_NumCustomDataStreams; i++)
             {
                 GUILayout.BeginVertical("Custom" + (i + 1), GUI.skin.window);

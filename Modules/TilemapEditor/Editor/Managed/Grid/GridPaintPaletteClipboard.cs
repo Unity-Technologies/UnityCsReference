@@ -26,6 +26,13 @@ namespace UnityEditor
         private const float k_MaxZoom = 100f; // How many pixels per cell at maximum
         private const float k_Padding = 0.75f; // How many percentages of window size is the empty padding around the palette content
 
+        private int m_KeyboardPanningID;
+        private int m_MousePanningID;
+
+        private float k_KeyboardPanningSpeed = 3.0f;
+
+        private Vector3 m_KeyboardPanning;
+
         private Rect m_GUIRect = new Rect(0, 0, 200, 200);
 
         private bool m_OldFog;
@@ -53,7 +60,7 @@ namespace UnityEditor
         private Dictionary<Vector2Int, Object> m_HoverData;
         private bool m_Unlocked;
         private bool m_PingTileAsset = false;
-        private bool m_Panning;
+
 
         public GameObject palette { get { return m_Owner.palette; } }
         public GameObject paletteInstance { get { return m_Owner.paletteInstance; } }
@@ -90,10 +97,10 @@ namespace UnityEditor
                 if (TilemapIsEmpty(tilemap))
                     return r;
 
-                int minX = int.MaxValue;
-                int minY = int.MaxValue;
-                int maxX = int.MinValue;
-                int maxY = int.MinValue;
+                int minX = tilemap.origin.x + tilemap.size.x;
+                int minY = tilemap.origin.y + tilemap.size.y;
+                int maxX = tilemap.origin.x;
+                int maxY = tilemap.origin.y;
 
                 foreach (Vector2Int pos in r.allPositionsWithin)
                 {
@@ -122,20 +129,22 @@ namespace UnityEditor
                 Vector2 min = grid.CellToLocal(new Vector3Int(size.xMin, size.yMin, 0));
                 Vector2 max = grid.CellToLocal(new Vector3Int(size.xMax, size.yMax, 0));
 
-                return new Rect(
-                    min - new Vector2(paddingW, paddingH),
-                    (max - min) + new Vector2(paddingW, paddingH) * 2f
-                    );
+                Rect result = new Rect(
+                        min - new Vector2(paddingW, paddingH),
+                        (max - min) + new Vector2(paddingW, paddingH) * 2f
+                        );
+
+                return result;
             }
         }
 
-        // same as paddedSize, but floored/ceiled to nearest integers
         private RectInt paddedBoundsInt
         {
             get
             {
-                Rect r = paddedBounds;
-                return new RectInt(Mathf.FloorToInt(r.xMin), Mathf.FloorToInt(r.yMin), Mathf.CeilToInt(r.size.x), Mathf.CeilToInt(r.size.y));
+                Vector3Int min = grid.LocalToCell(paddedBounds.min);
+                Vector3Int max = grid.LocalToCell(paddedBounds.max) + Vector3Int.one;
+                return new RectInt(min.x, min.y, max.x - min.x, max.y - min.y);
             }
         }
 
@@ -152,7 +161,7 @@ namespace UnityEditor
             get { return m_Unlocked; }
             set
             {
-                if (value == false && m_Unlocked)
+                if (value == false && m_Unlocked && tilemap != null)
                 {
                     tilemap.ClearAllEditorPreviewTiles();
                 }
@@ -309,6 +318,8 @@ namespace UnityEditor
         {
             base.OnEnable();
             Undo.undoRedoPerformed += UndoRedoPerformed;
+            m_KeyboardPanningID = GUIUtility.GetPermanentControlID();
+            m_MousePanningID = GUIUtility.GetPermanentControlID();
         }
 
         protected override void OnDisable()
@@ -416,9 +427,9 @@ namespace UnityEditor
             switch (Event.current.type)
             {
                 case EventType.MouseDown:
-                    if (MousePanningEvent() && guiRect.Contains(Event.current.mousePosition))
+                    if (MousePanningEvent() && guiRect.Contains(Event.current.mousePosition) && GUIUtility.hotControl == 0)
                     {
-                        m_Panning = true;
+                        GUIUtility.hotControl = m_MousePanningID;
                         Event.current.Use();
                     }
                     break;
@@ -439,20 +450,22 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.scrollWheel:
-                    float zoomDelta = HandleUtility.niceMouseDeltaZoom * (Event.current.shift ? -9 : -3) * k_ZoomSpeed;
-                    Camera camera = m_PreviewUtility.camera;
-                    Vector3 oldLocalPos = ScreenToLocal(Event.current.mousePosition);
-                    camera.orthographicSize = Mathf.Max(.0001f, camera.orthographicSize * (1 + zoomDelta * .001f));
-                    ClampZoomAndPan();
-                    Vector3 newLocalPos = ScreenToLocal(Event.current.mousePosition);
-                    Vector3 localDelta = newLocalPos - oldLocalPos;
-                    camera.transform.position = camera.transform.position - localDelta;
-                    ClampZoomAndPan();
-
-                    Event.current.Use();
+                    if (guiRect.Contains(Event.current.mousePosition))
+                    {
+                        float zoomDelta = HandleUtility.niceMouseDeltaZoom * (Event.current.shift ? -9 : -3) * k_ZoomSpeed;
+                        Camera camera = m_PreviewUtility.camera;
+                        Vector3 oldLocalPos = ScreenToLocal(Event.current.mousePosition);
+                        camera.orthographicSize = Mathf.Max(.0001f, camera.orthographicSize * (1 + zoomDelta * .001f));
+                        ClampZoomAndPan();
+                        Vector3 newLocalPos = ScreenToLocal(Event.current.mousePosition);
+                        Vector3 localDelta = newLocalPos - oldLocalPos;
+                        camera.transform.position = camera.transform.position - localDelta;
+                        ClampZoomAndPan();
+                        Event.current.Use();
+                    }
                     break;
                 case EventType.MouseDrag:
-                    if (m_Panning)
+                    if (GUIUtility.hotControl == m_MousePanningID)
                     {
                         Vector3 delta = new Vector3(-Event.current.delta.x, Event.current.delta.y, 0f) / LocalToScreenRatio();
                         m_PreviewUtility.camera.transform.Translate(delta);
@@ -461,20 +474,64 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.MouseMove: // Fix mousecursor being stuck when panning ended outside our window
-                    if (m_Panning && !MousePanningEvent())
-                        m_Panning = false;
+                    if (GUIUtility.hotControl == m_MousePanningID && !MousePanningEvent())
+                        GUIUtility.hotControl = 0;
                     break;
                 case EventType.MouseUp:
-                    if (m_Panning)
+                    if (GUIUtility.hotControl == m_MousePanningID)
                     {
                         ClampZoomAndPan();
-                        m_Panning = false;
+                        GUIUtility.hotControl = 0;
+                        Event.current.Use();
+                    }
+                    break;
+                case EventType.KeyDown:
+                    if (GUIUtility.hotControl == 0)
+                    {
+                        switch (Event.current.keyCode)
+                        {
+                            case KeyCode.LeftArrow:
+                                m_KeyboardPanning = new Vector3(-k_KeyboardPanningSpeed, 0f) / LocalToScreenRatio();
+                                GUIUtility.hotControl = m_KeyboardPanningID;
+                                Event.current.Use();
+                                break;
+                            case KeyCode.RightArrow:
+                                m_KeyboardPanning = new Vector3(k_KeyboardPanningSpeed, 0f) / LocalToScreenRatio();
+                                GUIUtility.hotControl = m_KeyboardPanningID;
+                                Event.current.Use();
+                                break;
+                            case KeyCode.UpArrow:
+                                m_KeyboardPanning = new Vector3(0f, k_KeyboardPanningSpeed) / LocalToScreenRatio();
+                                GUIUtility.hotControl = m_KeyboardPanningID;
+                                Event.current.Use();
+                                break;
+                            case KeyCode.DownArrow:
+                                m_KeyboardPanning = new Vector3(0f, -k_KeyboardPanningSpeed) / LocalToScreenRatio();
+                                GUIUtility.hotControl = m_KeyboardPanningID;
+                                Event.current.Use();
+                                break;
+                        }
+                    }
+                    break;
+                case EventType.KeyUp:
+                    if (GUIUtility.hotControl == m_KeyboardPanningID)
+                    {
+                        m_KeyboardPanning = Vector3.zero;
+                        GUIUtility.hotControl = 0;
                         Event.current.Use();
                     }
                     break;
                 case EventType.Repaint:
-                    if (m_Panning)
+                    if (GUIUtility.hotControl == m_KeyboardPanningID)
+                    {
+                        m_PreviewUtility.camera.transform.Translate(m_KeyboardPanning);
+                        ClampZoomAndPan();
+                        Repaint();
+                    }
+
+                    if (GUIUtility.hotControl == m_MousePanningID)
                         EditorGUIUtility.AddCursorRect(guiRect, MouseCursor.Pan);
+
                     break;
             }
         }
@@ -566,7 +623,7 @@ namespace UnityEditor
 
         private void RenderDragAndDropPreview()
         {
-            if (!activeDragAndDrop || m_HoverData == null)
+            if (!activeDragAndDrop || m_HoverData == null || m_HoverData.Count == 0)
                 return;
 
             RectInt rect = TileDragAndDrop.GetMinMaxRect(m_HoverData.Keys.ToList());
@@ -577,9 +634,9 @@ namespace UnityEditor
 
         private void RenderGrid()
         {
-            // GL.LINES doesn't give nice pixel perfect grid so we have to have separate codepath with GL.QUADS specially for palette window here
+            // MeshTopology.Lines doesn't give nice pixel perfect grid so we have to have separate codepath with MeshTopology.Quads specially for palette window here
             if (m_GridMesh == null && grid.cellLayout == Grid.CellLayout.Rectangle)
-                m_GridMesh = GridEditorUtility.GenerateCachedGridMesh(grid, k_GridColor, 1f / LocalToScreenRatio(), paddedBoundsInt);
+                m_GridMesh = GridEditorUtility.GenerateCachedGridMesh(grid, k_GridColor, 1f / LocalToScreenRatio(), paddedBoundsInt, MeshTopology.Quads);
 
             GridEditorUtility.DrawGridGizmo(grid, grid.transform, k_GridColor, ref m_GridMesh, ref m_GridMaterial);
         }
@@ -619,18 +676,24 @@ namespace UnityEditor
                 //TODO: Cache this
                 case EventType.DragUpdated:
                 {
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                     List<Texture2D> sheets = TileDragAndDrop.GetValidSpritesheets(DragAndDrop.objectReferences);
                     List<Sprite> sprites = TileDragAndDrop.GetValidSingleSprites(DragAndDrop.objectReferences);
                     List<TileBase> tiles = TileDragAndDrop.GetValidTiles(DragAndDrop.objectReferences);
                     m_HoverData = TileDragAndDrop.CreateHoverData(sheets, sprites, tiles);
 
-                    Event.current.Use();
-                    GUI.changed = true;
+                    if (m_HoverData != null && m_HoverData.Count > 0)
+                    {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                        Event.current.Use();
+                        GUI.changed = true;
+                    }
                 }
                 break;
                 case EventType.DragPerform:
                 {
+                    if (m_HoverData == null || m_HoverData.Count == 0)
+                        return;
+
                     RegisterUndo();
 
                     bool wasEmpty = TilemapIsEmpty(tilemap);

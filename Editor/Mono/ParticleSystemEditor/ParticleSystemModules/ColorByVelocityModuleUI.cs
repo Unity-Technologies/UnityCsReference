@@ -30,6 +30,8 @@ namespace UnityEditor
             // Already initialized?
             if (m_Gradient != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_Gradient = new SerializedMinMaxGradient(this);
             m_Gradient.m_AllowColor = false;
@@ -40,9 +42,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUIMinMaxGradient(s_Texts.color, m_Gradient, false);
             GUIMinMaxRange(s_Texts.velocityRange, m_Range);
         }

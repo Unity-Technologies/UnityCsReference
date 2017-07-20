@@ -3449,11 +3449,17 @@
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushesDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushesDropdown.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs</Link>
@@ -3472,6 +3478,9 @@
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalettesDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalettesDropdown.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs</Link>

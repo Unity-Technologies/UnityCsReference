@@ -24,13 +24,15 @@ namespace UnityEditor
         int m_ShowEditWindowForIndex = -1;
         int m_HoverIndex;
         int[] m_SeperatorIndices;
-        float m_MaxTextWidth = -1f;
+        float m_CachedWidth = -1f;
+        float m_MinTextWidth = 200f;
 
         const float lineHeight = 18f;
         const float seperatorHeight = 8f;
         const float leftMargin = 25f;
         int maxIndex { get { return m_ShowAddNewPresetItem ? m_ItemProvider.Count() : m_ItemProvider.Count() - 1; } }
         public int selectedIndex { get; set; }
+        protected float minTextWidth { get { return m_MinTextWidth; } set { m_MinTextWidth = value; ClearCachedWidth(); } }
 
         // itemClickedCallback arguments is clicked index, clicked item object
         public FlexibleMenu(IFlexibleMenuItemProvider itemProvider, int selectionIndex, FlexibleMenuModifyItemUI modifyItemUi, Action<int, object> itemClickedCallback)
@@ -193,14 +195,14 @@ namespace UnityEditor
         protected Vector2 CalcSize()
         {
             float height = (maxIndex + 1) * lineHeight + m_SeperatorIndices.Length * seperatorHeight;
-            if (m_MaxTextWidth < 0)
-                m_MaxTextWidth = Math.Max(200f, CalcWidth());
-            return new Vector2(m_MaxTextWidth, height);
+            if (m_CachedWidth < 0)
+                m_CachedWidth = Math.Max(m_MinTextWidth, CalcWidth());
+            return new Vector2(m_CachedWidth, height);
         }
 
         void ClearCachedWidth()
         {
-            m_MaxTextWidth = -1f;
+            m_CachedWidth = -1f;
         }
 
         float CalcWidth()

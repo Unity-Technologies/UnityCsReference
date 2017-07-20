@@ -38,7 +38,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_X != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -51,9 +50,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             MinMaxCurveState state = m_X.state;
             GUITripleMinMaxCurve(GUIContent.none, s_Texts.x, m_X, s_Texts.y, m_Y, s_Texts.z, m_Z, m_RandomizePerFrame);
 

@@ -190,6 +190,8 @@ namespace UnityEngine.Experimental.UIElements
                         return result;
                 }
             }
+            else if (containsPoint && picked != null)
+                picked.Add(root);
 
             switch (root.pickingMode)
             {

@@ -30,7 +30,7 @@ namespace UnityEditor
             public GUIContent separateAxes = EditorGUIUtility.TextContent("Separate Axes|If enabled, you can control the velocity limit separately for each axis.");
             public GUIContent space = EditorGUIUtility.TextContent("Space|Specifies if the velocity values are in local space (rotated with the transform) or world space.");
             public string[] spaces = { "Local", "World" };
-            public GUIContent drag = EditorGUIUtility.TextContent("Drag|Apply drag to particles.");
+            public GUIContent drag = EditorGUIUtility.TextContent("Drag|Control the amount of drag applied to each particle during its lifetime.");
             public GUIContent multiplyDragByParticleSize = EditorGUIUtility.TextContent("Multiply by Size|Adjust the drag based on the size of the particles.");
             public GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TextContent("Multiply by Velocity|Adjust the drag based on the velocity of the particles.");
         }

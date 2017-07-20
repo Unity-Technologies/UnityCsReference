@@ -20,6 +20,7 @@ namespace UnityEditor.IMGUI.Controls
         public float iconRightPadding { get; set; }
         public float iconTotalPadding { get { return iconLeftPadding + iconRightPadding; } }
         public System.Action<TreeViewItem, Rect> iconOverlayGUI { get; set; } // Rect includes iconLeftPadding and iconRightPadding
+        public System.Action<TreeViewItem, Rect> labelOverlayGUI { get; set; }
 
         private bool m_AnimateScrollBarOnExpandCollapse = true;
 
@@ -382,6 +383,11 @@ namespace UnityEditor.IMGUI.Controls
             if (icon != null)
                 rect.xMin += k_IconWidth + iconTotalPadding + k_SpaceBetweenIconAndText;
             lineStyle.Draw(rect, label, false, false, selected, focused);
+
+            if (labelOverlayGUI != null)
+            {
+                labelOverlayGUI(item, rect);
+            }
         }
 
         // Ping Item

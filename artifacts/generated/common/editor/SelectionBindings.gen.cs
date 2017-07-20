@@ -128,9 +128,10 @@ public sealed partial class Selection
         set;
     }
 
-    public static bool Contains(int instanceID) { return (System.Array.IndexOf<int>(instanceIDs, instanceID) != -1); }
-    
-    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool Contains (int instanceID) ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetActiveObjectWithContext (Object obj, Object context) ;

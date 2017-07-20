@@ -90,13 +90,53 @@ namespace UnityEditor
             public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TextContent("Custom Vertex Streams|Choose whether to send custom particle data to the shader.");
 
-            public string[] particleTypes = new string[] { "Billboard", "Stretched Billboard", "Horizontal Billboard", "Vertical Billboard", "Mesh", "None" }; // Keep in sync with enum in ParticleSystemRenderer.h
-            public string[] sortTypes = new string[] { "None", "By Distance", "Oldest in Front", "Youngest in Front" };
-            public string[] spaces = { "View", "World", "Local", "Facing", "Velocity" };
-            public string[] motionVectorOptions = new string[] { "Camera Motion Only", "Per Object Motion", "Force No Motion" };
+            // Keep in sync with enum in ParticleSystemRenderer.h
+            public GUIContent[] particleTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Billboard"),
+                EditorGUIUtility.TextContent("Stretched Billboard"),
+                EditorGUIUtility.TextContent("Horizontal Billboard"),
+                EditorGUIUtility.TextContent("Vertical Billboard"),
+                EditorGUIUtility.TextContent("Mesh"),
+                EditorGUIUtility.TextContent("None")
+            };
 
-            public GUIContent maskingMode = EditorGUIUtility.TextContent("Masking|Defines the masking behaviour of the particle renderer.");
-            public string[] maskInteraction = { "No Masking", "Visible Inside Mask", "Visible Outside Mask"};
+            public GUIContent[] sortTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("None"),
+                EditorGUIUtility.TextContent("By Distance"),
+                EditorGUIUtility.TextContent("Oldest in Front"),
+                EditorGUIUtility.TextContent("Youngest in Front")
+            };
+
+            public GUIContent[] spaces = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("View"),
+                EditorGUIUtility.TextContent("World"),
+                EditorGUIUtility.TextContent("Local"),
+                EditorGUIUtility.TextContent("Facing"),
+                EditorGUIUtility.TextContent("Velocity")
+            };
+
+            public GUIContent[] localSpace = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Local")
+            };
+
+            public GUIContent[] motionVectorOptions = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Camera Motion Only"),
+                EditorGUIUtility.TextContent("Per Object Motion"),
+                EditorGUIUtility.TextContent("Force No Motion")
+            };
+
+            public GUIContent maskingMode = EditorGUIUtility.TextContent("Masking|Defines the masking behavior of the particles. See Sprite Masking documentation for more details.");
+            public GUIContent[] maskInteractions = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("No Masking"),
+                EditorGUIUtility.TextContent("Visible Inside Mask"),
+                EditorGUIUtility.TextContent("Visible Outside Mask")
+            };
 
             public string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz" };
             public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw", "NoiseSum.x", "NoiseSum.xy", "NoiseSum.xyz", "NoiseImpulse.x", "NoiseImpulse.xy", "NoiseImpulse.xyz" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystem.bindings
@@ -116,6 +156,8 @@ namespace UnityEditor
         {
             if (m_CastShadows != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_CastShadows = GetProperty0("m_CastShadows");
             m_ReceiveShadows = GetProperty0("m_ReceiveShadows");
@@ -170,9 +212,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             EditorGUI.BeginChangeCheck();
             RenderMode renderMode = (RenderMode)GUIPopup(s_Texts.renderMode, m_RenderMode, s_Texts.particleTypes);
             bool renderModeChanged = EditorGUI.EndChangeCheck();
@@ -230,7 +269,7 @@ namespace UnityEditor
                         {
                             using (new EditorGUI.DisabledScope(true))
                             {
-                                GUIPopup(s_Texts.space, 0, new string[] { s_Texts.spaces[(int)ParticleSystemRenderSpace.Local] }); // force to "Local"
+                                GUIPopup(s_Texts.space, 0, s_Texts.localSpace); // force to "Local"
                             }
 
                             GUIContent info = EditorGUIUtility.TextContent("Using Align to Direction in the Shape Module forces the system to be rendered using Local Render Alignment.");
@@ -252,7 +291,7 @@ namespace UnityEditor
                     }
                 }
 
-                GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteraction);
+                GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
 
                 if (!m_RenderMode.hasMultipleDifferentValues)
                 {
@@ -261,7 +300,7 @@ namespace UnityEditor
 
                     EditorGUILayout.Space();
 
-                    GUIPopup(s_Texts.castShadows, m_CastShadows, m_CastShadows.enumDisplayNames);
+                    GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
 
                     // Disable ReceiveShadows options for Deferred rendering path
                     using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
@@ -428,7 +467,7 @@ namespace UnityEditor
 
             GenericMenu menu = new GenericMenu();
             for (int i = 0; i < notEnabled.Count; ++i)
-                menu.AddItem(new GUIContent(s_Texts.vertexStreamsMenu[notEnabled[i]]), false, SelectVertexStreamCallback, new StreamCallbackData(m_VertexStreams, notEnabled[i]));
+                menu.AddItem(EditorGUIUtility.TempContent(s_Texts.vertexStreamsMenu[notEnabled[i]]), false, SelectVertexStreamCallback, new StreamCallbackData(m_VertexStreams, notEnabled[i]));
             menu.ShowAsContext();
             Event.current.Use();
         }

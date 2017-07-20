@@ -1207,6 +1207,9 @@
 <Compile Include="..\..\artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UnityConnect\Managed\AnalyticsSessionInfo.bindings.cs" >
+<Link>Runtime\UnityConnect\Managed\AnalyticsSessionInfo.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\UnityConnect\UnityConnectSettingsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UnityConnect\UnityConnectSettingsBindings.gen.cs</Link>
 </Compile>

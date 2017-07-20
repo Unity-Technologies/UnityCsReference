@@ -25,7 +25,13 @@ namespace UnityEditor
             public GUIContent colorOverTrail = EditorGUIUtility.TextContent("Color over Trail|Select a color for the trail from its start to end vertex.");
             public GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
 
-            public string[] textureModeOptions = { "Stretch", "Tile", "DistributePerSegment", "RepeatPerSegment" };
+            public GUIContent[] textureModeOptions = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Stretch"),
+                EditorGUIUtility.TextContent("Tile"),
+                EditorGUIUtility.TextContent("DistributePerSegment"),
+                EditorGUIUtility.TextContent("RepeatPerSegment")
+            };
         }
         private static Texts s_Texts;
 
@@ -54,7 +60,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_Ratio != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -75,9 +80,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUIFloat(s_Texts.ratio, m_Ratio);
             GUIMinMaxCurve(s_Texts.lifetime, m_Lifetime);
             GUIFloat(s_Texts.minVertexDistance, m_MinVertexDistance);

@@ -188,6 +188,7 @@ public enum AndroidBuildSystem
 {
     Internal = 0,
     Gradle = 1,
+    [System.Obsolete ("use Gradle instead of export ADT project")]
     ADT = 2,
     VisualStudio = 3,
 }

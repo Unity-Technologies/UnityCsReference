@@ -4,7 +4,6 @@
 
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 namespace UnityEditor
 {
@@ -13,7 +12,6 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent activeSelection = EditorGUIUtility.TextContent("Active Selection");
             public static readonly Color activeColor = new Color(1f, .5f, 0f);
             public static readonly Color executingColor = new Color(1f, .75f, 0.25f);
         }
@@ -28,10 +26,7 @@ namespace UnityEditor
             OnInspectorGUI();
         }
 
-        public virtual void OnSelectionInspectorGUI()
-        {
-            GridSelection.position = EditorGUILayout.BoundsIntField(Styles.activeSelection, GridSelection.position);
-        }
+        public virtual void OnSelectionInspectorGUI() {}
 
         public virtual void OnMouseLeave() {}
         public virtual void OnMouseEnter() {}

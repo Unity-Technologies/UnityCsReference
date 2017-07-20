@@ -62,7 +62,7 @@ namespace UnityEngine.Experimental.Rendering
         int layerCullSpherical;
 
         CoreCameraValues coreCameraValues;
-        private int padding;
+        uint cameraType;
 
         public Plane GetShadowCullingPlane(int index)
         {

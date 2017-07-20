@@ -109,8 +109,7 @@ namespace UnityEngine
                     painterParams.borderTopWidth,
                     painterParams.borderRightWidth,
                     painterParams.borderBottomWidth);
-
-            DrawRect_Internal(screenRect, color, borderWidths, borderRadius);
+            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidths, borderRadius);
         }
 
         public void DrawTexture(TextureStylePainterParameters painterParams)
@@ -167,7 +166,7 @@ namespace UnityEngine
                     painterParams.borderRightWidth,
                     painterParams.borderBottomWidth);
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color, borderWidths, borderRadius, sliceLeft, sliceTop, sliceRight, sliceBottom);
+            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadius, sliceLeft, sliceTop, sliceRight, sliceBottom);
         }
 
         public void DrawText(TextStylePainterParameters painterParams)
@@ -184,7 +183,7 @@ namespace UnityEngine
             bool richText = painterParams.richText;
             TextClipping clipping = painterParams.clipping;
 
-            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
+            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters painterParams)

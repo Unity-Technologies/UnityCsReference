@@ -35,7 +35,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_X != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -50,9 +49,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             EditorGUI.BeginChangeCheck();
             bool separateAxes = GUIToggle(s_Texts.separateAxes, m_SeparateAxes);
             if (EditorGUI.EndChangeCheck())

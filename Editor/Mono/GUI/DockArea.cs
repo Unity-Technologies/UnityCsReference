@@ -248,10 +248,6 @@ namespace UnityEditor
             return true;
         }
 
-        // without leaving this in here for HostView.Invoke(), commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
-        void OnGUI()
-        {}
-
         protected override void OldOnGUI()
         {
             ClearBackground();

@@ -9,12 +9,33 @@ namespace UnityEditor
     [CustomEditor(typeof(GridSelection))]
     internal class GridSelectionEditor : Editor
     {
+        private const float iconSize = 32f;
+
+        static class Styles
+        {
+            public static readonly GUIStyle header = new GUIStyle("IN GameObjectHeader");
+            public static readonly GUIContent gridSelectionLabel = EditorGUIUtility.TextContent("Grid Selection");
+        }
+
         public override void OnInspectorGUI()
         {
             if (GridPaintingState.activeBrushEditor && GridSelection.active)
             {
                 GridPaintingState.activeBrushEditor.OnSelectionInspectorGUI();
             }
+        }
+
+        protected override void OnHeaderGUI()
+        {
+            EditorGUILayout.BeginHorizontal(Styles.header);
+            Texture2D icon = AssetPreview.GetMiniTypeThumbnail(typeof(Grid));
+            GUILayout.Label(icon, GUILayout.Width(iconSize), GUILayout.Height(iconSize));
+            EditorGUILayout.BeginVertical();
+            GUILayout.Label(Styles.gridSelectionLabel);
+            GridSelection.position = EditorGUILayout.BoundsIntField(GUIContent.none, GridSelection.position);
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
+            DrawHeaderHelpAndSettingsGUI(GUILayoutUtility.GetLastRect());
         }
 
         public bool HasFrameBounds()

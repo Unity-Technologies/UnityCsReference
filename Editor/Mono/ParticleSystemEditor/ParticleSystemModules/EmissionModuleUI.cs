@@ -43,12 +43,11 @@ namespace UnityEditor
 
         protected override void Init()
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             // Already initialized?
             if (m_BurstCount != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_Time = new SerializedMinMaxCurve(this, s_Texts.rateOverTime, "rateOverTime");
             m_Distance = new SerializedMinMaxCurve(this, s_Texts.rateOverDistance, "rateOverDistance");

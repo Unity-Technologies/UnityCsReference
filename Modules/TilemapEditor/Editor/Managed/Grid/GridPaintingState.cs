@@ -14,6 +14,8 @@ namespace UnityEditor
         [SerializeField] private GridBrushBase m_Brush; // Which brush will handle painting callbacks
         [SerializeField] private PaintableGrid m_ActiveGrid; // Grid that has painting focus (can be palette, too)
 
+        private GameObject[] m_CachedPaintTargets = null;
+        private bool m_FlushPaintTargetCache;
         private Editor m_CachedEditor;
         private bool m_SavingPalette;
 
@@ -23,40 +25,84 @@ namespace UnityEditor
         void OnEnable()
         {
             Selection.selectionChanged += OnSelectionChange;
+            EditorApplication.hierarchyWindowChanged += HierarchyChanged;
+            m_FlushPaintTargetCache = true;
+        }
+
+        private void OnBrushChanged(GridBrushBase gridBrushBase)
+        {
+            m_FlushPaintTargetCache = true;
         }
 
         void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChange;
+            EditorApplication.hierarchyWindowChanged -= HierarchyChanged;
+            FlushCache();
+        }
+
+        private void HierarchyChanged()
+        {
+            if (scenePaintTarget == null)
+                AutoSelectPaintTarget();
         }
 
         private void OnSelectionChange()
         {
+            m_FlushPaintTargetCache = true;
+
             if (ValidatePaintTarget(Selection.activeGameObject))
                 scenePaintTarget = Selection.activeGameObject;
+
+            if (scenePaintTarget == null)
+                AutoSelectPaintTarget();
         }
 
-        static public GameObject scenePaintTarget
+        public static void AutoSelectPaintTarget()
+        {
+            if (activeBrushEditor != null)
+            {
+                if (validTargets != null && validTargets.Length > 0)
+                {
+                    scenePaintTarget = validTargets[0];
+                }
+            }
+        }
+
+        public static GameObject scenePaintTarget
         {
             get { return instance.m_ScenePaintTarget; }
             set
             {
-                instance.m_ScenePaintTarget = value;
-                if (scenePaintTargetChanged != null)
-                    scenePaintTargetChanged(instance.m_ScenePaintTarget);
+                if (value != instance.m_ScenePaintTarget)
+                {
+                    instance.m_ScenePaintTarget = value;
+                    if (scenePaintTargetChanged != null)
+                        scenePaintTargetChanged(instance.m_ScenePaintTarget);
+                }
             }
         }
 
         public static GridBrushBase gridBrush
         {
-            get { return instance.m_Brush; }
+            get
+            {
+                if (instance.m_Brush == null)
+                    instance.m_Brush = GridPaletteBrushes.brushes[0];
+
+                return instance.m_Brush;
+            }
             set
             {
                 if (instance.m_Brush != value)
                 {
                     instance.m_Brush = value;
+                    instance.m_FlushPaintTargetCache = true;
 
                     scenePaintTarget = ValidatePaintTarget(Selection.activeGameObject) ? Selection.activeGameObject : null;
+
+                    if (scenePaintTarget == null)
+                        AutoSelectPaintTarget();
 
                     if (brushChanged != null)
                         brushChanged(instance.m_Brush);
@@ -100,7 +146,6 @@ namespace UnityEditor
             if (candidate == null || candidate.GetComponentInParent<Grid>() == null || activeBrushEditor == null)
                 return false;
 
-            GameObject[] validTargets = activeBrushEditor.validTargets;
             if (validTargets != null && !validTargets.Contains(candidate))
                 return false;
 
@@ -110,13 +155,32 @@ namespace UnityEditor
         public static void FlushCache()
         {
             if (instance.m_CachedEditor != null)
+            {
                 DestroyImmediate(instance.m_CachedEditor);
+                instance.m_CachedEditor = null;
+            }
+            instance.m_FlushPaintTargetCache = true;
         }
 
         public static bool savingPalette
         {
             get { return instance.m_SavingPalette; }
             set { instance.m_SavingPalette = value; }
+        }
+
+        public static GameObject[] validTargets
+        {
+            get
+            {
+                if (instance.m_FlushPaintTargetCache)
+                {
+                    instance.m_CachedPaintTargets = null;
+                    if (activeBrushEditor != null)
+                        instance.m_CachedPaintTargets = activeBrushEditor.validTargets;
+                    instance.m_FlushPaintTargetCache = false;
+                }
+                return instance.m_CachedPaintTargets;
+            }
         }
 
         public bool areToolModesAvailable { get { return true; } }

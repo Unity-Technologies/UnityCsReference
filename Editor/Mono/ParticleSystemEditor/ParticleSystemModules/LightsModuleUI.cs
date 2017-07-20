@@ -44,7 +44,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_Ratio != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -62,9 +61,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUIObject(s_Texts.light, m_Light);
             GUIFloat(s_Texts.ratio, m_Ratio);
             GUIToggle(s_Texts.randomDistribution, m_RandomDistribution);

@@ -35,7 +35,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_X != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -47,9 +46,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUITripleMinMaxCurve(GUIContent.none, s_Texts.x, m_X, s_Texts.y, m_Y, s_Texts.z, m_Z, null);
             GUIBoolAsPopup(s_Texts.space, m_InWorldSpace, s_Texts.spaces);
         }

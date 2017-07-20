@@ -28,7 +28,6 @@ namespace UnityEditor
             // Already initialized?
             if (m_Multiplier != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -37,9 +36,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUIFloat(s_Texts.multiplier, m_Multiplier);
         }
 

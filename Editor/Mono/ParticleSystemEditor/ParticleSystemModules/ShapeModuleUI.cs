@@ -35,7 +35,7 @@ namespace UnityEditor
 
                 EditorGUI.indentLevel++;
 
-                GUIPopup(text.mode, m_Mode, new string[] { "Random", "Loop", "Ping-Pong", "Burst Spread" });
+                GUIPopup(text.mode, m_Mode, s_Texts.emissionModes);
                 GUIFloat(text.spread, m_Spread);
 
                 if (!m_Mode.hasMultipleDifferentValues)
@@ -90,7 +90,6 @@ namespace UnityEditor
         private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
         private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
 
-        private readonly string[] m_GuiNames = new string[] { "Sphere", "Hemisphere", "Cone", "Donut", "Box", "Mesh", "Mesh Renderer", "Skinned Mesh Renderer", "Circle", "Edge" };
         private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge };
         private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 4, 5, 2, 2, 2, 8, 8, 9, 6, 7, 4, 4, 3 };
 
@@ -121,6 +120,48 @@ namespace UnityEditor
             public GUIContent position = EditorGUIUtility.TextContent("Position|Translate the emission shape.");
             public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Rotate the emission shape.");
             public GUIContent scale = EditorGUIUtility.TextContent("Scale|Scale the emission shape.");
+
+            public GUIContent[] shapeTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Sphere"),
+                EditorGUIUtility.TextContent("Hemisphere"),
+                EditorGUIUtility.TextContent("Cone"),
+                EditorGUIUtility.TextContent("Donut"),
+                EditorGUIUtility.TextContent("Box"),
+                EditorGUIUtility.TextContent("Mesh"),
+                EditorGUIUtility.TextContent("Mesh Renderer"),
+                EditorGUIUtility.TextContent("Skinned Mesh Renderer"),
+                EditorGUIUtility.TextContent("Circle"),
+                EditorGUIUtility.TextContent("Edge")
+            };
+
+            public GUIContent[] boxTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Volume"),
+                EditorGUIUtility.TextContent("Shell"),
+                EditorGUIUtility.TextContent("Edge")
+            };
+
+            public GUIContent[] coneTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Base"),
+                EditorGUIUtility.TextContent("Volume")
+            };
+
+            public GUIContent[] meshTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Vertex"),
+                EditorGUIUtility.TextContent("Edge"),
+                EditorGUIUtility.TextContent("Triangle")
+            };
+
+            public GUIContent[] emissionModes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Random"),
+                EditorGUIUtility.TextContent("Loop"),
+                EditorGUIUtility.TextContent("Ping-Pong"),
+                EditorGUIUtility.TextContent("Burst Spread")
+            };
         }
 
         static Texts s_Texts = new Texts();
@@ -163,7 +204,6 @@ namespace UnityEditor
         {
             if (m_Type != null)
                 return;
-
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -224,15 +264,15 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
+            EditorGUI.showMixedValue = m_Type.hasMultipleDifferentValues;
             int type = m_Type.intValue;
             int index = m_TypeToGuiTypeIndex[type];
 
             EditorGUI.BeginChangeCheck();
-            int index2 = GUIPopup(s_Texts.shape, index, m_GuiNames);
+            int index2 = GUIPopup(s_Texts.shape, index, s_Texts.shapeTypes);
             bool shapeTypeChanged = EditorGUI.EndChangeCheck();
+
+            EditorGUI.showMixedValue = false;
 
             ParticleSystemShapeType guiType = m_GuiTypes[index2];
             if (index2 != index)
@@ -240,130 +280,128 @@ namespace UnityEditor
                 type = (int)guiType;
             }
 
-            switch (guiType)
+            if (!m_Type.hasMultipleDifferentValues)
             {
-                case ParticleSystemShapeType.Box:
+                switch (guiType)
                 {
-                    string[] types = new string[] { "Volume", "Shell", "Edge" };
-
-                    int emitFrom = ConvertBoxTypeToBoxEmitFrom((ParticleSystemShapeType)type);
-                    emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, types);
-                    type = (int)ConvertBoxEmitFromToBoxType(emitFrom);
-
-                    if (type == (int)ParticleSystemShapeType.BoxShell || type == (int)ParticleSystemShapeType.BoxEdge)
-                        GUIVector3Field(s_Texts.boxThickness, m_BoxThickness);
-                }
-                break;
-
-                case ParticleSystemShapeType.Cone:
-                {
-                    GUIFloat(s_Texts.coneAngle, m_Angle);
-                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
-
-                    m_Arc.OnInspectorGUI(s_ArcTexts);
-
-                    bool showLength = (type != (int)ParticleSystemShapeType.ConeVolume);
-                    using (new EditorGUI.DisabledScope(showLength))
+                    case ParticleSystemShapeType.Box:
                     {
-                        GUIFloat(s_Texts.coneLength, m_Length);
+                        int emitFrom = ConvertBoxTypeToBoxEmitFrom((ParticleSystemShapeType)type);
+                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.boxTypes);
+                        type = (int)ConvertBoxEmitFromToBoxType(emitFrom);
+
+                        if (type == (int)ParticleSystemShapeType.BoxShell || type == (int)ParticleSystemShapeType.BoxEdge)
+                            GUIVector3Field(s_Texts.boxThickness, m_BoxThickness);
                     }
+                    break;
 
-                    string[] types = new string[] { "Base", "Volume" };
-
-                    int emitFrom = ConvertConeTypeToConeEmitFrom((ParticleSystemShapeType)type);
-                    emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, types);
-                    type = (int)ConvertConeEmitFromToConeType(emitFrom);
-                }
-                break;
-
-                case ParticleSystemShapeType.Donut:
-                {
-                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    GUIFloat(s_Texts.donutRadius, m_DonutRadius);
-                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
-
-                    m_Arc.OnInspectorGUI(s_ArcTexts);
-                }
-                break;
-
-                case ParticleSystemShapeType.Mesh:
-                case ParticleSystemShapeType.MeshRenderer:
-                case ParticleSystemShapeType.SkinnedMeshRenderer:
-                {
-                    string[] types = new string[] {"Vertex", "Edge", "Triangle"};
-                    GUIPopup(s_Texts.meshType, m_PlacementMode, types);
-
-                    Material material = null;
-                    Mesh srcMesh = null;
-                    if (guiType == ParticleSystemShapeType.Mesh)
+                    case ParticleSystemShapeType.Cone:
                     {
-                        GUIObject(s_Texts.mesh, m_Mesh);
-                    }
-                    else if (guiType == ParticleSystemShapeType.MeshRenderer)
-                    {
-                        GUIObject(s_Texts.meshRenderer, m_MeshRenderer);
-                        MeshRenderer mesh = (MeshRenderer)m_MeshRenderer.objectReferenceValue;
-                        if (mesh)
+                        GUIFloat(s_Texts.coneAngle, m_Angle);
+                        GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                        GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
+
+                        m_Arc.OnInspectorGUI(s_ArcTexts);
+
+                        bool showLength = (type != (int)ParticleSystemShapeType.ConeVolume);
+                        using (new EditorGUI.DisabledScope(showLength))
                         {
-                            material = mesh.sharedMaterial;
-                            if (mesh.GetComponent<MeshFilter>())
-                                srcMesh = mesh.GetComponent<MeshFilter>().sharedMesh;
+                            GUIFloat(s_Texts.coneLength, m_Length);
                         }
-                    }
-                    else
-                    {
-                        GUIObject(s_Texts.skinnedMeshRenderer, m_SkinnedMeshRenderer);
-                        SkinnedMeshRenderer mesh = (SkinnedMeshRenderer)m_SkinnedMeshRenderer.objectReferenceValue;
-                        if (mesh)
-                        {
-                            material = mesh.sharedMaterial;
-                            srcMesh = mesh.sharedMesh;
-                        }
-                    }
 
-                    GUIToggleWithIntField(s_Texts.meshMaterialIndex, m_UseMeshMaterialIndex, m_MeshMaterialIndex, false);
-                    bool useMeshColors = GUIToggle(s_Texts.useMeshColors, m_UseMeshColors);
-                    if (useMeshColors)
+                        int emitFrom = ConvertConeTypeToConeEmitFrom((ParticleSystemShapeType)type);
+                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.coneTypes);
+                        type = (int)ConvertConeEmitFromToConeType(emitFrom);
+                    }
+                    break;
+
+                    case ParticleSystemShapeType.Donut:
                     {
-                        if (material != null && srcMesh != null)
+                        GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                        GUIFloat(s_Texts.donutRadius, m_DonutRadius);
+                        GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
+
+                        m_Arc.OnInspectorGUI(s_ArcTexts);
+                    }
+                    break;
+
+                    case ParticleSystemShapeType.Mesh:
+                    case ParticleSystemShapeType.MeshRenderer:
+                    case ParticleSystemShapeType.SkinnedMeshRenderer:
+                    {
+                        GUIPopup(s_Texts.meshType, m_PlacementMode, s_Texts.meshTypes);
+
+                        Material material = null;
+                        Mesh srcMesh = null;
+                        if (guiType == ParticleSystemShapeType.Mesh)
                         {
-                            int colorName = Shader.PropertyToID("_Color");
-                            int tintColorName = Shader.PropertyToID("_TintColor");
-                            if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasChannel(Mesh.InternalShaderChannel.Color))
+                            GUIObject(s_Texts.mesh, m_Mesh);
+                        }
+                        else if (guiType == ParticleSystemShapeType.MeshRenderer)
+                        {
+                            GUIObject(s_Texts.meshRenderer, m_MeshRenderer);
+                            MeshRenderer mesh = (MeshRenderer)m_MeshRenderer.objectReferenceValue;
+                            if (mesh)
                             {
-                                GUIContent warning = EditorGUIUtility.TextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".");
-                                EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
+                                material = mesh.sharedMaterial;
+                                if (mesh.GetComponent<MeshFilter>())
+                                    srcMesh = mesh.GetComponent<MeshFilter>().sharedMesh;
                             }
                         }
+                        else
+                        {
+                            GUIObject(s_Texts.skinnedMeshRenderer, m_SkinnedMeshRenderer);
+                            SkinnedMeshRenderer mesh = (SkinnedMeshRenderer)m_SkinnedMeshRenderer.objectReferenceValue;
+                            if (mesh)
+                            {
+                                material = mesh.sharedMaterial;
+                                srcMesh = mesh.sharedMesh;
+                            }
+                        }
+
+                        GUIToggleWithIntField(s_Texts.meshMaterialIndex, m_UseMeshMaterialIndex, m_MeshMaterialIndex, false);
+                        bool useMeshColors = GUIToggle(s_Texts.useMeshColors, m_UseMeshColors);
+                        if (useMeshColors)
+                        {
+                            if (material != null && srcMesh != null)
+                            {
+                                int colorName = Shader.PropertyToID("_Color");
+                                int tintColorName = Shader.PropertyToID("_TintColor");
+                                if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasChannel(Mesh.InternalShaderChannel.Color))
+                                {
+                                    GUIContent warning = EditorGUIUtility.TextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".");
+                                    EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
+                                }
+                            }
+                        }
+
+                        GUIFloat(s_Texts.meshNormalOffset, m_MeshNormalOffset);
                     }
+                    break;
 
-                    GUIFloat(s_Texts.meshNormalOffset, m_MeshNormalOffset);
+                    case ParticleSystemShapeType.Sphere:
+                    case ParticleSystemShapeType.Hemisphere:
+                    {
+                        GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                        GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
+                    }
+                    break;
+
+                    case ParticleSystemShapeType.Circle:
+                    {
+                        GUIFloat(s_Texts.radius, m_Radius.m_Value);
+                        GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
+
+                        m_Arc.OnInspectorGUI(s_ArcTexts);
+                    }
+                    break;
+
+                    case ParticleSystemShapeType.SingleSidedEdge:
+                    {
+                        m_Radius.OnInspectorGUI(s_RadiusTexts);
+                    }
+                    break;
                 }
-                break;
-
-                case ParticleSystemShapeType.Sphere:
-                case ParticleSystemShapeType.Hemisphere:
-                {
-                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
-                }
-                break;
-
-                case ParticleSystemShapeType.Circle:
-                {
-                    GUIFloat(s_Texts.radius, m_Radius.m_Value);
-                    GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
-
-                    m_Arc.OnInspectorGUI(s_ArcTexts);
-                }
-                break;
-
-                case ParticleSystemShapeType.SingleSidedEdge:
-                {
-                    m_Radius.OnInspectorGUI(s_RadiusTexts);
-                }
-                break;
             }
 
             if (shapeTypeChanged || !m_Type.hasMultipleDifferentValues)

@@ -43,6 +43,7 @@ namespace UnityEditor
         private Vector2Int m_PreviousMouseGridPosition;
         private Vector2Int m_MouseGridPosition;
         private bool m_MouseGridPositionChanged;
+        private bool m_PositionChangeRepaintDone;
         private Vector2Int m_PreviousDragPosition;
         protected Vector2Int? m_PreviousMove = null;
         protected Vector2Int? m_MarqueeStart = null;
@@ -90,8 +91,11 @@ namespace UnityEditor
                 GUIUtility.hotControl = 0;
             }
 
-            if (mouseGridPositionChanged)
+            if (mouseGridPositionChanged && !m_PositionChangeRepaintDone)
+            {
                 Repaint();
+                m_PositionChangeRepaintDone = true;
+            }
         }
 
         protected void UpdateMouseGridPosition()
@@ -106,6 +110,7 @@ namespace UnityEditor
                     m_PreviousMouseGridPosition = m_MouseGridPosition;
                     m_MouseGridPosition = newGridPosition;
                     m_MouseGridPositionChanged = true;
+                    m_PositionChangeRepaintDone = false;
                 }
             }
         }
@@ -354,7 +359,12 @@ namespace UnityEditor
 
         private bool IsErasingEvent(Event evt)
         {
-            return (evt.button == 0 && (!evt.control && !evt.alt && evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
+            return (evt.button == 0 && (!evt.control && !evt.alt
+                                        && (evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
+                                        || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
         }
 
         private void HandleFloodFill()

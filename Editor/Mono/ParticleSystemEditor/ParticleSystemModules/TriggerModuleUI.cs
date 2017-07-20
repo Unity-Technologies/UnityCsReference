@@ -34,7 +34,13 @@ namespace UnityEditor
             public GUIContent exit = EditorGUIUtility.TextContent("Exit|Triggered once when particles leave the collison volume.");
             public GUIContent radiusScale = EditorGUIUtility.TextContent("Radius Scale|Scale particle bounds by this amount to get more precise collisions.");
             public GUIContent visualizeBounds = EditorGUIUtility.TextContent("Visualize Bounds|Render the collision bounds of the particles.");
-            public string[] overlapOptions = { "Ignore", "Kill", "Callback" };
+
+            public GUIContent[] overlapOptions = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Ignore"),
+                EditorGUIUtility.TextContent("Kill"),
+                EditorGUIUtility.TextContent("Callback")
+            };
         }
         private static Texts s_Texts;
 
@@ -47,6 +53,8 @@ namespace UnityEditor
         protected override void Init()
         {
             // Already initialized?
+            if (m_Inside != null)
+                return;
             if (s_Texts == null)
                 s_Texts = new Texts();
 
@@ -74,9 +82,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             DoListOfCollisionShapesGUI();
 
             GUIPopup(s_Texts.inside, m_Inside, s_Texts.overlapOptions);

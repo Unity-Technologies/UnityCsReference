@@ -31,8 +31,6 @@ namespace UnityEditor
             private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TextContent("A valid Light Probe Proxy Volume component could not be found.");
             private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
             private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
-            private string[] m_ReflectionProbeUsageNames = Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
-            private string[] m_LightProbeUsageNames = Enum.GetNames(typeof(LightProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
             private GUIContent[] m_ReflectionProbeUsageOptions = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             private GUIContent[] m_LightProbeBlendModeOptions = (Enum.GetNames(typeof(LightProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
 
@@ -106,11 +104,11 @@ namespace UnityEditor
                     {
                         if (isDeferredReflections)
                         {
-                            ModuleUI.GUIPopup(m_ReflectionProbeUsageStyle, (int)ReflectionProbeUsage.Simple, m_ReflectionProbeUsageNames);
+                            ModuleUI.GUIPopup(m_ReflectionProbeUsageStyle, (int)ReflectionProbeUsage.Simple, m_ReflectionProbeUsageOptions);
                         }
                         else
                         {
-                            ModuleUI.GUIPopup(m_ReflectionProbeUsageStyle, m_ReflectionProbeUsage, m_ReflectionProbeUsageNames);
+                            ModuleUI.GUIPopup(m_ReflectionProbeUsageStyle, m_ReflectionProbeUsage, m_ReflectionProbeUsageOptions);
                         }
                     }
                 }
@@ -139,10 +137,10 @@ namespace UnityEditor
                     else
                     {
                         if (usesLightMaps)
-                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, (int)LightProbeUsage.Off, m_LightProbeUsageNames);
+                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, (int)LightProbeUsage.Off, m_LightProbeBlendModeOptions);
                         else
                         {
-                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, m_LightProbeUsage, m_LightProbeUsageNames);
+                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, m_LightProbeUsage, m_LightProbeBlendModeOptions);
 
                             if (!m_LightProbeUsage.hasMultipleDifferentValues && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume)
                             {

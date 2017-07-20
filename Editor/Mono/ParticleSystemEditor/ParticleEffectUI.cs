@@ -53,9 +53,10 @@ namespace UnityEditor
             public GUIContent particleCount = new GUIContent("Particles");
             public GUIContent subEmitterParticleCount = new GUIContent("Sub Emitter Particles");
             public GUIContent particleSpeeds = new GUIContent("Speed Range");
-            public GUIContent play = new GUIContent("Simulate");
+            public GUIContent play = new GUIContent("Play");
             public GUIContent stop = new GUIContent("Stop");
             public GUIContent pause = new GUIContent("Pause");
+            public GUIContent restart = new GUIContent("Restart");
             public GUIContent addParticleSystem = new GUIContent("", "Create Particle System");
             public GUIContent wireframe = new GUIContent("Selection", "Show particles with the selection outline/wireframe, based on the selection options in the Gizmos menu");
             public GUIContent bounds = new GUIContent("Bounds", "Show world space bounding boxes");
@@ -669,7 +670,7 @@ namespace UnityEditor
             if (!EditorApplication.isPlaying)
             {
                 // Edit Mode: Play/Stop buttons
-                GUILayout.BeginHorizontal(GUILayout.Width(200.0f));
+                GUILayout.BeginHorizontal(GUILayout.Width(210.0f));
                 {
                     bool isPlaying = ParticleSystemEditorUtils.editorIsPlaying && !ParticleSystemEditorUtils.editorIsPaused;
                     if (GUILayout.Button(isPlaying ? s_Texts.pause : s_Texts.play, "ButtonLeft"))
@@ -678,6 +679,12 @@ namespace UnityEditor
                             Pause();
                         else
                             Play();
+                    }
+
+                    if (GUILayout.Button(s_Texts.restart, "ButtonMid"))
+                    {
+                        Stop();
+                        Play();
                     }
 
                     if (GUILayout.Button(s_Texts.stop, "ButtonRight"))
@@ -1025,27 +1032,17 @@ namespace UnityEditor
 
         internal void RefreshShowOnlySelected()
         {
-            if (IsShowOnlySelectedMode())
+            int[] selectedInstanceIDs = Selection.instanceIDs;
+            foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                int[] selectedInstanceIDs = Selection.instanceIDs;
-                foreach (ParticleSystemUI psUI in m_Emitters)
+                if (psUI.m_ParticleSystems[0] != null)
                 {
-                    if (psUI.m_ParticleSystems[0] != null)
+                    ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+                    if (psRenderer != null)
                     {
-                        ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
-                        if (psRenderer != null)
+                        if (IsShowOnlySelectedMode())
                             psRenderer.editorEnabled = selectedInstanceIDs.Contains(psRenderer.gameObject.GetInstanceID());
-                    }
-                }
-            }
-            else
-            {
-                foreach (ParticleSystemUI psUI in m_Emitters)
-                {
-                    if (psUI.m_ParticleSystems[0] != null)
-                    {
-                        ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
-                        if (psRenderer != null)
+                        else
                             psRenderer.editorEnabled = true;
                     }
                 }

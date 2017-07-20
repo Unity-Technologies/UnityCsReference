@@ -68,6 +68,27 @@ namespace UnityEditor
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
+
+            public GUIContent[] simulationSpaces = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Local"),
+                EditorGUIUtility.TextContent("World"),
+                EditorGUIUtility.TextContent("Custom")
+            };
+
+            public GUIContent[] scalingModes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Hierarchy"),
+                EditorGUIUtility.TextContent("Local"),
+                EditorGUIUtility.TextContent("Shape")
+            };
+
+            public GUIContent[] stopActions = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("None"),
+                EditorGUIUtility.TextContent("Disable"),
+                EditorGUIUtility.TextContent("Destroy")
+            };
         }
         private static Texts s_Texts;
 
@@ -84,12 +105,11 @@ namespace UnityEditor
 
         protected override void Init()
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             // Already initialized?
             if (m_LengthInSec != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             // general emitter state
             m_LengthInSec = GetProperty0("lengthInSec");
@@ -134,9 +154,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             GUIFloat(s_Texts.duration, m_LengthInSec, "f2");
 
             EditorGUI.BeginChangeCheck();
@@ -239,7 +256,7 @@ namespace UnityEditor
             GUIMinMaxGradient(s_Texts.color, m_Color, false);
 
             GUIMinMaxCurve(s_Texts.gravity, m_GravityModifier);
-            int space = GUIPopup(s_Texts.simulationSpace, m_SimulationSpace, new string[] { "Local", "World", "Custom" });
+            int space = GUIPopup(s_Texts.simulationSpace, m_SimulationSpace, s_Texts.simulationSpaces);
             if (space == 2 && m_CustomSimulationSpace != null)
                 GUIObject(s_Texts.customSimulationSpace, m_CustomSimulationSpace);
             GUIFloat(s_Texts.simulationSpeed, m_SimulationSpeed);
@@ -247,7 +264,7 @@ namespace UnityEditor
 
             bool anyNonMesh = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.shapeType != ParticleSystemShapeType.SkinnedMeshRenderer && o.shape.shapeType != ParticleSystemShapeType.MeshRenderer) != null;
             if (anyNonMesh)
-                GUIPopup(s_Texts.scalingMode, m_ScalingMode, new string[] { "Hierarchy", "Local", "Shape" });
+                GUIPopup(s_Texts.scalingMode, m_ScalingMode, s_Texts.scalingModes);
 
             bool oldPlayOnAwake = m_PlayOnAwake.boolValue;
             bool newPlayOnAwake = GUIToggle(s_Texts.autoplay, m_PlayOnAwake);
@@ -278,7 +295,7 @@ namespace UnityEditor
                 }
             }
 
-            GUIPopup(s_Texts.stopAction, m_StopAction, new string[] { "None", "Disable", "Destroy" });
+            GUIPopup(s_Texts.stopAction, m_StopAction, s_Texts.stopActions);
         }
 
         override public void UpdateCullingSupportedString(ref string text)

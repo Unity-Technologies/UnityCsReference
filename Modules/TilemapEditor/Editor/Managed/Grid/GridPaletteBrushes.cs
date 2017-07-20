@@ -94,13 +94,6 @@ namespace UnityEditor
                 m_Brushes.Insert(0, defaultBrush);
                 m_Brushes[0].name = GetBrushDropdownName(m_Brushes[0]);
             }
-            else
-            {
-                defaultBrush = m_Brushes[0];
-            }
-
-            if (GridPaintingState.gridBrush == null)
-                GridPaintingState.gridBrush = defaultBrush;
 
             var editorAssemblies = EditorAssemblies.loadedAssemblies;
             foreach (var editorAssembly in editorAssemblies)

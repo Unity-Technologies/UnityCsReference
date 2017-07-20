@@ -1421,7 +1421,8 @@ namespace UnityEditor
                 || targetGroup == BuildTargetGroup.XboxOne
                 || targetGroup == BuildTargetGroup.WSA
                 || targetGroup == BuildTargetGroup.WiiU
-                || targetGroup == BuildTargetGroup.WebGL)
+                || targetGroup == BuildTargetGroup.WebGL
+                || targetGroup == BuildTargetGroup.Switch)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
                 {
