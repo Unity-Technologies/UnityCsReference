@@ -275,7 +275,7 @@ namespace UnityEditor
                 bool showBakeButton = isContinuous || !Lightmapping.isRunning;
                 if (showBakeButton)
                 {
-                    if (EditorGUI.ButtonWithDropdownList(Styles.BuildLabel, s_BakeModeOptions, BakeDropDownCallback, GUILayout.Width(180)))
+                    if (EditorGUI.ButtonWithDropdownList(Styles.BuildLabel, s_BakeModeOptions, BakeDropDownCallback, GUILayout.Width(170)))
                     {
                         DoBake();
 
