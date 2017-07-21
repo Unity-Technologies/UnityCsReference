@@ -218,7 +218,7 @@ namespace UnityEditor
         {
             SearchFilter filter = new SearchFilter();
             filter.SearchFieldStringToFilter(m_SearchFilter);
-            if (!string.IsNullOrEmpty(m_RequiredType))
+            if (!string.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
             {
                 filter.classNames = new[] { m_RequiredType };
             }

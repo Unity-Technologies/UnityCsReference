@@ -165,6 +165,15 @@ public enum GraphicsJobMode
     Legacy = 1
 }
 
+public enum IconKind
+{
+    Any = -1,
+    Application = 0,
+    Settings = 1,
+    Notification = 2,
+    Spotlight = 3
+}
+
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
     private static SerializedObject _serializedObject;
@@ -721,42 +730,84 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         }
     
     
-    public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform)
+    public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform, IconKind kind)
         {
-            Texture2D[] icons = GetIconsForPlatform(GetPlatformName(platform));
+            Texture2D[] icons = GetIconsForPlatform(GetPlatformName(platform), kind);
             if (icons.Length == 0)
-                return new Texture2D[GetIconSizesForTargetGroup(platform).Length];
+                return new Texture2D[GetIconSizesForTargetGroup(platform, kind).Length];
             return icons;
         }
     
     
+    public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform)
+        {
+            return GetIconsForTargetGroup(platform, IconKind.Application);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  Texture2D[] GetIconsForPlatform (string platform) ;
+    extern internal static  Texture2D[] GetIconsForPlatform (string platform, IconKind kind) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Texture2D[] GetAllIconsForPlatform (string platform) ;
+
+    public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons, IconKind kind)
+        {
+            IconKind[] kinds = Enumerable.Repeat(kind, icons.Length).ToArray();
+            SetIconsForPlatform(GetPlatformName(platform), icons, kinds);
+        }
+    
+    
     public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons)
         {
-            SetIconsForPlatform(GetPlatformName(platform), icons);
+            SetIconsForTargetGroup(platform, icons, IconKind.Application);
+        }
+    
+    
+    internal static void SetIconsForPlatform(string platform, Texture2D[] icons)
+        {
+            IconKind[] kinds = Enumerable.Repeat(IconKind.Application, icons.Length).ToArray();
+            SetIconsForPlatform(platform, icons, kinds);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void SetIconsForPlatform (string platform, Texture2D[] icons) ;
+    extern internal static  void SetIconsForPlatform (string platform, Texture2D[] icons, IconKind[] kinds) ;
 
+    public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform, IconKind kind)
+        {
+            return GetIconWidthsForPlatform(GetPlatformName(platform), kind);
+        }
+    
+    
     public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform)
         {
-            return GetIconWidthsForPlatform(GetPlatformName(platform));
+            return GetIconSizesForTargetGroup(platform, IconKind.Application);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  int[] GetIconWidthsForPlatform (string platform) ;
+    extern internal static  int[] GetIconWidthsForPlatform (string platform, IconKind kind) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  int[] GetIconHeightsForPlatform (string platform) ;
+    extern internal static  int[] GetIconHeightsForPlatform (string platform, IconKind kind) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  int[] GetIconWidthsOfAllKindsForPlatform (string platform) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  int[] GetIconHeightsOfAllKindsForPlatform (string platform) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  IconKind[] GetIconKindsForPlatform (string platform) ;
 
     internal static string GetPlatformName(BuildTargetGroup targetGroup)
         {
@@ -767,7 +818,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  Texture2D GetIconForPlatformAtSize (string platform, int width, int height) ;
+    extern internal static  Texture2D GetIconForPlatformAtSize (string platform, int width, int height, IconKind kind) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
