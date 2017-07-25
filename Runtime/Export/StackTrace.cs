@@ -15,7 +15,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    public class StackTraceUtility
+    public static class StackTraceUtility
     {
         static string projectFolder = "";
 
@@ -259,6 +259,7 @@ namespace UnityEngine
     public class UnityException : SystemException
     {
         const int Result = unchecked ((int)0x80004003);
+#pragma warning disable 169
         string unityStackTrace;
 
         // Constructors
@@ -291,6 +292,7 @@ namespace UnityEngine
     public class MissingComponentException : SystemException
     {
         const int Result = unchecked ((int)0x80004003);
+#pragma warning disable 169
         string unityStackTrace;
 
         // Constructors
@@ -324,6 +326,7 @@ namespace UnityEngine
     public class UnassignedReferenceException : SystemException
     {
         const int Result = unchecked ((int)0x80004003);
+#pragma warning disable 169
         string unityStackTrace;
 
         // Constructors
@@ -357,6 +360,7 @@ namespace UnityEngine
     public class MissingReferenceException : SystemException
     {
         const int Result = unchecked ((int)0x80004003);
+#pragma warning disable 169
         string unityStackTrace;
 
         // Constructors

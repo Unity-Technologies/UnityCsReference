@@ -269,7 +269,7 @@ namespace UnityEditor
         {
             // Forward declare template function
             output.WriteLine("template <typename T> void RegisterClass();");
-            output.WriteLine("template <typename T> void RegisterStrippedTypeInfo(int, const char*, const char*);");
+            output.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
             output.WriteLine();
 
             // Forward declaration
@@ -324,7 +324,7 @@ namespace UnityEditor
             //  if (type.baseClass == null || type.isEditorOnly || nativeClassesAndBaseClasses.Contains(type))
             //      continue;
 
-            //  output.WriteLine("\tRegisterStrippedTypeInfo<{0}>();", type.qualifiedName);
+            //  output.WriteLine("\tRegisterStrippedType<{0}>();", type.qualifiedName);
             //}
 
             output.Write("\n}\n");

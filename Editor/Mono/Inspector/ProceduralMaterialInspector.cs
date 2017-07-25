@@ -1264,6 +1264,18 @@ namespace UnityEditor
                     }
                     break;
                 }
+                case ProceduralPropertyType.String:
+                {
+                    EditorGUI.BeginChangeCheck();
+                    string val = EditorGUILayout.TextField(content, m_Material.GetProceduralString(input.name));
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        RecordForUndo(m_Material, m_Importer, "Modified property " + input.name + " for material " + m_Material.name);
+                        m_Material.SetProceduralString(input.name, val);
+                    }
+                    break;
+                }
                 case ProceduralPropertyType.Texture:
                 {
                     EditorGUILayout.BeginHorizontal();

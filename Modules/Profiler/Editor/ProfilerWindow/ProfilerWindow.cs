@@ -532,7 +532,7 @@ namespace UnityEditor
         void OnDestroy()
         {
             // When window is destroyed, we disable profiling
-            if (Profiler.supported)
+            if (Profiler.supported && !EditorApplication.isPlayingOrWillChangePlaymode)
                 Profiler.enabled = false;
         }
 

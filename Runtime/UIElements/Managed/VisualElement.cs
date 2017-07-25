@@ -33,9 +33,9 @@ namespace UnityEngine.Experimental.UIElements
     {
         Position, // todo better name
         Ignore
-    }
+    }  
 
-    public partial class VisualElement : CallbackEventHandler
+    public partial class VisualElement : CallbackEventHandler, ITransform
     {
         private static uint s_NextId;
 
@@ -46,27 +46,71 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool usePixelCaching { get; set; }
 
+        internal bool forceVisible { get; set; }
+
         private RenderData m_RenderData;
         internal RenderData renderData
         {
             get { return m_RenderData ?? (m_RenderData = new RenderData()); }
         }
 
-        // the transform
-        internal Matrix4x4 m_Transform = Matrix4x4.identity;
-        public Matrix4x4 transform
+        Vector3 m_Position = Vector3.zero;
+        Quaternion m_Rotation = Quaternion.identity;
+        Vector3 m_Scale = Vector3.one;
+
+        public ITransform transform
+        {
+            get { return this; }
+        }
+
+        Vector3 ITransform.position
         {
             get
             {
-                return m_Transform;
+                return m_Position;
             }
             set
             {
-                if (m_Transform == value)
+                if (m_Position == value)
                     return;
-                m_Transform = value;
+                m_Position = value;
                 Dirty(ChangeType.Transform);
             }
+        }
+
+        Quaternion ITransform.rotation
+        {
+            get
+            {
+                return m_Rotation;
+            }
+            set
+            {
+                if (m_Rotation == value)
+                    return;
+                m_Rotation = value;
+                Dirty(ChangeType.Transform);
+            }
+        }
+
+        Vector3 ITransform.scale
+        {
+            get
+            {
+                return m_Scale;
+            }
+            set
+            {
+                if (m_Scale == value)
+                    return;
+                m_Scale = value;
+                Dirty(ChangeType.Transform);
+            }
+        }
+
+        Matrix4x4 ITransform.matrix
+        {
+            get { return Matrix4x4.TRS(m_Position, m_Rotation, m_Scale); }
         }
 
         Rect m_Layout;
@@ -175,7 +219,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var g = transform;
+                var g = transform.matrix;
                 var min = g.MultiplyPoint3x4(layout.min);
                 var max = g.MultiplyPoint3x4(layout.max);
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
@@ -191,11 +235,11 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         if (parent != null)
                         {
-                            renderData.worldTransForm = parent.globalTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform;
+                            renderData.worldTransForm = parent.globalTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform.matrix;
                         }
                         else
                         {
-                            renderData.worldTransForm = transform;
+                            renderData.worldTransForm = transform.matrix;
                         }
                         ClearDirty(ChangeType.Transform);
                     }
@@ -1070,15 +1114,6 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
         }
 
-        [SerializeField]
-        private string m_Tooltip;
-        public string tooltip
-        {
-            get { return m_Tooltip ?? String.Empty; }
-            set { if (m_Tooltip != value) { m_Tooltip = value; Dirty(ChangeType.Layout); } }
-        }
-
-
         public virtual bool enabled
         {
             get
@@ -1154,11 +1189,8 @@ namespace UnityEngine.Experimental.UIElements
 
         protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
-            float measuredWidth = float.NaN;
-            float measuredHeight = float.NaN;
-            Font font = style.font;
-            if (string.IsNullOrEmpty(text) || font == null)
-                return new Vector2(measuredWidth, measuredHeight);
+            float measuredWidth;
+            float measuredHeight;
 
             if (widthMode == MeasureMode.Exactly)
             {

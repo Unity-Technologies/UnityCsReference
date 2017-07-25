@@ -102,7 +102,6 @@ namespace UnityEditorInternal.VR
         static GUIContent s_EnableVideoLayer = EditorGUIUtility.TextContent("Enable Video Surface|Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
         static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TextContent("Use Protected Memory|Enable the use of DRM protection. Only usable if all content is DRM Protected.");
 
-        SerializedProperty m_DaydreamOnly;
         SerializedProperty m_DaydreamIcon;
         SerializedProperty m_DaydreamIconBackground;
         SerializedProperty m_DaydreamUseSustainedPerformanceMode;

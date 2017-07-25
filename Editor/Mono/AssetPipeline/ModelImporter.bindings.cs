@@ -331,6 +331,7 @@ namespace UnityEditor
 
     [NativeType(Header = "Editor/Src/AssetPipeline/ModelImporting/ModelImporter.h")]
     [StructLayoutAttribute(LayoutKind.Sequential)]
+    [UsedByNativeCode]
     public partial struct TakeInfo
     {
         public string name;
@@ -468,6 +469,12 @@ namespace UnityEditor
         }
 
         public extern bool keepQuads
+        {
+            get;
+            set;
+        }
+
+        public extern bool preserveHierarchy
         {
             get;
             set;

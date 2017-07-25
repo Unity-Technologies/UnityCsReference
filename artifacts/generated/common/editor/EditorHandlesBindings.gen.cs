@@ -344,12 +344,12 @@ public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 sli
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void Internal_FinishDrawingCamera (Camera cam, [uei.DefaultValue("true")]  bool renderGizmos ) ;
+    extern private static  void Internal_FinishDrawingCamera (Camera cam, [uei.DefaultValue("true")]  bool drawGizmos ) ;
 
     [uei.ExcludeFromDocs]
     private static void Internal_FinishDrawingCamera (Camera cam) {
-        bool renderGizmos = true;
-        Internal_FinishDrawingCamera ( cam, renderGizmos );
+        bool drawGizmos = true;
+        Internal_FinishDrawingCamera ( cam, drawGizmos );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -927,7 +927,8 @@ internal static void DrawCameraImpl(Rect position, Camera camera,
                         Internal_DrawCameraWithGrid(camera, (int)drawMode, ref gridParam);
                     else
                         Internal_DrawCamera(camera, (int)drawMode);
-                    if (finish)
+
+                    if (finish && camera.cameraType != CameraType.VR)
                         Internal_FinishDrawingCamera(camera, renderGizmos);
                 }
             }

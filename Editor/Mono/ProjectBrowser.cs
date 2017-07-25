@@ -48,25 +48,15 @@ namespace UnityEditor
         // Styles used in the object selector
         class Styles
         {
-            public GUIStyle smallStatus = "ObjectPickerSmallStatus";
-            public GUIStyle largeStatus = "ObjectPickerLargeStatus";
-            public GUIStyle toolbarBack = "ObjectPickerToolbar";
-            public GUIStyle tab = "ObjectPickerTab";
-            public GUIStyle bottomResize = "WindowBottomResize";
-            public GUIStyle background = "ObjectPickerBackground";
-            public GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
-            public GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
             public GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
             public GUIStyle topBarBg = "ProjectBrowserTopBarBg";
             public GUIStyle selectedPathLabel = "Label";
             public GUIStyle exposablePopup = GetStyle("ExposablePopupMenu");
             public GUIStyle lockButton = "IN LockButton";
             public GUIStyle foldout = "AC RightArrow";
-            public GUIStyle exposablePopupItem = GetStyle("ExposablePopupItem");
 
             public GUIContent m_FilterByLabel = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Search by Label");
             public GUIContent m_FilterByType = new GUIContent(EditorGUIUtility.FindTexture("FilterByType"), "Search by Type");
-            public GUIContent m_ShowChildAssetsContent = new GUIContent("", EditorGUIUtility.FindTexture("UnityEditor.HierarchyWindow"), "Toggle visibility of child assets in folders");
             public GUIContent m_CreateDropdownContent = new GUIContent("Create");
             public GUIContent m_SaveFilterContent = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Save search");
             public GUIContent m_EmptyFolderText = new GUIContent("This folder is empty");
@@ -110,7 +100,6 @@ namespace UnityEditor
         string m_SelectedPath;
         List<GUIContent> m_SelectedPathSplitted = new List<GUIContent>();
         float m_LastListWidth;
-        int m_CurrentNumItems;
         bool m_DidSelectSearchResult = false;
         bool m_ItemSelectedByRightClickThisEvent = false;
         bool m_InternalSelectionChange = false; // to know when selection change originated in project view itself

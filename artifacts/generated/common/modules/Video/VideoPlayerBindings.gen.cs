@@ -27,6 +27,13 @@ public enum VideoRenderMode
     APIOnly          = 4
 }
 
+public enum Video3DLayout
+{
+    No3D         = 0,
+    SideBySide3D = 1,
+    OverUnder3D  = 2
+}
+
 public enum VideoAspectRatio
 {
     NoScaling       = 0,
@@ -157,6 +164,16 @@ public sealed partial class VideoPlayer : Behaviour
     }
 
     public extern float targetCameraAlpha
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern Video3DLayout targetCamera3DLayout
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

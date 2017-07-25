@@ -15,9 +15,7 @@ namespace UnityEditor
         enum CollisionTypes { Plane = 0, World = 1 };
         enum CollisionModes { Mode3D = 0, Mode2D = 1 };
         enum ForceModes { None = 0, Constant = 1, SizeBased = 2 };
-
         enum PlaneVizType { Grid, Solid };
-        string[] m_PlaneVizTypeNames = {"Grid", "Solid"};
 
         SerializedProperty m_Type;
         SerializedProperty[] m_Planes = new SerializedProperty[k_MaxNumPlanes];
@@ -64,7 +62,6 @@ namespace UnityEditor
             public GUIContent collidesWithDynamic = EditorGUIUtility.TextContent("Enable Dynamic Colliders|Should particles collide with dynamic objects?");
             public GUIContent maxCollisionShapes = EditorGUIUtility.TextContent("Max Collision Shapes|How many collision shapes can be considered for particle collisions. Excess shapes will be ignored. Terrains take priority.");
             public GUIContent quality = EditorGUIUtility.TextContent("Collision Quality|Quality of world collisions. Medium and low quality are approximate and may leak particles.");
-            public string[] qualitySettings = { "High", "Medium (Static Colliders)", "Low (Static Colliders)" };
             public GUIContent voxelSize = EditorGUIUtility.TextContent("Voxel Size|Size of voxels in the collision cache. Smaller values improve accuracy, but require higher memory usage and are less efficient.");
             public GUIContent collisionMessages = EditorGUIUtility.TextContent("Send Collision Messages|Send collision callback messages.");
             public GUIContent collisionType = EditorGUIUtility.TextContent("Type|Collide with a list of Planes, or the Physics World.");
@@ -73,6 +70,31 @@ namespace UnityEditor
             public GUIContent multiplyColliderForceByCollisionAngle = EditorGUIUtility.TextContent("Multiply by Collision Angle|Should the force be proportional to the angle of the particle collision?  A particle collision directly along the collision normal produces all the specified force whilst collisions away from the collision normal produce less force.");
             public GUIContent multiplyColliderForceByParticleSpeed = EditorGUIUtility.TextContent("Multiply by Particle Speed|Should the force be proportional to the particle speed?");
             public GUIContent multiplyColliderForceByParticleSize = EditorGUIUtility.TextContent("Multiply by Particle Size|Should the force be proportional to the particle size?");
+
+            public GUIContent[] collisionTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Planes"),
+                EditorGUIUtility.TextContent("World")
+            };
+
+            public GUIContent[] collisionModes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("3D"),
+                EditorGUIUtility.TextContent("2D")
+            };
+
+            public GUIContent[] qualitySettings = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("High"),
+                EditorGUIUtility.TextContent("Medium (Static Colliders)"),
+                EditorGUIUtility.TextContent("Low (Static Colliders)")
+            };
+
+            public GUIContent[] planeVizTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Grid"),
+                EditorGUIUtility.TextContent("Solid")
+            };
 
             public GUIContent[] toolContents =
             {
@@ -211,9 +233,8 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            string[] types = new string[] {"Planes", "World"};
             EditorGUI.BeginChangeCheck();
-            CollisionTypes type = (CollisionTypes)GUIPopup(s_Texts.collisionType, m_Type, types);
+            CollisionTypes type = (CollisionTypes)GUIPopup(s_Texts.collisionType, m_Type, s_Texts.collisionTypes);
             if (EditorGUI.EndChangeCheck())
                 SyncVisualization();
 
@@ -222,7 +243,7 @@ namespace UnityEditor
                 DoListOfPlanesGUI();
 
                 EditorGUI.BeginChangeCheck();
-                m_PlaneVisualizationType = (PlaneVizType)GUIPopup(s_Texts.visualization, (int)m_PlaneVisualizationType, m_PlaneVizTypeNames);
+                m_PlaneVisualizationType = (PlaneVizType)GUIPopup(s_Texts.visualization, (int)m_PlaneVisualizationType, s_Texts.planeVizTypes);
                 if (EditorGUI.EndChangeCheck())
                 {
                     EditorPrefs.SetInt("PlaneColisionVizType", (int)m_PlaneVisualizationType);
@@ -240,7 +261,7 @@ namespace UnityEditor
             }
             else
             {
-                GUIPopup(s_Texts.collisionMode, m_CollisionMode, new string[] { "3D", "2D" });
+                GUIPopup(s_Texts.collisionMode, m_CollisionMode, s_Texts.collisionModes);
             }
 
             GUIMinMaxCurve(s_Texts.dampen, m_Dampen);

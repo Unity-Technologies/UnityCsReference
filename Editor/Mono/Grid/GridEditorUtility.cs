@@ -277,18 +277,20 @@ namespace UnityEditorInternal
             int numCells = max - min;
             RectInt bounds = new RectInt(min, min, numCells, numCells);
 
-            return GenerateCachedGridMesh(gridLayout, color, 0f, bounds);
+            return GenerateCachedGridMesh(gridLayout, color, 0f, bounds, MeshTopology.Lines);
         }
 
-        // Creates pixel perfect grid using MeshTopology.Quads instead of GL.LINES
-        public static Mesh GenerateCachedGridMesh(GridLayout gridLayout, Color color, float screenPixelSize, RectInt bounds)
+        public static Mesh GenerateCachedGridMesh(GridLayout gridLayout, Color color, float screenPixelSize, RectInt bounds, MeshTopology topology)
         {
             Mesh mesh = new Mesh();
             mesh.hideFlags = HideFlags.HideAndDontSave;
 
             int vertex = 0;
-            // 2 lines for each cell, 4 vertices for each line (2 for start and end, 2 for offset start and end)
-            int totalVertices = (2 * 4) * (bounds.size.x + bounds.size.y);
+
+            int totalVertices = topology == MeshTopology.Quads ?
+                8 * (bounds.size.x + bounds.size.y) :
+                4 * (bounds.size.x + bounds.size.y);
+
             Vector3 horizontalPixelOffset = new Vector3(screenPixelSize, 0f, 0f);
             Vector3 verticalPixelOffset = new Vector3(0f, screenPixelSize, 0f);
 
@@ -312,23 +314,29 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocal(minPosition);
                 vertices[vertex + 1] = gridLayout.CellToLocal(maxPosition);
-                vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + horizontalPixelOffset;
-                vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + horizontalPixelOffset;
-                uvs2[vertex + 0] = Vector2.zero;
-                uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
-                uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
-                uvs2[vertex + 3] = Vector2.zero;
-                vertex += 4;
+                if (topology == MeshTopology.Quads)
+                {
+                    vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + horizontalPixelOffset;
+                    vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + horizontalPixelOffset;
+                    uvs2[vertex + 0] = Vector2.zero;
+                    uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
+                    uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
+                    uvs2[vertex + 3] = Vector2.zero;
+                }
+                vertex += topology == MeshTopology.Quads ? 4 : 2;
 
                 vertices[vertex + 0] = gridLayout.CellToLocalInterpolated(minPosition + cellGap);
                 vertices[vertex + 1] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap);
-                vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + horizontalPixelOffset;
-                vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + horizontalPixelOffset;
-                uvs2[vertex + 0] = Vector2.zero;
-                uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
-                uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
-                uvs2[vertex + 3] = Vector2.zero;
-                vertex += 4;
+                if (topology == MeshTopology.Quads)
+                {
+                    vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + horizontalPixelOffset;
+                    vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + horizontalPixelOffset;
+                    uvs2[vertex + 0] = Vector2.zero;
+                    uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
+                    uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
+                    uvs2[vertex + 3] = Vector2.zero;
+                }
+                vertex += topology == MeshTopology.Quads ? 4 : 2;
             }
 
             minPosition = new Vector3Int(bounds.min.x, 0, 0);
@@ -346,23 +354,29 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocal(minPosition);
                 vertices[vertex + 1] = gridLayout.CellToLocal(maxPosition);
-                vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + verticalPixelOffset;
-                vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + verticalPixelOffset;
-                uvs2[vertex + 0] = Vector2.zero;
-                uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
-                uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
-                uvs2[vertex + 3] = Vector2.zero;
-                vertex += 4;
+                if (topology == MeshTopology.Quads)
+                {
+                    vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + verticalPixelOffset;
+                    vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + verticalPixelOffset;
+                    uvs2[vertex + 0] = Vector2.zero;
+                    uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
+                    uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
+                    uvs2[vertex + 3] = Vector2.zero;
+                }
+                vertex += topology == MeshTopology.Quads ? 4 : 2;
 
                 vertices[vertex + 0] = gridLayout.CellToLocalInterpolated(minPosition + cellGap);
                 vertices[vertex + 1] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap);
-                vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + verticalPixelOffset;
-                vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + verticalPixelOffset;
-                uvs2[vertex + 0] = Vector2.zero;
-                uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
-                uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
-                uvs2[vertex + 3] = Vector2.zero;
-                vertex += 4;
+                if (topology == MeshTopology.Quads)
+                {
+                    vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + verticalPixelOffset;
+                    vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + verticalPixelOffset;
+                    uvs2[vertex + 0] = Vector2.zero;
+                    uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
+                    uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
+                    uvs2[vertex + 3] = Vector2.zero;
+                }
+                vertex += topology == MeshTopology.Quads ? 4 : 2;
             }
 
             var uv0 = new Vector2(k_GridGizmoDistanceFalloff, 0f);
@@ -378,9 +392,10 @@ namespace UnityEditorInternal
 
             mesh.vertices = vertices;
             mesh.uv = uvs;
-            mesh.uv2 = uvs2;
+            if (topology == MeshTopology.Quads)
+                mesh.uv2 = uvs2;
             mesh.colors = colors;
-            mesh.SetIndices(indices, MeshTopology.Lines, 0);
+            mesh.SetIndices(indices, topology, 0);
 
             return mesh;
         }

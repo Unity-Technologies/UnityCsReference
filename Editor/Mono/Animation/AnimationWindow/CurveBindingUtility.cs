@@ -2,19 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
     static internal class CurveBindingUtility
     {
-        private static GameObject s_Root;
-
         // Retrieve current value.  If bindings are available and value is animated, use bindings to get value.
         // Otherwise, evaluate AnimationWindowCurve at current time.
         public static object GetCurrentValue(AnimationWindowState state, AnimationWindowCurve curve)

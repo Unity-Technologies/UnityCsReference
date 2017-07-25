@@ -72,7 +72,9 @@ public enum CalendarUnit
 [RequiredByNativeCode]
 public sealed partial class LocalNotification
 {
-    private IntPtr notificationWrapper;
+    
+            #pragma warning disable 169
+            private IntPtr notificationWrapper;
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -234,7 +236,9 @@ public sealed partial class LocalNotification
 [RequiredByNativeCode]
 public sealed partial class RemoteNotification
 {
-    private IntPtr notificationWrapper;
+    
+            #pragma warning disable 169
+            private IntPtr notificationWrapper;
     
     
     public extern  string alertBody

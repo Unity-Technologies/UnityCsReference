@@ -56,7 +56,13 @@ namespace UnityEditor
             public GUIContent z = EditorGUIUtility.TextContent("Z");
             public GUIContent previewTexture = EditorGUIUtility.TextContent("Preview|Preview the noise as a texture.");
             public GUIContent previewTextureMultiEdit = EditorGUIUtility.TextContent("Preview (Disabled)|Preview is disabled in multi-object editing mode.");
-            public string[] qualityDropdown = { "Low (1D)", "Medium (2D)", "High (3D)" };
+
+            public GUIContent[] qualityDropdown = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Low (1D)"),
+                EditorGUIUtility.TextContent("Medium (2D)"),
+                EditorGUIUtility.TextContent("High (3D)")
+            };
         }
         private static Texts s_Texts;
 
@@ -118,9 +124,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             // values take 1 frame to appear in the module, so delay our generation of the preview texture using this bool
             if (s_PreviewTextureDirty)
             {

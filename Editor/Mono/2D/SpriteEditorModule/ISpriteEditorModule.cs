@@ -45,6 +45,7 @@ namespace UnityEditor
         void DisplayProgressBar(string title, string content, float progress);
         void ClearProgressBar();
         ITexture2D GetReadableTexture2D();
+        void ApplyOrRevertModification(bool apply);
     }
 
     internal interface ISpriteRectCache : IUndoableObject

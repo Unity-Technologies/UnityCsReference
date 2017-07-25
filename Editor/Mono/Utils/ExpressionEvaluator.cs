@@ -12,7 +12,7 @@ using UnityEngine;
 namespace UnityEditor
 {
     // Evaluates simple expressions, supports int & float and operators: + - * / % ^ ( )
-    internal class ExpressionEvaluator
+    public class ExpressionEvaluator
     {
         private readonly static Operator[] s_Operators =
         {

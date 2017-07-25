@@ -298,6 +298,12 @@ namespace UnityEditor
             {
                 minRep = Mathf.FloorToInt((minTime - rangeStart) / (rangeEnd - rangeStart));
                 maxRep = Mathf.CeilToInt((maxTime - rangeEnd) / (rangeEnd - rangeStart));
+
+                // Prevent too many loops from being rendered at one time.
+                if (minRep < -kMaximumLoops)
+                    preWrap = WrapMode.Clamp;
+                if (maxRep > kMaximumLoops)
+                    postWrap = WrapMode.Clamp;
             }
             else
             {
@@ -452,7 +458,7 @@ namespace UnityEditor
                 minRep = Mathf.FloorToInt((minTime - rangeStart) / (rangeEnd - rangeStart));
                 maxRep = Mathf.CeilToInt((maxTime - rangeEnd) / (rangeEnd - rangeStart));
 
-                // Prevent too much loops from being rendered at one time.
+                // Prevent too many loops from being rendered at one time.
                 if (minRep < -kMaximumLoops)
                     preWrap = WrapMode.Clamp;
                 if (maxRep > kMaximumLoops)

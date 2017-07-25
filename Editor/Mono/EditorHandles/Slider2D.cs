@@ -316,12 +316,12 @@ namespace UnityEditorInternal
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0)
                     {
+                        s_CurrentMousePosition = evt.mousePosition;
                         bool success = true;
                         Vector3 localMousePoint = Handles.inverseMatrix.MultiplyPoint(GetMousePosition(handleDir, handlePos, ref success));
                         if (success)
                         {
                             GUIUtility.hotControl = id; // Grab mouse focus
-                            s_CurrentMousePosition = evt.mousePosition;
                             s_StartPosition = handlePos;
 
                             Vector3 clickOffset = localMousePoint - handlePos;
@@ -418,7 +418,7 @@ namespace UnityEditorInternal
             if (Camera.current != null)
             {
                 Plane plane = new Plane(Handles.matrix.MultiplyVector(handleDirection), Handles.matrix.MultiplyPoint(handlePosition));
-                Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+                Ray mouseRay = HandleUtility.GUIPointToWorldRay(s_CurrentMousePosition);
                 float dist = 0.0f;
                 success = plane.Raycast(mouseRay, out dist);
                 return mouseRay.GetPoint(dist);
@@ -426,7 +426,7 @@ namespace UnityEditorInternal
             else
             {
                 success = true;
-                return Event.current.mousePosition;
+                return s_CurrentMousePosition;
             }
         }
     }

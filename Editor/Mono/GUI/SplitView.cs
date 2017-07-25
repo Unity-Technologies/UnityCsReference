@@ -657,7 +657,6 @@ namespace UnityEditor
             }
         }
 
-        static float[] s_StartDragPos, s_DragPos;
         internal const float kGrabDist = 5;
         public void SplitGUI(Event evt)
         {

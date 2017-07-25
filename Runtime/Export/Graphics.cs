@@ -822,34 +822,3 @@ namespace UnityEngine
         public Vector2 GetTextureScale(int nameID) { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.x, st.y); }
     }
 }
-
-
-//
-// GeometryUtility
-//
-
-
-namespace UnityEngine
-{
-    public partial class GeometryUtility
-    {
-        static public Plane[] CalculateFrustumPlanes(Camera camera)
-        {
-            return CalculateFrustumPlanes(camera.projectionMatrix * camera.worldToCameraMatrix);
-        }
-
-        static public Plane[] CalculateFrustumPlanes(Matrix4x4 worldToProjectionMatrix)
-        {
-            Plane[] planes = new Plane[6];
-            Internal_ExtractPlanes(planes, worldToProjectionMatrix);
-            return planes;
-        }
-
-        public static Bounds CalculateBounds(Vector3[] positions, Matrix4x4 transform)
-        {
-            if (positions == null)       throw new ArgumentNullException("positions");
-            if (positions.Length == 0)   throw new ArgumentException("Zero-sized array is not allowed.", "positions");
-            return Internal_CalculateBounds(positions, transform);
-        }
-    }
-}

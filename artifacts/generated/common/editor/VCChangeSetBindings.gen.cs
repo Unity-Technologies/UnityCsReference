@@ -23,9 +23,8 @@ namespace UnityEditor.VersionControl
 public sealed partial class ChangeSet
 {
     
+            #pragma warning disable 169
             IntPtr m_thisDummy;
-    
-    
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

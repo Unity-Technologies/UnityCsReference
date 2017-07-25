@@ -403,6 +403,10 @@ public partial class Material : Object
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void GetColorArrayImplList (int nameID, object list) ;
 
+    
+    
+    
+    
     private Vector4 GetTextureScaleAndOffsetImpl (int nameID) {
         Vector4 result;
         INTERNAL_CALL_GetTextureScaleAndOffsetImpl ( this, nameID, out result );

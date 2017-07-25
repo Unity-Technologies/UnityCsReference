@@ -15,7 +15,7 @@ namespace UnityEditor.Collaboration
         {
             NotWaiting = 0,
             WaitForJobComplete,
-            WaitForAssetUpdate,
+            WaitForChannelMessageHandled
         }
 
         private static IEnumerator<AsyncState> _enumerator = null;
@@ -39,20 +39,20 @@ namespace UnityEditor.Collaboration
 
         public static void OnCompleteJob()
         {
-            if ((_nextState & AsyncState.WaitForJobComplete) == 0)
-                return;
-
-            _nextState &= ~AsyncState.WaitForJobComplete;
-            if (_nextState == AsyncState.NotWaiting)
-                Execute();
+            OnAsyncSignalReceived(AsyncState.WaitForJobComplete);
         }
 
-        public static void OnAssetUpdate()
+        public static void OnChannelMessageHandled()
         {
-            if ((_nextState & AsyncState.WaitForAssetUpdate) == 0)
+            OnAsyncSignalReceived(AsyncState.WaitForChannelMessageHandled);
+        }
+
+        private static void OnAsyncSignalReceived(AsyncState stateToRemove)
+        {
+            if ((_nextState & stateToRemove) == 0)
                 return;
 
-            _nextState &= ~AsyncState.WaitForAssetUpdate;
+            _nextState &= ~stateToRemove;
             if (_nextState == AsyncState.NotWaiting)
                 Execute();
         }

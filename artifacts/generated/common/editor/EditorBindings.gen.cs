@@ -232,12 +232,11 @@ public static Editor CreateEditor(Object[] targetObjects, [uei.DefaultValue("nul
                 m_OptimizedBlock = null;
             }
 
-            if (m_OptimizedBlock == null)
-                m_OptimizedBlock = new OptimizedGUIBlock();
-
-            block = m_OptimizedBlock;
             if (!isVisible)
             {
+                if (m_OptimizedBlock == null)
+                    m_OptimizedBlock = new OptimizedGUIBlock();
+                block = m_OptimizedBlock;
                 height = 0;
                 return true;
             }
@@ -253,6 +252,14 @@ public static Editor CreateEditor(Object[] targetObjects, [uei.DefaultValue("nul
             bool expand = true;
             while (property.NextVisible(expand))
             {
+                if (!EditorGUI.CanCacheInspectorGUI(property))
+                {
+                    if (m_OptimizedBlock != null)
+                        m_OptimizedBlock.Dispose();
+                    block = m_OptimizedBlock = null;
+                    return false;
+                }
+
                 height += EditorGUI.GetPropertyHeight(property, null, true) + EditorGUI.kControlVerticalSpacing;
                 expand = false;
             }
@@ -260,6 +267,9 @@ public static Editor CreateEditor(Object[] targetObjects, [uei.DefaultValue("nul
             if (height == EditorGUI.kControlVerticalSpacing)
                 height = 0;
 
+            if (m_OptimizedBlock == null)
+                m_OptimizedBlock = new OptimizedGUIBlock();
+            block = m_OptimizedBlock;
             return true;
         }
     

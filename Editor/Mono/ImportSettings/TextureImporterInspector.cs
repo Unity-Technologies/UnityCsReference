@@ -348,6 +348,7 @@ namespace UnityEditor
             TextureImporterFormat.ASTC_RGBA_12x12
         };
 
+#pragma warning disable 649
         internal static string[] s_TextureFormatStringsAll;
         internal static string[] s_TextureFormatStringsWiiU;
         internal static string[] s_TextureFormatStringsWebGL;

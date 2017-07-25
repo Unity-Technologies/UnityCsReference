@@ -21,9 +21,8 @@ namespace UnityEditor.RestService
 internal sealed partial class Request
 {
     
+            #pragma warning disable 169
             IntPtr m_nativeRequestPtr;
-    
-    
     public extern  string Payload
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -73,6 +72,7 @@ internal sealed partial class Response
     
     
     
+            #pragma warning disable 169
             IntPtr m_nativeRequestPtr;
     
     

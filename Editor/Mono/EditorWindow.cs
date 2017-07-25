@@ -63,6 +63,7 @@ namespace UnityEditor
         Vector2 m_GameViewTargetSize;
 
         bool m_DontClearBackground;
+#pragma warning disable 649
         EventInterests m_EventInterests;
 
         // Dockarea we're inside.

@@ -39,7 +39,7 @@ public enum BuildOptions
     
     InstallInBuildFolder = 1 << 6,
     
-    [System.Obsolete ("WebPlayer has been removed in 5.4")]
+    [System.Obsolete ("WebPlayer has been removed in 5.4", true)]
     WebPlayerOfflineDeployment = 1 << 7,
     
     ConnectWithProfiler = 1 << 8,
@@ -355,32 +355,11 @@ public static string BuildStreamedSceneAssetBundle(string[] levels, string locat
     #pragma warning disable 618
     
     
-    [System.Obsolete ("WebPlayer has been removed in 5.4", true)]
-private static bool WebPlayerAssetBundlesAreNoLongerSupported()
-        {
-            throw new InvalidOperationException("WebPlayer asset bundles can no longer be built in 5.4+");
-        }
-    
-    
     [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             uint crc;
             return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatform);
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName, BuildAssetBundleOptions assetBundleOptions)
-        {
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName)
-        {
-            return WebPlayerAssetBundlesAreNoLongerSupported();
         }
     
     
@@ -407,41 +386,11 @@ public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pa
         }
     
     
-    [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions)
-        {
-            crc = 0;
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundle(Object mainAsset, Object[] assets, string pathName, out uint crc)
-        {
-            crc = 0;
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
-    
     [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             uint crc;
             return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatform);
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions)
-        {
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName)
-        {
-            return WebPlayerAssetBundlesAreNoLongerSupported();
         }
     
     
@@ -467,22 +416,6 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
             }
         }
     
-    
-    [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions)
-        {
-            crc = 0;
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
-    
-    [System.Obsolete ("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
-public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] assetNames, string pathName, out uint crc)
-        {
-            crc = 0;
-            return WebPlayerAssetBundlesAreNoLongerSupported();
-        }
-    
     #pragma warning restore 618
     
     
@@ -490,22 +423,6 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  bool BuildAssetBundleInternal (Object mainAsset, Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, out uint crc) ;
 
-    [System.Obsolete ("BuildAssetBundles signature has changed. Please specify the targetPlatform parameter", true)]
-[uei.ExcludeFromDocs]
-public static AssetBundleManifest BuildAssetBundles (string outputPath) {
-    BuildAssetBundleOptions assetBundleOptions = BuildAssetBundleOptions.None;
-    return BuildAssetBundles ( outputPath, assetBundleOptions );
-}
-
-[System.Obsolete ("BuildAssetBundles signature has changed. Please specify the targetPlatform parameter", true)]
-public static AssetBundleManifest BuildAssetBundles(string outputPath, [uei.DefaultValue("BuildAssetBundleOptions.None")]  BuildAssetBundleOptions assetBundleOptions )
-        {
-            WebPlayerAssetBundlesAreNoLongerSupported();
-            return null;
-        }
-
-    
-    
     public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
@@ -526,22 +443,6 @@ public static AssetBundleManifest BuildAssetBundles(string outputPath, [uei.Defa
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  AssetBundleManifest BuildAssetBundlesInternal (string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform) ;
 
-    [System.Obsolete ("BuildAssetBundles signature has changed. Please specify the targetPlatform parameter", true)]
-[uei.ExcludeFromDocs]
-public static AssetBundleManifest BuildAssetBundles (string outputPath, AssetBundleBuild[] builds) {
-    BuildAssetBundleOptions assetBundleOptions = BuildAssetBundleOptions.None;
-    return BuildAssetBundles ( outputPath, builds, assetBundleOptions );
-}
-
-[System.Obsolete ("BuildAssetBundles signature has changed. Please specify the targetPlatform parameter", true)]
-public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, [uei.DefaultValue("BuildAssetBundleOptions.None")]  BuildAssetBundleOptions assetBundleOptions )
-        {
-            WebPlayerAssetBundlesAreNoLongerSupported();
-            return null;
-        }
-
-    
-    
     public static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
             BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);

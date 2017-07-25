@@ -84,6 +84,89 @@ namespace UnityEditor
         }
     }
 
+    internal class TransformTool : ManipulationTool
+    {
+        static TransformTool s_Instance;
+        static Vector3 s_Scale;
+
+        public static void OnGUI(SceneView view)
+        {
+            if (s_Instance == null)
+                s_Instance = new TransformTool();
+            s_Instance.OnToolGUI(view);
+        }
+
+        public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
+        {
+            var ids = Handles.TransformHandleIds.Default;
+            TransformManipulator.BeginManipulationHandling(false);
+
+            // Lock position when scaling or rotating
+            if (ids.scale.Has(GUIUtility.hotControl)
+                || ids.rotation.Has(GUIUtility.hotControl))
+                Tools.LockHandlePosition();
+            else
+                Tools.UnlockHandlePosition();
+
+            EditorGUI.BeginChangeCheck();
+
+            if (Event.current.type == EventType.MouseDown)
+                s_Scale = Vector3.one;
+
+            var startPosition = handlePosition;
+            var endPosition = startPosition;
+            var startRotation = Tools.handleRotation;
+            var endRotation = startRotation;
+            var startScale = s_Scale;
+            var endScale = startScale;
+            Handles.TransformHandle(ids, ref endPosition, ref endRotation, ref endScale, Handles.TransformHandleParam.Default);
+            s_Scale = endScale;
+
+            if (EditorGUI.EndChangeCheck() && !isStatic)
+            {
+                Undo.RecordObjects(Selection.transforms, "Transform Manipulation");
+
+                Vector3 deltaPosition = endPosition - TransformManipulator.mouseDownHandlePosition;
+                if (deltaPosition != Vector3.zero)
+                {
+                    ManipulationToolUtility.SetMinDragDifferenceForPos(handlePosition);
+                    TransformManipulator.SetPositionDelta(deltaPosition);
+                }
+
+                Quaternion deltaRotation = Quaternion.Inverse(startRotation) * endRotation;
+                float angle;
+                Vector3 axis;
+                deltaRotation.ToAngleAxis(out angle, out axis);
+                if (!Mathf.Approximately(angle, 0))
+                {
+                    foreach (Transform t in Selection.transforms)
+                    {
+                        // Rotate around handlePosition (Global or Local axis).
+                        if (Tools.pivotMode == PivotMode.Center)
+                            t.RotateAround(handlePosition, startRotation * axis, angle);
+                        // Local rotation (Pivot mode with Local axis).
+                        else if (TransformManipulator.individualSpace)
+                            t.Rotate(t.rotation * axis, angle, Space.World);
+                        // Pivot mode with Global axis.
+                        else
+                            t.Rotate(startRotation * axis, angle, Space.World);
+
+                        // sync euler hints after a rotate tool update tyo fake continuous rotation
+                        t.SetLocalEulerHint(t.GetLocalEulerAngles(t.rotationOrder));
+
+                        if (t.parent != null)
+                            t.SendTransformChangedScale(); // force scale update, needed if tr has non-uniformly scaled parent.
+                    }
+                    Tools.handleRotation = endRotation;
+                }
+
+                if (endScale != startScale)
+                    TransformManipulator.SetScaleDelta(endScale, endRotation);
+            }
+            TransformManipulator.EndManipulationHandling();
+        }
+    }
+
     internal class MoveTool : ManipulationTool
     {
         private static MoveTool s_Instance;

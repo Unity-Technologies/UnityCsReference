@@ -16,6 +16,16 @@ namespace UnityEditor
 {
     internal static class SpriteUtility
     {
+        static class SpriteUtilityStrings
+        {
+            public static readonly GUIContent saveAnimDialogMessage = EditorGUIUtility.TextContent("Create a new animation for the game object '{0}':");
+            public static readonly GUIContent saveAnimDialogTitle = EditorGUIUtility.TextContent("Create New Animation");
+            public static readonly GUIContent saveAnimDialogName = EditorGUIUtility.TextContent("New Animation");
+            public static readonly GUIContent unableToFindSpriteRendererWarning = EditorGUIUtility.TextContent("There should be a SpriteRenderer in dragged object");
+            public static readonly GUIContent unableToAddSpriteRendererWarning = EditorGUIUtility.TextContent("Unable to add SpriteRenderer into Gameobject.");
+            public static readonly GUIContent failedToCreateAnimationError = EditorGUIUtility.TextContent("Failed to create animation for dragged object");
+        }
+
         private static Material s_PreviewSpriteDefaultMaterial;
 
         internal static Material previewSpriteDefaultMaterial
@@ -239,9 +249,9 @@ namespace UnityEditor
             if (animator != null)
             {
                 // Go forward with presenting user a save clip dialog
-                string message = string.Format("Create a new animation for the game object '{0}':", gameObject.name);
+                string message = string.Format(SpriteUtilityStrings.saveAnimDialogMessage.text, gameObject.name);
                 string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
-                string newClipPath = saveFileDialog("Create New Animation", "New Animation", "anim", message, newClipDirectory);
+                string newClipPath = saveFileDialog(SpriteUtilityStrings.saveAnimDialogTitle.text, SpriteUtilityStrings.saveAnimDialogName.text, "anim", message, newClipDirectory);
 
                 if (string.IsNullOrEmpty(newClipPath))
                 {
@@ -260,7 +270,7 @@ namespace UnityEditor
             }
 
             if (createSuccess == false)
-                Debug.LogError("Failed to create animation for dragged object");
+                Debug.LogError(SpriteUtilityStrings.failedToCreateAnimationError.text);
 
             return createSuccess;
         }
@@ -391,14 +401,7 @@ namespace UnityEditor
             }
 
             Object firstSprite = null;
-            try
-            {
-                firstSprite = AssetDatabase.LoadAllAssetsAtPath(assetPath).First(t => t is Sprite);
-            }
-            catch (System.Exception)
-            {
-                Debug.LogWarning("Texture being dragged has no Sprites.");
-            }
+            firstSprite = AssetDatabase.LoadAllAssetsAtPath(assetPath).FirstOrDefault(t => t is Sprite);
 
             return firstSprite as Sprite;
         }
@@ -423,11 +426,11 @@ namespace UnityEditor
             SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
             {
-                Debug.LogWarning("There should be a SpriteRenderer in dragged object");
+                Debug.LogWarning(SpriteUtilityStrings.unableToFindSpriteRendererWarning.text);
                 spriteRenderer = go.AddComponent<SpriteRenderer>();
                 if (spriteRenderer == null)
                 {
-                    Debug.LogWarning("Unable to add SpriteRenderer into Gameobject.");
+                    Debug.LogWarning(SpriteUtilityStrings.unableToAddSpriteRendererWarning.text);
                     return false;
                 }
             }

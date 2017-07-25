@@ -32,6 +32,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.LinuxStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")]
@@ -49,6 +50,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
+[assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 
 
 [assembly: AssemblyIsEditorAssembly]

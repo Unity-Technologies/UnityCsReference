@@ -49,9 +49,26 @@ namespace UnityEditor.StyleSheets
                 resource = Resources.Load(pathName, type);
             }
 
+            if (resource == null && lookForRetinaAssets)
+            {
+                resource = AssetDatabase.LoadMainAssetAtPath(hiResPath);
+            }
+
+            if (resource == null)
+            {
+                resource = AssetDatabase.LoadMainAssetAtPath(pathName);
+            }
+
             if (resource != null)
             {
                 Debug.Assert(type.IsAssignableFrom(resource.GetType()), "Resource type mismatch");
+
+                // Add to post processor for tracking asset moves/deletes.
+                var absoluteAssetPath = AssetDatabase.GetAssetPath(resource);
+                if (type != typeof(UnityEngine.StyleSheets.StyleSheet) && !absoluteAssetPath.StartsWith("Library"))
+                {
+                    StyleSheetAssetPostprocessor.AddReferencedAssetPath(absoluteAssetPath);
+                }
             }
 
             return resource;

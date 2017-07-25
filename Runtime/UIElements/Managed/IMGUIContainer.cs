@@ -29,6 +29,15 @@ namespace UnityEngine.Experimental.UIElements
         public ContextType contextType { get; set; }
         internal int GUIDepth { get; private set; }
 
+        internal Matrix4x4 imguiTransform
+        {
+            get
+            {
+                var transform = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0.0f));
+                return globalTransform * transform;
+            }
+        }
+
         public IMGUIContainer(Action onGUIHandler)
         {
             m_OnGUIHandler = onGUIHandler;
@@ -37,11 +46,11 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override void DoRepaint(IStylePainter painter)
         {
-            base.DoRepaint(painter);
+            base.DoRepaint();
+
             lastWorldClip = painter.currentWorldClip;
 
-            IMGUIEvent genEvent = new IMGUIEvent(painter.repaintEvent);
-            HandleEvent(genEvent);
+            HandleIMGUIEvent(painter.repaintEvent);
         }
 
         internal override void ChangePanel(BaseVisualElementPanel p)
@@ -96,12 +105,12 @@ namespace UnityEngine.Experimental.UIElements
             Event.current.displayIndex = m_GUIGlobals.displayIndex;
         }
 
-        private bool DoOnGUI(Event evt)
+        private void DoOnGUI(Event evt)
         {
             if (m_OnGUIHandler == null
                 || panel == null)
             {
-                return false;
+                return;
             }
 
             // Save the GUIClip count to make sanity checks after calling the OnGUI handler
@@ -166,10 +175,7 @@ namespace UnityEngine.Experimental.UIElements
             if (eventType == EventType.Used)
             {
                 Dirty(ChangeType.Repaint);
-                return true;
             }
-
-            return false;
         }
 
         public override void OnLostKeyboardFocus()
@@ -182,6 +188,16 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.HandleEvent(evt);
 
+            if (evt.propagationPhase == PropagationPhase.DefaultAction)
+            {
+                return;
+            }
+
+            if (evt.imguiEvent == null)
+            {
+                return;
+            }
+
             if (evt.isPropagationStopped)
             {
                 return;
@@ -192,20 +208,29 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            EventType originalEventType = evt.imguiEvent.type;
-            evt.imguiEvent.type = EventType.Layout;
-
-            // layout event
-            bool ret = DoOnGUI(evt.imguiEvent);
-            // the actual event
-            evt.imguiEvent.type = originalEventType;
-            ret |= DoOnGUI(evt.imguiEvent);
-
-            if (ret)
+            if (HandleIMGUIEvent(evt.imguiEvent))
             {
                 evt.StopPropagation();
+                evt.PreventDefault();
             }
-            else if (evt.imguiEvent.type == EventType.MouseUp && this.HasCapture())
+        }
+
+        internal bool HandleIMGUIEvent(Event e)
+        {
+            EventType originalEventType = e.type;
+            e.type = EventType.Layout;
+
+            // layout event
+            DoOnGUI(e);
+            // the actual event
+            e.type = originalEventType;
+            DoOnGUI(e);
+
+            if (e.type == EventType.Used)
+            {
+                return true;
+            }
+            else if (e.type == EventType.MouseUp && this.HasCapture())
             {
                 // This can happen if a MouseDown was caught by a different IM element but we ended up here on the
                 // MouseUp event because no other element consumed it, including the one that had capture.
@@ -223,6 +248,8 @@ namespace UnityEngine.Experimental.UIElements
             {
                 GUIUtility.ExitGUI();
             }
+
+            return false;
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

@@ -26,10 +26,12 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("RotateTool", "|Rotate the selected objects."),
                 EditorGUIUtility.IconContent("ScaleTool", "|Scale the selected objects."),
                 EditorGUIUtility.IconContent("RectTool"),
+                EditorGUIUtility.IconContent("TransformTool", "|Move, Rotate or Scale selected objects."),
                 EditorGUIUtility.IconContent("MoveTool On"),
                 EditorGUIUtility.IconContent("RotateTool On"),
                 EditorGUIUtility.IconContent("ScaleTool On"),
-                EditorGUIUtility.IconContent("RectTool On")
+                EditorGUIUtility.IconContent("RectTool On"),
+                EditorGUIUtility.IconContent("TransformTool On"),
             };
 
             s_ViewToolIcons = new GUIContent[]
@@ -38,9 +40,11 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("ViewToolMove"),
                 EditorGUIUtility.IconContent("ViewToolZoom"),
                 EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
+                EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
                 EditorGUIUtility.IconContent("ViewToolOrbit On"),
                 EditorGUIUtility.IconContent("ViewToolMove On"),
                 EditorGUIUtility.IconContent("ViewToolZoom On"),
+                EditorGUIUtility.IconContent("ViewToolOrbit On"),
                 EditorGUIUtility.IconContent("ViewToolOrbit On")
             };
 
@@ -97,6 +101,7 @@ namespace UnityEditor
             "ToolbarPersistentToolsRotate",
             "ToolbarPersistentToolsScale",
             "ToolbarPersistentToolsRect",
+            "ToolbarPersistentToolsTransform",
         };
         static GUIContent[] s_ViewToolIcons;
         static GUIContent[] s_PivotIcons;
@@ -193,7 +198,7 @@ namespace UnityEditor
         }
 
         // The actual array we display. We build this every frame to make sure it looks correct i.r.t. selection :)
-        static GUIContent[] s_ShownToolIcons = { null, null, null, null, null };
+        static GUIContent[] s_ShownToolIcons = { null, null, null, null, null, null };
 
         public static Toolbar get = null;
         public static bool requestShowCollabToolbar = false;
@@ -291,7 +296,7 @@ namespace UnityEditor
 
             ReserveWidthRight(space, ref pos);
 
-            ReserveWidthRight(standardButtonWidth * 5, ref pos);
+            ReserveWidthRight(standardButtonWidth * s_ShownToolIcons.Length, ref pos);
             DoToolButtons(GetThickArea(pos));
 
             ReserveWidthRight(largeSpace, ref pos);
@@ -398,12 +403,12 @@ namespace UnityEditor
             int displayTool = Tools.viewToolActive ? 0 : (int)Tools.current;
 
             // Change the icon to match the correct view tool
-            for (int i = 1; i < 5; i++)
+            for (int i = 1; i < s_ShownToolIcons.Length; i++)
             {
-                s_ShownToolIcons[i] = s_ToolIcons[i - 1 + (i == displayTool ? 4 : 0)];
+                s_ShownToolIcons[i] = s_ToolIcons[i - 1 + (i == displayTool ? s_ShownToolIcons.Length - 1 : 0)];
                 s_ShownToolIcons[i].tooltip = s_ToolIcons[i - 1].tooltip;
             }
-            s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? 4 : 0)];
+            s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
 
             displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, "Command");
             if (GUI.changed)

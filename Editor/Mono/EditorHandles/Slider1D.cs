@@ -24,7 +24,7 @@ namespace UnityEditorInternal
 
         internal static Vector3 Do(int id, Vector3 position, Vector3 direction, float size, Handles.CapFunction capFunction, float snap)
         {
-            return Do(id, position, direction, direction, size, capFunction, snap);
+            return Do(id, position, Vector3.zero, direction, direction, size, capFunction, snap);
         }
 
         // DrawCapFunction was marked plannned obsolete by @juha on 2016-03-16, marked obsolete warning by @adamm on 2016-12-21
@@ -109,16 +109,16 @@ namespace UnityEditorInternal
             return position;
         }
 
-        internal static Vector3 Do(int id, Vector3 position, Vector3 handleDirection, Vector3 slideDirection, float size, Handles.CapFunction capFunction, float snap)
+        internal static Vector3 Do(int id, Vector3 position, Vector3 offset, Vector3 handleDirection, Vector3 slideDirection, float size, Handles.CapFunction capFunction, float snap)
         {
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.layout:
                     if (capFunction != null)
-                        capFunction(id, position, Quaternion.LookRotation(handleDirection), size, EventType.layout);
+                        capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.layout);
                     else
-                        HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, size * .2f));
+                        HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + offset, size * .2f));
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
@@ -173,7 +173,7 @@ namespace UnityEditorInternal
                         Handles.color = Handles.preselectionColor;
                     }
 
-                    capFunction(id, position, Quaternion.LookRotation(handleDirection), size, EventType.Repaint);
+                    capFunction(id, position + offset, Quaternion.LookRotation(handleDirection), size, EventType.Repaint);
 
                     if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;

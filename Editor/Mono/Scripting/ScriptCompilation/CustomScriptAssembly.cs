@@ -9,6 +9,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
     [System.Serializable]
     class CustomScriptAssemblyData
     {
+#pragma warning disable 649
         public string name;
         public string[] references;
         public string[] includePlatforms;

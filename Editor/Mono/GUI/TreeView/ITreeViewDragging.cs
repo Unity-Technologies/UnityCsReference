@@ -21,7 +21,7 @@ namespace UnityEditor.IMGUI.Controls
         void OnInitialize();
         bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition);
         void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs);
-        bool DragElement(TreeViewItem targetItem, Rect targetItemRect, bool firstItem);             // 'targetItem' is null when not hovering over any target Item.  Returns true if drag was handled.
+        bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row);             // 'targetItem' is null when not hovering over any target Item.  Returns true if drag was handled.
         void DragCleanup(bool revertExpanded);
         int GetDropTargetControlID();
         int GetRowMarkerControlID();

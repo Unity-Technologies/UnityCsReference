@@ -263,7 +263,7 @@ namespace UnityEngine.Experimental.UIElements
                 minPos -= scrollOffset;
                 maxPos -= scrollOffset;
 
-                if (minPos.y == maxPos.y)
+                if (Mathf.Approximately(minPos.y, maxPos.y))
                 {
                     painterParams.layout = new Rect(minPos.x, minPos.y, maxPos.x - minPos.x, lineHeight);
                     painter.DrawRect(painterParams);
@@ -295,7 +295,7 @@ namespace UnityEngine.Experimental.UIElements
             painter.DrawText(this);
 
             // Draw the cursor
-            if (cursorIndex == selectionEndIndex)
+            if (cursorIndex == selectionEndIndex && (Font)style.font != null)
             {
                 cursorParams = new CursorPositionStylePainterParameters
                 {

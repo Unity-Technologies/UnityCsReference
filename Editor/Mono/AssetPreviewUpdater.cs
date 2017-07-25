@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class AssetPreviewUpdater
+    internal static class AssetPreviewUpdater
     {
         // Generate a preview texture for an asset
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)

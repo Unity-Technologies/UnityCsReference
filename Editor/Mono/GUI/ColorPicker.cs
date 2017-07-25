@@ -65,6 +65,7 @@ namespace UnityEditor
         [SerializeField]
         Texture2D m_ColorSlider;
         [SerializeField]
+#pragma warning disable 169
         float m_SliderValue;
 
         [SerializeField]
@@ -117,6 +118,7 @@ namespace UnityEditor
         bool m_RGBHSVSlidersDirty;
 
         [SerializeField]
+#pragma warning disable 169
         ContainerWindow m_TrackingWindow;
 
         enum ColorBoxMode { SV_H, HV_S, HS_V, BG_R, BR_G, RG_B, EyeDropper }
@@ -1411,6 +1413,11 @@ namespace UnityEditor
                 if (!m_IsOSColorPicker && exitGUI)
                     GUIUtility.ExitGUI();
             }
+            if (m_OnColorChanged != null)
+            {
+                m_OnColorChanged(color);
+                Repaint();
+            }
         }
 
         private void SetNormalizedColor(Color c)
@@ -1458,16 +1465,16 @@ namespace UnityEditor
             Show(viewToUpdate, col, true, false, null);
         }
 
-        public static void Show(GUIView viewToUpdate, Color col, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
+        protected static ColorPicker PrepareShow(Color col, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
         {
             ColorPicker cp = ColorPicker.get;
             cp.m_HDR = hdr;
             cp.m_HDRConfig = new ColorPickerHDRConfig(hdrConfig ?? defaultHDRConfig);
-            cp.m_DelegateView = viewToUpdate;
             cp.SetColor(col);
             cp.m_OriginalColor = get.m_Color;
             cp.m_ShowAlpha = showAlpha;
             cp.m_ModalUndoGroup = Undo.GetCurrentGroup();
+
 
             // For now we enforce our Color Picker for hdr colors
             if (cp.m_HDR)
@@ -1484,6 +1491,24 @@ namespace UnityEditor
                 cp.InitIfNeeded(); // Ensure the heavy lifting of loading presets are done before window is visible
                 cp.ShowAuxWindow();
             }
+
+            return cp;
+        }
+
+        System.Action<Color> m_OnColorChanged;
+
+        public static void Show(System.Action<Color> onColorChanged, Color col, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
+        {
+            ColorPicker cp = PrepareShow(col, showAlpha, hdr, hdrConfig);
+            cp.m_DelegateView = null;
+            cp.m_OnColorChanged = onColorChanged;
+        }
+
+        public static void Show(GUIView viewToUpdate, Color col, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
+        {
+            ColorPicker cp = PrepareShow(col, showAlpha, hdr, hdrConfig);
+            cp.m_DelegateView = viewToUpdate;
+            cp.m_OnColorChanged = null;
         }
 
         void PollOSColorPicker()
@@ -1581,9 +1606,17 @@ namespace UnityEditor
         private static Vector2 s_PickCoordinates = Vector2.zero;
         private bool m_Focused = false;
 
+
+        public System.Action<Color> m_OnColorPicked;
+
         public static void Start(GUIView viewToUpdate)
         {
-            get.Show(viewToUpdate);
+            get.Show(viewToUpdate, null);
+        }
+
+        public static void Start(System.Action<Color> onColorPicked)
+        {
+            get.Show(null, onColorPicked);
         }
 
         static EyeDropper get
@@ -1601,9 +1634,10 @@ namespace UnityEditor
             s_Instance = this;
         }
 
-        void Show(GUIView sourceView)
+        void Show(GUIView sourceView, System.Action<Color> onColorPicked)
         {
             m_DelegateView = sourceView;
+            m_OnColorPicked = onColorPicked;
             ContainerWindow win = ScriptableObject.CreateInstance<ContainerWindow>();
             win.m_DontSaveToLayout = true;
             win.title = "EyeDropper";
@@ -1732,6 +1766,11 @@ namespace UnityEditor
                 m_DelegateView.SendEvent(e);
                 if (exitGUI)
                     GUIUtility.ExitGUI();
+            }
+
+            if (m_OnColorPicked != null && eventName == "EyeDropperClicked")
+            {
+                m_OnColorPicked(s_LastPickedColor);
             }
         }
 

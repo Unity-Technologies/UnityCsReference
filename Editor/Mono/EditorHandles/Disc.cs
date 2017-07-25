@@ -9,13 +9,23 @@ namespace UnityEditorInternal
 {
     internal class Disc
     {
+        const int k_MaxSnapMarkers = 360 / 5;
+        const float k_RotationUnitSnapMajorMarkerStep = 45;
+        const float k_RotationUnitSnapMarkerSize = 0.1f;
+        const float k_RotationUnitSnapMajorMarkerSize = 0.2f;
+        const float k_GrabZoneScale = 0.3f;
+
         static Vector2 s_StartMousePosition, s_CurrentMousePosition;
         static Vector3 s_StartPosition, s_StartAxis;
         static Quaternion s_StartRotation;
         static float s_RotationDist;
 
-
         public static Quaternion Do(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
+        {
+            return Do(id, rotation, position, axis, size, cutoffPlane, snap, true, true, Handles.secondaryColor);
+        }
+
+        public static Quaternion Do(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap, bool enableRayDrag, bool showHotArc, Color fillColor)
         {
             if (Mathf.Abs(Vector3.Dot(Camera.current.transform.forward, axis)) > .999f)
                 cutoffPlane = false;
@@ -29,11 +39,11 @@ namespace UnityEditorInternal
                     if (cutoffPlane)
                     {
                         Vector3 from = Vector3.Cross(axis, Camera.current.transform.forward).normalized;
-                        d = HandleUtility.DistanceToArc(position, axis, from, 180, size) / 2;
+                        d = HandleUtility.DistanceToArc(position, axis, from, 180, size) * k_GrabZoneScale;
                     }
                     else
                     {
-                        d = HandleUtility.DistanceToDisc(position, axis, size) / 2;
+                        d = HandleUtility.DistanceToDisc(position, axis, size) * k_GrabZoneScale;
                     }
 
                     HandleUtility.AddControl(id, d);
@@ -66,7 +76,7 @@ namespace UnityEditorInternal
                     if (GUIUtility.hotControl == id)
                     {
                         // handle look to point rotation
-                        bool rayDrag = EditorGUI.actionKey && evt.shift;
+                        bool rayDrag = EditorGUI.actionKey && evt.shift && enableRayDrag;
                         if (rayDrag)
                         {
                             if (HandleUtility.ignoreRaySnapObjects == null)
@@ -133,27 +143,33 @@ namespace UnityEditorInternal
                     {
                         Color t = Handles.color;
                         Vector3 from = (s_StartPosition - position).normalized;
-                        Handles.color = Handles.secondaryColor;
-                        Handles.DrawLine(position, position + from * size * 1.1f);
-                        float d = Mathf.Repeat(-s_RotationDist - 180, 360) - 180;
+                        Handles.color = fillColor;
+                        Handles.DrawLine(position, position + from * size);
+                        var d = -Mathf.Sign(s_RotationDist) * Mathf.Repeat(Mathf.Abs(s_RotationDist), 360);
                         Vector3 to = Quaternion.AngleAxis(d, axis) * from;
-                        Handles.DrawLine(position, position + to * size * 1.1f);
+                        Handles.DrawLine(position, position + to * size);
 
-                        Handles.color = Handles.secondaryColor * new Color(1, 1, 1, .2f);
+                        Handles.color = fillColor * new Color(1, 1, 1, .2f);
+                        for (int i = 0, revolutions = (int)Mathf.Abs(s_RotationDist * 0.002777777778f); i < revolutions; ++i)
+                            Handles.DrawSolidDisc(position, axis, size);
                         Handles.DrawSolidArc(position, axis, from, d, size);
+
+                        // Draw snap markers
+                        if (EditorGUI.actionKey && snap > 0)
+                        {
+                            DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMarkerSize, snap, @from);
+                            DrawRotationUnitSnapMarkers(position, axis, size, k_RotationUnitSnapMajorMarkerSize, k_RotationUnitSnapMajorMarkerStep, @from);
+                        }
                         Handles.color = t;
                     }
 
-                    if (cutoffPlane)
+                    if (showHotArc && GUIUtility.hotControl == id || GUIUtility.hotControl != id && !cutoffPlane)
+                        Handles.DrawWireDisc(position, axis, size);
+                    else if (GUIUtility.hotControl != id && cutoffPlane)
                     {
                         Vector3 from = Vector3.Cross(axis, Camera.current.transform.forward).normalized;
                         Handles.DrawWireArc(position, axis, from, 180, size);
                     }
-                    else
-                    {
-                        Handles.DrawWireDisc(position, axis, size);
-                    }
-
 
                     if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;
@@ -161,6 +177,31 @@ namespace UnityEditorInternal
             }
 
             return rotation;
+        }
+
+        static void DrawRotationUnitSnapMarkers(Vector3 position, Vector3 axis, float handleSize, float markerSize, float snap, Vector3 @from)
+        {
+            var iterationCount = Mathf.FloorToInt(360 / snap);
+            var performFading = iterationCount > k_MaxSnapMarkers;
+            var limitedIterationCount = Mathf.Min(iterationCount, k_MaxSnapMarkers);
+
+            // center the markers around the current angle
+            var count = Mathf.RoundToInt(limitedIterationCount * 0.5f);
+
+            for (var i = -count; i < count; ++i)
+            {
+                var rot = Quaternion.AngleAxis(i * snap, axis);
+                var u = rot * @from;
+                var startPoint = position + (1 - markerSize) * handleSize * u;
+                var endPoint = position + 1 * handleSize * u;
+                Handles.color = Handles.selectedColor;
+                if (performFading)
+                {
+                    var alpha = 1 - Mathf.SmoothStep(0, 1, Mathf.Abs(i / ((float)limitedIterationCount - 1) - 0.5f) * 2);
+                    Handles.color = new Color(Handles.color.r, Handles.color.g, Handles.color.b, alpha);
+                }
+                Handles.DrawLine(startPoint, endPoint);
+            }
         }
     }
 }

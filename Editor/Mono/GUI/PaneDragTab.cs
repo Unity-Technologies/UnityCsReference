@@ -14,6 +14,7 @@ namespace UnityEditor
         const float kMaxArea = 50000.0f;
 
         [SerializeField]
+#pragma warning disable 169
         bool m_Shadow;
 
         static PaneDragTab s_Get;
@@ -21,7 +22,6 @@ namespace UnityEditor
         [SerializeField]
         Vector2 m_FullWindowSize = new Vector2(80, 60);
 
-        Rect m_StartRect;
         [SerializeField]
         Rect m_TargetRect;
         [SerializeField]
@@ -31,7 +31,6 @@ namespace UnityEditor
 
         float m_TargetAlpha = 1.0f;
 
-        bool m_DidResizeOnLastLayout;
         DropInfo.Type m_Type = (DropInfo.Type)(-1);
 
         GUIContent m_Content;

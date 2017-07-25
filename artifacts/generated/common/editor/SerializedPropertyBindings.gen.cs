@@ -73,6 +73,7 @@ public enum SerializedPropertyType
 public sealed partial class SerializedObject : IDisposable
 {
     
+            #pragma warning disable 169
             IntPtr m_Property;
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -147,8 +148,17 @@ public sealed partial class SerializedObject : IDisposable
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CopyFromSerializedProperty (SerializedProperty prop) ;
+    extern private void CopyFromSerializedPropertyInternal (SerializedProperty prop) ;
 
+    public void CopyFromSerializedProperty(SerializedProperty prop)
+        {
+            if (prop == null)
+                throw new ArgumentNullException("prop");
+
+            CopyFromSerializedPropertyInternal(prop);
+        }
+    
+    
     internal extern  bool hasModifiedProperties
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

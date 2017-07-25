@@ -86,9 +86,8 @@ interface IHierarchyProperty
 
 public sealed partial class HierarchyProperty : IHierarchyProperty
 {
+            #pragma warning disable 169
     IntPtr m_Property;
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public HierarchyProperty (HierarchyType hierarchyType) ;
@@ -587,23 +586,31 @@ internal sealed partial class TerrainInspectorUtil
 
 }
 
-internal sealed partial class PhysicsManager : Object
+internal sealed partial class PhysicsManager : ProjectSettingsBase
 {
 }
 
-internal sealed partial class AudioManager : Object
+internal sealed partial class AudioManager : ProjectSettingsBase
 {
 }
 
-internal sealed partial class Physics2DSettings : Object
+internal sealed partial class Physics2DSettings : ProjectSettingsBase
 {
 }
 
-internal sealed partial class MonoManager : Object
+internal sealed partial class MonoManager : ProjectSettingsBase
 {
 }
 
-internal sealed partial class TagManager : Object
+internal sealed partial class TagManager : ProjectSettingsBase
+{
+}
+
+internal sealed partial class InputManager : ProjectSettingsBase
+{
+}
+
+internal sealed partial class TimeManager : ProjectSettingsBase
 {
 }
 
@@ -1097,11 +1104,22 @@ internal sealed partial class GradientPreviewCache
 
 }
 
+public enum ModuleIncludeSetting
+{
+    Auto = 0,
+    ForceExclude = 1,
+    ForceInclude = 2
+}
+
 internal sealed partial class ModuleMetadata
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string[] GetModuleNames () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  string[] GetModuleDependencies (string moduleName) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1116,12 +1134,28 @@ internal sealed partial class ModuleMetadata
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  ModuleIncludeSetting GetModuleIncludeSettingForModule (string module) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetModuleIncludeSettingForModule (string module, ModuleIncludeSetting setting) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  ModuleIncludeSetting GetModuleIncludeSettingForObject (Object o) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  int[] GetModuleClasses (string moduleName) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string GetICallModule (string icall) ;
 
+}
+
+internal partial class ProjectSettingsBase : Object
+{
 }
 
 }

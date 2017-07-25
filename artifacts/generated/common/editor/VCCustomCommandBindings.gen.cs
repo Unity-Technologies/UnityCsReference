@@ -28,9 +28,9 @@ internal enum CommandContext
 
 internal sealed partial class CustomCommand
 {
+            #pragma warning disable 169
     IntPtr m_thisDummy;
-    
-    
+            #pragma warning disable 169
     
             internal CustomCommand() {}
     

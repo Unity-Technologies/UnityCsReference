@@ -51,10 +51,10 @@ namespace UnityEngine.Experimental.UIElements
             float scrollableWidth = contentView.layout.width - contentViewport.layout.width;
             float scrollableHeight = contentView.layout.height - contentViewport.layout.height;
 
-            var t = contentView.transform;
-            t.m03 = -(normalizedOffset.x * scrollableWidth);
-            t.m13 = -(normalizedOffset.y * scrollableHeight);
-            contentView.transform = t;
+            var t = contentView.transform.position;
+            t.x = -(normalizedOffset.x * scrollableWidth);
+            t.y = -(normalizedOffset.y * scrollableHeight);
+            contentView.transform.position = t;
 
             this.Dirty(ChangeType.Repaint);
         }

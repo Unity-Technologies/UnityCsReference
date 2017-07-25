@@ -651,7 +651,7 @@ namespace UnityEditor
             }
 
             // FIXME: WHY IS THIS ALL IN ONE FUNCTION?!
-            // Draw the side bar to the right. Different options like streaming web player, Specific Standalone player to build etc.
+            // Draw the side bar to the right. Different options like specific Standalone player to build, profiling and debugging options, etc.
             string module = ModuleManager.GetTargetStringFrom(platform.targetGroup, buildTarget);
             IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(module);
             if (buildWindowExtension != null)
@@ -749,7 +749,7 @@ namespace UnityEditor
 
                 GUILayout.FlexibleSpace();
 
-                if (postprocessor.SupportsLz4Compression())
+                if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {
                     styles.compressionMethod.tooltip = "Compression method for Asset Bundles";
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));

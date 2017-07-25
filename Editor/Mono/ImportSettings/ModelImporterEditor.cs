@@ -36,6 +36,15 @@ namespace UnityEditor
             return base.HasPreviewGUI() && targets.Length < 2;
         }
 
+        public override GUIContent GetPreviewTitle()
+        {
+            var tab = activeTab as ModelImporterClipEditor;
+            if (tab != null)
+                return new GUIContent(tab.selectedClipName);
+
+            return base.GetPreviewTitle();
+        }
+
         // Only show the imported GameObject when the Model tab is active; not when the Animation tab is active
         public override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
     }

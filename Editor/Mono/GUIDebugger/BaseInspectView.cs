@@ -19,23 +19,20 @@ namespace UnityEditor
 
     internal abstract class BaseInspectView : IBaseInspectView
     {
-        class Styles
+        protected static class Styles
         {
-            public GUIContent instructionsLabel = new GUIContent("Instructions");
-            public GUIContent emptyViewLabel = new GUIContent("Select an Instruction on the left to see details");
+            public static readonly GUIContent instructionsLabel = new GUIContent("Instructions");
+            public static readonly GUIContent emptyViewLabel = new GUIContent("Select an Instruction on the left to see details");
 
-            public GUIStyle centeredLabel = new GUIStyle("PR Label");
+            public static readonly GUIStyle centeredLabel = new GUIStyle("PR Label");
 
-            public Styles()
+            static Styles()
             {
                 centeredLabel.alignment = TextAnchor.MiddleCenter;
                 centeredLabel.padding.right = 0;
                 centeredLabel.padding.left = 0;
             }
         }
-
-        static Styles styles { get { return s_Styles = s_Styles == null ? new Styles() : s_Styles; } }
-        static Styles s_Styles;
 
         protected ListViewState listViewState { get { return m_ListViewState; } }
         [NonSerialized]
@@ -61,7 +58,7 @@ namespace UnityEditor
             m_ListViewState.totalRows = GetInstructionCount();
 
             EditorGUILayout.BeginVertical(GUIViewDebuggerWindow.Styles.listBackgroundStyle);
-            GUILayout.Label(styles.instructionsLabel);
+            GUILayout.Label(Styles.instructionsLabel);
 
             int id = GUIUtility.GetControlID(FocusType.Keyboard);
             foreach (var element in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.Styles.listBackgroundStyle))
@@ -199,7 +196,7 @@ namespace UnityEditor
             heightFieldRect.y = heightFieldRect.y + (heightMarkerArea.height - heightFieldRect.height) / 2f;
 
             //Draw TopLeft point
-            GUI.Label(startPointFieldRect, string.Format("({0},{1})", instructionRect.x, instructionRect.y), styles.centeredLabel);
+            GUI.Label(startPointFieldRect, string.Format("({0},{1})", instructionRect.x, instructionRect.y), Styles.centeredLabel);
 
             Handles.color = new Color(1, 1, 1, 0.5f);
             //Draw Width markers and value
@@ -219,7 +216,7 @@ namespace UnityEditor
             endP.x = widthMarkersArea.xMax;
             Handles.DrawLine(startP, endP);
 
-            GUI.Label(widthFieldRect, instructionRect.width.ToString(), styles.centeredLabel);
+            GUI.Label(widthFieldRect, instructionRect.width.ToString(), Styles.centeredLabel);
 
             //Draw Height markers and value
             startP = new Vector3(heightMarkerArea.x, heightMarkerArea.y);
@@ -240,10 +237,18 @@ namespace UnityEditor
 
             GUI.Label(heightFieldRect, instructionRect.height.ToString());
 
-            GUI.Label(endPointFieldRect, string.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), styles.centeredLabel);
+            GUI.Label(endPointFieldRect, string.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), Styles.centeredLabel);
 
             //Draws the rect
             GUI.Box(visualRect, GUIContent.none);
+        }
+
+        protected void DoSelectableInstructionDataField(string label, string instructionData)
+        {
+            var rect = EditorGUILayout.GetControlRect(true);
+            EditorGUI.LabelField(rect, label);
+            rect.xMin += EditorGUIUtility.labelWidth;
+            EditorGUI.SelectableLabel(rect, instructionData);
         }
 
         internal abstract void DoDrawSelectedInstructionDetails(int selectedInstructionIndex);
@@ -258,7 +263,7 @@ namespace UnityEditor
         {
             EditorGUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
-            GUILayout.Label(styles.emptyViewLabel, GUIViewDebuggerWindow.Styles.centeredText);
+            GUILayout.Label(Styles.emptyViewLabel, GUIViewDebuggerWindow.Styles.centeredText);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndVertical();
         }

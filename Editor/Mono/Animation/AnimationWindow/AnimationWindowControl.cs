@@ -95,7 +95,6 @@ namespace UnityEditorInternal
         public AnimEditor animEditor { get { return state.animEditor; } }
 
         [SerializeField] private AnimationClip m_CandidateClip;
-        [NonSerialized] private List<UndoPropertyModification> m_Candidates;
 
         [SerializeField] private AnimationModeDriver m_Driver;
         [SerializeField] private AnimationModeDriver m_CandidateDriver;

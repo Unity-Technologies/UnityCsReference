@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Analytics;
+
 
 namespace UnityEditor.Web
 {
@@ -24,6 +26,11 @@ namespace UnityEditor.Web
             return GetServiceName();
         }
 
+        public virtual string GetPackageName()
+        {
+            return string.Empty;
+        }
+
         public virtual bool IsServiceEnabled()
         {
             return PlayerSettings.GetCloudServiceEnabled(GetServiceName());
@@ -33,6 +40,22 @@ namespace UnityEditor.Web
         {
             PlayerSettings.SetCloudServiceEnabled(GetServiceName(), enabled);
         }
+
+        public virtual string GetCurrentPackageVersion()
+        {
+            return UnityEditor.Connect.PackageUtils.instance.GetCurrentVersion(GetPackageName());
+        }
+
+        public virtual string GetLatestPackageVersion()
+        {
+            return UnityEditor.Connect.PackageUtils.instance.GetLatestVersion(GetPackageName());
+        }
+
+        public virtual void UpdateLatestPackage()
+        {
+            UnityEditor.Connect.PackageUtils.instance.UpdateLatest(GetPackageName());
+        }
+
 
         public virtual void OnProjectUnbound()
         {

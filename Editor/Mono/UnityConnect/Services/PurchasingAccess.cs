@@ -20,6 +20,7 @@ namespace UnityEditor.Web
     {
         private const string kServiceName = "Purchasing";
         private const string kServiceDisplayName = "In App Purchasing";
+        private const string kServicePackageName = "com.unity.purchasing";
         private const string kServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/purchasing";
         private const string kETagPath = "Assets/Plugins/UnityPurchasing/ETag";
         private const string kUnknownPackageETag = "unknown";
@@ -34,6 +35,11 @@ namespace UnityEditor.Web
         public override string GetServiceDisplayName()
         {
             return kServiceDisplayName;
+        }
+
+        public override string GetPackageName()
+        {
+            return kServicePackageName;
         }
 
         override public bool IsServiceEnabled()

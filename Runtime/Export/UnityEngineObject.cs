@@ -15,6 +15,7 @@ namespace UnityEngine
         IntPtr   m_CachedPtr;
 
         private int m_InstanceID;
+#pragma warning disable 169
         private string m_UnityRuntimeErrorString;
 
         internal static int OffsetOfInstanceIDInCPlusPlusObject = -1;

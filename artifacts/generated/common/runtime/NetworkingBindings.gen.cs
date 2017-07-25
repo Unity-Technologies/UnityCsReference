@@ -147,7 +147,7 @@ public enum NetworkLogLevel
     Full = 3
 }
 
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct NetworkPlayer
 {
@@ -247,7 +247,7 @@ public partial struct NetworkPlayer
     
 }
 
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct NetworkViewID
 {
@@ -854,7 +854,7 @@ public static NetworkConnectionError Connect(HostData hostData, [uei.DefaultValu
 
 }
 
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 public sealed partial class BitStream
 {
     internal IntPtr m_Ptr;
@@ -955,13 +955,13 @@ public void Serialize(ref Vector3 value, [uei.DefaultValue("0.00001F")]  float m
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 [System.Obsolete ("NetworkView RPC functions are deprecated. Refer to the new Multiplayer Networking system.")]
 public sealed partial class RPC : Attribute
 {
 }
 
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 [StructLayout(LayoutKind.Sequential)]
 public sealed partial class HostData
 {
@@ -1074,7 +1074,7 @@ public sealed partial class MasterServer
 
 }
 
-[RequiredByNativeCode]
+[RequiredByNativeCode(Optional = true)]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct NetworkMessageInfo
 {

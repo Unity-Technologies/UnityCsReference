@@ -13,7 +13,7 @@ using UnityEditor.Web;
 namespace UnityEditor
 {
     [CustomEditor(typeof(EditorSettings))]
-    internal class EditorSettingsInspector : Editor
+    internal class EditorSettingsInspector : ProjectSettingsBaseEditor
     {
         struct PopupElement
         {
@@ -371,7 +371,7 @@ namespace UnityEditor
             CreatePopupMenu("Padding Power", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
 
             DoProjectGenerationSettings();
-            DoEtcTextureCompressionSettings(editorEnabled);
+            DoEtcTextureCompressionSettings();
             DoInternalSettings();
         }
 
@@ -399,19 +399,25 @@ namespace UnityEditor
             GUILayout.Space(10);
             GUILayout.Label("Internal settings", EditorStyles.boldLabel);
 
-            var old = EditorSettings.Internal_UserGeneratedProjectSuffix;
-            string newvalue = EditorGUILayout.DelayedTextField("Assembly suffix", old);
-            if (newvalue != old)
-                EditorSettings.Internal_UserGeneratedProjectSuffix = newvalue;
+            var postfix = "-testable";
+            EditorGUI.BeginChangeCheck();
+            var isEnabled = EditorSettings.Internal_UserGeneratedProjectSuffix == postfix;
+            isEnabled = EditorGUILayout.Toggle("Internals visible in user scripts", isEnabled);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorSettings.Internal_UserGeneratedProjectSuffix = isEnabled ? postfix : "";
+            }
+            if (isEnabled)
+            {
+                EditorGUILayout.HelpBox("If you want this to be set for other people, remember to manually add ProjectSettings/EditorSettings.asset to the repository", MessageType.Info);
+            }
         }
 
-        private void DoEtcTextureCompressionSettings(bool editorEnabled)
+        private void DoEtcTextureCompressionSettings()
         {
             GUILayout.Space(10);
 
-            GUI.enabled = true;
             GUILayout.Label("ETC Texture Compressor", EditorStyles.boldLabel);
-            GUI.enabled = editorEnabled;
 
             int index = Mathf.Clamp((int)EditorSettings.etcTextureCompressorBehavior, 0, etcTextureCompressorPopupList.Length - 1);
             CreatePopupMenu("Behavior", etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
@@ -431,7 +437,7 @@ namespace UnityEditor
             }
             else
             {
-                GUI.enabled = false;
+                EditorGUI.BeginDisabledGroup(true);
 
                 if (index == 0)     // Legacy behavior
                 {
@@ -446,7 +452,7 @@ namespace UnityEditor
                     CreatePopupMenu("Best", etcTexturePresetCompressorPopupList, 5, null);
                 }
 
-                GUI.enabled = editorEnabled;
+                EditorGUI.EndDisabledGroup();
             }
 
             EditorGUI.indentLevel--;

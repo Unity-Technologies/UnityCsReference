@@ -12,6 +12,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.Bindings;
 using UnityEngine.Playables;
 
 namespace UnityEngine
@@ -135,6 +136,7 @@ public sealed partial class AnimationEvent
     
 }
 
+[NativeType("Runtime/Animation/AnimationClip.h")]
 public sealed partial class AnimationClip : Motion
 {
     public AnimationClip()

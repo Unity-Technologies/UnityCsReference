@@ -12,10 +12,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
 [UsedByNativeCode]
+[NativeType(Header = "Runtime/Math/Vector3.h")]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct Vector3
 {
@@ -75,6 +77,7 @@ public static Vector3 Exclude(Vector3 excludeThis, Vector3 fromThat)
 }
 
 [UsedByNativeCode]
+[NativeType(Header = "Runtime/Math/Quaternion.h")]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct Quaternion
 {
@@ -257,6 +260,18 @@ public void SetAxisAngle(Vector3 axis, float angle) { this = AxisAngle(axis, ang
     
 }
 
+[Serializable]
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+public partial struct FrustumPlanes
+{
+            public float left;
+            public float right;
+            public float bottom;
+            public float top;
+            public float zNear;
+            public float zFar;
+}
+
 [UsedByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct Matrix4x4
@@ -374,6 +389,37 @@ public partial struct Matrix4x4
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_LookAt (ref Vector3 from, ref Vector3 to, ref Vector3 up, out Matrix4x4 value);
+    public  FrustumPlanes decomposeProjection
+    {
+        get { FrustumPlanes tmp; INTERNAL_get_decomposeProjection(out tmp); return tmp;  }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_decomposeProjection (out FrustumPlanes value) ;
+
+
+    public static Matrix4x4 Frustum(float left, float right, float bottom, float top, float zNear, float zFar)
+        {
+            return FrustumInternal(left, right, bottom, top, zNear, zFar);
+        }
+    
+    
+    public static Matrix4x4 Frustum(FrustumPlanes frustumPlanes)
+        {
+            return FrustumInternal(frustumPlanes.left, frustumPlanes.right, frustumPlanes.bottom, frustumPlanes.top, frustumPlanes.zNear, frustumPlanes.zFar);
+        }
+    
+    
+    private static Matrix4x4 FrustumInternal (float left, float right, float bottom, float top, float zNear, float zFar) {
+        Matrix4x4 result;
+        INTERNAL_CALL_FrustumInternal ( left, right, bottom, top, zNear, zFar, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_FrustumInternal (float left, float right, float bottom, float top, float zNear, float zFar, out Matrix4x4 value);
 }
 
 [UsedByNativeCode]

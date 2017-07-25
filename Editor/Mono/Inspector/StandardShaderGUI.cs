@@ -56,7 +56,6 @@ namespace UnityEditor
             public static string forwardText = "Forward Rendering Options";
             public static string renderingMode = "Rendering Mode";
             public static string advancedText = "Advanced Options";
-            public static GUIContent emissiveWarning = new GUIContent("Emissive value is animated but the material has not been configured to support emissive. Please make sure the material itself has some amount of emissive.");
             public static readonly string[] blendNames = Enum.GetNames(typeof(BlendMode));
         }
 
@@ -162,7 +161,7 @@ namespace UnityEditor
                 GUILayout.Label(Styles.primaryMapsText, EditorStyles.boldLabel);
                 DoAlbedoArea(material);
                 DoSpecularMetallicArea();
-                m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
+                DoNormalArea();
                 m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
@@ -260,6 +259,18 @@ namespace UnityEditor
             }
 
             EditorGUI.showMixedValue = false;
+        }
+
+        void DoNormalArea()
+        {
+            m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
+            if (bumpScale.floatValue != 1 && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
+                if (m_MaterialEditor.HelpBoxWithButton(
+                        EditorGUIUtility.TextContent("Bump scale is not supported on mobile platforms"),
+                        EditorGUIUtility.TextContent("Fix Now")))
+                {
+                    bumpScale.floatValue = 1;
+                }
         }
 
         void DoAlbedoArea(Material material)

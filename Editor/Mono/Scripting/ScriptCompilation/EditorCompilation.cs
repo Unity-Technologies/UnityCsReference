@@ -529,9 +529,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     var buildingForEditor = scriptAssemblySettings.BuildingForEditor;
                     string enginePath = InternalEditorUtility.GetEngineCoreModuleAssemblyPath();
-                    // When using non-modular assemblies, the types UNETWeaver cares about are in the monolithic UnityEngine.dll
-                    if (!buildingForEditor && !BuildPipeline.IsFeatureSupported("ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES", scriptAssemblySettings.BuildTarget))
-                        enginePath = UnityEditor.EditorApplication.applicationContentsPath + "/Managed/UnityEngine.dll";
 
                     string unetPath = UnityEditor.EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll";
                     if (!Serialization.Weaver.WeaveUnetFromEditor(assembly, tempBuildDirectory, tempBuildDirectory, enginePath, unetPath, buildingForEditor))

@@ -21,7 +21,6 @@ namespace UnityEditor
         private string m_Warning;
 
         static OcclusionCullingWindow ms_OcclusionCullingWindow;
-        Object[] m_Objects;
         Vector2 m_ScrollPosition = Vector2.zero;
         Mode m_Mode = Mode.AreaSettings;
 

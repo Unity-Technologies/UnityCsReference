@@ -10,9 +10,10 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
+using Object = UnityEngine.Object;
 
 namespace UnityEngine
 {
@@ -36,6 +37,7 @@ public enum AvatarMaskBodyPart
 }
 
 [MovedFrom("UnityEditor.Animations", true)]
+[NativeHeader("Runtime/Animation/AvatarMask.h")]
 public sealed partial class AvatarMask : Object
 {
     public AvatarMask()

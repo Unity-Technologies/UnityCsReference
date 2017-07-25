@@ -18,6 +18,12 @@ namespace UnityEngine.Rendering
 {
 
 
+public enum ComputeQueueType
+{
+    Default = 0,
+    Background = 1,
+    Urgent = 2
+}
 
 [UsedByNativeCode]
 public sealed partial class CommandBuffer : IDisposable
@@ -51,6 +57,19 @@ public sealed partial class CommandBuffer : IDisposable
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void InitBuffer (CommandBuffer buf) ;
 
+    private IntPtr CreateGPUFence_Internal (SynchronisationStage stage) {
+        IntPtr result;
+        INTERNAL_CALL_CreateGPUFence_Internal ( this, stage, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_CreateGPUFence_Internal (CommandBuffer self, SynchronisationStage stage, out IntPtr value);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void WaitOnGPUFence_Internal (IntPtr fencePtr, SynchronisationStage stage) ;
+
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -69,54 +88,162 @@ public sealed partial class CommandBuffer : IDisposable
         }
     
     
+    [uei.ExcludeFromDocs]
+public GPUFence CreateGPUFence () {
+    SynchronisationStage stage = SynchronisationStage.PixelProcessing;
+    return CreateGPUFence ( stage );
+}
+
+public GPUFence CreateGPUFence( [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage )
+        {
+            GPUFence newFence = new GPUFence();
+            newFence.m_Ptr = CreateGPUFence_Internal(stage);
+            newFence.InitPostAllocation();
+            newFence.Validate();
+            return newFence;
+        }
+
+    
+    
+    [uei.ExcludeFromDocs]
+public void WaitOnGPUFence (GPUFence fence) {
+    SynchronisationStage stage = SynchronisationStage.VertexProcessing;
+    WaitOnGPUFence ( fence, stage );
+}
+
+public void WaitOnGPUFence(GPUFence fence, [uei.DefaultValue("SynchronisationStage.VertexProcessing")]  SynchronisationStage stage )
+        {
+            fence.Validate();
+
+            if (fence.IsFencePending())
+                WaitOnGPUFence_Internal(fence.m_Ptr, stage);
+        }
+
+    
+    
+    public void SetComputeFloatParam(ComputeShader computeShader, string name, float val)
+        {
+            SetComputeFloatParam(computeShader, Shader.PropertyToID(name), val);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetComputeFloatParam (ComputeShader computeShader, string name, float val) ;
+    extern public void SetComputeFloatParam (ComputeShader computeShader, int nameID, float val) ;
 
+    public void SetComputeIntParam(ComputeShader computeShader, string name, int val)
+        {
+            SetComputeIntParam(computeShader, Shader.PropertyToID(name), val);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetComputeIntParam (ComputeShader computeShader, string name, int val) ;
+    extern public void SetComputeIntParam (ComputeShader computeShader, int nameID, int val) ;
 
-    public void SetComputeVectorParam (ComputeShader computeShader, string name, Vector4 val) {
-        INTERNAL_CALL_SetComputeVectorParam ( this, computeShader, name, ref val );
+    public void SetComputeVectorParam(ComputeShader computeShader, string name, Vector4 val)
+        {
+            SetComputeVectorParam(computeShader, Shader.PropertyToID(name), val);
+        }
+    
+    
+    public void SetComputeVectorParam (ComputeShader computeShader, int nameID, Vector4 val) {
+        INTERNAL_CALL_SetComputeVectorParam ( this, computeShader, nameID, ref val );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetComputeVectorParam (CommandBuffer self, ComputeShader computeShader, string name, ref Vector4 val);
-    public void SetComputeFloatParams(ComputeShader computeShader, string name, params float[] values)
+    private extern static void INTERNAL_CALL_SetComputeVectorParam (CommandBuffer self, ComputeShader computeShader, int nameID, ref Vector4 val);
+    public void SetComputeVectorArrayParam(ComputeShader computeShader, string name, Vector4[] values)
         {
-            Internal_SetComputeFloats(computeShader, name, values);
+            SetComputeVectorArrayParam(computeShader, Shader.PropertyToID(name), values);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_SetComputeFloats (ComputeShader computeShader, string name, float[] values) ;
+    extern public void SetComputeVectorArrayParam (ComputeShader computeShader, int nameID, Vector4[] values) ;
+
+    public void SetComputeMatrixParam(ComputeShader computeShader, string name, Matrix4x4 val)
+        {
+            SetComputeMatrixParam(computeShader, Shader.PropertyToID(name), val);
+        }
+    
+    
+    public void SetComputeMatrixParam (ComputeShader computeShader, int nameID, Matrix4x4 val) {
+        INTERNAL_CALL_SetComputeMatrixParam ( this, computeShader, nameID, ref val );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetComputeMatrixParam (CommandBuffer self, ComputeShader computeShader, int nameID, ref Matrix4x4 val);
+    public void SetComputeMatrixArrayParam(ComputeShader computeShader, string name, Matrix4x4[] values)
+        {
+            SetComputeMatrixArrayParam(computeShader, Shader.PropertyToID(name), values);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetComputeMatrixArrayParam (ComputeShader computeShader, int nameID, Matrix4x4[] values) ;
+
+    public void SetComputeFloatParams(ComputeShader computeShader, string name, params float[] values)
+        {
+            Internal_SetComputeFloats(computeShader, Shader.PropertyToID(name), values);
+        }
+    
+    
+    public void SetComputeFloatParams(ComputeShader computeShader, int nameID, params float[] values)
+        {
+            Internal_SetComputeFloats(computeShader, nameID, values);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_SetComputeFloats (ComputeShader computeShader, int nameID, float[] values) ;
 
     public void SetComputeIntParams(ComputeShader computeShader, string name, params int[] values)
         {
-            Internal_SetComputeInts(computeShader, name, values);
+            Internal_SetComputeInts(computeShader, Shader.PropertyToID(name), values);
+        }
+    
+    
+    public void SetComputeIntParams(ComputeShader computeShader, int nameID, params int[] values)
+        {
+            Internal_SetComputeInts(computeShader, nameID, values);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_SetComputeInts (ComputeShader computeShader, string name, int[] values) ;
+    extern private void Internal_SetComputeInts (ComputeShader computeShader, int nameID, int[] values) ;
 
     public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, name, ref rt);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt);
+        }
+    
+    
+    public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt)
+        {
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_SetComputeTextureParam (ComputeShader computeShader, int kernelIndex, string name, ref UnityEngine.Rendering.RenderTargetIdentifier rt) ;
+    extern private void Internal_SetComputeTextureParam (ComputeShader computeShader, int kernelIndex, int nameID, ref UnityEngine.Rendering.RenderTargetIdentifier rt) ;
 
+    public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, ComputeBuffer buffer)
+        {
+            SetComputeBufferParam(computeShader, kernelIndex, Shader.PropertyToID(name), buffer);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetComputeBufferParam (ComputeShader computeShader, int kernelIndex, string name, ComputeBuffer buffer) ;
+    extern public void SetComputeBufferParam (ComputeShader computeShader, int kernelIndex, int nameID, ComputeBuffer buffer) ;
 
     public void DispatchCompute(ComputeShader computeShader, int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ)
         {

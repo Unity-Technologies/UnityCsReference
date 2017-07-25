@@ -14,6 +14,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         EditorOnly = (1 << 0),
         UseForMono = (1 << 1),
         UseForDotNet = (1 << 2),
-        FirstPass = (1 << 3)
+        FirstPass = (1 << 3),
+        ExcludedForRuntimeCode = (1 << 4),
     };
 }

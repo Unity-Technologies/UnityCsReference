@@ -207,6 +207,7 @@ namespace UnityEditor
         SerializedProperty m_MacAppStoreCategory;
 
         // iOS, tvOS
+#pragma warning disable 169
         SerializedProperty m_IPhoneApplicationDisplayName;
 
         SerializedProperty m_CameraUsageDescription;
@@ -551,8 +552,10 @@ namespace UnityEditor
             // Get icons and icon sizes for selected platform (or default)
             GUI.changed = false;
             string platformName = "";
-            Texture2D[] icons = PlayerSettings.GetIconsForPlatform(platformName);
-            int[] widths = PlayerSettings.GetIconWidthsForPlatform(platformName);
+            Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
+            int[] widths = PlayerSettings.GetIconWidthsOfAllKindsForPlatform(platformName);
+            IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platformName);
+
             // Ensure the default icon list is always populated correctly
             if (icons.Length != widths.Length)
             {
@@ -563,7 +566,7 @@ namespace UnityEditor
             if (GUI.changed)
             {
                 Undo.RecordObject(this.target, Styles.undoChangedIconString);
-                PlayerSettings.SetIconsForPlatform(platformName, icons);
+                PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
             }
 
             GUILayout.Space(3);
@@ -649,9 +652,10 @@ namespace UnityEditor
                     else
                     {
                         // Get icons and icon sizes for selected platform (or default)
-                        Texture2D[] icons = PlayerSettings.GetIconsForPlatform(platformName);
-                        int[] widths = PlayerSettings.GetIconWidthsForPlatform(platformName);
-                        int[] heights = PlayerSettings.GetIconHeightsForPlatform(platformName);
+                        Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
+                        int[] widths = PlayerSettings.GetIconWidthsOfAllKindsForPlatform(platformName);
+                        int[] heights = PlayerSettings.GetIconHeightsOfAllKindsForPlatform(platformName);
+                        IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platformName);
 
                         bool overrideIcons = true;
 
@@ -672,7 +676,7 @@ namespace UnityEditor
                                     icons = new Texture2D[0];
 
                                 if (GUI.changed)
-                                    PlayerSettings.SetIconsForPlatform(platformName, icons);
+                                    PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
                             }
                         }
 
@@ -687,16 +691,22 @@ namespace UnityEditor
                             {
                                 // Spotlight icons begin with 120 but there are two in the list.
                                 // So check if the next one is 80.
-                                if (i + 1 < widths.Length && widths[i + 1] == 80)
+                                if (kinds[i] == IconKind.Spotlight && kinds[i - 1] != IconKind.Spotlight)
                                 {
                                     Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
                                     GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Spotlight icons", EditorStyles.boldLabel);
                                 }
 
-                                if (widths[i] == 87)
+                                if (kinds[i] == IconKind.Settings && kinds[i - 1] != IconKind.Settings)
                                 {
                                     Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
                                     GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Settings icons", EditorStyles.boldLabel);
+                                }
+
+                                if (kinds[i] == IconKind.Notification && kinds[i - 1] != IconKind.Notification)
+                                {
+                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
+                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Notification icons", EditorStyles.boldLabel);
                                 }
                             }
 
@@ -721,7 +731,7 @@ namespace UnityEditor
 
                             // Preview
                             Rect previewRect = new Rect(rect.x + width - kMaxPreviewSize, rect.y, previewWidth, previewHeight);
-                            Texture2D closestIcon = PlayerSettings.GetIconForPlatformAtSize(platformName, widths[i], heights[i]);
+                            Texture2D closestIcon = PlayerSettings.GetIconForPlatformAtSize(platformName, widths[i], heights[i], kinds[i]);
                             if (closestIcon != null)
                                 GUI.DrawTexture(previewRect, closestIcon);
                             else
@@ -731,7 +741,7 @@ namespace UnityEditor
                         if (GUI.changed)
                         {
                             Undo.RecordObject(this.target, Styles.undoChangedIconString);
-                            PlayerSettings.SetIconsForPlatform(platformName, icons);
+                            PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
                         }
                         GUI.enabled = enabled;
 
@@ -1412,7 +1422,8 @@ namespace UnityEditor
                 || targetGroup == BuildTargetGroup.XboxOne
                 || targetGroup == BuildTargetGroup.WSA
                 || targetGroup == BuildTargetGroup.WiiU
-                || targetGroup == BuildTargetGroup.WebGL)
+                || targetGroup == BuildTargetGroup.WebGL
+                || targetGroup == BuildTargetGroup.Switch)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
                 {
@@ -1852,6 +1863,8 @@ namespace UnityEditor
                 EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
                 m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
                 m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
+                m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                EditorGUIUtility.ExitGUI();
             }
 
             EditorGUILayout.Space();
@@ -1915,7 +1928,7 @@ namespace UnityEditor
 
             // Vertex compression flags dropdown
             VertexChannelCompressionFlags vertexFlags = (VertexChannelCompressionFlags)m_VertexChannelCompressionMask.intValue;
-            vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumMaskPopup(Styles.vertexChannelCompressionMask, vertexFlags);
+            vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(Styles.vertexChannelCompressionMask, vertexFlags);
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
             // PSM doesn't support stripping of mesh components, as we don't know the SourceMap of the shader
@@ -2189,6 +2202,11 @@ namespace UnityEditor
             GUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label(warningMessage, EditorStyles.wordWrappedMiniLabel);
             GUILayout.EndVertical();
+        }
+
+        protected override bool ShouldHideOpenButton()
+        {
+            return true;
         }
     }
 }

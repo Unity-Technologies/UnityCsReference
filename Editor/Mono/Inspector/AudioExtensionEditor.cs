@@ -27,7 +27,7 @@ namespace UnityEditor
             public float                defaultValue;
             public SerializedProperty   serializedProperty;
         }
-
+#pragma warning disable 649
         protected ExtensionPropertyInfo[] m_ExtensionProperties;
 
         public virtual void InitExtensionPropertyInfo() {}

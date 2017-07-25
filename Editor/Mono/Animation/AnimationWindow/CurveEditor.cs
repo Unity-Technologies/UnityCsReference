@@ -841,7 +841,27 @@ namespace UnityEditor
                 return;
             }
 
-            Bounds frameBounds = selectionBounds;
+            Bounds frameBounds = new Bounds();
+
+            // Add neighboring keys in bounds if only a single key is selected.
+            if (selectedCurves.Count == 1)
+            {
+                CurveSelection cs = selectedCurves[0];
+                CurveWrapper cw = GetCurveWrapperFromSelection(cs);
+
+                // Encapsulate key in bounds
+                frameBounds = new Bounds(new Vector2(cw.curve[cs.key].time, cw.curve[cs.key].value), Vector2.zero);
+
+                // Include neighboring keys in bounds
+                if (cs.key - 1 >= 0)
+                    frameBounds.Encapsulate(new Vector2(cw.curve[cs.key - 1].time, cw.curve[cs.key - 1].value));
+                if (cs.key + 1 < cw.curve.length)
+                    frameBounds.Encapsulate(new Vector2(cw.curve[cs.key + 1].time, cw.curve[cs.key + 1].value));
+            }
+            else
+            {
+                frameBounds = selectionBounds;
+            }
 
             // Enforce minimum size of bounds
             frameBounds.size = new Vector3(Mathf.Max(frameBounds.size.x, 0.1F), Mathf.Max(frameBounds.size.y, 0.1F), 0);
@@ -2672,17 +2692,23 @@ namespace UnityEditor
                 }
             }
 
-            if (evt.type == EventType.KeyDown && (evt.character == '\t' || (int)evt.character == 25))
+            if (evt.type == EventType.KeyDown)
             {
-                // Override Unity's Tab and Shift+Tab handling.
-                if (m_TimeWasEdited || m_ValueWasEdited)
-                {
-                    SetSelectedKeyPositions(m_NewTime, m_NewValue, m_TimeWasEdited, m_ValueWasEdited);
-                    m_PointEditingFieldPosition = GetPointEditionFieldPosition();
-                }
+                const char tabCharacter = '\t';
+                const char endOfMediumCharacter = (char)25; // ASCII 25: "End Of Medium" on pressing shift tab
 
-                m_FocusedPointField = GUI.GetNameOfFocusedControl() == kPointValueFieldName ? kPointTimeFieldName : kPointValueFieldName;
-                evt.Use();
+                // Override Unity's Tab and Shift+Tab handling.
+                if (evt.character == tabCharacter || evt.character == endOfMediumCharacter)
+                {
+                    if (m_TimeWasEdited || m_ValueWasEdited)
+                    {
+                        SetSelectedKeyPositions(m_NewTime, m_NewValue, m_TimeWasEdited, m_ValueWasEdited);
+                        m_PointEditingFieldPosition = GetPointEditionFieldPosition();
+                    }
+
+                    m_FocusedPointField = GUI.GetNameOfFocusedControl() == kPointValueFieldName ? kPointTimeFieldName : kPointValueFieldName;
+                    evt.Use();
+                }
             }
 
             // Stop editing if there's an unused click

@@ -126,9 +126,6 @@ namespace UnityEditor
                 base.OnSelectionInspectorGUI();
                 GUILayout.Space(10f);
 
-                var position = new Vector3Int(selection.xMin, selection.yMin, selection.zMin);
-                TileEditor.DoTilePreview(tilemap.GetSprite(position), tilemap.GetColor(position), tilemap.GetTransformMatrix(position));
-
                 if (m_SelectionTiles == null || m_SelectionTiles.Length != cellCount)
                 {
                     m_SelectionTiles = new TileBase[cellCount];
@@ -153,6 +150,7 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = m_SelectionTiles.Any(tile => tile != m_SelectionTiles.First());
+                var position = new Vector3Int(selection.xMin, selection.yMin, selection.zMin);
                 TileBase newTile = EditorGUILayout.ObjectField(Styles.tileLabel, tilemap.GetTile(position), typeof(TileBase), false) as TileBase;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -208,15 +206,6 @@ namespace UnityEditor
         public override void OnMouseLeave()
         {
             ClearPreview();
-        }
-
-        public override void OnToolActivated(GridBrushBase.Tool tool)
-        {
-            if (tool == GridBrushBase.Tool.Select
-                || tool == GridBrushBase.Tool.Move)
-            {
-                brush.Reset();
-            }
         }
 
         public override void OnToolDeactivated(GridBrushBase.Tool tool)

@@ -316,7 +316,6 @@ namespace UnityEditor
             EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.BounceScale);
             EditorGUILayout.Slider(m_UpdateThreshold, 0.0f, 1.0f, Styles.UpdateThreshold);
 
-
             if (GUILayout.Button("Clear disk cache", GUILayout.Width(LightingWindow.kButtonWidth)))
             {
                 Lightmapping.Clear();

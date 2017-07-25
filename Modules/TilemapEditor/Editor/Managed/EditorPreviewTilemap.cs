@@ -54,6 +54,21 @@ namespace UnityEditor
             return tile ?? m_Tilemap.GetTile<T>(position);
         }
 
+        private TileBase CreateInvalidTile()
+        {
+            Texture2D tex = Texture2D.whiteTexture;
+            Sprite sprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width);
+
+            Tile tile = ScriptableObject.CreateInstance<Tile>();
+            tile.sprite = sprite;
+            // Try to get a pinkish look with a random color to differentiate between other invalid tiles
+            tile.color = UnityEngine.Random.ColorHSV(340f / 360f, 1f, 0.3f, 0.6f, 0.7f, 1.0f);
+            tile.transform = Matrix4x4.identity;
+            tile.flags = TileFlags.LockAll;
+
+            return tile;
+        }
+
         private static ITilemap CreateInstance()
         {
             s_Instance = new EditorPreviewTilemap();

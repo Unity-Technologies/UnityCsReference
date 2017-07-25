@@ -32,6 +32,15 @@ namespace UnityEditor
             }
         }
 
+        public string selectedClipName
+        {
+            get
+            {
+                var clipInfo = GetSelectedClipInfo();
+                return clipInfo != null ? clipInfo.name : "";
+            }
+        }
+
         SerializedObject m_DefaultClipsSerializedObject = null;
 
         SerializedProperty m_AnimationType;
@@ -51,8 +60,6 @@ namespace UnityEditor
         SerializedProperty m_MotionNodeName;
         public int motionNodeIndex { get; set; }
 
-
-        SerializedProperty m_PivotNodeName;
         public int pivotNodeIndex { get; set; }
 
         private SerializedProperty m_RigImportErrors;
@@ -712,7 +719,7 @@ namespace UnityEditor
 
         public override bool HasPreviewGUI()
         {
-            return m_AnimationClipEditor != null && m_AnimationClipEditor.HasPreviewGUI();
+            return m_ImportAnimation.boolValue && m_AnimationClipEditor != null && m_AnimationClipEditor.HasPreviewGUI();
         }
 
         public override void OnPreviewSettings()

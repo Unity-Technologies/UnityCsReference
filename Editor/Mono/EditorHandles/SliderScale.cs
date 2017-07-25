@@ -16,12 +16,24 @@ namespace UnityEditorInternal
 
         public static float DoAxis(int id, float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap)
         {
+            return DoAxis(id, scale, position, direction, rotation, size, snap, 0, 1);
+        }
+
+        internal static float DoAxis(int id, float scale, Vector3 position, Vector3 direction, Quaternion rotation, float size, float snap, float handleOffset, float lineScale)
+        {
+            var positionOffset = direction * size * handleOffset;
+            var s = GUIUtility.hotControl == id
+                ? size * scale / s_StartScale
+                : size;
+            var startPosition = position + positionOffset;
+            var cubePosition = position + direction * (s * s_ScaleDrawLength * lineScale) + positionOffset;
+
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.layout:
-                    HandleUtility.AddControl(id, HandleUtility.DistanceToLine(position, position + direction * size));
-                    HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position + direction * size, size * .2f));
+                    HandleUtility.AddControl(id, HandleUtility.DistanceToLine(startPosition, cubePosition));
+                    HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(cubePosition, size * .3f));
                     break;
                 case EventType.mouseDown:
                     // am I closest to the thingy?
@@ -38,7 +50,7 @@ namespace UnityEditorInternal
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
-                        float dist = 1 + HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, position, direction) / size;
+                        var dist = 1 + HandleUtility.CalcLineTranslation(s_StartMousePosition, s_CurrentMousePosition, position, direction) / size;
                         dist = Handles.SnapValue(dist, snap);
                         scale = s_StartScale * dist;
                         GUI.changed = true;
@@ -69,13 +81,9 @@ namespace UnityEditorInternal
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;
                     }
-                    float s = size;
-                    if (GUIUtility.hotControl == id)
-                    {
-                        s = size * scale / s_StartScale;
-                    }
-                    Handles.CubeHandleCap(id, position + direction * s * s_ScaleDrawLength, rotation, size * .1f, EventType.Repaint);
-                    Handles.DrawLine(position, position + direction * (s * s_ScaleDrawLength - size * .05f));
+
+                    Handles.DrawLine(startPosition, cubePosition);
+                    Handles.CubeHandleCap(id, cubePosition, rotation, size * .1f, EventType.Repaint);
 
                     if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
                         Handles.color = temp;

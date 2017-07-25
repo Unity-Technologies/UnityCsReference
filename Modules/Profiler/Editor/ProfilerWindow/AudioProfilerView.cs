@@ -532,6 +532,7 @@ namespace UnityEditorInternal
             public int y;
             public int level;
             public int maxY;
+#pragma warning disable 649
             public int targetPort;
             public bool audible;
         }
@@ -925,13 +926,6 @@ namespace UnityEditorInternal
             m_ColumnHeader.minColumnWidth = 30f;
 
             m_TreeView.selectionChangedCallback += OnTreeSelectionChanged;
-        }
-
-        private int delayedPingObject;
-
-        private void PingObjectDelayed()
-        {
-            EditorGUIUtility.PingObject(delayedPingObject);
         }
 
         public void OnTreeSelectionChanged(int[] selection)

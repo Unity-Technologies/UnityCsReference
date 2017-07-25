@@ -168,6 +168,9 @@ public sealed partial class EditorApplication
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetSceneRepaintDirty () ;
 
+    public static void QueuePlayerLoopUpdate() { SetSceneRepaintDirty(); }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void UpdateSceneIfNeeded () ;

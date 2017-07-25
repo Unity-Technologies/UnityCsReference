@@ -274,7 +274,7 @@ namespace UnityEditor
 
             // Fetch packages
             TreeViewItem packagesRootItem = null;
-            if (EditorPrefs.GetBool("ShowPackagesFolder"))
+            if (Unsupported.IsDeveloperBuild() && EditorPrefs.GetBool("ShowPackagesFolder"))
             {
                 var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesRootPath());
                 var packagesFolderInstanceID = AssetDatabase.GetInstanceIDFromGUID(packagesGuid);

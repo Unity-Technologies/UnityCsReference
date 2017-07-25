@@ -329,6 +329,13 @@ public sealed partial class VideoClipImporter : AssetImporter
         get;
     }
 
+    public extern bool transcodeSkipped
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
 }
 
 }

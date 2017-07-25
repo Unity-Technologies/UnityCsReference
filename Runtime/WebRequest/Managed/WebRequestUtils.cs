@@ -159,7 +159,7 @@ namespace UnityEngine
                             memStream.Write(crlf, 0, (int)crlf.Length);
                             memStream.Write(dispositionHeader, 0, (int)dispositionHeader.Length);
 
-                            string headerName = "";
+                            string headerName = System.Text.Encoding.UTF8.HeaderName;
                             // Headers must be 7 bit clean, so encode as per rfc1522 using quoted-printable if needed.
                             string encodedFieldName = (string)fieldNames[i];
                             if (!WWWTranscoder.SevenBitClean(encodedFieldName, System.Text.Encoding.UTF8) ||
@@ -443,7 +443,7 @@ namespace UnityEngineInternal
             else
                 redirectURI = new Uri(redirectUri, UriKind.RelativeOrAbsolute);
             if (redirectURI.IsAbsoluteUri)
-                return redirectUri;
+                return redirectURI.AbsoluteUri;
 
             var baseURI = new Uri(baseUri, UriKind.Absolute);
             var finalUri = new Uri(baseURI, redirectURI);

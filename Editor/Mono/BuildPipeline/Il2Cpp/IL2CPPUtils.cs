@@ -98,13 +98,13 @@ namespace UnityEditorInternal
             switch (compatibilityLevel)
             {
                 case ApiCompatibilityLevel.NET_2_0_Subset:
-                    return "Unity";
+                    return "legacyunity";
 
                 case ApiCompatibilityLevel.NET_2_0:
-                    return "Net20";
+                    return "net20";
 
                 case ApiCompatibilityLevel.NET_4_6:
-                    return "Net45";
+                    return "net45";
 
                 default:
                     throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported by IL2CPP!", compatibilityLevel));

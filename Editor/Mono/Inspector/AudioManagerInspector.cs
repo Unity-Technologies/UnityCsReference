@@ -11,7 +11,7 @@ using System.Collections.Generic;
 namespace UnityEditor
 {
     [CustomEditor(typeof(AudioManager))]
-    internal class AudioManagerInspector : Editor
+    internal class AudioManagerInspector : ProjectSettingsBaseEditor
     {
         private class Styles
         {

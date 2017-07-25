@@ -191,9 +191,6 @@ namespace UnityEditor
         bool m_ShowHighlighter = true;
 
         [NonSerialized]
-        int m_LastSelectedRow;
-
-        [NonSerialized]
         bool m_QueuedPointInspection = false;
 
         [NonSerialized]

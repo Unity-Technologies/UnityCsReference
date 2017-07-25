@@ -56,6 +56,15 @@ namespace UnityEngine.Experimental.Rendering
             ExecuteCommandBuffer_Internal(commandBuffer);
         }
 
+        public void ExecuteCommandBufferAsync(CommandBuffer commandBuffer, ComputeQueueType queueType)
+        {
+            if (commandBuffer == null)
+                throw new ArgumentNullException("commandBuffer");
+
+            CheckValid();
+            ExecuteCommandBufferAsync_Internal(commandBuffer, queueType);
+        }
+
         public void SetupCameraProperties(Camera camera)
         {
             CheckValid();

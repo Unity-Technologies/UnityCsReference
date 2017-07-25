@@ -13,42 +13,69 @@ namespace UnityEngine.Collections
     [StructLayout(LayoutKind.Sequential)]
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
+    [NativeContainerSupportsDeallocateOnJobCompletion]
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeArrayDebugView < >))]
     public struct NativeArray<T> : IDisposable, IEnumerable<T> where T : struct
     {
-        IntPtr                                           m_Buffer;
-        int                                              m_Length;
-        int                                              m_Stride;
+        internal IntPtr                   m_Buffer;
+        internal int                      m_Length;
 
 
-        readonly Allocator                               m_AllocatorLabel;
+        Allocator                         m_AllocatorLabel;
 
         public NativeArray(int length, Allocator allocMode)
         {
             Allocate(length, allocMode, out this);
+            UnsafeUtility.MemClear(m_Buffer, Length * UnsafeUtility.SizeOf<T>());
         }
 
         public NativeArray(T[] array, Allocator allocMode)
         {
             if (array == null) throw new ArgumentNullException("array");
             Allocate(array.Length, allocMode, out this);
-            FromArray(array);
+            CopyFrom(array);
         }
 
-        internal NativeArray(IntPtr dataPointer, int length) : this(dataPointer, length, Allocator.None)
+        public NativeArray(NativeArray<T> array, Allocator allocMode)
         {
+            Allocate(array.Length, allocMode, out this);
+            CopyFrom(array);
         }
 
-        internal NativeArray(IntPtr dataPointer, int length, int stride, AtomicSafetyHandle safety, Allocator allocMode)
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        internal static NativeArray<T> ConvertExistingDataToNativeArrayInternal(IntPtr dataPointer, int length, AtomicSafetyHandle safety, Allocator allocMode)
         {
+            NativeArray<T> newArray = new NativeArray<T>();
+
             // Internal method used typically by other systems to provide a view on them
             // The caller is still the owner of the data
-            // This is the only place we provide a stride argument
-            m_Buffer = dataPointer;
-            m_Length = length;
-            m_Stride = stride;
-            m_AllocatorLabel = allocMode;
+            newArray.m_Buffer = dataPointer;
+            newArray.m_Length = length;
+            newArray.m_AllocatorLabel = allocMode;
+
+
+            return newArray;
+        }
+
+        private static void Allocate(int length, Allocator allocator, out NativeArray<T> array)
+        {
+            // Native allocation is only valid for Temp, Job and Persistent
+            if (allocator <= Allocator.None)
+                throw new ArgumentOutOfRangeException("allocMode", "Allocator must be Temp, Job or Persistent");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException("length", "Length must be >= 0");
+
+            // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)
+            // because the underlying UnsafeUtility.Malloc is expecting a int
+            // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
+            long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
+            if (totalSize > int.MaxValue)
+                throw new ArgumentOutOfRangeException("length", "Length * sizeof(T) cannot exceed " + int.MaxValue + "bytes");
+
+            array.m_Buffer = UnsafeUtility.Malloc((int)totalSize, UnsafeUtility.AlignOf<T>(), allocator);
+            array.m_Length = length;
+            array.m_AllocatorLabel = allocator;
 
         }
 
@@ -61,7 +88,7 @@ namespace UnityEngine.Collections
                 if ((uint)index >= (uint)m_Length)
                     FailOutOfRangeError(index);
 
-                return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index * m_Stride);
+                return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
             }
 
             set
@@ -69,45 +96,83 @@ namespace UnityEngine.Collections
                 if ((uint)index >= (uint)m_Length)
                     FailOutOfRangeError(index);
 
-                UnsafeUtility.WriteArrayElement(m_Buffer, index * m_Stride, value);
+                UnsafeUtility.WriteArrayElement(m_Buffer, index, value);
             }
+        }
+
+        public bool IsCreated
+        {
+            get { return m_Buffer != IntPtr.Zero; }
         }
 
         public void Dispose()
         {
+
             UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
             m_Buffer = IntPtr.Zero;
             m_Length = 0;
         }
 
-        public IntPtr GetUnsafeReadBufferPtr()
+        public IntPtr UnsafePtr
         {
-            return m_Buffer;
+            get
+            {
+                return m_Buffer;
+            }
         }
 
-        public IntPtr GetUnsafeWriteBufferPtr()
+        public IntPtr UnsafeReadOnlyPtr
         {
-            return m_Buffer;
+            get
+            {
+                return m_Buffer;
+            }
         }
 
-        public void FromArray(T[] array)
+        internal void GetUnsafeBufferPointerWithoutChecksInternal(out AtomicSafetyHandle handle, out IntPtr ptr)
+        {
+            ptr = m_Buffer;
+            handle = new AtomicSafetyHandle();
+        }
+
+        public void CopyFrom(T[] array)
         {
 
             if (Length != array.Length)
                 throw new ArgumentException("Array length does not match the length of this instance");
 
-            // TODO: optimize with cpblk
             for (var i = 0; i < Length; i++)
-                UnsafeUtility.WriteArrayElement(m_Buffer, i * m_Stride, array[i]);
+                UnsafeUtility.WriteArrayElement(m_Buffer, i, array[i]);
+        }
+
+        public void CopyFrom(NativeArray<T> array)
+        {
+            array.CopyTo(this);
+        }
+
+        public void CopyTo(T[] array)
+        {
+
+            if (Length != array.Length)
+                throw new ArgumentException("Array length does not match the length of this instance");
+
+            for (var i = 0; i < Length; i++)
+                array[i] = UnsafeUtility.ReadArrayElement<T>(m_Buffer, i);
+        }
+
+        public void CopyTo(NativeArray<T> array)
+        {
+
+            if (Length != array.Length)
+                throw new ArgumentException("Array length does not match the length of this instance");
+
+            UnsafeUtility.MemCpy(array.m_Buffer, m_Buffer, Length * UnsafeUtility.SizeOf<T>());
         }
 
         public T[] ToArray()
         {
-            // TODO: optimize with cpblk
             var array = new T[Length];
-            for (var i = 0; i < Length; i++)
-                array[i] = UnsafeUtility.ReadArrayElement<T>(m_Buffer, i * m_Stride);
-
+            CopyTo(array);
             return array;
         }
 
@@ -115,41 +180,6 @@ namespace UnityEngine.Collections
         {
 
             throw new IndexOutOfRangeException(string.Format("Index {0} is out of range of '{1}' Length.", index, Length));
-        }
-
-        private static void Allocate(int length, Allocator allocMode, out NativeArray<T> outArray)
-        {
-            // Native allocation is only valid for Temp, Job and Persistent
-            if (allocMode <= Allocator.None)
-                throw new ArgumentOutOfRangeException("allocMode", "Allocator must be Temp, Job or Persistent");
-            if (length < 0)
-                throw new ArgumentOutOfRangeException("length", "Length must be >= 0");
-
-            // Make sure we cannot allocate more than int.MaxValue (2,147,483,647 bytes)
-            // because the underlying UnsafeUtility.Malloc is expecting a int
-            // TODO: change UnsafeUtility.Malloc to accept a UIntPtr length instead to match C++ API
-            long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
-            if (totalSize > int.MaxValue)
-                throw new ArgumentOutOfRangeException("length", "Length * sizeof(T) cannot exceed " + int.MaxValue + "bytes");
-
-            outArray = new NativeArray<T>(
-                    UnsafeUtility.Malloc((int)totalSize, UnsafeUtility.AlignOf<T>(), allocMode),
-                    length,
-                    allocMode);
-        }
-
-        private NativeArray(IntPtr dataPointer, int length, Allocator allocMode)
-        {
-            if (dataPointer == IntPtr.Zero)
-                throw new ArgumentOutOfRangeException("dataPointer", "Pointer must not be zero");
-            if (length < 0)
-                throw new ArgumentOutOfRangeException("length", "Length must be >= 0");
-
-            m_Buffer = dataPointer;
-            m_Length = length;
-            m_Stride = UnsafeUtility.SizeOf<T>();
-            m_AllocatorLabel = allocMode;
-
         }
 
         public IEnumerator<T> GetEnumerator()

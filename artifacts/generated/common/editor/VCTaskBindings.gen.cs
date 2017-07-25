@@ -38,6 +38,7 @@ public enum SubmitResult
 
 public sealed partial class Task
 {
+            #pragma warning disable 169
     IntPtr m_thisDummy;
     
     

@@ -48,7 +48,6 @@ namespace UnityEditor
         LightingWindowObjectTab             m_ObjectTab;
         public LightingWindowLightingTab    m_LightingTab;
         LightingWindowLightmapPreviewTab    m_LightmapPreviewTab;
-        LightModeValidator.Stats            m_Stats;
 
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
 
@@ -275,7 +274,7 @@ namespace UnityEditor
                 bool showBakeButton = isContinuous || !Lightmapping.isRunning;
                 if (showBakeButton)
                 {
-                    if (EditorGUI.ButtonWithDropdownList(Styles.BuildLabel, s_BakeModeOptions, BakeDropDownCallback, GUILayout.Width(180)))
+                    if (EditorGUI.ButtonWithDropdownList(Styles.BuildLabel, s_BakeModeOptions, BakeDropDownCallback, GUILayout.Width(170)))
                     {
                         DoBake();
 

@@ -71,7 +71,7 @@ namespace UnityEditor
 
         public static AnimationCurve curve
         {
-            get { return CurveEditorWindow.instance.m_Curve; }
+            get { return visible ? CurveEditorWindow.instance.m_Curve : null; }
             set
             {
                 CurveEditorWindow.instance.m_Property = null;
@@ -91,7 +91,7 @@ namespace UnityEditor
         {
             get
             {
-                return CurveEditorWindow.instance.m_Property;
+                return visible ? CurveEditorWindow.instance.m_Property : null;
             }
             set
             {
@@ -161,6 +161,12 @@ namespace UnityEditor
             }
 
             m_CurveEditor.FrameSelected(frameH, frameV);
+
+            titleContent = new GUIContent("Curve");
+
+            // deal with window size
+            minSize = new Vector2(240, 240 + kPresetsHeight);
+            maxSize = new Vector2(10000, 10000);
         }
 
         CurveLibraryType curveLibraryType
@@ -281,13 +287,21 @@ namespace UnityEditor
         public void Show(GUIView viewToUpdate, CurveEditorSettings settings)
         {
             delegateView = viewToUpdate;
+            m_OnCurveChanged = null;
+
             Init(settings);
             ShowAuxWindow();
-            titleContent = new GUIContent("Curve");
+        }
 
-            // deal with window size
-            minSize = new Vector2(240, 240 + kPresetsHeight);
-            maxSize = new Vector2(10000, 10000);
+        System.Action<AnimationCurve> m_OnCurveChanged;
+
+        public void Show(System.Action<AnimationCurve> onCurveChanged, CurveEditorSettings settings)
+        {
+            m_OnCurveChanged = onCurveChanged;
+            delegateView = null;
+
+            Init(settings);
+            ShowAuxWindow();
         }
 
         internal class Styles
@@ -436,7 +450,7 @@ namespace UnityEditor
         {
             bool gotMouseUp = (Event.current.type == EventType.mouseUp);
 
-            if (delegateView == null)
+            if (delegateView == null && m_OnCurveChanged == null)
                 m_Curve = null;
 
             if (ms_Styles == null)
@@ -595,6 +609,11 @@ namespace UnityEditor
                 delegateView.SendEvent(e);
                 if (exitGUI)
                     GUIUtility.ExitGUI();
+            }
+
+            if (m_OnCurveChanged != null)
+            {
+                m_OnCurveChanged(curve);
             }
             GUI.changed = true;
         }

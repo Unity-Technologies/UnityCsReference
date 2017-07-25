@@ -423,7 +423,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
             var unityReferences = GetUnityReferences(scriptAssembly, assemblies.UnityAssemblies, settings.CompilationOptions);
-
             references.AddRange(unityReferences);
 
             // Setup target assembly references
@@ -492,8 +491,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (unityAssemblies != null)
                 foreach (var unityAssembly in unityAssemblies)
                 {
+                    var moduleExcludedForRuntimeCode = (unityAssembly.Flags & AssemblyFlags.ExcludedForRuntimeCode) == AssemblyFlags.ExcludedForRuntimeCode;
+
                     // Add Unity editor assemblies (UnityEditor.dll) to all assemblies when building inside the editor
-                    if (buildingForEditor || assemblyEditorOnly)
+                    if ((buildingForEditor && !moduleExcludedForRuntimeCode) || assemblyEditorOnly)
                     {
                         if ((unityAssembly.Flags & AssemblyFlags.UseForMono) != 0)
                             references.Add(unityAssembly.Path);
@@ -503,7 +504,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         bool unityAssemblyEditorOnly = (unityAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
                         // Add Unity runtime assemblies (UnityEngine.dll) to all assemblies
-                        if (!unityAssemblyEditorOnly)
+                        if (!unityAssemblyEditorOnly && !moduleExcludedForRuntimeCode)
                         {
                             if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(unityAssembly, scriptAssembly))
                                 references.Add(unityAssembly.Path);

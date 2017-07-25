@@ -85,13 +85,73 @@ namespace UnityEditor.IMGUI.Controls
         // if targetitem is null then parent might be valid if root is hidden
         public abstract DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPosition);
 
+        protected float GetDropBetweenHalfHeight(TreeViewItem item, Rect itemRect)
+        {
+            return m_TreeView.data.CanBeParent(item) ? m_TreeView.gui.halfDropBetweenHeight : itemRect.height * 0.5f;
+        }
+
+        protected bool TryGetDropPosition(TreeViewItem item, Rect itemRect, int row, out DropPosition dropPosition)
+        {
+            Vector2 currentMousePos = Event.current.mousePosition;
+
+            if (itemRect.Contains(currentMousePos))
+            {
+                float dropBetweenHalfHeight = GetDropBetweenHalfHeight(item, itemRect);
+                if (currentMousePos.y >= itemRect.yMax - dropBetweenHalfHeight)
+                    dropPosition = DropPosition.Below;
+                else if (currentMousePos.y <= itemRect.yMin + dropBetweenHalfHeight)
+                    dropPosition = DropPosition.Above;
+                else
+                    dropPosition = DropPosition.Upon;
+                return true;
+            }
+            else
+            {
+                // Check overlap with next item (if any)
+                float nextOverlap = m_TreeView.gui.halfDropBetweenHeight;
+                int nextRow = row + 1;
+                if (nextRow < m_TreeView.data.rowCount)
+                {
+                    Rect nextRect = m_TreeView.gui.GetRowRect(nextRow, itemRect.width);
+                    bool nextCanBeParent = m_TreeView.data.CanBeParent(m_TreeView.data.GetItem(nextRow));
+                    if (nextCanBeParent)
+                        nextOverlap = m_TreeView.gui.halfDropBetweenHeight;
+                    else
+                        nextOverlap = nextRect.height * 0.5f;
+                }
+                Rect nextOverlapRect = itemRect;
+                nextOverlapRect.y = itemRect.yMax;
+                nextOverlapRect.height = nextOverlap;
+                if (nextOverlapRect.Contains(currentMousePos))
+                {
+                    dropPosition = DropPosition.Below;
+                    return true;
+                }
+
+                // Check overlap above first item
+                if (row == 0)
+                {
+                    Rect overlapUpwards = itemRect;
+                    overlapUpwards.yMin -= m_TreeView.gui.halfDropBetweenHeight;
+                    overlapUpwards.height = m_TreeView.gui.halfDropBetweenHeight;
+                    if (overlapUpwards.Contains(currentMousePos))
+                    {
+                        dropPosition = DropPosition.Above;
+                        return true;
+                    }
+                }
+            }
+
+            dropPosition = DropPosition.Below;
+            return false;
+        }
 
         // This method is called from TreeView and handles:
         // - Where the dragged items are dropped (above, below or upon)
         // - Auto expansion of collapsed items when hovering over them
         // - Setting up the render markers for drop location (horizontal lines)
         // 'targetItem' is null when not hovering over any target Item, if so the rest if the arguments are invalid
-        public virtual bool DragElement(TreeViewItem targetItem, Rect targetItemRect, bool firstItem)
+        public virtual bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row)
         {
             bool perform = Event.current.type == EventType.DragPerform;
 
@@ -114,27 +174,9 @@ namespace UnityEditor.IMGUI.Controls
                 return false;
             }
 
-            Vector2 currentMousePos = Event.current.mousePosition;
-            bool targetCanBeParent = m_TreeView.data.CanBeParent(targetItem);
-
-            // We create a rect that overlaps downwards to detect dropUpon or dropBetween
-            Rect dropRect = targetItemRect;
-            float betweenHalfHeight = targetCanBeParent ? m_TreeView.gui.halfDropBetweenHeight : targetItemRect.height * 0.5f;
-            if (firstItem)
-                dropRect.yMin -= betweenHalfHeight;
-            dropRect.yMax += betweenHalfHeight;
-            if (!dropRect.Contains(currentMousePos))
-                return false;
-
-            // Ok we are inside our offset rect
             DropPosition dropPosition;
-
-            if (currentMousePos.y >= targetItemRect.yMax - betweenHalfHeight)
-                dropPosition = DropPosition.Below;
-            else if (firstItem && currentMousePos.y <= targetItemRect.yMin + betweenHalfHeight)
-                dropPosition = DropPosition.Above;
-            else
-                dropPosition = targetCanBeParent ? DropPosition.Upon : DropPosition.Above;
+            if (!TryGetDropPosition(targetItem, targetItemRect, row, out dropPosition))
+                return false;
 
             TreeViewItem parentItem = null;
             switch (dropPosition)
@@ -204,7 +246,7 @@ namespace UnityEditor.IMGUI.Controls
                 m_DropData.rowMarkerControlID = 0;
 
                 int itemControlID = TreeViewController.GetItemControlID(targetItem);
-                HandleAutoExpansion(itemControlID, targetItem, targetItemRect, betweenHalfHeight, currentMousePos);
+                HandleAutoExpansion(itemControlID, targetItem, targetItemRect);
 
                 // Try drop on top of element
                 if (dropPosition == DropPosition.Upon)
@@ -255,10 +297,13 @@ namespace UnityEditor.IMGUI.Controls
             m_TreeView.NotifyListenersThatDragEnded(newSelection, draggedItemsFromOwnTreeView);
         }
 
-        protected virtual void HandleAutoExpansion(int itemControlID, TreeViewItem targetItem, Rect targetItemRect, float betweenHalfHeight, Vector2 currentMousePos)
+        protected virtual void HandleAutoExpansion(int itemControlID, TreeViewItem targetItem, Rect targetItemRect)
         {
+            Vector2 currentMousePos = Event.current.mousePosition;
+
             // Handle auto expansion
             float targetItemIndent = m_TreeView.gui.GetContentIndent(targetItem);
+            float betweenHalfHeight = GetDropBetweenHalfHeight(targetItem, targetItemRect);
             Rect indentedContentRect = new Rect(targetItemRect.x + targetItemIndent, targetItemRect.y + betweenHalfHeight, targetItemRect.width - targetItemIndent, targetItemRect.height - betweenHalfHeight * 2);
             bool hoveringOverIndentedContent = indentedContentRect.Contains(currentMousePos);
 

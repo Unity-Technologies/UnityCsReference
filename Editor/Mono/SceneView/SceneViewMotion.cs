@@ -155,7 +155,7 @@ namespace UnityEditor
 
             switch (eventType)
             {
-                case EventType.ScrollWheel:     HandleScrollWheel(view, !evt.alt); break;
+                case EventType.ScrollWheel:     HandleScrollWheel(view, view.in2DMode == evt.alt); break; // Default to zooming to mouse position in 2D mode without alt
                 case EventType.MouseDown:       HandleMouseDown(view, id, evt.button); break;
                 case EventType.MouseUp:         HandleMouseUp(view, id, evt.button, evt.clickCount); break;
                 case EventType.MouseDrag:       HandleMouseDrag(view, id); break;
@@ -164,7 +164,7 @@ namespace UnityEditor
                 case EventType.layout:
                 {
                     Vector3 motion = GetMovementDirection();
-                    // This seems to be the best way to have a continously repeating event
+                    // This seems to be the best way to have a continuously repeating event
                     if (GUIUtility.hotControl == id && motion.sqrMagnitude != 0)
                     {
                         view.pivot = view.pivot + view.rotation * motion;
@@ -230,7 +230,6 @@ namespace UnityEditor
 
                     if (Toolbar.get)
                         Toolbar.get.Repaint();
-                    EditorGUIUtility.SetWantsMouseJumping(1);
 
                     evt.Use();
 
@@ -251,7 +250,6 @@ namespace UnityEditor
             s_Motion = Vector3.zero;
             if (Toolbar.get)
                 Toolbar.get.Repaint();
-            EditorGUIUtility.SetWantsMouseJumping(0);
         }
 
         private static void HandleMouseUp(SceneView view, int id, int button, int clickCount)

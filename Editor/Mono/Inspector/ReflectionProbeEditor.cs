@@ -44,7 +44,6 @@ namespace UnityEditor
         SerializedProperty[] m_NearAndFarProperties;
 
         private static Mesh s_SphereMesh;
-        private static Mesh s_PlaneMesh;
         private Material m_ReflectiveMaterial;
         private Matrix4x4 m_OldLocalSpace = Matrix4x4.identity;
         private float m_MipLevelPreview = 0.0F;

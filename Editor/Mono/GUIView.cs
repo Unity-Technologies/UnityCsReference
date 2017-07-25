@@ -25,13 +25,11 @@ namespace UnityEditor
         internal static event Action<GUIView> positionChanged = null;
 
 
-        DataWatchService s_DataWatch = new DataWatchService();
-
         Panel panel
         {
             get
             {
-                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, StyleSheetResourceUtil.LoadResource);
+                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, DataWatchService.sharedInstance, StyleSheetResourceUtil.LoadResource);
                 if (p.visualTree.styleSheets == null)
                 {
                     p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
@@ -176,9 +174,10 @@ namespace UnityEditor
             visualTree.RemoveChild(imguiContainer);
         }
 
-        protected virtual void OldOnGUI()
-        {
-        }
+        protected virtual void OldOnGUI() {}
+        // Without leaving this in here for MonoBehaviour::DoGUI(), GetMethod(MonoScriptCache::kGUI) will return null.
+        // In that case, commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
+        protected virtual void OnGUI() {}
 
         protected override void SetPosition(Rect newPos)
         {

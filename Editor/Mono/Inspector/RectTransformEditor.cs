@@ -277,7 +277,7 @@ namespace UnityEditor
             position.height = EditorGUIUtility.singleLineHeight;
             SerializedProperty cur = property.Copy();
             cur.NextVisible(true);
-            EditorGUI.MultiPropertyField(position, s_XYZLabels, cur, EditorGUI.kMiniLabelW, disabledMask);
+            EditorGUI.MultiPropertyField(position, s_XYZLabels, cur, EditorGUI.PropertyVisibility.OnlyVisible, EditorGUI.kMiniLabelW, disabledMask);
 
             EditorGUI.EndProperty();
         }

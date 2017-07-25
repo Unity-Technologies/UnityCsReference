@@ -1409,9 +1409,11 @@ public sealed partial class ParticleSystem : Component
                     public MinMaxCurve x { set { SetX(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetX(m_ParticleSystem, ref r); return r; } }
                     public MinMaxCurve y { set { SetY(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetY(m_ParticleSystem, ref r); return r; } }
                     public MinMaxCurve z { set { SetZ(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetZ(m_ParticleSystem, ref r); return r; } }
+                    public MinMaxCurve speedModifier { set { SetSpeedModifier(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetSpeedModifier(m_ParticleSystem, ref r); return r; } }
                     public float xMultiplier { get { return GetXMultiplier(m_ParticleSystem); } set { SetXMultiplier(m_ParticleSystem, value); } }
                     public float yMultiplier { get { return GetYMultiplier(m_ParticleSystem); } set { SetYMultiplier(m_ParticleSystem, value); } }
                     public float zMultiplier { get { return GetZMultiplier(m_ParticleSystem); } set { SetZMultiplier(m_ParticleSystem, value); } }
+                    public float speedModifierMultiplier { get { return GetSpeedModifierMultiplier(m_ParticleSystem); } set { SetSpeedModifierMultiplier(m_ParticleSystem, value); } }
                     public ParticleSystemSimulationSpace space { get { return GetWorldSpace(m_ParticleSystem) ? ParticleSystemSimulationSpace.World : ParticleSystemSimulationSpace.Local; } set { SetWorldSpace(m_ParticleSystem, value == ParticleSystemSimulationSpace.World); } }
         
         
@@ -1449,6 +1451,14 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSpeedModifier (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetSpeedModifier (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetXMultiplier (ParticleSystem system, float value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1470,6 +1480,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetZMultiplier (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSpeedModifierMultiplier (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetSpeedModifierMultiplier (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

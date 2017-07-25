@@ -96,7 +96,7 @@ namespace UnityEditor
     }
 
     [CustomEditor(typeof(PhysicsManager))]
-    internal class PhysicsManagerInspector : Editor
+    internal class PhysicsManagerInspector : ProjectSettingsBaseEditor
     {
         Vector2 scrollPos;
         bool show = true;

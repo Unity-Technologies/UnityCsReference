@@ -86,22 +86,20 @@ namespace UnityEditor
             IMGUILayoutInstruction instruction = m_LayoutInstructions[selectedInstructionIndex];
 
             using (new EditorGUI.DisabledScope(true))
-            {
                 DrawInspectedRect(instruction.unclippedRect);
 
-                EditorGUILayout.IntField("margin.left", instruction.marginLeft);
-                EditorGUILayout.IntField("margin.top", instruction.marginTop);
-                EditorGUILayout.IntField("margin.right", instruction.marginRight);
-                EditorGUILayout.IntField("margin.bottom", instruction.marginBottom);
+            DoSelectableInstructionDataField("margin.left", instruction.marginLeft.ToString());
+            DoSelectableInstructionDataField("margin.top", instruction.marginTop.ToString());
+            DoSelectableInstructionDataField("margin.right", instruction.marginRight.ToString());
+            DoSelectableInstructionDataField("margin.bottom", instruction.marginBottom.ToString());
 
-                if (instruction.style != null)
-                    EditorGUILayout.LabelField("Style Name", instruction.style.name);
+            if (instruction.style != null)
+                DoSelectableInstructionDataField("Style Name", instruction.style.name);
 
-                if (instruction.isGroup == 1)
-                    return;
+            if (instruction.isGroup == 1)
+                return;
 
-                EditorGUILayout.Toggle("IsVertical", (instruction.isVertical == 1));
-            }
+            DoSelectableInstructionDataField("IsVertical", (instruction.isVertical == 1).ToString());
         }
 
         internal override string GetInstructionListName(int index)

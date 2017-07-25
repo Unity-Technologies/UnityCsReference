@@ -1358,13 +1358,14 @@ namespace UnityEditor
                     LastScrollTime = timeNow;
 
                 float yOffset = 0f;
+                int rowsBeingUsed = 0;
                 foreach (Group g in m_Groups)
                 {
                     if (SkipGroup(g))
                         continue;
 
                     // rect contains the offset rect where the group should draw
-                    g.Draw(yOffset, scrollPos);
+                    g.Draw(yOffset, scrollPos, ref rowsBeingUsed);
                     needRepaint = needRepaint || g.NeedsRepaint;
                     yOffset += g.Height;
 

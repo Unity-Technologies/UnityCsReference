@@ -114,7 +114,6 @@ namespace UnityEditor
         ShaderGUI   m_CustomShaderGUI;
         string      m_CustomEditorClassName;
 
-        [NonSerialized] bool                m_TriedCreatingCustomGUI;
         bool                                m_InsidePropertiesGUI;
         Renderer                            m_RendererForAnimationMode;
 

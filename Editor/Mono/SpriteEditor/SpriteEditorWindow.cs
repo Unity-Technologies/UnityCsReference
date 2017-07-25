@@ -41,8 +41,6 @@ namespace UnityEditor
             public static readonly GUIContent loadContentText = EditorGUIUtility.TextContent("Loading Sprites {0}/{1}");
         }
 
-        private SpriteEditorWindowStyles m_SpriteEditorWindowStyles;
-
         private const float k_MarginForFraming = 0.05f;
         private const float k_WarningMessageWidth = 250f;
         private const float k_WarningMessageHeight = 40f;
@@ -281,10 +279,21 @@ namespace UnityEditor
             if (newTexture != null && m_OriginalTexture != newTexture)
                 OnSelectionChange();
 
-            if (m_RectsCache != null && !m_RectsCache.Contains(selectedSpriteRect))
-                selectedSpriteRect = null;
+            InitSelectedSpriteRect();
 
             Repaint();
+        }
+
+        private void InitSelectedSpriteRect()
+        {
+            SpriteRect newSpriteRect = null;
+            if (m_RectsCache != null)
+            {
+                if (m_RectsCache.Count > 0)
+                    newSpriteRect = m_RectsCache.Contains(selectedSpriteRect) ? selectedSpriteRect : m_RectsCache.RectAt(0);
+            }
+
+            selectedSpriteRect = newSpriteRect;
         }
 
         private void OnDisable()
@@ -337,43 +346,42 @@ namespace UnityEditor
             }
             m_RectsCache = CreateInstance<SpriteRectCache>();
 
-            if (m_TextureImporterSprites == null)
-                return;
-
-            if (multipleSprites)
+            if (m_TextureImporterSprites != null)
             {
-                for (int i = 0; i < m_TextureImporterSprites.arraySize; i++)
+                if (multipleSprites)
+                {
+                    for (int i = 0; i < m_TextureImporterSprites.arraySize; i++)
+                    {
+                        SpriteRect spriteRect = new SpriteRect();
+                        spriteRect.LoadFromSerializedProperty(m_TextureImporterSprites.GetArrayElementAtIndex(i));
+                        m_RectsCache.AddRect(spriteRect);
+                        EditorUtility.DisplayProgressBar(SpriteEditorWindowStyles.loadProgressTitle.text, String.Format(SpriteEditorWindowStyles.loadContentText.text, i, m_TextureImporterSprites.arraySize), (float)i / (float)m_TextureImporterSprites.arraySize);
+                    }
+                }
+                else if (validSprite)
                 {
                     SpriteRect spriteRect = new SpriteRect();
-                    spriteRect.LoadFromSerializedProperty(m_TextureImporterSprites.GetArrayElementAtIndex(i));
+
+                    spriteRect.rect = new Rect(0, 0, m_Texture.width, m_Texture.height);
+                    spriteRect.name = m_OriginalTexture.name;
+                    spriteRect.alignment = (SpriteAlignment)m_TextureImporterSO.FindProperty("m_Alignment").intValue;
+                    spriteRect.border = m_TextureImporter.spriteBorder;
+                    spriteRect.pivot = SpriteEditorUtility.GetPivotValue(spriteRect.alignment, m_TextureImporter.spritePivot);
+                    spriteRect.tessellationDetail = m_TextureImporterSO.FindProperty("m_SpriteTessellationDetail").floatValue;
+
+                    SerializedProperty outlineSP = m_TextureImporterSO.FindProperty("m_SpriteSheet.m_Outline");
+                    spriteRect.outline = SpriteRect.AcquireOutline(outlineSP);
+
+                    SerializedProperty physicsShapeSP = m_TextureImporterSO.FindProperty("m_SpriteSheet.m_PhysicsShape");
+                    spriteRect.physicsShape = SpriteRect.AcquireOutline(physicsShapeSP);
+
                     m_RectsCache.AddRect(spriteRect);
-                    EditorUtility.DisplayProgressBar(SpriteEditorWindowStyles.loadProgressTitle.text, String.Format(SpriteEditorWindowStyles.loadContentText.text, i, m_TextureImporterSprites.arraySize), (float)i / (float)m_TextureImporterSprites.arraySize);
                 }
-            }
-            else if (validSprite)
-            {
-                SpriteRect spriteRect = new SpriteRect();
 
-                spriteRect.rect = new Rect(0, 0, m_Texture.width, m_Texture.height);
-                spriteRect.name = m_OriginalTexture.name;
-                spriteRect.alignment = (SpriteAlignment)m_TextureImporterSO.FindProperty("m_Alignment").intValue;
-                spriteRect.border = m_TextureImporter.spriteBorder;
-                spriteRect.pivot = SpriteEditorUtility.GetPivotValue(spriteRect.alignment, m_TextureImporter.spritePivot);
-                spriteRect.tessellationDetail = m_TextureImporterSO.FindProperty("m_SpriteTessellationDetail").floatValue;
-
-                SerializedProperty outlineSP = m_TextureImporterSO.FindProperty("m_SpriteSheet.m_Outline");
-                spriteRect.outline = SpriteRect.AcquireOutline(outlineSP);
-
-                SerializedProperty physicsShapeSP = m_TextureImporterSO.FindProperty("m_SpriteSheet.m_PhysicsShape");
-                spriteRect.physicsShape = SpriteRect.AcquireOutline(physicsShapeSP);
-
-                m_RectsCache.AddRect(spriteRect);
+                EditorUtility.ClearProgressBar();
             }
 
-            EditorUtility.ClearProgressBar();
-            // Always select the first sprite in index
-            if (m_RectsCache.Count > 0)
-                selectedSpriteRect = m_RectsCache.RectAt(0);
+            InitSelectedSpriteRect();
         }
 
         void OnGUI()
@@ -444,10 +452,13 @@ namespace UnityEditor
 
             // Top menu bar
 
+            // only show popup if there is more than 1 module.
             if (m_RegisteredModules.Count > 1)
             {
-                // only show popup if there is more than 1 module.
-                int module = EditorGUI.Popup(new Rect(0, 0, k_ModuleListWidth, k_ToolbarHeight), m_CurrentModuleIndex, m_RegisteredModuleNames, EditorStyles.toolbarPopup);
+                float moduleWidthPercentage = k_ModuleListWidth / minSize.x;
+                float moduleListWidth = position.width > minSize.x ? position.width * moduleWidthPercentage : k_ModuleListWidth;
+                moduleListWidth = Mathf.Min(moduleListWidth, EditorStyles.popup.CalcSize(m_RegisteredModuleNames[m_CurrentModuleIndex]).x);
+                int module = EditorGUI.Popup(new Rect(0, 0, moduleListWidth, k_ToolbarHeight), m_CurrentModuleIndex, m_RegisteredModuleNames, EditorStyles.toolbarPopup);
                 if (module != m_CurrentModuleIndex)
                 {
                     if (textureIsDirty)
@@ -462,7 +473,7 @@ namespace UnityEditor
                     }
                     SetupModule(module);
                 }
-                toolbarRect.x = k_ModuleListWidth;
+                toolbarRect.x = moduleListWidth;
             }
 
             toolbarRect  = DoAlphaZoomToolbarGUI(toolbarRect);
@@ -578,13 +589,12 @@ namespace UnityEditor
             m_IgnoreNextPostprocessEvent = true;
             DoTextureReimport(m_TextureImporter.assetPath);
             textureIsDirty = false;
-            selectedSpriteRect = null;
+            InitSelectedSpriteRect();
         }
 
         private void DoRevert()
         {
             textureIsDirty = false;
-            selectedSpriteRect = null;
             RefreshRects();
             GUI.FocusControl("");
         }
@@ -890,6 +900,14 @@ namespace UnityEditor
             }
 
             return new UnityEngine.U2D.Interface.Texture2D(m_ReadableTexture);
+        }
+
+        public void ApplyOrRevertModification(bool apply)
+        {
+            if (apply)
+                DoApply();
+            else
+                DoRevert();
         }
 
         internal class PreviewTexture2D : UnityEngine.U2D.Interface.Texture2D

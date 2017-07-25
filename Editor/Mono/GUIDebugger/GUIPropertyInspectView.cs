@@ -14,7 +14,6 @@ namespace UnityEditor
         private GUIStyle m_FakeMargingStyleForOverlay = new GUIStyle();
 
         List<IMGUIPropertyInstruction> m_PropertyList = new List<IMGUIPropertyInstruction>();
-        IMGUIClipInstruction m_Instruction;
 
         public GUIPropertyInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow) : base(guiViewDebuggerWindow)
         {
@@ -67,10 +66,10 @@ namespace UnityEditor
             var property = m_PropertyList[listViewState.row];
 
             using (new EditorGUI.DisabledScope(true))
-            {
                 DrawInspectedRect(property.rect);
-                EditorGUILayout.TextField("Path: ", property.path);
-            }
+
+            DoSelectableInstructionDataField("Target Type Name", property.targetTypeName);
+            DoSelectableInstructionDataField("Path", property.path);
         }
 
         internal override string GetInstructionListName(int index)

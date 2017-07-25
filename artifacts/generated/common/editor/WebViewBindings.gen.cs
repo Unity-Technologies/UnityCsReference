@@ -138,9 +138,8 @@ internal sealed partial class WebView : ScriptableObject
 internal sealed partial class WebViewV8CallbackCSharp
 {
     [SerializeField]
+            #pragma warning disable 169
             IntPtr m_thisDummy;
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void Callback (string result) ;

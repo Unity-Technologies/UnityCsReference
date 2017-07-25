@@ -48,9 +48,6 @@ namespace UnityEditor
             }
         }
 
-        EditorPluginCPUArchitecture cpu;
-        EditorPluginOSArchitecture os;
-
         public EditorPluginImporterExtension() : base(GetProperties())
         {
         }

@@ -425,17 +425,18 @@ namespace UnityEditor
             bool showOpenButton = true;
             if (!(this is AssetImporterEditor))
             {
+                var assetPath = AssetDatabase.GetAssetPath(targets[0]);
                 // Don't show open button if the target is not an asset
                 if (!AssetDatabase.IsMainAsset(targets[0]))
                     showOpenButton = false;
                 // Don't show open button if the target has an importer
                 // (but ignore AssetImporters since they're not shown)
-                AssetImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(targets[0]));
+                AssetImporter importer = AssetImporter.GetAtPath(assetPath);
                 if (importer && importer.GetType() != typeof(AssetImporter))
                     showOpenButton = false;
             }
 
-            if (showOpenButton)
+            if (showOpenButton && !ShouldHideOpenButton())
             {
                 if (GUILayout.Button("Open", EditorStyles.miniButton))
                 {
@@ -446,6 +447,11 @@ namespace UnityEditor
                     GUIUtility.ExitGUI();
                 }
             }
+        }
+
+        protected virtual bool ShouldHideOpenButton()
+        {
+            return false;
         }
 
         internal virtual void OnHeaderIconGUI(Rect iconRect)

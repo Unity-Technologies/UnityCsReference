@@ -107,8 +107,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RootContainer; }
         }
 
-        public VisualContainer defaultIMRoot { get; set; }
-
         public override IDispatcher dispatcher { get; protected set; }
 
         public override IDataWatchService dataWatch { get; protected set; }
@@ -153,14 +151,6 @@ namespace UnityEngine.Experimental.UIElements
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
-            // this really should be an IMGUI container with the EditorWindow OnGUI on it.
-            defaultIMRoot = new IMContainer()
-            {
-                name = "DefaultOnGUI",
-                pickingMode = PickingMode.Ignore,
-            };
-            defaultIMRoot.StretchToParentSize();
-            visualTree.InsertChild(0, defaultIMRoot);
 
             allowPixelCaching = true;
         }
@@ -172,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                 return null;
 
             var container = root as VisualContainer;
-            Vector3 localPoint = root.transform.inverse.MultiplyPoint3x4(point);
+            Vector3 localPoint = root.transform.matrix.inverse.MultiplyPoint3x4(point);
             bool containsPoint = root.ContainsPoint(localPoint);
 
             if (container != null)
@@ -200,6 +190,8 @@ namespace UnityEngine.Experimental.UIElements
                         return result;
                 }
             }
+            else if (containsPoint && picked != null)
+                picked.Add(root);
 
             switch (root.pickingMode)
             {
@@ -345,7 +337,7 @@ namespace UnityEngine.Experimental.UIElements
                     currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
                 }
             }
-            else
+            else if (!root.forceVisible)
             {
                 var offsetBounds = ComputeAAAlignedBound(root.globalBound, offset);
                 if (!offsetBounds.Overlaps(currentGlobalClip))
@@ -479,10 +471,9 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panelDebug != null)
             {
-                GUIClip.Internal_Push(visualTree.layout, Vector2.zero, Vector2.zero, true);
+                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.layout.width, visualTree.layout.height));
                 if (panelDebug.EndRepaint())
                     this.visualTree.Dirty(ChangeType.Repaint);
-                GUIClip.Internal_Pop();
             }
         }
     }

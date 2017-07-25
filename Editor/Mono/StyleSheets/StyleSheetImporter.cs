@@ -9,6 +9,7 @@ using System.IO;
 using ExCSS;
 using UnityEngine;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 using ParserStyleSheet = ExCSS.StyleSheet;
 using ParserStyleRule = ExCSS.StyleRule;
 using UnityStyleSheet = UnityEngine.StyleSheets.StyleSheet;
@@ -16,7 +17,7 @@ using UnityEngine.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {
-    [ScriptedImporter(2, "uss", -20)]
+    [ScriptedImporter(3, "uss", -20)]
     class StyleSheetImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)
@@ -25,8 +26,16 @@ namespace UnityEditor.StyleSheets
             string contents = File.ReadAllText(ctx.assetPath);
             UnityStyleSheet asset = ScriptableObject.CreateInstance<UnityStyleSheet>();
             asset.hideFlags = HideFlags.NotEditable;
-            importer.Import(asset, contents);
+            importer.Import(asset, contents, ctx.assetPath);
             ctx.SetMainAsset("stylesheet", asset);
+
+            // Force the pre processor to rebuild its list of referenced asset paths
+            // as paths may have changed with this import.
+            StyleSheetAssetPostprocessor.ClearReferencedAssets();
+
+            // Clear the style cache to force all USS rules to recompute
+            // and subsequently reload/reimport all images.
+            StyleContext.ClearStyleCache();
         }
 
 
@@ -43,7 +52,7 @@ namespace UnityEditor.StyleSheets
             m_Errors = new StyleSheetImportErrors();
         }
 
-        public void Import(UnityStyleSheet asset, string contents)
+        public void Import(UnityStyleSheet asset, string contents, string contextAssetPath)
         {
             ParserStyleSheet styleSheet = m_Parser.Parse(contents);
 

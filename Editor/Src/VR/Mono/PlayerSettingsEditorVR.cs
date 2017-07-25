@@ -27,7 +27,7 @@ namespace UnityEditorInternal.VR
             {
                 new GUIContent("Multi Pass"),
                 new GUIContent("Single Pass"),
-                new GUIContent("Single Pass Instanced")
+                new GUIContent("Single Pass Instanced (Preview)")
             };
 
             public static readonly GUIContent[] kAndroidStereoRenderingPaths =
@@ -114,40 +114,49 @@ namespace UnityEditorInternal.VR
         internal void XRSectionGUI(BuildTargetGroup targetGroup, int sectionIndex)
         {
             GUISectionIndex = sectionIndex;
-            if (!TargetGroupSupportsVirtualReality(targetGroup))
+
+            if (!TargetGroupSupportsVirtualReality(targetGroup) && !TargetGroupSupportsVuforia(targetGroup))
                 return;
 
             if (m_Settings.BeginSettingsBox(sectionIndex, Styles.xrSettingsTitle))
             {
-                if (targetGroup == BuildTargetGroup.Android)
+                if (EditorApplication.isPlaying)
                 {
-                    // Google Tango settings
-                    EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("Tango Supported"));
-
-                    if (PlayerSettings.Android.androidTangoEnabled)
-                    {
-                        EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(m_AndroidTangoUsesCamera, EditorGUIUtility.TextContent("Tango Uses Camera"));
-
-                        if ((int)PlayerSettings.Android.minSdkVersion < 23)
-                        {
-                            GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 6.0");
-                            EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
-                        }
-                        EditorGUI.indentLevel--;
-                    }
-
-                    EditorGUILayout.Space();
+                    EditorGUILayout.HelpBox("Changing XRSettings in not allowed in play mode.", MessageType.Info);
                 }
-
-                DevicesGUI(targetGroup);
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
-                    SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
+                    if (targetGroup == BuildTargetGroup.Android)
+                    {
+                        // Google Tango settings
+                        EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("Tango Supported"));
+
+                        if (PlayerSettings.Android.androidTangoEnabled)
+                        {
+                            EditorGUI.indentLevel++;
+                            EditorGUILayout.PropertyField(m_AndroidTangoUsesCamera, EditorGUIUtility.TextContent("Tango Uses Camera"));
+
+                            if ((int)PlayerSettings.Android.minSdkVersion < 23)
+                            {
+                                GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 6.0");
+                                EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
+                            }
+                            EditorGUI.indentLevel--;
+                        }
+                    }
+
+                    if (TargetGroupSupportsVuforia(targetGroup))
+                        VuforiaGUI(targetGroup);
+
+                    if (TargetGroupSupportsVirtualReality(targetGroup))
+                    {
+                        DevicesGUI(targetGroup);
+
+                        SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
+                    }
                 }
             }
-
             m_Settings.EndSettingsBox();
         }
 
@@ -189,7 +198,7 @@ namespace UnityEditorInternal.VR
             switch (targetGroup)
             {
                 case BuildTargetGroup.WSA:
-                    //case BuildTargetGroup.Standalone: // TODO: uncomment this when we fully enable it for desktop
+                case BuildTargetGroup.Standalone:
                     return true;
                 default:
                     return false;
@@ -374,6 +383,16 @@ namespace UnityEditorInternal.VR
             }
         }
 
+        private bool GetVRDeviceElementIsInList(BuildTargetGroup target, string deviceName)
+        {
+            var enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(target);
+
+            if (enabledDevices.Contains(deviceName))
+                return true;
+
+            return false;
+        }
+
         private void VRDevicesGUIOneBuildTarget(BuildTargetGroup targetGroup)
         {
             // create reorderable list for this target if needed
@@ -395,6 +414,39 @@ namespace UnityEditorInternal.VR
             if (m_VRDeviceActiveUI[targetGroup].list.Count == 0)
             {
                 EditorGUILayout.HelpBox("Must add at least one Virtual Reality SDK.", MessageType.Warning);
+            }
+        }
+
+        internal bool TargetGroupSupportsVuforia(BuildTargetGroup targetGroup)
+        {
+            return targetGroup == BuildTargetGroup.Standalone ||
+                targetGroup == BuildTargetGroup.Android ||
+                targetGroup == BuildTargetGroup.iOS ||
+                targetGroup == BuildTargetGroup.WSA;
+        }
+
+        internal void VuforiaGUI(BuildTargetGroup targetGroup)
+        {
+            // Disable toggle when Vuforia is in the VRDevice list and VR Supported == true
+            var shouldDisableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "Vuforia");
+            using (new EditorGUI.DisabledScope(shouldDisableScope))
+            {
+                if (shouldDisableScope && !PlayerSettings.GetPlatformVuforiaEnabled(targetGroup)) // Force Vuforia AR on if Vuforia is in the VRDevice List
+                    PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, true);
+
+                var vuforiaEnabled = PlayerSettings.GetPlatformVuforiaEnabled(targetGroup);
+
+                EditorGUI.BeginChangeCheck();
+                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Vuforia AR"), vuforiaEnabled);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, vuforiaEnabled);
+                }
+            }
+
+            if (shouldDisableScope)
+            {
+                EditorGUILayout.HelpBox("AR Vuforia required with VRDevice Vuforia.", MessageType.Warning);
             }
         }
     }

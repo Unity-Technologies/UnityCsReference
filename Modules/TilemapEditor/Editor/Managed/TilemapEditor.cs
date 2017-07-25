@@ -65,8 +65,7 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(tilemap, "Tilemap property change");
-                    if (Tilemap.Orientation.Custom == tilemap.orientation && Tilemap.Orientation.Custom == tilemap.orientation)
-                        tilemap.orientationMatrix = orientationMatrix;
+                    tilemap.orientationMatrix = orientationMatrix;
                 }
             }
             GUI.enabled = true;

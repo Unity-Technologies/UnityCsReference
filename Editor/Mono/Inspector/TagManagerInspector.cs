@@ -10,7 +10,7 @@ using UnityEditorInternal;
 namespace UnityEditor
 {
     [CustomEditor(typeof(TagManager))]
-    internal class TagManagerInspector : Editor
+    internal class TagManagerInspector : ProjectSettingsBaseEditor
     {
         protected SerializedProperty m_Tags;
         protected SerializedProperty m_SortingLayers;

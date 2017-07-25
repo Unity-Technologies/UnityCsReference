@@ -103,7 +103,6 @@ namespace UnityEditor
             }
         };
 
-        static GUIStyle s_ResolutionWarningStyle;
         static List<GameView> s_GameViews = new List<GameView>();
         static GameView s_LastFocusedGameView = null;
         static double s_LastScrollTime;
@@ -775,6 +774,8 @@ namespace UnityEditor
                 if (Event.current.rawType == EventType.MouseDown && !mousePosInGameViewRect)
                     return;
 
+                var originalDisplayIndex = Event.current.displayIndex;
+
                 // Transform events into local space, so the mouse position is correct
                 // Then queue it up for playback during playerloop
                 Event.current.mousePosition = gameMousePosition;
@@ -797,6 +798,9 @@ namespace UnityEditor
                     Event.current.Use();
                 else
                     Event.current.mousePosition = editorMousePosition;
+
+                // Reset display index
+                Event.current.displayIndex = originalDisplayIndex;
             }
 
             m_ZoomArea.EndViewGUI();

@@ -23,10 +23,8 @@ namespace UnityEditor.VersionControl
 public sealed partial class Asset
 {
     
-    
+            #pragma warning disable 169
             GUID m_guid;
-    
-    
     [Flags]
     public enum States    
     {

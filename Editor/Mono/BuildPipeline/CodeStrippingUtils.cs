@@ -267,16 +267,25 @@ namespace UnityEditor
         {
             // This function can be used to inject user-readable dependency information for specific classes which would not be obvious otherwise.
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
-            const string analyticsManagerName = "UnityAnalyticsManager";
-            var analyticsManager = UnityType.FindTypeByName(analyticsManagerName);
-            if (nativeClasses.Contains(analyticsManager))
+            const string connectSettingsName = "UnityConnectSettings";
+            var connectSettings = UnityType.FindTypeByName(connectSettingsName);
+            const string cloudWebServicesManagerName = "CloudWebServicesManager";
+            var cloudWebServicesManager = UnityType.FindTypeByName(cloudWebServicesManagerName);
+            if (nativeClasses.Contains(connectSettings) || nativeClasses.Contains(cloudWebServicesManager))
             {
                 if (PlayerSettings.submitAnalytics)
                 {
                     const string requiredMessage = "Required by HW Statistics (See Player Settings)";
-                    strippingInfo.RegisterDependency(analyticsManagerName, requiredMessage);
+                    strippingInfo.RegisterDependency(connectSettingsName, requiredMessage);
+                    strippingInfo.RegisterDependency(cloudWebServicesManagerName, requiredMessage);
                     strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
                 }
+            }
+
+            const string analyticsManagerName = "UnityAnalyticsManager";
+            var analyticsManager = UnityType.FindTypeByName(analyticsManagerName);
+            if (nativeClasses.Contains(analyticsManager))
+            {
                 if (UnityEditor.Analytics.AnalyticsSettings.enabled)
                 {
                     const string requiredMessage = "Required by Unity Analytics (See Services Window)";
@@ -338,6 +347,8 @@ namespace UnityEditor
                 nativeModules.UnionWith(icallModules);
             }
 
+            ApplyManualStrippingOverrides(nativeClasses, nativeModules, strippingInfo);
+
             bool didAdd = true;
             if (platformProvider != null)
             {
@@ -346,10 +357,10 @@ namespace UnityEditor
                     didAdd = false;
                     foreach (var module in nativeModules.ToList())
                     {
-                        var whitelist = GetModuleWhitelist(module, platformProvider.moduleStrippingInformationFolder);
-                        if (File.Exists(whitelist))
+                        var dependecies = ModuleMetadata.GetModuleDependencies(module);
+                        if (dependecies != null)
                         {
-                            foreach (var dependentModule in GetDependentModules(whitelist))
+                            foreach (var dependentModule in dependecies)
                             {
                                 if (!nativeModules.Contains(dependentModule))
                                 {
@@ -383,22 +394,53 @@ namespace UnityEditor
                 InjectCustomDependencies(platformProvider.target, strippingInfo, nativeClasses, nativeModules);
         }
 
+        public static void ApplyManualStrippingOverrides(HashSet<UnityType> nativeClasses, HashSet<string> nativeModules, StrippingInfo strippingInfo)
+        {
+            // Apply manual stripping overrides
+            foreach (var module in ModuleMetadata.GetModuleNames())
+            {
+                var includeSetting = ModuleMetadata.GetModuleIncludeSettingForModule(module);
+                if (includeSetting == ModuleIncludeSetting.ForceInclude)
+                {
+                    nativeModules.Add(module);
+                    var moduleClasses = ModuleMetadata.GetModuleTypes(module);
+                    foreach (var klass in moduleClasses)
+                    {
+                        nativeClasses.Add(klass);
+                        if (strippingInfo != null)
+                        {
+                            strippingInfo.RegisterDependency(klass.name, "Force included module");
+                            strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), klass.name);
+                        }
+                    }
+
+                    if (strippingInfo != null)
+                        strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), "Force included module");
+                }
+                else if (includeSetting == ModuleIncludeSetting.ForceExclude)
+                {
+                    if (nativeModules.Contains(module))
+                    {
+                        nativeModules.Remove(module);
+                        var moduleClasses = ModuleMetadata.GetModuleTypes(module);
+                        foreach (var klass in moduleClasses)
+                        {
+                            if (nativeClasses.Contains(klass))
+                            {
+                                nativeClasses.Remove(klass);
+                            }
+                        }
+
+                        if (strippingInfo != null)
+                            strippingInfo.modules.Remove(StrippingInfo.ModuleName(module));
+                    }
+                }
+            }
+        }
+
         public static string GetModuleWhitelist(string module, string moduleStrippingInformationFolder)
         {
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
-        }
-
-        public static List<string> GetDependentModules(string moduleXml)
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.Load(moduleXml);
-            List<string> result = new List<string>();
-
-            XmlNodeList dependencyNodes = doc.DocumentElement.SelectNodes("/linker/dependencies/module");
-            foreach (XmlNode dependencyNode in dependencyNodes)
-                result.Add(dependencyNode.Attributes["name"].Value);
-
-            return result;
         }
 
         public static void WriteModuleAndClassRegistrationFile(string strippedAssemblyDir, string icallsListFile, string outputDir, RuntimeClassRegistry rcr, IEnumerable<UnityType> classesToSkip, IIl2CppPlatformProvider platformProvider)
@@ -684,7 +726,7 @@ namespace UnityEditor
             using (TextWriter w = new StreamWriter(file))
             {
                 w.WriteLine("template <typename T> void RegisterClass();");
-                w.WriteLine("template <typename T> void RegisterStrippedTypeInfo(int, const char*, const char*);");
+                w.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
 
                 w.WriteLine();
                 WriteStaticallyLinkedModuleRegistration(w, nativeModules, nativeClasses);
@@ -754,7 +796,7 @@ namespace UnityEditor
                     //  if (type.baseClass == null || type.isEditorOnly || classesToSkip.Contains(type) || nativeClasses.Contains(type))
                     //      continue;
 
-                    //  w.WriteLine("\tRegisterStrippedTypeInfo<{0}>({1}, \"{2}\", \"{3}\");", type.qualifiedName, type.persistentTypeID, type.name, type.nativeNamespace);
+                    //  w.WriteLine("\tRegisterStrippedType<{0}>({1}, \"{2}\", \"{3}\");", type.qualifiedName, type.persistentTypeID, type.name, type.nativeNamespace);
                     //}
                 }
                 w.WriteLine("}");

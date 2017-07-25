@@ -182,7 +182,6 @@ namespace UnityEditor
         private const int kRecentAppsCount = 10;
 
         SortedDictionary<string, List<KeyValuePair<string, PrefColor>>> s_CachedColors = null;
-        int currentPage;
         private static Vector2 s_ScrollPosition = Vector2.zero;
 
         private int m_SpriteAtlasCacheSize;

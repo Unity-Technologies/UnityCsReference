@@ -4,11 +4,13 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Scripting;
 using System.Collections.Generic;
 
 namespace UnityEngine.Playables
 {
-    public partial struct PlayableOutput : IPlayableOutput, IEquatable<PlayableOutput>
+    [RequiredByNativeCode]
+    public struct PlayableOutput : IPlayableOutput, IEquatable<PlayableOutput>
     {
         PlayableOutputHandle m_Handle;
 
@@ -33,7 +35,7 @@ namespace UnityEngine.Playables
 
         public Type GetPlayableOutputType()
         {
-            return PlayableOutputHandle.GetPlayableOutputTypeOf(ref m_Handle);
+            return GetHandle().GetPlayableOutputType();
         }
 
         public bool Equals(PlayableOutput other)

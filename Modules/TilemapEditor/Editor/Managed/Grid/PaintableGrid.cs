@@ -43,12 +43,11 @@ namespace UnityEditor
         private Vector2Int m_PreviousMouseGridPosition;
         private Vector2Int m_MouseGridPosition;
         private bool m_MouseGridPositionChanged;
-        private Vector2Int m_PreviousDragPosition;
+        private bool m_PositionChangeRepaintDone;
         protected Vector2Int? m_PreviousMove = null;
         protected Vector2Int? m_MarqueeStart = null;
         private MarqueeType m_MarqueeType = MarqueeType.None;
         private bool m_PaintingOrErasing;
-        private bool m_ResetMarqueeAfterOnPaintSceneGUI;
 
         public Vector2Int mouseGridPosition { get { return m_MouseGridPosition; } }
         public bool isPicking { get { return m_MarqueeType == MarqueeType.Pick; } }
@@ -90,8 +89,11 @@ namespace UnityEditor
                 GUIUtility.hotControl = 0;
             }
 
-            if (mouseGridPositionChanged)
+            if (mouseGridPositionChanged && !m_PositionChangeRepaintDone)
+            {
                 Repaint();
+                m_PositionChangeRepaintDone = true;
+            }
         }
 
         protected void UpdateMouseGridPosition()
@@ -106,6 +108,7 @@ namespace UnityEditor
                     m_PreviousMouseGridPosition = m_MouseGridPosition;
                     m_MouseGridPosition = newGridPosition;
                     m_MouseGridPositionChanged = true;
+                    m_PositionChangeRepaintDone = false;
                 }
             }
         }
@@ -354,7 +357,12 @@ namespace UnityEditor
 
         private bool IsErasingEvent(Event evt)
         {
-            return (evt.button == 0 && (!evt.control && !evt.alt && evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
+            return (evt.button == 0 && (!evt.control && !evt.alt
+                                        && (evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
+                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
+                                        || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
         }
 
         private void HandleFloodFill()

@@ -23,7 +23,7 @@ namespace UnityEditor
             get { return selection != null ? selection.m_Position : new BoundsInt(); }
             set
             {
-                if (selection.m_Position != value)
+                if (selection != null && selection.m_Position != value)
                 {
                     selection.m_Position = value;
                     if (gridSelectionChanged != null)

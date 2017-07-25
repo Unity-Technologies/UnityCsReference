@@ -621,58 +621,6 @@ public static System.Enum EnumPopup(Rect position, GUIContent label, System.Enum
         }
 
     
-    [uei.ExcludeFromDocs]
-public static System.Enum EnumMaskPopup (Rect position, string label, System.Enum selected) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskPopup ( position, label, selected, style );
-}
-
-public static System.Enum EnumMaskPopup(Rect position, string label, System.Enum selected, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(position, label, selected, out changedFlags, out changedToValue, style);
-        }
-
-    
-    [uei.ExcludeFromDocs]
-internal static System.Enum EnumMaskPopup (Rect position, string label, System.Enum selected, out int changedFlags, out bool changedToValue) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskPopup ( position, label, selected, out changedFlags, out changedToValue, style );
-}
-
-internal static System.Enum EnumMaskPopup(Rect position, string label, System.Enum selected, out int changedFlags, out bool changedToValue, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            return EnumMaskPopup(position, EditorGUIUtility.TempContent(label), selected, out changedFlags, out changedToValue, style);
-        }
-
-    
-    [uei.ExcludeFromDocs]
-public static System.Enum EnumMaskPopup (Rect position, GUIContent label, System.Enum selected) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskPopup ( position, label, selected, style );
-}
-
-public static System.Enum EnumMaskPopup(Rect position, GUIContent label, System.Enum selected, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(position, label, selected, out changedFlags, out changedToValue, style);
-        }
-
-    
-    [uei.ExcludeFromDocs]
-internal static System.Enum EnumMaskPopup (Rect position, GUIContent label, System.Enum selected, out int changedFlags, out bool changedToValue) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskPopup ( position, label, selected, out changedFlags, out changedToValue, style );
-}
-
-internal static System.Enum EnumMaskPopup(Rect position, GUIContent label, System.Enum selected, out int changedFlags, out bool changedToValue, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            return EnumMaskPopupInternal(position, label, selected, out changedFlags, out changedToValue, style);
-        }
-
-    
     
     [uei.ExcludeFromDocs]
 public static int IntPopup (Rect position, int selectedValue, string[] displayedOptions, int[] optionValues) {
@@ -836,45 +784,6 @@ public static int MaskField (Rect position, int mask, string[] displayedOptions)
 public static int MaskField(Rect position, int mask, string[] displayedOptions, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
         {
             return MaskFieldInternal(position, mask, displayedOptions, style);
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public static System.Enum EnumMaskField (Rect position, GUIContent label, System.Enum enumValue) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskField ( position, label, enumValue, style );
-}
-
-public static System.Enum EnumMaskField(Rect position, GUIContent label, System.Enum enumValue, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            return EnumMaskFieldInternal(position, label, enumValue, style);
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public static System.Enum EnumMaskField (Rect position, string label, System.Enum enumValue) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskField ( position, label, enumValue, style );
-}
-
-public static System.Enum EnumMaskField(Rect position, string label, System.Enum enumValue, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            return EnumMaskFieldInternal(position, EditorGUIUtility.TempContent(label), enumValue, style);
-        }
-
-    
-    
-    [uei.ExcludeFromDocs]
-public static System.Enum EnumMaskField (Rect position, System.Enum enumValue) {
-    GUIStyle style = EditorStyles.popup;
-    return EnumMaskField ( position, enumValue, style );
-}
-
-public static System.Enum EnumMaskField(Rect position, System.Enum enumValue, [uei.DefaultValue("EditorStyles.popup")]  GUIStyle style )
-        {
-            return EnumMaskFieldInternal(position, enumValue, style);
         }
 
     

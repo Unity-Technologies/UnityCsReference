@@ -16,7 +16,6 @@ namespace UnityEditor
     {
         private static Texture2D iconKey;
         private static Texture2D iconCurve;
-        private static Texture2D iconNone;
 
 
         public static int GetPathAndTypeID(string path, Type type)

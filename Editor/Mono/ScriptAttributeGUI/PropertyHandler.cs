@@ -244,6 +244,31 @@ namespace UnityEditor
             return height;
         }
 
+        public bool CanCacheInspectorGUI(SerializedProperty property)
+        {
+            if (m_DecoratorDrawers != null &&
+                !isCurrentlyNested &&
+                m_DecoratorDrawers.Any(decorator => !decorator.CanCacheInspectorGUI()))
+                return false;
+
+            if (propertyDrawer != null)
+                return propertyDrawer.CanCacheInspectorGUISafe(property.Copy());
+
+            property = property.Copy();
+            SerializedProperty endProperty = property.GetEndProperty();
+            bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
+
+            // Loop through all child properties
+            while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
+            {
+                if (!ScriptAttributeUtility.GetHandler(property).CanCacheInspectorGUI(property))
+                    return false;
+                childrenAreExpanded = false;
+            }
+
+            return true;
+        }
+
         public void AddMenuItems(SerializedProperty property, GenericMenu menu)
         {
             if (contextMenuItems == null)

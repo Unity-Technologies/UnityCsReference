@@ -243,7 +243,6 @@ namespace UnityEditor
         const int sColliderTab = 3;
         const int sDefaultTab = sMappingTab;
 
-        private GameObject m_PrefabInstance;
         public GameObject prefab
         {
             get

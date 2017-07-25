@@ -9,9 +9,15 @@ namespace UnityEditorInternal
 {
     internal class FreeRotate
     {
+        static readonly Color s_DimmingColor = new Color(0f, 0f, 0f, 0.078f);
         private static Vector2 s_CurrentMousePosition;
 
         public static Quaternion Do(int id, Quaternion rotation, Vector3 position, float size)
+        {
+            return Do(id, rotation, position, size, true);
+        }
+
+        internal static Quaternion Do(int id, Quaternion rotation, Vector3 position, float size, bool drawCircle)
         {
             Vector3 worldPosition = Handles.matrix.MultiplyPoint(position);
             Matrix4x4 origMatrix = Handles.matrix;
@@ -97,13 +103,15 @@ namespace UnityEditorInternal
                     break;
                 case EventType.repaint:
                     Color temp = Color.white;
+                    var isHot = id == GUIUtility.hotControl;
+                    var isPreselected = id == HandleUtility.nearestControl && GUIUtility.hotControl == 0;
 
-                    if (id == GUIUtility.hotControl)
+                    if (isHot)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.selectedColor;
                     }
-                    else if (id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    else if (isPreselected)
                     {
                         temp = Handles.color;
                         Handles.color = Handles.preselectionColor;
@@ -111,10 +119,16 @@ namespace UnityEditorInternal
 
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
-                    Handles.DrawWireDisc(worldPosition, Camera.current.transform.forward, size);
+                    if (drawCircle)
+                        Handles.DrawWireDisc(worldPosition, Camera.current.transform.forward, size);
+                    if (isPreselected || isHot)
+                    {
+                        Handles.color = s_DimmingColor;
+                        Handles.DrawSolidDisc(worldPosition, Camera.current.transform.forward, size);
+                    }
                     Handles.matrix = origMatrix;
 
-                    if (id == GUIUtility.hotControl || id == HandleUtility.nearestControl && GUIUtility.hotControl == 0)
+                    if (isHot || isPreselected)
                         Handles.color = temp;
                     break;
             }

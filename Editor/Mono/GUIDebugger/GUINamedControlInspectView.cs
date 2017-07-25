@@ -57,11 +57,9 @@ namespace UnityEditor
             var instruction = m_NamedControlInstructions[listViewState.row];
 
             using (new EditorGUI.DisabledScope(true))
-            {
                 DrawInspectedRect(instruction.rect);
-                EditorGUILayout.TextField("SetNextControlName: ", instruction.name);
-                //EditorGUILayout.TextField("Id: ", "" + instruction.id);
-            }
+            DoSelectableInstructionDataField("Name", instruction.name);
+            DoSelectableInstructionDataField("ID", instruction.id.ToString());
         }
 
         internal override void OnSelectedInstructionChanged(int index)

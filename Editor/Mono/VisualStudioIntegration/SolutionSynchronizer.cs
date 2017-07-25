@@ -102,6 +102,10 @@ namespace UnityEditor.VisualStudioIntegration
         {
             string extension = Path.GetExtension(file);
 
+            // Exclude files coming from packages except if they are internalized.
+            if (AssetDatabase.IsPackagedAssetPath(file) && !AssetDatabase.IsInternalizedPackagedAssetPath(file))
+                return false;
+
             // Dll's are not scripts but still need to be included..
             if (extension == ".dll")
                 return true;
@@ -186,16 +190,18 @@ namespace UnityEditor.VisualStudioIntegration
             bool externalCodeAlreadyGeneratedProjects = AssetPostprocessingInternal.OnPreGeneratingCSProjectFiles();
             if (!externalCodeAlreadyGeneratedProjects)
             {
-                // Only synchronize islands that have associated source files
+                // Only synchronize islands that have associated source files and ones that we actually want in the project.
+                // This also filters out DLLs coming from .assembly.json files in packages.
                 IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
-                    Where(i => 0 < i._files.Length);
+                    Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
 
                 string otherAssetsProjectPart = GenerateAllAssetProjectPart();
                 var responseFileDefines = ScriptCompilerBase.GetResponseFileDefinesFromFile(MonoCSharpCompiler.ReponseFilename);
 
                 SyncSolution(islands);
-                foreach (MonoIsland island in RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()))
-                    SyncProject(island, otherAssetsProjectPart, responseFileDefines);
+                var allProjectIslands = RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()).ToList();
+                foreach (MonoIsland island in allProjectIslands)
+                    SyncProject(island, otherAssetsProjectPart, responseFileDefines, allProjectIslands);
 
                 if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                     WriteVSCodeSettingsFiles();
@@ -219,9 +225,9 @@ namespace UnityEditor.VisualStudioIntegration
             return projectBuilder.ToString();
         }
 
-        void SyncProject(MonoIsland island, string otherAssetsProjectPart, string[] additionalDefines)
+        void SyncProject(MonoIsland island, string otherAssetsProjectPart, string[] additionalDefines, List<MonoIsland> allProjectIslands)
         {
-            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), otherAssetsProjectPart, additionalDefines));
+            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), otherAssetsProjectPart, additionalDefines, allProjectIslands));
         }
 
         private static void SyncFileIfNotChanged(string filename, string newContents)
@@ -258,7 +264,7 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        string ProjectText(MonoIsland island, Mode mode, string allAssetsProject, string[] additionalDefines)
+        string ProjectText(MonoIsland island, Mode mode, string allAssetsProject, string[] additionalDefines, List<MonoIsland> allProjectIslands)
         {
             var projectBuilder = new StringBuilder(ProjectHeader(island, additionalDefines));
             var references = new List<string>();
@@ -270,6 +276,9 @@ namespace UnityEditor.VisualStudioIntegration
 
             foreach (string file in island._files)
             {
+                if (!ShouldFileBePartOfSolution(file))
+                    continue;
+
                 extension = Path.GetExtension(file).ToLower();
                 fullFile = Path.IsPathRooted(file) ?  file :  Path.Combine(_projectDirectory, file);
 
@@ -296,14 +305,19 @@ namespace UnityEditor.VisualStudioIntegration
                 match = scriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {
-                    var targetAssembly = EditorCompilationInterface.Instance.GetTargetAssemblyDetails(match.Groups["dllname"].Value);
-                    ScriptingLanguage targetLanguage = ScriptingLanguage.None;
-                    if (targetAssembly != null)
-                        targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), targetAssembly.Language.GetLanguageName(), true);
+                    var language = ScriptCompilers.GetLanguageFromExtension(island.GetExtensionOfSourceFiles());
+                    var targetLanguage = (ScriptingLanguage)Enum.Parse(typeof(ScriptingLanguage), language.GetLanguageName(), true);
                     if (mode == Mode.UnityScriptAsUnityProj || ScriptingLanguage.CSharp == targetLanguage)
                     {
-                        projectReferences.Add(match);
-                        continue;
+                        // Add a reference to a project except if it's a reference to a script assembly
+                        // that we are not generating a project for. This will be the case for assemblies
+                        // coming from .assembly.json files in non-internalized packages.
+                        var dllName = match.Groups["dllname"].Value;
+                        if (allProjectIslands.Any(i => Path.GetFileName(i._output) == dllName))
+                        {
+                            projectReferences.Add(match);
+                            continue;
+                        }
                     }
                 }
 

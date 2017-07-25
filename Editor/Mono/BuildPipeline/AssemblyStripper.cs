@@ -107,6 +107,7 @@ namespace UnityEditorInternal
         {
             var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
             var assemblies = GetUserAssemblies(rcr, managedAssemblyFolderPath);
+            assemblies.AddRange(Directory.GetFiles(managedAssemblyFolderPath, "I18N*.dll", SearchOption.TopDirectoryOnly));
             var assembliesToStrip = assemblies.ToArray();
 
             var searchDirs = new[]
@@ -165,6 +166,7 @@ namespace UnityEditorInternal
             {
                 blacklists = blacklists.Concat(new[] {
                     WriteMethodsToPreserveBlackList(stagingAreaData, rcr, platformProvider.target),
+                    WriteUnityEngineBlackList(stagingAreaData),
                     MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(stagingAreaData, managedAssemblyFolderPath, rcr)
                 });
             }
@@ -265,6 +267,16 @@ namespace UnityEditorInternal
             methodPerserveBlackList += stagingAreaData  + "/methods_pointedto_by_uievents.xml";
             File.WriteAllText(methodPerserveBlackList, GetMethodPreserveBlacklistContents(rcr, target));
             return methodPerserveBlackList;
+        }
+
+        private static string WriteUnityEngineBlackList(string stagingAreaData)
+        {
+            // UnityEngine.dll would be stripped, as it contains no referenced symbols, only type forwarders.
+            // Since we need those type forwarders, we generate blacklist to preserve the assembly (but no members).
+            var unityEngineBlackList = Path.IsPathRooted(stagingAreaData) ? "" : Directory.GetCurrentDirectory() + "/";
+            unityEngineBlackList += stagingAreaData  + "/UnityEngine.xml";
+            File.WriteAllText(unityEngineBlackList, "<linker><assembly fullname=\"UnityEngine\" preserve=\"nothing\"/></linker>");
+            return unityEngineBlackList;
         }
 
         private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr, BuildTarget target)

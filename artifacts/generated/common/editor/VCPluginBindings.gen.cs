@@ -17,10 +17,9 @@ namespace UnityEditor.VersionControl
 public sealed partial class ConfigField
 {
     
+            #pragma warning disable 169
             IntPtr m_thisDummy;
             string m_guid;
-    
-    
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -74,10 +73,10 @@ public sealed partial class ConfigField
 
 public sealed partial class Plugin
 {
-    IntPtr m_thisDummy;
+    
+            #pragma warning disable 169
+            IntPtr m_thisDummy;
             string m_guid;
-    
-    
     
     
             internal Plugin() {}

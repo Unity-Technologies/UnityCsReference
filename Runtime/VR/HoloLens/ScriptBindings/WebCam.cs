@@ -319,6 +319,11 @@ namespace UnityEngine.XR.WSA.WebCam
                 throw new ArgumentException("The specified directory does not exist.", "filename");
             }
 
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(filename);
+            if (fileInfo.Exists && fileInfo.IsReadOnly)
+            {
+                throw new ArgumentException("Cannot write to the file because it is read-only.", "filename");
+            }
 
             StartRecordingVideoToDisk_Internal(m_NativePtr, filename, onStartedRecordingVideoCallback);
         }
@@ -577,6 +582,11 @@ namespace UnityEngine.XR.WSA.WebCam
                 throw new ArgumentException("The specified directory does not exist.", "filename");
             }
 
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(filename);
+            if (fileInfo.Exists && fileInfo.IsReadOnly)
+            {
+                throw new ArgumentException("Cannot write to the file because it is read-only.", "filename");
+            }
 
             CapturePhotoToDisk_Internal(m_NativePtr, filename, (int)fileOutputFormat, onCapturedPhotoToDiskCallback);
         }
@@ -651,6 +661,7 @@ namespace UnityEngine.XR.WSA.WebCam
     [MovedFrom("UnityEngine.VR.WSA.WebCam")]
     public sealed partial class PhotoCaptureFrame : IDisposable
     {
+        #pragma warning disable 169
         private IntPtr m_NativePtr;
 
         public int dataLength

@@ -246,6 +246,11 @@ namespace UnityEditor
 
             foreach (var light in lights)
                 light.enabled = true;
+
+            var oldProbe = RenderSettings.ambientProbe;
+            Unsupported.SetOverrideRenderSettings(previewScene.scene);
+            // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
+            RenderSettings.ambientProbe = oldProbe;
         }
 
         public float GetScaleFactor(float width, float height)
@@ -272,6 +277,8 @@ namespace UnityEditor
 
         public Texture EndPreview()
         {
+            Unsupported.RestoreOverrideRenderSettings();
+
             m_SavedState.Restore();
             FinishFrame();
             return m_RenderTexture;
@@ -298,6 +305,8 @@ namespace UnityEditor
 
         public Texture2D EndStaticPreview()
         {
+            Unsupported.RestoreOverrideRenderSettings();
+
             var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
 
             GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
@@ -445,14 +454,10 @@ namespace UnityEditor
             foreach (var light in lights)
                 light.enabled = true;
 
-            var oldProbe = RenderSettings.ambientProbe;
-            Unsupported.SetOverrideRenderSettings(previewScene.scene);
-            RenderSettings.ambientProbe = oldProbe;
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
             Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
 
             float saveFieldOfView = camera.fieldOfView;
-
 
             if (updatefov)
             {
@@ -466,7 +471,6 @@ namespace UnityEditor
 
             camera.fieldOfView = saveFieldOfView;
             Unsupported.useScriptableRenderPipeline = oldAllowPipes;
-            Unsupported.RestoreOverrideRenderSettings();
         }
     }
 

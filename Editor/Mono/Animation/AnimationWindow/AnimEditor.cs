@@ -40,7 +40,6 @@ namespace UnityEditor
 
         [System.NonSerialized] private Rect m_Position;
         [System.NonSerialized] private bool m_TriggerFraming;
-        [System.NonSerialized] private bool m_StylesInitialized;
         [System.NonSerialized] private bool m_Initialized;
 
         private float hierarchyWidth { get { return m_HorizontalSplitter.realSizes[0]; } }

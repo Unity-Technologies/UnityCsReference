@@ -262,9 +262,7 @@ namespace UnityEditor
         static Material s_DeferredOverlayMaterial;
         static Shader s_ShowOverdrawShader;
         static Shader s_ShowMipsShader;
-        static Shader s_ShowLightmapsShader;
         static Shader s_AuraShader;
-        static Shader s_GrayScaleShader;
         static Texture2D s_MipColorsTexture;
 
         // Handle Dragging of stuff over scene view
@@ -842,8 +840,6 @@ namespace UnityEditor
 
         internal bool SceneViewIsRenderingHDR()
         {
-            if (UseSceneFiltering())
-                return false;
             return m_Camera != null && m_Camera.allowHDR;
         }
 
@@ -1561,6 +1557,22 @@ namespace UnityEditor
 
             CleanupCustomSceneLighting();
 
+            //Ensure that the target texture is clamped [0-1]
+            //This is needed because otherwise gizmo rendering gets all
+            //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
+            if (RenderTextureFormat.ARGBHalf == m_SceneTargetTexture.format)
+            {
+                var oldActive = RenderTexture.active;
+                var rtDesc = m_SceneTargetTexture.descriptor;
+                rtDesc.colorFormat = RenderTextureFormat.ARGB32;
+                rtDesc.depthBufferBits = 0;
+                var ldr = RenderTexture.GetTemporary(rtDesc);
+                Graphics.Blit(m_SceneTargetTexture, ldr);
+                Graphics.Blit(ldr, m_SceneTargetTexture);
+                RenderTexture.ReleaseTemporary(ldr);
+                RenderTexture.active = oldActive;
+            }
+
             if (!UseSceneFiltering())
             {
                 // Blit to final target RT in deferred mode
@@ -1956,7 +1968,8 @@ namespace UnityEditor
                             draggingLocked = DraggingLockedState.NotDragging;
                         break;
                     case (DraggingLockedState.NotDragging):
-                        Frame(bounds, true);
+                        // Once framed, we only need to lock position rather than all the parameters Frame() sets
+                        m_Position.value = bounds.center;
                         break;
                 }
             }
@@ -2103,6 +2116,9 @@ namespace UnityEditor
                     break;
                 case Tool.Rect:
                     RectTool.OnGUI(this);
+                    break;
+                case Tool.Transform:
+                    TransformTool.OnGUI(this);
                     break;
             }
 
@@ -2328,7 +2344,7 @@ namespace UnityEditor
             return Frame(bounds, EditorApplication.isPlaying);
         }
 
-        public bool Frame(Bounds bounds, bool instant)
+        public bool Frame(Bounds bounds, bool instant = true)
         {
             float newSize = bounds.extents.magnitude * 1.5f;
             if (newSize == Mathf.Infinity)

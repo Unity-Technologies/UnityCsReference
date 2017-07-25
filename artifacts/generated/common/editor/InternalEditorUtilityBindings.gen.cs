@@ -243,6 +243,10 @@ public enum HierarchyDropMode
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool HasAdvancedLicenseOnBuildTarget (BuildTarget target) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool IsMobilePlatform (BuildTarget target) ;
+
     public static Rect GetBoundsOfDesktopAtPoint (Vector2 pos) {
         Rect result;
         INTERNAL_CALL_GetBoundsOfDesktopAtPoint ( ref pos, out result );
@@ -611,13 +615,22 @@ public enum HierarchyDropMode
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_TransformBounds (ref Bounds b, Transform t, out Bounds value);
-    public static void SetCustomLighting (Light[] lights, Color ambient) {
-        INTERNAL_CALL_SetCustomLighting ( lights, ref ambient );
+    public static void SetCustomLightingInternal (Light[] lights, Color ambient) {
+        INTERNAL_CALL_SetCustomLightingInternal ( lights, ref ambient );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetCustomLighting (Light[] lights, ref Color ambient);
+    private extern static void INTERNAL_CALL_SetCustomLightingInternal (Light[] lights, ref Color ambient);
+    public static void SetCustomLighting(Light[] lights, Color ambient)
+        {
+            if (lights == null)
+                throw new System.ArgumentNullException("lights");
+
+            SetCustomLightingInternal(lights, ambient);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void ClearSceneLighting () ;

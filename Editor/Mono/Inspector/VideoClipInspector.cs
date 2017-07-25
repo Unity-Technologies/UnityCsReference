@@ -12,6 +12,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class VideoClipInspector : Editor
     {
+#pragma warning disable 649
         static readonly GUID kEmptyGUID;
 
         private VideoClip m_PlayingClip;

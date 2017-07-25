@@ -100,7 +100,7 @@ namespace UnityEditor
             DragAndDrop.StartDrag(title);
         }
 
-        public override bool DragElement(TreeViewItem targetItem, Rect targetItemRect, bool firstItem)
+        public override bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row)
         {
             // First ensure we are dragging AudioMixers (and not some other objects)
             var dragData = DragAndDrop.GetGenericData(k_AudioMixerDraggingID) as DragData;
@@ -133,7 +133,7 @@ namespace UnityEditor
             }
 
             // Normal handling when over dragging over items
-            return base.DragElement(targetItem, targetItemRect, firstItem);
+            return base.DragElement(targetItem, targetItemRect, row);
         }
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentNode, TreeViewItem targetNode, bool perform, DropPosition dragPos)
@@ -521,13 +521,11 @@ namespace UnityEditor
     internal class AudioMixersTreeView
     {
         private TreeViewController m_TreeView;
-        private int m_TreeViewKeyboardControlID;
         const int kObjectSelectorID = 1212;
         List<AudioMixerController> m_DraggedMixers;
 
         class Styles
         {
-            public GUIStyle optionsButton = "PaneOptions";
             public GUIContent header = new GUIContent("Mixers", "All mixers in the project are shown here. By default a mixer outputs to the AudioListener but mixers can also route their output to other mixers. Each mixer shows where it outputs (in parenthesis). To reroute a mixer simply drag the mixer upon another mixer and select a group from the popup.");
             public GUIContent addText = new GUIContent("+", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or if none is selected saved in the Assets folder.");
             public Texture2D audioMixerIcon = EditorGUIUtility.FindTexture("AudioMixerController Icon");

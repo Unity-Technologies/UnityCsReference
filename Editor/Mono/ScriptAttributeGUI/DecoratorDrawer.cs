@@ -24,5 +24,10 @@ namespace UnityEditor
         {
             return EditorGUI.kSingleLineHeight;
         }
+
+        public virtual bool CanCacheInspectorGUI()
+        {
+            return true;
+        }
     }
 }

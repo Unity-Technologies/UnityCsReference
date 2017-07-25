@@ -92,6 +92,16 @@ namespace UnityEditor
             }
         }
 
+        internal static int s_xRotateHandleHash = "xRotateHandleHash".GetHashCode();
+        internal static int s_yRotateHandleHash = "yRotateHandleHash".GetHashCode();
+        internal static int s_zRotateHandleHash = "zRotateHandleHash".GetHashCode();
+        internal static int s_cameraAxisRotateHandleHash = "cameraAxisRotateHandleHash".GetHashCode();
+        internal static int s_xyzRotateHandleHash = "xyzRotateHandleHash".GetHashCode();
+        internal static int s_xScaleHandleHash = "xScaleHandleHash".GetHashCode();
+        internal static int s_yScaleHandleHash = "yScaleHandleHash".GetHashCode();
+        internal static int s_zScaleHandleHash = "zScaleHandleHash".GetHashCode();
+        internal static int s_xyzScaleHandleHash = "xyzScaleHandleHash".GetHashCode();
+
         private static Color lineTransparency = new Color(1, 1, 1, 0.75f);
 
         internal const float kCameraViewLerpStart = 0.85f;
@@ -106,6 +116,21 @@ namespace UnityEditor
         public delegate void DrawCapFunction(int controlID, Vector3 position, Quaternion rotation, float size);
 
         public delegate float SizeFunction(Vector3 position);
+
+        static PrefColor[] s_AxisColor = { s_XAxisColor, s_YAxisColor, s_ZAxisColor };
+        static Vector3[] s_AxisVector = { Vector3.right, Vector3.up, Vector3.forward };
+
+        internal static Color s_DisabledHandleColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+
+        internal static Color GetColorByAxis(int axis)
+        {
+            return s_AxisColor[axis];
+        }
+
+        static Vector3 GetAxisVector(int axis)
+        {
+            return s_AxisVector[axis];
+        }
 
         private static bool BeginLineDrawing(Matrix4x4 matrix, bool dottedLines, int mode)
         {
@@ -143,7 +168,12 @@ namespace UnityEditor
 
         public static void DrawLine(Vector3 p1, Vector3 p2)
         {
-            if (!BeginLineDrawing(matrix, false, GL.LINES))
+            DrawLine(p1, p2, false);
+        }
+
+        internal static void DrawLine(Vector3 p1, Vector3 p2, bool dottedLine)
+        {
+            if (!BeginLineDrawing(matrix, dottedLine, GL.LINES))
                 return;
             GL.Vertex(p1);
             GL.Vertex(p2);
@@ -241,6 +271,16 @@ namespace UnityEditor
             Handles.DrawLine(points[3], points[8]);
         }
 
+        public static Quaternion Disc(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
+        {
+            return UnityEditorInternal.Disc.Do(id, rotation, position, axis, size, cutoffPlane, snap);
+        }
+
+        public static Quaternion FreeRotateHandle(int id, Quaternion rotation, Vector3 position, float size)
+        {
+            return UnityEditorInternal.FreeRotate.Do(id, rotation, position, size);
+        }
+
         // Make a 3D slider
         public static Vector3 Slider(Vector3 position, Vector3 direction)
         {
@@ -256,6 +296,11 @@ namespace UnityEditor
         public static Vector3 Slider(int controlID, Vector3 position, Vector3 direction, float size, CapFunction capFunction, float snap)
         {
             return UnityEditorInternal.Slider1D.Do(controlID, position, direction, size, capFunction, snap);
+        }
+
+        public static Vector3 Slider(int controlID, Vector3 position, Vector3 offset, Vector3 direction, float size, CapFunction capFunction, float snap)
+        {
+            return UnityEditorInternal.Slider1D.Do(controlID, position, offset, direction, direction, size, capFunction, snap);
         }
 
         [Obsolete("DrawCapFunction is obsolete. Use the version with CapFunction instead. Example: Change SphereCap to SphereHandleCap.")]
@@ -462,20 +507,25 @@ namespace UnityEditor
         // Draw an arrow like those used by the move tool.
         public static void ArrowHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
+            ArrowHandleCap(controlID, position, rotation, size, eventType, Vector3.zero);
+        }
+
+        internal static void ArrowHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType, Vector3 coneOffset)
+        {
             switch (eventType)
             {
                 case (EventType.Layout):
                 {
                     Vector3 direction = rotation * Vector3.forward;
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToLine(position, position + direction * size * .9f));
-                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position + direction * size, size * .2f));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToLine(position, position + (direction + coneOffset) * size * .9f));
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position + (direction + coneOffset) * size, size * .2f));
                     break;
                 }
                 case (EventType.Repaint):
                 {
                     Vector3 direction = rotation * Vector3.forward;
-                    ConeHandleCap(controlID, position + direction * size, Quaternion.LookRotation(direction), size * .2f, eventType);
-                    Handles.DrawLine(position, position + direction * size * .9f);
+                    ConeHandleCap(controlID, position + (direction + coneOffset) * size, Quaternion.LookRotation(direction), size * .2f, eventType);
+                    Handles.DrawLine(position, position + (direction + coneOffset) * size * .9f, false);
                     break;
                 }
             }

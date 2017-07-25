@@ -76,6 +76,39 @@ public sealed partial class ComputeShader : Object
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetVector (ComputeShader self, int nameID, ref Vector4 val);
+    public void SetVectorArray(string name, Vector4[] values)
+        {
+            SetVectorArray(Shader.PropertyToID(name), values);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetVectorArray (int nameID, Vector4[] values) ;
+
+    public void SetMatrix(string name, Matrix4x4 val)
+        {
+            SetMatrix(Shader.PropertyToID(name), val);
+        }
+    
+    
+    public void SetMatrix (int nameID, Matrix4x4 val) {
+        INTERNAL_CALL_SetMatrix ( this, nameID, ref val );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetMatrix (ComputeShader self, int nameID, ref Matrix4x4 val);
+    public void SetMatrixArray(string name, Matrix4x4[] values)
+        {
+            SetMatrixArray(Shader.PropertyToID(name), values);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetMatrixArray (int nameID, Matrix4x4[] values) ;
+
     public void SetFloats(string name, params float[] values)
         {
             Internal_SetFloats(Shader.PropertyToID(name), values);

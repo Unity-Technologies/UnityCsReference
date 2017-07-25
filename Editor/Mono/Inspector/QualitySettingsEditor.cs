@@ -6,12 +6,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Build;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
     [CustomEditor(typeof(QualitySettings))]
-    internal class QualitySettingsEditor : Editor
+    internal class QualitySettingsEditor : ProjectSettingsBaseEditor
     {
         private static class Styles
         {

@@ -27,10 +27,23 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent create = EditorGUIUtility.TextContent("|Create and assign a Particle System as sub emitter");
-
             public GUIContent inherit = EditorGUIUtility.TextContent("Inherit");
-            public string[] subEmitterTypeTexts = new string[] { "Birth", "Collision", "Death" };
-            public string[] propertyStrings = new string[] { "Color", "Size", "Rotation", "Lifetime" }; // Keep in sync with SubModule::InheritedProperties
+
+            public GUIContent[] subEmitterTypes = new GUIContent[]
+            {
+                EditorGUIUtility.TextContent("Birth"),
+                EditorGUIUtility.TextContent("Collision"),
+                EditorGUIUtility.TextContent("Lifetime")
+            };
+
+            // Keep in sync with SubModule::InheritedProperties
+            public string[] propertyTypes =
+            {
+                "Color",
+                "Size",
+                "Rotation",
+                "Lifetime"
+            };
         }
         private static Texts s_Texts;
 
@@ -47,6 +60,8 @@ namespace UnityEditor
             // Already initialized?
             if (m_SubEmitters != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_SubEmitters = GetProperty("subEmitters");
         }
@@ -199,9 +214,6 @@ namespace UnityEditor
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            if (s_Texts == null)
-                s_Texts = new Texts();
-
             // only allow sub-emitter editing in single edit mode
             if (m_ParticleSystemUI.multiEdit)
             {
@@ -248,7 +260,7 @@ namespace UnityEditor
             SerializedProperty type = subEmitterData.FindPropertyRelative("type");
             SerializedProperty properties = subEmitterData.FindPropertyRelative("properties");
 
-            GUIPopup(GUIContent.none, type, s_Texts.subEmitterTypeTexts, GUILayout.MaxWidth(80));
+            GUIPopup(GUIContent.none, type, s_Texts.subEmitterTypes, GUILayout.MaxWidth(80));
             GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(4));
             GUIObject(GUIContent.none, subEmitter);
             var olPlusStyle = new GUIStyle("OL Plus");
@@ -268,7 +280,7 @@ namespace UnityEditor
             {
                 GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(24));
             }
-            GUIMask(GUIContent.none, properties, s_Texts.propertyStrings, GUILayout.Width(100));
+            GUIMask(GUIContent.none, properties, s_Texts.propertyTypes, GUILayout.Width(100));
             GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(8));
 
             // add plus button to first element

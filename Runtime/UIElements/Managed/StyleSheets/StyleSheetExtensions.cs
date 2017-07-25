@@ -81,6 +81,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
 
             string path = sheet.ReadResourcePath(handle);
+
             if (!string.IsNullOrEmpty(path))
             {
                 T resource = loadResourceFunc(path, typeof(T)) as T;
@@ -91,7 +92,15 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 }
                 else
                 {
-                    Debug.LogWarning(string.Format("{0} resource not found for path: {1}", typeof(T).Name, path));
+                    // Load a stand-in picture to make it easier to identify which image element
+                    // is missing its picture (but only if the referenced asset is a texture).
+                    if (typeof(T) == typeof(Texture2D))
+                    {
+                        resource = loadResourceFunc("d_console.warnicon", typeof(T)) as T;
+                        Apply(resource, specificity, ref property);
+                    }
+
+                    Debug.LogWarning(string.Format("{0} resource/file not found for path: {1}", typeof(T).Name, path));
                 }
             }
         }

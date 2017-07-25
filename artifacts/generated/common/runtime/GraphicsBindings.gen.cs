@@ -2323,9 +2323,60 @@ public static void DrawTexture(Rect screenRect, Texture texture, Rect sourceRect
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void Internal_DrawTexture (ref Internal_DrawTextureArguments args) ;
 
+    [uei.ExcludeFromDocs]
+public static GPUFence CreateGPUFence () {
+    SynchronisationStage stage = SynchronisationStage.PixelProcessing;
+    return CreateGPUFence ( stage );
+}
+
+public static GPUFence CreateGPUFence( [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage )
+        {
+            GPUFence newFence = new GPUFence();
+            newFence.m_Ptr = Internal_CreateGPUFence(stage);
+            newFence.InitPostAllocation();
+            newFence.Validate();
+            return newFence;
+
+        }
+
+    
+    
+    private static IntPtr Internal_CreateGPUFence (SynchronisationStage stage) {
+        IntPtr result;
+        INTERNAL_CALL_Internal_CreateGPUFence ( stage, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Internal_CreateGPUFence (SynchronisationStage stage, out IntPtr value);
+    [uei.ExcludeFromDocs]
+public static void WaitOnGPUFence (GPUFence fence) {
+    SynchronisationStage stage = SynchronisationStage.VertexProcessing;
+    WaitOnGPUFence ( fence, stage );
+}
+
+public static void WaitOnGPUFence(GPUFence fence, [uei.DefaultValue("SynchronisationStage.VertexProcessing")]  SynchronisationStage stage )
+        {
+            fence.Validate();
+
+            if (fence.IsFencePending())
+                WaitOnGPUFence_Internal(fence.m_Ptr, stage);
+        }
+
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void WaitOnGPUFence_Internal (IntPtr fencePtr, SynchronisationStage stage) ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ExecuteCommandBuffer (UnityEngine.Rendering.CommandBuffer buffer) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void ExecuteCommandBufferAsync (UnityEngine.Rendering.CommandBuffer buffer, ComputeQueueType queueType) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

@@ -106,14 +106,13 @@ namespace UnityEngine.Experimental.UIElements
             GUIUtility.s_SkinMode = (int)container.contextType;
             GUIUtility.s_OriginalID = instanceID;
 
-
             Event.current = evt;
 
             // call AFTER setting current event
             if (s_BeginContainerCallback != null)
                 s_BeginContainerCallback(container);
 
-
+            GUI.enabled = container.enabled;
             GUILayoutUtility.BeginContainer(cache);
             GUIUtility.ResetGlobalState();
 
@@ -125,14 +124,12 @@ namespace UnityEngine.Experimental.UIElements
                 clippingRect = container.globalBound;
             }
 
-            var translate = Matrix4x4.TRS(new Vector3(container.layout.x, container.layout.y, 0.0f), Quaternion.identity, Vector3.one);
-            GUIClip.SetTransform(container.globalTransform * translate, clippingRect);
+            GUIClip.SetTransform(container.imguiTransform, clippingRect);
         }
 
         // End the 2D GUI.
         internal static void EndContainerGUI()
         {
-
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)
             {
@@ -239,10 +236,6 @@ namespace UnityEngine.Experimental.UIElements
         internal static Panel FindOrCreatePanel(int instanceId)
         {
             return FindOrCreatePanel(instanceId, GetGUIContextType());
-        }
-
-        internal static void BeginBuilder(VisualContainer w)
-        {
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditorInternal;
 using UnityEngine;
 
 using TierSettingsEditor            = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
@@ -16,7 +17,7 @@ using UnityEngine.Rendering;
 namespace UnityEditor
 {
     [CustomEditor(typeof(UnityEngine.Rendering.GraphicsSettings))]
-    internal class GraphicsSettingsInspector : Editor
+    internal class GraphicsSettingsInspector : ProjectSettingsBaseEditor
     {
         internal class Styles
         {

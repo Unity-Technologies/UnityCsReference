@@ -70,6 +70,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
+        public static void ClearStyleCache()
+        {
+            s_StyleCache.Clear();
+        }
+
         private class StyleContextHierarchyTraversal : HierarchyTraversal
         {
             private List<RuleRef> m_MatchedRules = new List<RuleRef>(capacity: 0);

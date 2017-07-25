@@ -21,7 +21,7 @@ public enum BuildTargetGroup
     
     Standalone = 1,
     
-    [System.Obsolete ("WebPlayer was removed in 5.4, consider using WebGL")]
+    [System.Obsolete ("WebPlayer was removed in 5.4, consider using WebGL", true)]
     WebPlayer = 2,
     
     [System.Obsolete ("Use iOS instead (UnityUpgradable) -> iOS", true)]

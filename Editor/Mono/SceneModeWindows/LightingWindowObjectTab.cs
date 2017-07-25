@@ -48,20 +48,13 @@ namespace UnityEditor
         int m_PreviousSelection;
         AnimBool m_ShowClampedSize = new AnimBool();
 
-        Editor m_LightEditor;
-        Editor m_LightmapParametersEditor;
-
         public void OnEnable(EditorWindow window)
         {
             m_ShowClampedSize.value = false;
             m_ShowClampedSize.valueChanged.AddListener(window.Repaint);
         }
 
-        public void OnDisable()
-        {
-            Object.DestroyImmediate(m_LightEditor);
-            Object.DestroyImmediate(m_LightmapParametersEditor);
-        }
+        public void OnDisable() {}
 
         public void ObjectPreview(Rect r)
         {

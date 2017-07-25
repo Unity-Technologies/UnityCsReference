@@ -1882,7 +1882,7 @@ namespace UnityEditor
                             splatPainter.target = m_SplatAlpha;
                             splatPainter.tool = selectedTool;
 
-                            m_Terrain.editorRenderFlags = TerrainRenderFlags.heightmap;
+                            m_Terrain.editorRenderFlags = TerrainRenderFlags.Heightmap;
                             splatPainter.Paint(uv.x, uv.y, m_SelectedSplat);
 
 
@@ -1924,7 +1924,7 @@ namespace UnityEditor
                             painter.targetHeight = m_TargetHeight;
                             painter.tool = selectedTool;
 
-                            m_Terrain.editorRenderFlags = TerrainRenderFlags.heightmap;
+                            m_Terrain.editorRenderFlags = TerrainRenderFlags.Heightmap;
 
                             if (selectedTool == TerrainTool.PaintHeight && Event.current.shift)
                                 painter.strength = -painter.strength;
@@ -1954,7 +1954,7 @@ namespace UnityEditor
                     if (selectedTool == TerrainTool.PaintTexture)
                         m_Terrain.terrainData.SetBasemapDirty(true);
 
-                    m_Terrain.editorRenderFlags = TerrainRenderFlags.all;
+                    m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
                     m_Terrain.ApplyDelayedHeightmapModification();
 
                     e.Use();

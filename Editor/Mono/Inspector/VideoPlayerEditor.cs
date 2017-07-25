@@ -45,6 +45,8 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Target Texture|RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and the used on other objects.");
             public GUIContent alphaContent =
                 EditorGUIUtility.TextContent("Alpha|A value less than 1.0 will reveal the content behind the video.");
+            public GUIContent camera3DLayout =
+                EditorGUIUtility.TextContent("3D Layout|Layout of 3D content in the source video.");
             public GUIContent audioOutputModeContent =
                 EditorGUIUtility.TextContent("Audio Output Mode|Where the audio in the movie will be output.");
             public GUIContent audioSourceContent =
@@ -117,6 +119,7 @@ namespace UnityEditor
         SerializedProperty m_TargetMaterialProperty;
         SerializedProperty m_AspectRatio;
         SerializedProperty m_TargetCameraAlpha;
+        SerializedProperty m_TargetCamera3DLayout;
         SerializedProperty m_AudioOutputMode;
         SerializedProperty m_ControlledAudioTrackCount;
         SerializedProperty m_EnabledAudioTracks;
@@ -165,6 +168,7 @@ namespace UnityEditor
             m_TargetMaterialProperty = serializedObject.FindProperty("m_TargetMaterialProperty");
             m_AspectRatio = serializedObject.FindProperty("m_AspectRatio");
             m_TargetCameraAlpha = serializedObject.FindProperty("m_TargetCameraAlpha");
+            m_TargetCamera3DLayout = serializedObject.FindProperty("m_TargetCamera3DLayout");
             m_AudioOutputMode = serializedObject.FindProperty("m_AudioOutputMode");
             m_ControlledAudioTrackCount = serializedObject.FindProperty("m_ControlledAudioTrackCount");
             m_EnabledAudioTracks = serializedObject.FindProperty("m_EnabledAudioTracks");
@@ -384,6 +388,8 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_TargetCamera, s_Styles.cameraContent);
                 EditorGUILayout.Slider(m_TargetCameraAlpha, 0.0f, 1.0f, s_Styles.alphaContent);
+                if (PlayerSettings.virtualRealitySupported)
+                    EditorGUILayout.PropertyField(m_TargetCamera3DLayout, s_Styles.camera3DLayout);
             }
             EditorGUILayout.EndFadeGroup();
 

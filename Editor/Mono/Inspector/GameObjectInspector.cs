@@ -520,11 +520,12 @@ namespace UnityEditor
             EditorGUI.showMixedValue = m_StaticEditorFlags.hasMultipleDifferentValues;
             int changedFlags;
             bool changedToValue;
-            EditorGUI.EnumMaskField(
+            EditorGUI.EnumFlagsField(
                 GUILayoutUtility.GetRect(GUIContent.none, s_Styles.staticDropdown, GUILayout.ExpandWidth(false)),
+                GUIContent.none,
                 GameObjectUtility.GetStaticEditorFlags(go),
-                s_Styles.staticDropdown,
-                out changedFlags, out changedToValue
+                out changedFlags, out changedToValue,
+                s_Styles.staticDropdown
                 );
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
@@ -908,7 +909,8 @@ namespace UnityEditor
                     DragAndDrop.AcceptDrag();
                     Selection.activeObject = dragObject;
                     HandleUtility.ignoreRaySnapObjects = null;
-                    SceneView.mouseOverWindow.Focus();
+                    if (SceneView.mouseOverWindow != null)
+                        SceneView.mouseOverWindow.Focus();
                     dragObject.name = uniqueName;
                     dragObject = null;
                     evt.Use();

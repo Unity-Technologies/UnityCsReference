@@ -576,22 +576,22 @@ namespace UnityEditor
             editorDragging.HandleDraggingToBottomArea(remainingRect, m_Tracker);
         }
 
+        private static bool HasLabel(Object target)
+        {
+            string assetPathForLabels = AssetDatabase.GetAssetPath(target);
+            return assetPathForLabels.StartsWith("assets", StringComparison.OrdinalIgnoreCase) && !Directory.Exists(assetPathForLabels);
+        }
+
         private Object[] GetInspectedAssets()
         {
             // We use this technique to support locking of the inspector. An inspector locks via an editor, so we need to use an editor to get the selection
             Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
-            if (assetEditor != null && assetEditor.targets.Length == 1)
-            {
-                string assetPathForLabels = AssetDatabase.GetAssetPath(assetEditor.target);
-                bool hasLabels = assetPathForLabels.ToLower().StartsWith("assets") && !Directory.Exists(assetPathForLabels);
-                if (hasLabels)
-                {
-                    return assetEditor.targets;
-                }
-            }
+            if (assetEditor != null && assetEditor.targets.Length == 1 && HasLabel(assetEditor.target))
+                return assetEditor.targets;
+
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.GetFiltered(typeof(Object), SelectionMode.Assets);
+            return Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Where(o => HasLabel(o)).ToArray();
         }
 
         private void DrawPreviewAndLabels()
@@ -1047,7 +1047,9 @@ namespace UnityEditor
             // inspector onGui starts, fetch ActiveEditorTrackers - this includes a MaterialEditor created with a canvasRenderer material
             // then, disabling a Mask component deletes this material
             // after that, either Active Editors are fetched again and the count is different OR the material is invalid and crashes the whole app
-            if (!target)
+            // The target is considered invalid if the MonoBehaviour is missing, to ensure that the missing MonoBehaviour field is drawn
+            // we only do not draw an editor if the target is invalid and it is not a MonoBehaviour. case: 917810
+            if (!target && target.GetType() != typeof(UnityEngine.MonoBehaviour))
                 return;
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
@@ -1171,7 +1173,11 @@ namespace UnityEditor
             EditorGUIUtility.ResetGUIState();
 
             Rect contentRect = new Rect();
-            using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
+            bool excludedClass = ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
+            if (excludedClass)
+                EditorGUILayout.HelpBox("The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
+
+            using (new EditorGUI.DisabledScope(!editor.IsEnabled() || excludedClass))
             {
                 var genericEditor = editor as GenericInspector;
                 if (genericEditor)

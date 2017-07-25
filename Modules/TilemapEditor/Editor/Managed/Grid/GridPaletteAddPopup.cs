@@ -19,6 +19,7 @@ namespace UnityEditor
             public static readonly GUIContent sizeLabel = EditorGUIUtility.TextContent("Cell Size");
         }
 
+#pragma warning disable 649
         private static long s_LastClosedTime;
         private string m_Name = "New Palette";
         private static GridPaletteAddPopup s_Instance;

@@ -40,8 +40,6 @@ namespace UnityEditor
         private static double s_FoldoutDestTime;
         private static int s_DragUpdatedOverID = 0;
 
-        private static bool s_WasBoldDefaultFont;
-
         private static int s_FoldoutHash = "Foldout".GetHashCode();
         private static int s_TagFieldHash = "s_TagFieldHash".GetHashCode();
         private static int s_PPtrHash = "s_PPtrHash".GetHashCode();
@@ -51,6 +49,7 @@ namespace UnityEditor
         private static int s_CurveHash = "s_CurveHash".GetHashCode();
         private static int s_LayerMaskField = "s_LayerMaskField".GetHashCode();
         private static int s_MaskField = "s_MaskField".GetHashCode();
+        private static int s_EnumFlagsField = "s_EnumFlagsField".GetHashCode();
         private static int s_GenericField = "s_GenericField".GetHashCode();
         private static int s_PopupHash = "EditorPopup".GetHashCode();
         private static int s_KeyEventFieldHash = "KeyEventField".GetHashCode();
@@ -2609,30 +2608,23 @@ namespace UnityEditor
         // Make an enum popup selection field.
         private static System.Enum EnumPopupInternal(Rect position, GUIContent label, System.Enum selected, GUIStyle style)
         {
-            System.Type _enum = selected.GetType();
-            if (!_enum.IsEnum)
+            System.Type enumType = selected.GetType();
+            if (!enumType.IsEnum)
             {
-                throw new Exception("parameter _enum must be of type System.Enum");
+                throw new ArgumentException("Parameter selected must be of type System.Enum", "selected");
             }
             // sa and values are sorted in the same order
-            System.Enum[] values = System.Enum.GetValues(_enum).Cast<System.Enum>().ToArray();
-            string[] sa = System.Enum.GetNames(_enum);
+            int[] values;
+            String[] names = GetNonObsoleteEnumNames(enumType, out values);
+            int i = System.Array.IndexOf(values, Convert.ToInt32(selected));
+            i = Popup(position, label, i, EditorGUIUtility.TempContent(names.Select(x => ObjectNames.NicifyVariableName(x)).ToArray()), style);
 
-            int i = System.Array.IndexOf(values, selected);
-            i = Popup(position, label, i, EditorGUIUtility.TempContent(sa.Select(x => ObjectNames.NicifyVariableName(x)).ToArray()), style);
-
-            if (i < 0 || i >= sa.Length)
+            if (i < 0 || i >= names.Length)
             {
                 return selected;
             }
 
-            return values[i];
-        }
-
-        // Make an enum mask popup selection field.
-        private static System.Enum EnumMaskPopupInternal(Rect position, GUIContent label, System.Enum selected, out int changedFlags, out bool changedToValue, GUIStyle style)
-        {
-            return EnumMaskField(position, label, selected, style, out changedFlags, out changedToValue);
+            return IntToEnumFlags(enumType, values[i]);
         }
 
         /// *listonly*
@@ -3026,6 +3018,39 @@ namespace UnityEditor
             return layer;
         }
 
+        // Get names of enum members that are not obsolete
+        internal static String[] GetNonObsoleteEnumNames(Type enumType)
+        {
+            var allNames = Enum.GetNames(enumType);
+            var validIndices = GetNonObsoleteEnumIndices(enumType, allNames);
+            var count = validIndices.Length;
+            String[] names = new String[count];
+            for (int i = 0; i < count; i++)
+                names[i] = allNames[validIndices[i]];
+            return names;
+        }
+
+        internal static String[] GetNonObsoleteEnumNames(Type enumType, out int[] values)
+        {
+            var allNames = Enum.GetNames(enumType);
+            var validIndices = GetNonObsoleteEnumIndices(enumType, allNames);
+            var count = validIndices.Length;
+            String[] names = new String[count];
+            var allValues = Enum.GetValues(enumType);
+            values = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = allNames[validIndices[i]];
+                values[i] = (int)allValues.GetValue(validIndices[i]);
+            }
+            return names;
+        }
+
+        internal static int[] GetNonObsoleteEnumIndices(Type enumType, String[] names)
+        {
+            return Enumerable.Range(0, names.Length).Where(index => (enumType.GetField(names[index]).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0)).ToArray();
+        }
+
         /// *listonly*
         internal static int MaskFieldInternal(Rect position, GUIContent label, int mask, string[] displayedOptions, GUIStyle style)
         {
@@ -3048,71 +3073,54 @@ namespace UnityEditor
             return MaskFieldGUI.DoMaskField(IndentedRect(position), id, mask, displayedOptions, style);
         }
 
-        /// *listonly*
-        internal static System.Enum EnumMaskFieldInternal(Rect position, GUIContent label, System.Enum enumValue, GUIStyle style)
+        public static Enum EnumFlagsField(Rect position, Enum enumValue)
         {
-            System.Type _enum = enumValue.GetType();
-            if (!_enum.IsEnum)
-            {
-                throw new Exception("parameter _enum must be of type System.Enum");
-            }
-
-            var id = GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position);
-            var position2 = EditorGUI.PrefixLabel(position, id, label);
-            position.xMax = position2.x;
-
-            var names = Enum.GetNames(enumValue.GetType()).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
-
-            int flags = MaskFieldGUI.DoMaskField(position2, id, Convert.ToInt32(enumValue), names, style);
-            return EnumFlagsToInt(_enum, flags);
+            return EnumFlagsField(position, enumValue, EditorStyles.popup);
         }
 
-        /// *listonly*
-        internal static System.Enum EnumMaskFieldInternal(Rect position, System.Enum enumValue, GUIStyle style)
+        public static Enum EnumFlagsField(Rect position, Enum enumValue, GUIStyle style)
         {
-            System.Type _enum = enumValue.GetType();
-            if (!_enum.IsEnum)
-            {
-                throw new Exception("parameter _enum must be of type System.Enum");
-            }
-
-            var names = Enum.GetNames(enumValue.GetType()).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
-            int flags = MaskFieldGUI.DoMaskField(
-                    IndentedRect(position),
-                    GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position),
-                    Convert.ToInt32(enumValue),
-                    names, style);
-            return EnumFlagsToInt(_enum, flags);
+            return EnumFlagsField(position, GUIContent.none, enumValue, style);
         }
 
-        /// *listonly*
-        internal static System.Enum EnumMaskField(Rect position, GUIContent label, System.Enum enumValue, GUIStyle style, out int changedFlags, out bool changedToValue)
+        public static Enum EnumFlagsField(Rect position, string label, Enum enumValue)
         {
-            return DoEnumMaskField(position, label, enumValue, style, out changedFlags, out changedToValue);
+            return EnumFlagsField(position, label, enumValue, EditorStyles.popup);
+        }
+
+        public static Enum EnumFlagsField(Rect position, string label, Enum enumValue, GUIStyle style)
+        {
+            return EnumFlagsField(position, EditorGUIUtility.TempContent(label), enumValue, style);
+        }
+
+        public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue)
+        {
+            return EnumFlagsField(position, label, enumValue, EditorStyles.popup);
+        }
+
+        public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, GUIStyle style)
+        {
+            int changedFlags;
+            bool changedToValue;
+            return EnumFlagsField(position, label, enumValue, out changedFlags, out changedToValue, style);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.
-        internal static System.Enum EnumMaskField(Rect position, System.Enum enumValue, GUIStyle style, out int changedFlags, out bool changedToValue)
+        internal static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, out int changedFlags, out bool changedToValue, GUIStyle style)
         {
-            return DoEnumMaskField(position, GUIContent.none, enumValue, style, out changedFlags, out changedToValue);
-        }
+            var enumType = enumValue.GetType();
+            if (!enumType.IsEnum)
+                throw new ArgumentException("Parameter enumValue must be of type System.Enum", "enumValue");
+            if (Enum.GetUnderlyingType(enumType) != typeof(int))
+                throw new ArgumentException("Underlying type of parameter enumValue must be int", "enumValue");
 
-        private static System.Enum DoEnumMaskField(Rect position, GUIContent label, System.Enum enumValue, GUIStyle style, out int changedFlags, out bool changedToValue)
-        {
-            System.Type _enum = enumValue.GetType();
-            if (!_enum.IsEnum)
-            {
-                throw new Exception("parameter _enum must be of type System.Enum");
-            }
+            var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
+            position = PrefixLabel(position, id, label);
 
-            var id = GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position);
-            var names = Enum.GetNames(enumValue.GetType()).Select(x => ObjectNames.NicifyVariableName(x)).ToArray();
-            int flags = MaskFieldGUI.DoMaskField(
-                    PrefixLabel(position, id, label),
-                    id,
-                    Convert.ToInt32(enumValue),
-                    names, style, out changedFlags, out changedToValue);
-            return EnumFlagsToInt(_enum, flags);
+            int[] values;
+            var names = GetNonObsoleteEnumNames(enumType, out values).Select(ObjectNames.NicifyVariableName).ToArray();
+            var flagsInt = MaskFieldGUI.DoMaskField(position, id, Convert.ToInt32(enumValue), names, values, style, out changedFlags, out changedToValue);
+            return IntToEnumFlags(enumType, flagsInt);
         }
 
         public static void ObjectField(Rect position, SerializedProperty property)
@@ -3429,8 +3437,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z field - not public (use PropertyField instead)
@@ -3440,8 +3448,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z and W field - not public (use PropertyField instead)
@@ -3451,8 +3459,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 4);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZWLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZWLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y, Z & W field for entering a [[Vector4]].
@@ -3527,8 +3535,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 2);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
         }
 
         // Make an X, Y and Z int field for entering a [[Vector3Int]].
@@ -3571,8 +3579,8 @@ namespace UnityEditor
             position = MultiFieldPrefixLabel(position, id, label, 3);
             position.height = kSingleLineHeight;
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3628,11 +3636,11 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur);
+            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3684,11 +3692,11 @@ namespace UnityEditor
             position.height = kSingleLineHeight;
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYLabels, cur);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYLabels, cur, PropertyVisibility.All);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
 
-            MultiPropertyField(position, s_WHLabels, cur);
+            MultiPropertyField(position, s_WHLabels, cur, PropertyVisibility.All);
         }
 
         private static Rect DrawBoundsFieldLabelsAndAdjustPositionForValues(Rect position, bool drawOutside, GUIContent firstContent, GUIContent secondContent)
@@ -3759,12 +3767,12 @@ namespace UnityEditor
             position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_CenterLabel, s_ExtentLabel);
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
-            cur.NextVisible(true);
+            cur.Next(true);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         /// *listonly*
@@ -3817,12 +3825,12 @@ namespace UnityEditor
             position = DrawBoundsFieldLabelsAndAdjustPositionForValues(position, EditorGUIUtility.wideMode && hasLabel, s_PositionLabel, s_SizeLabel);
 
             SerializedProperty cur = property.Copy();
-            cur.NextVisible(true);
-            cur.NextVisible(true);
-            MultiPropertyField(position, s_XYZLabels, cur);
-            cur.NextVisible(true);
+            cur.Next(true);
+            cur.Next(true);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
+            cur.Next(true);
             position.y += kSingleLineHeight + kVerticalSpacingMultiField;
-            MultiPropertyField(position, s_XYZLabels, cur);
+            MultiPropertyField(position, s_XYZLabels, cur, PropertyVisibility.All);
         }
 
         public static void MultiFloatField(Rect position, GUIContent label, GUIContent[] subLabels, float[] values)
@@ -3891,10 +3899,21 @@ namespace UnityEditor
 
         public static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator)
         {
-            MultiPropertyField(position, subLabels, valuesIterator, kMiniLabelW, null);
+            MultiPropertyField(position, subLabels, valuesIterator, PropertyVisibility.OnlyVisible);
         }
 
-        internal static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, float labelWidth, bool[] disabledMask)
+        internal enum PropertyVisibility
+        {
+            All,
+            OnlyVisible
+        }
+
+        private static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility)
+        {
+            MultiPropertyField(position, subLabels, valuesIterator, visibility, kMiniLabelW, null);
+        }
+
+        internal static void MultiPropertyField(Rect position, GUIContent[] subLabels, SerializedProperty valuesIterator, PropertyVisibility visibility, float labelWidth, bool[] disabledMask)
         {
             int eCount = subLabels.Length;
             float w = (position.width - (eCount - 1) * kSpacingSubLabel) / eCount;
@@ -3912,7 +3931,17 @@ namespace UnityEditor
                 if (disabledMask != null)
                     EndDisabled();
                 nr.x += w + kSpacingSubLabel;
-                valuesIterator.NextVisible(false);
+
+                switch (visibility)
+                {
+                    case PropertyVisibility.All:
+                        valuesIterator.Next(false);
+                        break;
+
+                    case PropertyVisibility.OnlyVisible:
+                        valuesIterator.NextVisible(false);
+                        break;
+                }
             }
             EditorGUIUtility.labelWidth = t;
             EditorGUI.indentLevel = l;
@@ -5108,7 +5137,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
-            GUIDebugger.LogBeginProperty(property.propertyPath, totalPosition);
+            var targetObjectTypeName = property.serializedObject.targetObject != null ?
+                property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
+            GUIDebugger.LogBeginProperty(targetObjectTypeName, property.propertyPath, totalPosition);
             showMixedValue = property.hasMultipleDifferentValues;
 
             if (property.isAnimated)
@@ -5455,6 +5486,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal static float GetPropertyHeightInternal(SerializedProperty property, GUIContent label, bool includeChildren)
         {
             return ScriptAttributeUtility.GetHandler(property).GetHeight(property, label, includeChildren);
+        }
+
+        public static bool CanCacheInspectorGUI(SerializedProperty property)
+        {
+            return ScriptAttributeUtility.GetHandler(property).CanCacheInspectorGUI(property);
         }
 
         internal static bool HasVisibleChildFields(SerializedProperty property)
@@ -5857,7 +5893,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return false;
         }
 
-        static System.Enum EnumFlagsToInt(System.Type type, int value)
+        static System.Enum IntToEnumFlags(System.Type type, int value)
         {
             // Yes, going through a string seems to be the only way to go from a flags int to an enum value
             return Enum.Parse(type, value.ToString()) as System.Enum;
@@ -6774,63 +6810,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         /// *listonly*
-        public static System.Enum EnumMaskPopup(string label, System.Enum selected, params GUILayoutOption[] options)
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(EditorGUIUtility.TempContent(label), selected, out changedFlags, out changedToValue, options);
-        }
-
-        /// *listonly*
-        public static System.Enum EnumMaskPopup(string label, System.Enum selected, GUIStyle style, params GUILayoutOption[] options)
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(EditorGUIUtility.TempContent(label), selected, out changedFlags, out changedToValue, style, options);
-        }
-
-        /// *listonly*
-        public static System.Enum EnumMaskPopup(GUIContent label, System.Enum selected, params GUILayoutOption[] options)
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(label, selected, out changedFlags, out changedToValue, options);
-        }
-
-        // Make an enum popup selection field for a bitmask.
-        public static System.Enum EnumMaskPopup(GUIContent label, System.Enum selected, GUIStyle style, params GUILayoutOption[] options)
-        {
-            int changedFlags;
-            bool changedToValue;
-            return EnumMaskPopup(label, selected, out changedFlags, out changedToValue, style, options);
-        }
-
-        /// *listonly*
-        internal static System.Enum EnumMaskPopup(string label, System.Enum selected, out int changedFlags, out bool changedToValue, params GUILayoutOption[] options)
-        {
-            return EnumMaskPopup(EditorGUIUtility.TempContent(label), selected, out changedFlags, out changedToValue, options);
-        }
-
-        /// *listonly*
-        internal static System.Enum EnumMaskPopup(string label, System.Enum selected, out int changedFlags, out bool changedToValue, GUIStyle style, params GUILayoutOption[] options)
-        {
-            return EnumMaskPopup(EditorGUIUtility.TempContent(label), selected, out changedFlags, out changedToValue, style, options);
-        }
-
-        /// *listonly*
-        internal static System.Enum EnumMaskPopup(GUIContent label, System.Enum selected, out int changedFlags, out bool changedToValue, params GUILayoutOption[] options)
-        {
-            return EnumMaskPopup(label, selected, out changedFlags, out changedToValue, EditorStyles.popup, options);
-        }
-
-        // Make an enum popup selection field for a bitmask.
-        internal static System.Enum EnumMaskPopup(GUIContent label, System.Enum selected, out int changedFlags, out bool changedToValue, GUIStyle style, params GUILayoutOption[] options)
-        {
-            Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumMaskPopup(r, label, selected, out changedFlags, out changedToValue, style);
-        }
-
-        /// *listonly*
         public static int IntPopup(int selectedValue, string[] displayedOptions, int[] optionValues, params GUILayoutOption[] options)
         {
             return IntPopup(selectedValue, displayedOptions, optionValues, EditorStyles.popup, options);
@@ -7019,46 +6998,36 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return EditorGUI.MaskField(r, mask, displayedOptions, EditorStyles.popup);
         }
 
-        /// *listonly*
-        public static System.Enum EnumMaskField(GUIContent label, System.Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(Enum enumValue, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumMaskField(r, label, enumValue, style);
+            return EnumFlagsField(enumValue, EditorStyles.popup, options);
         }
 
-        /// *listonly*
-        public static System.Enum EnumMaskField(string label, System.Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumMaskField(r, label, enumValue, style);
+            var position = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.EnumFlagsField(position, enumValue, style);
         }
 
-        /// *listonly*
-        public static System.Enum EnumMaskField(GUIContent label, System.Enum enumValue, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(string label, Enum enumValue, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup, options);
-            return EditorGUI.EnumMaskField(r, label, enumValue, EditorStyles.popup);
+            return EnumFlagsField(label, enumValue, EditorStyles.popup, options);
         }
 
-        /// *listonly*
-        public static System.Enum EnumMaskField(string label, System.Enum enumValue, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(string label, Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup, options);
-            return EditorGUI.EnumMaskField(r, label, enumValue, EditorStyles.popup);
+            return EnumFlagsField(EditorGUIUtility.TempContent(label), enumValue, style, options);
         }
 
-        /// *listonly*
-        public static System.Enum EnumMaskField(System.Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(GUIContent label, Enum enumValue, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumMaskField(r, enumValue, style);
+            return EnumFlagsField(label, enumValue, EditorStyles.popup, options);
         }
 
-        // Make a field for enum based masks.
-        public static System.Enum EnumMaskField(System.Enum enumValue, params GUILayoutOption[] options)
+        public static Enum EnumFlagsField(GUIContent label, Enum enumValue, GUIStyle style, params GUILayoutOption[] options)
         {
-            var r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.popup, options);
-            return EditorGUI.EnumMaskField(r, enumValue, EditorStyles.popup);
+            var position = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.EnumFlagsField(position, label, enumValue, style);
         }
 
         [System.Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]

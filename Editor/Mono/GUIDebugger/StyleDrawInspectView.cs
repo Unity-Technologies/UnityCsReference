@@ -88,15 +88,23 @@ namespace UnityEditor
         internal override void DoDrawSelectedInstructionDetails(int selectedInstructionIndex)
         {
             using (new EditorGUI.DisabledScope(true))
-            {
                 DrawInspectedRect(m_Instruction.rect);
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_CachedInstructionInfo.styleSerializedProperty, GUIContent.Temp("Style"), true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_CachedInstructionInfo.styleContainerSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                debuggerWindow.inspected.Repaint();
             }
 
-            DrawInspectedStyle();
-
-            using (new EditorGUI.DisabledScope(true))
+            GUILayout.Label(GUIContent.Temp("GUIContent"));
+            using (new EditorGUI.IndentLevelScope())
             {
-                DrawInspectedGUIContent();
+                DoSelectableInstructionDataField("Text", m_Instruction.usedGUIContent.text);
+                DoSelectableInstructionDataField("Tooltip", m_Instruction.usedGUIContent.tooltip);
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUILayout.ObjectField("Icon", m_Instruction.usedGUIContent.image, typeof(Texture2D), false);
             }
         }
 
@@ -153,27 +161,6 @@ namespace UnityEditor
                 m_CachedInstructionInfo = null;
 
                 debuggerWindow.ClearInstructionHighlighter();
-            }
-        }
-
-        void DrawInspectedGUIContent()
-        {
-            GUILayout.Label(GUIContent.Temp("GUIContent"));
-            EditorGUI.indentLevel++;
-            EditorGUILayout.TextField(m_Instruction.usedGUIContent.text);
-            EditorGUILayout.ObjectField(m_Instruction.usedGUIContent.image, typeof(Texture2D), false);
-            EditorGUI.indentLevel--;
-        }
-
-        void DrawInspectedStyle()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            EditorGUILayout.PropertyField(m_CachedInstructionInfo.styleSerializedProperty, GUIContent.Temp("Style"), true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_CachedInstructionInfo.styleContainerSerializedObject.ApplyModifiedPropertiesWithoutUndo();
-                debuggerWindow.inspected.Repaint();
             }
         }
 

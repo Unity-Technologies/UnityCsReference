@@ -387,8 +387,8 @@ namespace UnityEditor.IMGUI.Controls
                 case EventType.DragUpdated:
                 case EventType.DragPerform:
                 {
-                    bool firstItem = row == 0;
-                    if (dragging != null && dragging.DragElement(item, rect, firstItem))
+                    //bool firstItem = row == 0;
+                    if (dragging != null && dragging.DragElement(item, rect, row))
                         GUIUtility.hotControl = 0;
                 }
                 break;
@@ -737,7 +737,7 @@ namespace UnityEditor.IMGUI.Controls
                 case EventType.DragUpdated:
                     if (dragging != null && m_TotalRect.Contains(Event.current.mousePosition))
                     {
-                        dragging.DragElement(null, new Rect(), false);
+                        dragging.DragElement(null, new Rect(), -1);
                         Repaint();
                         Event.current.Use();
                     }
@@ -747,7 +747,7 @@ namespace UnityEditor.IMGUI.Controls
                     if (dragging != null && m_TotalRect.Contains(Event.current.mousePosition))
                     {
                         m_DragSelection.Clear();
-                        dragging.DragElement(null, new Rect(), false);
+                        dragging.DragElement(null, new Rect(), -1);
                         Repaint();
                         Event.current.Use();
                     }

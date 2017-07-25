@@ -28,7 +28,6 @@ namespace UnityEditor
         SerializedProperty m_SecondaryUVHardAngle;
         SerializedProperty m_SecondaryUVPackMargin;
         SerializedProperty m_NormalSmoothAngle;
-        SerializedProperty m_SplitTangentsAcrossSeams;
         SerializedProperty m_NormalImportMode;
         SerializedProperty m_NormalCalculationMode;
         SerializedProperty m_TangentImportMode;
@@ -39,6 +38,7 @@ namespace UnityEditor
         SerializedProperty m_ImportCameras;
         SerializedProperty m_ImportLights;
         SerializedProperty m_ImportVisibility;
+        SerializedProperty m_PreserveHierarchy;
 
         public ModelImporterModelEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
@@ -71,6 +71,7 @@ namespace UnityEditor
             m_KeepQuads = serializedObject.FindProperty("keepQuads");
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
             m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
+            m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
         }
 
         internal override void PreApply()
@@ -150,6 +151,7 @@ namespace UnityEditor
             public GUIContent ImportVisibility = EditorGUIUtility.TextContent("Import Visibility|Use visibility properties to enable or disable MeshRenderer components.");
             public GUIContent ImportCameras = EditorGUIUtility.TextContent("Import Cameras");
             public GUIContent ImportLights = EditorGUIUtility.TextContent("Import Lights");
+            public GUIContent PreserveHierarchy = EditorGUIUtility.TextContent("Preserve Hierarchy|Always create an explicit prefab root, even if the model only has a single root.");
             public GUIContent IsReadable = EditorGUIUtility.TextContent("Read/Write Enabled|Allow vertices and indices to be accessed from script.");
 
             public Styles()
@@ -223,6 +225,9 @@ namespace UnityEditor
 
             // Import Lights
             EditorGUILayout.PropertyField(m_ImportLights, styles.ImportLights);
+
+            // Preserve Hierarchy
+            EditorGUILayout.PropertyField(m_PreserveHierarchy, styles.PreserveHierarchy);
 
             // Swap uv channel
             EditorGUILayout.PropertyField(m_SwapUVChannels, styles.SwapUVChannels);

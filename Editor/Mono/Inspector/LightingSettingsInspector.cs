@@ -69,9 +69,6 @@ namespace UnityEditor
 
         static Styles s_Styles;
 
-        ZoomableArea m_ZoomablePreview;
-        GUIContent m_SelectedObjectPreviewTexture;
-        int m_PreviousSelection;
         bool m_ShowSettings = false;
         bool m_ShowChartingSettings = true;
         bool m_ShowLightmapSettings = true;

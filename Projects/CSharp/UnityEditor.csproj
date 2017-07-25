@@ -22,14 +22,14 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   <NoWarn>0169;0649;0626</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Boo.Lang">
@@ -190,6 +190,9 @@
 <Compile Include="..\..\Editor\Mono\AsyncHTTPClient.cs" >
 <Link>Editor\Mono\AsyncHTTPClient.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorGUI.EnumMaskField.deprecated.cs" >
+<Link>Editor\Mono\EditorGUI.EnumMaskField.deprecated.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs" >
 <Link>Editor\Mono\ProjectBrowser.cs</Link>
 </Compile>
@@ -340,6 +343,9 @@
 <Compile Include="..\..\Editor\Mono\BuildPlayerWindowBuildMethods.cs" >
 <Link>Editor\Mono\BuildPlayerWindowBuildMethods.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\AssetPipeline\AssetImporter.bindings.cs" >
+<Link>Editor\Mono\AssetPipeline\AssetImporter.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\AssetPipeline\LocalCacheServer.cs" >
 <Link>Editor\Mono\AssetPipeline\LocalCacheServer.cs</Link>
 </Compile>
@@ -363,6 +369,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetBuilder.cs" >
 <Link>Editor\Mono\StyleSheets\StyleSheetBuilder.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetAssetPostProcessor.cs" >
+<Link>Editor\Mono\StyleSheets\StyleSheetAssetPostProcessor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImporter.cs" >
 <Link>Editor\Mono\StyleSheets\StyleSheetImporter.cs</Link>
@@ -624,6 +633,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\EditorHandles\RotationHandle.cs" >
 <Link>Editor\Mono\EditorHandles\RotationHandle.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\EditorHandles\TransformHandle.cs" >
+<Link>Editor\Mono\EditorHandles\TransformHandle.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\EditorHandles\PositionHandle.cs" >
 <Link>Editor\Mono\EditorHandles\PositionHandle.cs</Link>
@@ -1242,6 +1254,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\Tools\TransformManipulator.cs" >
 <Link>Editor\Mono\GUI\Tools\TransformManipulator.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUI\Tools\Tools.cs" >
+<Link>Editor\Mono\GUI\Tools\Tools.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\FlexibleMenu\IFlexibleMenuItemProvider.cs" >
 <Link>Editor\Mono\GUI\FlexibleMenu\IFlexibleMenuItemProvider.cs</Link>
@@ -2077,6 +2092,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\TargetJoint2DEditor.cs" >
 <Link>Editor\Mono\Inspector\TargetJoint2DEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs" >
+<Link>Editor\Mono\Inspector\ProjectSettingsBaseEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditorGUIHelpers.cs" >
 <Link>Editor\Mono\Inspector\MaterialEditorGUIHelpers.cs</Link>
 </Compile>
@@ -2266,6 +2284,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\RenderSettingsInspector.cs" >
 <Link>Editor\Mono\Inspector\RenderSettingsInspector.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\TransformUtils.cs" >
+<Link>Editor\Mono\Inspector\TransformUtils.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Effector2DEditor.cs" >
 <Link>Editor\Mono\Inspector\Effector2DEditor.cs</Link>
 </Compile>
@@ -2389,6 +2410,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\SortingGroupEditor.cs" >
 <Link>Editor\Mono\Inspector\SortingGroupEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SkyboxProceduralShaderGUI.cs" >
+<Link>Editor\Mono\Inspector\SkyboxProceduralShaderGUI.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\TagManagerInspector.cs" >
 <Link>Editor\Mono\Inspector\TagManagerInspector.cs</Link>
 </Compile>
@@ -2433,6 +2457,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\PropertyDrawerCache.cs" >
 <Link>Editor\Mono\Inspector\PropertyDrawerCache.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SkyboxPanoramicShaderGUI.cs" >
+<Link>Editor\Mono\Inspector\SkyboxPanoramicShaderGUI.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioChorusFilterEditor.cs" >
 <Link>Editor\Mono\Inspector\AudioChorusFilterEditor.cs</Link>
@@ -2775,10 +2802,7 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\ProjectBrowser\SavedSearchFilter.cs" >
 <Link>Editor\Mono\ProjectBrowser\SavedSearchFilter.cs</Link>
-</Compile><Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs" >
-<Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\ActiveEditorTrackerBindings.gen.cs" >
+</Compile><Compile Include="..\..\artifacts\generated\common\editor\ActiveEditorTrackerBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\ActiveEditorTrackerBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\AnimationUtilityBindings.gen.cs" >
@@ -2792,9 +2816,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\AssetModificationProcessorBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\AssetModificationProcessorBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\AssetImporterBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\AssetImporterBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\AssetPostprocessorBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\AssetPostprocessorBindings.gen.cs</Link>
@@ -2951,9 +2972,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\GenericMenuBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\GenericMenuBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\ToolsBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\ToolsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\GUIViewBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\GUIViewBindings.gen.cs</Link>
@@ -3209,76 +3227,7 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\LightmapParametersBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\LightmapParametersBindings.gen.cs</Link>
-</Compile><Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemorySnapshot.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\MemorySnapshot.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryElementDataManager.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryElementDataManager.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\NetworkDetailStats.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\NetworkDetailStats.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\IProfilerWindowController.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\IProfilerWindowController.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedCallsView.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedCallsView.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryElement.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\Chart.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\Chart.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfiler.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfiler.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerChart.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerChart.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\AudioProfilerView.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\AudioProfilerView.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerInstrumentationPopup.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerInstrumentationPopup.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedView.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedView.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AIEditor\NavMeshBuilderBindings.gen.cs" >
+</Compile><Compile Include="..\..\artifacts\generated\common\modules\AIEditor\NavMeshBuilderBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\AIEditor\NavMeshBuilderBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\AIEditor\NavMeshVisualizationBindings.gen.cs" >
@@ -3349,6 +3298,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\Managed\CoreStats.cs" >
 <Link>Editor\Src\CloudServicesSettings\Managed\CoreStats.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Src\CloudServicesSettings\PackageUtils\ScriptBindings\PackageUtils.bindings.cs" >
+<Link>Editor\Src\CloudServicesSettings\PackageUtils\ScriptBindings\PackageUtils.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\CrashReporting\Managed\CrashReporting.cs" >
 <Link>Editor\Src\CloudServicesSettings\CrashReporting\Managed\CrashReporting.cs</Link>
@@ -3440,11 +3392,17 @@
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushEditorBase.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridBrushesDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridBrushesDropdown.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteClipboard.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintPaletteWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintTargetsDropdown.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPaintingState.cs</Link>
@@ -3463,6 +3421,9 @@
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalettes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridPalettesDropdown.cs" >
+<Link>Modules\TilemapEditor\Editor\Managed\Grid\GridPalettesDropdown.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\Grid\GridSelection.cs</Link>
@@ -3484,6 +3445,96 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\TilemapEditor\TilemapEditorBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\TilemapEditor\TilemapEditorBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\PanelDebug.cs" >
+<Link>Modules\UIElementsDebuggerEditor\PanelDebug.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\PanelPickerWindow.cs" >
+<Link>Modules\UIElementsDebuggerEditor\PanelPickerWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\PickingData.cs" >
+<Link>Modules\UIElementsDebuggerEditor\PickingData.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs" >
+<Link>Modules\UIElementsDebuggerEditor\UIElementsDebugger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\UxmlExporter.cs" >
+<Link>Modules\UIElementsDebuggerEditor\UxmlExporter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElementsDebuggerEditor\VisualTreeTreeView.cs" >
+<Link>Modules\UIElementsDebuggerEditor\VisualTreeTreeView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemorySnapshot.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\MemorySnapshot.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryElementDataManager.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryElementDataManager.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\NetworkDetailStats.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\NetworkDetailStats.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\IProfilerWindowController.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\IProfilerWindowController.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedCallsView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedCallsView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryElement.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\MemoryElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\Chart.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\Chart.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfiler.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfiler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerTreeView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerChart.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerChart.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\UISystem\UISystemProfilerThumbnailService.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\AudioProfilerView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\AudioProfilerView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerInstrumentationPopup.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerInstrumentationPopup.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedView.cs</Link>
+</Compile>
+<Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs" >
+<Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
 </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

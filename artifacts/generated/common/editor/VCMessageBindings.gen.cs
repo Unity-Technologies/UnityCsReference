@@ -18,9 +18,8 @@ namespace UnityEditor.VersionControl
 
 public sealed partial class Message
 {
+            #pragma warning disable 169
     IntPtr m_thisDummy;
-    
-    
     public enum Severity    
     {
         Data = 0,

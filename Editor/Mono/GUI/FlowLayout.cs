@@ -294,6 +294,7 @@ namespace UnityEditor
         {
             int           m_ID;
             GUISlideGroup m_Owner;
+#pragma warning disable 649
             internal Rect m_FinalRect;
             public void SetID(GUISlideGroup owner, int id)
             {

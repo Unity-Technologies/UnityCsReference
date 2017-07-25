@@ -312,6 +312,8 @@ namespace UnityEditor.U2D
 
                     // Packing an atlas might change platform settings in the process, reinitialize
                     SyncPlatformSettings();
+
+                    GUIUtility.ExitGUI();
                 }
             }
             else

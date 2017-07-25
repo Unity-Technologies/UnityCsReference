@@ -522,7 +522,7 @@ namespace UnityEditor
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             rect = PrefixLabel(rect, label);
-            return EditorGUI.EnumMaskField(rect, enumValue, ParticleSystemStyles.Get().popup);
+            return EditorGUI.EnumFlagsField(rect, enumValue, ParticleSystemStyles.Get().popup);
         }
 
         public static void GUIMask(GUIContent label, SerializedProperty intProp, string[] options, params GUILayoutOption[] layoutOptions)
@@ -540,12 +540,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
         }
 
-        public static int GUIPopup(string name, SerializedProperty intProp, string[] options, params GUILayoutOption[] layoutOptions)
-        {
-            return GUIPopup(GUIContent.Temp(name), intProp, options, layoutOptions);
-        }
-
-        public static int GUIPopup(GUIContent label, SerializedProperty intProp, string[] options, params GUILayoutOption[] layoutOptions)
+        public static int GUIPopup(GUIContent label, SerializedProperty intProp, GUIContent[] options, params GUILayoutOption[] layoutOptions)
         {
             EditorGUI.showMixedValue = intProp.hasMultipleDifferentValues;
 
@@ -553,7 +548,7 @@ namespace UnityEditor
             rect = PrefixLabel(rect, label);
 
             EditorGUI.BeginChangeCheck();
-            int newValue = EditorGUI.Popup(rect, null, intProp.intValue, EditorGUIUtility.TempContent(options), ParticleSystemStyles.Get().popup);
+            int newValue = EditorGUI.Popup(rect, null, intProp.intValue, options, ParticleSystemStyles.Get().popup);
             if (EditorGUI.EndChangeCheck())
                 intProp.intValue = newValue;
 
@@ -561,7 +556,7 @@ namespace UnityEditor
             return intProp.intValue;
         }
 
-        public static int GUIPopup(GUIContent label, int intValue, string[] options, params GUILayoutOption[] layoutOptions)
+        public static int GUIPopup(GUIContent label, int intValue, GUIContent[] options, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
             rect = PrefixLabel(rect, label);

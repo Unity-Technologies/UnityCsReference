@@ -14,7 +14,6 @@ namespace UnityEditor
             public readonly GUIStyle menuItem = "MenuItem";
         }
 
-        private static SceneFXWindow s_SceneFXWindow;
         private static Styles s_Styles;
         private readonly SceneView m_SceneView;
 

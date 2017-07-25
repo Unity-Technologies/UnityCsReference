@@ -18,7 +18,7 @@ namespace UnityEngine.Playables
         public static ScriptPlayableOutput Create(PlayableGraph graph, string name)
         {
             PlayableOutputHandle handle;
-            if (!PlayableGraph.CreateScriptOutputInternal(ref graph, name, out handle))
+            if (!graph.CreateScriptOutputInternal(name, out handle))
                 return ScriptPlayableOutput.Null;
             return new ScriptPlayableOutput(handle);
         }

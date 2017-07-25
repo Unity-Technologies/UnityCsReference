@@ -17,7 +17,9 @@ namespace UnityEditor
 [System.Serializable]
 public sealed partial class ActiveEditorTracker
 {
-    MonoReloadableIntPtrClear m_Property;
+    
+            #pragma warning disable 649
+            MonoReloadableIntPtrClear m_Property;
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

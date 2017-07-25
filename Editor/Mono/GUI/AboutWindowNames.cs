@@ -29,6 +29,7 @@ namespace UnityEditor
 
         public class CreditEntry
         {
+#pragma warning disable 649
             public string name;
             // Store diacritic free name for easing search
             public string normalizedName;

@@ -14,6 +14,7 @@ namespace UnityEditor
         public override bool showImportedObject { get { return false; } }
 
         SerializedProperty  m_IsReadable;
+        SerializedProperty  m_sRGBTexture;
         SerializedProperty  m_FilterMode;
         SerializedProperty  m_WrapU;
         SerializedProperty  m_WrapV;
@@ -23,6 +24,7 @@ namespace UnityEditor
         {
             // copy pasted from TextureImporterInspector.TextureSettingsGUI()
             public static readonly GUIContent readWrite     = EditorGUIUtility.TextContent("Read/Write Enabled|Enable to be able to access the raw pixel data from code.");
+            public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TextContent("sRGB (Color Texture)|Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public static readonly GUIContent wrapMode      = EditorGUIUtility.TextContent("Wrap Mode");
             public static readonly GUIContent filterMode    = EditorGUIUtility.TextContent("Filter Mode");
 
@@ -36,21 +38,11 @@ namespace UnityEditor
         public override void OnEnable()
         {
             m_IsReadable    = serializedObject.FindProperty("m_IsReadable");
+            m_sRGBTexture   = serializedObject.FindProperty("m_sRGBTexture");
             m_FilterMode    = serializedObject.FindProperty("m_TextureSettings.m_FilterMode");
             m_WrapU         = serializedObject.FindProperty("m_TextureSettings.m_WrapU");
             m_WrapV         = serializedObject.FindProperty("m_TextureSettings.m_WrapV");
             m_WrapW         = serializedObject.FindProperty("m_TextureSettings.m_WrapW");
-        }
-
-        public void IsReadableGUI()
-        {
-            Rect rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, Styles.readWrite, m_IsReadable);
-            EditorGUI.BeginChangeCheck();
-            bool value = EditorGUI.Toggle(rect, Styles.readWrite, m_IsReadable.boolValue);
-            if (EditorGUI.EndChangeCheck())
-                m_IsReadable.boolValue = value;
-            EditorGUI.EndProperty();
         }
 
         // alas it looks impossible to share code so we copy paste from TextureImporterInspector.TextureSettingsGUI()
@@ -74,7 +66,8 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            IsReadableGUI();
+            EditorGUILayout.PropertyField(m_IsReadable, Styles.readWrite);
+            EditorGUILayout.PropertyField(m_sRGBTexture, Styles.sRGBTexture);
 
             EditorGUI.BeginChangeCheck();
             TextureSettingsGUI();

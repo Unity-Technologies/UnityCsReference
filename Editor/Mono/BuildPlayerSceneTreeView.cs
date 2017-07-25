@@ -14,24 +14,40 @@ namespace UnityEditor
         private const string kAssetsFolder = "Assets/";
         private const string kSceneExtension = ".unity";
 
+        public static int kInvalidCounter = -1;
+
         public bool active;
+        public int counter;
         public string fullName;
+        public GUID guid;
+        public void UpdateName()
+        {
+            var name = AssetDatabase.GUIDToAssetPath(guid.ToString());
+            if (name != fullName)
+            {
+                fullName = name;
+
+                displayName = fullName;
+                if (displayName.StartsWith(kAssetsFolder))
+                    displayName = displayName.Remove(0, kAssetsFolder.Length);
+                var ext = displayName.LastIndexOf(kSceneExtension);
+                if (ext > 0)
+                    displayName = displayName.Substring(0, ext);
+            }
+        }
+
         public BuildPlayerSceneTreeViewItem(int id, int depth, string path, bool state) : base(id, depth)
         {
             active = state;
-            fullName = path;
+            counter = kInvalidCounter;
+            guid = new GUID(AssetDatabase.AssetPathToGUID(path));
+            fullName = "";
             displayName = path;
-            if (fullName.StartsWith(kAssetsFolder))
-                displayName = path.Remove(0, kAssetsFolder.Length);
-
-            var ext = displayName.LastIndexOf(kSceneExtension);
-            if (ext > 0)
-                displayName = displayName.Substring(0, ext);
+            UpdateName();
         }
     }
     internal class BuildPlayerSceneTreeView : TreeView
     {
-        private int m_ActiveSceneCounter;
         public BuildPlayerSceneTreeView(TreeViewState state) : base(state)
         {
             showBorder = true;
@@ -58,8 +74,24 @@ namespace UnityEditor
 
         protected override void BeforeRowsGUI()
         {
+            int counter = 0;
+            foreach (var item in rootItem.children)
+            {
+                var bpst = item as BuildPlayerSceneTreeViewItem;
+                if (bpst != null)
+                    bpst.UpdateName();
+
+                //Need to set counter here because RowGUI is only called on items that are visible.
+                if (bpst.active)
+                {
+                    bpst.counter = counter;
+                    counter++;
+                }
+                else
+                    bpst.counter = BuildPlayerSceneTreeViewItem.kInvalidCounter;
+            }
+
             base.BeforeRowsGUI();
-            m_ActiveSceneCounter = 0;
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -70,10 +102,11 @@ namespace UnityEditor
                 var sceneExists = File.Exists(sceneItem.fullName);
                 using (new EditorGUI.DisabledScope(!sceneExists))
                 {
+                    var newState = sceneItem.active;
                     if (!sceneExists)
-                        sceneItem.active = false;
-                    var toggleState = GUI.Toggle(new Rect(args.rowRect.x, args.rowRect.y, 16f, 16f), sceneItem.active, "");
-                    if (toggleState != sceneItem.active)
+                        newState = false;
+                    newState = GUI.Toggle(new Rect(args.rowRect.x, args.rowRect.y, 16f, 16f), newState, "");
+                    if (newState != sceneItem.active)
                     {
                         if (GetSelection().Contains(sceneItem.id))
                         {
@@ -81,22 +114,21 @@ namespace UnityEditor
                             foreach (var id in selection)
                             {
                                 var item = FindItem(id, rootItem) as BuildPlayerSceneTreeViewItem;
-                                item.active = toggleState;
+                                item.active = newState;
                             }
                         }
                         else
                         {
-                            sceneItem.active = toggleState;
+                            sceneItem.active = newState;
                         }
 
                         EditorBuildSettings.scenes = GetSceneList();
                     }
                     base.RowGUI(args);
 
-                    if (toggleState)
+                    if (sceneItem.counter != BuildPlayerSceneTreeViewItem.kInvalidCounter)
                     {
-                        TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "" + m_ActiveSceneCounter, args.selected, args.focused);
-                        m_ActiveSceneCounter++;
+                        TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "" + sceneItem.counter, args.selected, args.focused);
                     }
                 }
             }

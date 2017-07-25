@@ -9,36 +9,54 @@ namespace UnityEngine.Collections
 {
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal class ReadOnlyAttribute : Attribute
+    public class ReadOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal class ReadWriteAttribute : Attribute
+    public class WriteOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal class WriteOnlyAttribute : Attribute
+    public class DeallocateOnJobCompletionAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal class DeallocateOnJobCompletionAttribute : Attribute
+    public class NativeFixedLengthAttribute : System.Attribute
+    {
+        public NativeFixedLengthAttribute(int fixedLength) { FixedLength = fixedLength; }
+        public int FixedLength;
+    }
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public class NativeMatchesParallelForLengthAttribute : System.Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    internal class NativeDisableParallelForRestrictionAttribute : System.Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    internal class NativeContainerAttribute : Attribute
+    public class NativeContainerAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    internal class NativeContainerSupportsAtomicWriteAttribute : Attribute
+    public class NativeContainerIsAtomicWriteOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    internal class NativeContainerSupportsMinMaxWriteRestrictionAttribute : Attribute
+    public class NativeContainerSupportsMinMaxWriteRestrictionAttribute : Attribute
+    {}
+
+    [UnityEngine.Scripting.RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Struct)]
+    public class NativeContainerSupportsDeallocateOnJobCompletionAttribute : System.Attribute
     {}
 }

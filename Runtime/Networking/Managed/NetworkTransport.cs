@@ -11,9 +11,6 @@ namespace UnityEngine.Networking
 {
     public sealed partial class NetworkTransport
     {
-        // the code bellow is XBox only, exclude it on WP8, because it breaks build
-        // On WSA 8.1, it doesn't compile
-        // On WSA UWP, seems to work fine
         internal static bool DoesEndPointUsePlatformProtocols(EndPoint endPoint)
         {
             if (endPoint.GetType().FullName == "UnityEngine.PS4.SceEndPoint" || endPoint.GetType().FullName == "UnityEngine.PSVita.SceEndPoint")
@@ -119,7 +116,6 @@ namespace UnityEngine.Networking
                 return result;
             }
         }
-
     } // NetworkTransport class
 } // UnityEngine.Networking namespace
 

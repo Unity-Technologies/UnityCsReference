@@ -506,9 +506,9 @@ public sealed partial class ProfilerDriver
 
 public sealed partial class ProfilerProperty
 {
-    IntPtr m_Ptr;
     
-    
+            #pragma warning disable 169
+            IntPtr m_Ptr;
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public ProfilerProperty () ;
@@ -674,7 +674,9 @@ public sealed partial class ProfilerProperty
 
 public sealed partial class ProfilerFrameDataIterator
 {
-    IntPtr m_Ptr;
+    
+            #pragma warning disable 169
+            IntPtr m_Ptr;
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

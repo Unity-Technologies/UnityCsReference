@@ -40,7 +40,6 @@ namespace UnityEditor
             public static string forwardText = "Forward Rendering Options";
             public static string renderingMode = "Rendering Mode";
             public static string advancedText = "Advanced Options";
-            public static GUIContent emissiveWarning = new GUIContent("Emissive value is animated but the material has not been configured to support emissive. Please make sure the material itself has some amount of emissive.");
             public static readonly string[] blendNames = Enum.GetNames(typeof(BlendMode));
         }
 

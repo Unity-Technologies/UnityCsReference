@@ -40,7 +40,7 @@ namespace UnityEditor
             }
         }
 
-        static GUIStyle background, resize;
+        static GUIStyle background;
 
         protected override void OldOnGUI()
         {

@@ -10,7 +10,7 @@ using UnityEditor.AnimatedValues;
 namespace UnityEditor
 {
     [CustomEditor(typeof(Physics2DSettings))]
-    internal class Physics2DSettingsInspector : Editor
+    internal class Physics2DSettingsInspector : ProjectSettingsBaseEditor
     {
         Vector2 m_LayerCollisionMatrixScrollPos;
         bool m_ShowLayerCollisionMatrix = true;

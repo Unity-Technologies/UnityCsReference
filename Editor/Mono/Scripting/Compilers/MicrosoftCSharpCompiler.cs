@@ -21,35 +21,6 @@ namespace UnityEditor.Scripting.Compilers
 
         private BuildTarget BuildTarget { get { return _island._target; } }
 
-        internal static string ProgramFilesDirectory
-        {
-            get
-            {
-                string programFiles;
-
-                string programFilesOS64 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
-                // Note: For 32 bit applications quering env variable 'ProgramFiles' will return same string as quering 'ProgramFiles(x86)'
-
-                if (Directory.Exists(programFilesOS64)) programFiles = programFilesOS64;
-                else
-                {
-                    UnityEngine.Debug.Log("Env variables ProgramFiles(x86) & ProgramFiles didn't exist, trying hard coded paths");
-                    string mainLetter = Path.GetFullPath(Environment.GetEnvironmentVariable("windir") + "\\..\\..");
-                    string hardCodedProgramFilesOS64 = mainLetter + "Program Files (x86)";
-                    string hardCodedprogramFilesOS32 = mainLetter + "Program Files";
-
-                    // First check Program Files (x86) if such directory doesn't exist, it means we're on 32 bit system.
-                    if (Directory.Exists(hardCodedProgramFilesOS64)) programFiles = hardCodedProgramFilesOS64;
-                    else if (Directory.Exists(hardCodedprogramFilesOS32)) programFiles = hardCodedprogramFilesOS32;
-                    else
-                    {
-                        throw new System.Exception("Path '" + hardCodedProgramFilesOS64 + "' or '" + hardCodedprogramFilesOS32 + "' doesn't exist.");
-                    }
-                }
-                return programFiles;
-            }
-        }
-
         private static string[] GetReferencesFromMonoDistribution()
         {
             return new[]
@@ -64,24 +35,6 @@ namespace UnityEditor.Scripting.Compilers
                 "UnityScript.Lang.dll",
                 "Boo.Lang.dll",
             };
-        }
-
-        internal static string GetNETCoreFrameworkReferencesDirectory(WSASDK wsaSDK)
-        {
-            switch (wsaSDK)
-            {
-                case WSASDK.SDK80:
-                    return ProgramFilesDirectory + @"\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5";
-                case WSASDK.SDK81:
-                    return ProgramFilesDirectory + @"\Reference Assemblies\Microsoft\Framework\.NETCore\v4.5.1";
-                case WSASDK.PhoneSDK81:
-                    return ProgramFilesDirectory + @"\Reference Assemblies\Microsoft\Framework\WindowsPhoneApp\v8.1";
-                case WSASDK.UWP:
-                    // For UWP, framework path doesn't exist, to get assemblies you need to use project.lock with NuGetAssemblyResolver file
-                    return null;
-                default:
-                    throw new Exception("Unknown Windows SDK: " + wsaSDK.ToString());
-            }
         }
 
         private string[] GetClassLibraries()
@@ -110,10 +63,6 @@ namespace UnityEditor.Scripting.Compilers
 
             if (BuildTarget != BuildTarget.WSAPlayer)
                 throw new InvalidOperationException(string.Format("MicrosoftCSharpCompiler cannot build for .NET Scripting backend for BuildTarget.{0}.", BuildTarget));
-
-            var wsaSDK = WSASDK.UWP;
-            if (wsaSDK != WSASDK.UWP)
-                return Directory.GetFiles(GetNETCoreFrameworkReferencesDirectory(wsaSDK), "*.dll");
 
             var resolver = new NuGetPackageResolver { ProjectLockFile = @"UWP\project.lock.json" };
             return resolver.Resolve();

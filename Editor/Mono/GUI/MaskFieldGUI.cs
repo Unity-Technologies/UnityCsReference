@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,13 +25,8 @@ namespace UnityEditor
             // Used to pass selection changes back again
             private readonly int m_ControlID;
 
-            // Which item was selected
-            private int m_Mask;
-
-            //Flags to control all / nothing buttons
-            private bool m_SetAll;
-            private bool m_ClearAll;
-            private bool m_DoNothing;
+            // New mask value
+            private int m_NewMask;
 
             // Which view should we send it to.
             private readonly GUIView m_SourceView;
@@ -58,32 +54,15 @@ namespace UnityEditor
                     }
                     if (m_Instance.m_ControlID == controlID)
                     {
-                        if (!m_Instance.m_DoNothing)
-                        {
-                            if (m_Instance.m_ClearAll)
-                            {
-                                mask = 0;
-                                changedFlags = ~0;
-                                changedToValue = false;
-                            }
-                            else if (m_Instance.m_SetAll)
-                            {
-                                mask = ~0;
-                                changedFlags = ~0;
-                                changedToValue = true;
-                            }
-                            else
-                            {
-                                mask ^= m_Instance.m_Mask;
-                                changedFlags = m_Instance.m_Mask;
-                                changedToValue = (mask & m_Instance.m_Mask) != 0;
-                            }
+                        changedFlags = mask ^ m_Instance.m_NewMask;
+                        changedToValue = (m_Instance.m_NewMask & changedFlags) != 0;
 
+                        if (changedFlags != 0)
+                        {
+                            mask = m_Instance.m_NewMask;
                             GUI.changed = true;
                         }
-                        m_Instance.m_DoNothing = false;
-                        m_Instance.m_ClearAll = false;
-                        m_Instance.m_SetAll = false;
+
                         m_Instance = null;
                         evt.Use();
                     }
@@ -93,18 +72,8 @@ namespace UnityEditor
 
             internal void SetMaskValueDelegate(object userData, string[] options, int selected)
             {
-                switch (selected)
-                {
-                    case 0:
-                        m_ClearAll = true;
-                        break;
-                    case 1:
-                        m_SetAll = true;
-                        break;
-                    default:
-                        m_Mask = ((int[])userData)[selected - 2];
-                        break;
-                }
+                int[] optionMaskValues = (int[])userData;
+                m_NewMask = optionMaskValues[selected];
 
                 if (m_SourceView)
                     m_SourceView.SendEvent(EditorGUIUtility.CommandEvent(kMaskMenuChangedMessage));
@@ -141,59 +110,113 @@ namespace UnityEditor
         internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue)
         {
             mask = MaskCallbackInfo.GetSelectedValueForControl(controlID, mask, out changedFlags, out changedToValue);
-            var selectedFlags = new List<int>();
-            var fullFlagNames = new List<string> {"Nothing", "Everything"};
 
-            for (var i = 0; i < flagNames.Length; i++)
-            {
-                if ((mask & flagValues[i]) != 0)
-                    selectedFlags.Add(i + 2);
-            }
+            string buttonText;
+            string[] optionNames;
+            int[] optionMaskValues;
+            int[] selectedOptions;
+            GetMenuOptions(mask, flagNames, flagValues, out buttonText, out optionNames, out optionMaskValues, out selectedOptions);
 
-            fullFlagNames.AddRange(flagNames);
-
-            GUIContent buttonContent = EditorGUI.mixedValueContent;
-            if (!EditorGUI.showMixedValue)
-            {
-                switch (selectedFlags.Count)
-                {
-                    case 0:
-                        buttonContent = EditorGUIUtility.TempContent("Nothing");
-                        selectedFlags.Add(0);
-                        break;
-                    case 1:
-                        buttonContent = new GUIContent(fullFlagNames[selectedFlags[0]]);
-                        break;
-                    default:
-                        if (selectedFlags.Count >= flagNames.Length)
-                        {
-                            buttonContent = EditorGUIUtility.TempContent("Everything");
-                            selectedFlags.Add(1);
-                            // When every available item is selected, we force to ~0 to keep the mask int value consistent
-                            // between the cases where all items are individually selected vs. user clicks "everything"
-                            mask = ~0;
-                        }
-                        else
-                            buttonContent = EditorGUIUtility.TempContent("Mixed ...");
-                        break;
-                }
-            }
             Event evt = Event.current;
             if (evt.type == EventType.Repaint)
             {
+                GUIContent buttonContent = EditorGUI.showMixedValue ? EditorGUI.mixedValueContent : EditorGUIUtility.TempContent(buttonText);
                 style.Draw(position, buttonContent, controlID, false);
             }
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
             {
                 MaskCallbackInfo.m_Instance = new MaskCallbackInfo(controlID);
                 evt.Use();
-                EditorUtility.DisplayCustomMenu(position, fullFlagNames.ToArray(),
+                EditorUtility.DisplayCustomMenu(position, optionNames,
                     // Only show selections if we are not multi-editing
-                    EditorGUI.showMixedValue ? new int[] {} : selectedFlags.ToArray(),
-                    MaskCallbackInfo.m_Instance.SetMaskValueDelegate, flagValues);
+                    EditorGUI.showMixedValue ? new int[] {} : selectedOptions,
+                    MaskCallbackInfo.m_Instance.SetMaskValueDelegate, optionMaskValues);
                 EditorGUIUtility.keyboardControl = controlID;
             }
+
             return mask;
+        }
+
+        internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
+            out string buttonText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions)
+        {
+            bool hasNothingName = (flagValues[0] == 0);
+            bool hasEverythingName = (flagValues[flagValues.Length - 1] == ~0);
+
+            var nothingName = (hasNothingName ? flagNames[0] : "Nothing");
+            var everythingName = (hasEverythingName ? flagNames[flagValues.Length - 1] : "Everything");
+
+            var optionCount = flagNames.Length + (hasNothingName ? 0 : 1) + (hasEverythingName ? 0 : 1);
+            var flagCount = flagNames.Length - (hasNothingName ? 1 : 0) - (hasEverythingName ? 1 : 0);
+
+            // These indices refer to flags that are not 0 and ~0
+            var flagStartIndex = (hasNothingName ? 1 : 0);
+            var flagEndIndex = flagStartIndex + flagCount;
+
+            // Button text
+            buttonText = "Mixed ...";
+            if (mask == 0)
+                buttonText = nothingName;
+            else if (mask == ~0)
+                buttonText = everythingName;
+            else
+            {
+                for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+                {
+                    if (mask == flagValues[flagIndex])
+                        buttonText = flagNames[flagIndex];
+                }
+            }
+
+            // Options names
+            optionNames = new string[optionCount];
+            optionNames[0] = nothingName;
+            optionNames[1] = everythingName;
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+            {
+                var optionIndex = flagIndex - flagStartIndex + 2;
+                optionNames[optionIndex] = flagNames[flagIndex];
+            }
+
+            var flagMask = 0; // Disjunction of all flags (except 0 and ~0)
+            var intermediateMask = 0; // Mask used to compute new mask value for each option
+
+            // Selected options
+            var selectedOptionsSet = new HashSet<int>();
+            if (mask == 0)
+                selectedOptionsSet.Add(0);
+            if (mask == ~0)
+                selectedOptionsSet.Add(1);
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+            {
+                var flagValue = flagValues[flagIndex];
+                flagMask |= flagValue;
+                if ((mask & flagValue) == flagValue)
+                {
+                    var optionIndex = flagIndex - flagStartIndex + 2;
+                    selectedOptionsSet.Add(optionIndex);
+                    intermediateMask |= flagValue;
+                }
+            }
+            selectedOptions = selectedOptionsSet.ToArray();
+
+            // Option mask values
+            optionMaskValues = new int[optionCount];
+            optionMaskValues[0] = 0;
+            optionMaskValues[1] = ~0;
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+            {
+                var optionIndex = flagIndex - flagStartIndex + 2;
+                var flagValue = flagValues[flagIndex];
+                var flagSet = ((intermediateMask & flagValue) == flagValue);
+                var newMask = (flagSet ? intermediateMask & ~flagValue : intermediateMask | flagValue);
+
+                // If all flag options are selected the mask becomes ~0 to be consistent with the "Everything" option
+                if (newMask == flagMask)
+                    newMask = ~0;
+
+                optionMaskValues[optionIndex] = newMask;
+            }
         }
     }
 }

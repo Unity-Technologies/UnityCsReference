@@ -204,7 +204,6 @@ namespace UnityEditorInternal
         [SerializeField] public EditorWindow m_Owner;
 
         DopeSheetSelectionRect m_SelectionRect;
-        Texture m_DefaultDopeKeyIcon;
 
         float m_DragStartTime;
         bool m_MousedownOnKeyframe;

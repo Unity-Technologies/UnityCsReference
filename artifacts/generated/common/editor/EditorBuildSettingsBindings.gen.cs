@@ -682,24 +682,20 @@ public sealed partial class EditorUserBuildSettings
         set;
     }
 
+    [System.Obsolete ("EditorUserBuildSettings.webPlayerStreamed is obsolete and has no effect. It will be removed in a subsequent Unity release.", true)]
     public extern static bool webPlayerStreamed
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
     }
 
+    [System.Obsolete ("EditorUserBuildSettings.webPlayerOfflineDeployment is obsolete and has no effect. It will be removed in a subsequent Unity release.", true)]
     public extern static bool webPlayerOfflineDeployment
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
     }
 
     public extern static BuildTarget activeBuildTarget

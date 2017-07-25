@@ -207,7 +207,6 @@ namespace UnityEditor
         {
             public GUIStyle menuItem = "MenuItem";
             public GUIStyle menuItemMixed = "MenuItemMixed";
-            public GUIStyle label = "PR Label";
             public GUIStyle background = "grey_border";
             public GUIStyle customTextField;
             public GUIStyle customTextFieldCancelButton;
@@ -227,16 +226,9 @@ namespace UnityEditor
         private InputData m_Data;
 
         // Layout
-        const float scrollBarWidth = 14;
-        const float listElementHeight = 18;
-        const float gizmoRightAlign = 23;
-        const float iconRightAlign = 64;
-        const float frameWidth = 1f;
         const float k_LineHeight = 16;
         const float k_TextFieldHeight = 16;
         const float k_Margin = 10;
-        Vector2 m_ScrollPosition;
-        Vector2 m_ScreenPos;
         Gravity m_Gravity;
 
         string m_EnteredTextCompletion = "";
