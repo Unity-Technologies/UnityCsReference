@@ -1463,6 +1463,7 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.PSM ||
+                targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA)
             {
                 EditorGUI.BeginChangeCheck();
