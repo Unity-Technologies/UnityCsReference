@@ -236,6 +236,11 @@ namespace UnityEditor
 
             foreach (var light in lights)
                 light.enabled = true;
+
+            var oldProbe = RenderSettings.ambientProbe;
+            Unsupported.SetOverrideRenderSettings(previewScene.scene);
+            // Most preview windows just want the light probe from the main scene so by default we copy it here. It can then be overridden if user wants.
+            RenderSettings.ambientProbe = oldProbe;
         }
 
         public float GetScaleFactor(float width, float height)
@@ -259,6 +264,8 @@ namespace UnityEditor
 
         public Texture EndPreview()
         {
+            Unsupported.RestoreOverrideRenderSettings();
+
             m_SavedState.Restore();
             FinishFrame();
             return m_RenderTexture;
@@ -281,6 +288,8 @@ namespace UnityEditor
 
         public Texture2D EndStaticPreview()
         {
+            Unsupported.RestoreOverrideRenderSettings();
+
             var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
 
             GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
@@ -300,6 +309,12 @@ namespace UnityEditor
         public void AddSingleGO(GameObject go)
         {
             previewScene.AddGameObject(go);
+        }
+
+        public GameObject InstantiatePrefabInScene(GameObject prefab)
+        {
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, m_PreviewScene.scene);
+            return instance;
         }
 
         private Material GetInvisibleMaterial()
@@ -387,7 +402,6 @@ namespace UnityEditor
 
             float saveFieldOfView = camera.fieldOfView;
 
-
             if (updatefov)
             {
                 // Calculate a view multiplier to avoid clipping when the preview width is smaller than the height.
@@ -400,7 +414,6 @@ namespace UnityEditor
 
             camera.fieldOfView = saveFieldOfView;
             Unsupported.useScriptableRenderPipeline = oldAllowPipes;
-            Unsupported.RestoreOverrideRenderSettings();
         }
     }
 

@@ -41,7 +41,6 @@ namespace UnityEditor
                     {
                         p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
                     }
-                    p.visualTree.LoadStyleSheetsFromPaths();
                 }
                 return p;
             }

@@ -443,7 +443,7 @@ namespace UnityEngineInternal
             else
                 redirectURI = new Uri(redirectUri, UriKind.RelativeOrAbsolute);
             if (redirectURI.IsAbsoluteUri)
-                return redirectUri;
+                return redirectURI.AbsoluteUri;
 
             var baseURI = new Uri(baseUri, UriKind.Absolute);
             var finalUri = new Uri(baseURI, redirectURI);
@@ -452,6 +452,11 @@ namespace UnityEngineInternal
 
         internal static string MakeInitialUrl(string targetUrl, string localUrl)
         {
+            // Uri class leaves only one slash for protocol for this case, prevent that
+            // i.e. we report streaming assets folder on Android as jar:file:///blabla, keep it that way
+            if (targetUrl.StartsWith("jar:file://"))
+                return targetUrl;
+
             var localUri = new System.Uri(localUrl);
 
             if (targetUrl.StartsWith("//"))
