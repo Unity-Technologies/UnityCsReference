@@ -27,7 +27,7 @@ namespace UnityEditorInternal.VR
             {
                 new GUIContent("Multi Pass"),
                 new GUIContent("Single Pass"),
-                new GUIContent("Single Pass Instanced")
+                new GUIContent("Single Pass Instanced (Preview)")
             };
 
             public static readonly GUIContent[] kAndroidStereoRenderingPaths =
@@ -127,6 +127,13 @@ namespace UnityEditorInternal.VR
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
+                    if (TargetGroupSupportsVirtualReality(targetGroup))
+                    {
+                        DevicesGUI(targetGroup);
+
+                        SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
+                    }
+
                     if (targetGroup == BuildTargetGroup.Android)
                     {
                         // Google Tango settings
@@ -148,13 +155,6 @@ namespace UnityEditorInternal.VR
 
                     if (TargetGroupSupportsVuforia(targetGroup))
                         VuforiaGUI(targetGroup);
-
-                    if (TargetGroupSupportsVirtualReality(targetGroup))
-                    {
-                        DevicesGUI(targetGroup);
-
-                        SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
-                    }
                 }
             }
             m_Settings.EndSettingsBox();
@@ -198,7 +198,7 @@ namespace UnityEditorInternal.VR
             switch (targetGroup)
             {
                 case BuildTargetGroup.WSA:
-                    //case BuildTargetGroup.Standalone: // TODO: uncomment this when we fully enable it for desktop
+                case BuildTargetGroup.Standalone:
                     return true;
                 default:
                     return false;
@@ -446,7 +446,7 @@ namespace UnityEditorInternal.VR
 
             if (shouldDisableScope)
             {
-                EditorGUILayout.HelpBox("AR Vuforia required with VRDevice Vuforia.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Vuforia AR is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
             }
         }
     }

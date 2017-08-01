@@ -363,6 +363,7 @@ namespace UnityEditor.Build
             buildPreprocessors = null;
             buildPostprocessors = null;
             sceneProcessors = null;
+            previousFlags = BuildCallbacks.None;
         }
     }
 }

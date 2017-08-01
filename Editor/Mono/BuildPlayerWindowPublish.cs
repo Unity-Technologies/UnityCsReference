@@ -123,11 +123,11 @@ namespace UnityEditor
                     StatusCode code = Client.Add(out packmanOperationId, LatestXiaomiPackageId);
                     if (code == StatusCode.Error)
                     {
-                        Debug.LogError("Add: '" + LatestXiaomiPackageId + "' Error");
+                        Debug.LogError("Add " + LatestXiaomiPackageId + " error, please add it again.");
                         return;
                     }
                     packmanOperationType = PackmanOperationType.Add;
-                    Debug.Log("Add operationId: " + packmanOperationId + " for " + LatestXiaomiPackageId);
+                    System.Console.WriteLine("Add: OperationID " + packmanOperationId + " for " + LatestXiaomiPackageId);
                     packmanOperationRunning = true;
                 }
             }
@@ -146,11 +146,11 @@ namespace UnityEditor
                             StatusCode code = Client.Add(out packmanOperationId, LatestXiaomiPackageId);
                             if (code == StatusCode.Error)
                             {
-                                Debug.LogError("Update: '" + LatestXiaomiPackageId + "' Error");
+                                Debug.LogError("Update " + LatestXiaomiPackageId + " error, please update it again.");
                                 return;
                             }
                             packmanOperationType = PackmanOperationType.Add;
-                            Debug.Log("Update operationId: " + packmanOperationId + " for " + LatestXiaomiPackageId);
+                            System.Console.WriteLine("Update: OperationID " + packmanOperationId + " for " + LatestXiaomiPackageId);
                             packmanOperationRunning = true;
                         }
                     }
@@ -163,11 +163,11 @@ namespace UnityEditor
                     StatusCode code = Client.Remove(out packmanOperationId, CurrentXiaomiPackageId);
                     if (code == StatusCode.Error)
                     {
-                        Debug.LogError("Remove: '" + CurrentXiaomiPackageId + "' Error");
+                        Debug.LogError("Remove " + CurrentXiaomiPackageId + " error, please remove it again.");
                         return;
                     }
                     packmanOperationType = PackmanOperationType.Remove;
-                    Debug.Log("Remove operationId: " + packmanOperationId + " for " + CurrentXiaomiPackageId);
+                    System.Console.WriteLine("Remove: OperationID " + packmanOperationId + " for " + CurrentXiaomiPackageId);
                     packmanOperationRunning = true;
                 }
                 GUILayout.EndHorizontal();
@@ -213,8 +213,8 @@ namespace UnityEditor
                 CheckPackmanOperation(getCurrentVersionOperationId, PackmanOperationType.List);
                 CheckPackmanOperation(getLatestVersionOperationId, PackmanOperationType.Search);
 
-                Debug.Log("Current xiaomi package version is " + currentXiaomiPackageVersion);
-                Debug.Log("Latest xiaomi package version is " + latestXiaomiPackageVersion);
+                System.Console.WriteLine("Current xiaomi package version is " + (string.IsNullOrEmpty(currentXiaomiPackageVersion) ? "empty" : currentXiaomiPackageVersion));
+                System.Console.WriteLine("Latest xiaomi package version is " + (string.IsNullOrEmpty(latestXiaomiPackageVersion) ? "empty" : latestXiaomiPackageVersion));
 
                 isVersionInitialized = true;
                 return true;
@@ -240,23 +240,22 @@ namespace UnityEditor
             StatusCode statusCode = Client.GetOperationStatus(operationId);
             if (statusCode == StatusCode.NotFound)
             {
-                Debug.Log("Operation " + operationId + " Not Found");
+                Debug.LogError("OperationID " + operationId + " Not Found");
                 return true;
             }
             else if (statusCode == StatusCode.Error)
             {
                 Error error = Client.GetOperationError(operationId);
-                Debug.LogError("Operation " + operationId + " failed with Error " + error);
+                Debug.LogError("OperationID " + operationId + " failed with Error: " + error);
                 return true;
             }
             else if (statusCode == StatusCode.InProgress || statusCode == StatusCode.InQueue)
             {
-                Debug.Log("OperationID " + operationId + " -> In Progress!");
                 return false;
             }
             else if (statusCode == StatusCode.Done)
             {
-                Debug.Log("OperationID " + operationId + " -> Done!");
+                System.Console.WriteLine("OperationID " + operationId + " Done");
                 switch (operationType)
                 {
                     case PackmanOperationType.List:
@@ -274,7 +273,7 @@ namespace UnityEditor
                         ExtractLatestXiaomiPackageInfo(operationId);
                         break;
                     default:
-                        Debug.Log("Type " + operationType + " Not Supported");
+                        System.Console.WriteLine("Type " + operationType + " Not Supported");
                         break;
                 }
                 return true;

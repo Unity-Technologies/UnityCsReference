@@ -456,11 +456,6 @@ namespace UnityEditor
                 return;
 
             Event evt = Event.current;
-            EventType oldEventType = evt.type;
-
-            // we want ignored mouse up events to check for dragging off of scene view
-            if (evt.type == EventType.Ignore && evt.rawType == EventType.MouseUp)
-                oldEventType = evt.rawType;
 
             Color origCol = Handles.color;
             Color col = new Color(1, 1, 1, 0.5F);
@@ -504,13 +499,18 @@ namespace UnityEditor
                     }
                     else
                     {
-                        int oldKeyboardControl = GUIUtility.keyboardControl;
                         float handleSize = HandleUtility.GetHandleSize(position) * 0.6f;
+
+                        EventType oldEventType = evt.type;
+
+                        // we want ignored mouse up events to check for dragging off of scene view
+                        if (evt.type == EventType.Ignore && evt.rawType == EventType.MouseUp)
+                            oldEventType = evt.rawType;
 
                         Handles.FreeMoveHandle(position, Quaternion.identity, handleSize, Vector3.zero, Handles.RectangleHandleCap);
 
                         // Detect selected plane (similar to TreeEditor)
-                        if (oldEventType == EventType.MouseDown && evt.type == EventType.Used && oldKeyboardControl != GUIUtility.keyboardControl)
+                        if (oldEventType == EventType.MouseDown && evt.type == EventType.Used)
                         {
                             s_SelectedTransform = transform;
                             oldEventType = EventType.Used;

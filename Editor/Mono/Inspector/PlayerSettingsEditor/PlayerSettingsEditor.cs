@@ -88,7 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TextContent("Default Screen Height");
-            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support (Experimental)");
+            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support");
             public static readonly GUIContent runInBackground = EditorGUIUtility.TextContent("Run In Background*");
             public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TextContent("Default Orientation*");
             public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TextContent("Portrait");

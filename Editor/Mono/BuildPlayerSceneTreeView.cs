@@ -14,7 +14,10 @@ namespace UnityEditor
         private const string kAssetsFolder = "Assets/";
         private const string kSceneExtension = ".unity";
 
+        public static int kInvalidCounter = -1;
+
         public bool active;
+        public int counter;
         public string fullName;
         public GUID guid;
         public void UpdateName()
@@ -36,6 +39,7 @@ namespace UnityEditor
         public BuildPlayerSceneTreeViewItem(int id, int depth, string path, bool state) : base(id, depth)
         {
             active = state;
+            counter = kInvalidCounter;
             guid = new GUID(AssetDatabase.AssetPathToGUID(path));
             fullName = "";
             displayName = path;
@@ -44,7 +48,6 @@ namespace UnityEditor
     }
     internal class BuildPlayerSceneTreeView : TreeView
     {
-        private int m_ActiveSceneCounter;
         public BuildPlayerSceneTreeView(TreeViewState state) : base(state)
         {
             showBorder = true;
@@ -71,15 +74,24 @@ namespace UnityEditor
 
         protected override void BeforeRowsGUI()
         {
+            int counter = 0;
             foreach (var item in rootItem.children)
             {
                 var bpst = item as BuildPlayerSceneTreeViewItem;
                 if (bpst != null)
                     bpst.UpdateName();
+
+                //Need to set counter here because RowGUI is only called on items that are visible.
+                if (bpst.active)
+                {
+                    bpst.counter = counter;
+                    counter++;
+                }
+                else
+                    bpst.counter = BuildPlayerSceneTreeViewItem.kInvalidCounter;
             }
 
             base.BeforeRowsGUI();
-            m_ActiveSceneCounter = 0;
         }
 
         protected override void RowGUI(RowGUIArgs args)
@@ -114,10 +126,9 @@ namespace UnityEditor
                     }
                     base.RowGUI(args);
 
-                    if (newState)
+                    if (sceneItem.counter != BuildPlayerSceneTreeViewItem.kInvalidCounter)
                     {
-                        TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "" + m_ActiveSceneCounter, args.selected, args.focused);
-                        m_ActiveSceneCounter++;
+                        TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "" + sceneItem.counter, args.selected, args.focused);
                     }
                 }
             }

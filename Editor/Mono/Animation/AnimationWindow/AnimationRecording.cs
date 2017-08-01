@@ -320,7 +320,12 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    AddRotationKey(state, binding, type, previousValue.eulerAngles, currentValue.eulerAngles);
+                    Vector3 eulerAngles = target.GetLocalEulerAngles(RotationOrder.OrderZXY);
+
+                    Vector3 previousEulerAngles = AnimationUtility.GetClosestEuler(previousValue, eulerAngles, RotationOrder.OrderZXY);
+                    Vector3 currentEulerAngles = AnimationUtility.GetClosestEuler(currentValue, eulerAngles, RotationOrder.OrderZXY);
+
+                    AddRotationKey(state, binding, type, previousEulerAngles, currentEulerAngles);
                 }
             }
 
