@@ -8,7 +8,6 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
-
 using System;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -23,7 +22,10 @@ namespace UnityEngine.Networking
 
 public sealed partial class ConnectionSimulatorConfig : IDisposable
 {
-    internal IntPtr m_Ptr;
+    
+            #pragma warning disable 649 
+            internal IntPtr m_Ptr;
+            #pragma warning restore 649
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -40,7 +42,10 @@ public sealed partial class ConnectionSimulatorConfig : IDisposable
 
 internal sealed partial class ConnectionConfigInternal : IDisposable
 {
-    internal IntPtr m_Ptr;
+    
+            #pragma warning disable 649 
+            internal IntPtr m_Ptr;
+            #pragma warning restore 649
     
     
     private ConnectionConfigInternal()
@@ -235,7 +240,10 @@ internal sealed partial class ConnectionConfigInternal : IDisposable
 
 internal sealed partial class HostTopologyInternal : IDisposable
 {
-    internal IntPtr m_Ptr;
+    
+            #pragma warning disable 649 
+            internal IntPtr m_Ptr;
+            #pragma warning restore 649
     
     
     public HostTopologyInternal(HostTopology topology)
@@ -296,7 +304,10 @@ internal sealed partial class HostTopologyInternal : IDisposable
 
 internal sealed partial class GlobalConfigInternal : IDisposable
 {
-    internal IntPtr m_Ptr;
+    
+            #pragma warning disable 649 
+            internal IntPtr m_Ptr;
+            #pragma warning restore 649
     
     
     public GlobalConfigInternal(GlobalConfig config)

@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             if (!enabled) return false;
             m_RepaintDatas.Add(new RepaintData(visualElement.controlid,
-                    visualElement.globalBound,
+                    visualElement.worldBound,
                     Color.HSVToRGB(visualElement.controlid * 11 % 32 / 32.0f, .6f, 1.0f)));
             return true;
         }

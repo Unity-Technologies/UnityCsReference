@@ -33,7 +33,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (clicked != null && IsRepeatable())
             {
-                if (target.ContainsPointToLocal(lastMousePosition))
+                var localMousePosition = target.ChangeCoordinatesTo(target.parent, lastMousePosition);
+                if (target.ContainsPoint(localMousePosition))
                 {
                     clicked();
                     target.pseudoStates |= PseudoStates.Active;
@@ -74,7 +75,8 @@ namespace UnityEngine.Experimental.UIElements
                 if (IsRepeatable())
                 {
                     // Repeatable button clicks are performed on the MouseDown and at timer events
-                    if (clicked != null && target.ContainsPointToLocal(evt.localMousePosition))
+                    var localMousePosition = target.ChangeCoordinatesTo(target.parent, evt.localMousePosition);
+                    if (clicked != null && target.ContainsPoint(localMousePosition))
                     {
                         clicked();
                     }

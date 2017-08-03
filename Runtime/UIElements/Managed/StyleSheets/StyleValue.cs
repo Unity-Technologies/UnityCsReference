@@ -73,17 +73,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     internal enum StylePropertyApplyMode
     {
         Copy,
-        CopyIfMoreSpecific,
+        CopyIfEqualOrGreaterSpecificity,
         CopyIfNotInline
-    }
-
-    [Obsolete("Style<T> is deprecated, use StyleValue<T> instead", false)]
-    public struct Style<T>
-    {
-        public T GetSpecifiedValueOrDefault(T defaultValue)
-        {
-            return default(T);
-        }
     }
 
     public struct StyleValue<T>
@@ -124,28 +115,38 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             return sp.value;
         }
 
-        internal void Apply(StyleValue<T> other, StylePropertyApplyMode mode)
+        internal bool Apply(StyleValue<T> other, StylePropertyApplyMode mode)
+        {
+            return Apply(other.value, other.specificity, mode);
+        }
+
+        internal bool Apply(T otherValue, int otherSpecificity, StylePropertyApplyMode mode)
         {
             switch (mode)
             {
                 case StylePropertyApplyMode.Copy:
-                    value = other.value;
-                    specificity = other.specificity;
-                    break;
-                case StylePropertyApplyMode.CopyIfMoreSpecific:
-                    if (other.specificity >= specificity)
+                    value = otherValue;
+                    specificity = otherSpecificity;
+                    return true;
+                case StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity:
+                    if (otherSpecificity >= specificity)
                     {
-                        value = other.value;
-                        specificity = other.specificity;
+                        value = otherValue;
+                        specificity = otherSpecificity;
+                        return true;
                     }
-                    break;
+                    return false;
                 case StylePropertyApplyMode.CopyIfNotInline:
                     if (specificity < int.MaxValue)
                     {
-                        value = other.value;
-                        specificity = other.specificity;
+                        value = otherValue;
+                        specificity = otherSpecificity;
+                        return true;
                     }
-                    break;
+                    return false;
+                default:
+                    Debug.Assert(false, "Invalid mode " + mode);
+                    return false;
             }
         }
 

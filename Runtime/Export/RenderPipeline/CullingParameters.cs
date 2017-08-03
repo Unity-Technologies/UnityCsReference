@@ -138,6 +138,11 @@ namespace UnityEngine.Experimental.Rendering
 
         private CameraProperties m_CameraProperties;
 
+        public Matrix4x4 cullStereoView;
+        public Matrix4x4 cullStereoProj;
+        public float cullStereoSeparation;
+        private int padding2;
+
         public int cullingPlaneCount
         {
             get { return m_CullingPlaneCount; }
@@ -149,10 +154,10 @@ namespace UnityEngine.Experimental.Rendering
             }
         }
 
-        public int isOrthographic
+        public bool isOrthographic
         {
-            get { return m_IsOrthographic; }
-            set { m_IsOrthographic = value; }
+            get { return Convert.ToBoolean(m_IsOrthographic); }
+            set { m_IsOrthographic = Convert.ToInt32(value); }
         }
 
         public LODParameters lodParameters

@@ -203,8 +203,10 @@ namespace UnityEditor
                 bool showShadowMask = false;
                 foreach (LightmapData lightmapData in lightmaps)
                 {
-                    if (lightmapData.lightmapDir != null) showDirLightmap = true;
-                    if (lightmapData.shadowMask != null) showShadowMask = true;
+                    if (lightmapData.lightmapDir != null)
+                        showDirLightmap = true;
+                    if (lightmapData.shadowMask != null)
+                        showShadowMask = true;
                 }
 
                 for (int i = 0; i < lightmaps.Length; i++)
@@ -223,30 +225,35 @@ namespace UnityEditor
                         lightmaps[i].shadowMask = LightmapField(lightmaps[i].shadowMask, i);
                     }
                     GUILayout.Space(5);
-                    LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
                     GUILayout.BeginVertical();
                     GUILayout.Label("Index: " + i, EditorStyles.miniBoldLabel);
-                    if (lc.IsValid())
-                    {
-                        GUILayout.Label("Occupied: " + InternalEditorUtility.CountToString((ulong)lc.occupiedTexelCount), EditorStyles.miniLabel);
 
-                        GUIContent direct = EditorGUIUtility.TextContent("Direct: " + lc.minDirectSamples + " / " + lc.maxDirectSamples + " / " + lc.avgDirectSamples + "|min / max / avg samples per texel");
-                        GUILayout.Label(direct, EditorStyles.miniLabel);
-
-                        GUIContent gi = EditorGUIUtility.TextContent("GI: " + lc.minGISamples + " / " + lc.maxGISamples + " / " + lc.avgGISamples + "|min / max / avg samples per texel");
-                        GUILayout.Label(gi, EditorStyles.miniLabel);
-                    }
-                    else
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
                     {
-                        GUILayout.Label("Occupied: N/A", EditorStyles.miniLabel);
-                        GUILayout.Label("Direct: N/A", EditorStyles.miniLabel);
-                        GUILayout.Label("GI: N/A", EditorStyles.miniLabel);
+                        LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
+
+                        if (lc.IsValid())
+                        {
+                            GUILayout.Label("Occupied: " + InternalEditorUtility.CountToString((ulong)lc.occupiedTexelCount), EditorStyles.miniLabel);
+
+                            GUIContent direct = EditorGUIUtility.TextContent("Direct: " + lc.minDirectSamples + " / " + lc.maxDirectSamples + " / " + lc.avgDirectSamples + "|min / max / avg samples per texel");
+                            GUILayout.Label(direct, EditorStyles.miniLabel);
+
+                            GUIContent gi = EditorGUIUtility.TextContent("Global Illumination: " + lc.minGISamples + " / " + lc.maxGISamples + " / " + lc.avgGISamples + "|min / max / avg samples per texel");
+                            GUILayout.Label(gi, EditorStyles.miniLabel);
+                        }
+                        else
+                        {
+                            GUILayout.Label("Occupied: N/A", EditorStyles.miniLabel);
+                            GUILayout.Label("Direct: N/A", EditorStyles.miniLabel);
+                            GUILayout.Label("Global Illumination: N/A", EditorStyles.miniLabel);
+                        }
+                        float mraysPerSec = Lightmapping.GetLightmapBakePerformance(i);
+                        if (mraysPerSec >= 0.0)
+                            GUILayout.Label(mraysPerSec.ToString("0.00") + " mrays/sec", EditorStyles.miniLabel);
+                        else
+                            GUILayout.Label("N/A mrays/sec", EditorStyles.miniLabel);
                     }
-                    float mraysPerSec = Lightmapping.GetLightmapBakePerformance(i);
-                    if (mraysPerSec >= 0.0)
-                        GUILayout.Label(mraysPerSec.ToString("0.00") + " mrays/sec", EditorStyles.miniLabel);
-                    else
-                        GUILayout.Label("N/A mrays/sec", EditorStyles.miniLabel);
 
                     GUILayout.EndVertical();
                     GUILayout.FlexibleSpace();

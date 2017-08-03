@@ -17,8 +17,8 @@ namespace UnityEditor
 public enum BuildTarget
 {
     
-    StandaloneOSXUniversal = 2,
-    
+    StandaloneOSX = 2,
+    [System.Obsolete ("StandaloneOSXIntel has been removed in 2017.3")]
     StandaloneOSXIntel = 4,
     
     StandaloneWindows = 5,
@@ -56,7 +56,7 @@ public enum BuildTarget
     StandaloneLinuxUniversal = 25,
     [System.Obsolete ("Use WSAPlayer with Windows Phone 8.1 selected")]
     WP8Player = 26,
-    
+    [System.Obsolete ("StandaloneOSXIntel64 has been removed in 2017.3")]
     StandaloneOSXIntel64 = 27,
     [System.Obsolete ("BlackBerry has been removed in 5.4")]
     BlackBerry = 28,
@@ -79,6 +79,8 @@ public enum BuildTarget
     BB10 = -1,
     [System.Obsolete ("Use WSAPlayer instead (UnityUpgradable) -> WSAPlayer", true)]
     MetroPlayer = -1,
+    [System.Obsolete ("Use StandaloneOSX instead (UnityUpgradable) -> StandaloneOSX", true)]
+    StandaloneOSXUniversal = -1,
     
     NoTarget = -2,
 }

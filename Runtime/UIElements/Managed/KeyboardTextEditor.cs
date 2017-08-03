@@ -215,7 +215,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 // Simplest test: only allow the character if the display font supports it.
-                Font font = textField.guiStyle.font;
+                Font font = textField.editor.style.font;
                 if ((font != null && font.HasCharacter(c)) || c == '\n')
                 {
                     Insert(c);

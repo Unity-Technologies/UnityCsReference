@@ -17,6 +17,32 @@ namespace UnityEngine
 {
 
 
+internal sealed partial class NoAllocHelpers
+{
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void ResizeList (object list, int size) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  System.Array ExtractArrayFromList (object list) ;
+
+    
+    
+    public static int SafeLength(System.Array values)
+        {
+            return values != null ? values.Length : 0;
+        }
+    
+    
+    public static int SafeLength<T>(List<T> values)
+        {
+            return values != null ? values.Count : 0;
+        }
+    
+    
+}
+
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 internal partial struct CombineInstanceHelper
 {
@@ -69,17 +95,6 @@ public sealed partial class Mesh : Object
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void ResizeList (object list, int size) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  System.Array ExtractArrayFromList (object list) ;
-
-    
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private int[] GetTrianglesImpl (int submesh) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -123,7 +138,7 @@ public void SetTriangles (int[] triangles, int submesh) {
 public void SetTriangles(int[] triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
         {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, triangles, SafeLength(triangles), calculateBounds);
+                SetTrianglesImpl(submesh, triangles, NoAllocHelpers.SafeLength(triangles), calculateBounds);
         }
 
     
@@ -137,7 +152,7 @@ public void SetTriangles (List<int> triangles, int submesh) {
 public void SetTriangles(List<int> triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
         {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, ExtractArrayFromList(triangles), SafeLength(triangles), calculateBounds);
+                SetTrianglesImpl(submesh, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), calculateBounds);
         }
 
     
@@ -151,7 +166,7 @@ public void SetIndices (int[] indices, MeshTopology topology, int submesh) {
 public void SetIndices(int[] indices, MeshTopology topology, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
         {
             if (CheckCanAccessSubmeshIndices(submesh))
-                SetIndicesImpl(submesh, topology, indices, SafeLength(indices), calculateBounds);
+                SetIndicesImpl(submesh, topology, indices, NoAllocHelpers.SafeLength(indices), calculateBounds);
         }
 
     

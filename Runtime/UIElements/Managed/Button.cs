@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             // Click-once behaviour
             clickable = new Clickable(clickEvent);
-            AddManipulator(clickable);
+            this.AddManipulator(clickable);
         }
     }
 }

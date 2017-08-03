@@ -76,7 +76,7 @@ namespace UnityEngine.Experimental.UIElements
                     var element = currentTarget as VisualElement;
                     if (element != null)
                     {
-                        imguiEvent.mousePosition = element.GlobalToBound(imguiEvent.mousePosition);
+                        imguiEvent.mousePosition = element.WorldToLocal(imguiEvent.mousePosition);
                     }
                 }
             }

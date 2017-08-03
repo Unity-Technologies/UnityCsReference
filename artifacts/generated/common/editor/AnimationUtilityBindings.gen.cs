@@ -75,6 +75,11 @@ public partial struct EditorCurveBinding
     
     
     private int   m_isPPtrCurve;
+    
+    
+    private int   m_isDiscreteCurve;
+    
+    
     private int   m_isPhantom;
     
     
@@ -83,6 +88,7 @@ public partial struct EditorCurveBinding
     
     
     public bool  isPPtrCurve { get { return m_isPPtrCurve != 0; } }
+    public bool  isDiscreteCurve { get { return m_isDiscreteCurve != 0; } }
     internal bool  isPhantom { get { return m_isPhantom != 0; } set { m_isPhantom = value == true ? 1 : 0; } }
     
             public static bool operator==(EditorCurveBinding lhs, EditorCurveBinding rhs)
@@ -93,7 +99,7 @@ public partial struct EditorCurveBinding
                     return false;
             }
 
-            return lhs.path == rhs.path && lhs.type == rhs.type && lhs.propertyName == rhs.propertyName && lhs.m_isPPtrCurve == rhs.m_isPPtrCurve;
+            return lhs.m_isPPtrCurve == rhs.m_isPPtrCurve && lhs.m_isDiscreteCurve == rhs.m_isDiscreteCurve && lhs.path == rhs.path && lhs.type == rhs.type && lhs.propertyName == rhs.propertyName;
         }
     
             public static bool operator!=(EditorCurveBinding lhs, EditorCurveBinding rhs)
@@ -131,6 +137,7 @@ public partial struct EditorCurveBinding
             binding.type = inType;
             binding.propertyName = inPropertyName;
             binding.m_isPPtrCurve = 0;
+            binding.m_isDiscreteCurve = 0;
             binding.m_isPhantom = 0;
 
 
@@ -146,6 +153,7 @@ public partial struct EditorCurveBinding
             binding.type = inType;
             binding.propertyName = inPropertyName;
             binding.m_isPPtrCurve = 1;
+            binding.m_isDiscreteCurve = 1;
             binding.m_isPhantom = 0;
             return binding;
 

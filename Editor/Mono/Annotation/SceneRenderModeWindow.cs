@@ -77,8 +77,8 @@ namespace UnityEditor
             public static readonly GUIContent sMiscellaneous                = EditorGUIUtility.TextContent("Miscellaneous");
             public static readonly GUIContent sDeferredHeader               = EditorGUIUtility.TextContent("Deferred");
             public static readonly GUIContent sGlobalIlluminationHeader     = EditorGUIUtility.TextContent("Global Illumination");
-            public static readonly GUIContent sRealtimeGIHeader             = EditorGUIUtility.TextContent("Realtime GI");
-            public static readonly GUIContent sBakedGIHeader                = EditorGUIUtility.TextContent("Baked GI");
+            public static readonly GUIContent sRealtimeGIHeader             = EditorGUIUtility.TextContent("Realtime Global Illumination");
+            public static readonly GUIContent sBakedGIHeader                = EditorGUIUtility.TextContent("Baked Global Illumination");
             public static readonly GUIContent sMaterialValidationHeader     = EditorGUIUtility.TextContent("Material Validation");
             public static readonly GUIContent sResolutionToggle             = EditorGUIUtility.TextContent("Show Lightmap Resolution");
 
@@ -105,27 +105,27 @@ namespace UnityEditor
                 DrawCameraMode.DeferredSmoothness,
                 DrawCameraMode.DeferredNormal,
 
-                // Global Illumination
+                // Enlighten Global Illumination
                 DrawCameraMode.Systems,
                 DrawCameraMode.Clustering,
                 DrawCameraMode.LitClustering,
+                DrawCameraMode.RealtimeCharting,
 
                 // Realtime GI
-                DrawCameraMode.RealtimeIndirect,
                 DrawCameraMode.RealtimeAlbedo,
                 DrawCameraMode.RealtimeEmissive,
+                DrawCameraMode.RealtimeIndirect,
                 DrawCameraMode.RealtimeDirectionality,
-                DrawCameraMode.RealtimeCharting,
 
                 // Baked GI
                 DrawCameraMode.BakedLightmap,
+                DrawCameraMode.BakedDirectionality,
+                DrawCameraMode.ShadowMasks,
                 DrawCameraMode.BakedAlbedo,
                 DrawCameraMode.BakedEmissive,
-                DrawCameraMode.BakedDirectionality,
                 DrawCameraMode.BakedCharting,
                 DrawCameraMode.BakedTexelValidity,
                 DrawCameraMode.BakedIndices,
-                DrawCameraMode.ShadowMasks,
                 DrawCameraMode.LightOverlap,
 
                 // Material Validation
@@ -178,10 +178,6 @@ namespace UnityEditor
         static readonly int sRenderModeCount = Styles.sRenderModeOptions.Length;
         static readonly int sMenuRowCount = sRenderModeCount + kMenuHeaderCount;
 
-        SerializedProperty m_EnableRealtimeGI;
-        SerializedProperty m_EnableBakedGI;
-        bool m_PathTracerBackend = false;
-
         const int kMenuHeaderCount = 7;
         const float kSeparatorHeight = 3;
         const float kFrameWidth = 1f;
@@ -200,14 +196,6 @@ namespace UnityEditor
         public override Vector2 GetWindowSize()
         {
             return new Vector2(m_WindowWidth, m_WindowHeight);
-        }
-
-        public override void OnOpen()
-        {
-            var so = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-            m_EnableRealtimeGI = so.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
-            m_EnableBakedGI = so.FindProperty("m_GISettings.m_EnableBakedLightmaps");
-            m_PathTracerBackend = (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer);
         }
 
         public override void OnGUI(Rect rect)
@@ -284,7 +272,7 @@ namespace UnityEditor
                         DrawHeader(ref drawPos, Styles.sGlobalIlluminationHeader);
                         break;
 
-                    case DrawCameraMode.RealtimeIndirect:
+                    case DrawCameraMode.RealtimeAlbedo:
                         DrawSeparator(ref drawPos);
                         DrawHeader(ref drawPos, Styles.sRealtimeGIHeader);
                         break;
@@ -300,26 +288,19 @@ namespace UnityEditor
                         break;
                 }
 
-                using (new EditorGUI.DisabledScope(IsModeDisabled(mode)))
+                using (new EditorGUI.DisabledScope(!IsModeEnabled(mode)))
                 {
                     DoOneMode(caller, ref drawPos, mode);
                 }
             }
 
-            bool disabled = (m_SceneView.renderMode < DrawCameraMode.RealtimeCharting) || IsModeDisabled(m_SceneView.renderMode);
+            bool disabled = (m_SceneView.renderMode < DrawCameraMode.RealtimeCharting) || !IsModeEnabled(m_SceneView.renderMode);
             DoResolutionToggle(drawPos, disabled);
         }
 
-        bool IsModeDisabled(DrawCameraMode mode)
+        bool IsModeEnabled(DrawCameraMode mode)
         {
-            return (mode == DrawCameraMode.BakedLightmap && !m_EnableBakedGI.boolValue) ||
-                (mode == DrawCameraMode.BakedAlbedo && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
-                (mode == DrawCameraMode.BakedEmissive && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
-                (mode == DrawCameraMode.BakedTexelValidity && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
-                (mode == DrawCameraMode.BakedCharting && (!m_EnableBakedGI.boolValue || !m_PathTracerBackend)) ||
-                (mode >= DrawCameraMode.RealtimeCharting && mode < DrawCameraMode.BakedLightmap && !m_EnableRealtimeGI.boolValue && (!m_EnableBakedGI.boolValue || (m_EnableBakedGI.boolValue && m_PathTracerBackend)) ||
-                 (mode == DrawCameraMode.Clustering && !m_EnableRealtimeGI.boolValue && (!m_EnableBakedGI.boolValue || (m_EnableBakedGI.boolValue && m_PathTracerBackend))) ||
-                 (mode == DrawCameraMode.LitClustering && !m_EnableRealtimeGI.boolValue));
+            return m_SceneView.IsCameraDrawModeEnabled(mode);
         }
 
         void DoResolutionToggle(Rect rect, bool disabled)

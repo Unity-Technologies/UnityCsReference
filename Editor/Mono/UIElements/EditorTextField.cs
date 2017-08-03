@@ -15,7 +15,7 @@ namespace UnityEditor.Experimental.UIElements
             cm.AddAction("Cut", Cut, CutCopyActionStatus);
             cm.AddAction("Copy", Copy, CutCopyActionStatus);
             cm.AddAction("Paste", Paste, PasteActionStatus);
-            AddManipulator(cm);
+            this.AddManipulator(cm);
         }
 
         ContextualMenu.ActionStatus CutCopyActionStatus()

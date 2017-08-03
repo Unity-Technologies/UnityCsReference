@@ -822,3 +822,26 @@ namespace UnityEngine
         public Vector2 GetTextureScale(int nameID) { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.x, st.y); }
     }
 }
+
+
+//
+// Attributes
+//
+
+
+namespace UnityEngine
+{
+    [UsedByNativeCode]
+    public sealed partial class ImageEffectTransformsToLDR : Attribute
+    {
+    }
+
+    public sealed partial class ImageEffectAllowedInSceneView : Attribute
+    {
+    }
+
+    [UsedByNativeCode]
+    public sealed partial class ImageEffectOpaque : Attribute
+    {
+    }
+}

@@ -258,9 +258,7 @@ namespace UnityEditor
         {
             switch (EditorUserBuildSettings.activeBuildTarget)
             {
-                case BuildTarget.StandaloneOSXIntel:
-                case BuildTarget.StandaloneOSXIntel64:
-                case BuildTarget.StandaloneOSXUniversal:
+                case BuildTarget.StandaloneOSX:
                     return !PlayerSettings.macRetinaSupport; // if retina support enabled -> expecting LowRes setting disabled by default
                 default:
                     return true;

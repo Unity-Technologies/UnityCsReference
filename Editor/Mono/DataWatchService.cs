@@ -104,6 +104,15 @@ namespace UnityEditor
             return modifications;
         }
 
+        public void ForceDirtyNextPoll(Object obj)
+        {
+            Watchers watch;
+            if (m_Watched.TryGetValue(obj, out watch))
+            {
+                watch.tracker.ForceDirtyNextPoll();
+            }
+        }
+
         // go through all trackers and poll their native revisions
         public void PollNativeData()
         {

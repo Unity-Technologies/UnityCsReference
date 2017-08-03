@@ -68,7 +68,6 @@ namespace UnityEditor
         private DesktopSingleCPUProperty m_LinuxX86;
         private DesktopSingleCPUProperty m_LinuxX86_X64;
 
-        private DesktopSingleCPUProperty m_OSXX86;
         private DesktopSingleCPUProperty m_OSXX86_X64;
 
 
@@ -87,8 +86,9 @@ namespace UnityEditor
             m_LinuxX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux), DesktopPluginCPUArchitecture.x86);
             m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
 
-            m_OSXX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSXIntel));
+#pragma warning disable 612, 618
             m_OSXX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSXIntel64));
+#pragma warning restore 612, 618
 
             properties.Add(m_WindowsX86);
             properties.Add(m_WindowsX86_X64);
@@ -96,7 +96,6 @@ namespace UnityEditor
             properties.Add(m_LinuxX86);
             properties.Add(m_LinuxX86_X64);
 
-            properties.Add(m_OSXX86);
             properties.Add(m_OSXX86_X64);
 
             return properties.ToArray();
@@ -167,7 +166,6 @@ namespace UnityEditor
             if (IsUsableOnOSX(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TextContent("Mac OS X"), EditorStyles.boldLabel);
-                m_OSXX86.OnGUI(inspector);
                 m_OSXX86_X64.OnGUI(inspector);
             }
 
@@ -186,7 +184,6 @@ namespace UnityEditor
                 m_WindowsX86_X64,
                 m_LinuxX86,
                 m_LinuxX86_X64,
-                m_OSXX86,
                 m_OSXX86_X64
             };
 
@@ -212,20 +209,21 @@ namespace UnityEditor
                 importer.SetPlatformData(BuildTarget.StandaloneLinuxUniversal, "CPU", linuxUniversal.ToString());
             inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinuxUniversal), linuxX86Enabled || linuxX86_X64Enabled);
 
-            bool osxX86Enabled = m_OSXX86.IsTargetEnabled(inspector);
             bool osxX86_X64Enabled = m_OSXX86_X64.IsTargetEnabled(inspector);
 
-            DesktopPluginCPUArchitecture osxUniversal = CalculateMultiCPUArchitecture(osxX86Enabled, osxX86_X64Enabled);
+            DesktopPluginCPUArchitecture osxUniversal = CalculateMultiCPUArchitecture(true, osxX86_X64Enabled);
             foreach (var importer in inspector.importers)
-                importer.SetPlatformData(BuildTarget.StandaloneOSXUniversal, "CPU", osxUniversal.ToString());
-            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSXUniversal), osxX86Enabled || osxX86_X64Enabled);
+                importer.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", osxUniversal.ToString());
+            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), osxX86_X64Enabled);
         }
 
         public override string CalculateFinalPluginPath(string platformName, PluginImporter imp)
         {
             BuildTarget target = BuildPipeline.GetBuildTargetByName(platformName);
             bool pluginForWindows = target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
-            bool pluginForOSX = target == BuildTarget.StandaloneOSXIntel || target == BuildTarget.StandaloneOSXIntel64 || target == BuildTarget.StandaloneOSXUniversal;
+#pragma warning disable 612, 618
+            bool pluginForOSX = target == BuildTarget.StandaloneOSXIntel || target == BuildTarget.StandaloneOSXIntel64 || target == BuildTarget.StandaloneOSX;
+#pragma warning restore 612, 618
             bool pluginForLinux = target == BuildTarget.StandaloneLinux || target == BuildTarget.StandaloneLinux64 || target == BuildTarget.StandaloneLinuxUniversal;
 
             if (!pluginForLinux && !pluginForOSX && !pluginForWindows)

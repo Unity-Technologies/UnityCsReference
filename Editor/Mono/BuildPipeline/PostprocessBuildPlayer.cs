@@ -224,6 +224,7 @@ namespace UnityEditor
                     args.installPath = path;
                     args.productName = productName;
                     args.options = options;
+                    args.report = buildReport;
 
                     postprocessor.LaunchPlayer(args);
                 }
@@ -312,23 +313,6 @@ namespace UnityEditor
             get
             {
                 return "x86_64";
-            }
-        }
-
-        internal static string GetArchitectureForTarget(BuildTarget target)
-        {
-            switch (target)
-            {
-                case BuildTarget.StandaloneLinux64:
-                case BuildTarget.StandaloneWindows64:
-                    return "x86_64";
-                case BuildTarget.StandaloneLinux:
-                case BuildTarget.StandaloneLinuxUniversal:
-                case BuildTarget.StandaloneOSXIntel:
-                case BuildTarget.StandaloneWindows:
-                    return "x86";
-                default:
-                    return String.Empty;
             }
         }
     }

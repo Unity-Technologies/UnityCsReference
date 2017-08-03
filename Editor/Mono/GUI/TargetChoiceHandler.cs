@@ -62,12 +62,12 @@ namespace UnityEditor
             List<string> options = new List<string>();
             foreach (Object target in targets)
             {
-                string option = "Set to Value of " + target.name;
+                string option = string.Format("Set to Value of {0}", target.name);
                 if (options.Contains(option))
                 {
                     for (int i = 1;; i++)
                     {
-                        option = "Set to Value of " + target.name + " (" + i + ")";
+                        option = string.Format("Set to Value of {0}({1})", target.name, i);
                         if (!options.Contains(option))
                             break;
                     }

@@ -226,6 +226,13 @@ namespace UnityEditor
             SelectionChanged(hashCodes);
         }
 
+        protected override void DoubleClickedItem(int id)
+        {
+            BuildPlayerSceneTreeViewItem item = FindItem(id , rootItem) as BuildPlayerSceneTreeViewItem;
+            int instanceID = AssetDatabase.GetInstanceIDFromGUID(AssetDatabase.AssetPathToGUID(item.fullName));
+            EditorGUIUtility.PingObject(instanceID);
+        }
+
         protected int FindDropAtIndex(DragAndDropArgs args)
         {
             int indexToDrop = args.insertAtIndex;

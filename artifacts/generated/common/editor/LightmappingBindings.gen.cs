@@ -757,8 +757,75 @@ internal sealed partial class LightmapVisualization
 
 }
 
+internal enum GITextureAvailability
+{
+    GITextureUnknown = 0,
+    GITextureNotAvailable = 1,
+    GITextureLoading = 2,
+    GITextureAvailable = 3,
+    GITextureAvailabilityCount = 4
+}
+
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+internal partial struct VisualisationGITexture
+{
+    public GITextureType type;
+    public GITextureAvailability textureAvailability;
+    public Texture2D texture;
+    public Hash128 contentHash;
+}
+
 internal sealed partial class LightmapVisualizationUtility
 {
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  bool IsTextureTypeEnabled (GITextureType textureType) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool IsBakedTextureType (GITextureType textureType) ;
+
+    static internal VisualisationGITexture GetSelectedObjectGITexture(GITextureType textureType)
+        {
+            var result = new VisualisationGITexture();
+            GetSelectedObjectGITextureInternal(textureType, ref result);
+            return result;
+        }
+    
+    
+    private static void GetSelectedObjectGITextureInternal (GITextureType textureType, ref VisualisationGITexture result) {
+        INTERNAL_CALL_GetSelectedObjectGITextureInternal ( textureType, ref result );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetSelectedObjectGITextureInternal (GITextureType textureType, ref VisualisationGITexture result);
+    static internal Hash128 GetSelectedObjectGITextureHash(GITextureType textureType)
+        {
+            var result = new Hash128();
+            GetSelectedObjectGITextureHashInternal(textureType, ref result);
+            return result;
+        }
+    
+    
+    private static void GetSelectedObjectGITextureHashInternal (GITextureType textureType, ref Hash128 result) {
+        INTERNAL_CALL_GetSelectedObjectGITextureHashInternal ( textureType, ref result );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetSelectedObjectGITextureHashInternal (GITextureType textureType, ref Hash128 result);
+    public static void DrawTextureWithUVOverlay (Texture2D texture, GameObject gameObject, Rect drawableArea, Rect position, GITextureType textureType) {
+        INTERNAL_CALL_DrawTextureWithUVOverlay ( texture, gameObject, ref drawableArea, ref position, textureType );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_DrawTextureWithUVOverlay (Texture2D texture, GameObject gameObject, ref Rect drawableArea, ref Rect position, GITextureType textureType);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  LightmapType GetLightmapType (GITextureType textureType) ;
+
     public static Vector4 GetLightmapTilingOffset (LightmapType lightmapType) {
         Vector4 result;
         INTERNAL_CALL_GetLightmapTilingOffset ( lightmapType, out result );
@@ -768,17 +835,25 @@ internal sealed partial class LightmapVisualizationUtility
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetLightmapTilingOffset (LightmapType lightmapType, out Vector4 value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  Texture2D GetGITexture (GITextureType textureType) ;
+}
 
-    public static void DrawTextureWithUVOverlay (Texture2D texture, GameObject gameObject, Rect drawableArea, Rect position, GITextureType textureType) {
-        INTERNAL_CALL_DrawTextureWithUVOverlay ( texture, gameObject, ref drawableArea, ref position, textureType );
+}
+
+
+namespace UnityEditor.Experimental
+{
+public sealed partial class Lightmapping
+{
+    public extern static bool probesIgnoreDirectEnvironment
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
     }
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_DrawTextureWithUVOverlay (Texture2D texture, GameObject gameObject, ref Rect drawableArea, ref Rect position, GITextureType textureType);
 }
 
 }

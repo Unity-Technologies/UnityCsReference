@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -17,7 +18,6 @@ namespace UnityEditor
 
         // Material
         SerializedProperty m_ImportMaterials;
-        SerializedProperty m_AutoMapExternalMaterials;
         SerializedProperty m_MaterialName;
         SerializedProperty m_MaterialSearch;
         SerializedProperty m_MaterialLocation;
@@ -26,6 +26,10 @@ namespace UnityEditor
         SerializedProperty m_ExternalObjects;
 
         SerializedProperty m_HasEmbeddedTextures;
+
+        SerializedProperty m_SupportsEmbeddedMaterials;
+
+        private bool m_HasEmbeddedMaterials = false;
 
         class Styles
         {
@@ -60,6 +64,8 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Project-Wide")
             };
 
+            public GUIContent AutoMapExternalMaterials = EditorGUIUtility.TextContent("Map External Materials|Map the external materials found in the project automatically every time the asset is reimported.");
+
             public GUIContent NoMaterialHelp = EditorGUIUtility.TextContent("Do not generate materials. Use Unity's default material instead.");
 
             public GUIContent ExternalMaterialHelpStart = EditorGUIUtility.TextContent("For each imported material, Unity first looks for an existing material named %MAT%.");
@@ -86,7 +92,11 @@ namespace UnityEditor
 
             public GUIContent NoMaterialMappingsHelp = EditorGUIUtility.TextContent("Re-import the asset to see the list of used materials.");
 
-            public GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract Textures|Click on this button to extract the embedded textures.");
+            public GUIContent Textures = EditorGUIUtility.TextContent("Textures");
+            public GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract To...|Click on this button to extract the embedded textures.");
+
+            public GUIContent Materials = EditorGUIUtility.TextContent("Materials");
+            public GUIContent ExtractEmbeddedMaterials = EditorGUIUtility.TextContent("Extract To...|Click on this button to extract the embedded materials.");
         }
         static Styles styles;
 
@@ -103,11 +113,38 @@ namespace UnityEditor
 #pragma warning restore 618
         }
 
+        private bool HasEmbeddedMaterials()
+        {
+            if (m_Materials.arraySize == 0)
+                return false;
+
+            // if the m_ExternalObjecs map has any unapplied changes, keep the state of the button as is
+            if (m_ExternalObjects.serializedObject.hasModifiedProperties)
+                return m_HasEmbeddedMaterials;
+
+            m_HasEmbeddedMaterials = true;
+            foreach (var t in m_ExternalObjects.serializedObject.targetObjects)
+            {
+                var importer = t as ModelImporter;
+                var externalObjectMap = importer.GetExternalObjectMap();
+                var materialsList = importer.sourceMaterials;
+
+                int remappedMaterialCount = 0;
+                foreach (var entry in externalObjectMap)
+                {
+                    if (entry.Key.type == typeof(Material))
+                        ++remappedMaterialCount;
+                }
+
+                m_HasEmbeddedMaterials = m_HasEmbeddedMaterials && remappedMaterialCount != materialsList.Length;
+            }
+            return m_HasEmbeddedMaterials;
+        }
+
         internal override void OnEnable()
         {
             // Material
             m_ImportMaterials = serializedObject.FindProperty("m_ImportMaterials");
-            m_AutoMapExternalMaterials = serializedObject.FindProperty("m_AutoMapExternalMaterials");
             m_MaterialName = serializedObject.FindProperty("m_MaterialName");
             m_MaterialSearch = serializedObject.FindProperty("m_MaterialSearch");
             m_MaterialLocation = serializedObject.FindProperty("m_MaterialLocation");
@@ -117,6 +154,8 @@ namespace UnityEditor
 
             m_HasEmbeddedTextures = serializedObject.FindProperty("m_HasEmbeddedTextures");
 
+            m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
+
             UpdateShowAllMaterialNameOptions();
         }
 
@@ -124,16 +163,6 @@ namespace UnityEditor
         {
             base.ResetValues();
             UpdateShowAllMaterialNameOptions();
-        }
-
-        internal override void PreApply()
-        {
-            if (!m_MaterialLocation.hasMultipleDifferentValues && m_MaterialLocation.intValue == 0)
-            {
-                // this popup is only relevant for backwards compatibility, when the user stuck to using external materials
-                m_AutoMapExternalMaterials.boolValue = EditorUtility.DisplayDialog("Map External Materials",
-                        "Map the external materials found in the project?", "Yes", "No");
-            }
         }
 
         internal override void PostApply()
@@ -146,89 +175,95 @@ namespace UnityEditor
             if (styles == null)
                 styles = new Styles();
 
-            TexturesGUI();
             MaterialsGUI();
         }
 
         private void TexturesGUI()
         {
-            using (new EditorGUI.DisabledScope(!m_HasEmbeddedTextures.boolValue || m_HasEmbeddedTextures.hasMultipleDifferentValues))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button(styles.ExtractEmbeddedTextures))
+                EditorGUILayout.PrefixLabel(styles.Textures);
+
+                using (
+                    new EditorGUI.DisabledScope(!m_HasEmbeddedTextures.boolValue &&
+                        !m_HasEmbeddedTextures.hasMultipleDifferentValues))
                 {
-                    // when extracting textures, we must handle the case when multiple selected assets could generate textures with the same name at the user supplied path
-                    // we proceed as follows:
-                    // 1. each asset extracts the textures in a separate temp folder
-                    // 2. we remap the extracted assets to the respective asset importer
-                    // 3. we generate unique names for each asset and move them to the user supplied path
-                    // 4. we re-import all the assets to have the internal materials linked to the newly extracted textures
-
-                    List<Tuple<Object, string>> outputsForTargets = new List<Tuple<Object, string>>();
-                    // use the first target for selecting the destination folder, but apply that path for all targets
-                    string destinationPath = (target as ModelImporter).assetPath;
-                    destinationPath = EditorUtility.SaveFolderPanel("Select Textures Folder",
-                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
-                    if (string.IsNullOrEmpty(destinationPath))
+                    if (GUILayout.Button(styles.ExtractEmbeddedTextures))
                     {
-                        // cancel the extraction if the user did not select a folder
-                        return;
-                    }
-                    destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+                        // when extracting textures, we must handle the case when multiple selected assets could generate textures with the same name at the user supplied path
+                        // we proceed as follows:
+                        // 1. each asset extracts the textures in a separate temp folder
+                        // 2. we remap the extracted assets to the respective asset importer
+                        // 3. we generate unique names for each asset and move them to the user supplied path
+                        // 4. we re-import all the assets to have the internal materials linked to the newly extracted textures
 
-                    try
-                    {
-                        // batch the extraction of the textures
-                        AssetDatabase.StartAssetEditing();
-
-                        foreach (var t in targets)
+                        List<Tuple<Object, string>> outputsForTargets = new List<Tuple<Object, string>>();
+                        // use the first target for selecting the destination folder, but apply that path for all targets
+                        string destinationPath = (target as ModelImporter).assetPath;
+                        destinationPath = EditorUtility.SaveFolderPanel("Select Textures Folder",
+                                FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                        if (string.IsNullOrEmpty(destinationPath))
                         {
-                            var tempPath = FileUtil.GetUniqueTempPathInProject();
-                            tempPath = tempPath.Replace("Temp", UnityEditorInternal.InternalEditorUtility.GetAssetsFolder());
-                            outputsForTargets.Add(Tuple.Create(t, tempPath));
-
-                            var importer = t as ModelImporter;
-                            importer.ExtractTextures(tempPath);
+                            // cancel the extraction if the user did not select a folder
+                            return;
                         }
-                    }
-                    finally
-                    {
-                        AssetDatabase.StopAssetEditing();
-                    }
+                        destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
 
-                    try
-                    {
-                        // batch the remapping and the reimport of the assets
-                        AssetDatabase.Refresh();
-                        AssetDatabase.StartAssetEditing();
-
-                        foreach (var item in outputsForTargets)
+                        try
                         {
-                            var importer = item.Item1 as ModelImporter;
+                            // batch the extraction of the textures
+                            AssetDatabase.StartAssetEditing();
 
-                            var guids = AssetDatabase.FindAssets("t:Texture", new string[] { item.Item2 });
-
-                            foreach (var guid in guids)
+                            foreach (var t in targets)
                             {
-                                var path = AssetDatabase.GUIDToAssetPath(guid);
-                                var tex = AssetDatabase.LoadAssetAtPath<Texture>(path);
-                                if (tex == null)
-                                    continue;
+                                var tempPath = FileUtil.GetUniqueTempPathInProject();
+                                tempPath = tempPath.Replace("Temp", UnityEditorInternal.InternalEditorUtility.GetAssetsFolder());
+                                outputsForTargets.Add(Tuple.Create(t, tempPath));
 
-                                importer.AddRemap(new AssetImporter.SourceAssetIdentifier(tex), tex);
-
-                                var newPath = Path.Combine(destinationPath, FileUtil.UnityGetFileName(path));
-                                newPath = AssetDatabase.GenerateUniqueAssetPath(newPath);
-                                AssetDatabase.MoveAsset(path, newPath);
+                                var importer = t as ModelImporter;
+                                importer.ExtractTextures(tempPath);
                             }
-
-                            AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
-
-                            AssetDatabase.DeleteAsset(item.Item2);
                         }
-                    }
-                    finally
-                    {
-                        AssetDatabase.StopAssetEditing();
+                        finally
+                        {
+                            AssetDatabase.StopAssetEditing();
+                        }
+
+                        try
+                        {
+                            // batch the remapping and the reimport of the assets
+                            AssetDatabase.Refresh();
+                            AssetDatabase.StartAssetEditing();
+
+                            foreach (var item in outputsForTargets)
+                            {
+                                var importer = item.Item1 as ModelImporter;
+
+                                var guids = AssetDatabase.FindAssets("t:Texture", new string[] {item.Item2});
+
+                                foreach (var guid in guids)
+                                {
+                                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                                    var tex = AssetDatabase.LoadAssetAtPath<Texture>(path);
+                                    if (tex == null)
+                                        continue;
+
+                                    importer.AddRemap(new AssetImporter.SourceAssetIdentifier(tex), tex);
+
+                                    var newPath = Path.Combine(destinationPath, FileUtil.UnityGetFileName(path));
+                                    newPath = AssetDatabase.GenerateUniqueAssetPath(newPath);
+                                    AssetDatabase.MoveAsset(path, newPath);
+                                }
+
+                                AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+
+                                AssetDatabase.DeleteAsset(item.Item2);
+                            }
+                        }
+                        finally
+                        {
+                            AssetDatabase.StopAssetEditing();
+                        }
                     }
                 }
             }
@@ -262,7 +297,7 @@ namespace UnityEditor
                                 styles.ExternalMaterialSearchHelp[m_MaterialSearch.intValue].text + "\n" +
                                 styles.ExternalMaterialHelpEnd.text;
                         }
-                        else
+                        else if (m_Materials.arraySize > 0)
                         {
                             // we're generating materials inside the prefab
                             materialHelp = styles.InternalMaterialHelp.text;
@@ -273,6 +308,44 @@ namespace UnityEditor
                     {
                         materialHelp += " " + styles.MaterialAssignmentsHelp.text;
                     }
+
+                    // display the extract buttons
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.PrefixLabel(styles.Materials);
+                        using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
+                        {
+                            if (GUILayout.Button(styles.ExtractEmbeddedMaterials))
+                            {
+                                // use the first target for selecting the destination folder, but apply that path for all targets
+                                string destinationPath = (target as ModelImporter).assetPath;
+                                destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
+                                        FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                                if (string.IsNullOrEmpty(destinationPath))
+                                {
+                                    // cancel the extraction if the user did not select a folder
+                                    return;
+                                }
+                                destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+
+                                try
+                                {
+                                    // batch the extraction of the textures
+                                    AssetDatabase.StartAssetEditing();
+
+                                    PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
+                                }
+                                finally
+                                {
+                                    AssetDatabase.StopAssetEditing();
+                                }
+
+                                // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
+                                return;
+                            }
+                        }
+                    }
+                    TexturesGUI();
                 }
                 else
                 {
@@ -286,7 +359,7 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(materialHelp, MessageType.Info);
             }
 
-            if (targets.Length == 1 && m_Materials.arraySize == 0)
+            if ((targets.Length == 1 || m_SupportsEmbeddedMaterials.hasMultipleDifferentValues == false) && m_SupportsEmbeddedMaterials.boolValue == false)
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.HelpBox(styles.NoMaterialMappingsHelp.text, MessageType.Warning);
@@ -311,7 +384,7 @@ namespace UnityEditor
                     Material material = null;
                     var propertyIdx = 0;
 
-                    for (int externalObjectIdx = 0; externalObjectIdx < m_ExternalObjects.arraySize; ++externalObjectIdx)
+                    for (int externalObjectIdx = 0, count = m_ExternalObjects.arraySize; externalObjectIdx < count; ++externalObjectIdx)
                     {
                         var pair = m_ExternalObjects.GetArrayElementAtIndex(externalObjectIdx);
                         var externalName = pair.FindPropertyRelative("first.name").stringValue;

@@ -41,6 +41,11 @@ namespace UnityEngine.Bindings
         CodegenOptions CodegenOptions { get; set; }
     }
 
+    interface IBindingsWritableSelfProviderAttribute : IBindingsAttribute
+    {
+        bool WritableSelf { get; set; }
+    }
+
     // This is a set of attributes used to override conventional behaviour in the bindings generator.
     // Please refer to bindings generator documentation.
 
@@ -106,6 +111,22 @@ namespace UnityEngine.Bindings
             if (name == "") throw new ArgumentException("name cannot be empty", "name");
 
             Name = name;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    sealed class NativeWritableSelfAttribute : Attribute, IBindingsWritableSelfProviderAttribute
+    {
+        public bool WritableSelf { get; set; }
+
+        public NativeWritableSelfAttribute()
+        {
+            WritableSelf = true;
+        }
+
+        public NativeWritableSelfAttribute(bool writable)
+        {
+            WritableSelf = writable;
         }
     }
 

@@ -115,7 +115,19 @@ public partial struct ScriptableRenderContext
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void SetupCameraProperties_Internal (Camera camera) ;
+    extern private void SetupCameraProperties_Internal (Camera camera, bool stereoSetup) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void StereoEndRender_Internal (Camera camera) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void StartMultiEye_Internal (Camera camera) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void StopMultiEye_Internal (Camera camera) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -186,34 +198,61 @@ public partial struct VisibleReflectionProbe
 public partial struct CullResults
 {
     
-            public VisibleLight[]           visibleLights;
-            public VisibleLight[]           visibleOffscreenVertexLights;
-            public VisibleReflectionProbe[] visibleReflectionProbes;
+            public List<VisibleLight>           visibleLights;
+            public List<VisibleLight>           visibleOffscreenVertexLights;
+            public List<VisibleReflectionProbe> visibleReflectionProbes;
             internal IntPtr                 cullResults;
+    
+    
+    private void Init()
+        {
+            visibleLights = new List<VisibleLight>();
+            visibleOffscreenVertexLights = new List<VisibleLight>();
+            visibleReflectionProbes = new List<VisibleReflectionProbe>();
+            cullResults = IntPtr.Zero;
+        }
     
     
     unsafe public static bool GetCullingParameters(Camera camera, out ScriptableCullingParameters cullingParameters)
         {
-            return GetCullingParameters_Internal(camera, out cullingParameters, sizeof(ScriptableCullingParameters));
+            return GetCullingParameters_Internal(camera, false, out cullingParameters, sizeof(ScriptableCullingParameters));
+        }
+    
+    
+    unsafe public static bool GetCullingParameters(Camera camera, bool stereoAware, out ScriptableCullingParameters cullingParameters)
+        {
+            return GetCullingParameters_Internal(camera, stereoAware, out cullingParameters, sizeof(ScriptableCullingParameters));
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool GetCullingParameters_Internal (Camera camera, out ScriptableCullingParameters cullingParameters, int managedCullingParametersSize) ;
+    extern private static  bool GetCullingParameters_Internal (Camera camera, bool stereoAware, out ScriptableCullingParameters cullingParameters, int managedCullingParametersSize) ;
 
-    internal static void Internal_Cull (ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, out CullResults results) {
-        INTERNAL_CALL_Internal_Cull ( ref parameters, ref renderLoop, out results );
+    internal static void Internal_Cull (ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, ref CullResults results) {
+        INTERNAL_CALL_Internal_Cull ( ref parameters, ref renderLoop, ref results );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_Internal_Cull (ref ScriptableCullingParameters parameters, ref ScriptableRenderContext renderLoop, out CullResults results);
+    private extern static void INTERNAL_CALL_Internal_Cull (ref ScriptableCullingParameters parameters, ref ScriptableRenderContext renderLoop, ref CullResults results);
     public static CullResults Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop)
         {
-            CullResults res;
-            Internal_Cull(ref parameters, renderLoop, out res);
+            CullResults res = new CullResults();
+            Cull(ref parameters, renderLoop, ref res);
             return res;
+        }
+    
+    
+    public static void Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, ref CullResults results)
+        {
+            if (results.visibleLights == null
+                || results.visibleLights == null
+                || results.visibleReflectionProbes == null)
+            {
+                results.Init();
+            }
+            Internal_Cull(ref parameters, renderLoop, ref results);
         }
     
     
@@ -254,7 +293,7 @@ public partial struct CullResults
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void FillLightIndices (IntPtr cullResults, ComputeBuffer computeBuffer) ;
 
-    internal int[] GetLightIndexMap()
+    public int[] GetLightIndexMap()
         {
             return GetLightIndexMap(cullResults);
         }
@@ -264,7 +303,7 @@ public partial struct CullResults
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  int[] GetLightIndexMap (IntPtr cullResults) ;
 
-    internal void SetLightIndexMap(int[] mapping)
+    public void SetLightIndexMap(int[] mapping)
         {
             SetLightIndexMap(cullResults, mapping);
         }

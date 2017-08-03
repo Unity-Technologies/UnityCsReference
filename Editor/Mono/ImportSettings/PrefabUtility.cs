@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -10,6 +11,8 @@ namespace UnityEditor
 {
     public sealed partial class PrefabUtility
     {
+        private const string kMaterialExtension = ".mat";
+
         [RequiredByNativeCode]
         internal static void ExtractSelectedObjectsFromPrefab()
         {
@@ -33,7 +36,7 @@ namespace UnityEditor
                 }
 
                 // TODO: [bogdanc 3/6/2017] if we want this function really generic, we need to know what extension the new asset files should have
-                var extension = selectedObj is Material ? ".mat" : string.Empty;
+                var extension = selectedObj is Material ? kMaterialExtension : string.Empty;
                 var newAssetPath = FileUtil.CombinePaths(folder, selectedObj.name) + extension;
                 newAssetPath = AssetDatabase.GenerateUniqueAssetPath(newAssetPath);
 
@@ -41,6 +44,35 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(error))
                 {
                     assetsToReload.Add(path);
+                }
+            }
+
+            foreach (var path in assetsToReload)
+            {
+                AssetDatabase.WriteImportSettingsIfDirty(path);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            }
+        }
+
+        internal static void ExtractMaterialsFromAsset(Object[] targets, string destinationPath)
+        {
+            var assetsToReload = new HashSet<string>();
+            foreach (var t in targets)
+            {
+                var importer = t as ModelImporter;
+
+                var materials = AssetDatabase.LoadAllAssetsAtPath(importer.assetPath).Where(x => x.GetType() == typeof(Material));
+
+                foreach (var material in materials)
+                {
+                    var newAssetPath = FileUtil.CombinePaths(destinationPath, material.name) + kMaterialExtension;
+                    newAssetPath = AssetDatabase.GenerateUniqueAssetPath(newAssetPath);
+
+                    var error = AssetDatabase.ExtractAsset(material, newAssetPath);
+                    if (string.IsNullOrEmpty(error))
+                    {
+                        assetsToReload.Add(importer.assetPath);
+                    }
                 }
             }
 

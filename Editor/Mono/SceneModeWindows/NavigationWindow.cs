@@ -616,7 +616,7 @@ namespace UnityEditor
                 if (s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount > kDebugAgentCount)
                 {
                     EditorGUILayout.BeginVertical(GUILayout.MaxWidth(165));
-                    EditorGUILayout.HelpBox("Avoidance visualization can be drawn for " + kDebugAgentCount + " agents (" + s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount + " selected).", MessageType.Warning);
+                    EditorGUILayout.HelpBox(string.Format("Avoidance visualization can be drawn for {0} agents ({1} selected).", kDebugAgentCount, s_NavMeshEditorWindow.m_SelectedNavMeshAgentCount), MessageType.Warning);
                     EditorGUILayout.EndVertical();
                 }
             }

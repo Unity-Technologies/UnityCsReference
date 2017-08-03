@@ -120,8 +120,8 @@ namespace UnityEngine.Experimental.UIElements
             if (clippingRect.width == 0.0f || clippingRect.height == 0.0f)
             {
                 // lastWorldClip will be empty until the first repaint occurred,
-                // we fall back on the globalBound in this case.
-                clippingRect = container.globalBound;
+                // we fall back on the worldBound in this case.
+                clippingRect = container.worldBound;
             }
 
             GUIClip.SetTransform(container.imguiTransform, clippingRect);

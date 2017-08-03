@@ -140,13 +140,156 @@ public sealed partial class EditorGUIUtility : GUIUtility
         }
     
     
+    [uei.ExcludeFromDocs]
+internal static GUIContent TrTextContent (string text, string tooltip ) {
+    Texture icon = null;
+    return TrTextContent ( text, tooltip, icon );
+}
+
+[uei.ExcludeFromDocs]
+internal static GUIContent TrTextContent (string text) {
+    Texture icon = null;
+    string tooltip = null;
+    return TrTextContent ( text, tooltip, icon );
+}
+
+internal static GUIContent TrTextContent(string text, [uei.DefaultValue("null")]  string tooltip , [uei.DefaultValue("null")]  Texture icon )
+        {
+            string text_k = text != null ? text : "";
+            string tooltip_k = tooltip != null ? tooltip : "";
+            string key = string.Format("{0}|{1}", text_k, tooltip_k);
+
+            GUIContent gc = (GUIContent)s_GUIContents[key];
+            if (gc == null)
+            {
+                gc = new GUIContent(L10n.Tr(text));
+                if (tooltip != null)
+                {
+                    gc.tooltip = L10n.Tr(tooltip);
+                }
+                if (icon != null)
+                {
+                    gc.image = icon;
+                }
+                s_GUIContents[key] = gc;
+            }
+            return gc;
+        }
+
+    
+    
+    internal static GUIContent TrTextContent(string text, string tooltip, string iconName)
+        {
+            string text_k = text != null ? text : "";
+            string tooltip_k = tooltip != null ? tooltip : "";
+            string key = string.Format("{0}|{1}", text_k, tooltip_k);
+
+            GUIContent gc = (GUIContent)s_GUIContents[key];
+            if (gc == null)
+            {
+                gc = new GUIContent(L10n.Tr(text));
+                if (tooltip != null)
+                {
+                    gc.tooltip = L10n.Tr(tooltip);
+                }
+                if (iconName != null)
+                {
+                    Texture icon = LoadIconRequired(iconName);
+                    gc.image = icon;
+                }
+                s_GUIContents[key] = gc;
+            }
+            return gc;
+        }
+    
+    
+    internal static GUIContent TrTextContent(string text, Texture icon)
+        {
+            return TrTextContent(text, null, icon);
+        }
+    
+    
+    internal static GUIContent TrTextContentWithIcon(string text, Texture icon)
+        {
+            return TrTextContent(text, null, icon);
+        }
+    
+    
+    internal static GUIContent TrTextContentWithIcon(string text, string iconName)
+        {
+            return TrTextContent(text, null, iconName);
+        }
+    
+    
+    internal static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName)
+        {
+            return TrTextContent(text, tooltip, iconName);
+        }
+    
+    
+    internal static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon)
+        {
+            return TrTextContent(text, tooltip, icon);
+        }
+    
+    
+    [uei.ExcludeFromDocs]
+internal static GUIContent TrIconContent (string name) {
+    string tooltip = null;
+    return TrIconContent ( name, tooltip );
+}
+
+internal static GUIContent TrIconContent(string name, [uei.DefaultValue("null")]  string tooltip )
+        {
+            GUIContent gc = (GUIContent)s_IconGUIContents[name];
+            if (gc != null)
+            {
+                return gc;
+            }
+            gc = new GUIContent();
+
+            if (tooltip != null)
+            {
+                gc.tooltip = L10n.Tr(tooltip);
+            }
+            gc.image = LoadIconRequired(name);
+            s_IconGUIContents[name] = gc;
+            return gc;
+        }
+
+    
+    
+    [uei.ExcludeFromDocs]
+internal static GUIContent TrIconContent (Texture icon) {
+    string tooltip = null;
+    return TrIconContent ( icon, tooltip );
+}
+
+internal static GUIContent TrIconContent(Texture icon, [uei.DefaultValue("null")]  string tooltip )
+        {
+            GUIContent gc = (GUIContent)s_IconGUIContents[tooltip];
+            if (gc != null)
+            {
+                return gc;
+            }
+            gc = new GUIContent();
+
+            if (tooltip != null)
+            {
+                gc.tooltip = L10n.Tr(tooltip);
+            }
+            gc.image = icon;
+            s_IconGUIContents[tooltip] = gc;
+            return gc;
+        }
+
+    
+    
     internal static Color kDarkViewBackground = new Color(0.22f, 0.22f, 0.22f, 0);
     
     
     internal static string[] GetNameAndTooltipString(string nameAndTooltip)
         {
-            nameAndTooltip = LocalizationDatabase.GetLocalizedString(nameAndTooltip);
-
             string[] retval = new string[3];
 
             string[] s1 = nameAndTooltip.Split('|');
@@ -334,6 +477,11 @@ public static GUIContent IconContent(string name, [uei.DefaultValue("null")]  st
             return retval;
         }
     
+    internal static GUIContent TrTempContent(string t)
+        {
+            return TempContent(L10n.Tr(t));
+        }
+    
     internal static bool HasHolddownKeyModifiers(Event evt)
         {
             return evt.shift | evt.control | evt.alt | evt.command;
@@ -466,12 +614,15 @@ public static GUIContent IconContent(string name, [uei.DefaultValue("null")]  st
     
     
             static Hashtable s_TextGUIContents = new Hashtable();
+            static Hashtable s_GUIContents = new Hashtable();
             static Hashtable s_IconGUIContents = new Hashtable();
     
     
     internal static void NotifyLanguageChanged(SystemLanguage newLanguage)
         {
             s_TextGUIContents = new Hashtable();
+            s_GUIContents = new Hashtable();
+            s_IconGUIContents = new Hashtable();
             EditorUtility.Internal_UpdateMenuTitleForLanguage(newLanguage);
             LocalizationDatabase.SetCurrentEditorLanguage(newLanguage);
             EditorApplication.RequestRepaintAllViews();

@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace UnityEngine
 {
@@ -301,6 +302,17 @@ public sealed partial class ComputeBuffer : IDisposable
     
     
             [System.Security.SecuritySafeCritical] 
+    public void SetData<T>(List<T> data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+        }
+    
+    
+    
+            [System.Security.SecuritySafeCritical] 
     public void SetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
         {
             if (data == null)
@@ -310,6 +322,20 @@ public sealed partial class ComputeBuffer : IDisposable
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
 
             InternalSetData(data, managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+        }
+    
+    
+    
+            [System.Security.SecuritySafeCritical] 
+    public void SetData<T>(List<T> data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, computeBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
         }
     
     

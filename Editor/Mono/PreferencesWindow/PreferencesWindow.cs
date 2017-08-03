@@ -155,6 +155,8 @@ namespace UnityEditor
 
         private SystemLanguage m_SelectedLanguage = SystemLanguage.English;
         private string[] m_EditorLanguageNames;
+        private bool m_EnableEditorLocalization;
+        private SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
 
         private bool m_AllowAlphaNumericHierarchy = false;
 
@@ -226,6 +228,7 @@ namespace UnityEditor
             m_Sections.Add(new Section("Keys", ShowKeys));
             m_Sections.Add(new Section("GI Cache", ShowGICache));
             m_Sections.Add(new Section("2D", Show2D));
+            //m_Sections.Add(new Section("Language", ShowLanguage));
 
             if (Unsupported.IsDeveloperBuild() || UnityConnect.preferencesEnabled)
             {
@@ -565,52 +568,7 @@ namespace UnityEditor
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
             m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle("Enable Alpha Numeric Sorting", m_AllowAlphaNumericHierarchy);
 
-            bool languageChanged = false;
-            SystemLanguage oldLanguage = m_SelectedLanguage;
-
-            SystemLanguage[] editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
-
-            if (editorLanguages.Length > 1)
-            {
-                if (m_EditorLanguageNames == null)
-                {
-                    m_EditorLanguageNames = new string[editorLanguages.Length];
-
-                    for (int i = 0; i < editorLanguages.Length; ++i)
-                    {
-                        m_EditorLanguageNames[i] = editorLanguages[i].ToString();
-                    }
-
-                    string defaultLanguage = string.Format("Default ( {0} )", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
-
-                    ArrayUtility.Insert(ref m_EditorLanguageNames, 0, "");
-                    ArrayUtility.Insert(ref m_EditorLanguageNames, 0, defaultLanguage);
-                }
-
-
-                EditorGUI.BeginChangeCheck();
-                oldLanguage = m_SelectedLanguage;
-
-                int idx = k_LangListMenuOffset + Array.IndexOf(editorLanguages, m_SelectedLanguage);
-
-                int sel = EditorGUILayout.Popup("Language", idx, m_EditorLanguageNames);
-
-                m_SelectedLanguage = (sel == 0) ? LocalizationDatabase.GetDefaultEditorLanguage() :
-                    editorLanguages[sel - k_LangListMenuOffset];
-
-                if (EditorGUI.EndChangeCheck() && oldLanguage != m_SelectedLanguage)
-                {
-                    languageChanged = true;
-                }
-            }
-
             ApplyChangesToPrefs();
-
-            if (languageChanged)
-            {
-                EditorGUIUtility.NotifyLanguageChanged(m_SelectedLanguage);
-                InternalEditorUtility.RequestScriptReload();
-            }
 
             if (oldAlphaNumeric != m_AllowAlphaNumericHierarchy)
                 EditorApplication.DirtyHierarchyWindowSorting();
@@ -962,6 +920,106 @@ namespace UnityEditor
             }
         }
 
+        private void ShowLanguage()
+        {
+            bool languageChanged = false;
+            bool isEditorLocalizationEnabled = m_EnableEditorLocalization;
+
+            m_EnableEditorLocalization = EditorGUILayout.Toggle("Editor Language(Experimental)", m_EnableEditorLocalization);
+            if (!m_EnableEditorLocalization)
+            {
+                if (m_SelectedLanguage != SystemLanguage.English)
+                {
+                    m_SelectedLanguage = SystemLanguage.English;
+                    languageChanged = true;
+                }
+            }
+
+            EditorGUI.BeginDisabledGroup(!m_EnableEditorLocalization);
+            {
+                SystemLanguage oldLanguage = m_SelectedLanguage;
+                SystemLanguage[] editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
+
+                if (m_EditorLanguageNames == null || m_EditorLanguageNames.Length != editorLanguages.Length)
+                {
+                    m_EditorLanguageNames = new string[editorLanguages.Length];
+
+                    for (int i = 0; i < editorLanguages.Length; ++i)
+                    {
+                        // not in stable languages list - display it as experimental language
+                        if (ArrayUtility.FindIndex(m_stableLanguages, delegate(SystemLanguage v) { return v == editorLanguages[i]; }) < 0)
+                        {
+                            m_EditorLanguageNames[i] =  string.Format("{0} (Experimental)", editorLanguages[i].ToString());
+                        }
+                        else
+                        {
+                            m_EditorLanguageNames[i] = editorLanguages[i].ToString();
+                        }
+                    }
+
+                    string defaultLanguage = string.Format("Default ( {0} )", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
+
+                    ArrayUtility.Insert(ref m_EditorLanguageNames, 0, "");
+                    ArrayUtility.Insert(ref m_EditorLanguageNames, 0, defaultLanguage);
+                }
+
+
+                EditorGUI.BeginChangeCheck();
+                oldLanguage = m_SelectedLanguage;
+
+                int idx = k_LangListMenuOffset + Array.IndexOf(editorLanguages, m_SelectedLanguage);
+                int sel = EditorGUILayout.Popup("Editor language", idx, m_EditorLanguageNames);
+                m_SelectedLanguage = (sel == 0) ?   LocalizationDatabase.GetDefaultEditorLanguage() :
+                    editorLanguages[sel - k_LangListMenuOffset];
+
+                if (EditorGUI.EndChangeCheck() && oldLanguage != m_SelectedLanguage)
+                {
+                    languageChanged = true;
+                }
+
+                GUILayout.Space(20);
+                EditorGUILayout.BeginVertical(GUI.skin.box);
+                GUILayout.Space(8);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(8);
+
+                EditorGUILayout.LabelField("Do you wish to disable experimental languages?");
+                GUILayout.Space(8);
+                if (GUILayout.Button("Disable"))
+                {
+                    m_EnableEditorLocalization = false;
+                    m_SelectedLanguage = SystemLanguage.English;
+                    languageChanged = true;
+                }
+
+                GUILayout.Space(8);
+                EditorGUILayout.EndHorizontal();
+                GUILayout.Space(8);
+                EditorGUILayout.EndVertical();
+
+                if (editorLanguages.Length <= 1)
+                {
+                    GUILayout.Space(20);
+                    EditorGUILayout.HelpBox("Internet connection is required to enable non-English languages.", MessageType.Info);
+                }
+            }
+            EditorGUI.EndDisabledGroup();
+
+            ApplyChangesToPrefs();
+
+            if (isEditorLocalizationEnabled != m_EnableEditorLocalization && m_EnableEditorLocalization)
+            {
+                LocalizationDatabase.ReadEditorLocalizationResources();
+            }
+            if (languageChanged)
+            {
+                EditorGUIUtility.NotifyLanguageChanged(m_SelectedLanguage);
+                InternalEditorUtility.RequestScriptReload();
+                LocalizedEditorFontManager.UpdateSkinFont(m_SelectedLanguage);
+            }
+        }
+
+
         private void WriteRecentAppsList(string[] paths, string path, string prefsKey)
         {
             int appIndex = 0;
@@ -1010,6 +1068,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("AllowAttachedDebuggingOfEditor", m_AllowAttachedDebuggingOfEditor);
 
             //updates EditorPrefs inside
+            LocalizationDatabase.enableEditorLocalization = m_EnableEditorLocalization;
             LocalizationDatabase.SetCurrentEditorLanguage(m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
@@ -1114,6 +1173,7 @@ namespace UnityEditor
             m_SpriteAtlasCacheSize = EditorPrefs.GetInt("SpritePackerCacheMaximumSizeGB");
 
             m_AllowAttachedDebuggingOfEditor = EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true);
+            m_EnableEditorLocalization = LocalizationDatabase.enableEditorLocalization;
             m_SelectedLanguage = LocalizationDatabase.GetCurrentEditorLanguage();
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
 

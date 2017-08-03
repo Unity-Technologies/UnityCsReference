@@ -171,7 +171,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<CreateMatchResponse, DataResponseDelegate<MatchInfo>>(client, OnMatchCreate, callback));
         }
 
@@ -216,7 +216,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<JoinMatchResponse, DataResponseDelegate<MatchInfo>>(client, OnMatchJoined, callback));
         }
 
@@ -257,7 +257,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<BasicResponse, BasicResponseDelegate>(client, OnMatchDestroyed, callback));
         }
 
@@ -296,7 +296,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<DropConnectionResponse, BasicResponseDelegate>(client, OnDropConnection, callback));
         }
 
@@ -344,7 +344,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<ListMatchResponse, DataResponseDelegate<List<MatchInfoSnapshot>>>(client, OnMatchList, callback));
         }
 
@@ -389,7 +389,7 @@ namespace UnityEngine.Networking.Match
 
             data.headers["Accept"] = "application/json";
 
-            var client = new WWW(uri.ToString(), data);
+            var client = UnityWebRequest.Post(uri.ToString(), data);
             return StartCoroutine(ProcessMatchResponse<BasicResponse, BasicResponseDelegate>(client, OnSetMatchAttributes, callback));
         }
 
@@ -402,17 +402,17 @@ namespace UnityEngine.Networking.Match
 
 
         // Coroutine for getting a match info response
-        private IEnumerator ProcessMatchResponse<JSONRESPONSE, USERRESPONSEDELEGATETYPE>(WWW client, InternalResponseDelegate<JSONRESPONSE, USERRESPONSEDELEGATETYPE> internalCallback, USERRESPONSEDELEGATETYPE userCallback) where JSONRESPONSE : Response, new()
+        private IEnumerator ProcessMatchResponse<JSONRESPONSE, USERRESPONSEDELEGATETYPE>(UnityWebRequest client, InternalResponseDelegate<JSONRESPONSE, USERRESPONSEDELEGATETYPE> internalCallback, USERRESPONSEDELEGATETYPE userCallback) where JSONRESPONSE : Response, new()
         {
             // wait for request to complete
-            yield return client;
+            yield return client.SendWebRequest();
 
             JSONRESPONSE jsonInterface = new JSONRESPONSE();
 
-            if (String.IsNullOrEmpty(client.error))
+            if (!(client.isNetworkError || client.isHttpError))
             {
                 object o;
-                if (SimpleJson.SimpleJson.TryDeserializeObject(client.text, out o))
+                if (SimpleJson.SimpleJson.TryDeserializeObject(client.downloadHandler.text, out o))
                 {
                     IDictionary<string, object> dictJsonObj = o as IDictionary<string, object>;
                     if (null != dictJsonObj)
@@ -432,7 +432,7 @@ namespace UnityEngine.Networking.Match
             }
             else
             {
-                jsonInterface.SetFailure(UnityString.Format("Request error:[{0}] Raw response:[{1}]", client.error, client.text));
+                jsonInterface.SetFailure(UnityString.Format("Request error:[{0}] Raw response:[{1}]", client.error, client.downloadHandler.text));
             }
 
             client.Dispose();

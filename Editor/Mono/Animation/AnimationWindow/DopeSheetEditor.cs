@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using Boo.Lang.Compiler.Ast;
 using UnityEngine;
@@ -585,7 +584,7 @@ namespace UnityEditorInternal
                 Hashtable editorCurves = new Hashtable();
                 foreach (AnimationWindowKeyframe key in state.selectedKeys)
                 {
-                    if (key.isPPtrCurve)
+                    if (key.isDiscreteCurve)
                         continue;
 
                     int index = key.curve.GetKeyframeIndex(AnimationKeyTime.Time(key.time, state.frameRate));

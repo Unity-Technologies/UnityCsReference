@@ -321,7 +321,7 @@ namespace UnityEngine.Experimental.UIElements
                 // update clip
                 if (container.clipChildren)
                 {
-                    var worldBound = ComputeAAAlignedBound(root.layout, offset * root.globalTransform);
+                    var worldBound = ComputeAAAlignedBound(root.layout, offset * root.worldTransform);
                     // are we and our children clipped?
                     if (!worldBound.Overlaps(currentGlobalClip))
                     {
@@ -339,7 +339,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else if (!root.forceVisible)
             {
-                var offsetBounds = ComputeAAAlignedBound(root.globalBound, offset);
+                var offsetBounds = ComputeAAAlignedBound(root.worldBound, offset);
                 if (!offsetBounds.Overlaps(currentGlobalClip))
                 {
                     return;
@@ -347,17 +347,17 @@ namespace UnityEngine.Experimental.UIElements
             }
             if (
                 (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
-                root.usePixelCaching && allowPixelCaching && root.globalBound.size.magnitude > Mathf.Epsilon)
+                root.usePixelCaching && allowPixelCaching && root.worldBound.size.magnitude > Mathf.Epsilon)
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
 
                 // validate cache texture size first
-                var globalBound = root.globalBound;
-                int w = (int)globalBound.width;
-                int h = (int)globalBound.height;
-                int textureWidth = (int)(globalBound.width * GUIUtility.pixelsPerPoint);
-                int textureHeight = (int)(globalBound.height * GUIUtility.pixelsPerPoint);
+                var worldBound = root.worldBound;
+                int w = (int)worldBound.width;
+                int h = (int)worldBound.height;
+                int textureWidth = (int)(worldBound.width * GUIUtility.pixelsPerPoint);
+                int textureHeight = (int)(worldBound.height * GUIUtility.pixelsPerPoint);
 
                 var cache = root.renderData.pixelCache;
                 if (cache != null &&
@@ -391,11 +391,11 @@ namespace UnityEngine.Experimental.UIElements
                     GL.Clear(true, true, new Color(0, 0, 0, 0));
 
                     // fix up transform for subtree to match texture upper left
-                    offset = Matrix4x4.Translate(new Vector3(-globalBound.x, -globalBound.y, 0));
+                    offset = Matrix4x4.Translate(new Vector3(-worldBound.x, -worldBound.y, 0));
 
                     // reset clipping
                     var textureClip = new Rect(0, 0, w, h);
-                    GUIClip.SetTransform(offset * root.globalTransform, textureClip);
+                    GUIClip.SetTransform(offset * root.worldTransform, textureClip);
 
                     // paint self
                     painter.currentWorldClip = currentGlobalClip;
@@ -421,7 +421,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-                GUIClip.SetTransform(root.globalTransform, currentGlobalClip);
+                GUIClip.SetTransform(root.worldTransform, currentGlobalClip);
 
                 var painterParams = new TextureStylePainterParameters
                 {
@@ -434,10 +434,10 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                GUIClip.SetTransform(offset * root.globalTransform, currentGlobalClip);
+                GUIClip.SetTransform(offset * root.worldTransform, currentGlobalClip);
 
                 stylePainter.currentWorldClip = currentGlobalClip;
-                stylePainter.mousePosition = root.globalTransform.inverse.MultiplyPoint3x4(e.mousePosition);
+                stylePainter.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(e.mousePosition);
 
                 stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
                 root.DoRepaint(stylePainter);

@@ -18,17 +18,66 @@ namespace UnityEngine.Experimental.UIElements
             get { return this; }
         }
 
+        static bool ApplyAndCompare(ref StyleValue<float> current, StyleValue<float> other)
+        {
+            float oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        static bool ApplyAndCompare(ref StyleValue<int> current, StyleValue<int> other)
+        {
+            int oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        static bool ApplyAndCompare(ref StyleValue<bool> current, StyleValue<bool> other)
+        {
+            bool oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        static bool ApplyAndCompare(ref StyleValue<Color> current, StyleValue<Color> other)
+        {
+            Color oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : Object
+        {
+            T oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
         StyleValue<float> IStyle.width
         {
             get { return effectiveStyle.width; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.width.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.width, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.Width = value.value;
                 }
-                inlineStyle.width = value;
-                cssNode.Width = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -37,12 +86,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.height; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.height.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.height, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.Height = value.value;
                 }
-                inlineStyle.height = value;
-                cssNode.Height = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -51,12 +99,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.maxWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.maxWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.maxWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.MaxWidth = value.value;
                 }
-                inlineStyle.maxWidth = value;
-                cssNode.MaxWidth = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -65,12 +112,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.maxHeight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.maxHeight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.maxHeight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.MaxHeight = value.value;
                 }
-                inlineStyle.maxHeight = value;
-                cssNode.MaxHeight = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -79,12 +125,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.minWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.minWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.minWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.MinWidth = value.value;
                 }
-                inlineStyle.minWidth = value;
-                cssNode.MinWidth = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -93,12 +138,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.minHeight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.minHeight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.minHeight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.MinHeight = value.value;
                 }
-                inlineStyle.minHeight = value;
-                cssNode.MinHeight = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -107,12 +151,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.flex; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.flex.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.flex, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.Flex = value.value;
                 }
-                inlineStyle.flex = value;
-                cssNode.Flex = value.GetSpecifiedValueOrDefault(float.NaN);
             }
         }
 
@@ -124,12 +167,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                if (effectiveStyle.overflow.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.overflow, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.Overflow = (CSSOverflow)value.value;
                 }
-                inlineStyle.overflow = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.Overflow = (CSSOverflow)value.value;
             }
         }
 
@@ -138,12 +180,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionLeft; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.positionLeft.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.positionLeft, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPosition(CSSEdge.Left, value.value);
                 }
-                inlineStyle.positionLeft = value;
-                cssNode.SetPosition(CSSEdge.Left, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -152,12 +193,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionTop; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.positionTop.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.positionTop, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPosition(CSSEdge.Top, value.value);
                 }
-                inlineStyle.positionTop = value;
-                cssNode.SetPosition(CSSEdge.Top, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -166,12 +206,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionRight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.positionRight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.positionRight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPosition(CSSEdge.Right, value.value);
                 }
-                inlineStyle.positionRight = value;
-                cssNode.SetPosition(CSSEdge.Right, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -180,12 +219,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionBottom; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.positionBottom.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.positionBottom, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPosition(CSSEdge.Bottom, value.value);
                 }
-                inlineStyle.positionBottom = value;
-                cssNode.SetPosition(CSSEdge.Bottom, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -194,12 +232,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginLeft; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.marginLeft.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.marginLeft, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetMargin(CSSEdge.Left, value.value);
                 }
-                inlineStyle.marginLeft = value;
-                cssNode.SetMargin(CSSEdge.Left, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -208,12 +245,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginTop; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.marginTop.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.marginTop, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetMargin(CSSEdge.Top, value.value);
                 }
-                inlineStyle.marginTop = value;
-                cssNode.SetMargin(CSSEdge.Top, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -222,12 +258,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginRight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.marginRight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.marginRight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetMargin(CSSEdge.Right, value.value);
                 }
-                inlineStyle.marginRight = value;
-                cssNode.SetMargin(CSSEdge.Right, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -236,12 +271,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginBottom; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.marginBottom.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.marginBottom, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetMargin(CSSEdge.Bottom, value.value);
                 }
-                inlineStyle.marginBottom = value;
-                cssNode.SetMargin(CSSEdge.Bottom, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -250,12 +284,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderLeft; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderLeft.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderLeft, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Left, value.value);
                 }
-                inlineStyle.borderLeft = value;
-                cssNode.SetBorder(CSSEdge.Left, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -264,12 +297,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTop; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderTop.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderTop, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Top, value.value);
                 }
-                inlineStyle.borderTop = value;
-                cssNode.SetBorder(CSSEdge.Top, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -278,12 +310,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderRight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderRight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderRight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Right, value.value);
                 }
-                inlineStyle.borderRight = value;
-                cssNode.SetBorder(CSSEdge.Right, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -292,12 +323,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottom; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderBottom.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderBottom, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Bottom, value.value);
                 }
-                inlineStyle.borderBottom = value;
-                cssNode.SetBorder(CSSEdge.Bottom, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -306,12 +336,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderLeftWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderLeftWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderLeftWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Left, value.value);
                 }
-                inlineStyle.borderLeftWidth = value;
-                cssNode.SetBorder(CSSEdge.Left, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -320,12 +349,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTopWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderTopWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderTopWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Top, value.value);
                 }
-                inlineStyle.borderTopWidth = value;
-                cssNode.SetBorder(CSSEdge.Top, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -334,12 +362,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderRightWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderRightWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderRightWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Right, value.value);
                 }
-                inlineStyle.borderRightWidth = value;
-                cssNode.SetBorder(CSSEdge.Right, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -348,12 +375,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottomWidth; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderBottomWidth.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderBottomWidth, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetBorder(CSSEdge.Bottom, value.value);
                 }
-                inlineStyle.borderBottomWidth = value;
-                cssNode.SetBorder(CSSEdge.Bottom, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -362,12 +388,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingLeft; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.paddingLeft.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.paddingLeft, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPadding(CSSEdge.Left, value.value);
                 }
-                inlineStyle.paddingLeft = value;
-                cssNode.SetPadding(CSSEdge.Left, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -376,12 +401,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingTop; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.paddingTop.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.paddingTop, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPadding(CSSEdge.Top, value.value);
                 }
-                inlineStyle.paddingTop = value;
-                cssNode.SetPadding(CSSEdge.Top, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -390,12 +414,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingRight; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.paddingRight.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.paddingRight, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPadding(CSSEdge.Right, value.value);
                 }
-                inlineStyle.paddingRight = value;
-                cssNode.SetPadding(CSSEdge.Right, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -404,12 +427,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingBottom; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.paddingBottom.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.paddingBottom, value))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.SetPadding(CSSEdge.Bottom, value.value);
                 }
-                inlineStyle.paddingBottom = value;
-                cssNode.SetPadding(CSSEdge.Bottom, value.GetSpecifiedValueOrDefault(float.NaN));
             }
         }
 
@@ -421,21 +443,20 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                if (effectiveStyle.positionType.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.positionType, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                }
-                inlineStyle.positionType = new StyleValue<int>((int)value.value, value.specificity);
-                PositionType posType = (PositionType)value.value;
-                switch (posType)
-                {
-                    case PositionType.Absolute:
-                    case PositionType.Manual:
-                        cssNode.PositionType = CSSPositionType.Absolute;
-                        break;
-                    case PositionType.Relative:
-                        cssNode.PositionType = CSSPositionType.Relative;
-                        break;
+                    PositionType posType = (PositionType)value.value;
+                    switch (posType)
+                    {
+                        case PositionType.Absolute:
+                        case PositionType.Manual:
+                            cssNode.PositionType = CSSPositionType.Absolute;
+                            break;
+                        case PositionType.Relative:
+                            cssNode.PositionType = CSSPositionType.Relative;
+                            break;
+                    }
                 }
             }
         }
@@ -445,12 +466,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignSelf.value, effectiveStyle.alignSelf.specificity); }
             set
             {
-                if (effectiveStyle.alignSelf.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.alignSelf, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.AlignSelf = (CSSAlign)value.value;
                 }
-                inlineStyle.alignSelf = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.AlignSelf = (CSSAlign)value.value;
             }
         }
 
@@ -459,11 +479,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<TextAnchor>((TextAnchor)effectiveStyle.textAlignment.value, effectiveStyle.textAlignment.specificity); }
             set
             {
-                if (effectiveStyle.textAlignment.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.textAlignment, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.textAlignment = new StyleValue<int>((int)value.value, value.specificity);
             }
         }
 
@@ -472,11 +491,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<FontStyle>((FontStyle)effectiveStyle.fontStyle.value, effectiveStyle.fontStyle.specificity); }
             set
             {
-                if (effectiveStyle.fontStyle.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.fontStyle, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                 }
-                inlineStyle.fontStyle = new StyleValue<int>((int)value.value, value.specificity);
             }
         }
 
@@ -485,11 +503,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<TextClipping>((TextClipping)effectiveStyle.textClipping.value, effectiveStyle.textClipping.specificity); }
             set
             {
-                if (effectiveStyle.textClipping.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.textClipping, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.textClipping = new StyleValue<int>((int)value.value, value.specificity);
             }
         }
 
@@ -498,11 +515,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.font; }
             set
             {
-                if (effectiveStyle.font.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.font, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
-                inlineStyle.font = value;
             }
         }
 
@@ -511,11 +527,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.fontSize; }
             set
             {
-                if (effectiveStyle.fontSize.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.fontSize, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
-                inlineStyle.fontSize = value;
             }
         }
 
@@ -524,11 +539,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.wordWrap; }
             set
             {
-                if (effectiveStyle.wordWrap.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.wordWrap, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
-                inlineStyle.wordWrap = value;
             }
         }
 
@@ -537,11 +551,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.textColor; }
             set
             {
-                if (effectiveStyle.textColor.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.textColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.textColor = value;
             }
         }
 
@@ -550,12 +563,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<FlexDirection>((FlexDirection)effectiveStyle.flexDirection.value, effectiveStyle.flexDirection.specificity); }
             set
             {
-                if (effectiveStyle.flexDirection.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.flexDirection, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
+                    cssNode.FlexDirection = (CSSFlexDirection)value.value;
                 }
-                inlineStyle.flexDirection = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.FlexDirection = (CSSFlexDirection)value.value;
             }
         }
 
@@ -564,11 +576,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.backgroundColor; }
             set
             {
-                if (effectiveStyle.backgroundColor.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.backgroundColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.backgroundColor = value;
             }
         }
 
@@ -577,11 +588,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderColor; }
             set
             {
-                if (effectiveStyle.borderColor.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.borderColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.borderColor = value;
             }
         }
 
@@ -590,11 +600,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.backgroundImage; }
             set
             {
-                if (effectiveStyle.backgroundImage.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.backgroundImage, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.backgroundImage = value;
             }
         }
 
@@ -603,11 +612,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<ScaleMode>((ScaleMode)effectiveStyle.backgroundSize.value, effectiveStyle.backgroundSize.specificity); }
             set
             {
-                if (effectiveStyle.backgroundSize.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.backgroundSize, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.backgroundSize = new StyleValue<int>((int)value.value, value.specificity);
             }
         }
 
@@ -616,12 +624,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignItems.value, effectiveStyle.alignItems.specificity); }
             set
             {
-                if (effectiveStyle.alignItems.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.alignItems, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.AlignItems = (CSSAlign)value.value;
                 }
-                inlineStyle.alignItems = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.AlignItems = (CSSAlign)value.GetSpecifiedValueOrDefault(VisualElement.DefaultAlignItems);
             }
         }
 
@@ -630,12 +637,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignContent.value, effectiveStyle.alignContent.specificity); }
             set
             {
-                if (effectiveStyle.alignContent.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.alignContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.AlignContent = (CSSAlign)value.value;
                 }
-                inlineStyle.alignContent = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.AlignContent = (CSSAlign)value.GetSpecifiedValueOrDefault(VisualElement.DefaultAlignContent);
             }
         }
 
@@ -644,12 +650,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Justify>((Justify)effectiveStyle.justifyContent.value, effectiveStyle.justifyContent.specificity); }
             set
             {
-                if (effectiveStyle.justifyContent.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.justifyContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.JustifyContent = (CSSJustify)value.value;
                 }
-                inlineStyle.justifyContent = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.JustifyContent = (CSSJustify)value.value;
             }
         }
 
@@ -658,12 +663,11 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Wrap>((Wrap)effectiveStyle.flexWrap.value, effectiveStyle.flexWrap.specificity); }
             set
             {
-                if (effectiveStyle.flexWrap.value != (int)value.value)
+                if (ApplyAndCompare(ref inlineStyle.flexWrap, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
+                    cssNode.Wrap = (CSSWrap)value.value;
                 }
-                inlineStyle.flexWrap = new StyleValue<int>((int)value.value, value.specificity);
-                cssNode.Wrap = (CSSWrap)value.value;
             }
         }
 
@@ -672,11 +676,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderRadius; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.borderRadius.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.borderRadius, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.borderRadius = value;
             }
         }
 
@@ -685,11 +688,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceLeft; }
             set
             {
-                if (effectiveStyle.sliceLeft.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.sliceLeft, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.sliceLeft = value;
             }
         }
 
@@ -698,11 +700,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceTop; }
             set
             {
-                if (effectiveStyle.sliceTop.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.sliceTop, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.sliceTop = value;
             }
         }
 
@@ -711,11 +712,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceRight; }
             set
             {
-                if (effectiveStyle.sliceRight.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.sliceRight, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.sliceRight = value;
             }
         }
 
@@ -724,11 +724,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceBottom; }
             set
             {
-                if (effectiveStyle.sliceBottom.value != value.value)
+                if (ApplyAndCompare(ref inlineStyle.sliceBottom, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.sliceBottom = value;
             }
         }
 
@@ -737,11 +736,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.opacity; }
             set
             {
-                if (!Mathf.Approximately(effectiveStyle.opacity.value, value.value))
+                if (ApplyAndCompare(ref inlineStyle.opacity, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
-                inlineStyle.opacity = value;
             }
         }
     }

@@ -113,16 +113,6 @@ namespace UnityEngine
         public int order { get; private set; }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Struct)]
-    internal class IL2CPPStructAlignmentAttribute : System.Attribute
-    {
-        public int Align;
-        public IL2CPPStructAlignmentAttribute()
-        {
-            Align = 1;
-        }
-    }
-
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     public sealed class NativeClassAttribute : Attribute
     {
@@ -137,26 +127,6 @@ namespace UnityEngine
     [AttributeUsage(AttributeTargets.Assembly)]
     [RequiredByNativeCode]
     public class AssemblyIsEditorAssembly : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-    internal class WritableAttribute : Attribute
-    {
-    }
-
-    [AttributeUsage(AttributeTargets.Class)]
-    internal class RejectDragAndDropMaterial : Attribute
-    {
-    }
-}
-
-namespace UnityEngine.Scripting
-{
-    // NOTE(rb): This is a temporary attribute that UnityBindingsParser will
-    // generate for all custom methods and properties in the transition process
-    // to new bindings generator. It will be removed when migration is complete.
-    internal class GeneratedByOldBindingsGeneratorAttribute : System.Attribute
     {
     }
 }

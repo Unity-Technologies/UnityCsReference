@@ -57,7 +57,6 @@ namespace UnityEngine.Experimental.UIElements
 
             SaveBackup();
 
-            style = textField.guiStyle;
             position = textField.layout;
             maxLength = textField.maxLength;
             multiline = textField.multiline;

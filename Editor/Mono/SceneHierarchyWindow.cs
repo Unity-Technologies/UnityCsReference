@@ -659,6 +659,12 @@ namespace UnityEditor
             }
         }
 
+        /*
+         * NOTE: AddCreateGameObjectItemsToMenu() cooks existing menu, so that make sure menu entries are added to
+         *               localization entry.
+         * @Localization("Create Empty", "MenuItem")
+         * @Localization("Create Empty Child", "MenuItem")
+         */
         void AddCreateGameObjectItemsToMenu(GenericMenu menu, UnityEngine.Object[] context, bool includeCreateEmptyChild, bool includeGameObjectInPath, int targetSceneHandle)
         {
             string[] menus = Unsupported.GetSubmenus("GameObject");
@@ -1161,13 +1167,13 @@ namespace UnityEditor
 
         bool UserAllowedDiscardingChanges(Scene[] modifiedScenes)
         {
-            string title = LocalizationDatabase.GetLocalizedString("Discard Changes");
-            string message = LocalizationDatabase.GetLocalizedString("Are you sure you want to discard the changes in the following scenes:\n\n   {0}\n\nYour changes will be lost.");
+            string title = "Discard Changes";
+            string message = "Are you sure you want to discard the changes in the following scenes:\n\n   {0}\n\nYour changes will be lost.";
 
             string sceneNames = string.Join("\n   ", modifiedScenes.Select(scene => scene.name).ToArray());
             message = string.Format(message, sceneNames);
 
-            return EditorUtility.DisplayDialog(title, message, LocalizationDatabase.GetLocalizedString("OK"), LocalizationDatabase.GetLocalizedString("Cancel"));
+            return EditorUtility.DisplayDialog(title, message, "OK", "Cancel");
         }
 
         void DiscardChangesInSelectedScenes(object userData)

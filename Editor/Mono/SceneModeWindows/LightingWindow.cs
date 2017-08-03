@@ -193,7 +193,7 @@ namespace UnityEditor
 
         void PreviewSection()
         {
-            if (m_Mode != Mode.LightingSettings)
+            if (m_Mode == Mode.OutputMaps)
             {
                 EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.ToolbarStyle, GUILayout.Height(17));
                 {
@@ -216,7 +216,9 @@ namespace UnityEditor
                 case Mode.ObjectSettings:
                 {
                     //@TODO use gui layout to display ObjectPreview or deduct rect from previous window.
-                    Rect fullRect = new Rect(0, 180, position.width, position.height - 180);
+                    int height = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer ? 185 : 115;
+
+                    Rect fullRect = new Rect(0, height, position.width, position.height - height);
                     if (Selection.activeGameObject)
                         m_ObjectTab.ObjectPreview(fullRect);
                 } break;
@@ -363,12 +365,12 @@ namespace UnityEditor
             }
             StringBuilder sizesString = new StringBuilder();
             sizesString.Append(lightmapCount);
-            sizesString.Append((directionalLightmapsMode ? " directional" : " non-directional"));
-            sizesString.Append(" lightmap");
+            sizesString.Append((directionalLightmapsMode ? " Directional" : " Non-Directional"));
+            sizesString.Append(" Lightmap");
             if (lightmapCount != 1) sizesString.Append("s");
             if (shadowmaskMode)
             {
-                sizesString.Append(" with shadowmask");
+                sizesString.Append(" with Shadowmask");
                 if (lightmapCount != 1) sizesString.Append("s");
             }
 
@@ -405,7 +407,7 @@ namespace UnityEditor
             if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
             {
                 GUILayout.BeginVertical();
-                GUILayout.Label("Occupied texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);
+                GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);
                 if (Lightmapping.isRunning)
                 {
                     int numLightmapsInView = 0;
@@ -446,19 +448,19 @@ namespace UnityEditor
                     }
                     EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.LabelStyle);
                     EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("converged: " + numConvergedLightmapsInView, Styles.LabelStyle);
-                    EditorGUILayout.LabelField("not converged: " + numNotConvergedLightmapsInView, Styles.LabelStyle);
+                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.LabelStyle);
+                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.LabelStyle);
                     EditorGUI.indentLevel -= 1;
-                    EditorGUILayout.LabelField("Lightmaps out of view: " + numLightmapsNotInView, Styles.LabelStyle);
+                    EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.LabelStyle);
                     EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("converged: " + numConvergedLightmapsNotInView, Styles.LabelStyle);
-                    EditorGUILayout.LabelField("not converged: " + numNotConvergedLightmapsNotInView, Styles.LabelStyle);
+                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.LabelStyle);
+                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.LabelStyle);
                     EditorGUI.indentLevel -= 1;
                 }
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
                 if (mraysPerSec >= 0.0)
-                    GUILayout.Label("Bake performance: " + mraysPerSec.ToString("0.00") + " mrays/sec", Styles.LabelStyle);
+                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00") + " mrays/sec", Styles.LabelStyle);
                 if (!Lightmapping.isRunning)
                 {
                     float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();
@@ -486,9 +488,9 @@ namespace UnityEditor
                         int oHeadTimeS = oHeadTime;
 
 
-                        GUILayout.Label("Total bake time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.LabelStyle);
+                        GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.LabelStyle);
                         if (Unsupported.IsDeveloperBuild())
-                            GUILayout.Label("(Raw bake time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", overhead:" + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.LabelStyle);
+                            GUILayout.Label("(Raw Bake Time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", Overhead: " + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.LabelStyle);
                     }
                 }
                 GUILayout.EndVertical();

@@ -38,7 +38,7 @@ namespace UnityEditor
         {
             public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
 
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always and 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'minimum iOS version' set to 8.0 at least");
             public static readonly GUIContent colorSpaceTVOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API.");
@@ -88,7 +88,7 @@ namespace UnityEditor
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TextContent("Default Screen Height");
-            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support (Experimental)");
+            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support");
             public static readonly GUIContent runInBackground = EditorGUIUtility.TextContent("Run In Background*");
             public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TextContent("Default Orientation*");
             public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TextContent("Portrait");
@@ -1085,7 +1085,7 @@ namespace UnityEditor
         {
             return
                 Application.platform == RuntimePlatform.WindowsEditor && targetPlatform == BuildTarget.StandaloneWindows ||
-                Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSXUniversal;
+                Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSX;
         }
 
         void OpenGLES31OptionsGUI(BuildTargetGroup targetGroup, BuildTarget targetPlatform)
@@ -1168,7 +1168,7 @@ namespace UnityEditor
             if (targetGroup == BuildTargetGroup.Standalone)
             {
                 GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneWindows, " for Windows");
-                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneOSXUniversal, " for Mac");
+                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneOSX, " for Mac");
                 GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneLinuxUniversal, " for Linux");
             }
             else
@@ -1501,7 +1501,7 @@ namespace UnityEditor
                 {
                     if (Application.platform == RuntimePlatform.OSXEditor)
                     {
-                        GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSXUniversal);
+                        GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSX);
 
                         bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
                         if (!newMetalSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
@@ -1509,13 +1509,13 @@ namespace UnityEditor
                         if (newMetalSupport && api[0] == GraphicsDeviceType.Metal)
                             updateCurrentAPI = true; // just enabled metal so want to switch to it
 
-                        ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.StandaloneOSXUniversal, updateCurrentAPI);
+                        ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.StandaloneOSX, updateCurrentAPI);
                         if (action.changeList)
                         {
                             m_MetalEditorSupport.boolValue = newMetalSupport;
                             serializedObject.ApplyModifiedProperties();
                         }
-                        ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSXUniversal, api, action);
+                        ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSX, api, action);
                     }
                     else
                     {

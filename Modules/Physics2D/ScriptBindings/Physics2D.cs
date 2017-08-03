@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 649 //Field is never assigned to and will always have its default value
 
 namespace UnityEngine
 {
@@ -97,3 +98,5 @@ namespace UnityEngine
         }
     }
 }
+
+#pragma warning restore 649

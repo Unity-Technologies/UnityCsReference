@@ -22,6 +22,7 @@ namespace UnityEditor
         float EvaluateCurveDeltaSlow(float time);
         Bounds GetBounds();
         Bounds GetBounds(float minTime, float maxTime);
+        float ClampedValue(float value);
         void FlushCache();
     }
 } // namespace

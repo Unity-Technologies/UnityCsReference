@@ -199,7 +199,7 @@ namespace UnityEditor
                                     WritePreferences();
                                 }
                                 else
-                                    EditorUtility.DisplayDialog("Invalid Cache Location", "The directory " + path + " contains some files which don't look like Unity Cache server files. Please delete the directory contents or choose another directory.", "OK");
+                                    EditorUtility.DisplayDialog("Invalid Cache Location", string.Format("The directory {0} contains some files which don't look like Unity Cache server files. Please delete the directory contents or choose another directory.", path), "OK");
                                 EditorGUIUtility.ExitGUI();
                             }
                         }

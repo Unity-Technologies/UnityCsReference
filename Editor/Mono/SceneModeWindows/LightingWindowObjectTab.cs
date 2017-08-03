@@ -17,36 +17,52 @@ namespace UnityEditor
 {
     internal class LightingWindowObjectTab
     {
+        class Styles
+        {
+            public static readonly GUIContent[] ObjectPreviewTextureOptions =
+            {
+                EditorGUIUtility.TextContent("UV Charts"),
+                EditorGUIUtility.TextContent("Realtime Albedo"),
+                EditorGUIUtility.TextContent("Realtime Emissive"),
+                EditorGUIUtility.TextContent("Realtime Indirect"),
+                EditorGUIUtility.TextContent("Realtime Directionality"),
+                EditorGUIUtility.TextContent("Baked Lightmap"),
+                EditorGUIUtility.TextContent("Baked Directionality"),
+                EditorGUIUtility.TextContent("Baked Shadowmask"),
+                EditorGUIUtility.TextContent("Baked Albedo"),
+                EditorGUIUtility.TextContent("Baked Emissive"),
+                EditorGUIUtility.TextContent("Baked UV Charts"),
+                EditorGUIUtility.TextContent("Baked Texel Validity"),
+            };
+
+            public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TextContent("The texture is not available at the moment.");
+            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to Lightmap Static if it's meant to be baked.");
+            public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
+            public static readonly GUIContent TextureLoading = EditorGUIUtility.TextContent("Loading...");
+        }
+
         GITextureType[] kObjectPreviewTextureTypes =
         {
+            GITextureType.Charting,
             GITextureType.Albedo,
             GITextureType.Emissive,
             GITextureType.Irradiance,
             GITextureType.Directionality,
-            GITextureType.Charting,
             GITextureType.Baked,
             GITextureType.BakedDirectional,
-            GITextureType.BakedCharting,
             GITextureType.BakedShadowMask,
-        };
-
-        static GUIContent[] kObjectPreviewTextureOptions =
-        {
-            EditorGUIUtility.TextContent("Albedo"),
-            EditorGUIUtility.TextContent("Emissive"),
-            EditorGUIUtility.TextContent("Realtime Intensity"),
-            EditorGUIUtility.TextContent("Realtime Direction"),
-            EditorGUIUtility.TextContent("Realtime Charting"),
-            EditorGUIUtility.TextContent("Baked Intensity"),
-            EditorGUIUtility.TextContent("Baked Direction"),
-            EditorGUIUtility.TextContent("Baked Charting"),
-            EditorGUIUtility.TextContent("Baked Shadowmask"),
+            GITextureType.BakedAlbedo,
+            GITextureType.BakedEmissive,
+            GITextureType.BakedCharting,
+            GITextureType.BakedTexelValidity
         };
 
         ZoomableArea m_ZoomablePreview;
         GUIContent m_SelectedObjectPreviewTexture;
         int m_PreviousSelection;
         AnimBool m_ShowClampedSize = new AnimBool();
+
+        VisualisationGITexture m_CachedTexture;
 
         public void OnEnable(EditorWindow window)
         {
@@ -59,17 +75,6 @@ namespace UnityEditor
         public void ObjectPreview(Rect r)
         {
             if (r.height <= 0)
-                return;
-
-            // TODO(GI): Preview as a dockable window.
-            // Get textures and populate the dropdown options.
-            List<Texture2D> textures = new List<Texture2D>();
-            foreach (GITextureType textureType in kObjectPreviewTextureTypes)
-            {
-                textures.Add(LightmapVisualizationUtility.GetGITexture(textureType));
-            }
-
-            if (textures.Count == 0)
                 return;
 
             if (m_ZoomablePreview == null)
@@ -110,17 +115,58 @@ namespace UnityEditor
             drawableArea.yMax -= 14;
             drawableArea.width -= 11;
 
-            // Handle top menu dropdown
-            int index = Array.IndexOf(kObjectPreviewTextureOptions, m_SelectedObjectPreviewTexture);
-            if (index < 0)
-                index = 0;
+            int index = Array.IndexOf(Styles.ObjectPreviewTextureOptions, m_SelectedObjectPreviewTexture);
 
-            index = EditorGUI.Popup(dropRect, index, kObjectPreviewTextureOptions, EditorStyles.toolbarPopup);
-            if (index >= kObjectPreviewTextureOptions.Length)
+            if (index < 0 || !LightmapVisualizationUtility.IsTextureTypeEnabled(kObjectPreviewTextureTypes[index]))
+            {
                 index = 0;
+                m_SelectedObjectPreviewTexture = Styles.ObjectPreviewTextureOptions[index];
+            }
 
-            m_SelectedObjectPreviewTexture = kObjectPreviewTextureOptions[index];
-            LightmapType lightmapType = (GITextureType.BakedShadowMask == kObjectPreviewTextureTypes[index] || GITextureType.Baked == kObjectPreviewTextureTypes[index] || GITextureType.BakedDirectional == kObjectPreviewTextureTypes[index] || GITextureType.BakedCharting == kObjectPreviewTextureTypes[index]) ? LightmapType.StaticLightmap : LightmapType.DynamicLightmap;
+            if (EditorGUI.DropdownButton(dropRect, m_SelectedObjectPreviewTexture, FocusType.Passive, EditorStyles.toolbarPopup))
+            {
+                GenericMenu menu = new GenericMenu();
+
+                for (int i = 0; i < Styles.ObjectPreviewTextureOptions.Length; i++)
+                {
+                    if (LightmapVisualizationUtility.IsTextureTypeEnabled(kObjectPreviewTextureTypes[i]))
+                        menu.AddItem(Styles.ObjectPreviewTextureOptions[i], index == i, SelectPreviewTextureOption, Styles.ObjectPreviewTextureOptions.ElementAt(i));
+                    else
+                        menu.AddDisabledItem(Styles.ObjectPreviewTextureOptions.ElementAt(i));
+                }
+                menu.DropDown(dropRect);
+            }
+
+            GITextureType textureType = kObjectPreviewTextureTypes[Array.IndexOf(Styles.ObjectPreviewTextureOptions, m_SelectedObjectPreviewTexture)];
+
+            if (m_CachedTexture.type != textureType || m_CachedTexture.contentHash != LightmapVisualizationUtility.GetSelectedObjectGITextureHash(textureType) || m_CachedTexture.contentHash == new Hash128())
+            {
+                m_CachedTexture = LightmapVisualizationUtility.GetSelectedObjectGITexture(textureType);
+            }
+
+            if (m_CachedTexture.textureAvailability == GITextureAvailability.GITextureNotAvailable || m_CachedTexture.textureAvailability == GITextureAvailability.GITextureUnknown)
+            {
+                if (LightmapVisualizationUtility.IsBakedTextureType(textureType))
+                {
+                    if (textureType == GITextureType.BakedShadowMask)
+                        GUI.Label(drawableArea, Styles.TextureNotAvailableBakedShadowmask);
+                    else
+                        GUI.Label(drawableArea, Styles.TextureNotAvailableBaked);
+                }
+                else
+                    GUI.Label(drawableArea, Styles.TextureNotAvailableRealtime);
+
+                return;
+            }
+
+            if (m_CachedTexture.textureAvailability == GITextureAvailability.GITextureLoading && m_CachedTexture.texture == null)
+            {
+                GUI.Label(drawableArea, Styles.TextureLoading);
+
+                return;
+            }
+
+            LightmapType lightmapType = LightmapVisualizationUtility.GetLightmapType(textureType);
 
             // Framing and drawing
             var evt = Event.current;
@@ -158,7 +204,7 @@ namespace UnityEditor
                 // Scale and draw texture and uv's
                 case EventType.Repaint:
 
-                    Texture2D texture = textures[index];
+                    Texture2D texture = m_CachedTexture.texture;
                     if (texture && Event.current.type == EventType.Repaint)
                     {
                         Rect textureRect = new Rect(0, 0, texture.width, texture.height);
@@ -187,8 +233,6 @@ namespace UnityEditor
                         FilterMode prevMode = texture.filterMode;
                         texture.filterMode = FilterMode.Point;
 
-                        GITextureType textureType = kObjectPreviewTextureTypes[index];
-
                         LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture, Selection.activeGameObject, clipRect, uvRect, textureType);
                         texture.filterMode = prevMode;
                     }
@@ -212,6 +256,11 @@ namespace UnityEditor
             m_ZoomablePreview.EndViewGUI();
 
             GUILayoutUtility.GetRect(r.width, r.height);
+        }
+
+        private void SelectPreviewTextureOption(object textureOption)
+        {
+            m_SelectedObjectPreviewTexture = (GUIContent)textureOption;
         }
 
         Rect ResizeRectToFit(Rect rect, Rect to)

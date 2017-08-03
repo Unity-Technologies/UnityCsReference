@@ -15,5 +15,6 @@ namespace UnityEngine.Experimental.UIElements
     public interface IDataWatchService
     {
         IDataWatchHandle AddWatch(VisualElement watcher, Object watched, Action OnDataChanged);
+        void ForceDirtyNextPoll(Object obj);
     }
 }

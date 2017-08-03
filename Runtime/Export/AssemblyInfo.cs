@@ -18,13 +18,14 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
+[assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 
-[assembly: InternalsVisibleTo("UnityEngine.Physics")]
-[assembly: InternalsVisibleTo("UnityEngine.Terrain")]
-[assembly: InternalsVisibleTo("UnityEngine.TerrainPhysics")]
+// Required for the type forwarder UnityEngine.dll
+[assembly: InternalsVisibleTo("UnityEngine")]
+
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud.Service")]

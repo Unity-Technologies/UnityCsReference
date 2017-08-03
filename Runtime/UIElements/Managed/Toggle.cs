@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
             this.clickEvent = clickEvent;
 
             // Click-once behaviour
-            AddManipulator(new Clickable(OnClick));
+            this.AddManipulator(new Clickable(OnClick));
         }
 
         private void OnClick()

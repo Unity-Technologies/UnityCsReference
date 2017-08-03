@@ -728,9 +728,12 @@ namespace UnityEditor.Modules
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
                     return "WindowsStandalone";
+                case BuildTarget.StandaloneOSX:
+                    // Deprecated
+#pragma warning disable 612, 618
                 case BuildTarget.StandaloneOSXIntel:
                 case BuildTarget.StandaloneOSXIntel64:
-                case BuildTarget.StandaloneOSXUniversal:
+#pragma warning restore 612, 618
                     return "OSXStandalone";
                 default: return null;
             }

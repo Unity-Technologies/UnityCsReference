@@ -580,13 +580,13 @@ namespace UnityEditorInternal
                 {
                     List<CurveWrapper> activeCurveWrappers = new List<CurveWrapper>();
                     foreach (AnimationWindowCurve curve in activeCurves)
-                        if (!curve.isPPtrCurve)
+                        if (!curve.isDiscreteCurve)
                             activeCurveWrappers.Add(AnimationWindowUtility.GetCurveWrapper(curve, curve.clip));
 
                     // If there are no active curves, we would end up with empty curve editor so we just give all curves insteads
                     if (!activeCurveWrappers.Any())
                         foreach (AnimationWindowCurve curve in allCurves)
-                            if (!curve.isPPtrCurve)
+                            if (!curve.isDiscreteCurve)
                                 activeCurveWrappers.Add(AnimationWindowUtility.GetCurveWrapper(curve, curve.clip));
 
                     m_ActiveCurveWrappersCache = activeCurveWrappers.ToArray();

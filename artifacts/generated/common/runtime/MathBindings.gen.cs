@@ -697,6 +697,12 @@ public sealed partial class AnimationCurve
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SmoothTangents (int index, float weight) ;
 
+    public static AnimationCurve Constant(float timeStart, float timeEnd, float value)
+        {
+            return Linear(timeStart, value, timeEnd, value);
+        }
+    
+    
     public static AnimationCurve Linear(float timeStart, float valueStart, float timeEnd, float valueEnd)
         {
             float tangent = (valueEnd - valueStart) / (timeEnd - timeStart);

@@ -66,6 +66,18 @@ internal partial struct ChangeTrackerHandle
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private bool Internal_PollChanges () ;
 
+    internal void ForceDirtyNextPoll()
+        {
+            if (m_Handle == IntPtr.Zero)
+                throw new ArgumentNullException("Not a valid handle, has it been released already?");
+            Internal_ForceUpdate();
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_ForceUpdate () ;
+
 }
 
 }

@@ -101,6 +101,7 @@ namespace UnityEngine.XR.WSA.Input
         Thumbstick
     }
 
+#pragma warning disable 649 //Field is never assigned to and will always have its default value
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct InteractionSourceLocation
@@ -267,6 +268,8 @@ namespace UnityEngine.XR.WSA.Input
         internal ushort m_ProductId;
         internal ushort m_ProductVersion;
     }
+
+#pragma warning restore 649
 
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct SourceDetectedEventArgs

@@ -485,6 +485,27 @@ namespace UnityEngine
         Normalized = 0,
         Pixel = 1,
     }
+
+    public enum MotionVectorGenerationMode
+    {
+        Camera = 0,
+        Object = 1,
+        ForceNoMotion = 2,
+    }
+
+    public enum LineTextureMode
+    {
+        Stretch = 0,
+        Tile = 1,
+        DistributePerSegment = 2,
+        RepeatPerSegment = 3,
+    }
+
+    public enum LineAlignment
+    {
+        View = 0,
+        Local = 1,
+    }
 } // namespace UnityEngine
 
 
@@ -1157,3 +1178,13 @@ namespace UnityEngine.Rendering
         Unlimited = 100
     }
 } // namespace UnityEngine.Rendering
+
+namespace UnityEngineInternal
+{
+    internal enum LightmapType
+    {
+        NoLightmap      = -1,
+        StaticLightmap  = 0,
+        DynamicLightmap = 1,
+    }
+}

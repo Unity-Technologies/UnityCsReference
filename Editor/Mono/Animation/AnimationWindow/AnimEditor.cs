@@ -1032,7 +1032,7 @@ namespace UnityEditor
                         if (curvesToUpdate.TryGetValue(curveWrapper.animationClip, out changedCurves))
                         {
                             changedCurves.bindings.Add(curveWrapper.binding);
-                            changedCurves.curves.Add(curveWrapper.curve);
+                            changedCurves.curves.Add(curveWrapper.curve.length > 0 ? curveWrapper.curve : null);
                         }
                         else
                         {
@@ -1040,7 +1040,7 @@ namespace UnityEditor
                             changedCurves.curves = new List<AnimationCurve>();
 
                             changedCurves.bindings.Add(curveWrapper.binding);
-                            changedCurves.curves.Add(curveWrapper.curve);
+                            changedCurves.curves.Add(curveWrapper.curve.length > 0 ? curveWrapper.curve : null);
 
                             curvesToUpdate.Add(curveWrapper.animationClip, changedCurves);
                         }

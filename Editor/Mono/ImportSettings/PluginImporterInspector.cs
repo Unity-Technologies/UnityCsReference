@@ -43,9 +43,7 @@ namespace UnityEditor
 
         private readonly static BuildTarget[] m_StandaloneTargets = new BuildTarget[]
         {
-            BuildTarget.StandaloneOSXIntel,
-            BuildTarget.StandaloneOSXIntel64,
-            BuildTarget.StandaloneOSXUniversal,
+            BuildTarget.StandaloneOSX,
             BuildTarget.StandaloneWindows,
             BuildTarget.StandaloneWindows64,
             BuildTarget.StandaloneLinux,

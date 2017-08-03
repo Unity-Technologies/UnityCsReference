@@ -16,17 +16,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         public StyleSheet data;
     }
 
-    [Obsolete("ICustomStyles has been deprecated and will be removed. Use ICustomStyle instead", false)]
-    public interface ICustomStyles
-    {
-        void ApplyCustomProperty(string propertyName, ref Style<float> target);
-        void ApplyCustomProperty(string propertyName, ref Style<int> target);
-        void ApplyCustomProperty(string propertyName, ref Style<bool> target);
-        void ApplyCustomProperty(string propertyName, ref Style<Color> target);
-        void ApplyCustomProperty<T>(string propertyName, ref Style<T> target) where T : Object;
-        void ApplyCustomProperty(string propertyName, ref Style<string> target);
-    }
-
     public interface ICustomStyle
     {
         void ApplyCustomProperty(string propertyName, ref StyleValue<float> target);

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using UnityEngine;
 using UnityEditor;
 using System;
@@ -40,6 +39,7 @@ namespace UnityEditor
     {
         public delegate Vector2 GetAxisScalarsCallback();
         public delegate void SetAxisScalarsCallback(Vector2 newAxisScalars);
+        public delegate void PreProcessKeyMovement(ref Keyframe key);
 
         public CurveWrapper()
         {
@@ -90,6 +90,8 @@ namespace UnityEditor
         public GetAxisScalarsCallback getAxisUiScalarsCallback; // Delegate used to fetch values that are multiplied on x and y axis ui values
         public SetAxisScalarsCallback setAxisUiScalarsCallback; // Delegate used to set values back that has been changed by this curve editor
 
+        public PreProcessKeyMovement preProcessKeyMovementDelegate; // Delegate used limit key manipulation to fit curve constraints
+
         // Should be updated by curve editor as appropriate
         public SelectionMode selected;
         public int listIndex;                                       // Index into m_AnimationCurves list
@@ -111,11 +113,28 @@ namespace UnityEditor
             }
         }
 
+        public int AddKey(Keyframe key)
+        {
+            PreProcessKey(ref key);
+            return curve.AddKey(key);
+        }
+
+        public void PreProcessKey(ref Keyframe key)
+        {
+            if (preProcessKeyMovementDelegate != null)
+                preProcessKeyMovementDelegate(ref key);
+        }
+
+        public int MoveKey(int index, ref Keyframe key)
+        {
+            PreProcessKey(ref key);
+            return curve.MoveKey(index, key);
+        }
+
         // An additional vertical min / max range clamp when editing multiple curves with different ranges
         public float vRangeMin = -Mathf.Infinity;
         public float vRangeMax = Mathf.Infinity;
     }
-
 
     //  Control point collection renderer
     class CurveControlPointRenderer
@@ -568,7 +587,6 @@ namespace UnityEditor
         private AxisLock m_AxisLock;
 
         CurveControlPointRenderer m_PointRenderer;
-
         CurveEditorRectangleTool m_RectangleTool;
 
         // The square of the maximum pick distance in pixels.
@@ -1248,7 +1266,7 @@ namespace UnityEditor
                                 }
                             }
 
-                            dragged.key = curveWrapper.curve.MoveKey(dragged.key, key);
+                            dragged.key = curveWrapper.MoveKey(dragged.key, ref key);
                             AnimationUtility.UpdateTangentsFromModeSurrounding(curveWrapper.curve, dragged.key);
 
                             curveWrapper.changed = true;
@@ -1480,7 +1498,6 @@ namespace UnityEditor
 
                         return duplicateKeyframe;
                     }
-
                     return keyframe;
                 }
                 );
@@ -1582,6 +1599,7 @@ namespace UnityEditor
                     if (keyframe.selected == CurveWrapper.SelectionMode.None)
                     {
                         var newKeyframe = action(keyframe, sc);
+                        cw.PreProcessKey(ref newKeyframe.key);
 
                         // We might have moved keys around, let's add new key or replace existing key.
                         working[newKeyframe.key.time] = newKeyframe;
@@ -1594,7 +1612,7 @@ namespace UnityEditor
                     if (keyframe.selected != CurveWrapper.SelectionMode.None)
                     {
                         var newKeyframe = action(keyframe, sc);
-
+                        cw.PreProcessKey(ref newKeyframe.key);
                         // We might have moved keys around, let's add new key or replace existing key.
                         working[newKeyframe.key.time] = newKeyframe;
                     }
@@ -1988,7 +2006,7 @@ namespace UnityEditor
             if (!cw.animationIsEditable)
                 return null;
 
-            int keyIndex = cw.curve.AddKey(key);
+            int keyIndex = cw.AddKey(key);
             CurveUtility.SetKeyModeFromContext(cw.curve, keyIndex);
             AnimationUtility.UpdateTangentsFromModeSurrounding(cw.curve, keyIndex);
 

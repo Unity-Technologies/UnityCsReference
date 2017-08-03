@@ -152,10 +152,10 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(iconName))
                 {
                     // This should error msg if icon is not found since icon has been explicitly requested by the user
-                    return EditorGUIUtility.TextContentWithIcon(attr.title, iconName);
+                    return EditorGUIUtility.TrTextContentWithIcon(attr.title, iconName);
                 }
 
-                return EditorGUIUtility.TextContent(attr.title);
+                return EditorGUIUtility.TrTextContent(attr.title);
             }
 
             // Fallback to type name (Do not localize type name)

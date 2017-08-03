@@ -184,7 +184,7 @@ namespace UnityEditorInternal
                 keyframe.curve = curve;
                 curve.AddKeyframe(keyframe, time);
             }
-            else if (type == typeof(bool) || type == typeof(float))
+            else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
                 keyframe = new AnimationWindowKeyframe();
 
@@ -192,14 +192,21 @@ namespace UnityEditorInternal
                 AnimationCurve animationCurve = curve.ToAnimationCurve();
 
                 Keyframe tempKey = new Keyframe(time.time, (float)value);
-                if (type == typeof(bool))
+                if (type == typeof(bool) || type == typeof(int))
                 {
-                    AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
-                    AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+                    if (type == typeof(int) && !curve.isDiscreteCurve)
+                    {
+                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Linear);
+                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Linear);
+                    }
+                    else
+                    {
+                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
+                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+                    }
+
                     AnimationUtility.SetKeyBroken(ref tempKey, true);
                     keyframe.m_TangentMode = tempKey.tangentMode;
-                    keyframe.m_InTangent = Mathf.Infinity;
-                    keyframe.m_OutTangent = Mathf.Infinity;
                 }
                 else
                 {
@@ -486,8 +493,9 @@ namespace UnityEditorInternal
                 var isFloat = propertyIter.propertyType == SerializedPropertyType.Float;
                 var isBool = propertyIter.propertyType == SerializedPropertyType.Boolean;
                 var isInt = propertyIter.propertyType == SerializedPropertyType.Integer;
+                var isEnum = propertyIter.propertyType == SerializedPropertyType.Enum;
 
-                if (isObject || isFloat || isBool || isInt)
+                if (isObject || isFloat || isBool || isInt || isEnum)
                 {
                     var serializedObject = propertyIter.serializedObject;
                     var targetObjects = serializedObject.targetObjects;
@@ -508,6 +516,8 @@ namespace UnityEditorInternal
                                 value = singleProperty.floatValue.ToString();
                             else if (isInt)
                                 value = singleProperty.intValue.ToString();
+                            else if (isEnum)
+                                value = singleProperty.enumValueIndex.ToString();
                             else // if (isBool)
                                 value = singleProperty.boolValue.ToString();
 
@@ -727,7 +737,9 @@ namespace UnityEditorInternal
         public static float GetNextKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
         {
             float candidate = float.MaxValue;
-            float nextFrame = currentTime + 1f / frameRate;
+            AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
+            AnimationKeyTime nextTime = AnimationKeyTime.Frame(time.frame + 1, frameRate);
+
             bool found = false;
 
             foreach (AnimationWindowCurve curve in curves)
@@ -736,20 +748,22 @@ namespace UnityEditorInternal
                 {
                     float offsetTime = keyframe.time + curve.timeOffset;
 
-                    if (offsetTime < candidate && offsetTime >= nextFrame)
+                    if (offsetTime < candidate && offsetTime >= nextTime.time)
                     {
                         candidate = offsetTime;
                         found = true;
                     }
                 }
             }
-            return found ? candidate : currentTime;
+            return found ? candidate : time.time;
         }
 
         public static float GetPreviousKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
         {
             float candidate = float.MinValue;
-            float previousFrame = Mathf.Max(0f, currentTime - 1f / frameRate);
+            AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
+            AnimationKeyTime previousTime = AnimationKeyTime.Frame(time.frame - 1, frameRate);
+
             bool found = false;
 
             foreach (AnimationWindowCurve curve in curves)
@@ -758,14 +772,14 @@ namespace UnityEditorInternal
                 {
                     float offsetTime = keyframe.time + curve.timeOffset;
 
-                    if (offsetTime > candidate && offsetTime <= previousFrame)
+                    if (offsetTime > candidate && offsetTime <= previousTime.time)
                     {
                         candidate = offsetTime;
                         found = true;
                     }
                 }
             }
-            return found ? candidate : currentTime;
+            return found ? candidate : time.time;
         }
 
         // Add animator, controller and clip to gameobject if they are missing to make this gameobject animatable
@@ -1049,10 +1063,47 @@ namespace UnityEditorInternal
             GL.PopMatrix();
         }
 
+        private static CurveRenderer CreateRendererForCurve(AnimationWindowCurve curve)
+        {
+            CurveRenderer renderer;
+            switch (System.Type.GetTypeCode(curve.valueType))
+            {
+                case TypeCode.Int32:
+                    renderer = new IntCurveRenderer(curve.ToAnimationCurve());
+                    break;
+                case TypeCode.Boolean:
+                    renderer = new BoolCurveRenderer(curve.ToAnimationCurve());
+                    break;
+                default:
+                    renderer = new NormalCurveRenderer(curve.ToAnimationCurve());
+                    break;
+            }
+            return renderer;
+        }
+
+        private static CurveWrapper.PreProcessKeyMovement CreateKeyPreprocessorForCurve(AnimationWindowCurve curve)
+        {
+            CurveWrapper.PreProcessKeyMovement method;
+            switch (System.Type.GetTypeCode(curve.valueType))
+            {
+                case TypeCode.Int32:
+                    method = (ref Keyframe key) => { key.value = Mathf.Floor(key.value + 0.5f); };
+                    break;
+                case TypeCode.Boolean:
+                    method = (ref Keyframe key) => { key.value = key.value > 0.5f ? 1.0f : 0.0f; };
+                    break;
+                default:
+                    method = null;
+                    break;
+            }
+            return method;
+        }
+
         public static CurveWrapper GetCurveWrapper(AnimationWindowCurve curve, AnimationClip clip)
         {
             CurveWrapper curveWrapper = new CurveWrapper();
-            curveWrapper.renderer = new NormalCurveRenderer(curve.ToAnimationCurve());
+            curveWrapper.renderer = CreateRendererForCurve(curve);
+            curveWrapper.preProcessKeyMovementDelegate = CreateKeyPreprocessorForCurve(curve);
             curveWrapper.renderer.SetWrap(WrapMode.Clamp, clip.isLooping ? WrapMode.Loop : WrapMode.Clamp);
             curveWrapper.renderer.SetCustomRange(clip.startTime, clip.stopTime);
             curveWrapper.binding = curve.binding;

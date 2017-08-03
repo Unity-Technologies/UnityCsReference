@@ -68,7 +68,31 @@ namespace UnityEngine.Experimental.Rendering
         public void SetupCameraProperties(Camera camera)
         {
             CheckValid();
-            SetupCameraProperties_Internal(camera);
+            SetupCameraProperties_Internal(camera,  false);
+        }
+
+        public void SetupCameraProperties(Camera camera, bool stereoSetup)
+        {
+            CheckValid();
+            SetupCameraProperties_Internal(camera, stereoSetup);
+        }
+
+        public void StereoEndRender(Camera camera)
+        {
+            CheckValid();
+            StereoEndRender_Internal(camera);
+        }
+
+        public void StartMultiEye(Camera camera)
+        {
+            CheckValid();
+            StartMultiEye_Internal(camera);
+        }
+
+        public void StopMultiEye(Camera camera)
+        {
+            CheckValid();
+            StopMultiEye_Internal(camera);
         }
 
         public void DrawSkybox(Camera camera)

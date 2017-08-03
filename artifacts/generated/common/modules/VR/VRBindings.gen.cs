@@ -91,6 +91,16 @@ public static partial class XRSettings
         get;
     }
 
+    public static RenderTextureDescriptor eyeTextureDesc
+    {
+        get { RenderTextureDescriptor tmp; INTERNAL_get_eyeTextureDesc(out tmp); return tmp;  }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static void INTERNAL_get_eyeTextureDesc (out RenderTextureDescriptor value) ;
+
+
     public static float renderViewportScale
         {
             get

@@ -77,8 +77,7 @@ internal abstract class DesktopStandalonePostProcessor
             switch (cpu)
             {
                 case "x86":
-                    if (t == BuildTarget.StandaloneOSXIntel64 ||
-                        t == BuildTarget.StandaloneWindows64 ||
+                    if (t == BuildTarget.StandaloneWindows64 ||
                         t == BuildTarget.StandaloneLinux64)
                     {
                         continue;
@@ -90,8 +89,7 @@ internal abstract class DesktopStandalonePostProcessor
                     }
                     break;
                 case "x86_64":
-                    if (t != BuildTarget.StandaloneOSXIntel64 &&
-                        t != BuildTarget.StandaloneOSXUniversal &&
+                    if (t != BuildTarget.StandaloneOSX &&
                         t != BuildTarget.StandaloneWindows64 &&
                         t != BuildTarget.StandaloneLinux64 &&
                         t != BuildTarget.StandaloneLinuxUniversal)

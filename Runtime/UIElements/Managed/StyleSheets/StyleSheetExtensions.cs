@@ -107,7 +107,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         static void Apply<T>(T val, int specificity, ref StyleValue<T> property)
         {
-            property.Apply(new StyleValue<T>(val, specificity), StylePropertyApplyMode.CopyIfMoreSpecific);
+            property.Apply(new StyleValue<T>(val, specificity), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
         }
 
         public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)

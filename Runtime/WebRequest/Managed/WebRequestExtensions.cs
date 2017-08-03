@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Text;
 
 namespace UnityEngine.Networking
 {
@@ -213,6 +214,41 @@ namespace UnityEngine.Networking
             return request;
         }
 
+
+        public static string EscapeURL(string s)
+        {
+            return EscapeURL(s, System.Text.Encoding.UTF8);
+        }
+
+        public static string EscapeURL(string s, Encoding e)
+        {
+            if (s == null)
+                return null;
+
+            if (s == "")
+                return "";
+
+            if (e == null)
+                return null;
+
+            return WWWTranscoder.URLEncode(s, e);
+        }
+
+        public static string UnEscapeURL(string s)
+        {
+            return UnEscapeURL(s, System.Text.Encoding.UTF8);
+        }
+
+        public static string UnEscapeURL(string s, Encoding e)
+        {
+            if (null == s)
+                return null;
+
+            if (s.IndexOf('%') == -1 && s.IndexOf('+') == -1)
+                return s;
+
+            return WWWTranscoder.URLDecode(s, e);
+        }
 
         public static byte[] SerializeFormSections(List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {

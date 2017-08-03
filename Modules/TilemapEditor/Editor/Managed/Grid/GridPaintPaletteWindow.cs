@@ -181,7 +181,6 @@ namespace UnityEditor
         public GameObject m_Target;
 
         private Vector2 m_BrushScroll;
-        private int m_PreviousBrushIndex; //fallback for null brush
         private GridBrushEditorBase m_PreviousToolActivatedEditor;
         private GridBrushBase.Tool m_PreviousToolActivated;
 

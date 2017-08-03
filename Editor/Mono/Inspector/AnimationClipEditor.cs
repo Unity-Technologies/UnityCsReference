@@ -1442,6 +1442,8 @@ namespace UnityEditor
 
         private string m_InstantTooltipText = null;
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
+        private readonly GUIContent m_DeleteAnimationEventText = new GUIContent("Delete Animation Event");
+        private readonly GUIContent m_DeleteAnimationEventsText = new GUIContent("Delete Animation Events");
 
         private bool[] m_EventsSelected;
         private AnimationWindowEvent[] m_Events;
@@ -1590,8 +1592,9 @@ namespace UnityEditor
                         false,
                         EventLineContextMenuAdd,
                         new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
-                        menu.AddItem(
-                        new GUIContent(selectedEventsCount > 1 ? "Delete Animation Events" : "Delete Animation Event"),
+                        menu.AddItem((selectedEventsCount > 1 ?
+                                      m_DeleteAnimationEventsText :
+                                      m_DeleteAnimationEventText),
                         false,
                         EventLineContextMenuDelete,
                         new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
@@ -1618,8 +1621,9 @@ namespace UnityEditor
 
                 if (selectedEventsCount > 0)
                 {
-                    menu.AddItem(
-                        new GUIContent(selectedEventsCount > 1 ? "Delete Animation Events" : "Delete Animation Event"),
+                    menu.AddItem((selectedEventsCount > 1 ?
+                                  m_DeleteAnimationEventsText :
+                                  m_DeleteAnimationEventText),
                         false,
                         EventLineContextMenuDelete,
                         new EventModificationContextMenuObject(clipInfo, mousePosTime, -1, m_EventsSelected));

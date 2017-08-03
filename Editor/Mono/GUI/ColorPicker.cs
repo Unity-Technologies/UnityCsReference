@@ -743,7 +743,7 @@ namespace UnityEditor
             public GUIStyle axisLabelNumberField = new GUIStyle(EditorStyles.miniTextField);
             public GUIStyle foldout = new GUIStyle(EditorStyles.foldout);
             public GUIStyle toggle = new GUIStyle(EditorStyles.toggle);
-            public GUIContent eyeDropper = EditorGUIUtility.IconContent("EyeDropper.Large", "|Pick a color from the screen.");
+            public GUIContent eyeDropper = EditorGUIUtility.IconContent("EyeDropper.Large", "Pick a color from the screen.");
             public GUIContent colorCycle = EditorGUIUtility.IconContent("ColorPicker.CycleColor");
             public GUIContent colorToggle = EditorGUIUtility.TextContent("Colors");
             public GUIContent tonemappingToggle = new GUIContent("Tonemapped Preview", "When enabled preview colors are tonemapped using Photographic Tonemapping");

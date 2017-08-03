@@ -22,7 +22,10 @@ namespace UnityEngine
         [RequiredByNativeCode]
         static internal void SetProjectFolder(string folder)
         {
-            projectFolder = folder.Replace("\\", "/");
+            projectFolder = folder;
+
+            if (!string.IsNullOrEmpty(projectFolder))
+                projectFolder = projectFolder.Replace("\\", "/");
         }
 
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
@@ -150,7 +153,9 @@ namespace UnityEngine
 
                 newLine = newLine.Replace("  in <filename unknown>:0", "");
                 newLine = newLine.Replace("\\", "/");
-                newLine = newLine.Replace(projectFolder, "");
+
+                if (!string.IsNullOrEmpty(projectFolder))
+                    newLine = newLine.Replace(projectFolder, "");
 
                 // Unify path names to unix style
                 newLine = newLine.Replace('\\', '/');
@@ -235,10 +240,14 @@ namespace UnityEngine
                     {
                         sb.Append(" (at ");
 
-                        if (path.Replace("\\", "/").StartsWith(projectFolder))
+                        if (!string.IsNullOrEmpty(projectFolder))
                         {
-                            path = path.Substring(projectFolder.Length, path.Length - projectFolder.Length);
+                            if (path.Replace("\\", "/").StartsWith(projectFolder))
+                            {
+                                path = path.Substring(projectFolder.Length, path.Length - projectFolder.Length);
+                            }
                         }
+
                         sb.Append(path);
                         sb.Append(":");
                         sb.Append(frame.GetFileLineNumber().ToString());

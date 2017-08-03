@@ -33,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         Position, // todo better name
         Ignore
-    }  
+    }
 
     public partial class VisualElement : CallbackEventHandler, ITransform
     {
@@ -115,20 +115,6 @@ namespace UnityEngine.Experimental.UIElements
 
         Rect m_Layout;
 
-        // Temporary obsolete so that we can use position with the transform property.
-        [Obsolete("Use the property layout instead (UnityUpgradable) -> layout", false)]
-        public Rect position
-        {
-            get
-            {
-                return layout;
-            }
-            set
-            {
-                layout = value;
-            }
-        }
-
         // This will replace the Rect position
         // origin and size relative to parent
         public Rect layout
@@ -194,21 +180,21 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                var spacing = new Spacing(borderLeftWidth,
-                        borderTopWidth,
-                        borderRightWidth,
-                        borderBottomWidth);
+                var spacing = new Spacing(style.borderLeftWidth,
+                        style.borderTopWidth,
+                        style.borderRightWidth,
+                        style.borderBottomWidth);
 
                 return layout - spacing;
             }
         }
 
         // get the AA aligned bound
-        public Rect globalBound
+        public Rect worldBound
         {
             get
             {
-                var g = globalTransform;
+                var g = worldTransform;
                 var min = g.MultiplyPoint3x4(layout.min);
                 var max = g.MultiplyPoint3x4(layout.max);
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
@@ -226,7 +212,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public Matrix4x4 globalTransform
+        public Matrix4x4 worldTransform
         {
             get
             {
@@ -235,7 +221,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         if (parent != null)
                         {
-                            renderData.worldTransForm = parent.globalTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform.matrix;
+                            renderData.worldTransForm = parent.worldTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform.matrix;
                         }
                         else
                         {
@@ -331,9 +317,6 @@ namespace UnityEngine.Experimental.UIElements
         // user-defined style object, if not set, is the same reference as m_SharedStyles
         internal VisualElementStylesData m_Style = VisualElementStylesData.none;
 
-        [Obsolete("OnStylesResolved(ICustomStyles) has been deprecated and will be removed. Use OnStyleResolved(ICustomStyle) instead", false)]
-        public virtual void OnStylesResolved(ICustomStyles style) {}
-
         public virtual void OnStyleResolved(ICustomStyle style)
         {
             // push all non inlined layout things up
@@ -378,548 +361,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        [Obsolete("VisualElement.width will be removed. Use VisualElement.style.width instead", false)]
-        public float width
-        {
-            get
-            {
-                return style.width;
-            }
-            set
-            {
-                style.width = value;
-            }
-        }
-
-        [Obsolete("VisualElement.height will be removed. Use VisualElement.style.height instead", false)]
-        public float height
-        {
-            get
-            {
-                return style.height;
-            }
-            set
-            {
-                style.height = value;
-            }
-        }
-
-        [Obsolete("VisualElement.maxWidth will be removed. Use VisualElement.style.maxWidth instead", false)]
-        public float maxWidth
-        {
-            get
-            {
-                return style.maxWidth;
-            }
-            set
-            {
-                style.maxWidth = value;
-            }
-        }
-
-        [Obsolete("VisualElement.maxHeight will be removed. Use VisualElement.style.maxHeight instead", false)]
-        public float maxHeight
-        {
-            get
-            {
-                return style.maxHeight;
-            }
-            set
-            {
-                style.maxHeight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.minWidth will be removed. Use VisualElement.style.minWidth instead", false)]
-        public float minWidth
-        {
-            get
-            {
-                return style.minWidth;
-            }
-            set
-            {
-                style.minWidth = value;
-            }
-        }
-
-        [Obsolete("VisualElement.minHeight will be removed. Use VisualElement.style.minHeight instead", false)]
-        public float minHeight
-        {
-            get
-            {
-                return style.minHeight;
-            }
-            set
-            {
-                style.minHeight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.flex will be removed. Use VisualElement.style.flex instead", false)]
-        public float flex
-        {
-            get
-            {
-                return style.flex;
-            }
-            set
-            {
-                style.flex = value;
-            }
-        }
-
-        [Obsolete("VisualElement.positionLeft will be removed. Use VisualElement.style.positionLeft instead", false)]
-        public float positionLeft
-        {
-            get
-            {
-                return style.positionLeft;
-            }
-            set
-            {
-                style.positionLeft = value;
-            }
-        }
-
-        [Obsolete("VisualElement.positionTop will be removed. Use VisualElement.style.positionTop instead", false)]
-        public float positionTop
-        {
-            get
-            {
-                return style.positionTop;
-            }
-            set
-            {
-                style.positionTop = value;
-            }
-        }
-
-        [Obsolete("VisualElement.positionRight will be removed. Use VisualElement.style.positionRight instead", false)]
-        public float positionRight
-        {
-            get
-            {
-                return style.positionRight;
-            }
-            set
-            {
-                style.positionRight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.positionBottom will be removed. Use VisualElement.style.positionBottom instead", false)]
-        public float positionBottom
-        {
-            get
-            {
-                return style.positionBottom;
-            }
-            set
-            {
-                style.positionBottom = value;
-            }
-        }
-
-        [Obsolete("VisualElement.marginLeft will be removed. Use VisualElement.style.marginLeft instead", false)]
-        public float marginLeft
-        {
-            get
-            {
-                return style.marginLeft;
-            }
-            set
-            {
-                style.marginLeft = value;
-            }
-        }
-
-        [Obsolete("VisualElement.marginTop will be removed. Use VisualElement.style.marginTop instead", false)]
-        public float marginTop
-        {
-            get
-            {
-                return style.marginTop;
-            }
-            set
-            {
-                style.marginTop = value;
-            }
-        }
-
-        [Obsolete("VisualElement.marginRight will be removed. Use VisualElement.style.marginRight instead", false)]
-        public float marginRight
-        {
-            get
-            {
-                return style.marginRight;
-            }
-            set
-            {
-                style.marginRight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.marginBottom will be removed. Use VisualElement.style.marginBottom instead", false)]
-        public float marginBottom
-        {
-            get
-            {
-                return style.marginBottom;
-            }
-            set
-            {
-                style.marginBottom = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderLeft will be removed. Use VisualElement.style.borderLeft instead", false)]
-        public float borderLeft
-        {
-            get
-            {
-                return style.borderLeft;
-            }
-            set
-            {
-                style.borderLeft = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderTop will be removed. Use VisualElement.style.borderTop instead", false)]
-        public float borderTop
-        {
-            get
-            {
-                return style.borderTop;
-            }
-            set
-            {
-                style.borderTop = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderRight will be removed. Use VisualElement.style.borderRight instead", false)]
-        public float borderRight
-        {
-            get
-            {
-                return style.borderRight;
-            }
-            set
-            {
-                style.borderRight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderBottom will be removed. Use VisualElement.style.borderBottom instead", false)]
-        public float borderBottom
-        {
-            get
-            {
-                return style.borderBottom;
-            }
-            set
-            {
-                style.borderBottom = value;
-            }
-        }
-
-        [Obsolete("VisualElement.paddingLeft will be removed. Use VisualElement.style.paddingLeft instead", false)]
-        public float paddingLeft
-        {
-            get
-            {
-                return style.paddingLeft;
-            }
-            set
-            {
-                style.paddingLeft = value;
-            }
-        }
-
-        [Obsolete("VisualElement.paddingTop will be removed. Use VisualElement.style.paddingTop instead", false)]
-        public float paddingTop
-        {
-            get
-            {
-                return style.paddingTop;
-            }
-            set
-            {
-                style.paddingTop = value;
-            }
-        }
-
-        [Obsolete("VisualElement.paddingRight will be removed. Use VisualElement.style.paddingRight instead", false)]
-        public float paddingRight
-        {
-            get
-            {
-                return style.paddingRight;
-            }
-            set
-            {
-                style.paddingRight = value;
-            }
-        }
-
-        [Obsolete("VisualElement.paddingBottom will be removed. Use VisualElement.style.paddingBottom instead", false)]
-        public float paddingBottom
-        {
-            get
-            {
-                return style.paddingBottom;
-            }
-            set
-            {
-                style.paddingBottom = value;
-            }
-        }
-
-        [Obsolete("VisualElement.positionType will be removed. Use VisualElement.style.positionType instead", false)]
-        public PositionType positionType
-        {
-            get
-            {
-                return (PositionType)m_Style.positionType.value;
-            }
-            set
-            {
-                style.positionType = value;
-            }
-        }
-
-        [Obsolete("VisualElement.backgroundSize will be removed. Use VisualElement.style.backgroundSize instead", false)]
-        public ScaleMode backgroundSize
-        {
-            get
-            {
-                return style.backgroundSize.value;
-            }
-            set
-            {
-                style.backgroundSize = value;
-            }
-        }
-
-        [Obsolete("VisualElement.alignSelf will be removed. Use VisualElement.style.alignSelf instead", false)]
-        public Align alignSelf
-        {
-            get
-            {
-                return style.alignSelf.value;
-            }
-            set
-            {
-                style.alignSelf = value;
-            }
-        }
-
-        [Obsolete("VisualElement.textAlignment will be removed. Use VisualElement.style.textAlignment instead", false)]
-        public TextAnchor textAlignment
-        {
-            get
-            {
-                return style.textAlignment.value;
-            }
-            set
-            {
-                style.textAlignment = value;
-            }
-        }
-
-        [Obsolete("VisualElement.fontStyle will be removed. Use VisualElement.style.fontStyle instead", false)]
-        public FontStyle fontStyle
-        {
-            get
-            {
-                return style.fontStyle.value;
-            }
-            set
-            {
-                style.fontStyle = value;
-            }
-        }
-
-        [Obsolete("VisualElement.textClipping will be removed. Use VisualElement.style.textClipping instead", false)]
-        public TextClipping textClipping
-        {
-            get
-            {
-                return style.textClipping.value;
-            }
-            set
-            {
-                style.textClipping = value;
-            }
-        }
-
-        [Obsolete("VisualElement.font will be removed. Use VisualElement.style.font instead", false)]
-        public Font font
-        {
-            get
-            {
-                return style.font;
-            }
-            set
-            {
-                style.font = value;
-            }
-        }
-
-        [Obsolete("VisualElement.fontSize will be removed. Use VisualElement.style.fontSize instead", false)]
-        public int fontSize
-        {
-            get
-            {
-                return style.fontSize;
-            }
-            set
-            {
-                style.fontSize = value;
-            }
-        }
-
-        [Obsolete("VisualElement.wordWrap will be removed. Use VisualElement.style.wordWrap instead", false)]
-        public bool wordWrap
-        {
-            get
-            {
-                return style.wordWrap;
-            }
-            set
-            {
-                style.wordWrap = value;
-            }
-        }
-
-        [Obsolete("VisualElement.backgroundImage will be removed. Use VisualElement.style.backgroundImage instead", false)]
-        public Texture2D backgroundImage
-        {
-            get
-            {
-                return style.backgroundImage;
-            }
-            set
-            {
-                style.backgroundImage = value;
-            }
-        }
-
-        [Obsolete("VisualElement.textColor will be removed. Use VisualElement.style.textColor instead", false)]
-        public Color textColor
-        {
-            get
-            {
-                return style.textColor.GetSpecifiedValueOrDefault(Color.black);
-            }
-            set
-            {
-                style.textColor = value;
-            }
-        }
-
-        [Obsolete("VisualElement.backgroundColor will be removed. Use VisualElement.style.backgroundColor instead", false)]
-        public Color backgroundColor
-        {
-            get
-            {
-                return style.backgroundColor;
-            }
-            set
-            {
-                style.backgroundColor = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderColor will be removed. Use VisualElement.style.borderColor instead", false)]
-        public Color borderColor
-        {
-            get
-            {
-                return style.borderColor;
-            }
-            set
-            {
-                style.borderColor = value;
-            }
-        }
-
-        public float borderLeftWidth
-        {
-            get
-            {
-                return style.borderLeftWidth;
-            }
-            set
-            {
-                style.borderLeftWidth = value;
-            }
-        }
-
-        public float borderTopWidth
-        {
-            get
-            {
-                return style.borderTopWidth;
-            }
-            set
-            {
-                style.borderTopWidth = value;
-            }
-        }
-
-        public float borderRightWidth
-        {
-            get
-            {
-                return style.borderRightWidth;
-            }
-            set
-            {
-                style.borderRightWidth = value;
-            }
-        }
-
-        public float borderBottomWidth
-        {
-            get
-            {
-                return style.borderBottomWidth;
-            }
-            set
-            {
-                style.borderBottomWidth = value;
-            }
-        }
-
-        [Obsolete("VisualElement.borderRadius will be removed. Use VisualElement.style.borderRadius instead", false)]
-        public float borderRadius
-        {
-            get
-            {
-                return style.borderRadius;
-            }
-            set
-            {
-                style.borderRadius = value;
-            }
-        }
-
-        [Obsolete("VisualElement.overflow will be removed. Use VisualElement.style.overflow instead", false)]
-        public Overflow overflow
-        {
-            get
-            {
-                return style.overflow.value;
-            }
-            set
-            {
-                style.overflow = value;
-            }
-        }
-
         // Opacity is not fully supported so it's hidden from public API for now
         internal float opacity
         {
@@ -932,8 +373,6 @@ namespace UnityEngine.Experimental.UIElements
                 style.opacity = value;
             }
         }
-
-        private List<IManipulator> m_Manipulators = new List<IManipulator>();
 
         internal readonly uint controlid;
 
@@ -950,44 +389,6 @@ namespace UnityEngine.Experimental.UIElements
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = 0; // not in a tree yet so not dirty, they will stack up as we get inserted somewhere.
-        }
-
-        internal List<IManipulator>.Enumerator GetManipulatorsInternal()
-        {
-            if (m_Manipulators != null)
-                return m_Manipulators.GetEnumerator();
-            return default(List<IManipulator>.Enumerator);
-        }
-
-        public void InsertManipulator(int index, IManipulator manipulator)
-        {
-            if (m_Manipulators == null)
-                m_Manipulators = new List<IManipulator>();
-            if (!m_Manipulators.Contains(manipulator))
-            {
-                manipulator.target = this;
-                m_Manipulators.Insert(index, manipulator);
-            }
-        }
-
-        public void AddManipulator(IManipulator manipulator)
-        {
-            if (m_Manipulators == null)
-                m_Manipulators = new List<IManipulator>();
-            if (!m_Manipulators.Contains(manipulator))
-            {
-                manipulator.target = this;
-                m_Manipulators.Add(manipulator);
-            }
-        }
-
-        public void RemoveManipulator(IManipulator manipulator)
-        {
-            manipulator.target = null;
-            if (m_Manipulators != null)
-            {
-                m_Manipulators.Remove(manipulator);
-            }
         }
 
         internal virtual void ChangePanel(BaseVisualElementPanel p)
@@ -1085,6 +486,11 @@ namespace UnityEngine.Experimental.UIElements
             PropagateChangesToParents();
         }
 
+        internal bool AnyDirty()
+        {
+            return changesNeeded != 0;
+        }
+
         public bool IsDirty(ChangeType type)
         {
             return (changesNeeded & type) > 0;
@@ -1168,11 +574,6 @@ namespace UnityEngine.Experimental.UIElements
         public virtual bool ContainsPoint(Vector2 localPoint)
         {
             return layout.Contains(localPoint);
-        }
-
-        public virtual bool ContainsPointToLocal(Vector2 point)
-        {
-            return ContainsPoint(this.ChangeCoordinatesTo(parent, point));
         }
 
         public virtual bool Overlaps(Rect rectangle)
@@ -1362,8 +763,8 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return;
             }
-            IStyle styleAccess = this.style;
-            styleAccess.positionType = StyleValue<PositionType>.nil;
+            VisualElementStylesData styleAccess = inlineStyle;
+            styleAccess.positionType = StyleValue<int>.nil;
             styleAccess.marginLeft = StyleValue<float>.nil;
             styleAccess.marginRight = StyleValue<float>.nil;
             styleAccess.marginBottom = StyleValue<float>.nil;
@@ -1384,7 +785,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override string ToString()
         {
-            return name + " " + layout + " global rect: " + globalBound;
+            return name + " " + layout + " world rect: " + worldBound;
         }
 
         // WARNING returning the HashSet means it could be modified, be careful
@@ -1429,24 +830,24 @@ namespace UnityEngine.Experimental.UIElements
 
     public static class VisualElementExtensions
     {
-        // transforms a point assumed in Panel space to the referential inside of the element bound
-        public static Vector2 GlobalToBound(this VisualElement ele, Vector2 p)
+        // transforms a point assumed in Panel space to the referential inside of the element bound (local)
+        public static Vector2 WorldToLocal(this VisualElement ele, Vector2 p)
         {
-            var toLocal = ele.globalTransform.inverse.MultiplyPoint3x4(new Vector3(p.x, p.y, 0));
+            var toLocal = ele.worldTransform.inverse.MultiplyPoint3x4(new Vector3(p.x, p.y, 0));
             return new Vector2(toLocal.x - ele.layout.position.x, toLocal.y - ele.layout.position.y);
         }
 
-        // transforms a point assumed in Panel space to  local referential
-        public static Vector2 LocalToGlobal(this VisualElement ele, Vector2 p)
+        // transforms a point to Panel space referential
+        public static Vector2 LocalToWorld(this VisualElement ele, Vector2 p)
         {
-            var toGlobal = ele.globalTransform.MultiplyPoint3x4((Vector3)(p + ele.layout.position));
-            return new Vector2(toGlobal.x, toGlobal.y);
+            var toWorld = ele.worldTransform.MultiplyPoint3x4((Vector3)(p + ele.layout.position));
+            return new Vector2(toWorld.x, toWorld.y);
         }
 
-        // transforms a rect assumed in Panel space to  local referential
-        public static Rect GlobalToBound(this VisualElement ele, Rect r)
+        // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
+        public static Rect WorldToLocal(this VisualElement ele, Rect r)
         {
-            var inv = ele.globalTransform.inverse;
+            var inv = ele.worldTransform.inverse;
             Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
             r.position = position - ele.layout.position;
             r.size = inv.MultiplyPoint3x4(r.size);
@@ -1454,24 +855,24 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // transforms a rect to Panel space referential
-        public static Rect LocalToGlobal(this VisualElement ele, Rect r)
+        public static Rect LocalToWorld(this VisualElement ele, Rect r)
         {
-            var toGlobalMatrix = ele.globalTransform;
-            r.position = toGlobalMatrix.MultiplyPoint3x4(ele.layout.position + r.position);
-            r.size = toGlobalMatrix.MultiplyPoint3x4(r.size);
+            var toWorldMatrix = ele.worldTransform;
+            r.position = toWorldMatrix.MultiplyPoint3x4(ele.layout.position + r.position);
+            r.size = toWorldMatrix.MultiplyPoint3x4(r.size);
             return r;
         }
 
         // transform point from the local space of one element to to the local space of another
         public static Vector2 ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Vector2 point)
         {
-            return dest.GlobalToBound(src.LocalToGlobal(point));
+            return dest.WorldToLocal(src.LocalToWorld(point));
         }
 
         // transform Rect from the local space of one element to to the local space of another
         public static Rect ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Rect rect)
         {
-            return dest.GlobalToBound(src.LocalToGlobal(rect));
+            return dest.WorldToLocal(src.LocalToWorld(rect));
         }
 
         public static void StretchToParentSize(this VisualElement elem)
@@ -1505,6 +906,16 @@ namespace UnityEngine.Experimental.UIElements
                 ancestor = ancestor.parent;
             }
             return null;
+        }
+
+        public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
+        {
+            manipulator.target = ele;
+        }
+
+        public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)
+        {
+            manipulator.target = null;
         }
     }
 

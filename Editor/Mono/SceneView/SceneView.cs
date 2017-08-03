@@ -34,6 +34,10 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
         static readonly PrefColor kSceneViewSelectedWire = new PrefColor("Scene/Wireframe Selected", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 64.0f / 255.0f);
 
+        static readonly PrefColor kSceneViewMaterialValidateLow = new PrefColor("Scene/Material Validator Value Too Low", 255.0f / 255.0f, 0.0f, 0.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialValidateHigh = new PrefColor("Scene/Material Validator Value Too High", 0.0f, 0.0f, 255.0f / 255.0f, 1.0f);
+        static readonly PrefColor kSceneViewMaterialValidatePureMetal = new PrefColor("Scene/Material Validator Pure Metal", 255.0f / 255.0f, 255.0f / 255.0f, 0.0f, 1.0f);
+
         internal static Color kSceneViewFrontLight = new Color(0.769f, 0.769f, 0.769f, 1);
         internal static Color kSceneViewUpLight = new Color(0.212f, 0.227f, 0.259f, 1);
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
@@ -951,6 +955,11 @@ namespace UnityEditor
             EditorGUIUtility.SetGUITextureBlitColorspaceSettings(EditorGUIUtility.GUITextureBlitColorspaceMaterial);
         }
 
+        internal bool IsCameraDrawModeEnabled(DrawCameraMode mode)
+        {
+            return Handles.IsCameraDrawModeEnabled(m_Camera, mode);
+        }
+
         internal bool IsSceneCameraDeferred()
         {
             if (m_Camera == null)
@@ -1238,6 +1247,10 @@ namespace UnityEditor
         private GUIContent[] m_AlbedoSwatchGUIContent;
         private String[] m_AlbedoSwatchLuminanceStrings;
 
+        private GUIStyle m_TooLowColorStyle = null;
+        private GUIStyle m_TooHighColorStyle = null;
+        private GUIStyle m_PureMetalColorStyle = null;
+
         private int m_SelectedAlbedoSwatchIndex = 0;
         private float m_AlbedoSwatchHueTolerance = 0.1f;
         private float m_AlbedoSwatchSaturationTolerance = 0.2f;
@@ -1393,6 +1406,16 @@ namespace UnityEditor
             }
         }
 
+        void UpdatePBRColorLegend()
+        {
+            m_TooLowColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateLow.Color);
+            m_TooHighColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidateHigh.Color);
+            m_PureMetalColorStyle = CreateSwatchStyleForColor(kSceneViewMaterialValidatePureMetal.Color);
+            Shader.SetGlobalColor("unity_MaterialValidateLowColor", kSceneViewMaterialValidateLow.Color.linear);
+            Shader.SetGlobalColor("unity_MaterialValidateHighColor", kSceneViewMaterialValidateHigh.Color.linear);
+            Shader.SetGlobalColor("unity_MaterialValidatePureMetalColor", kSceneViewMaterialValidatePureMetal.Color.linear);
+        }
+
         void UpdateAlbedoSwatch()
         {
             Color color = Color.gray;
@@ -1421,40 +1444,91 @@ namespace UnityEditor
 
         internal void DrawPBRSettingsForScene()
         {
-            if (m_RenderMode != DrawCameraMode.ValidateAlbedo)
+            if (m_RenderMode == DrawCameraMode.ValidateAlbedo)
             {
-                return;
-            }
+                if (PlayerSettings.colorSpace == ColorSpace.Gamma)
+                {
+                    EditorGUILayout.HelpBox("Albedo Validation doesn't work when Color Space is set to gamma space", MessageType.Warning);
+                }
 
-            EditorGUIUtility.labelWidth = 140;
-
-            m_SelectedAlbedoSwatchIndex = EditorGUILayout.Popup(new GUIContent("Luminance Validation:", "Select default luminance validation or validate against a configured albedo swatch"), m_SelectedAlbedoSwatchIndex, m_AlbedoSwatchGUIContent);
-            EditorGUI.indentLevel++;
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUIUtility.labelWidth = 5;
-                EditorGUILayout.LabelField(" ", m_AlbedoSwatchColorStyles[m_SelectedAlbedoSwatchIndex]);
                 EditorGUIUtility.labelWidth = 140;
-                EditorGUILayout.LabelField(m_AlbedoSwatchLuminanceStrings[m_SelectedAlbedoSwatchIndex]);
-            }
 
-            UpdateAlbedoSwatch();
+                m_SelectedAlbedoSwatchIndex = EditorGUILayout.Popup(new GUIContent("Luminance Validation:", "Select default luminance validation or validate against a configured albedo swatch"), m_SelectedAlbedoSwatchIndex, m_AlbedoSwatchGUIContent);
+                EditorGUI.indentLevel++;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUIUtility.labelWidth = 5;
+                    EditorGUILayout.LabelField(" ", m_AlbedoSwatchColorStyles[m_SelectedAlbedoSwatchIndex]);
+                    EditorGUIUtility.labelWidth = 140;
+                    EditorGUILayout.LabelField(m_AlbedoSwatchLuminanceStrings[m_SelectedAlbedoSwatchIndex]);
+                }
 
-            EditorGUI.indentLevel--;
-            using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
-            {
-                EditorGUI.BeginChangeCheck();
+                UpdateAlbedoSwatch();
+
+                EditorGUI.indentLevel--;
                 using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
                 {
-                    m_AlbedoSwatchHueTolerance = EditorGUILayout.Slider(new GUIContent("Hue Tolerance:", "Check that the hue of the albedo value of a material is within the tolerance of the hue of the albedo swatch being validated against"), m_AlbedoSwatchHueTolerance, 0f, 0.5f);
+                    EditorGUI.BeginChangeCheck();
+                    using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
+                    {
+                        m_AlbedoSwatchHueTolerance = EditorGUILayout.Slider(new GUIContent("Hue Tolerance:", "Check that the hue of the albedo value of a material is within the tolerance of the hue of the albedo swatch being validated against"), m_AlbedoSwatchHueTolerance, 0f, 0.5f);
 
-                    m_AlbedoSwatchSaturationTolerance = EditorGUILayout.Slider(new GUIContent("Saturation Tolerance:", "Check that the saturation of the albedo value of a material is within the tolerance of the saturation of the albedo swatch being validated against"), m_AlbedoSwatchSaturationTolerance, 0f, 0.5f);
-                }
+                        m_AlbedoSwatchSaturationTolerance = EditorGUILayout.Slider(new GUIContent("Saturation Tolerance:", "Check that the saturation of the albedo value of a material is within the tolerance of the saturation of the albedo swatch being validated against"), m_AlbedoSwatchSaturationTolerance, 0f, 0.5f);
+                    }
 
-                if (EditorGUI.EndChangeCheck())
-                {
-                    UpdateAlbedoSwatch();
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        UpdateAlbedoSwatch();
+                    }
                 }
+            }
+
+            UpdatePBRColorLegend();
+            EditorGUILayout.LabelField("Color Legend:");
+            EditorGUI.indentLevel++;
+            string modeString;
+
+            if (m_RenderMode == DrawCameraMode.ValidateAlbedo)
+            {
+                modeString = "Luminance";
+            }
+            else
+            {
+                modeString = "Specular";
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_TooLowColorStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField("Below Minimum " + modeString + " Value");
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_TooHighColorStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField("Above Maximum " + modeString + " Value");
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUIUtility.labelWidth = 2;
+                EditorGUILayout.LabelField("", m_PureMetalColorStyle);
+                EditorGUIUtility.labelWidth = 200;
+                EditorGUILayout.LabelField("Not A Pure Metal");
+            }
+        }
+
+        internal void PrepareValidationUI()
+        {
+            if (m_AlbedoSwatchInfos == null)
+                CreateAlbedoSwatchData();
+
+            if (PlayerSettings.colorSpace != m_LastKnownColorSpace)
+            {
+                UpdateAlbedoSwatchGUI();
+                UpdateAlbedoSwatch();
             }
         }
 
@@ -1466,16 +1540,11 @@ namespace UnityEditor
 
         void DrawValidateAlbedoSwatches(SceneView sceneView)
         {
-            if (m_AlbedoSwatchInfos == null)
-                CreateAlbedoSwatchData();
-
-            if (PlayerSettings.colorSpace != m_LastKnownColorSpace)
+            if (sceneView.m_RenderMode == DrawCameraMode.ValidateAlbedo || sceneView.m_RenderMode == DrawCameraMode.ValidateMetalSpecular)
             {
-                UpdateAlbedoSwatchGUI();
-                UpdateAlbedoSwatch();
+                sceneView.PrepareValidationUI();
+                SceneViewOverlay.Window(new GUIContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
-
-            SceneViewOverlay.Window(new GUIContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
         }
 
         void RepaintGizmosThatAreRenderedOnTopOfSceneView()

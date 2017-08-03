@@ -83,71 +83,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Children.Count; }
         }
 
-        [Obsolete("VisualElement.flexDirection will be removed. Use VisualElement.styles.flexDirection instead", false)]
-        public FlexDirection flexDirection
-        {
-            get
-            {
-                return style.flexDirection;
-            }
-            set
-            {
-                style.flexDirection = value;
-            }
-        }
-
-        [Obsolete("VisualElement.alignItems will be removed. Use VisualElement.styles.alignItems instead", false)]
-        public Align alignItems
-        {
-            get
-            {
-                return style.alignItems;
-            }
-            set
-            {
-                style.alignItems = value;
-            }
-        }
-
-        [Obsolete("VisualElement.alignContent will be removed. Use VisualElement.styles.alignContent instead", false)]
-        public Align alignContent
-        {
-            get
-            {
-                return style.alignContent.value;
-            }
-            set
-            {
-                style.alignContent = value;
-            }
-        }
-
-        [Obsolete("VisualElement.justifyContent will be removed. Use VisualElement.styles.justifyContent instead", false)]
-        public Justify justifyContent
-        {
-            get
-            {
-                return style.justifyContent.value;
-            }
-            set
-            {
-                style.justifyContent = value;
-            }
-        }
-
-        [Obsolete("VisualElement.flexWrap will be removed. Use VisualElement.styles.flexWrap instead", false)]
-        public Wrap flexWrap
-        {
-            get
-            {
-                return style.flexWrap.value;
-            }
-            set
-            {
-                style.flexWrap = value;
-            }
-        }
-
         public Enumerator GetEnumerator()
         {
             return new Enumerator(ref m_Children);
@@ -210,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
         public void RemoveChild(VisualElement child)
         {
             if (child == null)
-                throw new ArgumentException("Cannot add null child");
+                throw new ArgumentException("Cannot remove null child");
 
             if (child.parent != this)
                 throw new ArgumentException("This visualElement is not my child");

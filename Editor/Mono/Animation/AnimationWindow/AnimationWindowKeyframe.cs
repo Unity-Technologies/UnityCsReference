@@ -60,6 +60,7 @@ namespace UnityEditorInternal
         }
 
         public bool isPPtrCurve { get { return curve.isPPtrCurve; } }
+        public bool isDiscreteCurve { get { return curve.isDiscreteCurve; } }
 
         public AnimationWindowKeyframe()
         {

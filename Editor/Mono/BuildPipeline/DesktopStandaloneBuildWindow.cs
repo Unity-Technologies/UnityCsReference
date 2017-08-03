@@ -34,9 +34,9 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
             standaloneSubtargetsList.Add(BuildTarget.StandaloneWindows);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TextContent("Windows"));
         }
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSXIntel)))
+        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
         {
-            standaloneSubtargetsList.Add(BuildTarget.StandaloneOSXIntel);
+            standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
             standaloneSubtargetStringsList.Add(EditorGUIUtility.TextContent("Mac OS X"));
         }
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneLinux)))
@@ -55,10 +55,10 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
             return selectedTarget;
         if (RuntimePlatform.WindowsEditor == Application.platform && ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneWindows)))
             return BuildTarget.StandaloneWindows;
-        if (RuntimePlatform.OSXEditor == Application.platform && ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSXIntel)))
-            return BuildTarget.StandaloneOSXIntel;
-        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSXIntel)))
-            return BuildTarget.StandaloneOSXIntel;
+        if (RuntimePlatform.OSXEditor == Application.platform && ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
+            return BuildTarget.StandaloneOSX;
+        if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
+            return BuildTarget.StandaloneOSX;
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneLinux)))
             return BuildTarget.StandaloneLinux;
         return BuildTarget.StandaloneWindows;
@@ -82,14 +82,6 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
                     { EditorGUIUtility.TextContent("x86_64"), BuildTarget.StandaloneLinux64 },
                     { EditorGUIUtility.TextContent("x86 + x86_64 (Universal)"), BuildTarget.StandaloneLinuxUniversal },
                 };
-            case BuildTarget.StandaloneOSXIntel:
-            case BuildTarget.StandaloneOSXIntel64:
-            case BuildTarget.StandaloneOSXUniversal:
-                return new Dictionary<GUIContent, BuildTarget>() {
-                    { EditorGUIUtility.TextContent("x86"), BuildTarget.StandaloneOSXIntel },
-                    { EditorGUIUtility.TextContent("x86_64"), BuildTarget.StandaloneOSXIntel64 },
-                    { EditorGUIUtility.TextContent("Universal"), BuildTarget.StandaloneOSXUniversal },
-                };
             default:
                 return null;
         }
@@ -106,10 +98,13 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
             case BuildTarget.StandaloneLinux64:
             case BuildTarget.StandaloneLinuxUniversal:
                 return BuildTarget.StandaloneLinux;
+            case BuildTarget.StandaloneOSX:
+                // Deprecated
+#pragma warning disable 612, 618
             case BuildTarget.StandaloneOSXIntel:
             case BuildTarget.StandaloneOSXIntel64:
-            case BuildTarget.StandaloneOSXUniversal:
-                return BuildTarget.StandaloneOSXIntel;
+#pragma warning restore 612, 618
+                return BuildTarget.StandaloneOSX;
             default:
                 return target;
         }

@@ -318,6 +318,7 @@ namespace UnityEditor.Modules
         public string installPath;
         public string productName;
         public BuildOptions options;
+        public BuildReporting.BuildReport report;
     }
 
     internal struct BuildPostProcessArgs

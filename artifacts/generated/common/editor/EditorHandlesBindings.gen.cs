@@ -46,7 +46,7 @@ public sealed partial class Handles
     public static Color centerColor { get { return s_CenterColor; } }
     internal static PrefColor s_SelectedColor = new PrefColor("Scene/Selected Axis", 246f / 255, 242f / 255, 50f / 255, .89f);
     public static Color selectedColor { get { return s_SelectedColor; } }
-    internal static PrefColor s_PreselectionColor = new PrefColor("Scene/Preselection Axis", 246f / 255, 242f / 255, 50f / 255, .89f);
+    internal static PrefColor s_PreselectionColor = new PrefColor("Scene/Preselection Highlight", 201f / 255, 200f / 255, 144f / 255, 0.89f);
     public static Color preselectionColor { get { return s_PreselectionColor; } }
     internal static PrefColor s_SecondaryColor = new PrefColor("Scene/Guide Line", .5f, .5f, .5f, .2f);
     public static Color secondaryColor { get { return s_SecondaryColor; } }
@@ -334,6 +334,10 @@ public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 sli
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool Internal_IsCameraDrawModeEnabled (Camera camera, int drawMode) ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void Internal_DrawCameraWithGrid (Camera cam, int renderMode, ref DrawGridParameters gridParam) ;
@@ -867,6 +871,12 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     public static Vector2 GetMainGameViewSize()
         {
             return GameView.GetMainGameViewTargetSize();
+        }
+    
+    
+    internal static bool IsCameraDrawModeEnabled(Camera camera, DrawCameraMode drawMode)
+        {
+            return Internal_IsCameraDrawModeEnabled(camera, (int)drawMode);
         }
     
     

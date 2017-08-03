@@ -1331,6 +1331,22 @@ public Vector2 GetTexelOffset()
 
     [System.Obsolete ("SetBorderColor is no longer supported.", true)]
 public void SetBorderColor(Color color) {}
+    
+    
+    public  Hash128 imageContentsHash
+    {
+        get { Hash128 tmp; INTERNAL_get_imageContentsHash(out tmp); return tmp;  }
+        set { INTERNAL_set_imageContentsHash(ref value); }
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_get_imageContentsHash (out Hash128 value) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private  void INTERNAL_set_imageContentsHash (ref Hash128 value) ;
+
 }
 
 [System.Serializable]

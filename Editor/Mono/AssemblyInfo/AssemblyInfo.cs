@@ -51,6 +51,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
+[assembly: InternalsVisibleTo("UnityEditor.Networking")]
+[assembly: InternalsVisibleTo("UnityEditor.UI")]
 
 
 [assembly: AssemblyIsEditorAssembly]

@@ -34,7 +34,7 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var transform = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0.0f));
-                return globalTransform * transform;
+                return worldTransform * transform;
             }
         }
 

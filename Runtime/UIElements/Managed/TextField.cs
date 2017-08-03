@@ -64,15 +64,9 @@ namespace UnityEngine.Experimental.UIElements
 
         bool touchScreenTextField { get { return TouchScreenKeyboard.isSupported; } }
 
-        GUIStyle m_DrawGUIStyle;
-        internal GUIStyle guiStyle
-        {
-            get { return m_DrawGUIStyle ?? (m_DrawGUIStyle = new GUIStyle()); }
-        }
-
         public bool hasFocus { get { return elementPanel != null && elementPanel.focusedElement == this; } }
 
-        public TextEditor editor { get; protected set; }
+        internal TextEditor editor { get; set; }
 
         public TextField() : this(kMaxLengthNone, false, false, char.MinValue)
         {
@@ -98,7 +92,7 @@ namespace UnityEngine.Experimental.UIElements
                 editor = new KeyboardTextEditor(this);
             }
 
-            AddManipulator(editor);
+            this.AddManipulator(editor);
         }
 
         internal void TextFieldChanged()
@@ -124,7 +118,7 @@ namespace UnityEngine.Experimental.UIElements
             effectiveStyle.ApplyCustomProperty(SelectionColorProperty, ref m_SelectionColor); // TODO: Switch over to default style properties
             effectiveStyle.ApplyCustomProperty(CursorColorProperty, ref m_CursorColor);
 
-            effectiveStyle.WriteToGUIStyle(guiStyle);
+            effectiveStyle.WriteToGUIStyle(editor.style);
         }
 
         internal override void DoRepaint(IStylePainter painter)

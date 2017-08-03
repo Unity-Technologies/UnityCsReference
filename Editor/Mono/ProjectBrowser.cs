@@ -163,7 +163,7 @@ namespace UnityEditor
 
         // Used by search menu bar
         [System.NonSerialized]
-        public GUIContent m_SearchAllAssets = new GUIContent("Assets");
+        public GUIContent m_SearchAllAssets = new GUIContent("Assets"); // do not localize this: Assets=folder name
         [System.NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
         [System.NonSerialized]

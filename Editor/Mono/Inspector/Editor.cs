@@ -648,6 +648,13 @@ namespace UnityEditor
         {
             message = string.Empty;
 
+            // Need to check for null early to avoid an exception being thrown in
+            // AssetDatabase.IsNativeAsset(). One of these exceptions, unhandled,
+            // caused case 930291 and case 930931. For both cases, the UI broke because
+            // it was exiting early due to the exception.
+            if (assetObject == null)
+                return false;
+
             if (AssetDatabase.IsNativeAsset(assetObject))
             {
                 if (!AssetDatabase.IsOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible))

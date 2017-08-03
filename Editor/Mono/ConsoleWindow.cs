@@ -37,6 +37,12 @@ namespace UnityEditor
             public static GUIStyle StatusLog;
             public static GUIStyle Toolbar;
             public static GUIStyle CountBadge;
+            public static readonly string ClearLabel = L10n.Tr("Clear");
+            public static readonly string ClearOnPlayLabel = L10n.Tr("Clear on Play");
+            public static readonly string ErrorPauseLabel = L10n.Tr("Error Pause");
+            public static readonly string CollapseLabel = L10n.Tr("Collapse");
+            public static readonly string StopForAssertLabel = L10n.Tr("Stop for Assert");
+            public static readonly string StopForErrorLabel = L10n.Tr("Stop for Error");
 
             public static void Init()
             {
@@ -339,7 +345,7 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal(Constants.Toolbar);
 
-            if (GUILayout.Button("Clear", Constants.MiniButton))
+            if (GUILayout.Button(Constants.ClearLabel, Constants.MiniButton))
             {
                 LogEntries.Clear();
                 GUIUtility.keyboardControl = 0;
@@ -359,7 +365,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             bool wasCollapsed = HasFlag(ConsoleFlags.Collapse);
-            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, "Collapse", Constants.MiniButtonLeft));
+            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.CollapseLabel, Constants.MiniButtonLeft));
 
             bool collapsedChanged = (wasCollapsed != HasFlag(ConsoleFlags.Collapse));
             if (collapsedChanged)
@@ -371,8 +377,8 @@ namespace UnityEditor
                 m_ListView.scrollPos.y = LogEntries.GetCount() * m_RowHeight;
             }
 
-            SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), "Clear on Play", Constants.MiniButtonMiddle));
-            SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), "Error Pause", Constants.MiniButtonRight));
+            SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButtonMiddle));
+            SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButtonRight));
 
             m_AttachProfilerUI.OnGUILayout(this);
 
@@ -381,8 +387,8 @@ namespace UnityEditor
             if (m_DevBuild)
             {
                 GUILayout.FlexibleSpace();
-                SetFlag(ConsoleFlags.StopForAssert, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForAssert), "Stop for Assert", Constants.MiniButtonLeft));
-                SetFlag(ConsoleFlags.StopForError, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForError), "Stop for Error", Constants.MiniButtonRight));
+                SetFlag(ConsoleFlags.StopForAssert, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForAssert), Constants.StopForAssertLabel, Constants.MiniButtonLeft));
+                SetFlag(ConsoleFlags.StopForError, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForError), Constants.StopForErrorLabel, Constants.MiniButtonRight));
             }
 
             GUILayout.FlexibleSpace();

@@ -72,10 +72,6 @@ namespace UnityEngine
             return GetAllocArrayFromChannel<T>(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel));
         }
 
-        // just tiny helper as we want to keep null as valid param to all setters
-        private int SafeLength(System.Array values) { return values != null ? values.Length : 0; }
-        private int SafeLength<T>(List<T> values)   { return values != null ? values.Count : 0; }
-
         private void SetSizedArrayForChannel(InternalShaderChannel channel, InternalVertexChannelType format, int dim, System.Array values, int valuesCount)
         {
             if (canAccess)
@@ -86,22 +82,22 @@ namespace UnityEngine
 
         private void SetArrayForChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim, T[] values)
         {
-            SetSizedArrayForChannel(channel, format, dim, values, SafeLength(values));
+            SetSizedArrayForChannel(channel, format, dim, values, NoAllocHelpers.SafeLength(values));
         }
 
         private void SetArrayForChannel<T>(InternalShaderChannel channel, T[] values)
         {
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, SafeLength(values));
+            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, NoAllocHelpers.SafeLength(values));
         }
 
         private void SetListForChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim, List<T> values)
         {
-            SetSizedArrayForChannel(channel, format, dim, ExtractArrayFromList(values), SafeLength(values));
+            SetSizedArrayForChannel(channel, format, dim, NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
         }
 
         private void SetListForChannel<T>(InternalShaderChannel channel, List<T> values)
         {
-            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), ExtractArrayFromList(values), SafeLength(values));
+            SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
         }
 
         private void GetListForChannel<T>(List<T> buffer, int capacity, InternalShaderChannel channel, int dim)
@@ -124,7 +120,7 @@ namespace UnityEngine
 
             PrepareUserBuffer(buffer, capacity);
 
-            GetArrayFromChannelImpl(channel, channelType, dim, ExtractArrayFromList(buffer));
+            GetArrayFromChannelImpl(channel, channelType, dim, NoAllocHelpers.ExtractArrayFromList(buffer));
         }
 
         private void PrepareUserBuffer<T>(List<T> buffer, int capacity)
@@ -135,7 +131,7 @@ namespace UnityEngine
             if (buffer.Capacity < capacity)
                 buffer.Capacity = capacity;
 
-            ResizeList(buffer, capacity);
+            NoAllocHelpers.ResizeList(buffer, capacity);
         }
 
         public Vector3[] vertices
@@ -338,7 +334,7 @@ namespace UnityEngine
             }
             set
             {
-                if (canAccess)  SetTrianglesImpl(-1, value, SafeLength(value));
+                if (canAccess)   SetTrianglesImpl(-1, value, NoAllocHelpers.SafeLength(value));
                 else            PrintErrorCantAccessIndices();
             }
         }

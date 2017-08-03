@@ -25,6 +25,11 @@ namespace UnityEditor
             return renderer.GetCurveOfComponent(component);
         }
 
+        public float ClampedValue(float value)
+        {
+            return value;
+        }
+
         public float RangeStart() { return renderer.RangeStart(); }
         public float RangeEnd() { return renderer.RangeEnd(); }
         public void SetWrap(WrapMode wrap)

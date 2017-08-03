@@ -5117,7 +5117,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 throw new NullReferenceException(error);
             }
 
-            s_PropertyFieldTempContent.text = LocalizationDatabase.GetLocalizedString((label == null) ? property.displayName : label.text);
+            s_PropertyFieldTempContent.text = (label == null) ? L10n.Tr(property.displayName) : label.text; // no necessary to be translated.
             s_PropertyFieldTempContent.tooltip = EditorGUI.isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
             string attributeTooltip = ScriptAttributeUtility.GetHandler(property).tooltip;
             if (attributeTooltip != null)

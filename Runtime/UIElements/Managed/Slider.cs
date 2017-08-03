@@ -88,7 +88,7 @@ namespace UnityEngine.Experimental.UIElements
             AddChild(dragElement);
 
             clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
-            AddManipulator(clampedDragger);
+            this.AddManipulator(clampedDragger);
         }
 
         // Handles slider drags

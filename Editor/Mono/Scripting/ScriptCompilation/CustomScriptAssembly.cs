@@ -69,13 +69,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CustomScriptAssembly()
         {
-            Platforms = new CustomScriptAssemblyPlatform[23];
+            Platforms = new CustomScriptAssemblyPlatform[21];
 
             int i = 0;
             Platforms[i++] = new CustomScriptAssemblyPlatform("Editor", BuildTarget.NoTarget);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("OSXtandalone32", BuildTarget.StandaloneOSXIntel);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("OSXStandalone64", BuildTarget.StandaloneOSXIntel64);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("OSXStandaloneUniversal", BuildTarget.StandaloneOSXUniversal);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("OSXStandalone", BuildTarget.StandaloneOSX);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone32", BuildTarget.StandaloneWindows);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone64", BuildTarget.StandaloneWindows64);
             Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone32", BuildTarget.StandaloneLinux);

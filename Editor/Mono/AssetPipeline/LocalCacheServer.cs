@@ -58,8 +58,8 @@ namespace UnityEditor
             {
                 Arguments = "\"" + cacheServerJs + "\""
                     + " --port " + _port
-                    + " --path " + path
-                    + " --nolegacy"
+                    + " --path \"" + path
+                    + "\" --nolegacy"
                     + " --monitor-parent-process " + Process.GetCurrentProcess().Id
                     // node.js has issues running on windows with stdout not redirected.
                     // so we silence logging to avoid that. And also to avoid CacheServer

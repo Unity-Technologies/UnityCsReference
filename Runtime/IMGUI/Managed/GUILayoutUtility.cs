@@ -50,9 +50,9 @@ namespace UnityEngine
         {
             // See GUI.CleanupRoots
             s_SpaceStyle = null;
-            s_StoredLayouts = null;
-            s_StoredWindows = null;
-            current = null;
+            s_StoredLayouts.Clear();
+            s_StoredWindows.Clear();
+            current = new LayoutCache();
         }
 
         static internal LayoutCache SelectIDList(int instanceID, bool isWindow)

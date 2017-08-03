@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
@@ -76,7 +75,12 @@ namespace UnityEditor
             m_CustomRangeEnd = end;
         }
 
-        public float EvaluateCurveSlow(float time)
+        public virtual float ClampedValue(float value)
+        {
+            return value;
+        }
+
+        public virtual float EvaluateCurveSlow(float time)
         {
             return m_Curve.Evaluate(time);
         }
@@ -85,7 +89,7 @@ namespace UnityEditor
         public float EvaluateCurveDeltaSlow(float time)
         {
             float epsilon = 0.0001f;
-            return (m_Curve.Evaluate(time + epsilon) - m_Curve.Evaluate(time - epsilon)) / (epsilon * 2);
+            return (EvaluateCurveSlow(time + epsilon) - EvaluateCurveSlow(time - epsilon)) / (epsilon * 2);
         }
 
         private Vector3[] GetPoints()
@@ -156,7 +160,7 @@ namespace UnityEditor
                 return new float[1, 2] {{minTime, maxTime}};
         }
 
-        private static int GetSegmentResolution(float minTime, float maxTime, float keyTime, float nextKeyTime)
+        protected virtual int GetSegmentResolution(float minTime, float maxTime, float keyTime, float nextKeyTime)
         {
             float fullTimeRange = maxTime - minTime;
             float keyTimeRange = nextKeyTime - keyTime;
@@ -164,12 +168,19 @@ namespace UnityEditor
             return Mathf.Clamp(count, 1, kMaximumSampleCount);
         }
 
+        protected virtual void AddPoint(ref List<Vector3> points, ref float lastTime, float sampleTime, ref float lastValue, float sampleValue)
+        {
+            points.Add(new Vector3(sampleTime, sampleValue));
+            lastTime = sampleTime;
+            lastValue = sampleValue;
+        }
+
         private void AddPoints(ref List<Vector3> points, float minTime, float maxTime, float visibleMinTime, float visibleMaxTime)
         {
             if (m_Curve[0].time >= minTime)
             {
-                points.Add(new Vector3(rangeStart, m_Curve[0].value));
-                points.Add(new Vector3(m_Curve[0].time, m_Curve[0].value));
+                points.Add(new Vector3(rangeStart, ClampedValue(m_Curve[0].value)));
+                points.Add(new Vector3(m_Curve[0].time, ClampedValue(m_Curve[0].value)));
             }
 
             for (int i = 0; i < m_Curve.length - 1; i++)
@@ -187,27 +198,34 @@ namespace UnityEditor
                 // Place second sample very close to first one (to correctly handle stepped interpolation)
                 int segmentResolution = GetSegmentResolution(visibleMinTime, visibleMaxTime, key.time, nextKey.time);
                 float newTime = Mathf.Lerp(key.time, nextKey.time, 0.001f / segmentResolution);
-                points.Add(new Vector3(newTime, m_Curve.Evaluate(newTime)));
+                float lastTime = key.time;
+                float lastValue = ClampedValue(key.value);
+                float value = EvaluateCurveSlow(newTime);
+                AddPoint(ref points, ref lastTime, newTime, ref lastValue, value);
+
                 // Iterate through curve segment
                 for (float j = 1; j < segmentResolution; j++)
                 {
                     newTime = Mathf.Lerp(key.time, nextKey.time, j / segmentResolution);
-                    points.Add(new Vector3(newTime, m_Curve.Evaluate(newTime)));
+                    value = EvaluateCurveSlow(newTime);
+                    AddPoint(ref points, ref lastTime, newTime, ref lastValue, value);
                 }
 
                 // Place second last sample very close to last one (to correctly handle stepped interpolation)
                 newTime = Mathf.Lerp(key.time, nextKey.time, 1 - 0.001f / segmentResolution);
-                points.Add(new Vector3(newTime, m_Curve.Evaluate(newTime)));
+                value = EvaluateCurveSlow(newTime);
+                AddPoint(ref points, ref lastTime, newTime, ref lastValue, value);
 
                 // Get last value from actual key rather than evaluating curve (to correctly handle stepped interpolation)
                 newTime = nextKey.time;
-                points.Add(new Vector3(newTime, nextKey.value));
+                AddPoint(ref points, ref lastTime, newTime, ref lastValue, value);
             }
 
             if (m_Curve[m_Curve.length - 1].time <= maxTime)
             {
-                points.Add(new Vector3(m_Curve[m_Curve.length - 1].time, m_Curve[m_Curve.length - 1].value));
-                points.Add(new Vector3(rangeEnd, m_Curve[m_Curve.length - 1].value));
+                float clampedValue = ClampedValue(m_Curve[m_Curve.length - 1].value);
+                points.Add(new Vector3(m_Curve[m_Curve.length - 1].time, clampedValue));
+                points.Add(new Vector3(rangeEnd, clampedValue));
             }
         }
 

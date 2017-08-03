@@ -211,12 +211,6 @@ namespace UnityEditor
 
         public void SetMinMaxState(MinMaxCurveState newState, bool addToCurveEditor)
         {
-            if (stateHasMultipleDifferentValues)
-            {
-                Debug.LogError("SetMinMaxState is not allowed with multiple different values");
-                return;
-            }
-
             if (newState == state)
                 return;
 
