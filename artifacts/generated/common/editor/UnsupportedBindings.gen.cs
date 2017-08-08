@@ -108,15 +108,15 @@ public sealed partial class Unsupported
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetAllowCursorLock (bool allow) ;
 
-    static internal void SetOverrideRenderSettings(Scene scene)
+    static internal bool SetOverrideRenderSettings(Scene scene)
         {
-            SetOverrideRenderSettingsInternal(scene.handle);
+            return SetOverrideRenderSettingsInternal(scene.handle);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void SetOverrideRenderSettingsInternal (int sceneHandle) ;
+    extern internal static  bool SetOverrideRenderSettingsInternal (int sceneHandle) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

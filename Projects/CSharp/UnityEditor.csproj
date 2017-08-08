@@ -1552,6 +1552,9 @@
 <Compile Include="..\..\Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs" >
 <Link>Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectConsentView.cs" >
+<Link>Editor\Mono\UnityConnect\UnityConnectConsentView.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.cs" >
 <Link>Editor\Mono\UnityConnect\UnityConnect.cs</Link>
 </Compile>

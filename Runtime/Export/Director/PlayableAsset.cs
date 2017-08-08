@@ -49,7 +49,7 @@ namespace UnityEngine.Playables
         //  Uses an IntPtr because XBoxOne doesn't support marshalling the struct as a return value properly
         //  and UAP doesn't support out parameters
         [RequiredByNativeCode]
-        unsafe static internal void Internal_CreatePlayable(PlayableAsset asset, PlayableGraph graph, GameObject go, IntPtr ptr)
+        internal static unsafe void Internal_CreatePlayable(PlayableAsset asset, PlayableGraph graph, GameObject go, IntPtr ptr)
         {
             Playable result;
             if (asset == null)
@@ -63,7 +63,7 @@ namespace UnityEngine.Playables
 
         // workaround for not being able to Invoke<double> on iOS
         [RequiredByNativeCode]
-        static internal void Internal_GetPlayableAssetDuration(PlayableAsset asset, IntPtr ptrToDouble)
+        internal static void Internal_GetPlayableAssetDuration(PlayableAsset asset, IntPtr ptrToDouble)
         {
             double d = asset.duration;
             unsafe

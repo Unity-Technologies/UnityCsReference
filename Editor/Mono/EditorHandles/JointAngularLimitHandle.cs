@@ -305,7 +305,7 @@ namespace UnityEditor.IMGUI.Controls
             switch (xMotion)
             {
                 case ConfigurableJointMotion.Free:
-                    using (new Handles.DrawingScope(xHandleColor))
+                    using (new Handles.DrawingScope(Handles.color * xHandleColor))
                     {
                         Handles.DrawWireDisc(Vector3.zero, Vector3.right, radius);
                         Handles.color *= fillScalar;
@@ -327,7 +327,7 @@ namespace UnityEditor.IMGUI.Controls
                     }
                     break;
                 case ConfigurableJointMotion.Locked:
-                    using (new Handles.DrawingScope(Color.Lerp(xHandleColor, s_LockedColor, s_LockedColorAmount)))
+                    using (new Handles.DrawingScope(Handles.color * Color.Lerp(xHandleColor, s_LockedColor, s_LockedColorAmount)))
                         Handles.DrawWireDisc(Vector3.zero, Vector3.right, radius);
                     break;
             }
@@ -336,7 +336,7 @@ namespace UnityEditor.IMGUI.Controls
                 switch (yMotion)
                 {
                     case ConfigurableJointMotion.Free:
-                        using (new Handles.DrawingScope(yHandleColor))
+                        using (new Handles.DrawingScope(Handles.color * yHandleColor))
                         {
                             Handles.DrawWireDisc(Vector3.zero, Vector3.up, radius);
                             Handles.color *= fillScalar;
@@ -349,14 +349,14 @@ namespace UnityEditor.IMGUI.Controls
                             DrawArc(m_YMinHandle, m_YMaxHandle, yHandleColor * fillScalar, ArcType.Solid);
                         break;
                     case ConfigurableJointMotion.Locked:
-                        using (new Handles.DrawingScope(Color.Lerp(yHandleColor, s_LockedColor, s_LockedColorAmount)))
+                        using (new Handles.DrawingScope(Handles.color * Color.Lerp(yHandleColor, s_LockedColor, s_LockedColorAmount)))
                             Handles.DrawWireDisc(Vector3.zero, Vector3.up, radius);
                         break;
                 }
                 switch (zMotion)
                 {
                     case ConfigurableJointMotion.Free:
-                        using (new Handles.DrawingScope(zHandleColor))
+                        using (new Handles.DrawingScope(Handles.color * zHandleColor))
                         {
                             Handles.DrawWireDisc(Vector3.zero, Vector3.forward, radius);
                             Handles.color *= fillScalar;
@@ -369,7 +369,7 @@ namespace UnityEditor.IMGUI.Controls
                         drawZ = true;
                         break;
                     case ConfigurableJointMotion.Locked:
-                        using (new Handles.DrawingScope(Color.Lerp(zHandleColor, s_LockedColor, s_LockedColorAmount)))
+                        using (new Handles.DrawingScope(Handles.color * Color.Lerp(zHandleColor, s_LockedColor, s_LockedColorAmount)))
                             Handles.DrawWireDisc(Vector3.zero, Vector3.forward, radius);
                         break;
                 }
@@ -424,7 +424,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             float angle = maxHandle.angle - minHandle.angle;
             Vector3 forward = Quaternion.AngleAxis(minHandle.angle, Vector3.up) * Vector3.forward;
-            using (new Handles.DrawingScope(color))
+            using (new Handles.DrawingScope(Handles.color * color))
             {
                 if (arcType == ArcType.Solid)
                 {
@@ -450,7 +450,7 @@ namespace UnityEditor.IMGUI.Controls
 
             Color fillAlphaScalar = new Color(1f, 1f, 1f, fillAlpha);
             Vector3 start;
-            using (new Handles.DrawingScope(yHandleColor * fillAlphaScalar))
+            using (new Handles.DrawingScope(Handles.color * (yHandleColor * fillAlphaScalar)))
             {
                 float yAngle = yMax - yMin;
 
@@ -460,7 +460,7 @@ namespace UnityEditor.IMGUI.Controls
                 start = toXMin * toYMax * Vector3.forward;
                 Handles.DrawSolidArc(Vector3.zero, toXMin * Vector3.down, start, yAngle, radius);
             }
-            using (new Handles.DrawingScope(xHandleColor * fillAlphaScalar))
+            using (new Handles.DrawingScope(Handles.color * (xHandleColor * fillAlphaScalar)))
             {
                 float xAngle = xMax - xMin;
 

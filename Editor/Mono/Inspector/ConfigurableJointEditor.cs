@@ -9,10 +9,20 @@ namespace UnityEditor
     [CustomEditor(typeof(ConfigurableJoint)), CanEditMultipleObjects]
     class ConfigurableJointEditor : JointEditor<ConfigurableJoint>
     {
-        protected override Matrix4x4 GetConnectedBodyMatrix(ConfigurableJoint joint)
+        protected override void GetActors(
+            ConfigurableJoint joint,
+            out Rigidbody dynamicActor,
+            out Rigidbody connectedActor,
+            out int jointFrameActorIndex,
+            out bool rightHandedLimit
+            )
         {
-            return joint.configuredInWorldSpace || joint.connectedBody == null ?
-                Matrix4x4.identity : joint.connectedBody.transform.localToWorldMatrix;
+            base.GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
+            if (joint.swapBodies)
+            {
+                jointFrameActorIndex = 0;
+                rightHandedLimit = true;
+            }
         }
 
         protected override void DoAngularLimitHandles(ConfigurableJoint joint)
