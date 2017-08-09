@@ -82,7 +82,7 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Unity will do a recursive-up search for it in all Materials folders up to the Assets folder."),
                 EditorGUIUtility.TextContent("Unity will search for it anywhere inside the Assets folder.")
             };
-            public GUIContent ExternalMaterialHelpEnd = EditorGUIUtility.TextContent("If no external material asset is found, the material is embedded inside the imported asset.");
+            public GUIContent ExternalMaterialHelpEnd = EditorGUIUtility.TextContent("If it doesn't exist, a new one is created in the local Materials folder.");
 
             public GUIContent InternalMaterialHelp = EditorGUIUtility.TextContent("Materials are embedded inside the imported asset.");
 
@@ -93,10 +93,10 @@ namespace UnityEditor
             public GUIContent NoMaterialMappingsHelp = EditorGUIUtility.TextContent("Re-import the asset to see the list of used materials.");
 
             public GUIContent Textures = EditorGUIUtility.TextContent("Textures");
-            public GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract To...|Click on this button to extract the embedded textures.");
+            public GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract Textures...|Click on this button to extract the embedded textures.");
 
             public GUIContent Materials = EditorGUIUtility.TextContent("Materials");
-            public GUIContent ExtractEmbeddedMaterials = EditorGUIUtility.TextContent("Extract To...|Click on this button to extract the embedded materials.");
+            public GUIContent ExtractEmbeddedMaterials = EditorGUIUtility.TextContent("Extract Materials...|Click on this button to extract the embedded materials.");
         }
         static Styles styles;
 
@@ -304,48 +304,51 @@ namespace UnityEditor
                         }
                     }
 
-                    if (targets.Length == 1 && m_Materials.arraySize > 0)
+                    if (targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0)
                     {
                         materialHelp += " " + styles.MaterialAssignmentsHelp.text;
                     }
 
                     // display the extract buttons
-                    using (new EditorGUILayout.HorizontalScope())
+                    if (m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
                     {
-                        EditorGUILayout.PrefixLabel(styles.Materials);
-                        using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
+                        TexturesGUI();
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            if (GUILayout.Button(styles.ExtractEmbeddedMaterials))
+                            EditorGUILayout.PrefixLabel(styles.Materials);
+                            using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
                             {
-                                // use the first target for selecting the destination folder, but apply that path for all targets
-                                string destinationPath = (target as ModelImporter).assetPath;
-                                destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
-                                        FileUtil.DeleteLastPathNameComponent(destinationPath), "");
-                                if (string.IsNullOrEmpty(destinationPath))
+                                if (GUILayout.Button(styles.ExtractEmbeddedMaterials))
                                 {
-                                    // cancel the extraction if the user did not select a folder
+                                    // use the first target for selecting the destination folder, but apply that path for all targets
+                                    string destinationPath = (target as ModelImporter).assetPath;
+                                    destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
+                                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                                    if (string.IsNullOrEmpty(destinationPath))
+                                    {
+                                        // cancel the extraction if the user did not select a folder
+                                        return;
+                                    }
+                                    destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+
+                                    try
+                                    {
+                                        // batch the extraction of the textures
+                                        AssetDatabase.StartAssetEditing();
+
+                                        PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
+                                    }
+                                    finally
+                                    {
+                                        AssetDatabase.StopAssetEditing();
+                                    }
+
+                                    // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
                                     return;
                                 }
-                                destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
-
-                                try
-                                {
-                                    // batch the extraction of the textures
-                                    AssetDatabase.StartAssetEditing();
-
-                                    PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
-                                }
-                                finally
-                                {
-                                    AssetDatabase.StopAssetEditing();
-                                }
-
-                                // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
-                                return;
                             }
                         }
                     }
-                    TexturesGUI();
                 }
                 else
                 {
@@ -359,14 +362,15 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(materialHelp, MessageType.Info);
             }
 
-            if ((targets.Length == 1 || m_SupportsEmbeddedMaterials.hasMultipleDifferentValues == false) && m_SupportsEmbeddedMaterials.boolValue == false)
+            if ((targets.Length == 1 || m_SupportsEmbeddedMaterials.hasMultipleDifferentValues == false) && m_SupportsEmbeddedMaterials.boolValue == false
+                && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.HelpBox(styles.NoMaterialMappingsHelp.text, MessageType.Warning);
             }
 
             // hidden for multi-selection
-            if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0)
+            if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
             {
                 GUILayout.Label(styles.ExternalMaterialMappings, EditorStyles.boldLabel);
 

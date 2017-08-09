@@ -181,7 +181,7 @@ namespace UnityEditor
                 if (fixedSize)
                     previewSize = Mathf.Min(previewSize, kPreviewMinSize);
 
-                bool selectingOne = (evt.type == EventType.mouseDown && evt.button == 0 && evt.clickCount == 2 &&
+                bool selectingOne = (evt.type == EventType.MouseDown && evt.button == 0 && evt.clickCount == 2 &&
                                      previewArea.Contains(evt.mousePosition));
 
                 defaultPreview.ResetTarget();

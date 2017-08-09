@@ -33,7 +33,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                 {
                     float d;
                     if (cutoffPlane)
@@ -49,7 +49,7 @@ namespace UnityEditorInternal
                     HandleUtility.AddControl(id, d);
                     break;
                 }
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
@@ -72,7 +72,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         // handle look to point rotation
@@ -103,7 +103,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         Tools.UnlockHandlePosition();
@@ -112,7 +112,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
@@ -124,7 +124,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color temp = Color.white;
 
                     if (id == GUIUtility.hotControl)

@@ -164,7 +164,9 @@ namespace UnityEngine.Experimental.UIElements
                 for (int i = 0; i < m_ScheduledItems.Count; i++)
                 {
                     ScheduledItem scheduledItem = m_ScheduledItems[i];
-                    if (scheduledItem.handler.panel == null)
+
+                    VisualElement handlerAsVisualElement = scheduledItem.handler as VisualElement;
+                    if (handlerAsVisualElement != null && handlerAsVisualElement.panel == null)
                     {
                         // Seems we have an orphan timer event, unschedule it immediately and don't even try to execute
                         Debug.Log("Will unschedule action of " + scheduledItem.handler + " because it has no panel");

@@ -143,7 +143,7 @@ namespace UnityEditor.Sprites
         {
             Rect toolbarRect = new Rect(0 , 0, position.width, k_ToolbarHeight);
 
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 EditorStyles.toolbar.Draw(toolbarRect, false, false, false, false);
             }

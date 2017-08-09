@@ -225,9 +225,6 @@ namespace UnityEngine.Experimental.UIElements
 
             m_IsInvoking--;
 
-            // FIXME: this does not completely support the case where callbacks send events
-            // and add/remove callbacks in the registry. For now, all recursively sent events
-            // will invoke the initial callback list.
             if (m_IsInvoking == 0)
             {
                 // If callbacks were modified during callback invocation, update them now.

@@ -940,7 +940,7 @@ namespace UnityEditor.IMGUI.Controls
             if (keyboardInputCallback != null)
                 keyboardInputCallback();
 
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 switch (Event.current.keyCode)
                 {

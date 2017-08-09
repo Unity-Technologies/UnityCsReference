@@ -120,7 +120,7 @@ namespace UnityEditor
 
         public void OnGUI(float width, bool fixedWidth)
         {
-            bool isRepaintEvent = Event.current.type == EventType.repaint;
+            bool isRepaintEvent = Event.current.type == EventType.Repaint;
 
             // Name of current emitter
             string selectedEmitterName = null;

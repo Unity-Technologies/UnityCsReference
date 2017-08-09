@@ -307,6 +307,9 @@
 <Compile Include="..\..\Editor\Mono\ProjectBrowserColumnOne.cs" >
 <Link>Editor\Mono\ProjectBrowserColumnOne.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs" >
+<Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\SceneHierarchySortingWindow.cs" >
 <Link>Editor\Mono\SceneHierarchySortingWindow.cs</Link>
 </Compile>
@@ -1423,6 +1426,9 @@
 <Compile Include="..\..\Editor\Mono\UIElements\EditorTextField.cs" >
 <Link>Editor\Mono\UIElements\EditorTextField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\UIElementsViewImporter.cs" >
+<Link>Editor\Mono\UIElements\UIElementsViewImporter.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\AssetStore\AssetStoreAsset.cs" >
 <Link>Editor\Mono\AssetStore\AssetStoreAsset.cs</Link>
 </Compile>
@@ -1573,6 +1579,9 @@
 <Compile Include="..\..\Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs" >
 <Link>Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectConsentView.cs" >
+<Link>Editor\Mono\UnityConnect\UnityConnectConsentView.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.cs" >
 <Link>Editor\Mono\UnityConnect\UnityConnect.cs</Link>
 </Compile>
@@ -1656,6 +1665,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Troubleshooter\TroubleshooterWindow.cs" >
 <Link>Editor\Mono\Troubleshooter\TroubleshooterWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Media\Bindings\MediaEncoder.bindings.cs" >
+<Link>Editor\Mono\Media\Bindings\MediaEncoder.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Internal\MonoScripts.cs" >
 <Link>Editor\Mono\Internal\MonoScripts.cs</Link>
@@ -2359,9 +2371,6 @@
 <Compile Include="..\..\Editor\Mono\Inspector\AvatarPreview.cs" >
 <Link>Editor\Mono\Inspector\AvatarPreview.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\BatchedSpriteRendererEditor.cs" >
-<Link>Editor\Mono\Inspector\BatchedSpriteRendererEditor.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Collider3DEditorBase.cs" >
 <Link>Editor\Mono\Inspector\Collider3DEditorBase.cs</Link>
 </Compile>
@@ -2410,6 +2419,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\RectTransformSnapping.cs" >
 <Link>Editor\Mono\Inspector\RectTransformSnapping.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\TerrainColliderEditor.cs" >
+<Link>Editor\Mono\Inspector\TerrainColliderEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\TimeControl.cs" >
 <Link>Editor\Mono\Inspector\TimeControl.cs</Link>
 </Compile>
@@ -2454,6 +2466,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Physics2DSettingsInspector.cs" >
 <Link>Editor\Mono\Inspector\Physics2DSettingsInspector.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\TimeManagerInspector.cs" >
+<Link>Editor\Mono\Inspector\TimeManagerInspector.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\RendererEditorBase.cs" >
 <Link>Editor\Mono\Inspector\RendererEditorBase.cs</Link>
@@ -3320,6 +3335,9 @@
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\Managed\CoreStats.cs" >
 <Link>Editor\Src\CloudServicesSettings\Managed\CoreStats.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Src\CloudServicesSettings\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs" >
+<Link>Editor\Src\CloudServicesSettings\CrashReporting\ScriptBindings\CrashReportingSettings.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Src\CloudServicesSettings\PackageUtils\ScriptBindings\PackageUtils.bindings.cs" >
 <Link>Editor\Src\CloudServicesSettings\PackageUtils\ScriptBindings\PackageUtils.bindings.cs</Link>
 </Compile>
@@ -3379,6 +3397,132 @@
 </Compile>
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\BaseTypeFactory.cs" >
+<Link>Modules\GraphViewEditor\BaseTypeFactory.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Capabilities.cs" >
+<Link>Modules\GraphViewEditor\Capabilities.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\DataWatchContainer.cs" >
+<Link>Modules\GraphViewEditor\DataWatchContainer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Direction.cs" >
+<Link>Modules\GraphViewEditor\Direction.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\GraphViewEditorWindow.cs" >
+<Link>Modules\GraphViewEditor\GraphViewEditorWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\GraphViewTypeFactory.cs" >
+<Link>Modules\GraphViewEditor\GraphViewTypeFactory.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\IDroppable.cs" >
+<Link>Modules\GraphViewEditor\IDroppable.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\ISelectable.cs" >
+<Link>Modules\GraphViewEditor\ISelectable.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\ISelection.cs" >
+<Link>Modules\GraphViewEditor\ISelection.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\NodeAdapter.cs" >
+<Link>Modules\GraphViewEditor\NodeAdapter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Orientation.cs" >
+<Link>Modules\GraphViewEditor\Orientation.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Decorators\GridBackground.cs" >
+<Link>Modules\GraphViewEditor\Decorators\GridBackground.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Edge.cs" >
+<Link>Modules\GraphViewEditor\Elements\Edge.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\FallbackGraphElement.cs" >
+<Link>Modules\GraphViewEditor\Elements\FallbackGraphElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElement.cs" >
+<Link>Modules\GraphViewEditor\Elements\GraphElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\MiniMap.cs" >
+<Link>Modules\GraphViewEditor\Elements\MiniMap.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Node.cs" >
+<Link>Modules\GraphViewEditor\Elements\Node.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\NodeAnchor.cs" >
+<Link>Modules\GraphViewEditor\Elements\NodeAnchor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\SimpleElement.cs" >
+<Link>Modules\GraphViewEditor\Elements\SimpleElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\EdgePresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\EdgePresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\InputNodeAnchorPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\InputNodeAnchorPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\NodeAnchorPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\NodeAnchorPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\OutputNodeAnchorPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\OutputNodeAnchorPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ClickSelector.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\ClickSelector.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ContentDragger.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\ContentDragger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Dragger.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\Dragger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\EdgeConnector.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\EdgeConnector.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ManipulatorActivationFilter.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\ManipulatorActivationFilter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\MouseManipulator.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\MouseManipulator.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\RectangleSelector.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\RectangleSelector.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Resizer.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\Resizer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\SelectionDragger.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\SelectionDragger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\SelectionDropper.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\SelectionDropper.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\ShortcutHandler.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\ShortcutHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Zoomer.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\Zoomer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Utils\RectUtils.cs" >
+<Link>Modules\GraphViewEditor\Utils\RectUtils.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs" >
+<Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs" >
+<Link>Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\PackageManager.cs" >
 <Link>Modules\PackageManager\Editor\PackageManager.cs</Link>

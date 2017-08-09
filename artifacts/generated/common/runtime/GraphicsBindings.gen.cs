@@ -1625,6 +1625,10 @@ public sealed partial class LightProbes : Object
         get;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  bool AreLightProbesAllowed (Renderer renderer) ;
+
 }
 
 public sealed partial class LightmapSettings : Object

@@ -348,7 +348,7 @@ namespace UnityEditor
             ResetKeyboardControl();
             m_ScrollPosition = EditorGUILayout.BeginVerticalScrollView(m_ScrollPosition);
             {
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                     tracker.ClearDirty();
 
                 s_CurrentInspectorWindow = this;
@@ -536,7 +536,7 @@ namespace UnityEditor
         {
             var key = Event.current.keyCode;
 
-            if (Event.current.type != EventType.keyDown || (key != KeyCode.DownArrow && key != KeyCode.UpArrow && key != KeyCode.Tab))
+            if (Event.current.type != EventType.KeyDown || (key != KeyCode.DownArrow && key != KeyCode.UpArrow && key != KeyCode.Tab))
                 return;
 
             if (key != KeyCode.Tab)
@@ -804,7 +804,7 @@ namespace UnityEditor
             {
                 var rect = new Rect(10, position.height - 94, position.width - 20, 80);
                 rect.y -= offset;
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     styles.stickyNote.Draw(rect, false, false, false, false);
 
@@ -856,7 +856,7 @@ namespace UnityEditor
 
                 var rect = GUILayoutUtility.GetLastRect();
 
-                bool isLayoutOrRepaint = Event.current.type == EventType.layout || Event.current.type == EventType.repaint;
+                bool isLayoutOrRepaint = Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint;
 
                 if (showAssetState && isLayoutOrRepaint)
                 {
@@ -976,7 +976,7 @@ namespace UnityEditor
             }
 
             bool rebuildOptimizedGUIBlocks = false;
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 if (inspectedObject != null
                     && m_IsOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject, out msg))
@@ -1073,7 +1073,7 @@ namespace UnityEditor
             rebuildOptimizedGUIBlock |= editor.isInspectorDirty;
 
             // Reset dirtyness when repainting
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 editor.isInspectorDirty = false;
             }

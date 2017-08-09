@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
-    public partial class VisualElement : CallbackEventHandler, ITransform
+    public partial class VisualElement : Focusable, ITransform
     {
         private static uint s_NextId;
 
@@ -43,6 +43,13 @@ namespace UnityEngine.Experimental.UIElements
         HashSet<string> m_ClassList;
         string m_TypeName;
         string m_FullTypeName;
+
+        public override bool canGrabFocus { get { return enabled && base.canGrabFocus; } }
+
+        public override FocusController focusController
+        {
+            get { return panel == null ? null : panel.focusController; }
+        }
 
         public bool usePixelCaching { get; set; }
 
@@ -272,7 +279,7 @@ namespace UnityEngine.Experimental.UIElements
         // this will be null until a visual tree is added to a panel
         internal BaseVisualElementPanel elementPanel { get; private set; }
 
-        public override IPanel panel { get { return elementPanel; } }
+        public IPanel panel { get { return elementPanel; } }
 
         public PickingMode pickingMode { get; set; }
 
@@ -385,10 +392,28 @@ namespace UnityEngine.Experimental.UIElements
             m_TypeName = string.Empty;
             enabled = true;
             visible = true;
+
+            // Make element non focusable by default.
+            focusIndex = -1;
+
             name = string.Empty;
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = 0; // not in a tree yet so not dirty, they will stack up as we get inserted somewhere.
+        }
+
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == BlurEvent.s_EventClassId)
+            {
+                pseudoStates = pseudoStates & ~PseudoStates.Focus;
+            }
+            else if (evt.GetEventTypeId() == FocusEvent.s_EventClassId)
+            {
+                pseudoStates = pseudoStates | PseudoStates.Focus;
+            }
         }
 
         internal virtual void ChangePanel(BaseVisualElementPanel p)
@@ -533,6 +558,13 @@ namespace UnityEngine.Experimental.UIElements
                 else
                     pseudoStates |= PseudoStates.Disabled;
             }
+        }
+
+        // used by uxml importer to determine where to insert child nodes/elements
+        // temporary, until the content/hierarchy trees PR lands
+        internal virtual VisualContainer GetChildContainer()
+        {
+            return null;
         }
 
         protected internal virtual void OnPostLayout(bool hasNewLayout) {}
@@ -916,6 +948,28 @@ namespace UnityEngine.Experimental.UIElements
         public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)
         {
             manipulator.target = null;
+        }
+
+        public static ScheduleBuilder Schedule(this VisualElement self, Action<TimerState> timerUpdateEvent)
+        {
+            if (self.panel == null || self.panel.scheduler == null)
+            {
+                Debug.LogError("Cannot schedule an event without a valid panel");
+                return new ScheduleBuilder();
+            }
+
+            return self.panel.scheduler.Schedule(timerUpdateEvent, self);
+        }
+
+        public static void Unschedule(this VisualElement self, Action<TimerState> timerUpdateEvent)
+        {
+            if (self.panel == null || self.panel.scheduler == null)
+            {
+                Debug.LogError("Cannot unschedule an event without a valid panel");
+                return;
+            }
+
+            self.panel.scheduler.Unschedule(timerUpdateEvent);
         }
     }
 

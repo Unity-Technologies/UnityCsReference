@@ -112,7 +112,7 @@ namespace UnityEditorInternal
 
             Event evt = Event.current;
 
-            if (evt.type == EventType.mouseDown && rect.Contains(evt.mousePosition))
+            if (evt.type == EventType.MouseDown && rect.Contains(evt.mousePosition))
                 m_HadKeyFocusAtMouseDown = m_ReorderableList.HasKeyboardControl();
 
             if (m_FrameIndex != -1)
@@ -162,7 +162,7 @@ namespace UnityEditorInternal
 
         public void DrawElementText(Rect r, int index, bool isActive, bool isSelected, bool isFocused)
         {
-            if (Event.current.type == EventType.repaint && onGetNameAtIndex != null)
+            if (Event.current.type == EventType.Repaint && onGetNameAtIndex != null)
             {
                 elementStyle.Draw(r, onGetNameAtIndex(index), false, false, isSelected, true);
             }
@@ -272,7 +272,7 @@ namespace UnityEditorInternal
         void KeyboardHandling()
         {
             Event evt = Event.current;
-            if (evt.type != EventType.keyDown)
+            if (evt.type != EventType.KeyDown)
                 return;
 
             /*if (GUI.GetNameOfFocusedControl () == kRenameField)

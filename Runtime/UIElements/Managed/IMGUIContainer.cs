@@ -29,19 +29,21 @@ namespace UnityEngine.Experimental.UIElements
         public ContextType contextType { get; set; }
         internal int GUIDepth { get; private set; }
 
-        internal Matrix4x4 imguiTransform
+        bool lostFocus = false;
+        bool receivedFocus = false;
+        FocusChangeDirection focusChangeDirection = FocusChangeDirection.kUnspecified;
+        bool hasFocusableControls = false;
+
+        public override bool canGrabFocus
         {
-            get
-            {
-                var transform = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0.0f));
-                return worldTransform * transform;
-            }
+            get { return base.canGrabFocus && hasFocusableControls; }
         }
 
         public IMGUIContainer(Action onGUIHandler)
         {
             m_OnGUIHandler = onGUIHandler;
             contextType = ContextType.Editor;
+            focusIndex = 0;
         }
 
         internal override void DoRepaint(IStylePainter painter)
@@ -49,7 +51,6 @@ namespace UnityEngine.Experimental.UIElements
             base.DoRepaint();
 
             lastWorldClip = painter.currentWorldClip;
-
             HandleIMGUIEvent(painter.repaintEvent);
         }
 
@@ -120,6 +121,40 @@ namespace UnityEngine.Experimental.UIElements
             int ctx = executionContext != 0 ? executionContext : elementPanel.instanceID;
             UIElementsUtility.BeginContainerGUI(cache, ctx, evt, this);
 
+            if (lostFocus)
+            {
+                GUIUtility.keyboardControl = 0;
+                if (focusController != null)
+                {
+                    focusController.imguiKeyboardControl = 0;
+                }
+                lostFocus = false;
+            }
+
+            if (receivedFocus)
+            {
+                // If we just received the focus and GUIUtility.keyboardControl is not already one of our control,
+                // set the GUIUtility.keyboardControl to our first or last focusable control.
+                if (focusChangeDirection != FocusChangeDirection.kUnspecified && focusChangeDirection != FocusChangeDirection.kNone)
+                {
+                    // We assume we are using the VisualElementFocusRing.
+                    if (focusChangeDirection == VisualElementFocusChangeDirection.kLeft)
+                    {
+                        GUIUtility.SetKeyboardControlToLastControlId();
+                    }
+                    else if (focusChangeDirection == VisualElementFocusChangeDirection.kRight)
+                    {
+                        GUIUtility.SetKeyboardControlToFirstControlId();
+                    }
+                }
+                receivedFocus = false;
+                focusChangeDirection = FocusChangeDirection.kUnspecified;
+                if (focusController != null)
+                {
+                    focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                }
+            }
+
             GUIDepth = GUIUtility.Internal_GetGUIDepth();
             EventType originalEventType = Event.current.type;
 
@@ -147,7 +182,66 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            GUIUtility.CheckForTabEvent(evt);
+            int result = GUIUtility.CheckForTabEvent(evt);
+            if (focusController != null)
+            {
+                if (result < 0)
+                {
+                    // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
+                    // We should switch the focus to the next VisualElement.
+                    KeyDownEvent e = null;
+                    if (result == -1)
+                    {
+                        e = new KeyDownEvent('\t', KeyCode.Tab, EventModifiers.None);
+                    }
+                    else if (result == -2)
+                    {
+                        e = new KeyDownEvent('\t', KeyCode.Tab, EventModifiers.Shift);
+                    }
+
+                    var currentFocusedElement = focusController.focusedElement;
+                    focusController.SwitchFocusOnEvent(e);
+
+                    if (currentFocusedElement == this)
+                    {
+                        if (focusController.focusedElement == this)
+                        {
+                            // We still have the focus. We should cycle around our controls.
+                            if (result == -2)
+                            {
+                                GUIUtility.SetKeyboardControlToLastControlId();
+                            }
+                            else if (result == -1)
+                            {
+                                GUIUtility.SetKeyboardControlToFirstControlId();
+                            }
+
+                            focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                        }
+                        else
+                        {
+                            // We lost the focus. Set it to 0 until next IMGUIContainer have a chance to set it to its own control.
+                            // Doing this will ensure we draw ourselves without any focused control.
+                            GUIUtility.keyboardControl = 0;
+                            focusController.imguiKeyboardControl = 0;
+                        }
+                    }
+                }
+                else if (result > 0)
+                {
+                    // A positive result indicates that the focused control has changed.
+                    focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                }
+                else if (result == 0 && originalEventType == EventType.MouseDown)
+                {
+                    // This means the event is not a tab but a MouseDown.
+                    // Synchronize our focus info with IMGUI.
+                    focusController.SyncIMGUIFocus(this);
+                }
+            }
+
+            // Cache the fact that we have focusable controls or not.
+            hasFocusableControls = GUIUtility.HasFocusableControls();
 
             // The Event will probably be nuked with the next function call, so we get its type now.
             EventType eventType = Event.current.type;
@@ -176,12 +270,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 Dirty(ChangeType.Repaint);
             }
-        }
-
-        public override void OnLostKeyboardFocus()
-        {
-            // nuke keyboard focus when losing focus ourselves
-            GUIUtility.keyboardControl = 0;
         }
 
         public override void HandleEvent(EventBase evt)
@@ -250,6 +338,32 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             return false;
+        }
+
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            // no call to base.ExecuteDefaultAction(evt):
+            // - we dont want mouse click to directly give focus to IMGUIContainer:
+            //   they should be handled by IMGUI and if an IMGUI control grabs the
+            //   keyboard, the IMGUIContainer will gain focus via FocusController.SyncIMGUIFocus.
+            // - same thing for tabs: IMGUI should handle them.
+            // - we dont want to set the PseudoState.Focus flag on IMGUIContainer.
+            //   They are focusable, but only for the purpose of focusing their children.
+
+            if (evt.GetEventTypeId() == BlurEvent.s_EventClassId)
+            {
+                BlurEvent be = evt as BlurEvent;
+                if (be.relatedTarget == null || !be.relatedTarget.canGrabFocus)
+                {
+                    lostFocus = true;
+                }
+            }
+            else if (evt.GetEventTypeId() == FocusEvent.s_EventClassId)
+            {
+                FocusEvent fe = evt as FocusEvent;
+                receivedFocus = true;
+                focusChangeDirection = fe.direction;
+            }
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

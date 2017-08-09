@@ -587,7 +587,7 @@ namespace UnityEditor
 
         private static void DrawSolidPlane(Vector3 pos, Quaternion rot, Color faceColor, Color edgeColor)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             var oldMatrix = Handles.matrix;
@@ -600,7 +600,7 @@ namespace UnityEditor
 
         private static void DrawGrid(Vector3 pos, Vector3 axis1, Vector3 axis2, Vector3 normal, Color color)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             HandleUtility.ApplyWireMaterial();

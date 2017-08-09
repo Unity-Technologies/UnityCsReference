@@ -925,7 +925,7 @@ namespace UnityEditor
             {
                 HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size * 0.5f));
             }
-            else if (eventType == EventType.repaint)
+            else if (eventType == EventType.Repaint)
             {
                 Vector3 normal = handles.matrix.GetColumn(2);
                 Vector3 projectedUp = (ProjectPointOnPlane(normal, position, position + Vector3.up) - position).normalized;
@@ -958,7 +958,7 @@ namespace UnityEditor
             {
                 HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size * 0.5f));
             }
-            else if (eventType == EventType.repaint)
+            else if (eventType == EventType.Repaint)
             {
                 Vector3 forward = handleMatrixrotation * rotation * Vector3.forward;
                 Vector3 tangent = Vector3.Cross(forward, Vector3.up);
@@ -991,7 +991,7 @@ namespace UnityEditor
             {
                 HandleUtility.AddControl(controlID, HandleUtility.DistanceToCircle(position, size * 0.5f));
             }
-            else if (eventType == EventType.repaint)
+            else if (eventType == EventType.Repaint)
             {
                 Vector3 normal = handles.matrix.GetColumn(2);
                 Vector3 projectedUp = (ProjectPointOnPlane(normal, position, position + Vector3.up) - position).normalized;

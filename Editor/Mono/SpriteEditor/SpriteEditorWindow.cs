@@ -444,7 +444,7 @@ namespace UnityEditor
             GUIStyle toolBarStyle = EditorStyles.toolbar;
 
             Rect toolbarRect = new Rect(0, 0, position.width, k_ToolbarHeight);
-            if (m_EventSystem.current.type == EventType.repaint)
+            if (m_EventSystem.current.type == EventType.Repaint)
             {
                 toolBarStyle.Draw(toolbarRect, false, false, false, false);
             }

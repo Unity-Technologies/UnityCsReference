@@ -445,7 +445,7 @@ namespace UnityEditor
                 if (item != null)
                 {
                     // Ensure preview is shown when clicking on an already selected item (the preview might have been closed)
-                    if (Event.current.type == EventType.mouseDown && rowRect.Contains(Event.current.mousePosition) && !PopupWindowWithoutFocus.IsVisible())
+                    if (Event.current.type == EventType.MouseDown && rowRect.Contains(Event.current.mousePosition) && !PopupWindowWithoutFocus.IsVisible())
                         showPreviewForID = pitem.id;
 
                     // Show preview

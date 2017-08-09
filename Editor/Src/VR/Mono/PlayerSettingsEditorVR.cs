@@ -127,6 +127,13 @@ namespace UnityEditorInternal.VR
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
+                    if (TargetGroupSupportsVirtualReality(targetGroup))
+                    {
+                        DevicesGUI(targetGroup);
+
+                        SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
+                    }
+
                     if (targetGroup == BuildTargetGroup.Android)
                     {
                         // Google Tango settings
@@ -148,13 +155,6 @@ namespace UnityEditorInternal.VR
 
                     if (TargetGroupSupportsVuforia(targetGroup))
                         VuforiaGUI(targetGroup);
-
-                    if (TargetGroupSupportsVirtualReality(targetGroup))
-                    {
-                        DevicesGUI(targetGroup);
-
-                        SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
-                    }
                 }
             }
             m_Settings.EndSettingsBox();
@@ -446,7 +446,7 @@ namespace UnityEditorInternal.VR
 
             if (shouldDisableScope)
             {
-                EditorGUILayout.HelpBox("AR Vuforia required with VRDevice Vuforia.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Vuforia AR is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
             }
         }
     }

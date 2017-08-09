@@ -73,6 +73,7 @@ namespace UnityEngine
 
         Rect currentWorldClip { get; set; }
         Vector2 mousePosition { get; set; }
+        Matrix4x4 currentTransform { get; set; }
 
         Event repaintEvent { get; set; }
         float opacity { get; set; }
@@ -235,6 +236,7 @@ namespace UnityEngine
             return ComputeTextHeight_Internal(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
         }
 
+        public Matrix4x4 currentTransform { get; set; }
         public Vector2 mousePosition { get; set; }
         public Rect currentWorldClip { get; set; }
         public Event repaintEvent { get; set; }

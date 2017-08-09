@@ -161,7 +161,7 @@ namespace UnityEditor
                     evt.Use();
                 }
 
-                if (evt.type != EventType.keyDown && lastMotion.sqrMagnitude == 0)
+                if (evt.type != EventType.KeyDown && lastMotion.sqrMagnitude == 0)
                     m_FPSTiming.Begin();
             }
         }

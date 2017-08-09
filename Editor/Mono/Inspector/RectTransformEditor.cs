@@ -717,6 +717,10 @@ namespace UnityEditor
                     Vector3 sideDir = (xHandle == 1 ? space.right * rect.width : space.up * rect.height);
                     Vector3 slideDir = (xHandle == 1 ? space.up : space.right);
 
+                    // could happen if gui.rect.{width,height} == 0
+                    if (sideDir == Vector3.zero)
+                        continue;
+
                     EditorGUI.BeginChangeCheck();
                     Vector3 newPos = RectHandles.SideSlider(id, curPos, sideDir, slideDir, size, null, 0, -3);
                     if (EditorGUI.EndChangeCheck())

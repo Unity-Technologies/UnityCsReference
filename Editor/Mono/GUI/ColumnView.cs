@@ -200,7 +200,7 @@ namespace UnityEditor
 
         private int DoListColumn(ListViewState listView, List<ColumnViewElement> columnViewElements, int columnIndex, int selectedIndex, ObjectColumnFunction selectedSearchItemFunction, ObjectColumnFunction selectedRegularItemFunction, ObjectColumnGetDataFunction getDataForDraggingFunction)
         {
-            if (Event.current.type == EventType.keyDown &&
+            if (Event.current.type == EventType.KeyDown &&
                 Event.current.keyCode == KeyCode.Return && listView.row > -1)
             {
                 if (isSearching && selectedSearchItemFunction != null)

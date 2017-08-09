@@ -31,7 +31,9 @@ namespace UnityEditor
             public GUIContent prefabIcon = EditorGUIUtility.IconContent("PrefabNormal Icon");
             public GUIContent modelIcon = EditorGUIUtility.IconContent("PrefabModel Icon");
 
-            public GUIContent staticContent = EditorGUIUtility.TextContent("Static");
+            public GUIContent staticContent = EditorGUIUtility.TextContent("Static|Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
+            public GUIContent layerContent = EditorGUIUtility.TextContent("Layer|The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
+            public GUIContent tagContent = EditorGUIUtility.TextContent("Tag|The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
             public float tagFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Tag")).x;
             public float layerFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Layer")).x;
@@ -472,7 +474,7 @@ namespace UnityEditor
             Rect layerRect = GUILayoutUtility.GetRect(GUIContent.none, s_Styles.layerPopup);
             EditorGUI.BeginProperty(layerRect, GUIContent.none, m_Layer);
             EditorGUI.BeginChangeCheck();
-            int layer = EditorGUI.LayerField(layerRect, EditorGUIUtility.TempContent("Layer"), go.layer, s_Styles.layerPopup);
+            int layer = EditorGUI.LayerField(layerRect, s_Styles.layerContent, go.layer, s_Styles.layerPopup);
             if (EditorGUI.EndChangeCheck())
             {
                 GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
@@ -503,7 +505,7 @@ namespace UnityEditor
             Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.popup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
             EditorGUI.BeginChangeCheck();
-            string tag = EditorGUI.TagField(tagRect, EditorGUIUtility.TempContent("Tag"), tagName);
+            string tag = EditorGUI.TagField(tagRect, s_Styles.tagContent, tagName);
             if (EditorGUI.EndChangeCheck())
             {
                 m_Tag.stringValue = tag;

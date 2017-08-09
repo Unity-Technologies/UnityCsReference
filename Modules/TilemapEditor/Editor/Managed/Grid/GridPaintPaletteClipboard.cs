@@ -449,7 +449,7 @@ namespace UnityEditor
                         Event.current.Use();
                     }
                     break;
-                case EventType.scrollWheel:
+                case EventType.ScrollWheel:
                     if (guiRect.Contains(Event.current.mousePosition))
                     {
                         float zoomDelta = HandleUtility.niceMouseDeltaZoom * (Event.current.shift ? -9 : -3) * k_ZoomSpeed;

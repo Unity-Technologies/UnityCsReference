@@ -166,7 +166,7 @@ namespace UnityEditor
                         isDefaultQuality = true;
 
                     var toggleRect = GUILayoutUtility.GetRect(Styles.kPlatformTooltip, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
-                    if (Event.current.type == EventType.repaint)
+                    if (Event.current.type == EventType.Repaint)
                     {
                         bgStyle.Draw(toggleRect, GUIContent.none, false, false, selected, false);
                     }
@@ -190,7 +190,7 @@ namespace UnityEditor
 
                 //Extra column for deleting quality button
                 var deleteButton = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     bgStyle.Draw(deleteButton, GUIContent.none, false, false, selected, false);
                 }

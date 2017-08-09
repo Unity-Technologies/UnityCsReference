@@ -15,6 +15,10 @@ namespace UnityEditor
         SerializedProperty m_Size;
         private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
+        protected GUIContent centerContent = EditorGUIUtility.TextContent("Center|The position of the Collider in the object’s local space.");
+        protected GUIContent sizeContent = EditorGUIUtility.TextContent("Size|The size of the Collider in the X, Y, Z directions.");
+
+
         public override void OnEnable()
         {
             base.OnEnable();
@@ -28,10 +32,10 @@ namespace UnityEditor
             serializedObject.Update();
 
             InspectorEditButtonGUI();
-            EditorGUILayout.PropertyField(m_IsTrigger);
-            EditorGUILayout.PropertyField(m_Material);
-            EditorGUILayout.PropertyField(m_Center);
-            EditorGUILayout.PropertyField(m_Size);
+            EditorGUILayout.PropertyField(m_IsTrigger, triggerContent);
+            EditorGUILayout.PropertyField(m_Material, materialContent);
+            EditorGUILayout.PropertyField(m_Center, centerContent);
+            EditorGUILayout.PropertyField(m_Size, sizeContent);
 
             serializedObject.ApplyModifiedProperties();
         }

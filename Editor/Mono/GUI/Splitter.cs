@@ -377,7 +377,7 @@ namespace UnityEditor
                     g.ApplyOptions(options);
                     break;
                 }
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                 {
                     if ((Event.current.button == 0) && (Event.current.clickCount == 1))
                     {
@@ -404,7 +404,7 @@ namespace UnityEditor
                     }
                     break;
                 }
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                 {
                     if ((GUIUtility.hotControl == state.ID) && (state.currentActiveSplitter >= 0))
                     {
@@ -421,7 +421,7 @@ namespace UnityEditor
                     }
                     break;
                 }
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                 {
                     if (GUIUtility.hotControl == state.ID)
                     {

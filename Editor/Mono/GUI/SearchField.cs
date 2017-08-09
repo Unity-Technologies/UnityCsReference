@@ -97,7 +97,7 @@ namespace UnityEditor.IMGUI.Controls
         void FocusAndKeyHandling()
         {
             Event evt = Event.current;
-            if (m_WantsFocus && evt.type == EventType.repaint)
+            if (m_WantsFocus && evt.type == EventType.Repaint)
             {
                 GUIUtility.keyboardControl = m_ControlID;
                 EditorGUIUtility.editingTextField = true;

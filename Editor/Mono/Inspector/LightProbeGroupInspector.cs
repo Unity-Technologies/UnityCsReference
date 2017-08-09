@@ -197,7 +197,7 @@ namespace UnityEditor
 
         private void DrawTetrahedra()
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             if (SceneView.lastActiveSceneView)
@@ -284,7 +284,7 @@ namespace UnityEditor
             if (!m_Group.enabled)
                 return m_Editing;
 
-            if (Event.current.type == EventType.layout)
+            if (Event.current.type == EventType.Layout)
             {
                 //If the group has moved / scaled since last frame need to retetra);)
                 if (m_LastPosition != m_Group.transform.position

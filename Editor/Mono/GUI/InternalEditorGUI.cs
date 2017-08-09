@@ -245,7 +245,7 @@ namespace UnityEditor
 
         public static void DrawRect(Rect rect, Color color)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             Color orgColor = GUI.color;
@@ -261,7 +261,7 @@ namespace UnityEditor
 
         internal static void DrawOutline(Rect rect, float size, Color color)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             Color orgColor = GUI.color;

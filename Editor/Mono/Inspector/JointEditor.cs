@@ -57,7 +57,7 @@ namespace UnityEditor
         {
             var bounds = base.GetWorldBoundsOfTarget(targetObject);
             // ensure joint's anchor point is included in bounds
-            bounds.Encapsulate(GetHandleMatrix((T)targetObject).MultiplyPoint3x4(Vector3.zero));
+            bounds.Encapsulate(GetAngularLimitHandleMatrix((T)targetObject).MultiplyPoint3x4(Vector3.zero));
             return bounds;
         }
 
@@ -68,23 +68,66 @@ namespace UnityEditor
                 T joint = (T)target;
                 EditorGUI.BeginChangeCheck();
 
-                using (new Handles.DrawingScope(GetHandleMatrix(joint)))
+                using (new Handles.DrawingScope(GetAngularLimitHandleMatrix(joint)))
                     DoAngularLimitHandles(joint);
 
-                // wake up rigidbody in case current orientation is out of bounds of new limits
+                // wake up rigidbodies in case current orientation is out of bounds of new limits
                 if (EditorGUI.EndChangeCheck())
-                    joint.GetComponent<Rigidbody>().WakeUp();
+                {
+                    var rigidbody = joint.GetComponent<Rigidbody>();
+                    if (rigidbody.isKinematic && joint.connectedBody != null)
+                        joint.connectedBody.WakeUp();
+                    else
+                        rigidbody.WakeUp();
+                }
             }
         }
 
-        protected virtual Matrix4x4 GetConnectedBodyMatrix(T joint)
+        protected virtual void GetActors(
+            T joint,
+            out Rigidbody dynamicActor,
+            out Rigidbody connectedActor,
+            out int jointFrameActorIndex,
+            out bool rightHandedLimit
+            )
         {
-            return joint.connectedBody == null ? Matrix4x4.identity : joint.connectedBody.transform.localToWorldMatrix;
+            jointFrameActorIndex = 1;
+            rightHandedLimit = false;
+
+            dynamicActor = joint.GetComponent<Rigidbody>();
+            connectedActor = joint.connectedBody;
+
+            if (dynamicActor.isKinematic && connectedActor != null && !connectedActor.isKinematic)
+            {
+                var temp = connectedActor;
+                connectedActor = dynamicActor;
+                dynamicActor = temp;
+            }
         }
 
-        protected virtual Matrix4x4 GetHandleMatrix(T joint)
+        private Matrix4x4 GetAngularLimitHandleMatrix(T joint)
         {
-            return GetConnectedBodyMatrix(joint) * joint.GetJointFrame();
+            Rigidbody dynamicActor, connectedActor;
+            int jointFrameActorIndex;
+            bool rightHandedLimit;
+            GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
+
+            var connectedBodyRotation =
+                connectedActor == null ? Quaternion.identity : connectedActor.transform.rotation;
+
+            // to enhance usability, orient the limit region so the dynamic body is within it, assuming bodies were bound on opposite sides of the anchor
+            var jointFrame = joint.GetActorLocalPose(jointFrameActorIndex);
+            var jointFrameOrientation = Quaternion.LookRotation(
+                    jointFrame.MultiplyVector(Vector3.forward),
+                    jointFrame.MultiplyVector(rightHandedLimit ? Vector3.down : Vector3.up)
+                    );
+
+            // point of rotation is about the anchor of the joint body, which is not necessarily aligned to the anchor on the connected body
+            var jointAnchorPosition = joint.anchor;
+            if (dynamicActor != null)
+                jointAnchorPosition = dynamicActor.transform.TransformPoint(jointAnchorPosition);
+
+            return Matrix4x4.TRS(jointAnchorPosition, connectedBodyRotation * jointFrameOrientation, Vector3.one);
         }
 
         protected virtual void DoAngularLimitHandles(T joint)

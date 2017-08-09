@@ -523,7 +523,7 @@ namespace UnityEngine
         // *undocumented*
         internal static string PasswordFieldGetStrToShow(string password, char maskChar)
         {
-            return (Event.current.type == EventType.repaint || Event.current.type == EventType.mouseDown) ?
+            return (Event.current.type == EventType.Repaint || Event.current.type == EventType.MouseDown) ?
                 "".PadRight(password.Length, maskChar) : password;
         }
 
@@ -1464,7 +1464,7 @@ namespace UnityEngine
             s_ScrollViewStates.Pop();
 
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
-            if (handleScrollWheel && Event.current.type == EventType.scrollWheel && state.position.Contains(Event.current.mousePosition))
+            if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition))
             {
                 state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
                 state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);

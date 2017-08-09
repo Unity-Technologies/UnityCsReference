@@ -117,8 +117,8 @@ namespace UnityEditor
         private static GUIContent s_PositionLabel = EditorGUIUtility.TextContent("Position");
         private static GUIContent s_SizeLabel = EditorGUIUtility.TextContent("Size");
 
-        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TextContent("Clipping Planes");
-        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TextContent("Near"), EditorGUIUtility.TextContent("Far") };
+        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TextContent("Clipping Planes|Distances from the camera to start and stop rendering.");
+        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TextContent("Near|The closest point relative to the camera that drawing will occur."), EditorGUIUtility.TextContent("Far|The furthest point relative to the camera that drawing will occur.\n") };
         internal const float kNearFarLabelsWidth = 35f;
 
         private static int s_ColorPickID;
@@ -790,7 +790,7 @@ namespace UnityEditor
                         }
                     }
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition) && evt.button == 0)
                     {
                         // Does this text field already have focus?
@@ -1452,7 +1452,7 @@ namespace UnityEditor
 
             text = ToolbarSearchField(id, position, text, hasPopup);
 
-            if (hasPopup && text == "" && !s_RecycledEditor.IsEditingControl(id) && Event.current.type == EventType.repaint)
+            if (hasPopup && text == "" && !s_RecycledEditor.IsEditingControl(id) && Event.current.type == EventType.Repaint)
             {
                 const float k_CancelButtonWidth = 14f;
                 position.width -= k_CancelButtonWidth;
@@ -2413,7 +2413,7 @@ namespace UnityEditor
 
                 Rect sliderRect = new Rect(position.x, position.y, sWidth, position.height);
 
-                if (sliderBackground != null && Event.current.type == EventType.repaint)
+                if (sliderBackground != null && Event.current.type == EventType.Repaint)
                 {
                     Rect bgRect = sliderStyle.overflow.Add(sliderRect);
                     Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, Color.grey);
@@ -7984,7 +7984,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
-            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.mouseDown)
+            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
             {
                 Event.current.Use();
             }

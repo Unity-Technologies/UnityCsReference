@@ -183,7 +183,7 @@ namespace UnityEditor
             m_OriginalEventType = Event.current.type;
 
             // Clear state if necessary while waiting for rename (0.5 second)
-            if (m_IsWaitingForDelay && (m_OriginalEventType == EventType.mouseDown || m_OriginalEventType == EventType.keyDown))
+            if (m_IsWaitingForDelay && (m_OriginalEventType == EventType.MouseDown || m_OriginalEventType == EventType.KeyDown))
             {
                 EndRename(false);
                 return false;
@@ -247,7 +247,7 @@ namespace UnityEditor
             }
 
             // Detect if we clicked outside the text field (must be before text field below which steals keyboard control)
-            if (m_OriginalEventType == EventType.mouseDown && !m_EditFieldRect.Contains(Event.current.mousePosition))
+            if (m_OriginalEventType == EventType.MouseDown && !m_EditFieldRect.Contains(Event.current.mousePosition))
             {
                 EndRename(true);
                 return false;

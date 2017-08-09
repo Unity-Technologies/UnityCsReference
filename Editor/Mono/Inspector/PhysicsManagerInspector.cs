@@ -56,9 +56,6 @@ namespace UnityEditor
                         Vector3 translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.y + topLeft.x + scrollPos.y - clipOffset, topLeft.y + scrollPos.y, 0);
                         GUI.matrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one) * Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, 0, 90), Vector3.one);
 
-                        if (SystemInfo.graphicsDeviceVersion.StartsWith("Direct3D 9.0"))
-                            GUI.matrix *= Matrix4x4.TRS(new Vector3(-0.5f, -0.5f, 0), Quaternion.identity, Vector3.one);
-
                         GUI.Label(new Rect(2 - topLeft.x - scrollPos.y, scrollPos.y - clipOffset, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
                         y++;
                     }

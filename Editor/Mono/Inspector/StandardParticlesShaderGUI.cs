@@ -620,7 +620,7 @@ namespace UnityEditor
                     break;
                 case BlendMode.Modulate:
                     material.SetOverrideTag("RenderType", "Transparent");
-                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Multiply);
+                    material.SetInt("_BlendOp", (int)UnityEngine.Rendering.BlendOp.Add);
                     material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
                     material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                     material.SetInt("_ZWrite", 0);

@@ -180,7 +180,7 @@ namespace UnityEditor
             Event evt = Event.current;
             switch (evt.type)
             {
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     // Holding 'V' turns on the FreeMove transform gizmo and enables vertex snapping.
                     if (evt.keyCode == KeyCode.V && !currentlyDragging)
                     {
@@ -188,7 +188,7 @@ namespace UnityEditor
                     }
                     break;
 
-                case EventType.keyUp:
+                case EventType.KeyUp:
                     // If the user has released the 'V' key, then rendering the transform gizmo
                     // one last time with Free Move mode off is technically incorrect since it can
                     // add one additional frame of input with FreeMove enabled, but the
@@ -201,7 +201,7 @@ namespace UnityEditor
                     }
                     return position;
 
-                case EventType.layout:
+                case EventType.Layout:
                     if (!currentlyDragging && !Tools.vertexDragging)
                     {
                         s_FreeMoveMode = evt.shift;

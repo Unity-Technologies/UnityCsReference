@@ -209,7 +209,7 @@ namespace UnityEditor.IMGUI.Controls
         virtual public void EndRowGUI()
         {
             // Draw row marker when dragging
-            if (m_DraggingInsertionMarkerRect.x >= 0 && Event.current.type == EventType.repaint)
+            if (m_DraggingInsertionMarkerRect.x >= 0 && Event.current.type == EventType.Repaint)
             {
                 Styles.insertion.Draw(m_DraggingInsertionMarkerRect, false, false, false, false);
             }

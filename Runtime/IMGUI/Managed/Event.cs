@@ -176,7 +176,7 @@ namespace UnityEngine
         // Is this event a scroll wheel event? (RO)
         public bool isScrollWheel
         {
-            get { EventType t = type; return t == EventType.ScrollWheel || t == EventType.scrollWheel; }
+            get { EventType t = type; return t == EventType.ScrollWheel; }
         }
 
         // Create a keyboard event.

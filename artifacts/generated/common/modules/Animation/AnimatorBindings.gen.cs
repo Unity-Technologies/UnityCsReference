@@ -13,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Playables;
 
 namespace UnityEngine

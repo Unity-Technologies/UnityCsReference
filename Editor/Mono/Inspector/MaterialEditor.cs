@@ -1466,7 +1466,7 @@ namespace UnityEditor
                 Renderer renderer = GetAssociatedRenderFromInspector();
                 if (renderer != null)
                 {
-                    if (Event.current.type == EventType.layout)
+                    if (Event.current.type == EventType.Layout)
                     {
                         renderer.GetPropertyBlock(m_PropertyBlock);
                     }
@@ -1643,7 +1643,7 @@ namespace UnityEditor
             const float iconHeight = 6f;
             Rect iconRect = new Rect(buttonRect.x + (buttonRect.width - iconWidth) / 2, buttonRect.y + (buttonRect.height - iconHeight) / 2, iconWidth, iconHeight);
 
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 Styles.kReflectionProbePickerStyle.Draw(iconRect, false, false, false, false);
 
             if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, GUIStyle.none))

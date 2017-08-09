@@ -423,7 +423,7 @@ namespace UnityEditor
                 bool collapsed = HasFlag(ConsoleFlags.Collapse);
                 foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, Constants.Box))
                 {
-                    if (e.type == EventType.mouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
+                    if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
                     {
                         if (e.clickCount == 2)
                         {
@@ -434,7 +434,7 @@ namespace UnityEditor
                     }
 
                     // Paint list view element
-                    if (e.type == EventType.repaint)
+                    if (e.type == EventType.Repaint)
                     {
                         int mode = 0;
                         string text = null;

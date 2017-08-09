@@ -14,12 +14,12 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class HingeJoint2DEditor : AnchoredJoint2DEditor
     {
-        private const float k_ArcRadiusScale = 0.8f;
-
         new protected static class Styles
         {
             public static readonly GUIContent editAngularLimitsButton = new GUIContent(EditorGUIUtility.IconContent("JointAngularLimits"));
             public static readonly string editAngularLimitsUndoMessage = EditorGUIUtility.TextContent("Change Joint Angular Limits").text;
+            public static readonly Color handleColor = new Color(0f, 1f, 0f, 0.7f);
+            public static readonly float handleRadius = 0.8f;
 
             static Styles()
             {
@@ -33,9 +33,7 @@ namespace UnityEditor
         {
             base.OnEnable();
 
-            m_AngularLimitHandle.xHandleColor = new Color(0f, 1f, 0f, 0.7f);
-            m_AngularLimitHandle.fillAlpha = 0.04285714286f; // matches color of static representation when not in edit mode
-
+            m_AngularLimitHandle.xHandleColor = Color.white;
             m_AngularLimitHandle.yHandleColor = Color.clear;
             m_AngularLimitHandle.zHandleColor = Color.clear;
 
@@ -68,6 +66,17 @@ namespace UnityEditor
             return bounds;
         }
 
+        private void NonEditableHandleDrawFunction(
+            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
+            )
+        {
+        }
+
+        private static readonly Quaternion s_RightHandedHandleOrientationOffset =
+            Quaternion.AngleAxis(180f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up);
+        private static readonly Quaternion s_LeftHandedHandleOrientationOffset =
+            Quaternion.AngleAxis(180f, Vector3.forward) * Quaternion.AngleAxis(90f, Vector3.up);
+
         new public void OnSceneGUI()
         {
             var hingeJoint2D = (HingeJoint2D)target;
@@ -76,78 +85,82 @@ namespace UnityEditor
             if (!hingeJoint2D.enabled)
                 return;
 
-            if (EditMode.editMode == EditMode.SceneViewEditMode.JointAngularLimits && EditMode.IsOwner(this))
-            {
-                m_AngularLimitHandle.xMotion = hingeJoint2D.useLimits ? ConfigurableJointMotion.Limited : ConfigurableJointMotion.Free;
+            m_AngularLimitHandle.xMotion = hingeJoint2D.useLimits ? ConfigurableJointMotion.Limited : ConfigurableJointMotion.Free;
 
-                JointAngleLimits2D limit;
+            JointAngleLimits2D limit;
+
+            limit = hingeJoint2D.limits;
+            m_AngularLimitHandle.xMin = limit.min;
+            m_AngularLimitHandle.xMax = limit.max;
+
+            // only display control handles on manipulator if in edit mode
+            var editMode = EditMode.editMode == EditMode.SceneViewEditMode.JointAngularLimits && EditMode.IsOwner(this);
+            if (editMode)
+                m_AngularLimitHandle.angleHandleDrawFunction = null;
+            else
+                m_AngularLimitHandle.angleHandleDrawFunction = NonEditableHandleDrawFunction;
+
+            // to enhance usability, orient the manipulator to best illustrate its affects on the dynamic body in the system
+            var dynamicBody = hingeJoint2D.attachedRigidbody;
+            var dynamicBodyLocalReferencePosition = Vector3.right;
+            var dynamicAnchor = hingeJoint2D.anchor;
+            var connectedBody = hingeJoint2D.connectedBody;
+            var handleOrientationOffset = s_RightHandedHandleOrientationOffset;
+            if (
+                dynamicBody.bodyType != RigidbodyType2D.Dynamic
+                && hingeJoint2D.connectedBody != null
+                && hingeJoint2D.connectedBody.bodyType == RigidbodyType2D.Dynamic
+                )
+            {
+                dynamicBody = hingeJoint2D.connectedBody;
+                dynamicBodyLocalReferencePosition = Vector3.left;
+                dynamicAnchor = hingeJoint2D.connectedAnchor;
+                connectedBody = hingeJoint2D.attachedRigidbody;
+                handleOrientationOffset = s_LeftHandedHandleOrientationOffset;
+            }
+
+            var handlePosition = TransformPoint(dynamicBody.transform, dynamicAnchor);
+            var handleOrientation = (
+                    connectedBody == null ?
+                    Quaternion.identity :
+                    Quaternion.LookRotation(Vector3.forward, connectedBody.transform.rotation * Vector3.up)
+                    ) * handleOrientationOffset;
+            var dynamicActorReferencePosition =
+                handlePosition
+                + Quaternion.LookRotation(Vector3.forward, dynamicBody.transform.rotation * Vector3.up)
+                * dynamicBodyLocalReferencePosition;
+
+            var handleMatrix = Matrix4x4.TRS(handlePosition, handleOrientation, Vector3.one);
+
+            EditorGUI.BeginChangeCheck();
+
+            using (new Handles.DrawingScope(Styles.handleColor, handleMatrix))
+            {
+                var radius = HandleUtility.GetHandleSize(Vector3.zero) * Styles.handleRadius;
+                m_AngularLimitHandle.radius = radius;
+
+                // reference line within arc to illustrate affected local axis
+                Handles.DrawLine(
+                    Vector3.zero,
+                    handleMatrix.inverse.MultiplyPoint3x4(dynamicActorReferencePosition).normalized * radius
+                    );
+
+                m_AngularLimitHandle.DrawHandle();
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(hingeJoint2D, Styles.editAngularLimitsUndoMessage);
 
                 limit = hingeJoint2D.limits;
-                m_AngularLimitHandle.xMin = limit.min;
-                m_AngularLimitHandle.xMax = limit.max;
+                limit.min = m_AngularLimitHandle.xMin;
+                limit.max = m_AngularLimitHandle.xMax;
+                hingeJoint2D.limits = limit;
 
-                EditorGUI.BeginChangeCheck();
-
-                Matrix4x4 handleMatrix = Matrix4x4.TRS(
-                        TransformPoint(hingeJoint2D.transform, hingeJoint2D.anchor),
-                        Quaternion.AngleAxis(90f, Vector3.up),
-                        Vector3.one
-                        );
-                using (new Handles.DrawingScope(handleMatrix))
-                {
-                    m_AngularLimitHandle.radius = HandleUtility.GetHandleSize(Vector3.zero) * k_ArcRadiusScale;
-                    m_AngularLimitHandle.DrawHandle();
-                }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    Undo.RecordObject(hingeJoint2D, Styles.editAngularLimitsUndoMessage);
-
-                    limit = hingeJoint2D.limits;
-                    limit.min = m_AngularLimitHandle.xMin;
-                    limit.max = m_AngularLimitHandle.xMax;
-                    hingeJoint2D.limits = limit;
-                }
-            }
-            else if (hingeJoint2D.useLimits)
-            {
-                var center = TransformPoint(hingeJoint2D.transform, hingeJoint2D.anchor);
-
-                var limitMin = Mathf.Min(hingeJoint2D.limits.min, hingeJoint2D.limits.max);
-                var limitMax = Mathf.Max(hingeJoint2D.limits.min, hingeJoint2D.limits.max);
-
-                var arcAngle = limitMax - limitMin;
-                var arcRadius = HandleUtility.GetHandleSize(center) * k_ArcRadiusScale;
-
-                var hingeBodyAngle = hingeJoint2D.GetComponent<Rigidbody2D>().rotation;
-                Vector3 fromDirection = RotateVector2(Vector3.right, -limitMax - hingeBodyAngle);
-                var referencePosition = center + (Vector3)(RotateVector2(Vector3.right, -hingeJoint2D.jointAngle - hingeBodyAngle) * arcRadius);
-
-                // "reference" line
-                Handles.color = new Color(0, 1, 0, 0.7f);
-                DrawAALine(center, referencePosition);
-
-                // arc background
-                Handles.color = new Color(0, 1, 0, 0.03f);
-                Handles.DrawSolidArc(center, Vector3.back, fromDirection, arcAngle, arcRadius);
-
-                // arc frame
-                Handles.color = new Color(0, 1, 0, 0.7f);
-                Handles.DrawWireArc(center, Vector3.back, fromDirection, arcAngle, arcRadius);
-
-                DrawTick(center, arcRadius, 0, fromDirection, 1);
-                DrawTick(center, arcRadius, arcAngle, fromDirection, 1);
+                dynamicBody.WakeUp();
             }
 
             base.OnSceneGUI();
-        }
-
-        void DrawTick(Vector3 center, float radius, float angle, Vector3 up, float length)
-        {
-            Vector3 direction = RotateVector2(up, angle).normalized;
-            Vector3 start = center + direction * radius;
-            Vector3 end = start + (center - start).normalized * radius * length;
-            Handles.DrawAAPolyLine(new[] { new Color(0, 1, 0, 0.7f), new Color(0, 1, 0, 0) }, new[] { start, end });
         }
     }
 }

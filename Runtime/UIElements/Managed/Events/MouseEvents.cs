@@ -9,6 +9,30 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class MouseEventBase : UIEvent
     {
+        static List<long> s_EventSubTypeIds;
+
+        protected new static long RegisterEventClass()
+        {
+            if (s_EventSubTypeIds == null)
+            {
+                s_EventSubTypeIds = new List<long>();
+            }
+
+            long id = UIEvent.RegisterEventClass();
+            s_EventSubTypeIds.Add(id);
+            return id;
+        }
+
+        public static bool Is(EventBase evt)
+        {
+            if (s_EventSubTypeIds == null || evt == null)
+            {
+                return false;
+            }
+
+            return s_EventSubTypeIds.Contains(evt.GetEventTypeId());
+        }
+
         public EventModifiers modifiers { get; private set; }
         public Vector2 mousePosition { get; private set; }
         public Vector2 localMousePosition { get; internal set; }
@@ -68,10 +92,10 @@ namespace UnityEngine.Experimental.UIElements
 
     public class MouseDownEvent : MouseEventBase
     {
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
         static MouseDownEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()
@@ -90,10 +114,10 @@ namespace UnityEngine.Experimental.UIElements
 
     public class MouseUpEvent : MouseEventBase
     {
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
         static MouseUpEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()
@@ -112,10 +136,10 @@ namespace UnityEngine.Experimental.UIElements
 
     public class MouseMoveEvent : MouseEventBase
     {
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
         static MouseMoveEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()
@@ -136,10 +160,10 @@ namespace UnityEngine.Experimental.UIElements
     {
         public Vector3 delta { get; private set; }
 
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
         static WheelEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()

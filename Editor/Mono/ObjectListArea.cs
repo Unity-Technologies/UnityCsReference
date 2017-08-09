@@ -573,7 +573,7 @@ namespace UnityEditor
 
         void FrameLastClickedItemIfWanted()
         {
-            if (m_FrameLastClickedItem && Event.current.type == EventType.repaint)
+            if (m_FrameLastClickedItem && Event.current.type == EventType.Repaint)
             {
                 m_FrameLastClickedItem = false;
                 double timeSinceLastDraw = EditorApplication.timeSinceStartup - m_LocalAssets.m_LastClickedDrawTime;
@@ -874,7 +874,7 @@ namespace UnityEditor
 
         void HandleZoomScrolling()
         {
-            if (EditorGUI.actionKey && Event.current.type == EventType.scrollWheel && m_TotalRect.Contains(Event.current.mousePosition))
+            if (EditorGUI.actionKey && Event.current.type == EventType.ScrollWheel && m_TotalRect.Contains(Event.current.mousePosition))
             {
                 int sign = Event.current.delta.y > 0 ? -1 : 1;
                 gridSize = Mathf.Clamp(gridSize + sign * 7, minGridSize, maxGridSize);
@@ -912,7 +912,7 @@ namespace UnityEditor
                 m_KeyboardInputCallback();
 
             // Now default list area handling
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 int offset = 0;
 
@@ -1293,7 +1293,7 @@ namespace UnityEditor
                 g.UpdateAssets();
             }
 
-            if (forceReflow || Event.current.type == EventType.repaint)
+            if (forceReflow || Event.current.type == EventType.Repaint)
             {
                 // Reflow according to number of items, scrollbar presence, item dims etc.
                 Reflow();

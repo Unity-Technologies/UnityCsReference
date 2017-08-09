@@ -16,8 +16,8 @@ namespace UnityEditor
 
         class Contents
         {
-            public GUIContent positionContent = new GUIContent(LocalizationDatabase.GetLocalizedString("Position"), LocalizationDatabase.GetLocalizedString("The local position of this Game Object relative to the parent."));
-            public GUIContent scaleContent = new GUIContent(LocalizationDatabase.GetLocalizedString("Scale"), LocalizationDatabase.GetLocalizedString("The local scaling of this Game Object relative to the parent."));
+            public GUIContent positionContent = EditorGUIUtility.TextContent("Position|The local position of this GameObject relative to the parent.");
+            public GUIContent scaleContent = EditorGUIUtility.TextContent("Scale|The local scaling of this GameObject relative to the parent.");
             public string floatingPointWarning = LocalizationDatabase.GetLocalizedString("Due to floating-point precision limitations, it is recommended to bring the world coordinates of the GameObject within a smaller range.");
         }
         static Contents s_Contents;
@@ -29,7 +29,7 @@ namespace UnityEditor
 
             if (m_RotationGUI == null)
                 m_RotationGUI = new TransformRotationGUI();
-            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), new GUIContent(LocalizationDatabase.GetLocalizedString("Rotation")));
+            m_RotationGUI.OnEnable(serializedObject.FindProperty("m_LocalRotation"), EditorGUIUtility.TextContent("Rotation|The local rotation of this GameObject relative to the parent."));
         }
 
         public override void OnInspectorGUI()

@@ -102,7 +102,7 @@ namespace UnityEditor.StyleSheets
                     m_Builder.BeginProperty(property.Name);
 
                     // Note: we must rely on recursion to correctly handle parser types here
-                    VisitValue(property.Term);
+                    VisitValue(m_Errors, m_Builder, property.Term);
 
                     m_Builder.EndProperty();
                 }
@@ -111,7 +111,7 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        void VisitValue(Term term)
+        internal static void VisitValue(StyleSheetImportErrors errors, StyleSheetBuilder ssb, Term term)
         {
             var primitiveTerm = term as PrimitiveTerm;
             var colorTerm = term as HtmlColor;
@@ -120,7 +120,7 @@ namespace UnityEditor.StyleSheets
 
             if (term == PrimitiveTerm.Inherit)
             {
-                m_Builder.AddValue(StyleValueKeyword.Inherit);
+                ssb.AddValue(StyleValueKeyword.Inherit);
             }
             else if (primitiveTerm != null)
             {
@@ -131,32 +131,32 @@ namespace UnityEditor.StyleSheets
                     case UnitType.Pixel:
                     case UnitType.Number:
                         float? floatValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(floatValue.Value);
+                        ssb.AddValue(floatValue.Value);
                         break;
                     case UnitType.Ident:
                         StyleValueKeyword keyword;
                         if (TryParseKeyword(rawStr, out keyword))
                         {
-                            m_Builder.AddValue(keyword);
+                            ssb.AddValue(keyword);
                         }
                         else
                         {
-                            m_Builder.AddValue(rawStr, StyleValueType.Enum);
+                            ssb.AddValue(rawStr, StyleValueType.Enum);
                         }
                         break;
                     case UnitType.String:
                         string unquotedStr = rawStr.Trim('\'', '\"');
-                        m_Builder.AddValue(unquotedStr, StyleValueType.String);
+                        ssb.AddValue(unquotedStr, StyleValueType.String);
                         break;
                     default:
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, primitiveTerm.ToString());
+                        errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, primitiveTerm.ToString());
                         return;
                 }
             }
             else if (colorTerm != null)
             {
                 var color = new Color((float)colorTerm.R / 255.0f, (float)colorTerm.G / 255.0f, (float)colorTerm.B / 255.0f, (float)colorTerm.A / 255.0f);
-                m_Builder.AddValue(color);
+                ssb.AddValue(color);
             }
             else if (funcTerm != null)
             {
@@ -164,24 +164,24 @@ namespace UnityEditor.StyleSheets
                 if (funcTerm.Name == k_ResourcePathFunctionName && primitiveTerm != null)
                 {
                     string path = primitiveTerm.Value as string;
-                    m_Builder.AddValue(path, StyleValueType.ResourcePath);
+                    ssb.AddValue(path, StyleValueType.ResourcePath);
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedFunction, funcTerm.Name);
+                    errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedFunction, funcTerm.Name);
                 }
             }
             else if (termList != null)
             {
                 foreach (Term childTerm in termList)
                 {
-                    VisitValue(childTerm);
+                    VisitValue(errors, ssb, childTerm);
                 }
                 return;
             }
             else
             {
-                m_Errors.AddInternalError(term.GetType().Name);
+                errors.AddInternalError(term.GetType().Name);
             }
         }
 
@@ -325,7 +325,7 @@ namespace UnityEditor.StyleSheets
 
         static Dictionary<string, StyleValueKeyword> s_NameCache;
 
-        bool TryParseKeyword(string rawStr, out StyleValueKeyword value)
+        static bool TryParseKeyword(string rawStr, out StyleValueKeyword value)
         {
             if (s_NameCache == null)
             {

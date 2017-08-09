@@ -42,7 +42,7 @@ namespace UnityEditor
             float labelWidth = 80f;
 
             Rect size = EditorGUILayout.BeginVertical();
-            if (Event.current.type != EventType.layout)
+            if (Event.current.type != EventType.Layout)
                 m_WantedSize = size;
 
             // Header
@@ -107,7 +107,7 @@ namespace UnityEditor
             Event evt = Event.current;
             switch (evt.type)
             {
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     switch (evt.keyCode)
                     {
                         case KeyCode.KeypadEnter:

@@ -127,14 +127,14 @@ namespace UnityEditorInternal
 
         public static void DrawLine(Vector3 p1, Vector3 p2)
         {
-            Assert.IsTrue(Event.current.type == EventType.repaint);
+            Assert.IsTrue(Event.current.type == EventType.Repaint);
             GL.Vertex(p1);
             GL.Vertex(p2);
         }
 
         public static void BeginLines(Color color)
         {
-            Assert.IsTrue(Event.current.type == EventType.repaint);
+            Assert.IsTrue(Event.current.type == EventType.Repaint);
             HandleUtility.ApplyWireMaterial();
             GL.PushMatrix();
             GL.MultMatrix(Handles.matrix);
@@ -144,7 +144,7 @@ namespace UnityEditorInternal
 
         public static void EndLines()
         {
-            Assert.IsTrue(Event.current.type == EventType.repaint);
+            Assert.IsTrue(Event.current.type == EventType.Repaint);
             GL.End();
             GL.PopMatrix();
         }

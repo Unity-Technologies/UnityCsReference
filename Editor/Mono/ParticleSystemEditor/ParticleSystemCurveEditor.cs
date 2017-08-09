@@ -619,7 +619,7 @@ internal class ParticleSystemCurveEditor
                     m_CurveEditor.ClearSelection();
                 }
             }
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 curveLibrary.Draw(swatchRect, i);
 
             curX += swatchWidth;

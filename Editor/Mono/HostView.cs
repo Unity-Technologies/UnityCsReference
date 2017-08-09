@@ -402,7 +402,7 @@ namespace UnityEditor
 
         protected void ClearBackground()
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             EditorWindow view = actualView;
             if (view != null && view.dontClearBackground)

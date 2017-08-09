@@ -2439,7 +2439,7 @@ namespace UnityEditor
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.repaint:
+                case EventType.Repaint:
                     if (GUIUtility.hotControl == 0)
                         EditorGUIUtility.AddCursorRect(dragRect, MouseCursor.SlideArrow);
                     break;

@@ -70,6 +70,13 @@ namespace UnityEditor
         SerializedProperty  m_BounceScale;
         SerializedProperty  m_UpdateThreshold;
 
+        static bool PlayerHasSM20Support()
+        {
+            var apis = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
+            bool hasSM20Api = apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2) || apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.N3DS);
+            return hasSM20Api;
+        }
+
         public LightingWindowBakeSettings()
         {
             m_LightModeUtil = LightModeUtil.Get();
@@ -250,6 +257,11 @@ namespace UnityEditor
                 if (realtimeGI != (realtimeMode == 0))
                 {
                     m_LightModeUtil.Store(realtimeGI ? 0 : 1, mixedMode);
+                }
+
+                if (realtimeGI && PlayerHasSM20Support())
+                {
+                    EditorGUILayout.HelpBox(Styles.NoRealtimeGIInSM2AndGLES2.text, MessageType.Warning);
                 }
 
                 EditorGUI.indentLevel--;
@@ -466,7 +478,7 @@ namespace UnityEditor
 
                     EditorGUILayout.IntPopup(m_LightmapDirectionalMode, Styles.LightmapDirectionalModeStrings, Styles.LightmapDirectionalModeValues, Styles.LightmapDirectionalMode);
 
-                    if ((int)LightmapsMode.CombinedDirectional == m_LightmapDirectionalMode.intValue)
+                    if ((int)LightmapsMode.CombinedDirectional == m_LightmapDirectionalMode.intValue && PlayerHasSM20Support())
                         EditorGUILayout.HelpBox(Styles.NoDirectionalInSM2AndGLES2.text, MessageType.Warning);
 
                     EditorGUILayout.Slider(m_IndirectOutputScale, 0.0f, 5.0f, Styles.IndirectOutputScale);
@@ -557,6 +569,7 @@ namespace UnityEditor
             public static readonly GUIContent MixedLightsLabel = EditorGUIUtility.TextContent("Mixed Lighting|Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
             public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TextContent("Lightmapping Settings|Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent NoDirectionalInSM2AndGLES2 = EditorGUIUtility.TextContent("Directional lightmaps cannot be decoded on SM2.0 hardware nor when using GLES2.0. They will fallback to Non-Directional lightmaps.");
+            public static readonly GUIContent NoRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
             public static readonly GUIContent NoShadowMaskInProgressive = EditorGUIUtility.TextContent("'Shadowmask' and 'Distance Shadowmask' modes are not supported in this preview version of the Progressive Lightmapper.");
             public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TextContent("Concurrent Jobs|The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TextContent("Force White Albedo|Force white albedo during lighting calculations.");

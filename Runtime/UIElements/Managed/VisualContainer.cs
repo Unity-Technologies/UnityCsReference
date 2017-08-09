@@ -196,6 +196,11 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
+        internal override VisualContainer GetChildContainer()
+        {
+            return this;
+        }
+
         public void AddStyleSheetPath(string sheetPath)
         {
             if (m_StyleSheetPaths == null)

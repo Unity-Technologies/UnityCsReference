@@ -46,7 +46,7 @@ namespace UnityEditor
                     return;
                 switch (evt.GetTypeForControl(id))
                 {
-                    case EventType.keyDown:
+                    case EventType.KeyDown:
                         switch (evt.keyCode)
                         {
                             case KeyCode.UpArrow:
@@ -82,7 +82,7 @@ namespace UnityEditor
                         }
                         break;
 
-                    case EventType.keyUp:
+                    case EventType.KeyUp:
                         if (GUIUtility.hotControl == id)
                         {
                             switch (evt.keyCode)
@@ -103,7 +103,7 @@ namespace UnityEditor
 
                         break;
 
-                    case EventType.layout:
+                    case EventType.Layout:
                         if (GUIUtility.hotControl == id)
                         {
                             Vector3 fwd;
@@ -159,9 +159,9 @@ namespace UnityEditor
                 case EventType.MouseDown:       HandleMouseDown(view, id, evt.button); break;
                 case EventType.MouseUp:         HandleMouseUp(view, id, evt.button, evt.clickCount); break;
                 case EventType.MouseDrag:       HandleMouseDrag(view, id); break;
-                case EventType.keyDown:         HandleKeyDown(view); break;
-                case EventType.keyUp:           HandleKeyUp(); break;
-                case EventType.layout:
+                case EventType.KeyDown:         HandleKeyDown(view); break;
+                case EventType.KeyUp:           HandleKeyUp(); break;
+                case EventType.Layout:
                 {
                     Vector3 motion = GetMovementDirection();
                     // This seems to be the best way to have a continuously repeating event
@@ -489,7 +489,7 @@ namespace UnityEditor
                     evt.Use();
                 }
 
-                if (evt.type != EventType.keyDown && lastMotion.sqrMagnitude == 0)
+                if (evt.type != EventType.KeyDown && lastMotion.sqrMagnitude == 0)
                     s_FPSTiming.Begin();
             }
         }

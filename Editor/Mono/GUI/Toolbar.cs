@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Connect;
@@ -22,10 +23,10 @@ namespace UnityEditor
 
             s_ToolIcons = new GUIContent[]
             {
-                EditorGUIUtility.IconContent("MoveTool", "|Move the selected objects."),
-                EditorGUIUtility.IconContent("RotateTool", "|Rotate the selected objects."),
-                EditorGUIUtility.IconContent("ScaleTool", "|Scale the selected objects."),
-                EditorGUIUtility.IconContent("RectTool"),
+                EditorGUIUtility.IconContent("MoveTool", "|Move Tool"),
+                EditorGUIUtility.IconContent("RotateTool", "|Rotate Tool"),
+                EditorGUIUtility.IconContent("ScaleTool", "|Scale Tool"),
+                EditorGUIUtility.IconContent("RectTool", "|Rect Tool"),
                 EditorGUIUtility.IconContent("TransformTool", "|Move, Rotate or Scale selected objects."),
                 EditorGUIUtility.IconContent("MoveTool On"),
                 EditorGUIUtility.IconContent("RotateTool On"),
@@ -34,40 +35,42 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("TransformTool On"),
             };
 
+            string viewToolsTooltipText = "|Hand Tool";
+
             s_ViewToolIcons = new GUIContent[]
             {
+                EditorGUIUtility.IconContent("ViewToolOrbit", viewToolsTooltipText),
+                EditorGUIUtility.IconContent("ViewToolMove", viewToolsTooltipText),
+                EditorGUIUtility.IconContent("ViewToolZoom", viewToolsTooltipText),
+                EditorGUIUtility.IconContent("ViewToolOrbit", viewToolsTooltipText),
                 EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
-                EditorGUIUtility.IconContent("ViewToolMove"),
-                EditorGUIUtility.IconContent("ViewToolZoom"),
-                EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
-                EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
+                EditorGUIUtility.IconContent("ViewToolOrbit On", viewToolsTooltipText),
+                EditorGUIUtility.IconContent("ViewToolMove On", viewToolsTooltipText),
+                EditorGUIUtility.IconContent("ViewToolZoom On", viewToolsTooltipText),
                 EditorGUIUtility.IconContent("ViewToolOrbit On"),
-                EditorGUIUtility.IconContent("ViewToolMove On"),
-                EditorGUIUtility.IconContent("ViewToolZoom On"),
-                EditorGUIUtility.IconContent("ViewToolOrbit On"),
-                EditorGUIUtility.IconContent("ViewToolOrbit On")
+                EditorGUIUtility.IconContent("ViewToolOrbit On", viewToolsTooltipText)
             };
 
             s_PivotIcons = new GUIContent[]
             {
-                EditorGUIUtility.TextContentWithIcon("Center|The tool handle is placed at the center of the selection.", "ToolHandleCenter"),
-                EditorGUIUtility.TextContentWithIcon("Pivot|The tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
+                EditorGUIUtility.TextContentWithIcon("Center|Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
+                EditorGUIUtility.TextContentWithIcon("Pivot|Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
             };
 
             s_PivotRotation = new GUIContent[]
             {
-                EditorGUIUtility.TextContentWithIcon("Local|Tool handles are in active object's rotation.", "ToolHandleLocal"),
-                EditorGUIUtility.TextContentWithIcon("Global|Tool handles are in global rotation.", "ToolHandleGlobal")
+                EditorGUIUtility.TextContentWithIcon("Local|Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
+                EditorGUIUtility.TextContentWithIcon("Global|Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
             };
 
             s_LayerContent = EditorGUIUtility.TextContent("Layers|Which layers are visible in the Scene views.");
 
             s_PlayIcons = new GUIContent[]
             {
-                EditorGUIUtility.IconContent("PlayButton"),
-                EditorGUIUtility.IconContent("PauseButton"),
-                EditorGUIUtility.IconContent("StepButton"),
-                EditorGUIUtility.IconContent("PlayButtonProfile"),
+                EditorGUIUtility.IconContent("PlayButton", "|Play"),
+                EditorGUIUtility.IconContent("PauseButton", "|Pause"),
+                EditorGUIUtility.IconContent("StepButton", "|Step"),
+                EditorGUIUtility.IconContent("PlayButtonProfile", "|Profiler Play"),
                 EditorGUIUtility.IconContent("PlayButton On"),
                 EditorGUIUtility.IconContent("PauseButton On"),
                 EditorGUIUtility.IconContent("StepButton On"),

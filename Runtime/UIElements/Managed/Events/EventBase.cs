@@ -10,6 +10,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         // Automatic event type id.
         private static long s_LastClassId = 0;
+
         protected static long RegisterEventClass()
         {
             return ++s_LastClassId;
@@ -27,6 +28,7 @@ namespace UnityEngine.Experimental.UIElements
 
         // Read-only state
         public long timestamp { get; private set; }
+
         private EventFlags flags;
 
         public bool bubbles
@@ -37,12 +39,14 @@ namespace UnityEngine.Experimental.UIElements
         public IEventHandler target { get; internal set; }
 
         public bool isPropagationStopped { get; private set; }
+
         public void StopPropagation()
         {
             isPropagationStopped = true;
         }
 
         public bool isImmediatePropagationStopped { get; private set; }
+
         public void StopImmediatePropagation()
         {
             isPropagationStopped = true;

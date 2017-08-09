@@ -358,7 +358,7 @@ namespace UnityEditor
                     }
                     break;
 
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (evt.keyCode == KeyCode.Delete)
                     {
                         if (m_SelectedSwatch != null)

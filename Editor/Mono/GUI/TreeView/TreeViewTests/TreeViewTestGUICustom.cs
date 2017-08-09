@@ -41,7 +41,7 @@ namespace UnityEditor.TreeViewExamples
             base.EndRowGUI();
 
             // Draw row marker when dragging
-            if (m_DraggingInsertionMarkerRect.x >= 0 && Event.current.type == EventType.repaint)
+            if (m_DraggingInsertionMarkerRect.x >= 0 && Event.current.type == EventType.Repaint)
             {
                 Rect insertionRect = m_DraggingInsertionMarkerRect;
                 insertionRect.height = 2f;

@@ -325,7 +325,7 @@ namespace UnityEditor
 
         public static void DrawScrollDropShadow(Rect scrollViewRect, float scrollY, float contentHeight)
         {
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 bool isShowingScrollBar = contentHeight > scrollViewRect.height;
                 if (!isShowingScrollBar)

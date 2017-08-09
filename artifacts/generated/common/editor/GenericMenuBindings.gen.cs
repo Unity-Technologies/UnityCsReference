@@ -113,12 +113,6 @@ public sealed partial class GenericMenu
     
     internal void Popup(Rect position, int selectedIndex)
         {
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                DropDown(position);
-                return;
-            }
-
             DropDown(position);
         }
     

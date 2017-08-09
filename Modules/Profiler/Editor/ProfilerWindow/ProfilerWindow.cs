@@ -785,7 +785,7 @@ namespace UnityEditor
                 m_SearchString = "";
 
             // On arrow down/up swicth to control selection in list area
-            if (evt.type == EventType.keyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow) && GUI.GetNameOfFocusedControl() == kSearchControlName)
+            if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow) && GUI.GetNameOfFocusedControl() == kSearchControlName)
             {
                 m_CPUHierarchyGUI.SelectFirstRow();
                 m_CPUHierarchyGUI.SetKeyboardFocus();

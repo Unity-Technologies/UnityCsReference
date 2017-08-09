@@ -99,6 +99,11 @@ namespace UnityEngine.Experimental.UIElements
             RegisterCallback<WheelEvent>(OnScrollWheel);
         }
 
+        internal override VisualContainer GetChildContainer()
+        {
+            return contentView;
+        }
+
         protected internal override void OnPostLayout(bool hasNewLayout)
         {
             if (!hasNewLayout)

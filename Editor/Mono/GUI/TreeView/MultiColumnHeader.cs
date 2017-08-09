@@ -217,7 +217,7 @@ namespace UnityEditor.IMGUI.Controls
 
             DetectSizeChanges(rect);
 
-            if (m_ResizeToFit && evt.type == EventType.repaint)
+            if (m_ResizeToFit && evt.type == EventType.Repaint)
             {
                 m_ResizeToFit = false;
                 ResizeColumnsWidthsProportionally(rect.width - GUI.skin.verticalScrollbar.fixedWidth - state.widthOfAllVisibleColumns);
@@ -258,7 +258,7 @@ namespace UnityEditor.IMGUI.Controls
                     Rect dragRect = new Rect(dividerRect.x - m_DividerWidth * 0.5f, localRect.y, m_DividerWidth, localRect.height);
                     bool hasControl;
                     column.width = EditorGUI.WidthResizer(dragRect, column.width, column.minWidth, column.maxWidth, out hasControl);
-                    if (hasControl && evt.type == EventType.repaint)
+                    if (hasControl && evt.type == EventType.Repaint)
                     {
                         DrawColumnResizing(headerRect, column);
                     }

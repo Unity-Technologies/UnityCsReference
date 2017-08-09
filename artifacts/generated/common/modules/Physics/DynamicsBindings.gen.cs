@@ -1949,15 +1949,15 @@ public partial class Joint : Component
         set;
     }
 
-    internal Matrix4x4 GetJointFrame () {
+    internal Matrix4x4 GetActorLocalPose (int actorIndex) {
         Matrix4x4 result;
-        INTERNAL_CALL_GetJointFrame ( this, out result );
+        INTERNAL_CALL_GetActorLocalPose ( this, actorIndex, out result );
         return result;
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetJointFrame (Joint self, out Matrix4x4 value);
+    private extern static void INTERNAL_CALL_GetActorLocalPose (Joint self, int actorIndex, out Matrix4x4 value);
 }
 
 public sealed partial class HingeJoint : Joint

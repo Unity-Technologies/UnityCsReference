@@ -816,8 +816,6 @@ namespace UnityEditor
                     (RenderTextureFormat)cur.rtFormat));
             if (cur.rtDim == (int)UnityEngine.Rendering.TextureDimension.Cube)
                 GUILayout.Label("Rendering into cubemap");
-            if (cur.rtFormat == (int)RenderTextureFormat.Shadowmap && SystemInfo.graphicsDeviceVersion.StartsWith("Direct3D 9"))
-                EditorGUILayout.HelpBox("Rendering into shadowmap on DX9, can't visualize it in the game view properly", MessageType.Info, true);
         }
 
         private void DrawEventDrawCallInfo()

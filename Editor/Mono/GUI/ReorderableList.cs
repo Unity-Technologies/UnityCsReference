@@ -97,7 +97,7 @@ namespace UnityEditorInternal
                 rect = new Rect(leftEdge, rect.y, rightEdge - leftEdge, rect.height);
                 Rect addRect = new Rect(leftEdge + 4, rect.y - 3, 25, 13);
                 Rect removeRect = new Rect(rightEdge - 29, rect.y - 3, 25, 13);
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     footerBackground.Draw(rect, false, false, false, false);
                 }
@@ -185,7 +185,7 @@ namespace UnityEditorInternal
             // draw the default header background
             public void DrawHeaderBackground(Rect headerRect)
             {
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                     headerBackground.Draw(headerRect, false, false, false, false);
             }
 
@@ -198,7 +198,7 @@ namespace UnityEditorInternal
             // draw the default element background
             public void DrawElementBackground(Rect rect, int index, bool selected, bool focused, bool draggable)
             {
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     elementBackground.Draw(rect, false, selected, selected, focused);
                 }
@@ -206,7 +206,7 @@ namespace UnityEditorInternal
 
             public void DrawElementDraggingHandle(Rect rect, int index, bool selected, bool focused, bool draggable)
             {
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     if (draggable)
                         draggingHandle.Draw(new Rect(rect.x + 5, rect.y + 7, 10, rect.height - (rect.height - 7)), false, false, false, false);
@@ -445,7 +445,7 @@ namespace UnityEditorInternal
             int arraySize = count;
 
             // draw the background in repaint
-            if (showDefaultBackground && Event.current.type == EventType.repaint)
+            if (showDefaultBackground && Event.current.type == EventType.Repaint)
                 s_Defaults.boxBackground.Draw(listRect, false, false, false, false);
 
             // resize to the area that we want to draw our elements into
@@ -612,7 +612,7 @@ namespace UnityEditorInternal
         private void DoListHeader(Rect headerRect)
         {
             // draw the background on repaint
-            if (showDefaultBackground && Event.current.type == EventType.repaint)
+            if (showDefaultBackground && Event.current.type == EventType.Repaint)
                 s_Defaults.DrawHeaderBackground(headerRect);
 
             // apply the padding to get the internal rect

@@ -267,7 +267,7 @@ namespace UnityEngine
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
-            return GUIClip.Unclip(guiPoint) + s_EditorScreenPointOffset;
+            return GUIClip.UnclipToWindow(guiPoint) + s_EditorScreenPointOffset;
         }
 
         // Convert a rect from GUI position to screen space.
@@ -282,7 +282,7 @@ namespace UnityEngine
         // Convert a point from screen space to GUI position.
         public static Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
-            return GUIClip.Clip(screenPoint) - s_EditorScreenPointOffset;
+            return GUIClip.ClipToWindow(screenPoint) - s_EditorScreenPointOffset;
         }
 
         // Convert a rect from screen space to GUI position.
@@ -328,31 +328,59 @@ namespace UnityEngine
             Internal_Pop();
         }
 
-        // Unclips /pos/ to physical device coordinates.
+        // Unclips /pos/ to IMGUI container coordinates.
         public static Vector2 Unclip(Vector2 pos)
         {
             Unclip_Vector2(ref pos);
             return pos;
         }
 
-        // Unclips /rect/ to physical device coordinates.
+        // Unclips /rect/ to IMGUI container coordinates.
         public static Rect Unclip(Rect rect)
         {
             Unclip_Rect(ref rect);
             return rect;
         }
 
-        // Clips /absolutePos/ to drawing coordinates
+        // Clips /absolutePos/ to IMGUI container coordinates
         public static Vector2 Clip(Vector2 absolutePos)
         {
             Clip_Vector2(ref absolutePos);
             return absolutePos;
         }
 
-        // Convert /absoluteRect/ to drawing coordinates
+        // Convert /absoluteRect/ to IMGUI container coordinates
         public static Rect Clip(Rect absoluteRect)
         {
             Internal_Clip_Rect(ref absoluteRect);
+            return absoluteRect;
+        }
+
+        // Unclips /pos/ to window coordinater.
+        public static Vector2 UnclipToWindow(Vector2 pos)
+        {
+            UnclipToWindow_Vector2(ref pos);
+            return pos;
+        }
+
+        // Unclips /rect/ to window coordinates.
+        public static Rect UnclipToWindow(Rect rect)
+        {
+            UnclipToWindow_Rect(ref rect);
+            return rect;
+        }
+
+        // Clips /absolutePos/ to window coordinates
+        public static Vector2 ClipToWindow(Vector2 absolutePos)
+        {
+            ClipToWindow_Vector2(ref absolutePos);
+            return absolutePos;
+        }
+
+        // Convert /absoluteRect/ to window coordinates
+        public static Rect ClipToWindow(Rect absoluteRect)
+        {
+            ClipToWindow_Rect(ref absoluteRect);
             return absoluteRect;
         }
 

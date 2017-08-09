@@ -298,7 +298,7 @@ namespace UnityEditor
             const float optionsButtonHeight = 6f;
             const float margin = 4f;
             Rect buttonRect = new Rect(rect.width - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
 
             // We want larger click area than the button icon

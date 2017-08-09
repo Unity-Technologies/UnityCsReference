@@ -799,6 +799,7 @@ namespace UnityEngine.Rendering
     {
         [System.Obsolete("OpenGL2 is no longer supported in Unity 5.5+")]
         OpenGL2 = 0,
+        [System.Obsolete("Direct3D 9 is no longer supported in Unity 2017.2+")]
         Direct3D9 = 1,
         Direct3D11 = 2,
         [System.Obsolete("PS3 is no longer supported in Unity 5.5+")]
@@ -816,7 +817,8 @@ namespace UnityEngine.Rendering
         OpenGLCore = 17,
         Direct3D12 = 18,
         N3DS = 19,
-        Vulkan = 21
+        Vulkan = 21,
+        XboxOneD3D12 = 23
     }
 
     public enum GraphicsTier

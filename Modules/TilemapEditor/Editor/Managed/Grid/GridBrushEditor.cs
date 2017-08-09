@@ -68,7 +68,7 @@ namespace UnityEditor
         {
             BoundsInt gizmoRect = position;
             bool refreshPreviews = false;
-            if (Event.current.type == EventType.layout)
+            if (Event.current.type == EventType.Layout)
             {
                 int newPreviewRefreshHash = GetHash(gridLayout, brushTarget, position, tool, brush);
                 refreshPreviews = newPreviewRefreshHash != m_LastPreviewRefreshHash;

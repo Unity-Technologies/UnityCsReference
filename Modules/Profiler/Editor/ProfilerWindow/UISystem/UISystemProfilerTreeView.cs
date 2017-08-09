@@ -100,7 +100,7 @@ namespace UnityEditor
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             for (int i = 0, count = args.GetNumVisibleColumns(); i < count; i++)
             {

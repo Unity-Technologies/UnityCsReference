@@ -30,6 +30,12 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        // For testing purposes
+        internal static void ClearDispatcher()
+        {
+            s_EventDispatcher = null;
+        }
+
         static UIElementsUtility()
         {
             GUIUtility.takeCapture += TakeCapture;
@@ -124,7 +130,18 @@ namespace UnityEngine.Experimental.UIElements
                 clippingRect = container.worldBound;
             }
 
-            GUIClip.SetTransform(container.imguiTransform, clippingRect);
+            Matrix4x4 currentTransform = container.worldTransform;
+
+            if (evt.type == EventType.Repaint
+                && container.elementPanel != null
+                && container.elementPanel.stylePainter != null)
+            {
+                // during repaint, we must use in case the current transform is not relative to Panel
+                // this is to account for the pixel caching feature
+                currentTransform = container.elementPanel.stylePainter.currentTransform;
+            }
+
+            GUIClip.SetTransform(currentTransform * Matrix4x4.Translate(container.layout.position), clippingRect);
         }
 
         // End the 2D GUI.

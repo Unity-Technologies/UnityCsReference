@@ -885,7 +885,7 @@ namespace UnityEditor
 
         void ListAreaKeyboardCallback()
         {
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 switch (Event.current.keyCode)
                 {
@@ -1149,7 +1149,7 @@ namespace UnityEditor
 
         void AssetTreeKeyboardInputCallback()
         {
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 switch (Event.current.keyCode)
                 {
@@ -1736,7 +1736,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             Rect ProjectBrowserRect = new Rect(0, 0, position.width, position.height);
-            if (evt.type == EventType.mouseDown && ProjectBrowserRect.Contains(evt.mousePosition))
+            if (evt.type == EventType.MouseDown && ProjectBrowserRect.Contains(evt.mousePosition))
             {
                 EndPing();
                 SetAsLastInteractedProjectBrowser();
@@ -2121,7 +2121,7 @@ namespace UnityEditor
 
             // On arrow down/up swicth to control selection in list area
             Event evt = Event.current;
-            if (evt.type == EventType.keyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
+            if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
             {
                 if (GUIUtility.keyboardControl == searchFieldControlID)
                 {

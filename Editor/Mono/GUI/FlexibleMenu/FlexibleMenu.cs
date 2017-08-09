@@ -273,7 +273,7 @@ namespace UnityEditor
 
         public static void DrawRect(Rect rect, Color color)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             Color orgColor = GUI.color;

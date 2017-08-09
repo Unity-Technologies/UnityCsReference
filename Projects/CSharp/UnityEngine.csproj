@@ -69,6 +69,9 @@
 <Compile Include="..\..\Runtime\Export\SystemClock.cs" >
 <Link>Runtime\Export\SystemClock.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Camera.bindings.cs" >
+<Link>Runtime\Export\Camera.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\ScrollWaitDefinitions.cs" >
 <Link>Runtime\Export\ScrollWaitDefinitions.cs</Link>
 </Compile>
@@ -534,6 +537,9 @@
 <Compile Include="..\..\Runtime\Export\iOS\TV.bindings.cs" >
 <Link>Runtime\Export\iOS\TV.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\iOS\iOSNotifications.bindings.cs" >
+<Link>Runtime\Export\iOS\iOSNotifications.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Logger\ILogger.cs" >
 <Link>Runtime\Export\Logger\ILogger.cs</Link>
 </Compile>
@@ -583,6 +589,11 @@
 <Link>Runtime\Export\Assertions\Must\MustFloat.cs</Link>
 </Compile><Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs" >
 <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
+</Compile><Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs" >
+<Link>Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests2.bindings.cs" >
+<Link>Runtime\Scripting\Marshalling\Test\MarshallingTests2.bindings.cs</Link>
 </Compile><Compile Include="..\..\artifacts\generated\common\runtime\AndroidInputBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\AndroidInputBindings.gen.cs</Link>
 </Compile>
@@ -769,9 +780,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\SamsungTVBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SamsungTVBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\Common2DBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\Common2DBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\GUIElementBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\GUIElementBindings.gen.cs</Link>
 </Compile>
@@ -792,9 +800,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\OnDemandResourcesBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\OnDemandResourcesBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\iOSNotificationsBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\iOSNotificationsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\InputBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\InputBindings.gen.cs</Link>
@@ -951,6 +956,9 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs</Link>
 </Compile>
@@ -959,9 +967,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.cs" >
-<Link>Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs</Link>
@@ -1149,30 +1154,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\UnityWebRequest\WebRequestBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UnityWebRequest\WebRequestBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\WebRequestAudio\WebRequestMultimedia.cs" >
-<Link>Runtime\WebRequestAudio\WebRequestMultimedia.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestAudio\ScriptBindings\DownloadHandlerAudio.bindings.cs" >
-<Link>Runtime\WebRequestAudio\ScriptBindings\DownloadHandlerAudio.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestTexture\WebRequestTexture.cs" >
-<Link>Runtime\WebRequestTexture\WebRequestTexture.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestTexture\DownloadHandlerTexture.bindings.cs" >
-<Link>Runtime\WebRequestTexture\DownloadHandlerTexture.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestWWW\UWRWWW.cs" >
-<Link>Runtime\WebRequestWWW\UWRWWW.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestWWW\WebRequestWWW.bindings.cs" >
-<Link>Runtime\WebRequestWWW\WebRequestWWW.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestWWW\WWW.cs" >
-<Link>Runtime\WebRequestWWW\WWW.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequestWWW\WWWAudio.cs" >
-<Link>Runtime\WebRequestWWW\WWWAudio.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\Networking\Managed\UNETInterface.cs" >
 <Link>Runtime\Networking\Managed\UNETInterface.cs</Link>
 </Compile>
@@ -1193,6 +1174,9 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Director\Module\ScriptBindings\PlayableDirector.bindings.cs" >
+<Link>Runtime\Director\Module\ScriptBindings\PlayableDirector.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Director\PlayableDirectorBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Director\PlayableDirectorBindings.gen.cs</Link>
@@ -1233,6 +1217,9 @@
 <Compile Include="..\..\Runtime\Web\FriendAttributes.cs" >
 <Link>Runtime\Web\FriendAttributes.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs" >
+<Link>Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoConfig.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\TangoConfig.cs</Link>
 </Compile>
@@ -1247,9 +1234,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\AR\ScriptBindings\ARBackgroundRenderer.cs" >
 <Link>Runtime\AR\ScriptBindings\ARBackgroundRenderer.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AR\TangoBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AR\TangoBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\VR\ScriptBindings\InputTracking.cs" >
 <Link>Runtime\VR\ScriptBindings\InputTracking.cs</Link>
@@ -1332,6 +1316,9 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\EventDispatcher.cs" >
 <Link>Runtime\UIElements\Managed\EventDispatcher.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\FocusController.cs" >
+<Link>Runtime\UIElements\Managed\FocusController.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\IDataWatchService.cs" >
 <Link>Runtime\UIElements\Managed\IDataWatchService.cs</Link>
 </Compile>
@@ -1401,6 +1388,9 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\TouchScreenTextEditor.cs" >
 <Link>Runtime\UIElements\Managed\TouchScreenTextEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\TemplateContainer.cs" >
+<Link>Runtime\UIElements\Managed\TemplateContainer.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\TextEditor.cs" >
 <Link>Runtime\UIElements\Managed\TextEditor.cs</Link>
 </Compile>
@@ -1415,6 +1405,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElement.cs" >
 <Link>Runtime\UIElements\Managed\VisualElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementFocusRing.cs" >
+<Link>Runtime\UIElements\Managed\VisualElementFocusRing.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElementStyleAccess.cs" >
 <Link>Runtime\UIElements\Managed\VisualElementStyleAccess.cs</Link>
@@ -1436,6 +1429,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\EventHandler.cs" >
 <Link>Runtime\UIElements\Managed\Events\EventHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\Events\FocusEvents.cs" >
+<Link>Runtime\UIElements\Managed\Events\FocusEvents.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\KeyboardEvents.cs" >
 <Link>Runtime\UIElements\Managed\Events\KeyboardEvents.cs</Link>
@@ -1625,6 +1621,24 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestAudio\UnityWebRequestMultimedia.cs" >
+<Link>Modules\UnityWebRequestAudio\UnityWebRequestMultimedia.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestAudio\Public\DownloadHandlerAudio.bindings.cs" >
+<Link>Modules\UnityWebRequestAudio\Public\DownloadHandlerAudio.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestTexture\UnityWebRequestTexture.cs" >
+<Link>Modules\UnityWebRequestTexture\UnityWebRequestTexture.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestTexture\Public\DownloadHandlerTexture.bindings.cs" >
+<Link>Modules\UnityWebRequestTexture\Public\DownloadHandlerTexture.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestWWW\Public\WWW.bindings.cs" >
+<Link>Modules\UnityWebRequestWWW\Public\WWW.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequestWWW\Public\WWW.cs" >
+<Link>Modules\UnityWebRequestWWW\Public\WWW.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs</Link>

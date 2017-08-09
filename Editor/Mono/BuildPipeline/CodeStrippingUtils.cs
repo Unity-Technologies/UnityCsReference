@@ -687,14 +687,12 @@ namespace UnityEditor
             var arguments = new List<string>();
 
             foreach (var assembly in UserAssemblies)
-                arguments.AddRange(GetAssembliesInDirectory(strippedAssemblyDir, assembly));
+            {
+                var files = Directory.GetFiles(strippedAssemblyDir, assembly, SearchOption.TopDirectoryOnly);
+                arguments.AddRange(files.Select(f => Path.GetFileName(f)));
+            }
 
             return arguments.ToArray();
-        }
-
-        private static IEnumerable<string> GetAssembliesInDirectory(string strippedAssemblyDir, string assemblyName)
-        {
-            return Directory.GetFiles(strippedAssemblyDir, assemblyName, SearchOption.TopDirectoryOnly);
         }
     } //CodeStrippingUtils
 } //UnityEditor

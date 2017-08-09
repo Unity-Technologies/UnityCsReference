@@ -21,6 +21,7 @@ namespace UnityEditor
         SerializedProperty m_CustomCharacters;
         SerializedProperty m_FontRenderingMode;
         SerializedProperty m_AscentCalculationMode;
+        SerializedProperty m_FallbackFontReferencesArraySize;
 
         string m_FontNamesString = "";
         string m_DefaultFontNamesString = "";
@@ -38,13 +39,30 @@ namespace UnityEditor
             m_CustomCharacters = serializedObject.FindProperty("m_CustomCharacters");
             m_FontRenderingMode = serializedObject.FindProperty("m_FontRenderingMode");
             m_AscentCalculationMode = serializedObject.FindProperty("m_AscentCalculationMode");
+            m_FallbackFontReferencesArraySize = serializedObject.FindProperty("m_FallbackFontReferences.Array.size");
 
             // We don't want to expose GUI for setting included fonts when selecting multiple fonts
             if (targets.Length == 1)
             {
                 m_DefaultFontNamesString = GetDefaultFontNames();
                 m_FontNamesString = GetFontNames();
+                var importer = (TrueTypeFontImporter)target;
+                m_FallbackFontReferences = importer.fontReferences;
             }
+        }
+
+        protected override void Apply()
+        {
+            m_FallbackFontReferencesArraySize.intValue = m_FallbackFontReferences.Length;
+            SerializedProperty fontReferenceProp = m_FallbackFontReferencesArraySize.Copy();
+
+            for (int i = 0; i < m_FallbackFontReferences.Length; i++)
+            {
+                fontReferenceProp.Next(false);
+                fontReferenceProp.objectReferenceValue = m_FallbackFontReferences[i];
+            }
+
+            base.Apply();
         }
 
         string GetDefaultFontNames()

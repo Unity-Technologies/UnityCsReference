@@ -61,7 +61,9 @@ namespace UnityEngine.Experimental.UIElements
         IDataWatchService dataWatch { get; }
         ContextType contextType { get; }
 
+        FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
+        VisualContainer LoadTemplate(string path);
 
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
@@ -70,12 +72,11 @@ namespace UnityEngine.Experimental.UIElements
 
     abstract class BaseVisualElementPanel : IPanel
     {
-        public virtual VisualElement focusedElement { get; set; }
-
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract int instanceID { get; protected set; }
         public abstract LoadResourceFunction loadResourceFunc { get; protected set; }
         public abstract int IMGUIContainersCount { get; set; }
+        public abstract FocusController focusController { get; set; }
 
         public abstract void Repaint(Event e);
         public abstract void ValidateLayout();
@@ -89,6 +90,7 @@ namespace UnityEngine.Experimental.UIElements
         public abstract ContextType contextType { get; protected set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
+        public abstract VisualContainer LoadTemplate(string path);
 
         public BasePanelDebug panelDebug { get; set; }
     }
@@ -134,6 +136,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override ContextType contextType { get; protected set; }
 
+        public override FocusController focusController { get; set; }
         public override EventInterests IMGUIEventInterests { get; set; }
 
         public override LoadResourceFunction loadResourceFunc { get; protected set; }
@@ -150,6 +153,7 @@ namespace UnityEngine.Experimental.UIElements
             m_RootContainer = new VisualContainer();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
+            focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
 
             allowPixelCaching = true;
@@ -173,7 +177,7 @@ namespace UnityEngine.Experimental.UIElements
                     return null;
                 }
 
-                if (picked != null)
+                if (picked != null && root.enabled)
                 {
                     picked.Add(root);
                 }
@@ -197,7 +201,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 case PickingMode.Position:
                 {
-                    if (containsPoint)
+                    if (containsPoint && root.enabled)
                     {
                         return root;
                     }
@@ -207,6 +211,17 @@ namespace UnityEngine.Experimental.UIElements
                     break;
             }
             return null;
+        }
+
+        public override VisualContainer LoadTemplate(string path)
+        {
+            VisualTreeAsset vta = loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
+            if (vta == null)
+            {
+                return null;
+            }
+
+            return vta.CloneTree(this);
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
@@ -395,10 +410,11 @@ namespace UnityEngine.Experimental.UIElements
 
                     // reset clipping
                     var textureClip = new Rect(0, 0, w, h);
-                    GUIClip.SetTransform(offset * root.worldTransform, textureClip);
+                    painter.currentTransform = offset * root.worldTransform;
+                    GUIClip.SetTransform(painter.currentTransform, textureClip);
 
                     // paint self
-                    painter.currentWorldClip = currentGlobalClip;
+                    painter.currentWorldClip = textureClip;
                     root.DoRepaint(painter);
                     root.ClearDirty(ChangeType.Repaint);
 
@@ -421,7 +437,8 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-                GUIClip.SetTransform(root.worldTransform, currentGlobalClip);
+                painter.currentTransform = root.worldTransform;
+                GUIClip.SetTransform(painter.currentTransform, currentGlobalClip);
 
                 var painterParams = new TextureStylePainterParameters
                 {
@@ -434,7 +451,8 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                GUIClip.SetTransform(offset * root.worldTransform, currentGlobalClip);
+                stylePainter.currentTransform = offset * root.worldTransform;
+                GUIClip.SetTransform(stylePainter.currentTransform, currentGlobalClip);
 
                 stylePainter.currentWorldClip = currentGlobalClip;
                 stylePainter.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(e.mousePosition);
@@ -471,7 +489,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panelDebug != null)
             {
-                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.layout.width, visualTree.layout.height));
+                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.style.width, visualTree.style.height));
                 if (panelDebug.EndRepaint())
                     this.visualTree.Dirty(ChangeType.Repaint);
             }

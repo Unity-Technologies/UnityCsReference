@@ -664,7 +664,7 @@ namespace UnityEditor
                 s_Texts = new Texts();
 
             Event evt = Event.current;
-            if (evt.type == EventType.layout)
+            if (evt.type == EventType.Layout)
                 m_TimeHelper.Update();
 
             if (!EditorApplication.isPlaying)
@@ -786,7 +786,7 @@ namespace UnityEditor
 
                     // Draw Emitters
                     Color orgColor = GUI.color;
-                    bool isRepaintEvent = Event.current.type == EventType.repaint;
+                    bool isRepaintEvent = Event.current.type == EventType.Repaint;
                     bool isShowOnlySelected = IsShowOnlySelectedMode();
                     List<ParticleSystemUI> selectedSystems = GetSelectedParticleSystemUIs();
 
@@ -907,7 +907,7 @@ namespace UnityEditor
         void ClampWindowContentSizes()
         {
             EventType type = Event.current.type;
-            if (type != EventType.layout)
+            if (type != EventType.Layout)
             {
                 float width = GUIClip.visibleRect.width;
                 float height = GUIClip.visibleRect.height;

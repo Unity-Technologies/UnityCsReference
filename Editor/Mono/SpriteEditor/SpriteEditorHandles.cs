@@ -30,7 +30,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.repaint:
+                case EventType.Repaint:
                     if (GUIUtility.hotControl == id)
                         dragDotActive.Draw(handleScreenPos, GUIContent.none, id);
                     else
@@ -53,7 +53,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (evt.button == 0 &&
                         cursorRect.Contains(Event.current.mousePosition) &&
@@ -67,7 +67,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -78,7 +78,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -86,7 +86,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         if (evt.keyCode == KeyCode.Escape)
@@ -98,7 +98,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     EditorGUIUtility.AddCursorRect(cursorRect, cursor, id);
                     break;
             }
@@ -124,7 +124,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (evt.button == 0 && handleScreenPos.Contains(Event.current.mousePosition) && !evt.alt)
                     {
@@ -137,7 +137,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -149,7 +149,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -157,7 +157,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         if (evt.keyCode == KeyCode.Escape)
@@ -169,7 +169,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     EditorGUIUtility.AddCursorRect(handleScreenPos, MouseCursor.Arrow, id);
 
                     if (GUIUtility.hotControl == id)
@@ -201,7 +201,7 @@ namespace UnityEditorInternal
 
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (evt.button == 0 && pos.Contains(Handles.inverseMatrix.MultiplyPoint(Event.current.mousePosition)) && !evt.alt)
                     {
@@ -209,7 +209,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -222,7 +222,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -230,7 +230,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         if (evt.keyCode == KeyCode.Escape)
@@ -242,7 +242,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Vector2 topleft = Handles.inverseMatrix.MultiplyPoint(new Vector2(pos.xMin, pos.yMin));
                     Vector2 bottomright = Handles.inverseMatrix.MultiplyPoint(new Vector2(pos.xMax, pos.yMax));
                     EditorGUIUtility.AddCursorRect(new Rect(topleft.x, topleft.y, bottomright.x - topleft.x, bottomright.y - topleft.y), MouseCursor.Arrow, id);
@@ -275,7 +275,7 @@ namespace UnityEditorInternal
 
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     if (evt.button == 0)
                     {
                         GUIUtility.hotControl = id;
@@ -295,7 +295,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition = new Vector2(mousePos.x, mousePos.y);
@@ -303,7 +303,7 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.repaint:
+                case EventType.Repaint:
                     if (GUIUtility.hotControl == id && ValidRect(s_DragStartScreenPosition, s_CurrentMousePosition))
                     {
                         // TODO: use rectstyle
@@ -314,7 +314,7 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && evt.button == 0)
                     {
                         if (ValidRect(s_DragStartScreenPosition, s_CurrentMousePosition))
@@ -327,7 +327,7 @@ namespace UnityEditorInternal
                         GUIUtility.hotControl = 0;
                     }
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         if (evt.keyCode == KeyCode.Escape)

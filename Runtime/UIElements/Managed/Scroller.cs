@@ -76,6 +76,12 @@ namespace UnityEngine.Experimental.UIElements
             AddChild(highButton);
         }
 
+        internal override VisualContainer GetChildContainer()
+        {
+            // Scroller  can't have children
+            return null;
+        }
+
         public override bool enabled
         {
             get { return base.enabled; }

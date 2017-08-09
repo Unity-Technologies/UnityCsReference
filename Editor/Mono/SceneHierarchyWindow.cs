@@ -395,7 +395,7 @@ namespace UnityEditor
 
             Rect SceneHierarchyRect = new Rect(0, 0, position.width, position.height);
             Event evt = Event.current;
-            if (evt.type == EventType.mouseDown && SceneHierarchyRect.Contains(evt.mousePosition))
+            if (evt.type == EventType.MouseDown && SceneHierarchyRect.Contains(evt.mousePosition))
             {
                 treeView.EndPing();
                 SetAsLastInteractedHierarchy();
@@ -607,7 +607,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // When searchfield has focus give keyboard focus to the tree view on Down/UpArrow
-            if (hasSearchFilterFocus && evt.type == EventType.keyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
+            if (hasSearchFilterFocus && evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
             {
                 GUIUtility.keyboardControl = m_TreeViewKeyboardControlID;
 

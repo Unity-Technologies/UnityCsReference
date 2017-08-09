@@ -64,7 +64,7 @@ namespace UnityEngine.Experimental.UIElements
 
         bool touchScreenTextField { get { return TouchScreenKeyboard.isSupported; } }
 
-        public bool hasFocus { get { return elementPanel != null && elementPanel.focusedElement == this; } }
+        public bool hasFocus { get { return elementPanel != null && elementPanel.focusController.focusedElement == this; } }
 
         internal TextEditor editor { get; set; }
 
@@ -91,6 +91,9 @@ namespace UnityEngine.Experimental.UIElements
 
                 editor = new KeyboardTextEditor(this);
             }
+
+            // TextField are focusable by default.
+            focusIndex = 0;
 
             this.AddManipulator(editor);
         }
