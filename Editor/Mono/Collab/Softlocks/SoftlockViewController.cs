@@ -89,6 +89,7 @@ namespace UnityEditor
             UnregisterDrawDelegates();
             ObjectListArea.postAssetIconDrawCallback += Instance.DrawProjectBrowserGridUI;
             ObjectListArea.postAssetLabelDrawCallback += Instance.DrawProjectBrowserListUI;
+            AssetsTreeViewGUI.postAssetLabelDrawCallback += Instance.DrawSingleColumnProjectBrowserUI;
             Editor.OnPostIconGUI += Instance.DrawInspectorUI;
             GameObjectTreeViewGUI.OnPostHeaderGUI += Instance.DrawSceneUI;
         }
@@ -225,8 +226,7 @@ namespace UnityEditor
         }
 
         // Assigned callback to ObjectListArea.OnPostAssetDrawDelegate.
-        // Draws either overtop of the project browser asset (when in grid view) or
-        // at the rightside when in list view.
+        // Draws either overtop of the project browser asset (when in grid view).
         private void DrawProjectBrowserGridUI(Rect iconRect, string assetGUID, bool isListMode)
         {
             if (isListMode || !HasSoftlocks(assetGUID))
@@ -243,21 +243,43 @@ namespace UnityEditor
             }
         }
 
+        // Should draw only in listMode and expects 'drawRect' to be the designed space for the icon,
+        // and not the entire row.
         private bool DrawProjectBrowserListUI(Rect drawRect, string assetGUID, bool isListMode)
         {
-            if (!HasSoftlocks(assetGUID))
+            if (!isListMode || !HasSoftlocks(assetGUID))
             {
                 return false;
             }
 
+            // center icon.
+            Rect iconRect = drawRect;
+            iconRect.width = drawRect.height;
+            iconRect.x = (float)Math.Round(drawRect.center.x - (iconRect.width / 2F));
+            return DrawInProjectBrowserListMode(iconRect, assetGUID);
+        }
+
+        // Expects 'drawRect' to be the available width of the row.
+        private bool DrawSingleColumnProjectBrowserUI(Rect drawRect, string assetGUID)
+        {
+            if (ProjectBrowser.s_LastInteractedProjectBrowser.IsTwoColumns() || !HasSoftlocks(assetGUID))
+            {
+                return false;
+            }
+
+            Rect iconRect = drawRect;
+            iconRect.width = drawRect.height;
+            float spacingFromEnd = (iconRect.width / 2F);
+            iconRect.x = (float)Math.Round(drawRect.xMax - iconRect.width - spacingFromEnd);
+            return DrawInProjectBrowserListMode(iconRect, assetGUID);
+        }
+
+        private bool DrawInProjectBrowserListMode(Rect iconRect, string assetGUID)
+        {
             Texture icon = SoftLockUIData.GetIconForSection(SoftLockUIData.SectionEnum.ProjectBrowser);
             bool didDraw = false;
             if (icon != null)
             {
-                // center icon.
-                Rect iconRect = drawRect;
-                iconRect.width = drawRect.height;
-                iconRect.x = (float)Math.Round(drawRect.center.x - (iconRect.width / 2F));
                 DrawIconWithTooltips(iconRect, icon, assetGUID);
                 didDraw = true;
             }
