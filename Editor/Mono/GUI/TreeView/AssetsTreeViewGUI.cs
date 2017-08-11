@@ -7,6 +7,8 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
 using UnityEditor.VersionControl;
+using System.Collections.Generic;
+using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
@@ -18,10 +20,16 @@ namespace UnityEditor
         internal delegate void OnAssetIconDrawDelegate(Rect iconRect, string guid);
         internal static event OnAssetIconDrawDelegate postAssetIconDrawCallback = null;
 
+        internal delegate bool OnAssetLabelDrawDelegate(Rect drawRect, string guid);
+        internal static event OnAssetLabelDrawDelegate postAssetLabelDrawCallback = null;
+
+        private static IDictionary<int, string> s_GUIDCache = null;
+
         public AssetsTreeViewGUI(TreeViewController treeView)
             : base(treeView)
         {
             iconOverlayGUI += OnIconOverlayGUI;
+            labelOverlayGUI += OnLabelOverlayGUI;
             k_TopRowMargin = 4f;
         }
 
@@ -131,18 +139,46 @@ namespace UnityEditor
         {
             if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(item.id))
             {
-                string path = AssetDatabase.GetAssetPath(item.id);
-                string guid = AssetDatabase.AssetPathToGUID(path);
+                string guid = GetGUIDForInstanceID(item.id);
                 postAssetIconDrawCallback(overlayRect, guid);
             }
 
             // Draw vcs icons
             if (s_VCEnabled && AssetDatabase.IsMainAsset(item.id))
             {
-                string path = AssetDatabase.GetAssetPath(item.id);
-                string guid = AssetDatabase.AssetPathToGUID(path);
+                string guid = GetGUIDForInstanceID(item.id);
                 ProjectHooks.OnProjectWindowItem(guid, overlayRect);
             }
+        }
+
+        private void OnLabelOverlayGUI(TreeViewItem item, Rect labelRect)
+        {
+            if (postAssetLabelDrawCallback != null && AssetDatabase.IsMainAsset(item.id))
+            {
+                string guid = GetGUIDForInstanceID(item.id);
+                postAssetLabelDrawCallback(labelRect, guid);
+            }
+        }
+
+        // Returns a previously stored GUID for the given ID,
+        // else retrieves it from the asset database and stores it.
+        private static string GetGUIDForInstanceID(int instanceID)
+        {
+            if (s_GUIDCache == null)
+            {
+                s_GUIDCache = new Dictionary<int, string>();
+            }
+
+            string GUID = null;
+            if (!s_GUIDCache.TryGetValue(instanceID, out GUID))
+            {
+                string path = AssetDatabase.GetAssetPath(instanceID);
+                GUID = AssetDatabase.AssetPathToGUID(path);
+                Assert.IsTrue(!string.IsNullOrEmpty(GUID));
+                s_GUIDCache.Add(instanceID, GUID);
+            }
+
+            return GUID;
         }
     }
 

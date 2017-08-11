@@ -124,12 +124,12 @@ namespace UnityEngine
             get
             {
                 if (!_uwr.isDone)
-                    return "";
+                    return null;
                 if (_uwr.isNetworkError)
                     return _uwr.error;
                 if (_uwr.responseCode >= 400)
                     return string.Format("{0} {1}", _uwr.responseCode, GetStatusCodeName(_uwr.responseCode));
-                return "";
+                return null;
             }
         }
 
