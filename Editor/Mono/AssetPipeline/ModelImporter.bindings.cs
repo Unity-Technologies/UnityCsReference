@@ -371,6 +371,12 @@ namespace UnityEditor
             set;
         }
 
+        internal extern int sourceMaterialCount
+        {
+            [FreeFunction(Name = "ModelImporterBindings::GetSourceMaterialCount", HasExplicitThis = true)]
+            get;
+        }
+
         public extern float globalScale
         {
             get;

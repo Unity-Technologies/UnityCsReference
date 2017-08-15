@@ -77,7 +77,7 @@ namespace UnityEditor
             public static readonly GUIContent createNewPalette = EditorGUIUtility.TextContent("Create New Palette");
             public static readonly GUIContent focusLabel = EditorGUIUtility.TextContent("Focus On");
             public static readonly GUIContent rendererOverlayTitleLabel = EditorGUIUtility.TextContent("Tilemap");
-            public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TextContent("Active|Currently active paint target.\nSynced with scene selection changes.");
+            public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TextContent("Active Tilemap|Specifies the currently active Tilemap used for painting in the Scene View.");
 
             public static readonly GUIContent edit = EditorGUIUtility.TextContent("Edit");
             public static readonly GUIStyle lockButton = "IN LockButton";
@@ -108,8 +108,8 @@ namespace UnityEditor
         }
 
         private const float k_DropdownWidth = 200f;
-        private const float k_ActiveTargetLabelWidth = 40f;
-        private const float k_ActiveTargetDropdownWidth = 180f;
+        private const float k_ActiveTargetLabelWidth = 90f;
+        private const float k_ActiveTargetDropdownWidth = 130f;
         private const float k_TopAreaHeight = 95f;
         private const float k_MinBrushInspectorHeight = 50f;
         private const float k_MinClipboardHeight = 200f;
@@ -191,6 +191,18 @@ namespace UnityEditor
         private int m_PreviousBrushIndex; //fallback for null brush
         private GridBrushEditorBase m_PreviousToolActivatedEditor;
         private GridBrushBase.Tool m_PreviousToolActivated;
+
+        private PreviewRenderUtility m_PreviewUtility;
+        public PreviewRenderUtility previewUtility
+        {
+            get
+            {
+                if (m_PreviewUtility == null)
+                    InitPreviewUtility();
+
+                return m_PreviewUtility;
+            }
+        }
 
         private void OnSelectionChange()
         {
@@ -284,14 +296,19 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = 0;
         }
 
+        private void SetEnabledRecursive(GameObject go, bool enabled)
+        {
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+        }
+
         public void ResetPreviewInstance()
         {
             DestroyPreviewInstance();
             if (palette != null)
             {
-                m_PaletteInstance = GameObject.Instantiate(palette);
-                m_PaletteInstance.hideFlags = HideFlags.HideAndDontSave;
-                m_PaletteInstance.layer = Camera.PreviewCullingLayer;
+                m_PaletteInstance = previewUtility.InstantiatePrefabInScene(palette);
+                EditorUtility.InitInstantiatedPreviewRecursive(m_PaletteInstance);
                 m_PaletteInstance.transform.position = new Vector3(0, 0, 0);
                 m_PaletteInstance.transform.rotation = Quaternion.identity;
                 m_PaletteInstance.transform.localScale = Vector3.one;
@@ -319,12 +336,15 @@ namespace UnityEditor
                 }
 
                 foreach (var renderer in m_PaletteInstance.GetComponentsInChildren<Renderer>())
+                {
                     renderer.gameObject.layer = Camera.PreviewCullingLayer;
+                    renderer.allowOcclusionWhenDynamic = false;
+                }
 
                 foreach (var transform in m_PaletteInstance.GetComponentsInChildren<Transform>())
                     transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
 
-                GameObjectInspector.SetEnabledRecursive(m_PaletteInstance, false);
+                SetEnabledRecursive(m_PaletteInstance, false);
 
                 clipboardView.ResetPreviewMesh();
             }
@@ -334,6 +354,21 @@ namespace UnityEditor
         {
             if (m_PaletteInstance != null)
                 DestroyImmediate(m_PaletteInstance);
+        }
+
+        public void InitPreviewUtility()
+        {
+            m_PreviewUtility = new PreviewRenderUtility(true, true);
+            m_PreviewUtility.camera.cullingMask = 1 << Camera.PreviewCullingLayer;
+            m_PreviewUtility.camera.gameObject.layer = Camera.PreviewCullingLayer;
+            m_PreviewUtility.lights[0].gameObject.layer = Camera.PreviewCullingLayer;
+            m_PreviewUtility.camera.orthographic = true;
+            m_PreviewUtility.camera.orthographicSize = 5f;
+            m_PreviewUtility.camera.transform.position = new Vector3(0f, 0f, -10f);
+            m_PreviewUtility.ambientColor = new Color(1f, 1f, 1f, 0);
+
+            ResetPreviewInstance();
+            clipboardView.SetupPreviewCameraOnInit();
         }
 
         private void HandleContextMenu()
@@ -510,6 +545,7 @@ namespace UnityEditor
         {
             CallOnToolDeactivated();
             instances.Remove(this);
+            DestroyPreviewInstance();
             EditorApplication.globalEventHandler -= HotkeyHandler;
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
@@ -530,8 +566,13 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
+            DestroyPreviewInstance();
             DestroyImmediate(clipboardView);
             DestroyImmediate(m_PaintableSceneViewGrid);
+
+            if (m_PreviewUtility != null)
+                m_PreviewUtility.Cleanup();
+            m_PreviewUtility = null;
 
             if (PaintableGrid.InGridEditMode())
                 EditMode.QuitEditMode();
@@ -712,14 +753,15 @@ namespace UnityEditor
         private void DoActiveTargetsGUI()
         {
             bool hasPaintTarget = GridPaintingState.scenePaintTarget != null;
-            GUILayout.Label(Styles.activeTargetLabel, GUILayout.Width(k_ActiveTargetLabelWidth));
             using (new EditorGUI.DisabledScope(!hasPaintTarget || GridPaintingState.validTargets == null))
             {
+                GUILayout.Label(Styles.activeTargetLabel, GUILayout.Width(k_ActiveTargetLabelWidth));
                 GUIContent content = GUIContent.Temp(hasPaintTarget ? GridPaintingState.scenePaintTarget.name : "Nothing");
                 if (EditorGUILayout.DropdownButton(content, FocusType.Passive, EditorStyles.popup, GUILayout.Width(k_ActiveTargetDropdownWidth)))
                 {
+                    int index = hasPaintTarget ? Array.IndexOf(GridPaintingState.validTargets, GridPaintingState.scenePaintTarget) : 0;
                     var menuData = new GridPaintTargetsDropdown.MenuItemProvider();
-                    var flexibleMenu = new GridPaintTargetsDropdown(menuData, 0, null, SelectTarget, k_ActiveTargetDropdownWidth);
+                    var flexibleMenu = new GridPaintTargetsDropdown(menuData, index, null, SelectTarget, k_ActiveTargetDropdownWidth);
                     PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), flexibleMenu);
                 }
             }
@@ -728,6 +770,8 @@ namespace UnityEditor
         private void SelectTarget(int i, object o)
         {
             GridPaintingState.scenePaintTarget = (o as GameObject);
+            if (GridPaintingState.scenePaintTarget != null)
+                EditorGUIUtility.PingObject(GridPaintingState.scenePaintTarget);
         }
 
         private void DoClipboardHeader()
