@@ -151,9 +151,12 @@ public sealed partial class UnityWebRequest : IDisposable
     
     public void Dispose()
         {
-            DisposeHandlers();
-            InternalDestroy();
-            GC.SuppressFinalize(this);
+            if (m_Ptr != IntPtr.Zero)
+            {
+                DisposeHandlers();
+                InternalDestroy();
+                GC.SuppressFinalize(this);
+            }
         }
     
     
