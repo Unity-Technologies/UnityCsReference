@@ -590,6 +590,9 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs" >
+<Link>artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\SpeechBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SpeechBindings.gen.cs</Link>
 </Compile>
