@@ -402,6 +402,13 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
+        internal extern static bool useLowAccuracyLocation
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+        }
+
     }
 
 }

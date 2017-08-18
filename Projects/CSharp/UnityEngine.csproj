@@ -297,6 +297,9 @@
 <Compile Include="..\..\Runtime\Export\Color32.cs" >
 <Link>Runtime\Export\Color32.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Pose.cs" >
+<Link>Runtime\Export\Pose.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs" >
 <Link>Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs</Link>
 </Compile>
@@ -1270,8 +1273,14 @@
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldManager.deprecated.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\WorldManager.deprecated.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs</Link>

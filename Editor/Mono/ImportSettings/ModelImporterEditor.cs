@@ -16,7 +16,7 @@ namespace UnityEditor
             if (tabs == null)
             {
                 tabs = new BaseAssetImporterTabUI[] { new ModelImporterModelEditor(this), new ModelImporterRigEditor(this), new ModelImporterClipEditor(this), new ModelImporterMaterialEditor(this) };
-                m_TabNames = new string[] {"Model", "Rig", "Animations", "Materials"};
+                m_TabNames = new string[] {"Model", "Rig", "Animation", "Materials"};
             }
             base.OnEnable();
         }

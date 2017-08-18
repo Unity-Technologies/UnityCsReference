@@ -5993,11 +5993,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             var position = s_LastRect = GUILayoutUtility.GetRect(label, EditorStyles.linkLabel, options);
 
-            Handles.BeginGUI();
             Handles.color = EditorStyles.linkLabel.normal.textColor;
             Handles.DrawLine(new Vector3(position.xMin, position.yMax), new Vector3(position.xMax, position.yMax));
             Handles.color = Color.white;
-            Handles.EndGUI();
 
             EditorGUIUtility.AddCursorRect(position, MouseCursor.Link);
 

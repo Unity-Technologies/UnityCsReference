@@ -20,16 +20,20 @@ namespace UnityEngine.XR.WSA.Input
         Controller
     }
 
+    internal enum InteractionSourceFlags
+    {
+        None = 0,
+        SupportsGrasp = 1 << 0,
+        SupportsMenu = 1 << 1,
+        SupportsPointing = 1 << 2,
+        SupportsTouchpad = 1 << 3,
+        SupportsThumbstick = 1 << 4,
+    }
+
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct InteractionSource
     {
-        public InteractionSource(uint sourceId, InteractionSourceKind sourceKind) : this()
-        {
-            m_Id = sourceId;
-            m_Kind = sourceKind;
-        }
-
         public override bool Equals(object obj)
         {
             InteractionSource? source = obj as InteractionSource ? ;
@@ -45,45 +49,68 @@ namespace UnityEngine.XR.WSA.Input
         }
 
         public uint id { get { return m_Id; } }
-        public InteractionSourceKind kind { get { return m_Kind; } }
+        public InteractionSourceKind kind { get { return m_SourceKind; } }
+
+        public InteractionSourceHandedness handedness
+        { get { return m_Handedness; } }
+
+        public bool supportsGrasp
+        { get { return (m_Flags & InteractionSourceFlags.SupportsGrasp) != 0; } }
+
+        public bool supportsMenu
+        { get { return (m_Flags & InteractionSourceFlags.SupportsMenu) != 0; } }
+
+        public bool supportsPointing
+        { get { return (m_Flags & InteractionSourceFlags.SupportsPointing) != 0; } }
+
+        public bool supportsThumbstick
+        { get { return (m_Flags & InteractionSourceFlags.SupportsThumbstick) != 0; } }
+
+        public bool supportsTouchpad
+        { get { return (m_Flags & InteractionSourceFlags.SupportsTouchpad) != 0; } }
+
+        public ushort vendorId
+        { get { return m_VendorId; } }
+
+        public ushort productId
+        { get { return m_ProductId; } }
+
+        public ushort productVersion
+        { get { return m_ProductVersion; } }
 
         internal uint m_Id;
-        internal InteractionSourceKind m_Kind;
+        internal InteractionSourceKind m_SourceKind;
+        internal InteractionSourceHandedness m_Handedness;
+        internal InteractionSourceFlags m_Flags;
+
+        internal ushort m_VendorId;
+        internal ushort m_ProductId;
+        internal ushort m_ProductVersion;
     }
 
-    internal enum InteractionSourceRayFlags
+    internal enum InteractionSourcePoseFlags
     {
         None = 0,
-        HasPosition = 1 << 0,
-        HasRotation = 1 << 1
-    }
-
-    internal enum InteractionSourceLocationFlags
-    {
-        None = 0,
-        HasVelocity = 1 << 0
+        HasGripPosition = 1 << 0,
+        HasGripRotation = 1 << 1,
+        HasPointerPosition = 1 << 2,
+        HasPointerRotation = 1 << 3,
+        HasVelocity = 1 << 4,
     }
 
     internal enum InteractionSourceStateFlags
     {
         None = 0,
-        SupportsTouchpad = 1 << 0,
-        SupportsThumbstick = 1 << 1,
-        SupportsPointing = 1 << 2,
-        SupportsGrasp = 1 << 3,
-        SupportsMenu = 1 << 4,
-        Grasped = 1 << 5,
-        AnyPressed = 1 << 6,
-        TouchpadPressed = 1 << 7,
-        ThumbstickPressed = 1 << 8,
-        SelectPressed = 1 << 9,
-        MenuPressed = 1 << 10,
-        TouchpadTouched = 1 << 11,
-        VendorDataValid = 1 << 12
+        Grasped = 1 << 0,
+        AnyPressed = 1 << 1,
+        TouchpadPressed = 1 << 2,
+        ThumbstickPressed = 1 << 3,
+        SelectPressed = 1 << 4,
+        MenuPressed = 1 << 5,
+        TouchpadTouched = 1 << 6,
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public enum InteractionSourceHandType
+    public enum InteractionSourceHandedness
     {
         Unknown,
         Left,
@@ -101,74 +128,98 @@ namespace UnityEngine.XR.WSA.Input
         Thumbstick
     }
 
-    [RequiredByNativeCode]
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct InteractionSourceLocation
+    public enum InteractionSourceNode
     {
+        Grip,
+        Pointer
+    }
+
+    [RequiredByNativeCode]
+    public partial struct InteractionSourcePose
+    {
+        public bool TryGetPosition(out Vector3 position)
+        {
+            return TryGetPosition(out position, InteractionSourceNode.Grip);
+        }
+
+        public bool TryGetPosition(out Vector3 position, InteractionSourceNode node)
+        {
+            if (node == InteractionSourceNode.Grip)
+            {
+                position = m_GripPosition;
+                return (m_Flags & InteractionSourcePoseFlags.HasGripPosition) != 0;
+            }
+            else
+            {
+                position = m_PointerPosition;
+                return (m_Flags & InteractionSourcePoseFlags.HasPointerPosition) != 0;
+            }
+        }
+
+        public bool TryGetRotation(out Quaternion rotation, InteractionSourceNode node = InteractionSourceNode.Grip)
+        {
+            if (node == InteractionSourceNode.Grip)
+            {
+                rotation = m_GripRotation;
+                return (m_Flags & InteractionSourcePoseFlags.HasGripRotation) != 0;
+            }
+            else
+            {
+                rotation = m_PointerRotation;
+                return (m_Flags & InteractionSourcePoseFlags.HasPointerRotation) != 0;
+            }
+        }
+
+        public bool TryGetForward(out Vector3 forward, InteractionSourceNode node = InteractionSourceNode.Grip)
+        {
+            Quaternion rotation;
+            bool ret = TryGetRotation(out rotation, node);
+            forward = rotation * Vector3.forward;
+            return ret;
+        }
+
+        public bool TryGetRight(out Vector3 right, InteractionSourceNode node = InteractionSourceNode.Grip)
+        {
+            Quaternion rotation;
+            bool ret = TryGetRotation(out rotation, node);
+            right = rotation * Vector3.right;
+            return ret;
+        }
+
+        public bool TryGetUp(out Vector3 up, InteractionSourceNode node = InteractionSourceNode.Grip)
+        {
+            Quaternion rotation;
+            bool ret = TryGetRotation(out rotation, node);
+            up = rotation * Vector3.up;
+            return ret;
+        }
+
         public bool TryGetVelocity(out Vector3 velocity)
         {
             velocity = m_Velocity;
-            return (m_Flags & InteractionSourceLocationFlags.HasVelocity) != 0;
+            return (m_Flags & InteractionSourcePoseFlags.HasVelocity) != 0;
         }
 
-        [Obsolete("InteractionSourceLocation.TryGetPosition is deprecated, and will be removed in a future release. Update your scripts to use InteractionSourceLocation.pointer.TryGetPosition instead.", false)]
-        public bool TryGetPosition(out Vector3 position)
-        {
-            return m_Pointer.TryGetPosition(out position);
-        }
+        internal Quaternion m_GripRotation;
+        internal Quaternion m_PointerRotation;
 
-        public InteractionSourceRay pointer
-        { get { return m_Pointer; } }
+        internal Vector3 m_GripPosition;
+        internal Vector3 m_PointerPosition;
+        internal Vector3 m_Velocity;
 
-        public InteractionSourceRay grip
-        { get { return m_Grip; } }
-
-        InteractionSourceRay m_Pointer;
-        InteractionSourceRay m_Grip;
-
-        Vector3 m_Velocity;
-        InteractionSourceLocationFlags m_Flags;
+        internal InteractionSourcePoseFlags m_Flags;
     }
 
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct InteractionSourceRay
+    public partial struct InteractionSourceProperties
     {
-        public bool TryGetPosition(out Vector3 position)
-        {
-            position = m_Position;
-            return (m_Flags & InteractionSourceRayFlags.HasPosition) != 0;
-        }
+        public double sourceLossRisk { get { return m_SourceLossRisk; } }
+        public Vector3 sourceLossMitigationDirection { get { return m_SourceLossMitigationDirection; } }
 
-        public bool TryGetRotation(out Quaternion rotation)
-        {
-            rotation = m_Rotation;
-            return (m_Flags & InteractionSourceRayFlags.HasRotation) != 0;
-        }
-
-        public bool TryGetRay(out Ray ray)
-        {
-            ray = new Ray(m_Position, m_Rotation * Vector3.forward);
-            return (m_Flags & InteractionSourceRayFlags.HasPosition) != 0 && (m_Flags & InteractionSourceRayFlags.HasRotation) != 0;
-        }
-
-        internal Vector3 m_Position;
-        internal Quaternion m_Rotation;
-
-        internal InteractionSourceRayFlags m_Flags;
-    }
-
-    [RequiredByNativeCode]
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct InteractionSourceProperties
-    {
-        public double sourceLossRisk { get { return m_sourceLossRisk; } }
-        public Vector3 sourceLossMitigationDirection { get { return m_sourceLossMitigationDirection; } }
-        public InteractionSourceLocation location { get { return m_location; } }
-
-        internal double m_sourceLossRisk;
-        internal Vector3 m_sourceLossMitigationDirection;
-        internal InteractionSourceLocation m_location;
+        internal double m_SourceLossRisk;
+        internal Vector3 m_SourceLossMitigationDirection;
+        internal InteractionSourcePose m_SourcePose;
     }
 
     [RequiredByNativeCode]
@@ -178,59 +229,29 @@ namespace UnityEngine.XR.WSA.Input
         public bool anyPressed
         { get { return (m_Flags & InteractionSourceStateFlags.AnyPressed) != 0; } }
 
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
         public InteractionSourceProperties properties
         { get { return m_Properties; } }
 
         public InteractionSource source
         { get { return m_Source; } }
 
-        public InteractionSourceRay headSourceRay
-        { get { return m_HeadRay; } }
+        public InteractionSourcePose sourcePose
+        { get { return m_Properties.m_SourcePose; } }
 
         public float selectPressedAmount
         { get { return m_SelectPressedAmount; } }
 
-        public InteractionSourceHandType handType
-        { get { return m_HandType; } }
-
-        public bool TryGetVendorId(out ushort vendorId)
-        {
-            vendorId = m_VendorId;
-            return (m_Flags & InteractionSourceStateFlags.VendorDataValid) != 0;
-        }
-
-        public bool TryGetProductId(out ushort productId)
-        {
-            productId = m_ProductId;
-            return (m_Flags & InteractionSourceStateFlags.VendorDataValid) != 0;
-        }
-
-        public bool TryGetProductVersion(out ushort productVersion)
-        {
-            productVersion = m_ProductVersion;
-            return (m_Flags & InteractionSourceStateFlags.VendorDataValid) != 0;
-        }
-
         public bool selectPressed
         { get { return (m_Flags & InteractionSourceStateFlags.SelectPressed) != 0; } }
-
-        public bool supportsPointing
-        { get { return (m_Flags & InteractionSourceStateFlags.SupportsPointing) != 0; } }
-
-        public bool supportsMenu
-        { get { return (m_Flags & InteractionSourceStateFlags.SupportsMenu) != 0; } }
 
         public bool menuPressed
         { get { return (m_Flags & InteractionSourceStateFlags.MenuPressed) != 0; } }
 
-        public bool supportsGrasp
-        { get { return (m_Flags & InteractionSourceStateFlags.SupportsGrasp) != 0; } }
-
         public bool grasped
         { get { return (m_Flags & InteractionSourceStateFlags.Grasped) != 0; } }
-
-        public bool supportsTouchpad
-        { get { return (m_Flags & InteractionSourceStateFlags.SupportsTouchpad) != 0; } }
 
         public bool touchpadTouched
         { get { return (m_Flags & InteractionSourceStateFlags.TouchpadTouched) != 0; } }
@@ -241,59 +262,47 @@ namespace UnityEngine.XR.WSA.Input
         public Vector2 touchpadPosition
         { get { return m_TouchpadPosition; } }
 
-        public bool supportsThumbstick
-        { get { return (m_Flags & InteractionSourceStateFlags.SupportsThumbstick) != 0; } }
-
         public Vector2 thumbstickPosition
         { get { return m_ThumbstickPosition; } }
 
         public bool thumbstickPressed
         { get { return (m_Flags & InteractionSourceStateFlags.ThumbstickPressed) != 0; } }
 
-        InteractionSourceProperties m_Properties;
-        InteractionSource m_Source;
-        InteractionSourceRay m_HeadRay;
+        internal InteractionSourceProperties m_Properties;
+        internal InteractionSource m_Source;
+        internal Pose m_HeadPose;
 
         internal Vector2 m_ThumbstickPosition;
         internal Vector2 m_TouchpadPosition;
 
         internal float m_SelectPressedAmount;
 
-        internal InteractionSourceHandType m_HandType;
-
         internal InteractionSourceStateFlags m_Flags;
-
-        internal ushort m_VendorId;
-        internal ushort m_ProductId;
-        internal ushort m_ProductVersion;
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct SourceDetectedEventArgs
+    public struct InteractionSourceDetectedEventArgs
     {
         public InteractionSourceState state
         { get; private set; }
 
-        public SourceDetectedEventArgs(InteractionSourceState state) : this()
+        public InteractionSourceDetectedEventArgs(InteractionSourceState state) : this()
         {
             this.state = state;
         }
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct SourceLostEventArgs
+    public struct InteractionSourceLostEventArgs
     {
         public InteractionSourceState state
         { get; private set; }
 
-        public SourceLostEventArgs(InteractionSourceState state) : this()
+        public InteractionSourceLostEventArgs(InteractionSourceState state) : this()
         {
             this.state = state;
         }
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct SourcePressedEventArgs
+    public struct InteractionSourcePressedEventArgs
     {
         public InteractionSourceState state
         { get; private set; }
@@ -301,15 +310,14 @@ namespace UnityEngine.XR.WSA.Input
         public InteractionSourcePressType pressType
         { get; private set; }
 
-        public SourcePressedEventArgs(InteractionSourceState state, InteractionSourcePressType pressType) : this()
+        public InteractionSourcePressedEventArgs(InteractionSourceState state, InteractionSourcePressType pressType) : this()
         {
             this.state = state;
             this.pressType = pressType;
         }
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct SourceReleasedEventArgs
+    public struct InteractionSourceReleasedEventArgs
     {
         public InteractionSourceState state
         { get; private set; }
@@ -317,20 +325,19 @@ namespace UnityEngine.XR.WSA.Input
         public InteractionSourcePressType pressType
         { get; private set; }
 
-        public SourceReleasedEventArgs(InteractionSourceState state, InteractionSourcePressType pressType) : this()
+        public InteractionSourceReleasedEventArgs(InteractionSourceState state, InteractionSourcePressType pressType) : this()
         {
             this.state = state;
             this.pressType = pressType;
         }
     }
 
-    [MovedFrom("UnityEngine.VR.WSA.Input")]
-    public struct SourceUpdatedEventArgs
+    public struct InteractionSourceUpdatedEventArgs
     {
         public InteractionSourceState state
         { get; private set; }
 
-        public SourceUpdatedEventArgs(InteractionSourceState state) : this()
+        public InteractionSourceUpdatedEventArgs(InteractionSourceState state) : this()
         {
             this.state = state;
         }
@@ -338,11 +345,11 @@ namespace UnityEngine.XR.WSA.Input
 
     public partial class InteractionManager
     {
-        public static event Action<SourceDetectedEventArgs> OnSourceDetected;
-        public static event Action<SourceLostEventArgs> OnSourceLost;
-        public static event Action<SourcePressedEventArgs> OnSourcePressed;
-        public static event Action<SourceReleasedEventArgs> OnSourceReleased;
-        public static event Action<SourceUpdatedEventArgs> OnSourceUpdated;
+        public static event Action<InteractionSourceDetectedEventArgs> InteractionSourceDetected;
+        public static event Action<InteractionSourceLostEventArgs> InteractionSourceLost;
+        public static event Action<InteractionSourcePressedEventArgs> InteractionSourcePressed;
+        public static event Action<InteractionSourceReleasedEventArgs> InteractionSourceReleased;
+        public static event Action<InteractionSourceUpdatedEventArgs> InteractionSourceUpdated;
 
         public static int GetCurrentReading(InteractionSourceState[] sourceStates)
         {
@@ -390,61 +397,61 @@ namespace UnityEngine.XR.WSA.Input
             {
                 case EventType.SourceDetected:
                 {
-                    var deprecatedEventHandler = SourceDetected;
+                    var deprecatedEventHandler = InteractionSourceDetectedLegacy;
                     if (deprecatedEventHandler != null)
                         deprecatedEventHandler(state);
 
-                    var eventHandler = OnSourceDetected;
+                    var eventHandler = InteractionSourceDetected;
                     if (eventHandler != null)
-                        eventHandler(new SourceDetectedEventArgs(state));
+                        eventHandler(new InteractionSourceDetectedEventArgs(state));
                 }
                 break;
 
                 case EventType.SourceLost:
                 {
-                    var deprecatedEventHandler = SourceLost;
+                    var deprecatedEventHandler = InteractionSourceLostLegacy;
                     if (deprecatedEventHandler != null)
                         deprecatedEventHandler(state);
 
-                    var eventHandler = OnSourceLost;
+                    var eventHandler = InteractionSourceLost;
                     if (eventHandler != null)
-                        eventHandler(new SourceLostEventArgs(state));
+                        eventHandler(new InteractionSourceLostEventArgs(state));
                 }
                 break;
 
                 case EventType.SourceUpdated:
                 {
-                    var deprecatedEventHandler = SourceUpdated;
+                    var deprecatedEventHandler = InteractionSourceUpdatedLegacy;
                     if (deprecatedEventHandler != null)
                         deprecatedEventHandler(state);
 
-                    var eventHandler = OnSourceUpdated;
+                    var eventHandler = InteractionSourceUpdated;
                     if (eventHandler != null)
-                        eventHandler(new SourceUpdatedEventArgs(state));
+                        eventHandler(new InteractionSourceUpdatedEventArgs(state));
                 }
                 break;
 
                 case EventType.SourcePressed:
                 {
-                    var deprecatedEventHandler = SourcePressed;
+                    var deprecatedEventHandler = InteractionSourcePressedLegacy;
                     if (deprecatedEventHandler != null)
                         deprecatedEventHandler(state);
 
-                    var eventHandler = OnSourcePressed;
+                    var eventHandler = InteractionSourcePressed;
                     if (eventHandler != null)
-                        eventHandler(new SourcePressedEventArgs(state, pressType));
+                        eventHandler(new InteractionSourcePressedEventArgs(state, pressType));
                 }
                 break;
 
                 case EventType.SourceReleased:
                 {
-                    var deprecatedEventHandler = SourceReleased;
+                    var deprecatedEventHandler = InteractionSourceReleasedLegacy;
                     if (deprecatedEventHandler != null)
                         deprecatedEventHandler(state);
 
-                    var eventHandler = OnSourceReleased;
+                    var eventHandler = InteractionSourceReleased;
                     if (eventHandler != null)
-                        eventHandler(new SourceReleasedEventArgs(state, pressType));
+                        eventHandler(new InteractionSourceReleasedEventArgs(state, pressType));
                 }
                 break;
 

@@ -93,8 +93,11 @@ namespace UnityEditor.Modules
 
         public string FixTargetOSVersion(string version)
         {
-            if (version.IndexOf('.') < 0)
+            var decimalIndex = version.IndexOf('.');
+            if (decimalIndex < 0)
                 return (version + ".0").Trim();
+            else if (decimalIndex == version.Length - 1)
+                return (version + "0").Trim();
             return version.Trim();
         }
 
