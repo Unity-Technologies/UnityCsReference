@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Experimental.UIElements;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Experimental.UIElements;
@@ -79,13 +80,28 @@ namespace UnityEditor
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            bool anyUxmlImported = false;
+            bool anyUssImported = false;
             foreach (string assetPath in importedAssets)
             {
                 if (assetPath.EndsWith("uss"))
                 {
+                    anyUssImported = true;
                     FlagStyleSheetChange();
-                    break;
                 }
+                else if (assetPath.EndsWith("uxml"))
+                {
+                    anyUxmlImported = true;
+                    UIElementsViewImporter.logger.FinishImport();
+
+                    // the inline stylesheet cache might get out of date.
+                    // Usually called by the USS importer, which might not get called here
+                    StyleSheetCache.ClearCaches();
+                }
+
+                // no need to continue, as we found both extensions we were looking for
+                if (anyUxmlImported && anyUssImported)
+                    break;
             }
         }
 

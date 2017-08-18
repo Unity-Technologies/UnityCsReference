@@ -64,7 +64,7 @@ namespace UnityEditor
             foreach (var element in ListViewGUI.ListView(m_ListViewState, GUIViewDebuggerWindow.Styles.listBackgroundStyle))
             {
                 ListViewElement listViewElement = (ListViewElement)element;
-                if (evt.type == EventType.mouseDown && evt.button == 0 && listViewElement.position.Contains(evt.mousePosition))
+                if (evt.type == EventType.MouseDown && evt.button == 0 && listViewElement.position.Contains(evt.mousePosition))
                 {
                     if (evt.clickCount == 2)
                     {
@@ -72,7 +72,7 @@ namespace UnityEditor
                     }
                 }
                 // Paint list view element
-                if (evt.type == EventType.repaint && listViewElement.row < GetInstructionCount())
+                if (evt.type == EventType.Repaint && listViewElement.row < GetInstructionCount())
                 {
                     DoDrawInstruction(listViewElement, id);
                 }

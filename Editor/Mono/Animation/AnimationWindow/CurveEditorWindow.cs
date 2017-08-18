@@ -448,7 +448,7 @@ namespace UnityEditor
 
         void OnGUI()
         {
-            bool gotMouseUp = (Event.current.type == EventType.mouseUp);
+            bool gotMouseUp = (Event.current.type == EventType.MouseUp);
 
             if (delegateView == null && m_OnCurveChanged == null)
                 m_Curve = null;
@@ -492,7 +492,7 @@ namespace UnityEditor
                         RefreshShownCurves();
                         SendEvent("CurveChanged", true);
                     }
-                    if (Event.current.type == EventType.repaint)
+                    if (Event.current.type == EventType.Repaint)
                         curveLibrary.Draw(swatchRect, i);
 
                     if (swatchRect.xMax > position.width - 2 * margin)
@@ -507,7 +507,7 @@ namespace UnityEditor
             //if (EditorGUI.DropdownButton(new Rect (position.width -26, yPos, 20, 20), GUIContent.none, FocusType.Passive, "OL Plus"))
             //  AddDefaultPresetsToCurrentLib ();
 
-            if (Event.current.type == EventType.used && gotMouseUp)
+            if (Event.current.type == EventType.Used && gotMouseUp)
             {
                 DoUpdateCurve(false);
                 SendEvent("CurveChangeCompleted", true);

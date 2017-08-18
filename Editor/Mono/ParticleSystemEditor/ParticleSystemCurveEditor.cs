@@ -23,11 +23,9 @@ internal class ParticleSystemCurveEditor
         public GUIStyle curveEditorBackground = "CurveEditorBackground";
         public GUIStyle curveSwatch = "PopupCurveEditorSwatch";
         public GUIStyle curveSwatchArea = "PopupCurveSwatchBackground";
-        public GUIStyle minus = "OL Minus";
-        public GUIStyle plus = "OL Plus";
         public GUIStyle yAxisHeader = new GUIStyle(ParticleSystemStyles.Get().label);
-        public GUIContent optimizeCurveText = new GUIContent("", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
-        public GUIContent removeCurveText = new GUIContent("", "Remove selected curve(s)");
+        public GUIContent optimizeCurveText = new GUIContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
+        public GUIContent removeCurveText = new GUIContent("Remove", "Remove selected curve(s)");
         public GUIContent curveLibraryPopup = new GUIContent("", "Open curve library");
         public GUIContent presetTooltip = new GUIContent();
     }
@@ -428,14 +426,14 @@ internal class ParticleSystemCurveEditor
             }
         }
 
-        m_CurveEditor.OnGUI();
-
-        DoLabelForTopMostCurve(new Rect(rect.x + 4, rect.y, rect.width, 20));
+        DoLabelForTopMostCurve(new Rect(rect.x + 4, rect.y, rect.width - 160, 20));
         DoRemoveSelectedButton(new Rect(curveEditorRect.x, curveEditorRect.y, curveEditorRect.width, 24));
-        DoOptimizeCurveButton(presetRect);
+        DoOptimizeCurveButton(new Rect(curveEditorRect.x, curveEditorRect.y, curveEditorRect.width, 24));
         presetRect.x += 30;
         presetRect.width -= 2 * 30;
         PresetCurveButtons(presetRect, rect);
+
+        m_CurveEditor.OnGUI();
 
         SaveChangedCurves();
     }
@@ -619,7 +617,7 @@ internal class ParticleSystemCurveEditor
                     m_CurveEditor.ClearSelection();
                 }
             }
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 curveLibrary.Draw(swatchRect, i);
 
             curX += swatchWidth;
@@ -634,8 +632,8 @@ internal class ParticleSystemCurveEditor
         if (m_CurveEditor.IsDraggingCurveOrRegion())
             return;
 
-        const float buttonSize = 14;
-        Rect buttonRect = new Rect(rect.xMax - 10 - buttonSize, rect.y + (rect.height - buttonSize) * 0.5f, buttonSize, buttonSize);
+        Vector2 buttonSize = new Vector2(64, 14);
+        Rect buttonRect = new Rect(rect.xMax - 80 - buttonSize.x, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
 
         int numValidPolynomialCurve = 0;
         List<CurveSelection> selection = m_CurveEditor.selectedCurves;
@@ -649,7 +647,7 @@ internal class ParticleSystemCurveEditor
 
             if (selection.Count != numValidPolynomialCurve)
             {
-                if (GUI.Button(buttonRect, s_Styles.optimizeCurveText, s_Styles.plus))
+                if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
                 {
                     for (int j = 0; j < selection.Count; ++j)
                     {
@@ -678,7 +676,7 @@ internal class ParticleSystemCurveEditor
                 CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromID(topMostCurveID);
                 if (!AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve))
                 {
-                    if (GUI.Button(buttonRect, s_Styles.optimizeCurveText, s_Styles.plus))
+                    if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
                     {
                         // Reset wrap mode
                         cw.curve.preWrapMode = WrapMode.Clamp;
@@ -698,9 +696,9 @@ internal class ParticleSystemCurveEditor
         if (m_CurveEditor.animationCurves.Length == 0)
             return;
 
-        float clearButtonSize = 14;
-        Rect clearCurvesRect = new Rect(rect.x + rect.width - clearButtonSize - 10, rect.y + (rect.height - clearButtonSize) * 0.5f, clearButtonSize, clearButtonSize);
-        if (GUI.Button(clearCurvesRect, s_Styles.removeCurveText, s_Styles.minus))
+        Vector2 buttonSize = new Vector2(64, 14);
+        Rect clearCurvesRect = new Rect(rect.x + rect.width - buttonSize.x - 10, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
+        if (GUI.Button(clearCurvesRect, s_Styles.removeCurveText))
         {
             if (m_CurveEditor.selectedCurves.Count > 0)
                 RemoveSelected();

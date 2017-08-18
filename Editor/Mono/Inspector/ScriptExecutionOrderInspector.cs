@@ -629,7 +629,7 @@ namespace UnityEditor
         {
             MonoScript script = obj as MonoScript;
 
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 m_Styles.elementBackground.Draw(r, false, false, false, false);
                 m_Styles.draggingHandle.Draw(GetDraggingHandleRect(r), false, false, false, false);

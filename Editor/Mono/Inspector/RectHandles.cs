@@ -58,7 +58,7 @@ namespace UnityEditor
 
             switch (evt.type)
             {
-                case EventType.layout:
+                case EventType.Layout:
                     Vector3 sideDir = sideVector.normalized;
                     HandleUtility.AddControl(id, HandleUtility.DistanceToLine(position + sideVector * 0.5f - sideDir * size * 2, position - sideVector * 0.5f + sideDir * size * 2) - bias);
                     break;
@@ -252,7 +252,7 @@ namespace UnityEditor
         public static void DrawPolyLineWithShadow(Color shadowColor, Vector2 screenOffset, params Vector3[] points)
         {
             Camera cam = Camera.current;
-            if (!cam || Event.current.type != EventType.repaint)
+            if (!cam || Event.current.type != EventType.Repaint)
                 return;
 
             if (s_TempVectors.Length != points.Length)
@@ -276,7 +276,7 @@ namespace UnityEditor
         public static void DrawDottedLineWithShadow(Color shadowColor, Vector2 screenOffset, Vector3 p1, Vector3 p2, float screenSpaceSize)
         {
             Camera cam = Camera.current;
-            if (!cam || Event.current.type != EventType.repaint)
+            if (!cam || Event.current.type != EventType.Repaint)
                 return;
 
             Color oldColor = Handles.color;

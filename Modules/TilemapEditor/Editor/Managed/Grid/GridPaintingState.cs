@@ -24,8 +24,8 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            Selection.selectionChanged += OnSelectionChange;
             EditorApplication.hierarchyWindowChanged += HierarchyChanged;
+            Selection.selectionChanged += OnSelectionChange;
             m_FlushPaintTargetCache = true;
         }
 
@@ -36,25 +36,23 @@ namespace UnityEditor
 
         void OnDisable()
         {
-            Selection.selectionChanged -= OnSelectionChange;
             EditorApplication.hierarchyWindowChanged -= HierarchyChanged;
+            Selection.selectionChanged -= OnSelectionChange;
             FlushCache();
-        }
-
-        private void HierarchyChanged()
-        {
-            if (scenePaintTarget == null)
-                AutoSelectPaintTarget();
         }
 
         private void OnSelectionChange()
         {
-            m_FlushPaintTargetCache = true;
-
-            if (ValidatePaintTarget(Selection.activeGameObject))
+            if (validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
+            {
                 scenePaintTarget = Selection.activeGameObject;
+            }
+        }
 
-            if (scenePaintTarget == null)
+        private void HierarchyChanged()
+        {
+            m_FlushPaintTargetCache = true;
+            if (validTargets == null || !validTargets.Contains(scenePaintTarget))
                 AutoSelectPaintTarget();
         }
 

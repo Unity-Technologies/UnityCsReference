@@ -59,7 +59,7 @@ namespace UnityEditor
             public static GUIContent[] probePositionMode = (Enum.GetNames(typeof(LightProbeProxyVolume.ProbePositionMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent[] refreshMode = (Enum.GetNames(typeof(LightProbeProxyVolume.RefreshMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static GUIContent resProbesPerUnit = EditorGUIUtility.TextContent("Density|Density in probes per world unit.");
-            public static GUIContent componentUnusedNote = EditorGUIUtility.TextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer and baked lightmaps should be disabled.");
+            public static GUIContent componentUnusedNote = EditorGUIUtility.TextContent("In order to use the component on this game object, the Light Probes property should be set to 'Use Proxy Volume' in Renderer.");
             public static GUIContent noRendererNode = EditorGUIUtility.TextContent("The component is unused by this game object because there is no Renderer component attached.");
             public static GUIContent noLightProbes = EditorGUIUtility.TextContent("The scene doesn't contain any light probes. Add light probes using Light Probe Group components (menu: Component->Rendering->Light Probe Group).");
             public static GUIContent componentUnsuportedOnTreesNote = EditorGUIUtility.TextContent("Tree rendering doesn't support Light Probe Proxy Volume components.");
@@ -113,8 +113,8 @@ namespace UnityEditor
             get
             {
                 Renderer renderer = ((LightProbeProxyVolume)target).GetComponent(typeof(Renderer)) as Renderer;
-                bool isLightmapped = (renderer != null) && LightmapEditorSettings.IsLightmappedOrDynamicLightmappedForRendering(renderer);
-                return (renderer != null) && (targets.Length == 1) && ((renderer.lightProbeUsage != LightProbeUsage.UseProxyVolume) || isLightmapped);
+                bool useLightProbes = (renderer != null) && LightProbes.AreLightProbesAllowed(renderer);
+                return (renderer != null) && (targets.Length == 1) && ((renderer.lightProbeUsage != LightProbeUsage.UseProxyVolume) || !useLightProbes);
             }
         }
 

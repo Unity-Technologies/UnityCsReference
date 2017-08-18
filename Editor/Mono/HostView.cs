@@ -129,6 +129,7 @@ namespace UnityEditor
 
         void OnLostFocus()
         {
+            EditorGUI.EndEditingActiveTextField();
             Invoke("OnLostFocus");
             Repaint();
         }
@@ -289,7 +290,9 @@ namespace UnityEditor
                 return;
             m_ActualView.m_Parent = this;
 
-            visualTree.AddChild(m_ActualView.rootVisualContainer);
+            visualTree.Add(m_ActualView.rootVisualContainer);
+            panel.viewDataDictionary = m_ActualView.viewDataDictionary;
+            panel.savePersistentViewData = m_ActualView.SavePersistentViewData;
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
@@ -323,8 +326,11 @@ namespace UnityEditor
             if (!m_ActualView)
                 return;
 
-            if (m_ActualView.rootVisualContainer.parent == visualTree)
-                visualTree.RemoveChild(m_ActualView.rootVisualContainer);
+            if (m_ActualView.rootVisualContainer.shadow.parent == visualTree)
+            {
+                visualTree.Remove(m_ActualView.rootVisualContainer);
+                panel.viewDataDictionary = null;
+            }
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;
 
@@ -402,7 +408,7 @@ namespace UnityEditor
 
         protected void ClearBackground()
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             EditorWindow view = actualView;
             if (view != null && view.dontClearBackground)

@@ -142,7 +142,7 @@ namespace UnityEditor
                         // with a build.
                         var errStr = string.Format("Could not switch to build target '{0}', '{1}'.",
                                 BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
-                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.target));
+                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
                         throw new BuildMethodException(errStr);
                     }
 
@@ -289,16 +289,22 @@ namespace UnityEditor
 
             static bool PickBuildLocation(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, out bool updateExistingBuild)
             {
-                bool initializeDefaultBuildPath = false;
-                if (EditorUserBuildSettings.GetBuildLocation(target) == String.Empty
-                    || EditorUserBuildSettings.GetBuildLocation(target) == Application.dataPath)
-                {
-                    EditorUserBuildSettings.SetBuildLocation(target, Application.dataPath);
-                    initializeDefaultBuildPath = true;
-                }
-
                 updateExistingBuild = false;
                 var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
+
+                string defaultFolder;
+                string defaultName;
+                if (previousPath == String.Empty)
+                {
+                    defaultFolder = FileUtil.DeleteLastPathNameComponent(Application.dataPath);
+                    defaultName = "";
+                }
+                else
+                {
+                    defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
+                    defaultName = FileUtil.GetLastPathNameComponent(previousPath);
+                }
+
 
                 // When exporting Eclipse project, we're saving a folder, not file,
                 // deal with it separately:
@@ -308,19 +314,15 @@ namespace UnityEditor
                     var exportProjectTitle  = "Export Google Android Project";
                     var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
 
+                    if (exportProjectFolder == String.Empty)
+                        return false;
+
                     EditorUserBuildSettings.SetBuildLocation(target, exportProjectFolder);
                     return true;
                 }
 
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
-
-                string defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
-                string defaultName = FileUtil.GetLastPathNameComponent(previousPath);
-                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
-
-                if (initializeDefaultBuildPath)
-                    defaultName = String.Empty;
-
+                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
                 if (path == string.Empty)

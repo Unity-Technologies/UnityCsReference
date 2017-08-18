@@ -276,7 +276,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // We do not use the layout event
-            if (evt.type == EventType.layout)
+            if (evt.type == EventType.Layout)
                 return;
 
             if (s_Styles == null)
@@ -318,7 +318,7 @@ namespace UnityEditor
             string textBeforeEdit = CurrentDisplayedText();
 
             // Handle "special" keyboard input
-            if (evt.type == EventType.keyDown)
+            if (evt.type == EventType.KeyDown)
             {
                 switch (evt.keyCode)
                 {

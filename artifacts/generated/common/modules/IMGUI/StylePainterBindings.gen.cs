@@ -25,20 +25,20 @@ internal sealed partial class StylePainter : IStylePainter
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Init () ;
 
-    internal void DrawRect_Internal (Rect screenRect, Color color, Vector4 borderWidths, float borderRadius) {
-        INTERNAL_CALL_DrawRect_Internal ( this, ref screenRect, ref color, ref borderWidths, borderRadius );
+    internal void DrawRect_Internal (Rect screenRect, Color color, Vector4 borderWidths, Vector4 borderRadiuses) {
+        INTERNAL_CALL_DrawRect_Internal ( this, ref screenRect, ref color, ref borderWidths, ref borderRadiuses );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_DrawRect_Internal (StylePainter self, ref Rect screenRect, ref Color color, ref Vector4 borderWidths, float borderRadius);
-    internal void DrawTexture_Internal (Rect screenRect, Texture texture, Rect sourceRect, Color color, Vector4 borderWidths, float borderRadius, int leftBorder, int topBorder, int rightBorder, int bottomBorder) {
-        INTERNAL_CALL_DrawTexture_Internal ( this, ref screenRect, texture, ref sourceRect, ref color, ref borderWidths, borderRadius, leftBorder, topBorder, rightBorder, bottomBorder );
+    private extern static void INTERNAL_CALL_DrawRect_Internal (StylePainter self, ref Rect screenRect, ref Color color, ref Vector4 borderWidths, ref Vector4 borderRadiuses);
+    internal void DrawTexture_Internal (Rect screenRect, Texture texture, Rect sourceRect, Color color, Vector4 borderWidths, Vector4 borderRadiuses, int leftBorder, int topBorder, int rightBorder, int bottomBorder) {
+        INTERNAL_CALL_DrawTexture_Internal ( this, ref screenRect, texture, ref sourceRect, ref color, ref borderWidths, ref borderRadiuses, leftBorder, topBorder, rightBorder, bottomBorder );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_DrawTexture_Internal (StylePainter self, ref Rect screenRect, Texture texture, ref Rect sourceRect, ref Color color, ref Vector4 borderWidths, float borderRadius, int leftBorder, int topBorder, int rightBorder, int bottomBorder);
+    private extern static void INTERNAL_CALL_DrawTexture_Internal (StylePainter self, ref Rect screenRect, Texture texture, ref Rect sourceRect, ref Color color, ref Vector4 borderWidths, ref Vector4 borderRadiuses, int leftBorder, int topBorder, int rightBorder, int bottomBorder);
     internal void DrawText_Internal (Rect screenRect, string text, Font font, int fontSize, FontStyle fontStyle, Color fontColor, TextAnchor anchor, bool wordWrap, float wordWrapWidth, bool richText, TextClipping textClipping) {
         INTERNAL_CALL_DrawText_Internal ( this, ref screenRect, text, font, fontSize, fontStyle, ref fontColor, anchor, wordWrap, wordWrapWidth, richText, textClipping );
     }

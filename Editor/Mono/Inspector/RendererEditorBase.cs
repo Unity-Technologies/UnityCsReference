@@ -72,7 +72,7 @@ namespace UnityEditor
                         LightProbeProxyVolume lightProbeProxyVol = renderer.GetComponent<LightProbeProxyVolume>();
                         bool invalidProxyVolumeOverride = (renderer.lightProbeProxyVolumeOverride == null) ||
                             (renderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>() == null);
-                        if (lightProbeProxyVol == null && invalidProxyVolumeOverride)
+                        if (lightProbeProxyVol == null && invalidProxyVolumeOverride && LightProbes.AreLightProbesAllowed(renderer))
                         {
                             EditorGUILayout.HelpBox(m_LightProbeVolumeNote.text, MessageType.Warning);
                         }
@@ -114,15 +114,13 @@ namespace UnityEditor
                 }
             }
 
-            internal void RenderLightProbeUsage(int selectionCount, Renderer renderer, bool useMiniStyle, bool usesLightMaps)
+            internal void RenderLightProbeUsage(int selectionCount, Renderer renderer, bool useMiniStyle, bool lightProbeAllowed)
             {
-                using (new EditorGUI.DisabledScope(usesLightMaps))
+                using (new EditorGUI.DisabledScope(!lightProbeAllowed))
                 {
                     if (!useMiniStyle)
                     {
-                        if (usesLightMaps)
-                            EditorGUILayout.EnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off);
-                        else
+                        if (lightProbeAllowed)
                         {
                             EditorGUILayout.Popup(m_LightProbeUsage, m_LightProbeBlendModeOptions, m_LightProbeUsageStyle);
 
@@ -133,12 +131,12 @@ namespace UnityEditor
                                 EditorGUI.indentLevel--;
                             }
                         }
+                        else
+                            EditorGUILayout.EnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off);
                     }
                     else
                     {
-                        if (usesLightMaps)
-                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, (int)LightProbeUsage.Off, m_LightProbeBlendModeOptions);
-                        else
+                        if (lightProbeAllowed)
                         {
                             ModuleUI.GUIPopup(m_LightProbeUsageStyle, m_LightProbeUsage, m_LightProbeBlendModeOptions);
 
@@ -149,6 +147,8 @@ namespace UnityEditor
                                 EditorGUI.indentLevel--;
                             }
                         }
+                        else
+                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, (int)LightProbeUsage.Off, m_LightProbeBlendModeOptions);
                     }
                 }
 
@@ -191,15 +191,15 @@ namespace UnityEditor
                 int selectionCount = 1;
                 bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
                 bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
-                bool isLightmappedOrDynamicLightmappedForRendering = false;
+                bool areLightProbesAllowed = true;
 
                 if (selection != null)
                 {
                     foreach (UnityEngine.Object obj in selection)
                     {
-                        if (LightmapEditorSettings.IsLightmappedOrDynamicLightmappedForRendering((Renderer)obj))
+                        if (LightProbes.AreLightProbesAllowed((Renderer)obj) == false)
                         {
-                            isLightmappedOrDynamicLightmappedForRendering = true;
+                            areLightProbesAllowed = false;
                             break;
                         }
                     }
@@ -207,7 +207,9 @@ namespace UnityEditor
                     selectionCount = selection.Length;
                 }
 
-                RenderLightProbeUsage(selectionCount, renderer, useMiniStyle, isLightmappedOrDynamicLightmappedForRendering);
+                RenderLightProbeUsage(selectionCount, renderer, useMiniStyle, areLightProbesAllowed);
+
+                RenderLightProbeProxyVolumeWarningNote(renderer, selectionCount);
 
                 RenderReflectionProbeUsage(useMiniStyle, isDeferredRenderingPath, isDeferredReflections);
 
@@ -234,8 +236,6 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(m_DeferredNote.text, MessageType.Info);
                 }
-
-                RenderLightProbeProxyVolumeWarningNote(renderer, selectionCount);
             }
 
             // Show an info list of probes affecting this object, and their weights.

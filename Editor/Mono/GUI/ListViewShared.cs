@@ -98,7 +98,7 @@ namespace UnityEditor
         {
             int totalRows = ilvState.state.totalRows;
 
-            if ((Event.current.type != EventType.keyDown) || (totalRows == 0))
+            if ((Event.current.type != EventType.KeyDown) || (totalRows == 0))
                 return false;
 
             if ((GUIUtility.keyboardControl != ilvState.state.ID) ||
@@ -185,7 +185,7 @@ namespace UnityEditor
 
         static internal bool HasMouseDown(InternalListViewState ilvState, Rect r, int button)
         {
-            if (Event.current.type == EventType.mouseDown && Event.current.button == button)
+            if (Event.current.type == EventType.MouseDown && Event.current.button == button)
             {
                 if (r.Contains(Event.current.mousePosition))
                 {
@@ -207,7 +207,7 @@ namespace UnityEditor
 
         static internal bool HasMouseUp(InternalListViewState ilvState, Rect r, int button)
         {
-            if (Event.current.type == EventType.mouseUp && Event.current.button == button)
+            if (Event.current.type == EventType.MouseUp && Event.current.button == button)
             {
                 if (r.Contains(Event.current.mousePosition))
                 {
@@ -390,7 +390,7 @@ namespace UnityEditor
                     if (!ListViewShared.isDragging &&
                         (ilvState.wantsReordering || ilvState.wantsToStartCustomDrag) &&
                         GUIUtility.hotControl == ilvState.state.ID &&
-                        Event.current.type == EventType.mouseDrag &&
+                        Event.current.type == EventType.MouseDrag &&
                         GUIClip.visibleRect.Contains(Event.current.mousePosition))
                     {
                         DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), ilvState.state.ID);

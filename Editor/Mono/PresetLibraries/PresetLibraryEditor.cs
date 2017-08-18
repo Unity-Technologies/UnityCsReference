@@ -341,7 +341,7 @@ namespace UnityEditor
                 const float optionsButtonWidth = 16f;
                 const float optionsButtonHeight = 6f;
                 Rect buttonRect = new Rect(rect.width - optionsButtonWidth - settingsMenuRightMargin, (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                     s_Styles.optionsButton.Draw(buttonRect, false, false, false, false);
 
                 // We want larger click area than the button icon
@@ -431,7 +431,7 @@ namespace UnityEditor
             }
 
             // Draw horizontal lines for scrollview content to clip against
-            if ((m_ShowedScrollBarLastFrame || alwaysShowScrollAreaHorizontalLines) && Event.current.type == EventType.repaint)
+            if ((m_ShowedScrollBarLastFrame || alwaysShowScrollAreaHorizontalLines) && Event.current.type == EventType.Repaint)
             {
                 Rect scrollEdgeRect = new RectOffset(1, 1, 1, 1).Add(rect);
                 scrollEdgeRect.height = 1;
@@ -681,7 +681,7 @@ namespace UnityEditor
                     InspectorWindow.RepaintAllInspectors(); // If inspecting a preset libarary we want to show the new preset there as well
                 }
 
-                if (Event.current.type == EventType.repaint)
+                if (Event.current.type == EventType.Repaint)
                 {
                     Rect rect2 = new RectOffset(-3, -3, -3, -3).Add(buttonRect);
                     lib.Draw(rect2, newPresetObject);

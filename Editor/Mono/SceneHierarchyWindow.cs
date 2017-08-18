@@ -395,7 +395,7 @@ namespace UnityEditor
 
             Rect SceneHierarchyRect = new Rect(0, 0, position.width, position.height);
             Event evt = Event.current;
-            if (evt.type == EventType.mouseDown && SceneHierarchyRect.Contains(evt.mousePosition))
+            if (evt.type == EventType.MouseDown && SceneHierarchyRect.Contains(evt.mousePosition))
             {
                 treeView.EndPing();
                 SetAsLastInteractedHierarchy();
@@ -411,12 +411,6 @@ namespace UnityEditor
         {
             // Added because this window uses RenameOverlay
             treeView.EndNameEditing(true);
-
-            // When typing in search field and then opening a dropdown (e.g type filters)
-            // the text field is not properly ending its editing which results in a bug where
-            // the search text added from the dropdown is removed when clicking directly on
-            // the search field
-            EditorGUI.EndEditingActiveTextField();
         }
 
         public static bool IsSceneHeaderInHierarchyWindow(Scene scene)
@@ -607,7 +601,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // When searchfield has focus give keyboard focus to the tree view on Down/UpArrow
-            if (hasSearchFilterFocus && evt.type == EventType.keyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
+            if (hasSearchFilterFocus && evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
             {
                 GUIUtility.keyboardControl = m_TreeViewKeyboardControlID;
 

@@ -33,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (clicked != null && IsRepeatable())
             {
-                var localMousePosition = target.ChangeCoordinatesTo(target.parent, lastMousePosition);
+                var localMousePosition = target.ChangeCoordinatesTo(target.shadow.parent, lastMousePosition);
                 if (target.ContainsPoint(localMousePosition))
                 {
                     clicked();
@@ -75,7 +75,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (IsRepeatable())
                 {
                     // Repeatable button clicks are performed on the MouseDown and at timer events
-                    var localMousePosition = target.ChangeCoordinatesTo(target.parent, evt.localMousePosition);
+                    var localMousePosition = target.ChangeCoordinatesTo(target.shadow.parent, evt.localMousePosition);
                     if (clicked != null && target.ContainsPoint(localMousePosition))
                     {
                         clicked();
@@ -115,7 +115,7 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     // Non repeatable button clicks are performed on the MouseUp
-                    if (clicked != null && target.ContainsPoint(target.ChangeCoordinatesTo(target.parent, evt.localMousePosition)))
+                    if (clicked != null && target.ContainsPoint(target.ChangeCoordinatesTo(target.shadow.parent, evt.localMousePosition)))
                     {
                         clicked();
                     }

@@ -107,7 +107,7 @@ namespace UnityEditor
 
         private const float kPreviewNormalizedSize = 0.2f;
 
-        private readonly GUIContent m_ViewportLabel = new GUIContent("Viewport Rect");
+        private readonly GUIContent m_ViewportLabel = EditorGUIUtility.TextContent("Viewport Rect|Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
 
         private bool m_CommandBuffersShown = true;
 
@@ -273,9 +273,9 @@ namespace UnityEditor
             m_ShowOrthoOptions.target = !m_Orthographic.hasMultipleDifferentValues && c.orthographic;
             m_ShowTargetEyeOption.target = m_TargetEye.intValue != (int)StereoTargetEyeMask.Both || PlayerSettings.virtualRealitySupported;
 
-            EditorGUILayout.PropertyField(m_ClearFlags);
+            EditorGUILayout.PropertyField(m_ClearFlags, EditorGUIUtility.TextContent("Clear Flags|What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas."));
             if (EditorGUILayout.BeginFadeGroup(m_ShowBGColorOptions.faded))
-                EditorGUILayout.PropertyField(m_BackgroundColor, new GUIContent("Background", "Camera clears the screen to this color before rendering."));
+                EditorGUILayout.PropertyField(m_BackgroundColor, EditorGUIUtility.TextContent("Background|The Camera clears the screen to this color before rendering."));
             EditorGUILayout.EndFadeGroup();
             EditorGUILayout.PropertyField(m_CullingMask);
 
@@ -284,7 +284,7 @@ namespace UnityEditor
             ProjectionType projectionType = m_Orthographic.boolValue ? ProjectionType.Orthographic : ProjectionType.Perspective;
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = m_Orthographic.hasMultipleDifferentValues;
-            projectionType = (ProjectionType)EditorGUILayout.EnumPopup("Projection", projectionType);
+            projectionType = (ProjectionType)EditorGUILayout.EnumPopup(EditorGUIUtility.TextContent("Projection|How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective."), projectionType);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 m_Orthographic.boolValue = (projectionType == ProjectionType.Orthographic);
@@ -295,7 +295,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_OrthographicSize, new GUIContent("Size"));
                 EditorGUILayout.EndFadeGroup();
                 if (EditorGUILayout.BeginFadeGroup(1 - m_ShowOrthoOptions.faded))
-                    EditorGUILayout.Slider(m_FieldOfView, 1f, 179f, new GUIContent("Field of View"));
+                    EditorGUILayout.Slider(m_FieldOfView, 1f, 179f, EditorGUIUtility.TextContent("Field of View|The width of the Camera’s view angle, measured in degrees along the local Y axis."));
                 EditorGUILayout.EndFadeGroup();
             }
 

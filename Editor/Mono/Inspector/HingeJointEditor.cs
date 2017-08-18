@@ -10,9 +10,6 @@ namespace UnityEditor
     [CustomEditor(typeof(HingeJoint)), CanEditMultipleObjects]
     class HingeJointEditor : JointEditor<HingeJoint>
     {
-        private static readonly Matrix4x4 s_JointMatrixOffset =
-            Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(180f, Vector3.forward), Vector3.one);
-
         private static readonly GUIContent s_WarningMessage =
             EditorGUIUtility.TextContent("Min and max limits must be within the range [-180, 180].");
 
@@ -44,9 +41,16 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(s_WarningMessage.text, MessageType.Warning);
         }
 
-        protected override Matrix4x4 GetHandleMatrix(HingeJoint joint)
+        protected override void GetActors(
+            HingeJoint joint,
+            out Rigidbody dynamicActor,
+            out Rigidbody connectedActor,
+            out int jointFrameActorIndex,
+            out bool rightHandedLimit
+            )
         {
-            return base.GetHandleMatrix(joint) * s_JointMatrixOffset;
+            base.GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
+            rightHandedLimit = true;
         }
 
         protected override void DoAngularLimitHandles(HingeJoint joint)

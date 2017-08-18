@@ -61,7 +61,7 @@ namespace UnityEditor
                         GUI.color = new Color(c.r, c.g, c.b, c.a * alpha);
                     }
 
-                    if (m_ContentDraw != null && Event.current.type == EventType.repaint)
+                    if (m_ContentDraw != null && Event.current.type == EventType.Repaint)
                     {
                         Rect backRect = m_ContentRect;
                         backRect.x -= m_PingStyle.padding.left;

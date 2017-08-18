@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -389,8 +390,8 @@ namespace UnityEditor
                     if (PackageImport.HasInvalidCharInFilePath(item.assetPath))
                         continue; // Do not add invalid paths (we already warn the user with a dialog in PackageImport.cs)
 
-                    string filename   = Path.GetFileName(item.assetPath);
-                    string folderPath = Path.GetDirectoryName(item.assetPath);
+                    string filename   = Path.GetFileName(item.assetPath).ConvertSeparatorsToUnity();
+                    string folderPath = Path.GetDirectoryName(item.assetPath).ConvertSeparatorsToUnity();
 
                     // Ensure folders. This is for when installed packages have been moved to other folders.
                     TreeViewItem targetFolder = EnsureFolderPath(folderPath, treeViewFolders, initExpandedState);

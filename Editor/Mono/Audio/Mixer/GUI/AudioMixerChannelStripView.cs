@@ -145,7 +145,7 @@ namespace UnityEditor
 
         void DrawAreaBackground(Rect rect)
         {
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 // Draw background
                 Color prevColor = GUI.color;
@@ -822,7 +822,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // Right click toggle
-            if (evt.type == EventType.mouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.solo))
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.solo))
             {
                 Undo.RecordObject(group, "Change solo state");
                 foreach (var g in allGroups)
@@ -849,7 +849,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-            if (evt.type == EventType.mouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.mute))
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.mute))
             {
                 Undo.RecordObject(group, "Change mute state");
                 if (allGroups.Any(g => g.solo))
@@ -883,7 +883,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
             // Right click toggle
-            if (evt.type == EventType.mouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.bypassEffects))
+            if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.bypassEffects))
             {
                 Undo.RecordObject(group, "Change bypass effects state");
                 foreach (var g in allGroups)
@@ -1170,7 +1170,7 @@ namespace UnityEditor
 
         void DrawBackgrounds(ChannelStripParams p, bool selected)
         {
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 // Bg
                 styles.channelStripBg.Draw(p.stripRect, false, false, selected, false);
@@ -1320,7 +1320,7 @@ namespace UnityEditor
             if (p.visible)
             {
                 Rect effectRect = p.bgRects[p.bgRects.Count - 1];
-                if (evt.type == EventType.repaint)
+                if (evt.type == EventType.Repaint)
                 {
                     GUI.DrawTextureWithTexCoords(new Rect(effectRect.x, effectRect.y, effectRect.width, effectRect.height - 1), styles.effectBar.hover.background, new Rect(0, 0.5f, 0.1f, 0.1f));
                     GUI.Label(effectRect, addText, styles.effectName);
@@ -1525,10 +1525,10 @@ namespace UnityEditor
                 DrawChannelStrip(channelStripParams, ref m_Controller.m_HighlightEffectIndex, ref patchslots, showBusConnectionsOfSelection);
 
                 // If we click inside the the strip rect we use the event to ensure the mousedown is not caught by rectangle selection
-                if (evt.type == EventType.mouseDown && evt.button == 0 && channelStripParams.stripRect.Contains(evt.mousePosition))
+                if (evt.type == EventType.MouseDown && evt.button == 0 && channelStripParams.stripRect.Contains(evt.mousePosition))
                     evt.Use();
                 // If we are dragging effects we reset destination index when dragging outside effects
-                if (IsMovingEffect() && evt.type == EventType.mouseDrag && channelStripParams.stripRect.Contains(evt.mousePosition) && GUIUtility.hotControl == m_EffectInteractionControlID)
+                if (IsMovingEffect() && evt.type == EventType.MouseDrag && channelStripParams.stripRect.Contains(evt.mousePosition) && GUIUtility.hotControl == m_EffectInteractionControlID)
                 {
                     m_MovingEffectDstIndex = -1;
                     evt.Use();

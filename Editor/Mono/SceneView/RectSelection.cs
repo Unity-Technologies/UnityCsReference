@@ -41,12 +41,12 @@ namespace UnityEditor
 
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     if (!Tools.viewToolActive)
                         HandleUtility.AddDefaultControl(id);
                     break;
 
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
                         GUIUtility.hotControl = id;
@@ -55,7 +55,7 @@ namespace UnityEditor
                         m_RectSelecting = false;
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         if (!m_RectSelecting && (mousePos - m_SelectStartPoint).magnitude > 6f)
@@ -111,12 +111,12 @@ namespace UnityEditor
                     }
                     break;
 
-                case EventType.repaint:
+                case EventType.Repaint:
                     if (GUIUtility.hotControl == id && m_RectSelecting)
                         EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
                     break;
 
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && evt.button == 0)
                     {
                         GUIUtility.hotControl = 0;

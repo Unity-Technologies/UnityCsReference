@@ -180,14 +180,21 @@ namespace UnityEngine
         }
 
         // Draw a texture within a rectangle.
-        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, float borderWidth, float cornerRadius)
+        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, float borderWidth, float borderRadius)
         {
-            var borderWidths = new Vector4(borderWidth, borderWidth, borderWidth, borderWidth);
-            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, borderWidths, cornerRadius);
+            var borderWidths = Vector4.one * borderWidth;
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, borderWidths, borderRadius);
         }
 
         // Draw a texture within a rectangle.
-        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, Vector4 borderWidths, float cornerRadius)
+        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, Vector4 borderWidths, float borderRadius)
+        {
+            var borderRadiuses = Vector4.one * borderRadius;
+            DrawTexture(position, image, scaleMode, alphaBlend, imageAspect, color, borderWidths, borderRadiuses);
+        }
+
+        // Draw a texture within a rectangle.
+        public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend, float imageAspect, Color color, Vector4 borderWidths, Vector4 borderRadiuses)
         {
             GUIUtility.CheckOnGUI();
             if (Event.current.type == EventType.Repaint)
@@ -202,7 +209,7 @@ namespace UnityEngine
                     imageAspect = (float)image.width / image.height;
 
                 Material mat = null;
-                if (borderWidths != Vector4.zero || cornerRadius > Mathf.Epsilon)
+                if (borderWidths != Vector4.zero || borderRadiuses != Vector4.zero)
                 {
                     mat = roundedRectMaterial;
                 }
@@ -215,7 +222,7 @@ namespace UnityEngine
                 arguments.leftBorder = 0; arguments.rightBorder = 0; arguments.topBorder = 0; arguments.bottomBorder = 0;
                 arguments.color = color;
                 arguments.borderWidths = borderWidths;
-                arguments.cornerRadius = cornerRadius;
+                arguments.cornerRadiuses = borderRadiuses;
                 arguments.texture = image;
                 arguments.mat = mat;
                 CalculateScaledTextureRects(position, scaleMode, imageAspect, ref arguments.screenRect, ref arguments.sourceRect);
@@ -523,7 +530,7 @@ namespace UnityEngine
         // *undocumented*
         internal static string PasswordFieldGetStrToShow(string password, char maskChar)
         {
-            return (Event.current.type == EventType.repaint || Event.current.type == EventType.mouseDown) ?
+            return (Event.current.type == EventType.Repaint || Event.current.type == EventType.MouseDown) ?
                 "".PadRight(password.Length, maskChar) : password;
         }
 
@@ -1464,7 +1471,7 @@ namespace UnityEngine
             s_ScrollViewStates.Pop();
 
             // This is the mac way of handling things: if the mouse is over a scrollview, the scrollview gets the event.
-            if (handleScrollWheel && Event.current.type == EventType.scrollWheel && state.position.Contains(Event.current.mousePosition))
+            if (handleScrollWheel && Event.current.type == EventType.ScrollWheel && state.position.Contains(Event.current.mousePosition))
             {
                 state.scrollPosition.x = Mathf.Clamp(state.scrollPosition.x + (Event.current.delta.x * 20f), 0f, state.viewRect.width - state.visibleRect.width);
                 state.scrollPosition.y = Mathf.Clamp(state.scrollPosition.y + (Event.current.delta.y * 20f), 0f, state.viewRect.height - state.visibleRect.height);

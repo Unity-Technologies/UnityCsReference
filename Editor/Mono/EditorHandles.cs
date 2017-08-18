@@ -134,7 +134,7 @@ namespace UnityEditor
 
         private static bool BeginLineDrawing(Matrix4x4 matrix, bool dottedLines, int mode)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return false;
 
             Color col = color * lineTransparency;
@@ -534,7 +534,7 @@ namespace UnityEditor
         // Draw a camera facing selection frame.
         public static void DrawSelectionFrame(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
-            if (eventType != EventType.repaint)
+            if (eventType != EventType.Repaint)
                 return;
 
             Handles.StartCapDraw(position, rotation, size);

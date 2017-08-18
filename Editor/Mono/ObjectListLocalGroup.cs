@@ -535,7 +535,7 @@ namespace UnityEditor
 
             void DrawSubAssetBackground(int beginIndex, int endIndex, float yOffset)
             {
-                if (Event.current.type != EventType.repaint)
+                if (Event.current.type != EventType.Repaint)
                     return;
 
                 FilteredHierarchy.FilterResult[] results = m_FilteredHierarchy.results;
@@ -1261,7 +1261,7 @@ namespace UnityEditor
 
             public bool DoCharacterOffsetSelection()
             {
-                if (Event.current.type == EventType.keyDown && Event.current.shift)
+                if (Event.current.type == EventType.KeyDown && Event.current.shift)
                 {
                     System.StringComparison ignoreCase = System.StringComparison.CurrentCultureIgnoreCase;
                     string startName = "";

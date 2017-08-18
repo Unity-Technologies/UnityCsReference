@@ -90,14 +90,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         protected virtual void Recurse(VisualElement element, int depth, List<RuleMatcher> ruleMatchers)
         {
-            var container = element as VisualContainer;
-            if (container != null)
+            for (int i = 0; i < element.shadow.childCount; i++)
             {
-                for (int i = 0; i < container.childrenCount; i++)
-                {
-                    var child = container.GetChildAt(i);
-                    Traverse(child, depth + 1, ruleMatchers);
-                }
+                var child = element.shadow[i];
+                Traverse(child, depth + 1, ruleMatchers);
             }
         }
 

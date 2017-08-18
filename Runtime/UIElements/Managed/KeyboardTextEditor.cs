@@ -26,6 +26,8 @@ namespace UnityEngine.Experimental.UIElements
 
         protected override void RegisterCallbacksOnTarget()
         {
+            base.RegisterCallbacksOnTarget();
+
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
@@ -35,6 +37,8 @@ namespace UnityEngine.Experimental.UIElements
 
         protected override void UnregisterCallbacksFromTarget()
         {
+            base.UnregisterCallbacksFromTarget();
+
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);

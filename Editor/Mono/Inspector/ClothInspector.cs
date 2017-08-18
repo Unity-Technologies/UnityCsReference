@@ -606,7 +606,7 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            if (Event.current.type == EventType.keyDown && Event.current.keyCode == KeyCode.Backspace)
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Backspace)
             {
                 for (int i = 0; i < coefficients.Length; i++)
                 {

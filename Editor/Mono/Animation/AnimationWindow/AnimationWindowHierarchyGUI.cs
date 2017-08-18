@@ -470,7 +470,7 @@ namespace UnityEditorInternal
 
         private void DoCurveColorIndicator(Rect rect, AnimationWindowHierarchyNode node)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             Color originalColor = GUI.color;

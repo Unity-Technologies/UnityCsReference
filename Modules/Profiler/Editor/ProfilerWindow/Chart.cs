@@ -247,7 +247,7 @@ namespace UnityEditorInternal
 
         internal static void DrawVerticalLine(int frame, ChartViewData cdata, Rect r, Color color1, Color color2, float widthFactor)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             frame -= cdata.chartDomainOffset;
@@ -350,7 +350,7 @@ namespace UnityEditorInternal
 
         private void DrawGridStacked(Rect r, ChartViewData cdata)
         {
-            if (Event.current.type != EventType.repaint ||
+            if (Event.current.type != EventType.Repaint ||
                 cdata.grid == null || cdata.gridLabels == null)
                 return;
 

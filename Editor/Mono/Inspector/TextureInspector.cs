@@ -479,7 +479,8 @@ namespace UnityEditor
             Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
             PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
             float oldBias = t.mipMapBias;
-            TextureUtil.SetMipMapBiasNoDirty(t, mipLevel - Log2(texWidth / wantedRect.width));
+            // with multi-select wantedRect can get negative width/height - not sure if that's intentional, but let's avoid NaNs
+            TextureUtil.SetMipMapBiasNoDirty(t, mipLevel - Log2(Mathf.Abs(texWidth / wantedRect.width)));
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
 

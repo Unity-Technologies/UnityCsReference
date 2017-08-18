@@ -15,8 +15,27 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override Rect localPosition { get { return new Rect(0, 0, position.width, position.height); } }
 
-        protected virtual void RegisterCallbacksOnTarget() {}
-        protected virtual void UnregisterCallbacksFromTarget() {}
+        protected virtual void RegisterCallbacksOnTarget()
+        {
+            target.RegisterCallback<FocusEvent>(OnFocus);
+            target.RegisterCallback<BlurEvent>(OnBlur);
+        }
+
+        protected virtual void UnregisterCallbacksFromTarget()
+        {
+            target.UnregisterCallback<FocusEvent>(OnFocus);
+            target.UnregisterCallback<BlurEvent>(OnBlur);
+        }
+
+        void OnFocus(FocusEvent evt)
+        {
+            OnFocus();
+        }
+
+        void OnBlur(BlurEvent evt)
+        {
+            OnLostFocus();
+        }
 
         VisualElement m_Target;
 

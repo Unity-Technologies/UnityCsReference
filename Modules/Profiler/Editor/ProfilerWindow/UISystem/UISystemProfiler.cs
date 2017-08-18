@@ -121,7 +121,7 @@ namespace UnityEditor
             GUI.Box(previewRect, GUIContent.none);
             m_ZoomablePreview.BeginViewGUI();
             bool first = true;
-            if (m_UGUIProfilerTreeViewState != null && Event.current.type == EventType.repaint)
+            if (m_UGUIProfilerTreeViewState != null && Event.current.type == EventType.Repaint)
             {
                 IList<int> selection = m_TreeViewControl.GetSelection();
                 if (selection.Count > 0)
@@ -185,7 +185,7 @@ namespace UnityEditor
                     }
                 }
             }
-            if (first && Event.current.type == EventType.repaint)
+            if (first && Event.current.type == EventType.Repaint)
                 m_ZoomablePreview.rect = previewRect;
             m_ZoomablePreview.EndViewGUI();
         }

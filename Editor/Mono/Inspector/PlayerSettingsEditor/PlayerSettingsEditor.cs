@@ -100,7 +100,6 @@ namespace UnityEditor
             public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TextContent("Status Bar Style");
             public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TextContent("Mac App Store Validation");
             public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TextContent("Category|'LSApplicationCategoryType'");
-            public static readonly GUIContent D3D9FullscreenMode = EditorGUIUtility.TextContent("D3D9 Fullscreen Mode");
             public static readonly GUIContent D3D11FullscreenMode = EditorGUIUtility.TextContent("D3D11 Fullscreen Mode");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TextContent("Allow Fullscreen Switch");
@@ -191,6 +190,7 @@ namespace UnityEditor
 
         private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
         private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { new GUIContent("Native"), new GUIContent("Legacy") };
+        private static GUIContent[] m_XBoxOneGfxJobModeNames = new GUIContent[] { new GUIContent("Native - DX12"), new GUIContent("Legacy - DX11") };
 
         // Section and tab selection state
 
@@ -290,7 +290,6 @@ namespace UnityEditor
         SerializedProperty m_BakeCollisionMeshes;
         SerializedProperty m_ResizableWindow;
         SerializedProperty m_MacFullscreenMode;
-        SerializedProperty m_D3D9FullscreenMode;
         SerializedProperty m_D3D11FullscreenMode;
         SerializedProperty m_VisibleInBackground;
         SerializedProperty m_AllowFullscreenSwitch;
@@ -444,7 +443,6 @@ namespace UnityEditor
             m_ResizableWindow               = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
             m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
-            m_D3D9FullscreenMode            = FindPropertyAssert("d3d9FullscreenMode");
             m_D3D11FullscreenMode           = FindPropertyAssert("d3d11FullscreenMode");
             m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
@@ -888,21 +886,8 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
                         EditorGUILayout.PropertyField(m_MacFullscreenMode);
-                        EditorGUILayout.PropertyField(m_D3D9FullscreenMode, Styles.D3D9FullscreenMode);
                         EditorGUILayout.PropertyField(m_D3D11FullscreenMode, Styles.D3D11FullscreenMode);
-
-                        // If we are on DX9 and using Exclusive mode -> not visible in background is implied
-                        var apisWin = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows);
-                        var dx9FirstAPI = apisWin.Length >= 1 && apisWin[0] == GraphicsDeviceType.Direct3D9;
-                        bool dx9ExclusiveMode = m_D3D9FullscreenMode.intValue == (int)D3D9FullscreenMode.ExclusiveMode;
-                        var alwaysVisibleBackground = (dx9FirstAPI && dx9ExclusiveMode);
-                        if (alwaysVisibleBackground)
-                            m_VisibleInBackground.boolValue = false;
-                        using (new EditorGUI.DisabledScope(alwaysVisibleBackground))
-                        {
-                            EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
-                        }
-
+                        EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
                         EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
@@ -1111,6 +1096,10 @@ namespace UnityEditor
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
             if (availableDevices == null || availableDevices.Length < 2)
+                return;
+
+            // we do not want XboxOne users to select D3D12 via dropdown list. we only want to switch to D3D12 if native jobs are selected and otherwise default to D3D11.
+            if (targetGroup == BuildTargetGroup.XboxOne)
                 return;
 
             // toggle for automatic API selection
@@ -1627,10 +1616,25 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
                 {
                     GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
-                    GraphicsJobMode newGfxJobMode = BuildEnumPopup(Styles.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
+                    GraphicsJobMode newGfxJobMode = BuildEnumPopup(Styles.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, targetGroup == BuildTargetGroup.XboxOne ? m_XBoxOneGfxJobModeNames : m_GfxJobModeNames);
                     if (newGfxJobMode != currGfxJobMode)
                     {
                         PlayerSettings.graphicsJobMode = newGfxJobMode;
+                    }
+                }
+                if (targetGroup == BuildTargetGroup.XboxOne)
+                {
+                    // for xboxone gfx job mode is the renderer api selector, use D3D12 only if the jobs are enabled and native selected...
+                    bool isXBoxOneD3D12Required = m_GraphicsJobs.boolValue && (PlayerSettings.graphicsJobMode == GraphicsJobMode.Native);
+                    GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.XboxOne);
+                    GraphicsDeviceType newGfxAPI = isXBoxOneD3D12Required ? GraphicsDeviceType.XboxOneD3D12 : GraphicsDeviceType.XboxOne;
+                    if (newGfxAPI != gfxAPIs[0])
+                    {
+                        ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.XboxOne, true);
+                        if (action.changeList)
+                        {
+                            ApplyChangeGraphicsApiAction(BuildTarget.XboxOne, new GraphicsDeviceType[] { newGfxAPI }, action);
+                        }
                     }
                 }
             }

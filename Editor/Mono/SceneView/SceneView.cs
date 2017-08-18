@@ -388,12 +388,6 @@ namespace UnityEditor
             base.SetSearchFilter(searchFilter, mode, setAll);
         }
 
-        internal void OnFocus()
-        {
-            if (!Application.isPlaying && m_AudioPlay && m_Camera != null)
-                RefreshAudioPlay();
-        }
-
         internal void OnLostFocus()
         {
             // don't bleed our scene view rendering into game view
@@ -430,14 +424,16 @@ namespace UnityEditor
             dontClearBackground = true;
             s_SceneViews.Add(this);
 
-            m_Lighting = EditorGUIUtility.IconContent("SceneviewLighting", "Lighting|The scene lighting is used when toggled on. When toggled off a light attached to the scene view camera is used.");
-            m_Fx = EditorGUIUtility.IconContent("SceneviewFx", "Fx|Toggles skybox, fog and lens flare effects.");
-            m_AudioPlayContent = EditorGUIUtility.IconContent("SceneviewAudio", "AudioPlay|Toggles audio on or off.");
-            m_GizmosContent = new GUIContent("Gizmos");
-            m_2DModeContent = new GUIContent("2D");
-            m_RenderDocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc");
+            m_Lighting = EditorGUIUtility.IconContent("SceneviewLighting", "Lighting|When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
+            m_Fx = EditorGUIUtility.IconContent("SceneviewFx", "Effects|Toggle skybox, fog and lens flare effects.");
+            m_AudioPlayContent = EditorGUIUtility.IconContent("SceneviewAudio", "AudioPlay|Toggle audio on or off.");
+            m_GizmosContent = EditorGUIUtility.TextContent("Gizmos|Toggle the visibility of different Gizmos in the Scene view.");
+            m_2DModeContent = new GUIContent("2D", "When togggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            m_RenderDocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc.");
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
             m_DraggingLockedState = DraggingLockedState.NotDragging;
@@ -499,6 +495,8 @@ namespace UnityEditor
         {
             EditorApplication.modifierKeysChanged -= RepaintAll;
 
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
             if (m_Light[0])
@@ -531,6 +529,15 @@ namespace UnityEditor
             }
         }
 
+        internal void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (m_AudioPlay)
+            {
+                m_AudioPlay = false;
+                RefreshAudioPlay();
+            }
+        }
+
         private static GUIStyle s_DropDownStyle;
         private GUIStyle effectsDropDownStyle
         {
@@ -548,6 +555,7 @@ namespace UnityEditor
             {
                 // render mode popup
                 GUIContent modeContent = SceneRenderModeWindow.GetGUIContent(m_RenderMode);
+                modeContent.tooltip = LocalizationDatabase.GetLocalizedString("The Draw Mode used to display the Scene.");
                 Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
                 if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
                 {
@@ -860,7 +868,7 @@ namespace UnityEditor
             else if (GUIUtility.hotControl == 0 && draggingLocked == DraggingLockedState.Dragging)
                 draggingLocked = DraggingLockedState.LookAt;
 
-            if (evt.type == EventType.mouseDown)
+            if (evt.type == EventType.MouseDown)
             {
                 Tools.s_ButtonDown = evt.button;
                 if (evt.button == 1 && Application.platform == RuntimePlatform.OSXEditor)
@@ -2167,7 +2175,7 @@ namespace UnityEditor
             if (GUIUtility.hotControl == 0)
                 s_CurrentTool = Tools.viewToolActive ? 0 : Tools.current;
 
-            Tool tool = (Event.current.type == EventType.repaint ? Tools.current : s_CurrentTool);
+            Tool tool = (Event.current.type == EventType.Repaint ? Tools.current : s_CurrentTool);
 
             switch (tool)
             {

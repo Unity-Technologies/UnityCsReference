@@ -44,13 +44,10 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             var child = new VisualTreeItem(elt, tree.depth + 1);
             tree.AddChild(child);
-            var container = elt as VisualContainer;
-            if (container != null)
+
+            foreach (var childElement in elt.shadow.Children())
             {
-                for (int i = 0; i < container.childrenCount; i++)
-                {
-                    Recurse(child, container.GetChildAt(i));
-                }
+                Recurse(child, childElement);
             }
         }
 

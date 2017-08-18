@@ -22,6 +22,10 @@ namespace UnityEngine.Experimental.UIElements
     [Flags]
     public enum ChangeType
     {
+        // persistent data ready
+        PersistentData = 1 << 6,
+        // persistent data ready for children
+        PersistentDataPath = 1 << 5,
         // changes to layout
         Layout = 1 << 4,
         // changes to styles, colors and other render properties
@@ -54,14 +58,16 @@ namespace UnityEngine.Experimental.UIElements
     // Passed-in to every element of the visual tree
     public interface IPanel
     {
-        VisualContainer visualTree { get; }
+        VisualElement visualTree { get; }
 
         IDispatcher dispatcher { get; }
         IScheduler scheduler { get; }
         IDataWatchService dataWatch { get; }
         ContextType contextType { get; }
 
+        FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
+        VisualElement LoadTemplate(string path);
 
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
@@ -70,25 +76,26 @@ namespace UnityEngine.Experimental.UIElements
 
     abstract class BaseVisualElementPanel : IPanel
     {
-        public virtual VisualElement focusedElement { get; set; }
-
         public abstract EventInterests IMGUIEventInterests { get; set; }
         public abstract int instanceID { get; protected set; }
-        public abstract LoadResourceFunction loadResourceFunc { get; protected set; }
+        public abstract SavePersistentViewData savePersistentViewData { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
+        public abstract FocusController focusController { get; set; }
 
         public abstract void Repaint(Event e);
         public abstract void ValidateLayout();
 
         internal virtual IStylePainter stylePainter { get; set; }
         //IPanel
-        public abstract VisualContainer visualTree { get; }
+        public abstract VisualElement visualTree { get; }
         public abstract IDispatcher dispatcher { get; protected set; }
         public abstract IScheduler scheduler { get; }
         public abstract IDataWatchService dataWatch { get; protected set; }
         public abstract ContextType contextType { get; protected set; }
+        public abstract ISerializableJsonDictionary viewDataDictionary { get; set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
+        public abstract VisualElement LoadTemplate(string path);
 
         public BasePanelDebug panelDebug { get; set; }
     }
@@ -96,13 +103,16 @@ namespace UnityEngine.Experimental.UIElements
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
 
+    // Strategy to save persistent data must be provided in the context of Editor or Runtime
+    internal delegate void SavePersistentViewData();
+
     // Default panel implementation
     internal class Panel : BaseVisualElementPanel
     {
         private StyleSheets.StyleContext m_StyleContext;
-        private VisualContainer m_RootContainer;
+        private VisualElement m_RootContainer;
 
-        public override VisualContainer visualTree
+        public override VisualElement visualTree
         {
             get { return m_RootContainer; }
         }
@@ -134,22 +144,28 @@ namespace UnityEngine.Experimental.UIElements
 
         public override ContextType contextType { get; protected set; }
 
+        public override ISerializableJsonDictionary viewDataDictionary { get; set; }
+
+        public override FocusController focusController { get; set; }
+
         public override EventInterests IMGUIEventInterests { get; set; }
 
-        public override LoadResourceFunction loadResourceFunc { get; protected set; }
+        internal static LoadResourceFunction loadResourceFunc = null;
+
+        public override SavePersistentViewData savePersistentViewData { get; set; }
 
         public override int IMGUIContainersCount { get; set; }
-        public Panel(int instanceID, ContextType contextType, LoadResourceFunction loadResourceDelegate = null, IDataWatchService dataWatch = null, IDispatcher dispatcher = null)
+        public Panel(int instanceID, ContextType contextType, IDataWatchService dataWatch = null, IDispatcher dispatcher = null)
         {
             this.instanceID = instanceID;
             this.contextType = contextType;
-            this.loadResourceFunc = loadResourceDelegate ?? Resources.Load;
             this.dataWatch = dataWatch;
             this.dispatcher = dispatcher;
             stylePainter = new StylePainter();
-            m_RootContainer = new VisualContainer();
+            m_RootContainer = new VisualElement();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             visualTree.ChangePanel(this);
+            focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
 
             allowPixelCaching = true;
@@ -161,43 +177,37 @@ namespace UnityEngine.Experimental.UIElements
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return null;
 
-            var container = root as VisualContainer;
             Vector3 localPoint = root.transform.matrix.inverse.MultiplyPoint3x4(point);
             bool containsPoint = root.ContainsPoint(localPoint);
 
-            if (container != null)
+            // we only skip children in the case we visually clip them
+            if (!containsPoint && root.clipChildren)
             {
-                // we only skip children in the case we visually clip them
-                if (!containsPoint && container.clipChildren)
-                {
-                    return null;
-                }
-
-                if (picked != null)
-                {
-                    picked.Add(root);
-                }
-
-                // reset ref to upper left
-                localPoint = localPoint - new Vector3(container.layout.position.x, container.layout.position.y, 0);
-
-                for (int i = container.childrenCount - 1; i >= 0; i--)
-                {
-                    var child = container.GetChildAt(i);
-                    // Depth first in reverse order, do children
-                    var result = PickAll(child, localPoint, picked);
-                    if (result != null)
-                        return result;
-                }
+                return null;
             }
-            else if (containsPoint && picked != null)
+
+            if (picked != null && root.enabled)
+            {
                 picked.Add(root);
+            }
+
+            // reset ref to upper left
+            localPoint = localPoint - new Vector3(root.layout.position.x, root.layout.position.y, 0);
+
+            // Depth first in reverse order, do children
+            for (int i = root.shadow.childCount - 1; i >= 0; i--)
+            {
+                var child = root.shadow[i];
+                var result = PickAll(child, localPoint, picked);
+                if (result != null)
+                    return result;
+            }
 
             switch (root.pickingMode)
             {
                 case PickingMode.Position:
                 {
-                    if (containsPoint)
+                    if (containsPoint && root.enabled)
                     {
                         return root;
                     }
@@ -207,6 +217,17 @@ namespace UnityEngine.Experimental.UIElements
                     break;
             }
             return null;
+        }
+
+        public override VisualElement LoadTemplate(string path)
+        {
+            VisualTreeAsset vta = loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
+            if (vta == null)
+            {
+                return null;
+            }
+
+            return vta.CloneTree();
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
@@ -224,6 +245,43 @@ namespace UnityEngine.Experimental.UIElements
             ValidateLayout();
 
             return PickAll(visualTree, point);
+        }
+
+        const int kMaxValidatePersistentDataCount = 5;
+
+        void ValidatePersistentData()
+        {
+            int validatePersistentDataCount = 0;
+            while (visualTree.IsDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
+            {
+                ValidatePersistentDataOnSubTree(visualTree);
+                validatePersistentDataCount++;
+
+                if (validatePersistentDataCount > kMaxValidatePersistentDataCount)
+                {
+                    Debug.LogError("UIElements: Too many children recursively added that rely on persistent data: " + visualTree);
+                    break;
+                }
+            }
+        }
+
+        void ValidatePersistentDataOnSubTree(VisualElement root)
+        {
+            if (root.IsDirty(ChangeType.PersistentData))
+            {
+                root.OnPersistentDataReady();
+                root.ClearDirty(ChangeType.PersistentData);
+            }
+
+            if (root.IsDirty(ChangeType.PersistentDataPath))
+            {
+                foreach (var child in root)
+                {
+                    ValidatePersistentDataOnSubTree(child);
+                }
+
+                root.ClearDirty(ChangeType.PersistentDataPath);
+            }
         }
 
         void ValidateStyling()
@@ -275,14 +333,9 @@ namespace UnityEngine.Experimental.UIElements
             bool hasNewLayout = root.cssNode.HasNewLayout;
             if (hasNewLayout)
             {
-                var container = root as VisualContainer;
-
-                if (container != null)
+                for (int i = 0; i < root.shadow.childCount; ++i)
                 {
-                    foreach (var child in container)
-                    {
-                        hasNewLayout |= ValidateSubTree(child);
-                    }
+                    hasNewLayout |= ValidateSubTree(root.shadow[i]);
                 }
             }
 
@@ -315,11 +368,10 @@ namespace UnityEngine.Experimental.UIElements
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return;
 
-            var container = root as VisualContainer;
-            if (container != null) // container node
+            if (root.shadow.childCount > 0) // container node
             {
                 // update clip
-                if (container.clipChildren)
+                if (root.clipChildren)
                 {
                     var worldBound = ComputeAAAlignedBound(root.layout, offset * root.worldTransform);
                     // are we and our children clipped?
@@ -335,6 +387,10 @@ namespace UnityEngine.Experimental.UIElements
 
                     // new global clip
                     currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
+                }
+                else
+                {
+                    //since our children are not clipped, there is no early out.
                 }
             }
             else if (!root.forceVisible)
@@ -395,33 +451,23 @@ namespace UnityEngine.Experimental.UIElements
 
                     // reset clipping
                     var textureClip = new Rect(0, 0, w, h);
-                    GUIClip.SetTransform(offset * root.worldTransform, textureClip);
+                    painter.currentTransform = offset * root.worldTransform;
+                    GUIClip.SetTransform(painter.currentTransform, textureClip);
 
                     // paint self
-                    painter.currentWorldClip = currentGlobalClip;
+                    painter.currentWorldClip = textureClip;
                     root.DoRepaint(painter);
                     root.ClearDirty(ChangeType.Repaint);
 
-                    if (container != null)
-                    {
-                        int count = container.childrenCount;
-                        for (int i = 0; i < count; i++)
-                        {
-                            VisualElement child = container.GetChildAt(i);
-                            PaintSubTree(e, child, offset, textureClip);
+                    PaintSubTreeChildren(e, root, offset, textureClip);
 
-                            if (count != container.childrenCount)
-                            {
-                                throw new NotImplementedException("Visual tree is read-only during repaint");
-                            }
-                        }
-                    }
                     RenderTexture.active = old;
                 }
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-                GUIClip.SetTransform(root.worldTransform, currentGlobalClip);
+                painter.currentTransform = root.worldTransform;
+                GUIClip.SetTransform(painter.currentTransform, currentGlobalClip);
 
                 var painterParams = new TextureStylePainterParameters
                 {
@@ -434,7 +480,8 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                GUIClip.SetTransform(offset * root.worldTransform, currentGlobalClip);
+                stylePainter.currentTransform = offset * root.worldTransform;
+                GUIClip.SetTransform(stylePainter.currentTransform, currentGlobalClip);
 
                 stylePainter.currentWorldClip = currentGlobalClip;
                 stylePainter.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(e.mousePosition);
@@ -444,25 +491,27 @@ namespace UnityEngine.Experimental.UIElements
                 stylePainter.opacity = 1.0f;
                 root.ClearDirty(ChangeType.Repaint);
 
-                if (container != null)
-                {
-                    int count = container.childrenCount;
-                    for (int i = 0; i < count; i++)
-                    {
-                        VisualElement child = container.GetChildAt(i);
-                        PaintSubTree(e, child, offset, currentGlobalClip);
+                PaintSubTreeChildren(e, root, offset, currentGlobalClip);
+            }
+        }
 
-                        if (count != container.childrenCount)
-                        {
-                            throw new NotImplementedException("Visual tree is read-only during repaint");
-                        }
-                    }
+        private void PaintSubTreeChildren(Event e, VisualElement root, Matrix4x4 offset, Rect textureClip)
+        {
+            int count = root.shadow.childCount;
+            for (int i = 0; i < count; i++)
+            {
+                PaintSubTree(e, root.shadow[i], offset, textureClip);
+
+                if (count != root.shadow.childCount)
+                {
+                    throw new NotImplementedException("Visual tree is read-only during repaint");
                 }
             }
         }
 
         public override void Repaint(Event e)
         {
+            ValidatePersistentData();
             ValidateLayout();
             stylePainter.repaintEvent = e;
 
@@ -471,7 +520,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panelDebug != null)
             {
-                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.layout.width, visualTree.layout.height));
+                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.style.width, visualTree.style.height));
                 if (panelDebug.EndRepaint())
                     this.visualTree.Dirty(ChangeType.Repaint);
             }

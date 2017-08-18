@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor.Audio;
 using UnityEditor.ProjectWindowCallback;
 using UnityEditor.SceneManagement;
@@ -93,6 +94,16 @@ namespace UnityEditor
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
                 Object o = ProjectWindowUtil.CreateScriptAssetFromTemplate(pathName, resourceFile);
+                ProjectWindowUtil.ShowCreatedAsset(o);
+            }
+        }
+
+        internal class DoCreateAssetWithContent : EndNameEditAction
+        {
+            public string filecontent;
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                Object o = ProjectWindowUtil.CreateScriptAssetWithContent(pathName, filecontent);
                 ProjectWindowUtil.ShowCreatedAsset(o);
             }
         }
@@ -208,6 +219,13 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePrefab>(), "New Prefab.prefab", EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D, null);
         }
 
+        internal static void CreateAssetWithContent(string filename, string content)
+        {
+            var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
+            action.filecontent = content;
+            StartNameEditingIfProjectWindowExists(0, action, filename, null, null);
+        }
+
         static void CreateScriptAsset(string templatePath, string destName)
         {
             var templateFilename = Path.GetFileName(templatePath);
@@ -303,10 +321,28 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, action, assetName + ".png", icon, null);
         }
 
-        internal static Object CreateScriptAssetFromTemplate(string pathName, string resourceFile)
+        internal static Object CreateScriptAssetWithContent(string pathName, string templateContent)
         {
             string fullPath = Path.GetFullPath(pathName);
 
+            // utf8-bom encoding was added for case 510374 in 2012. i think this was the wrong solution. BOM's are
+            // problematic for diff tools, naive readers and writers (of which we have many!), and generally not
+            // something most people think about. you wouldn't believe how many unity source files have BOM's embedded
+            // in the middle of them for no reason. copy paste problem? bad tool? unity should instead have been fixed
+            // to read all files that have no BOM as utf8 by default, and then we just strip them all, always, from
+            // files we control. perhaps we'll do this one day and this next line can be removed. -scobi
+            var encoding = new System.Text.UTF8Encoding(/*encoderShouldEmitUTF8Identifier:*/ true);
+
+            File.WriteAllText(fullPath, templateContent, encoding);
+
+            // Import the asset
+            AssetDatabase.ImportAsset(pathName);
+
+            return AssetDatabase.LoadAssetAtPath(pathName, typeof(Object));
+        }
+
+        internal static Object CreateScriptAssetFromTemplate(string pathName, string resourceFile)
+        {
             string content = File.ReadAllText(resourceFile);
 
             // #NOTRIM# is a special marker that is used to mark the end of a line where we want to leave whitespace. prevent editors auto-stripping it by accident.
@@ -331,20 +367,7 @@ namespace UnityEditor
                 content = content.Replace("#SCRIPTNAME_LOWER#", baseFileNoSpaces);
             }
 
-            // utf8-bom encoding was added for case 510374 in 2012. i think this was the wrong solution. BOM's are
-            // problematic for diff tools, naive readers and writers (of which we have many!), and generally not
-            // something most people think about. you wouldn't believe how many unity source files have BOM's embedded
-            // in the middle of them for no reason. copy paste problem? bad tool? unity should instead have been fixed
-            // to read all files that have no BOM as utf8 by default, and then we just strip them all, always, from
-            // files we control. perhaps we'll do this one day and this next line can be removed. -scobi
-            var encoding = new System.Text.UTF8Encoding(/*encoderShouldEmitUTF8Identifier:*/ true);
-
-            File.WriteAllText(fullPath, content, encoding);
-
-            // Import the asset
-            AssetDatabase.ImportAsset(pathName);
-
-            return AssetDatabase.LoadAssetAtPath(pathName, typeof(Object));
+            return CreateScriptAssetWithContent(pathName, content);
         }
 
         public static void StartNameEditingIfProjectWindowExists(int instanceID, EndNameEditAction endAction, string pathName, Texture2D icon, string resourceFile)
@@ -568,76 +591,150 @@ namespace UnityEditor
             return result.ToArray();
         }
 
-        static internal void DuplicateSelectedAssets()
+        internal static void DuplicateSelectedAssets()
         {
+            // Note that this method was refactored, but contains identical behaviour to the last version:
+            // If any animation clips exist in the selection, duplicate only the animation clips in a special way,
+            // otherwise duplicate the rest (everything) as assets.
+            // The refactor initially changed the behaviour to duplicate all animation clips in a special way,
+            // as well as duplicate all the other assets in the selection, but was changed as to not alter behaviour.
+            // The code is kept this way so it's easy to reenable the "new" functionality.
+
             AssetDatabase.Refresh();
 
-            // If we are duplicating an animation clip which comes from a imported model. Instead of duplicating the fbx file, we duplicate the animation clip.
-            // Thus the user can edit and add for example animation events.
-            Object[] selectedAnimations = Selection.objects;
-            bool duplicateClip = true;
-            foreach (Object asset in selectedAnimations)
+            IEnumerable<Object> results = null;
+
+            var animObjects = Selection.objects.Where(o => o is AnimationClip && AssetDatabase.Contains(o)).ToList();
+
+            if (animObjects.Count > 0)
             {
-                AnimationClip clip = asset as AnimationClip;
-                if (clip == null || !AssetDatabase.Contains(clip))
-                    duplicateClip = false;
-            }
-
-            ArrayList copiedPaths = new ArrayList();
-            bool failed = false;
-
-            if (duplicateClip)
-            {
-                foreach (Object asset in selectedAnimations)
-                {
-                    AnimationClip sourceClip = asset as AnimationClip;
-                    if (sourceClip != null)
-                    {
-                        string path = AssetDatabase.GetAssetPath(asset);
-                        path = Path.Combine(Path.GetDirectoryName(path), sourceClip.name) + ".anim";
-                        string newPath = AssetDatabase.GenerateUniqueAssetPath(path);
-
-                        AnimationClip newClip = new AnimationClip();
-                        EditorUtility.CopySerialized(sourceClip, newClip);
-                        AssetDatabase.CreateAsset(newClip, newPath);
-                        copiedPaths.Add(newPath);
-                    }
-                }
+                results = DuplicateAnimationClips(animObjects.Cast<AnimationClip>()).Cast<Object>();
             }
             else
             {
-                Object[] selectedAssets = Selection.GetFiltered(typeof(Object), SelectionMode.Assets);
+                var otherObjects = Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Except(animObjects);
+                results = DuplicateAssets(otherObjects.Select(o => o.GetInstanceID()));
+            }
 
-                foreach (Object asset in selectedAssets)
+            Selection.objects = results.ToArray();
+        }
+
+        // Deletes the assets of the instance IDs, with an optional user confirmation dialog.
+        // Returns true if the delete operation was successfully performed on all assets.
+        // Note: Zero input assets always returns true.
+        // Also note that the operation cannot be undone even if some operations failed.
+        internal static bool DeleteAssets(List<int> instanceIDs, bool askIfSure)
+        {
+            if (instanceIDs.Count == 0)
+                return true;
+
+            bool foundAssetsFolder = instanceIDs.IndexOf(ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID()) >= 0;
+            if (foundAssetsFolder)
+            {
+                string title = "Cannot Delete";
+                EditorUtility.DisplayDialog(title, "Deleting the 'Assets' folder is not allowed", "Ok");
+                return false;
+            }
+
+            var paths = GetMainPathsOfAssets(instanceIDs).ToList();
+
+            if (paths.Count == 0)
+                return false;
+
+            if (askIfSure)
+            {
+                string title = "Delete selected asset";
+                if (paths.Count > 1)
+                    title = title + "s";
+                title = title + "?";
+
+                int maxCount = 3;
+                string infotext = "";
+                for (int i = 0; i < paths.Count && i < maxCount; ++i)
+                    infotext += "   " + paths[i] + "\n";
+                if (paths.Count > maxCount)
+                    infotext += "   ...\n";
+                infotext += "\nYou cannot undo this action.";
+                if (!EditorUtility.DisplayDialog(title, infotext, "Delete", "Cancel"))
                 {
-                    string assetPath = AssetDatabase.GetAssetPath(asset);
-                    string newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-
-                    // Copy
-                    if (newPath.Length != 0)
-                        failed |= !AssetDatabase.CopyAsset(assetPath, newPath);
-                    else
-                        failed |= true;
-
-                    if (!failed)
-                    {
-                        copiedPaths.Add(newPath);
-                    }
+                    return false;
                 }
             }
 
-            //              if (failed)
-            //                  UnityBeep ();
+            bool success = true;
+
+            AssetDatabase.StartAssetEditing();
+            foreach (string path in paths)
+            {
+                if (!AssetDatabase.MoveAssetToTrash(path))
+                    success = false;
+            }
+            AssetDatabase.StopAssetEditing();
+
+            return success;
+        }
+
+        internal static IEnumerable<AnimationClip> DuplicateAnimationClips(IEnumerable<AnimationClip> clips)
+        {
+            // If we are duplicating an animation clip which comes from a imported model. Instead of duplicating the fbx file, we duplicate the animation clip.
+            // Thus the user can edit and add for example animation events.
+            AssetDatabase.Refresh();
+
+            List<string> copiedPaths = new List<string>();
+
+            foreach (var sourceClip in clips)
+            {
+                if (sourceClip != null)
+                {
+                    string path = AssetDatabase.GetAssetPath(sourceClip);
+                    path = Path.Combine(Path.GetDirectoryName(path), sourceClip.name) + ".anim";
+                    string newPath = AssetDatabase.GenerateUniqueAssetPath(path);
+
+                    AnimationClip newClip = new AnimationClip();
+                    EditorUtility.CopySerialized(sourceClip, newClip);
+                    AssetDatabase.CreateAsset(newClip, newPath);
+                    copiedPaths.Add(newPath);
+                }
+            }
 
             AssetDatabase.Refresh();
 
-            Object[] copiedAssets = new Object[copiedPaths.Count];
-            for (int i = 0; i < copiedPaths.Count; i++)
+            return copiedPaths.Select(s => AssetDatabase.LoadMainAssetAtPath(s) as AnimationClip);
+        }
+
+        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<string> assets)
+        {
+            AssetDatabase.Refresh();
+
+            List<string> copiedPaths = new List<string>();
+
+            foreach (var assetPath in assets)
             {
-                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(copiedPaths[i] as string);
+                string newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
+
+                if (newPath.Length != 0 && AssetDatabase.CopyAsset(assetPath, newPath))
+                    copiedPaths.Add(newPath);
             }
 
-            Selection.objects = copiedAssets;
+            AssetDatabase.Refresh();
+
+            return copiedPaths.Select(AssetDatabase.LoadMainAssetAtPath);
+        }
+
+        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<int> instanceIDs)
+        {
+            return DuplicateAssets(GetMainPathsOfAssets(instanceIDs));
+        }
+
+        internal static IEnumerable<string> GetMainPathsOfAssets(IEnumerable<int> instanceIDs)
+        {
+            foreach (var instanceID in instanceIDs)
+            {
+                if (AssetDatabase.IsMainAsset(instanceID))
+                {
+                    yield return AssetDatabase.GetAssetPath(instanceID);
+                }
+            }
         }
     }
 }

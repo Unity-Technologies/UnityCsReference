@@ -63,6 +63,8 @@ namespace UnityEngine.Experimental.UIElements
 
         // use to set a capture. if any capture is set, it will be removed
         void TakeCapture(IEventHandler handler);
+
+        void DispatchEvent(EventBase evt, IPanel panel);
     }
 
     internal class EventDispatcher : IDispatcher
@@ -112,7 +114,7 @@ namespace UnityEngine.Experimental.UIElements
                 // if we set/unset the hover state on the PanelContainer, when the mouse exits
                 // the panel window, all hover states are unset as expected but after the draw
                 // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
+                if (element.shadow.parent == null)
                     continue;
 
                 // let element know
@@ -134,7 +136,7 @@ namespace UnityEngine.Experimental.UIElements
                 // if we set/unset the hover state on the PanelContainer, when the mouse exits
                 // the panel window, all hover states are unset as expected but after the draw
                 // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
+                if (element.shadow.parent == null)
                     continue;
 
                 // let element know
@@ -143,40 +145,44 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void DispatchEvent(EventBase evt, BaseVisualElementPanel panel)
+        public void DispatchEvent(EventBase evt, IPanel panel)
         {
             Event e = evt.imguiEvent;
-
-            if (e.type == EventType.Repaint)
+            if (e != null && e.type == EventType.Repaint)
             {
-                Debug.Log("Repaint should be handled by Panel before Dispatcher");
                 return;
             }
 
             bool invokedHandleEvent = false;
+            VisualElement captureVE = capture as VisualElement;
 
-            if (panel.panelDebug != null && panel.panelDebug.enabled && panel.panelDebug.interceptEvents != null)
+            if (panel != null && panel.panelDebug != null && panel.panelDebug.enabled && panel.panelDebug.interceptEvents != null)
                 if (panel.panelDebug.interceptEvents(e))
                 {
                     evt.StopPropagation();
                     return;
                 }
 
-            if (capture != null && capture.panel == null)
+            if (captureVE != null && captureVE.panel == null)
             {
-                Debug.Log(string.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e.type));
+                Debug.Log(String.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e.type));
                 RemoveCapture();
+                captureVE = null;
             }
 
-            if (capture != null)
+            // Send all IMGUI events (for backward compatibility) and MouseEvents (because thats what we want to do in the new system)
+            // to the capture, if there is one.
+            if ((MouseEventBase.Is(evt) || e != null) && capture != null)
             {
-                if (capture.panel.contextType != panel.contextType)
+                if (panel != null)
                 {
-                    return;
+                    if (captureVE != null && captureVE.panel.contextType != panel.contextType)
+                    {
+                        return;
+                    }
                 }
 
                 invokedHandleEvent = true;
-
                 evt.dispatch = true;
                 evt.target = capture;
                 evt.currentTarget = capture;
@@ -185,89 +191,146 @@ namespace UnityEngine.Experimental.UIElements
                 evt.propagationPhase = PropagationPhase.None;
                 evt.currentTarget = null;
                 evt.dispatch = false;
-
-                if (evt.isPropagationStopped)
-                {
-                    return;
-                }
             }
 
-            if (e.isKey)
+            if (!evt.isPropagationStopped)
             {
-                if (panel.focusedElement != null)
+                if (KeyboardEventBase.Is(evt))
                 {
-                    invokedHandleEvent = true;
-                    PropagateEvent(panel.focusedElement, evt);
-                }
-                else
-                {
-                    // Force call to SendEventToIMGUIContainers(), even if capture != null.
-                    invokedHandleEvent = false;
-                }
-
-                // if the event was not handled than we want to check for focus move, ie: tabbing.
-            }
-            else if (e.isMouse
-                     || e.isScrollWheel
-                     || e.type == EventType.DragUpdated
-                     || e.type == EventType.DragPerform
-                     || e.type == EventType.DragExited)
-            {
-                VisualElement topElementUnderMouse;
-
-                // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
-                // this is a problem in itself but it could leave some elements as "hover"
-                if (e.type == EventType.MouseLeaveWindow)
-                {
-                    ClearHoverOnElementsUnderMouse();
-                    topElementUnderMouse = null;
-                }
-                // update element under mouse and fire necessary events
-                else
-                {
-                    if (m_ElementsUnderMouse == null)
+                    if (panel.focusController.focusedElement != null)
                     {
-                        m_ElementsUnderMouse = new HashSet<VisualElement>();
+                        IMGUIContainer imguiContainer = panel.focusController.focusedElement as IMGUIContainer;
+
+                        invokedHandleEvent = true;
+                        if (imguiContainer != null)
+                        {
+                            if (imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
+                            {
+                                evt.StopPropagation();
+                                evt.PreventDefault();
+                            }
+                        }
+                        else
+                        {
+                            evt.target = panel.focusController.focusedElement;
+                            PropagateEvent(evt);
+                        }
                     }
+                    else
+                    {
+                        evt.target = panel.visualTree;
+                        PropagateEvent(evt);
 
-                    var picked = new List<VisualElement>();
-                    topElementUnderMouse = panel.PickAll(e.mousePosition, picked);
+                        // Force call to PropagateToIMGUIContainer(), even if capture != null.
+                        invokedHandleEvent = false;
+                    }
+                }
+                else if (MouseEventBase.Is(evt) || (
+                             e != null && (
+                                 e.type == EventType.ContextClick ||
+                                 e.type == EventType.MouseEnterWindow ||
+                                 e.type == EventType.MouseLeaveWindow ||
+                                 e.type == EventType.DragUpdated ||
+                                 e.type == EventType.DragPerform ||
+                                 e.type == EventType.DragExited
+                                 )
+                             ))
+                {
+                    // FIXME: we should not change hover state when capture is true.
+                    // However, when doing drag and drop, drop target should be highlighted.
 
-                    if (!m_ElementsUnderMouse.SetEquals(picked))
+                    VisualElement topElementUnderMouse = null;
+
+                    // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
+                    // this is a problem in itself but it could leave some elements as "hover"
+                    if (e != null && e.type == EventType.MouseLeaveWindow)
                     {
                         ClearHoverOnElementsUnderMouse();
-                        m_ElementsUnderMouse.UnionWith(picked);
-                        SetHoverOnElementsUnderMouse();
+                        topElementUnderMouse = null;
+                    }
+                    // update element under mouse and fire necessary events
+                    else if (MouseEventBase.Is(evt))
+                    {
+                        if (m_ElementsUnderMouse == null)
+                        {
+                            m_ElementsUnderMouse = new HashSet<VisualElement>();
+                        }
+
+                        var picked = new List<VisualElement>();
+                        topElementUnderMouse = panel.PickAll((evt as MouseEventBase).localMousePosition, picked);
+
+                        if (!m_ElementsUnderMouse.SetEquals(picked))
+                        {
+                            ClearHoverOnElementsUnderMouse();
+                            m_ElementsUnderMouse.UnionWith(picked);
+                            SetHoverOnElementsUnderMouse();
+                        }
+                    }
+                    else if (e != null)
+                    {
+                        if (m_ElementsUnderMouse == null)
+                        {
+                            m_ElementsUnderMouse = new HashSet<VisualElement>();
+                        }
+
+                        var picked = new List<VisualElement>();
+                        topElementUnderMouse = panel.PickAll(e.mousePosition, picked);
+
+                        if (!m_ElementsUnderMouse.SetEquals(picked))
+                        {
+                            ClearHoverOnElementsUnderMouse();
+                            m_ElementsUnderMouse.UnionWith(picked);
+                            SetHoverOnElementsUnderMouse();
+                        }
+                    }
+
+                    if (topElementUnderMouse != null)
+                    {
+                        invokedHandleEvent = true;
+                        evt.target = topElementUnderMouse;
+                        PropagateEvent(evt);
                     }
                 }
-
-                if (e.type == EventType.MouseDown
-                    && topElementUnderMouse != null
-                    && topElementUnderMouse.enabled)
+                else if (e != null && (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand))
                 {
-                    SetFocusedElement(panel, topElementUnderMouse);
+                    IMGUIContainer imguiContainer = panel.focusController.focusedElement as IMGUIContainer;
+
+                    if (imguiContainer != null)
+                    {
+                        invokedHandleEvent = true;
+                        if (imguiContainer.HandleIMGUIEvent(evt.imguiEvent))
+                        {
+                            evt.StopPropagation();
+                            evt.PreventDefault();
+                        }
+                    }
+                    else if (panel.focusController.focusedElement != null)
+                    {
+                        invokedHandleEvent = true;
+                        evt.target = panel.focusController.focusedElement;
+                        PropagateEvent(evt);
+                    }
                 }
-
-                if (topElementUnderMouse != null)
+                else if (FocusEventBase.Is(evt))
                 {
+                    Debug.Assert(evt.target != null);
                     invokedHandleEvent = true;
-                    PropagateEvent(topElementUnderMouse, evt);
-                }
-            }
-            else if (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand)
-            {
-                if (panel.focusedElement != null)
-                {
-                    invokedHandleEvent = true;
-                    PropagateEvent(panel.focusedElement, evt);
+                    PropagateEvent(evt);
                 }
             }
 
-            // Fallback on IMGUI propagation if we don't recognize this event
-            if (!evt.isPropagationStopped && (e.type == EventType.MouseEnterWindow || e.type == EventType.MouseLeaveWindow || e.type == EventType.Used || !invokedHandleEvent))
+            if (!evt.isPropagationStopped && e != null)
             {
-                SendEventToIMGUIContainers(panel.visualTree, evt);
+                if (!invokedHandleEvent || e != null && (
+                        e.type == EventType.MouseEnterWindow ||
+                        e.type == EventType.MouseLeaveWindow ||
+                        e.type == EventType.Used
+                        ))
+                {
+                    PropagateToIMGUIContainer(panel.visualTree, evt, captureVE);
+                }
             }
+
             if (evt.target == null)
             {
                 evt.target = panel.visualTree;
@@ -275,12 +338,13 @@ namespace UnityEngine.Experimental.UIElements
             ExecuteDefaultAction(evt);
         }
 
-        private void SendEventToIMGUIContainers(VisualElement root, EventBase evt)
+        private static void PropagateToIMGUIContainer(VisualElement root, EventBase evt, VisualElement capture)
         {
             // Send the event to the first IMGUIContainer that can handle it.
+            // If e.type != EventType.Used, avoid resending the event to the capture as it already had the chance to handle it.
 
             var imContainer = root as IMGUIContainer;
-            if (imContainer != null)
+            if (imContainer != null && (evt.imguiEvent.type == EventType.Used || root != capture))
             {
                 if (imContainer.HandleIMGUIEvent(evt.imguiEvent))
                 {
@@ -290,12 +354,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var container = root as VisualContainer;
-                if (container != null)
+                if (root != null)
                 {
-                    for (int i = 0; i < container.childrenCount; i++)
+                    for (int i = 0; i < root.shadow.childCount; i++)
                     {
-                        SendEventToIMGUIContainers(container.GetChildAt(i), evt);
+                        PropagateToIMGUIContainer(root.shadow[i], evt, capture);
                         if (evt.isPropagationStopped)
                             break;
                     }
@@ -303,7 +366,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private void PropagateEvent(VisualElement target, EventBase evt)
+        private static void PropagateEvent(EventBase evt)
         {
             if (evt.dispatch)
             {
@@ -311,32 +374,28 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            var path = BuildPropagationPath(target);
+            var path = BuildPropagationPath(evt.target as VisualElement);
 
             evt.dispatch = true;
-            evt.target = target;
 
             // Phase 1: Capture phase
             // Propagate event from root to target.parent
             evt.propagationPhase = PropagationPhase.Capture;
+
             for (int i = 0; i < path.Count; i++)
             {
                 if (evt.isPropagationStopped)
                     break;
 
-                var currentTarget = path[i];
-                if (currentTarget.enabled)
-                {
-                    evt.currentTarget = currentTarget;
-                    evt.currentTarget.HandleEvent(evt);
-                }
+                evt.currentTarget = path[i];
+                evt.currentTarget.HandleEvent(evt);
             }
 
             // Phase 2: Target
-            if (!evt.isPropagationStopped && target.enabled)
+            if (!evt.isPropagationStopped)
             {
                 evt.propagationPhase = PropagationPhase.AtTarget;
-                evt.currentTarget = target;
+                evt.currentTarget = evt.target;
                 evt.currentTarget.HandleEvent(evt);
             }
 
@@ -351,12 +410,8 @@ namespace UnityEngine.Experimental.UIElements
                     if (evt.isPropagationStopped)
                         break;
 
-                    var currentTarget = path[i];
-                    if (currentTarget.enabled)
-                    {
-                        evt.currentTarget = currentTarget;
-                        evt.currentTarget.HandleEvent(evt);
-                    }
+                    evt.currentTarget = path[i];
+                    evt.currentTarget.HandleEvent(evt);
                 }
             }
 
@@ -381,39 +436,19 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        void SetFocusedElement(BaseVisualElementPanel panel, VisualElement element)
-        {
-            if (panel.focusedElement == element)
-                return;
-
-            if (panel.focusedElement != null)
-            {
-                // let element know
-                panel.focusedElement.pseudoStates = panel.focusedElement.pseudoStates & ~PseudoStates.Focus;
-                // TODO replace with focus lost event
-                panel.focusedElement.OnLostKeyboardFocus();
-            }
-
-            panel.focusedElement = element;
-
-            if (element != null)
-            {
-                // let element know
-                element.pseudoStates = element.pseudoStates | PseudoStates.Focus;
-                // TODO send focus gain event
-            }
-        }
-
         private static List<VisualElement> BuildPropagationPath(VisualElement elem)
         {
             var ret = new List<VisualElement>(16);
             if (elem == null)
                 return ret;
 
-            while (elem.parent != null)
+            while (elem.shadow.parent != null)
             {
-                ret.Add(elem.parent);
-                elem = elem.parent;
+                if (elem.shadow.parent.enabled)
+                {
+                    ret.Add(elem.shadow.parent);
+                }
+                elem = elem.shadow.parent;
             }
 
             ret.Reverse();

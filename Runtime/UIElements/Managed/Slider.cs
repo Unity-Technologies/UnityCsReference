@@ -7,7 +7,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Slider : VisualContainer
+    public class Slider : VisualElement
     {
         public enum Direction
         {
@@ -78,14 +78,14 @@ namespace UnityEngine.Experimental.UIElements
             lowValue = start;
             highValue = end;
 
-            AddChild(new VisualElement() { name = "TrackElement" });
+            Add(new VisualElement() { name = "TrackElement" });
 
             // Explicitly set m_Value
             m_Value = lowValue;
 
             dragElement = new VisualElement() { name = "DragElement" };
 
-            AddChild(dragElement);
+            Add(dragElement);
 
             clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             this.AddManipulator(clampedDragger);

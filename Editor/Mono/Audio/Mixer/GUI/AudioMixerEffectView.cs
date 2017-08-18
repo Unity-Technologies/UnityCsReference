@@ -246,7 +246,7 @@ namespace UnityEditor
 
                     numChannels = group.controller.GetGroupVUInfo(group.groupID, true, ref vuinfo_level, ref vuinfo_peak);
 
-                    if (evt.type == EventType.layout)
+                    if (evt.type == EventType.Layout)
                     {
                         m_LastNumChannels = numChannels;
                     }

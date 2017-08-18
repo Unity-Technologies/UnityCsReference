@@ -435,7 +435,7 @@ public static Vector3 Slider2D(Vector3 handlePos, Vector3 handleDir, Vector3 sli
     [System.Obsolete ("Use CubeHandleCap instead")]
 public static void CubeCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Graphics.DrawMeshNow(cubeMesh, StartCapDraw(position, rotation, size));
         }
@@ -444,7 +444,7 @@ public static void CubeCap(int controlID, Vector3 position, Quaternion rotation,
     [System.Obsolete ("Use SphereHandleCap instead")]
 public static void SphereCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Graphics.DrawMeshNow(sphereMesh, StartCapDraw(position, rotation, size));
         }
@@ -453,7 +453,7 @@ public static void SphereCap(int controlID, Vector3 position, Quaternion rotatio
     [System.Obsolete ("Use ConeHandleCap instead")]
 public static void ConeCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Graphics.DrawMeshNow(coneMesh, StartCapDraw(position, rotation, size));
         }
@@ -462,7 +462,7 @@ public static void ConeCap(int controlID, Vector3 position, Quaternion rotation,
     [System.Obsolete ("Use CylinderHandleCap instead")]
 public static void CylinderCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Graphics.DrawMeshNow(cylinderMesh, StartCapDraw(position, rotation, size));
         }
@@ -477,7 +477,7 @@ public static void RectangleCap(int controlID, Vector3 position, Quaternion rota
     
     internal static void RectangleCap(int controlID, Vector3 position, Quaternion rotation, Vector2 size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Vector3 sideways = rotation * new Vector3(size.x, 0, 0);
             Vector3 up = rotation * new Vector3(0, size.y, 0);
@@ -492,7 +492,7 @@ public static void RectangleCap(int controlID, Vector3 position, Quaternion rota
     
     public static void SelectionFrame(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Handles.StartCapDraw(position, rotation, size);
             Vector3 sideways = rotation * new Vector3(size, 0, 0);
@@ -513,7 +513,7 @@ public static void RectangleCap(int controlID, Vector3 position, Quaternion rota
     [System.Obsolete ("Use DotHandleCap instead")]
 public static void DotCap(int controlID, Vector3 position,  Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             position = matrix.MultiplyPoint(position);
@@ -536,7 +536,7 @@ public static void DotCap(int controlID, Vector3 position,  Quaternion rotation,
     [System.Obsolete ("Use CircleHandleCap instead")]
 public static void CircleCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             StartCapDraw(position, rotation, size);
             Vector3 forward = rotation * new Vector3(0, 0, 1);
@@ -547,7 +547,7 @@ public static void CircleCap(int controlID, Vector3 position, Quaternion rotatio
     [System.Obsolete ("Use ArrowHandleCap instead")]
 public static void ArrowCap(int controlID, Vector3 position, Quaternion rotation, float size)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             Vector3 direction = rotation * Vector3.forward;
             ConeCap(controlID, position + direction * size, Quaternion.LookRotation(direction), size * .2f);
@@ -600,7 +600,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     
     private static void DoDrawAAPolyLine(Color[] colors, Vector3[] points, int actualNumberOfPoints, Texture2D lineTex, float width, float alpha)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             HandleUtility.ApplyWireMaterial(zTest);
 
@@ -630,7 +630,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     
     private static void DoDrawAAConvexPolygon(Vector3[] points, int actualNumberOfPoints, float alpha)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             HandleUtility.ApplyWireMaterial(zTest);
@@ -649,7 +649,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     private extern static void INTERNAL_CALL_Internal_DrawAAConvexPolygon (Vector3[] points, ref Color defaultColor, int actualNumberOfPoints, ref Matrix4x4 toWorld);
     public static void DrawBezier(Vector3 startPosition, Vector3 endPosition, Vector3 startTangent, Vector3 endTangent, Color color, Texture2D texture, float width)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             HandleUtility.ApplyWireMaterial(zTest);
@@ -696,7 +696,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     
     public static void DrawSolidRectangleWithOutline(Vector3[] verts, Color faceColor, Color outlineColor)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             HandleUtility.ApplyWireMaterial(zTest);
@@ -750,7 +750,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
     
     public static void DrawSolidArc(Vector3 center, Vector3 normal, Vector3 from, float angle, float radius)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
             SetDiscSectionPoints(s_WireArcPoints, center, normal, from, angle, radius);
 
@@ -894,7 +894,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
             {
                 camera.rect = new Rect(0, 0, 1, 1);
             }
-            if (evt.type == EventType.repaint)
+            if (evt.type == EventType.Repaint)
                 Internal_ClearCamera(camera);
             else
                 Internal_SetCurrentCamera(camera);
@@ -912,7 +912,7 @@ internal static void DrawCameraImpl(Rect position, Camera camera,
         {
             Event evt = Event.current;
 
-            if (evt.type == EventType.repaint)
+            if (evt.type == EventType.Repaint)
             {
                 if (camera.targetTexture == null)
                 {
@@ -962,7 +962,7 @@ internal static void DrawCameraImpl(Rect position, Camera camera,
     
     internal static void DrawCameraStep2(Camera camera, DrawCameraMode drawMode)
         {
-            if (Event.current.type == EventType.repaint && drawMode != DrawCameraMode.Normal)
+            if (Event.current.type == EventType.Repaint && drawMode != DrawCameraMode.Normal)
                 Internal_FinishDrawingCamera(camera);
         }
     
@@ -1007,7 +1007,7 @@ public static void DrawCamera(Rect position, Camera camera, [uei.DefaultValue("D
 
     public static void SetCamera(Camera camera)
         {
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 Internal_SetupCamera(camera);
             else
                 Internal_SetCurrentCamera(camera);
@@ -1025,7 +1025,7 @@ public static void DrawCamera(Rect position, Camera camera, [uei.DefaultValue("D
 
             Event evt = Event.current;
 
-            if (evt.type == EventType.repaint)
+            if (evt.type == EventType.Repaint)
                 Internal_SetupCamera(camera);
             else
                 Internal_SetCurrentCamera(camera);
@@ -1034,7 +1034,7 @@ public static void DrawCamera(Rect position, Camera camera, [uei.DefaultValue("D
     
     public static void BeginGUI()
         {
-            if (Camera.current && Event.current.type == EventType.repaint)
+            if (Camera.current && Event.current.type == EventType.Repaint)
             {
                 GUIClip.Reapply();
             }
@@ -1051,7 +1051,7 @@ public static void BeginGUI(Rect position)
     public static void EndGUI()
         {
             Camera cam = Camera.current;
-            if (cam && Event.current.type == EventType.repaint)
+            if (cam && Event.current.type == EventType.Repaint)
                 Internal_SetupCamera(cam);
         }
     

@@ -272,7 +272,7 @@ namespace UnityEditor
 
         public static void DrawPolyLine(Matrix4x4 transform, float minDistance, params Vector3[] points)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             Color col = Handles.color * new Color(1, 1, 1, 0.75f);
@@ -307,7 +307,7 @@ namespace UnityEditor
             if (mesh.vertexCount == 0)
                 return;
 
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             int minRep;

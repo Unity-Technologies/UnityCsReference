@@ -649,7 +649,7 @@ namespace UnityEditorInternal
                     }
                 }
 
-                if (eventType == EventType.mouseUp)
+                if (eventType == EventType.MouseUp)
                 {
                     if (m_IsDragging && GUIUtility.hotControl == id)
                     {
@@ -1359,7 +1359,7 @@ namespace UnityEditorInternal
                 int id = s_RectSelectionID;
                 switch (evt.GetTypeForControl(id))
                 {
-                    case EventType.mouseDown:
+                    case EventType.MouseDown:
                         if (evt.button == 0 && position.Contains(mousePos))
                         {
                             GUIUtility.hotControl = id;
@@ -1368,7 +1368,7 @@ namespace UnityEditorInternal
                             evt.Use();
                         }
                         break;
-                    case EventType.mouseDrag:
+                    case EventType.MouseDrag:
                         if (GUIUtility.hotControl == id)
                         {
                             m_ValidRect = Mathf.Abs((mousePos - m_SelectStartPoint).x) > 1f;
@@ -1380,12 +1380,12 @@ namespace UnityEditorInternal
                         }
                         break;
 
-                    case EventType.repaint:
+                    case EventType.Repaint:
                         if (GUIUtility.hotControl == id && m_ValidRect)
                             EditorStyles.selectionRect.Draw(GetCurrentPixelRect(), GUIContent.none, false, false, false, false);
                         break;
 
-                    case EventType.mouseUp:
+                    case EventType.MouseUp:
                         if (GUIUtility.hotControl == id && evt.button == 0)
                         {
                             if (m_ValidRect)

@@ -68,7 +68,7 @@ namespace UnityEditor
         {
             BoundsInt gizmoRect = position;
             bool refreshPreviews = false;
-            if (Event.current.type == EventType.layout)
+            if (Event.current.type == EventType.Layout)
             {
                 int newPreviewRefreshHash = GetHash(gridLayout, brushTarget, position, tool, brush);
                 refreshPreviews = newPreviewRefreshHash != m_LastPreviewRefreshHash;
@@ -193,9 +193,9 @@ namespace UnityEditor
                     EditorGUILayout.ObjectField(Styles.spriteLabel, m_SelectionSprites[0], typeof(Sprite), false, GUILayout.Height(EditorGUI.kSingleLineHeight));
                     EditorGUI.showMixedValue = m_SelectionColliderTypes.Any(colliderType => colliderType != m_SelectionColliderTypes.First());
                     EditorGUILayout.EnumPopup(Styles.colliderTypeLabel, m_SelectionColliderTypes[0]);
-                    EditorGUI.showMixedValue = colorFlagsAllEqual;
+                    EditorGUI.showMixedValue = !colorFlagsAllEqual;
                     EditorGUILayout.Toggle(Styles.lockColorLabel, (m_SelectionFlagsArray[0] & TileFlags.LockColor) != 0);
-                    EditorGUI.showMixedValue = transformFlagsAllEqual;
+                    EditorGUI.showMixedValue = !transformFlagsAllEqual;
                     EditorGUILayout.Toggle(Styles.lockTransformLabel, (m_SelectionFlagsArray[0] & TileFlags.LockTransform) != 0);
                 }
 

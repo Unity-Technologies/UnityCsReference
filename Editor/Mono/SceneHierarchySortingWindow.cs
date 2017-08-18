@@ -112,7 +112,7 @@ namespace UnityEditor
         internal void OnGUI()
         {
             // We do not use the layout event
-            if (Event.current.type == EventType.layout)
+            if (Event.current.type == EventType.Layout)
                 return;
 
             if (Event.current.type == EventType.MouseMove)

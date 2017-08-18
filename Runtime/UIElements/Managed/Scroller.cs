@@ -19,7 +19,7 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class Scroller : VisualContainer
+    public class Scroller : VisualElement
     {
         // Usually set by the owner of the scroller
         public event System.Action<float> valueChanged;
@@ -69,11 +69,11 @@ namespace UnityEngine.Experimental.UIElements
 
             // Add children in correct order
             slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider"};
-            AddChild(slider);
+            Add(slider);
             lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
-            AddChild(lowButton);
+            Add(lowButton);
             highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
-            AddChild(highButton);
+            Add(highButton);
         }
 
         public override bool enabled
@@ -82,14 +82,15 @@ namespace UnityEngine.Experimental.UIElements
             set { base.enabled = value; PropagateEnabled(this, value); }
         }
 
-        public void PropagateEnabled(VisualContainer c, bool enabled)
+        public void PropagateEnabled(VisualElement c, bool enabled)
         {
             if (c != null)
             {
-                foreach (var child in c)
+                for (int i = 0; i < c.shadow.childCount; ++i)
                 {
+                    var child = c.shadow[i];
                     child.enabled = enabled;
-                    PropagateEnabled(child as VisualContainer, enabled);
+                    PropagateEnabled(child, enabled);
                 }
             }
         }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine;
 
@@ -24,6 +25,8 @@ namespace UnityEngine.XR.Tango
     }
 
     // Must match Tango::MeshReconstruction::Config in TangoTypes.h
+    [NativeHeader("ARScriptingClasses.h")]
+    [UsedByNativeCode]
     public struct MeshReconstructionConfig
     {
         public double resolution;
@@ -35,7 +38,7 @@ namespace UnityEngine.XR.Tango
         public bool useSpaceClearing;
         public UpdateMethod updateMethod;
 
-        MeshReconstructionConfig GetDefault()
+        public static MeshReconstructionConfig GetDefault()
         {
             return new MeshReconstructionConfig
             {
@@ -55,6 +58,7 @@ namespace UnityEngine.XR.Tango
     // A container for the grid index
     // Must match Tango::MeshReconstruction::GridIndex in TangoTypes.h
     //
+    [UsedByNativeCode]
     public struct GridIndex
     {
         public int i;
@@ -90,10 +94,26 @@ namespace UnityEngine.XR.Tango
         public delegate void SegmentChangedDelegate(GridIndex gridIndex, SegmentChange changeType, double updateTime);
         public delegate void SegmentReadyDelegate(SegmentGenerationResult generatedSegmentData);
 
+        // This must match Tango::MeshReconstruction::CreationStatus in TangoTypes.h
+        public enum Status
+        {
+            UnsupportedPlatform,
+            Ok,
+            MissingMeshReconstructionLibrary,
+            FailedToCreateMeshReconstructionContext,
+            FailedToSetDepthCalibration
+        }
+
+        private Status m_Status = Status.UnsupportedPlatform;
+        public Status status
+        { get { return m_Status; } }
+
 
         public MeshReconstructionServer(MeshReconstructionConfig config)
         {
-            m_ServerPtr = Internal_Create(config);
+            int status = 0;
+            m_ServerPtr = Internal_Create(this, config, out status);
+            m_Status = (Status)status;
         }
 
         ~MeshReconstructionServer()

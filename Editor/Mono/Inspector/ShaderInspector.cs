@@ -195,7 +195,7 @@ namespace UnityEditor
                 }
 
                 // background
-                if (e.type == EventType.repaint)
+                if (e.type == EventType.Repaint)
                 {
                     if ((i & 1) == 0)
                     {

@@ -9,6 +9,30 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class KeyboardEventBase : UIEvent
     {
+        static List<long> s_EventSubTypeIds;
+
+        protected new static long RegisterEventClass()
+        {
+            if (s_EventSubTypeIds == null)
+            {
+                s_EventSubTypeIds = new List<long>();
+            }
+
+            long id = UIEvent.RegisterEventClass();
+            s_EventSubTypeIds.Add(id);
+            return id;
+        }
+
+        public static bool Is(EventBase evt)
+        {
+            if (s_EventSubTypeIds == null || evt == null)
+            {
+                return false;
+            }
+
+            return s_EventSubTypeIds.Contains(evt.GetEventTypeId());
+        }
+
         public EventModifiers modifiers { get; private set; }
         public char character { get; private set; }
         public KeyCode keyCode { get; private set; }
@@ -44,15 +68,23 @@ namespace UnityEngine.Experimental.UIElements
                 keyCode = systemEvent.keyCode;
             }
         }
+
+        public KeyboardEventBase(EventFlags flags, char character, KeyCode keyCode, EventModifiers modifiers)
+            : base(flags, null)
+        {
+            this.modifiers = modifiers;
+            this.character = character;
+            this.keyCode = keyCode;
+        }
     }
 
     public class KeyDownEvent : KeyboardEventBase
     {
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
 
         static KeyDownEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()
@@ -67,15 +99,20 @@ namespace UnityEngine.Experimental.UIElements
             : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
         {
         }
+
+        public KeyDownEvent(char character, KeyCode keyCode, EventModifiers modifiers)
+            : base(EventFlags.Bubbles | EventFlags.Cancellable, character, keyCode, modifiers)
+        {
+        }
     }
 
     public class KeyUpEvent : KeyboardEventBase
     {
-        static readonly long s_EventClassId;
+        public static readonly long s_EventClassId;
 
         static KeyUpEvent()
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            s_EventClassId = RegisterEventClass();
         }
 
         public override long GetEventTypeId()
@@ -88,6 +125,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public KeyUpEvent(Event systemEvent)
             : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
+        {
+        }
+
+        public KeyUpEvent(char character, KeyCode keyCode, EventModifiers modifiers)
+            : base(EventFlags.Bubbles | EventFlags.Cancellable, character, keyCode, modifiers)
         {
         }
     }

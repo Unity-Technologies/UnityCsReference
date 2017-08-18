@@ -33,7 +33,7 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TextContent("Birth"),
                 EditorGUIUtility.TextContent("Collision"),
-                EditorGUIUtility.TextContent("Lifetime")
+                EditorGUIUtility.TextContent("Death")
             };
 
             // Keep in sync with SubModule::InheritedProperties

@@ -8,6 +8,7 @@ using UnityEditor.Callbacks;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -132,7 +133,24 @@ namespace UnityEditor
         extern public bool GetExcludeFromAnyPlatform(string platformName);
 
         public delegate bool IncludeInBuildDelegate(string path);
-        extern public void SetIncludeInBuildDelegate(IncludeInBuildDelegate includeInBuildDelegate);
+
+        // this is implemented as a static map so that it can survive a garbage collection on the PluginImporter and not get lost
+        private static Dictionary<string, IncludeInBuildDelegate> s_includeInBuildDelegateMap = new Dictionary<string, IncludeInBuildDelegate>();
+        public void SetIncludeInBuildDelegate(IncludeInBuildDelegate includeInBuildDelegate)
+        {
+            s_includeInBuildDelegateMap[assetPath] = includeInBuildDelegate;
+        }
+
+        [RequiredByNativeCode]
+        private bool InvokeIncludeInBuildDelegate()
+        {
+            if (s_includeInBuildDelegateMap.ContainsKey(assetPath))
+            {
+                return s_includeInBuildDelegateMap[assetPath](assetPath);
+            }
+
+            return true;
+        }
 
         public void SetExcludeFromAnyPlatform(BuildTarget platform, bool excludedFromAny)
         {

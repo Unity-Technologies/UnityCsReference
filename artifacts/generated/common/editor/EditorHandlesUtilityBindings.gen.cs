@@ -398,7 +398,7 @@ public sealed partial class HandleUtility
             Handles.Init();
             switch (Event.current.type)
             {
-                case EventType.layout:
+                case EventType.Layout:
                     s_NearestControl = 0;
                     s_NearestDistance = kPickDistance;
                     break;

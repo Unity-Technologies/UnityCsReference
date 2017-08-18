@@ -25,13 +25,13 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     // We only want the position to be affected by the Handles.matrix.
                     Handles.matrix = Matrix4x4.identity;
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(worldPosition, size) + HandleUtility.kPickDistance);
                     Handles.matrix = origMatrix;
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
@@ -43,7 +43,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         // rayDrag rotates object to look at ray hit
@@ -80,7 +80,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         Tools.UnlockHandlePosition();
@@ -89,7 +89,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
@@ -101,7 +101,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color temp = Color.white;
                     var isHot = id == GUIUtility.hotControl;
                     var isPreselected = id == HandleUtility.nearestControl && GUIUtility.hotControl == 0;

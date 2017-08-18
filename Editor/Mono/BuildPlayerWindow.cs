@@ -114,7 +114,7 @@ namespace UnityEditor
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
-            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method");
+            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method|Compression applied to Player data (scenes and resources).\nNone - no compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
             public Compression[] compressionTypes =
             {
@@ -608,14 +608,14 @@ namespace UnityEditor
                         "Your {0} build will include a Unity Personal Edition splash screen." +
                         "\n\nYou must be eligible to use Unity Personal Edition to use this build option. " +
                         "Please refer to our EULA for further information.",
-                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTarget));
+                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(infoText, EditorStyles.wordWrappedMiniLabel);
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("EULA", EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/legal/eula");
-                if (GUILayout.Button(string.Format("Add {0} to your Unity Pro license", BuildPlatforms.instance.GetBuildTargetDisplayName(buildTarget)), EditorStyles.miniButton))
+                if (GUILayout.Button(string.Format("Add {0} to your Unity Pro license", BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget)), EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/get-unity");
                 GUILayout.EndHorizontal();
                 GUILayout.EndVertical();
@@ -751,10 +751,9 @@ namespace UnityEditor
 
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
                 {
-                    styles.compressionMethod.tooltip = "Compression method for Asset Bundles";
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
                     if (cmpIdx == -1)
-                        cmpIdx = 0;
+                        cmpIdx = 1; // Lz4 by default.
                     cmpIdx = EditorGUILayout.Popup(styles.compressionMethod, cmpIdx, styles.compressionStrings);
                     EditorUserBuildSettings.SetCompressionType(buildTargetGroup, styles.compressionTypes[cmpIdx]);
                 }

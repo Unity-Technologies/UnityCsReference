@@ -591,7 +591,7 @@ namespace UnityEditorInternal
 
         public void OnGUI(Rect clippingRect, ProfilerProperty property, bool showInactiveDSPChains, bool highlightAudibleDSPChains, ref float zoomFactor, ref Vector2 scrollPos)
         {
-            if (Event.current.type == EventType.scrollWheel && clippingRect.Contains(Event.current.mousePosition) && Event.current.shift)
+            if (Event.current.type == EventType.ScrollWheel && clippingRect.Contains(Event.current.mousePosition) && Event.current.shift)
             {
                 float zoomStep = 1.05f;
                 var oldZoomFactor = zoomFactor;

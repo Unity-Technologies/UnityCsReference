@@ -5,6 +5,7 @@
 using System;
 using UnityEditorInternal;
 using UnityEditor.Web;
+using UnityEngine;
 
 namespace UnityEditor.Connect
 {
@@ -42,7 +43,6 @@ namespace UnityEditor.Connect
 
             string url = string.Format("{0}/v1/oauth2/authorize", UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudIdentity));
 
-
             AsyncHTTPClient client = new AsyncHTTPClient(url);
             client.postData = string.Format("client_id={0}&response_type=code&format=json&access_token={1}&prompt=none",
                     clientId,
@@ -65,6 +65,22 @@ namespace UnityEditor.Connect
                             else if (json.ContainsKey("message"))
                             {
                                 response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", json["message"].AsString()));
+                            }
+                            else if (json.ContainsKey("location") && !json["location"].IsNull())
+                            {
+                                UnityConnectConsentView consentView = UnityConnectConsentView.ShowUnityConnectConsentView(json["location"].AsString());
+                                if (!string.IsNullOrEmpty(consentView.Code))
+                                {
+                                    response.AuthCode = consentView.Code;
+                                }
+                                else if (!string.IsNullOrEmpty(consentView.Error))
+                                {
+                                    response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", consentView.Error));
+                                }
+                                else
+                                {
+                                    response.Exception = new InvalidOperationException("Consent Windows was closed unexpected.");
+                                }
                             }
                             else
                             {

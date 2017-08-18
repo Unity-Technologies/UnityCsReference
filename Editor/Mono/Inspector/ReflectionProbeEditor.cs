@@ -616,7 +616,7 @@ namespace UnityEditor
         // Draw Reflection probe preview sphere
         private void OnPreSceneGUICallback(SceneView sceneView)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             foreach (var t in targets)

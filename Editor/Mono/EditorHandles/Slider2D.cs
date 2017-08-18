@@ -154,7 +154,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     // This is an ugly hack. It would be better if the drawFunc can handle it's own layout.
                     if (drawFunc == Handles.ArrowCap)
                     {
@@ -171,7 +171,7 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0)
                     {
@@ -194,7 +194,7 @@ namespace UnityEditorInternal
                     }
                     break;
 
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -225,7 +225,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -233,11 +233,11 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                 {
                     if (drawFunc == null)
                         break;
@@ -306,13 +306,13 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     if (capFunction != null)
                         capFunction(id, position, rotation, handleSize, EventType.Layout);
                     else
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(handlePos + offset, handleSize * .5f));
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0 && GUIUtility.hotControl == 0)
                     {
@@ -333,7 +333,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -356,7 +356,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -364,11 +364,11 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                 {
                     if (capFunction == null)
                         break;

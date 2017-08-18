@@ -88,7 +88,7 @@ public sealed partial class GenericMenu
         {
             if (Event.current == null)
                 return;
-            DropDown(new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
+            DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
         }
     
     public void DropDown(Rect position)
@@ -113,12 +113,6 @@ public sealed partial class GenericMenu
     
     internal void Popup(Rect position, int selectedIndex)
         {
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                DropDown(position);
-                return;
-            }
-
             DropDown(position);
         }
     

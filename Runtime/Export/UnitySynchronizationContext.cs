@@ -13,14 +13,31 @@ namespace UnityEngine
     {
         private const int kAwqInitialCapacity = 20;
         private readonly Queue<WorkRequest> m_AsyncWorkQueue = new Queue<WorkRequest>(kAwqInitialCapacity);
+        private readonly int m_MainThreadID = System.Threading.Thread.CurrentThread.ManagedThreadId;
 
-        // Send will process the call synchronously
+        // Send will process the call synchronously. If the call is processed on the main thread, we'll invoke it
+        // directly here. If the call is processed on another thread it will be queued up like POST to be executed
+        // on the main thread and it will wait. Once the main thread processes the work we can continue
         public override void Send(SendOrPostCallback callback, object state)
         {
-            callback(state);
+            if (m_MainThreadID == System.Threading.Thread.CurrentThread.ManagedThreadId)
+            {
+                callback(state);
+            }
+            else
+            {
+                using (var waitHandle = new ManualResetEvent(false))
+                {
+                    lock (m_AsyncWorkQueue)
+                    {
+                        m_AsyncWorkQueue.Enqueue(new WorkRequest(callback, state, waitHandle));
+                    }
+                    waitHandle.WaitOne();
+                }
+            }
         }
 
-        // Post will add the call to a task list to be executed later
+        // Post will add the call to a task list to be executed later on the main thread then work will continue asynchronously
         public override void Post(SendOrPostCallback callback, object state)
         {
             lock (m_AsyncWorkQueue)
@@ -65,16 +82,20 @@ namespace UnityEngine
         {
             private readonly SendOrPostCallback m_DelagateCallback;
             private readonly object m_DelagateState;
+            private readonly ManualResetEvent m_WaitHandle;
 
-            public WorkRequest(SendOrPostCallback callback, object state)
+            public WorkRequest(SendOrPostCallback callback, object state, ManualResetEvent waitHandle = null)
             {
                 m_DelagateCallback = callback;
                 m_DelagateState = state;
+                m_WaitHandle = waitHandle;
             }
 
             public void Invoke()
             {
                 m_DelagateCallback(m_DelagateState);
+                if (m_WaitHandle != null)
+                    m_WaitHandle.Set();
             }
         }
     }

@@ -56,7 +56,7 @@ namespace UnityEditor
                 0, // This value will be overriden during runtime
             };
 
-            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable Instancing");
+            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable GPU Instancing");
             public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TextContent("Double Sided Global Illumination|When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
             public static readonly GUIContent emissionLabel = EditorGUIUtility.TextContent("Emission");
         }
@@ -1466,7 +1466,7 @@ namespace UnityEditor
                 Renderer renderer = GetAssociatedRenderFromInspector();
                 if (renderer != null)
                 {
-                    if (Event.current.type == EventType.layout)
+                    if (Event.current.type == EventType.Layout)
                     {
                         renderer.GetPropertyBlock(m_PropertyBlock);
                     }
@@ -1643,7 +1643,7 @@ namespace UnityEditor
             const float iconHeight = 6f;
             Rect iconRect = new Rect(buttonRect.x + (buttonRect.width - iconWidth) / 2, buttonRect.y + (buttonRect.height - iconHeight) / 2, iconWidth, iconHeight);
 
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
                 Styles.kReflectionProbePickerStyle.Draw(iconRect, false, false, false, false);
 
             if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, GUIStyle.none))

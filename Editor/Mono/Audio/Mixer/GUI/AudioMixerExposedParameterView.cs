@@ -94,7 +94,7 @@ namespace UnityEditor
                 evt.Use();
             }
 
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             // The left side of the text is drawn by the reorderable list, now draw the additional right aligned text

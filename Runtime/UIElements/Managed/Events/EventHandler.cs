@@ -7,14 +7,9 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    // TODO this interface is going to be refactored in a later iteration
     public interface IEventHandler
     {
-        IPanel panel { get; }
-
         void OnLostCapture();
-
-        void OnLostKeyboardFocus();
 
         void HandleEvent(EventBase evt);
     }
@@ -23,60 +18,22 @@ namespace UnityEngine.Experimental.UIElements
     {
         public static void TakeCapture(this IEventHandler handler)
         {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.TakeCapture(handler);
-            }
+            UIElementsUtility.eventDispatcher.TakeCapture(handler);
         }
 
         public static bool HasCapture(this IEventHandler handler)
         {
-            if (handler.panel != null)
-            {
-                return handler.panel.dispatcher.capture == handler;
-            }
-            else
-            {
-                return false;
-            }
+            return UIElementsUtility.eventDispatcher.capture == handler;
         }
 
         public static void ReleaseCapture(this IEventHandler handler)
         {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.ReleaseCapture(handler);
-            }
+            UIElementsUtility.eventDispatcher.ReleaseCapture(handler);
         }
 
         public static void RemoveCapture(this IEventHandler handler)
         {
-            if (handler.panel != null)
-            {
-                handler.panel.dispatcher.RemoveCapture();
-            }
-        }
-
-        public static ScheduleBuilder Schedule(this IEventHandler handler, Action<TimerState> timerUpdateEvent)
-        {
-            if (handler.panel == null || handler.panel.scheduler == null)
-            {
-                Debug.LogError("Cannot schedule an event without a valid panel");
-                return new ScheduleBuilder();
-            }
-
-            return handler.panel.scheduler.Schedule(timerUpdateEvent, handler);
-        }
-
-        public static void Unschedule(this IEventHandler handler, Action<TimerState> timerUpdateEvent)
-        {
-            if (handler.panel == null || handler.panel.scheduler == null)
-            {
-                Debug.LogError("Cannot unschedule an event without a valid panel");
-                return;
-            }
-
-            handler.panel.scheduler.Unschedule(timerUpdateEvent);
+            UIElementsUtility.eventDispatcher.RemoveCapture();
         }
     }
 
@@ -139,15 +96,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual void OnLostCapture()
         {
-        }
-
-        public virtual void OnLostKeyboardFocus()
-        {
-        }
-
-        public virtual IPanel panel
-        {
-            get { return null; }
         }
     }
 }

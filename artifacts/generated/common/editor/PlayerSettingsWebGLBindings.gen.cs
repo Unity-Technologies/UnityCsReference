@@ -24,7 +24,8 @@ public enum WebGLExceptionSupport
 {
     None = 0,
     ExplicitlyThrownExceptionsOnly = 1,
-    Full = 2
+    FullWithoutStacktrace = 2,
+    FullWithStacktrace = 3
 }
 
 public enum WebGLCompressionFormat

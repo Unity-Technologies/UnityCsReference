@@ -102,15 +102,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             if (classes.Any())
                 elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
 
-            var container = ve as VisualContainer;
-            if (container != null)
+            foreach (var childElement in ve.shadow.Children())
             {
-                var childContainer = container;
-
-                for (int i = 0; i < childContainer.childrenCount; i++)
-                {
-                    Recurse(elt, nsToPrefix, childContainer.GetChildAt(i), options);
-                }
+                Recurse(elt, nsToPrefix, childElement, options);
             }
         }
     }

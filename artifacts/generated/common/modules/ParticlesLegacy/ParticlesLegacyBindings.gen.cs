@@ -571,5 +571,10 @@ public sealed partial class ParticleRenderer : Renderer
     
 }
 
+[RequireComponent(typeof(Transform))]
+internal sealed partial class WorldParticleCollider : Component
+{
+}
+
 
 }

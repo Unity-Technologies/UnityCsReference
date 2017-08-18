@@ -241,7 +241,7 @@ namespace UnityEditor
 
             Texture2D selectedIcon = EditorGUIUtility.GetIconForObject(m_TargetObject);
             bool isSelectionALabelIcon = false;
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 selectedIcon = ConvertLargeIconToSmallIcon(selectedIcon, ref isSelectionALabelIcon);
             }

@@ -488,8 +488,7 @@ namespace UnityEditor.IMGUI.Controls
             if (evt.type == EventType.Repaint)
                 m_TotalRect = rect;
 
-            if (m_GUIView == null)
-                m_GUIView = GUIView.current;
+            m_GUIView = GUIView.current;
 
             // End rename if the window do not have focus
             if (m_GUIView != null && !m_GUIView.hasFocus && state.renameOverlay.IsRenaming())
@@ -940,7 +939,7 @@ namespace UnityEditor.IMGUI.Controls
             if (keyboardInputCallback != null)
                 keyboardInputCallback();
 
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 switch (Event.current.keyCode)
                 {
@@ -1128,6 +1127,11 @@ namespace UnityEditor.IMGUI.Controls
 
         void EnsureRowIsVisible(int row, bool animated)
         {
+            // We don't want to change the scroll to make the row visible,
+            // if it's disabled: Causes content to be moved/rendered out of bounds.
+            if (!m_UseScrollView)
+                return;
+
             if (row >= 0)
             {
                 // Adjusting for when the horizontal scrollbar is being shown. Before the TreeView has repainted

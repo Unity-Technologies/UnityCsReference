@@ -83,7 +83,7 @@ namespace UnityEditor
 
         public void OnSceneGUI()
         {
-            if (Event.current.type != EventType.repaint
+            if (Event.current.type != EventType.Repaint
                 || Camera.current == null
                 || SceneView.lastActiveSceneView != SceneView.currentDrawingSceneView)
                 return;

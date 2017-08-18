@@ -29,7 +29,7 @@ namespace UnityEditor
             public GUIContent Lighting = new GUIContent(EditorGUIUtility.TextContent("Lighting").text); // prevent the Lighting window icon from being added
             public GUIContent MinimumChartSize = EditorGUIUtility.TextContent("Min Chart Size|Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
             public GUIContent ImportantGI = EditorGUIUtility.TextContent("Prioritize Illumination|When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
-            public GUIContent StitchSeams = EditorGUIUtility.TextContent("Stitch Seams|When enabled, seams in baked lightmaps will get smoothed.");
+            public GUIContent StitchLightmapSeams = EditorGUIUtility.TextContent("Stitch Seams|When enabled, seams in baked lightmaps will get smoothed.");
             public GUIContent AutoUVMaxDistance = EditorGUIUtility.TextContent("Max Distance|Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance they will be simplified for optimization purposes.");
             public GUIContent AutoUVMaxAngle = EditorGUIUtility.TextContent("Max Angle|Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
             public GUIContent LightmapParameters = EditorGUIUtility.TextContent("Lightmap Parameters|Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
@@ -80,7 +80,7 @@ namespace UnityEditor
         SerializedObject m_GameObjectsSerializedObject;
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_ImportantGI;
-        SerializedProperty m_StitchSeams;
+        SerializedProperty m_StitchLightmapSeams;
         SerializedProperty m_LightmapParameters;
         SerializedProperty m_LightmapIndex;
         SerializedProperty m_LightmapTilingOffsetX;
@@ -123,7 +123,7 @@ namespace UnityEditor
             m_GameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
 
             m_ImportantGI = m_SerializedObject.FindProperty("m_ImportantGI");
-            m_StitchSeams = m_SerializedObject.FindProperty("m_StitchSeams");
+            m_StitchLightmapSeams = m_SerializedObject.FindProperty("m_StitchLightmapSeams");
             m_LightmapParameters = m_SerializedObject.FindProperty("m_LightmapParameters");
             m_LightmapIndex = m_SerializedObject.FindProperty("m_LightmapIndex");
             m_LightmapTilingOffsetX = m_SerializedObject.FindProperty("m_LightmapTilingOffset.x");
@@ -228,8 +228,12 @@ namespace UnityEditor
 
                     EditorGUILayout.PropertyField(m_ImportantGI, s_Styles.ImportantGI);
 
-                    if (isPrefabAsset || LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
-                        EditorGUILayout.PropertyField(m_StitchSeams, s_Styles.StitchSeams);
+                    bool pathTracerIsActive = (
+                            LightModeUtil.Get().AreBakedLightmapsEnabled() &&
+                            LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer);
+
+                    if (isPrefabAsset || pathTracerIsActive)
+                        EditorGUILayout.PropertyField(m_StitchLightmapSeams, s_Styles.StitchLightmapSeams);
 
                     LightmapParametersGUI(m_LightmapParameters, s_Styles.LightmapParameters);
 

@@ -58,7 +58,7 @@ namespace UnityEditor
             {
                 Debug.LogWarning("Highlighter recursion detected.  You are calling Highlighter.Highlight() with too much abandon.  Avoid highlighting during layout and repaint events.");
             }
-            else if (Event.current != null && Event.current.type == EventType.layout)
+            else if (Event.current != null && Event.current.type == EventType.Layout)
             {
                 Debug.LogWarning("You are calling Highlighter.Highlight() inorrectly.  Avoid highlighting during layout and repaint events.");
             }

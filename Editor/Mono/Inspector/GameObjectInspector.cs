@@ -31,7 +31,9 @@ namespace UnityEditor
             public GUIContent prefabIcon = EditorGUIUtility.IconContent("PrefabNormal Icon");
             public GUIContent modelIcon = EditorGUIUtility.IconContent("PrefabModel Icon");
 
-            public GUIContent staticContent = EditorGUIUtility.TextContent("Static");
+            public GUIContent staticContent = EditorGUIUtility.TextContent("Static|Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
+            public GUIContent layerContent = EditorGUIUtility.TextContent("Layer|The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
+            public GUIContent tagContent = EditorGUIUtility.TextContent("Tag|The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
             public float tagFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Tag")).x;
             public float layerFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Layer")).x;
@@ -72,6 +74,7 @@ namespace UnityEditor
         Vector2 previewDir;
 
         PreviewRenderUtility m_PreviewUtility;
+        List<GameObject> m_PreviewInstances;
 
         bool m_HasInstance = false;
         bool m_AllOfSamePrefabType = true;
@@ -472,7 +475,7 @@ namespace UnityEditor
             Rect layerRect = GUILayoutUtility.GetRect(GUIContent.none, s_Styles.layerPopup);
             EditorGUI.BeginProperty(layerRect, GUIContent.none, m_Layer);
             EditorGUI.BeginChangeCheck();
-            int layer = EditorGUI.LayerField(layerRect, EditorGUIUtility.TempContent("Layer"), go.layer, s_Styles.layerPopup);
+            int layer = EditorGUI.LayerField(layerRect, s_Styles.layerContent, go.layer, s_Styles.layerPopup);
             if (EditorGUI.EndChangeCheck())
             {
                 GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
@@ -503,7 +506,7 @@ namespace UnityEditor
             Rect tagRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.popup);
             EditorGUI.BeginProperty(tagRect, GUIContent.none, m_Tag);
             EditorGUI.BeginChangeCheck();
-            string tag = EditorGUI.TagField(tagRect, EditorGUIUtility.TempContent("Tag"), tagName);
+            string tag = EditorGUI.TagField(tagRect, s_Styles.tagContent, tagName);
             if (EditorGUI.EndChangeCheck())
             {
                 m_Tag.stringValue = tag;
@@ -573,10 +576,22 @@ namespace UnityEditor
                 go.layer = layer;
         }
 
-        public static void SetEnabledRecursive(GameObject go, bool enabled)
+        public override void ReloadPreviewInstances()
         {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
+            CreatePreviewInstances();
+        }
+
+        void CreatePreviewInstances()
+        {
+            if (m_PreviewInstances == null)
+                m_PreviewInstances = new List<GameObject>(targets.Length);
+
+            for (int i = 0; i < targets.Length; ++i)
+            {
+                GameObject instance = EditorUtility.InstantiateForAnimatorPreview(targets[i]);
+                m_PreviewInstances.Add(instance);
+                m_PreviewUtility.AddSingleGO(instance);
+            }
         }
 
         void InitPreview()
@@ -585,6 +600,7 @@ namespace UnityEditor
             {
                 m_PreviewUtility = new PreviewRenderUtility();
                 m_PreviewUtility.camera.fieldOfView = 30.0f;
+                CreatePreviewInstances();
             }
         }
 
@@ -594,6 +610,7 @@ namespace UnityEditor
             {
                 m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
+                m_PreviewInstances.Clear();
             }
         }
 
@@ -782,12 +799,10 @@ namespace UnityEditor
 
         private void DoRenderPreview()
         {
-            var toDraw = target as GameObject;
-            if (toDraw == null)
-                return;
+            GameObject go = m_PreviewInstances[referenceTargetIndex];
 
-            Bounds bounds = new Bounds(toDraw.transform.position, Vector3.zero);
-            GetRenderableBoundsRecurse(ref bounds, toDraw);
+            Bounds bounds = new Bounds(go.transform.position, Vector3.zero);
+            GetRenderableBoundsRecurse(ref bounds, go);
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
@@ -806,8 +821,7 @@ namespace UnityEditor
 
             m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
 
-            m_PreviewUtility.AddSingleGO(toDraw);
-            var prefabType = PrefabUtility.GetPrefabType(toDraw);
+            var prefabType = PrefabUtility.GetPrefabType(go);
             var allowSRP = !(prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.ModelPrefab);
             m_PreviewUtility.Render(allowSRP);
         }

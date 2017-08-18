@@ -20,15 +20,15 @@ namespace UnityEditorInternal
 
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     if (GUI.enabled)
                         HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, pickSize));
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                         HandleUtility.Repaint();
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -36,7 +36,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -46,7 +46,7 @@ namespace UnityEditorInternal
                             return true;
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color origColor = Handles.color;
                     if (HandleUtility.nearestControl == id && GUI.enabled && GUIUtility.hotControl == 0)
                         Handles.color = Handles.preselectionColor;
@@ -65,15 +65,15 @@ namespace UnityEditorInternal
 
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     if (GUI.enabled)
                         capFunction(id, position, direction, pickSize, EventType.Layout);
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                         HandleUtility.Repaint();
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && (evt.button == 0 || evt.button == 2))
                     {
@@ -81,7 +81,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -91,7 +91,7 @@ namespace UnityEditorInternal
                             return true;
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color origColor = Handles.color;
                     if (HandleUtility.nearestControl == id && GUI.enabled && GUIUtility.hotControl == 0)
                         Handles.color = Handles.preselectionColor;

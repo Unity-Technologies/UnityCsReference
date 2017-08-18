@@ -257,7 +257,7 @@ namespace UnityEditor
 
             switch (e.GetTypeForControl(id))
             {
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                 {
                     if (rect.Contains(e.mousePosition)) // inside this control
                     {
@@ -271,14 +271,14 @@ namespace UnityEditor
                     }
                     break;
                 }
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id)
                     {
                         GUIUtility.hotControl = 0;
                         e.Use();
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                 {
                     if (GUIUtility.hotControl != id)
                         break;
@@ -295,7 +295,7 @@ namespace UnityEditor
                 }
                 break;
 
-                case EventType.repaint:
+                case EventType.Repaint:
                 {
                     // background
                     backStyle.Draw(rect, GUIContent.none, id);
@@ -400,7 +400,7 @@ namespace UnityEditor
 
             r.x += kTextWidth;
             r.width -= kTextWidth + kSpacing + fieldWidth;
-            if (Event.current.type == EventType.repaint)
+            if (Event.current.type == EventType.Repaint)
             {
                 Rect r2 = new Rect(r.x + 1, r.y + 2, r.width - 2, r.height - 4);
                 Graphics.DrawTexture(r2, background, new Rect(.5f / background.width, .5f / background.height, 1 - 1f / background.width, 1 - 1f / background.height), 0, 0, 0, 0, Color.grey);
@@ -531,7 +531,7 @@ namespace UnityEditor
 
         void DrawColorSlider(Rect colorSliderRect, Vector2 constantValues)
         {
-            if (Event.current.type != EventType.repaint)
+            if (Event.current.type != EventType.Repaint)
                 return;
 
             // If we've switched mode, regenerate box
@@ -1133,7 +1133,7 @@ namespace UnityEditor
                 SetHeight(contentRect.height);
             }
 
-            if (Event.current.type == EventType.keyDown)
+            if (Event.current.type == EventType.KeyDown)
             {
                 switch (Event.current.keyCode)
                 {
@@ -1152,7 +1152,7 @@ namespace UnityEditor
             }
 
             // Remove keyfocus when clicked outside any control
-            if ((Event.current.type == EventType.mouseDown && Event.current.button != 1) || Event.current.type == EventType.ContextClick)
+            if ((Event.current.type == EventType.MouseDown && Event.current.button != 1) || Event.current.type == EventType.ContextClick)
             {
                 GUIUtility.keyboardControl = 0;
                 Repaint();

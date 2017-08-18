@@ -31,11 +31,11 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     HandleUtility.AddControl(id, HandleUtility.DistanceToLine(startPosition, cubePosition));
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(cubePosition, size * .3f));
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
@@ -46,7 +46,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_CurrentMousePosition += evt.delta;
@@ -57,7 +57,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -65,11 +65,11 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)
                     {
@@ -102,10 +102,10 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     HandleUtility.AddControl(id, HandleUtility.DistanceToCircle(position, size * .15f));
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
@@ -116,7 +116,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_ValueDrag += HandleUtility.niceMouseDelta * .01f;
@@ -126,11 +126,11 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         // Cancel dragging on ESC
@@ -144,7 +144,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -153,7 +153,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)
                     {
@@ -180,10 +180,10 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
-                case EventType.layout:
+                case EventType.Layout:
                     capFunction(id, position, rotation, size * .15f, EventType.Layout);
                     break;
-                case EventType.mouseDown:
+                case EventType.MouseDown:
                     // am I closest to the thingy?
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
@@ -194,7 +194,7 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(1);
                     }
                     break;
-                case EventType.mouseDrag:
+                case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
                         s_ValueDrag += HandleUtility.niceMouseDelta * .01f;
@@ -204,7 +204,7 @@ namespace UnityEditorInternal
                         evt.Use();
                     }
                     break;
-                case EventType.keyDown:
+                case EventType.KeyDown:
                     if (GUIUtility.hotControl == id)
                     {
                         // Cancel dragging on ESC
@@ -218,7 +218,7 @@ namespace UnityEditorInternal
                         }
                     }
                     break;
-                case EventType.mouseUp:
+                case EventType.MouseUp:
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
@@ -227,11 +227,11 @@ namespace UnityEditorInternal
                         EditorGUIUtility.SetWantsMouseJumping(0);
                     }
                     break;
-                case EventType.mouseMove:
+                case EventType.MouseMove:
                     if (id == HandleUtility.nearestControl)
                         HandleUtility.Repaint();
                     break;
-                case EventType.repaint:
+                case EventType.Repaint:
                     Color temp = Color.white;
                     if (id == GUIUtility.hotControl)
                     {

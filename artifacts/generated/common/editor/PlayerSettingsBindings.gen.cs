@@ -62,11 +62,12 @@ public enum MacFullscreenMode
     FullscreenWindowWithDockAndMenuBar = 2,
 }
 
+[System.Obsolete ("D3D9 support has been removed")]
 public enum D3D9FullscreenMode
 {
-    
+    [System.Obsolete ("D3D9 support has been removed")]
     ExclusiveMode = 0,
-    
+    [System.Obsolete ("D3D9 support has been removed")]
     FullscreenWindow = 1,
 }
 
@@ -591,6 +592,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
+    [System.Obsolete ("D3D9 support has been removed; d3d9FullscreenMode does nothing now")]
     public extern static D3D9FullscreenMode d3d9FullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
