@@ -90,6 +90,9 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(true))
                 DrawInspectedRect(m_Instruction.rect);
 
+            DoSelectableInstructionDataField("VisibleRect", m_Instruction.visibleRect.ToString());
+            EditorGUILayout.Space();
+
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_CachedInstructionInfo.styleSerializedProperty, GUIContent.Temp("Style"), true);
             if (EditorGUI.EndChangeCheck())

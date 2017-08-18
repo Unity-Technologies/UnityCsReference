@@ -51,11 +51,15 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<Align> alignContent { get; set; }
         StyleValue<Justify> justifyContent { get; set; }
         StyleValue<Wrap> flexWrap { get; set; }
-        StyleValue<float> borderRadius { get; set; }
         StyleValue<float> borderLeftWidth { get; set; }
         StyleValue<float> borderTopWidth { get; set; }
         StyleValue<float> borderRightWidth { get; set; }
         StyleValue<float> borderBottomWidth { get; set; }
+        StyleValue<float> borderRadius { get; set; }
+        StyleValue<float> borderTopLeftRadius { get; set; }
+        StyleValue<float> borderTopRightRadius { get; set; }
+        StyleValue<float> borderBottomRightRadius { get; set; }
+        StyleValue<float> borderBottomLeftRadius { get; set; }
         StyleValue<int> sliceLeft { get; set; }
         StyleValue<int> sliceTop { get; set; }
         StyleValue<int> sliceRight { get; set; }

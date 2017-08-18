@@ -438,7 +438,7 @@ namespace UnityEditor
 
         int m_IsDraggingTimeHotControlID = -1;
 
-        internal void PlayBackTimeGUI()
+        internal void PlayBackInfoGUI(bool isPlayMode)
         {
             EventType oldEventType = Event.current.type;
             int oldHotControl = GUIUtility.hotControl;
@@ -446,54 +446,57 @@ namespace UnityEditor
 
             EditorGUIUtility.labelWidth = 110.0f;
 
-            EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-            ParticleSystemEditorUtils.editorSimulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.editorSimulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
-            EditorGUI.kFloatFieldFormatString = oldFormat;
-
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-            float editorPlaybackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.editorPlaybackTime);
-            EditorGUI.kFloatFieldFormatString = oldFormat;
-            if (EditorGUI.EndChangeCheck())
+            if (!isPlayMode)
             {
-                if (oldEventType == EventType.MouseDrag)
-                {
-                    ParticleSystemEditorUtils.editorIsScrubbing = true;
-                    float previewSpeed = ParticleSystemEditorUtils.editorSimulationSpeed;
-                    float oldEditorPlaybackTime = ParticleSystemEditorUtils.editorPlaybackTime;
-                    float timeDiff = editorPlaybackTime - oldEditorPlaybackTime;
-                    editorPlaybackTime = oldEditorPlaybackTime + timeDiff * (0.05F * previewSpeed);
-                }
+                EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
+                ParticleSystemEditorUtils.editorSimulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.editorSimulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
+                EditorGUI.kFloatFieldFormatString = oldFormat;
 
-                editorPlaybackTime = Mathf.Max(editorPlaybackTime, 0.0F);
-                ParticleSystemEditorUtils.editorPlaybackTime = editorPlaybackTime;
 
-                foreach (ParticleSystem ps in m_SelectedParticleSystems)
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
+                float editorPlaybackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.editorPlaybackTime);
+                EditorGUI.kFloatFieldFormatString = oldFormat;
+                if (EditorGUI.EndChangeCheck())
                 {
-                    ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
-                    if (root.isStopped)
+                    if (oldEventType == EventType.MouseDrag)
                     {
-                        root.Play();
-                        root.Pause();
+                        ParticleSystemEditorUtils.editorIsScrubbing = true;
+                        float previewSpeed = ParticleSystemEditorUtils.editorSimulationSpeed;
+                        float oldEditorPlaybackTime = ParticleSystemEditorUtils.editorPlaybackTime;
+                        float timeDiff = editorPlaybackTime - oldEditorPlaybackTime;
+                        editorPlaybackTime = oldEditorPlaybackTime + timeDiff * (0.05F * previewSpeed);
                     }
+
+                    editorPlaybackTime = Mathf.Max(editorPlaybackTime, 0.0F);
+                    ParticleSystemEditorUtils.editorPlaybackTime = editorPlaybackTime;
+
+                    foreach (ParticleSystem ps in m_SelectedParticleSystems)
+                    {
+                        ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
+                        if (root.isStopped)
+                        {
+                            root.Play();
+                            root.Pause();
+                        }
+                    }
+
+                    ParticleSystemEditorUtils.PerformCompleteResimulation();
                 }
 
-                ParticleSystemEditorUtils.PerformCompleteResimulation();
-            }
+                // Detect start dragging
+                if (oldEventType == EventType.MouseDown && GUIUtility.hotControl != oldHotControl)
+                {
+                    m_IsDraggingTimeHotControlID = GUIUtility.hotControl;
+                    ParticleSystemEditorUtils.editorIsScrubbing = true;
+                }
 
-            // Detect start dragging
-            if (oldEventType == EventType.MouseDown && GUIUtility.hotControl != oldHotControl)
-            {
-                m_IsDraggingTimeHotControlID = GUIUtility.hotControl;
-                ParticleSystemEditorUtils.editorIsScrubbing = true;
-            }
-
-            // Detect stop dragging
-            if (m_IsDraggingTimeHotControlID != -1 && GUIUtility.hotControl != m_IsDraggingTimeHotControlID)
-            {
-                m_IsDraggingTimeHotControlID = -1;
-                ParticleSystemEditorUtils.editorIsScrubbing = false;
+                // Detect stop dragging
+                if (m_IsDraggingTimeHotControlID != -1 && GUIUtility.hotControl != m_IsDraggingTimeHotControlID)
+                {
+                    m_IsDraggingTimeHotControlID = -1;
+                    ParticleSystemEditorUtils.editorIsScrubbing = false;
+                }
             }
 
             int particleCount = 0;
@@ -693,9 +696,6 @@ namespace UnityEditor
                     }
                 }
                 GUILayout.EndHorizontal();
-
-                // Playback time
-                PlayBackTimeGUI();
             }
             else
             {
@@ -714,6 +714,9 @@ namespace UnityEditor
                 }
                 GUILayout.EndHorizontal();
             }
+
+            // Playback info
+            PlayBackInfoGUI(EditorApplication.isPlaying);
 
             // Handle shortcut keys last so we do not activate them if inputfield has used the event
             HandleKeyboardShortcuts();

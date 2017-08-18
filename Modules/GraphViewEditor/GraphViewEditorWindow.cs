@@ -30,12 +30,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             graphView.onEnter += OnEnterPanel;
             graphView.onLeave += OnLeavePanel;
 
-            this.GetRootVisualContainer().AddChild(graphView);
+            this.GetRootVisualContainer().Add(graphView);
         }
 
         protected void OnDisable()
         {
-            this.GetRootVisualContainer().RemoveChild(graphView);
+            this.GetRootVisualContainer().Remove(graphView);
         }
 
         // Override these methods to properly support domain reload & enter/exit playmode

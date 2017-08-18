@@ -6,7 +6,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class DataWatchContainer : VisualContainer
+    internal abstract class DataWatchContainer : VisualElement
     {
         IDataWatchHandle[] handles;
 

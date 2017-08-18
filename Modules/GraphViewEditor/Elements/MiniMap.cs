@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_Label = new Label("Floating Minimap");
 
-            AddChild(m_Label);
+            Add(m_Label);
 
             RegisterCallback<MouseUpEvent>(ShowContextualMenu);
             RegisterCallback<MouseDownEvent>(OnMouseDown);

@@ -27,6 +27,18 @@ namespace UnityEditor.Scripting.Compilers
         }
     }
 
+    internal class UWPSDK
+    {
+        public readonly Version Version;
+        public readonly Version MinVSVersion;
+
+        public UWPSDK(Version version, Version minVSVersion)
+        {
+            Version = version;
+            MinVSVersion = minVSVersion;
+        }
+    }
+
     internal static class UWPReferences
     {
         private sealed class UWPExtension
@@ -101,20 +113,20 @@ namespace UnityEditor.Scripting.Compilers
             return sdkVersion;
         }
 
-        public static IEnumerable<Version> GetInstalledSDKVersions()
+        public static IEnumerable<UWPSDK> GetInstalledSDKs()
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-                return new Version[0];
+                return Enumerable.Empty<UWPSDK>();
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
-                return new Version[0];
+                return Enumerable.Empty<UWPSDK>();
+
+            var allSDKs = new List<UWPSDK>();
 
             var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
-
-            var allVersions = new List<Version>();
 
             foreach (var platformXmlFile in allPlatformXmlFiles)
             {
@@ -129,19 +141,34 @@ namespace UnityEditor.Scripting.Compilers
                     continue;
                 }
 
-                foreach (var node in xDocument.Nodes())
+                foreach (var element in xDocument.Elements("ApplicationPlatform"))
                 {
-                    var element = node as XElement;
-                    if (element == null)
-                        continue;
-
                     Version version;
                     if (FindVersionInNode(element, out version))
-                        allVersions.Add(version);
+                    {
+                        var minVSVersionString = element.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
+                        allSDKs.Add(new UWPSDK(version, TryParseVersion(minVSVersionString)));
+                    }
                 }
             }
 
-            return allVersions;
+            return allSDKs;
+        }
+
+        // No Version.TryParse in .NET 3.5 :(
+        private static Version TryParseVersion(string s)
+        {
+            if (!string.IsNullOrEmpty(s))
+            {
+                try
+                {
+                    return new Version(s);
+                }
+                catch
+                {
+                }
+            }
+            return null;
         }
 
         private static bool FindVersionInNode(XElement node, out Version version)
@@ -150,14 +177,10 @@ namespace UnityEditor.Scripting.Compilers
             {
                 if (string.Equals(attribute.Name.LocalName, "version", StringComparison.OrdinalIgnoreCase))
                 {
-                    try
+                    version = TryParseVersion(attribute.Value);
+                    if (version != null)
                     {
-                        version = new Version(attribute.Value);
                         return true;
-                    }
-                    catch
-                    {
-                        // No Version.TryParse in .NET 3.5 :(
                     }
                 }
             }

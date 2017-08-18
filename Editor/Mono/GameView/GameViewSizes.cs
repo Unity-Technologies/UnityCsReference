@@ -448,7 +448,7 @@ namespace UnityEditor
             var targetArea = targetSize.x * targetSize.y;
             if (targetArea > maxVRAMArea)
             {
-                var aspect = targetSize.x / targetSize.y;
+                var aspect = targetSize.y / targetSize.x;
                 targetSize.x = Mathf.Sqrt(maxVRAMArea * aspect);
                 targetSize.y = aspect * targetSize.x;
                 clamped = true;

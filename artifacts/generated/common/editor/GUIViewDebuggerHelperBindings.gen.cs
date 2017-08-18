@@ -23,6 +23,7 @@ namespace UnityEditor
     internal struct IMGUIDrawInstruction
     {
         public Rect         rect;
+        public Rect         visibleRect;
         public GUIStyle     usedGUIStyle;
         public GUIContent   usedGUIContent;
         public StackFrame[] stackframes;
@@ -30,6 +31,7 @@ namespace UnityEditor
         public void Reset()
         {
             rect = new Rect();
+            visibleRect = new Rect();
             usedGUIStyle = GUIStyle.none;
             usedGUIContent = GUIContent.none;
         }

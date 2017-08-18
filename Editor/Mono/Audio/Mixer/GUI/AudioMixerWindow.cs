@@ -158,6 +158,8 @@ namespace UnityEditor
             if (m_Controller == null)
                 return;
 
+            m_AllControllers = FindAllAudioMixerControllers();
+
             m_Controller.SanitizeGroupViews();
             m_Controller.OnUnitySelectionChanged();
 

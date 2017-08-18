@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine.Scripting;
 
@@ -89,7 +90,90 @@ namespace UnityEditor
 
         int ms_LVHeight = 0;
 
-        AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
+        class ConsoleAttachProfilerUI : AttachProfilerUI
+        {
+            List<string> additionalMenuItems = null;
+
+            enum MenuItemIndex
+            {
+                PlayerLogging,
+                FullLog
+            }
+
+            protected void SelectClick(object userData, string[] options, int selected)
+            {
+                if (selected == (int)MenuItemIndex.PlayerLogging)
+                {
+                    var connected = PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
+                    PlayerConnectionLogReceiver.instance.State = connected ? PlayerConnectionLogReceiver.ConnectionState.Disconnected : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
+                    return;
+                }
+
+                if (selected == (int)MenuItemIndex.FullLog)
+                {
+                    var cleanLog = PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.CleanLog;
+                    PlayerConnectionLogReceiver.instance.State = cleanLog ? PlayerConnectionLogReceiver.ConnectionState.FullLog : PlayerConnectionLogReceiver.ConnectionState.CleanLog;
+                    return;
+                }
+
+                if (selected < additionalMenuItems.Count)
+                    return;
+
+                SelectProfilerClick(userData, options, selected - additionalMenuItems.Count);
+            }
+
+            protected override void OnGUIMenu(Rect connectRect, List<ProfilerChoise> profilers)
+            {
+                if (additionalMenuItems == null)
+                {
+                    additionalMenuItems = new List<string>();
+                    additionalMenuItems.Add("Player Logging");
+                    if (Unsupported.IsDeveloperBuild())
+                        additionalMenuItems.Add("Full Log (Development Editor only)");
+                    additionalMenuItems.Add("");
+                }
+
+                var names = additionalMenuItems.Concat(profilers.Select(p => p.Name));
+
+                var enabled = new List<bool>();
+
+                // "Player Logging" field is always enabled.
+                enabled.Add(true);
+
+                var selected = new List<int>();
+
+                var connected = PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
+                if (connected)
+                {
+                    selected.Add((int)MenuItemIndex.PlayerLogging);
+                    if (Unsupported.IsDeveloperBuild())
+                    {
+                        if (PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog)
+                            selected.Add((int)MenuItemIndex.FullLog);
+
+                        // Enable "Show Full Log"
+                        enabled.Add(true);
+                    }
+                    enabled.Add(true);
+                    enabled.AddRange(profilers.Select(p => p.Enabled));
+                }
+                else
+                {
+                    // everything but first menu item is disabled.
+                    enabled.AddRange(new bool[names.Count() - 1]);
+                }
+
+                int index = profilers.FindIndex(p => p.IsSelected());
+                if (index != -1)
+                    selected.Add(index + additionalMenuItems.Count);
+
+                var seperators = new bool[enabled.Count];
+                seperators[additionalMenuItems.Count - 1] = true;
+                EditorUtility.DisplayCustomMenuWithSeparators(connectRect, names.ToArray(), enabled.ToArray(), seperators, selected.ToArray(), SelectClick, profilers);
+            }
+        }
+
+        ConsoleAttachProfilerUI m_AttachProfilerUI = new ConsoleAttachProfilerUI();
 
         enum Mode
         {

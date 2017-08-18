@@ -71,7 +71,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     graphView.ClearSelection();
                 }
 
-                graphView.AddChild(m_Rectangle);
+                graphView.Add(m_Rectangle);
 
                 m_Rectangle.start = e.localMousePosition;
                 m_Rectangle.end = m_Rectangle.start;
@@ -94,7 +94,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!CanStopManipulation(e))
                 return;
 
-            graphView.RemoveChild(m_Rectangle);
+            graphView.Remove(m_Rectangle);
 
             m_Rectangle.end = e.localMousePosition;
 

@@ -114,7 +114,7 @@ namespace UnityEngine.Experimental.UIElements
                 // if we set/unset the hover state on the PanelContainer, when the mouse exits
                 // the panel window, all hover states are unset as expected but after the draw
                 // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
+                if (element.shadow.parent == null)
                     continue;
 
                 // let element know
@@ -136,7 +136,7 @@ namespace UnityEngine.Experimental.UIElements
                 // if we set/unset the hover state on the PanelContainer, when the mouse exits
                 // the panel window, all hover states are unset as expected but after the draw
                 // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
+                if (element.shadow.parent == null)
                     continue;
 
                 // let element know
@@ -354,12 +354,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var container = root as VisualContainer;
-                if (container != null)
+                if (root != null)
                 {
-                    for (int i = 0; i < container.childrenCount; i++)
+                    for (int i = 0; i < root.shadow.childCount; i++)
                     {
-                        PropagateToIMGUIContainer(container.GetChildAt(i), evt, capture);
+                        PropagateToIMGUIContainer(root.shadow[i], evt, capture);
                         if (evt.isPropagationStopped)
                             break;
                     }
@@ -443,13 +442,13 @@ namespace UnityEngine.Experimental.UIElements
             if (elem == null)
                 return ret;
 
-            while (elem.parent != null)
+            while (elem.shadow.parent != null)
             {
-                if (elem.parent.enabled)
+                if (elem.shadow.parent.enabled)
                 {
-                    ret.Add(elem.parent);
+                    ret.Add(elem.shadow.parent);
                 }
-                elem = elem.parent;
+                elem = elem.shadow.parent;
             }
 
             ret.Reverse();

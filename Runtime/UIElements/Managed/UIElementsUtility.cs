@@ -235,18 +235,19 @@ namespace UnityEngine.Experimental.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        internal static Panel FindOrCreatePanel(int instanceId, ContextType contextType, IDataWatchService dataWatch = null, LoadResourceFunction loadResourceFunction = null)
+        internal static Panel FindOrCreatePanel(int instanceId, ContextType contextType, IDataWatchService dataWatch = null)
         {
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
             {
-                panel = new Panel(instanceId, contextType, loadResourceFunction, dataWatch, eventDispatcher);
+                panel = new Panel(instanceId, contextType, dataWatch, eventDispatcher);
                 s_UIElementsCache.Add(instanceId, panel);
             }
             else
             {
                 Debug.Assert(contextType == panel.contextType, "Context type mismatch");
             }
+
             return panel;
         }
 

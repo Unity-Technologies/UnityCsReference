@@ -21,7 +21,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         public float currentPixelsPerPoint { get; set; }
 
         private List<RuleMatcher> m_Matchers;
-        private VisualContainer m_VisualTree;
+        private VisualElement m_VisualTree;
 
         private struct RuleRef
         {
@@ -36,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         private static StyleContextHierarchyTraversal s_StyleContextHierarchyTraversal = new StyleContextHierarchyTraversal();
 
-        public StyleContext(VisualContainer tree)
+        public StyleContext(VisualElement tree)
         {
             m_VisualTree = tree;
             m_Matchers = new List<RuleMatcher>(capacity: 0);
@@ -55,15 +55,14 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             m_Matchers.Clear();
         }
 
-        private static void PropagateDirtyStyleSheets(VisualElement e)
+        private static void PropagateDirtyStyleSheets(VisualElement element)
         {
-            var c = e as VisualContainer;
-            if (c != null)
+            if (element != null)
             {
-                if (c.styleSheets != null)
-                    c.LoadStyleSheetsFromPaths();
+                if (element.styleSheets != null)
+                    element.LoadStyleSheetsFromPaths();
 
-                foreach (var child in c)
+                foreach (var child in element.shadow.Children())
                 {
                     PropagateDirtyStyleSheets(child);
                 }
@@ -99,10 +98,9 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
             public override void OnBeginElementTest(VisualElement element, List<RuleMatcher> ruleMatchers)
             {
-                var container = element as VisualContainer;
-                if (container != null && container.styleSheets != null)
+                if (element != null && element.styleSheets != null)
                 {
-                    foreach (var styleSheetData in container.styleSheets)
+                    foreach (var styleSheetData in element.styleSheets)
                     {
                         var complexSelectors = styleSheetData.complexSelectors;
                         // To avoid excessive re-allocations, just resize the list right now
@@ -147,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                     {
                         RuleRef ruleRef = m_MatchedRules[i];
                         StylePropertyID[] propertyIDs = StyleSheetCache.GetPropertyIDs(ruleRef.sheet, ruleRef.selector.ruleIndex);
-                        resolvedStyles.ApplyRule(ruleRef.sheet, ruleRef.selector.specificity, ruleRef.selector.rule, propertyIDs, element.elementPanel.loadResourceFunc);
+                        resolvedStyles.ApplyRule(ruleRef.sheet, ruleRef.selector.specificity, ruleRef.selector.rule, propertyIDs, Panel.loadResourceFunc);
                     }
 
                     s_StyleCache[m_MatchingRulesHash] = resolvedStyles;

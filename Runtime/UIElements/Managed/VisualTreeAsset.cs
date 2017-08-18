@@ -38,7 +38,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-
         [SerializeField]
         private List<UsingEntry> m_Usings;
 
@@ -54,44 +53,45 @@ namespace UnityEngine.Experimental.UIElements
             set { m_VisualElementAssets = value; }
         }
 
-        public VisualContainer CloneTree(IPanel panel)
+        public TemplateContainer CloneTree()
         {
-            VisualElement rootVe = null;
-            if (m_VisualElementAssets != null && m_VisualElementAssets.Count > 0)
-            {
-                Dictionary<int, List<VisualElementAsset>> dict = new Dictionary<int, List<VisualElementAsset>>();
-                for (int i = 0; i < m_VisualElementAssets.Count; i++)
-                {
-                    VisualElementAsset asset = m_VisualElementAssets[i];
-                    List<VisualElementAsset> children;
-                    if (!dict.TryGetValue(asset.parentId, out children))
-                    {
-                        dict.Add(asset.parentId, children = new List<VisualElementAsset>());
-                    }
-
-                    children.Add(asset);
-                }
-                VisualElementAsset root = dict[0][0];
-                rootVe = CloneSetupRecursively(root, null, dict, (BaseVisualElementPanel)panel);
-            }
-
-            if (rootVe == null)
-                return new VisualContainer();
-
-            VisualContainer container = rootVe as VisualContainer;
-            if (container == null)
-            {
-                container = new VisualContainer();
-                container.AddChild(rootVe);
-            }
-
-            return container;
+            var tc = new TemplateContainer(this.name);
+            CloneTree(tc);
+            return tc;
         }
 
-        private VisualElement CloneSetupRecursively(VisualElementAsset root, VisualContainer parent, Dictionary<int, List<VisualElementAsset>> dict, BaseVisualElementPanel panel)
+        public void CloneTree(VisualElement target)
         {
-            VisualContainer actualParent = parent != null ? parent.GetChildContainer() : null;
-            VisualElement ve = root.Create(panel, this);
+            if (m_VisualElementAssets == null || m_VisualElementAssets.Count <= 0)
+                return;
+
+            Dictionary<int, List<VisualElementAsset>> dict = new Dictionary<int, List<VisualElementAsset>>();
+            for (int i = 0; i < m_VisualElementAssets.Count; i++)
+            {
+                VisualElementAsset asset = m_VisualElementAssets[i];
+                List<VisualElementAsset> children;
+                if (!dict.TryGetValue(asset.parentId, out children))
+                {
+                    dict.Add(asset.parentId, children = new List<VisualElementAsset>());
+                }
+
+                children.Add(asset);
+            }
+
+            List<VisualElementAsset> rootAssets;
+            if (dict.TryGetValue(0, out rootAssets) && rootAssets != null)
+            {
+                foreach (VisualElementAsset rootElement in rootAssets)
+                {
+                    VisualElement rootVe = CloneSetupRecursively(rootElement, dict);
+                    target.Add(rootVe);
+                }
+            }
+        }
+
+        private VisualElement CloneSetupRecursively(VisualElementAsset root, Dictionary<int, List<VisualElementAsset>> dict)
+        {
+            VisualElement ve = root.Create(this);
             ve.name = root.name;
             if (root.classes != null)
             {
@@ -115,41 +115,29 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            if (parent != null)
+            if (root.stylesheets != null)
             {
-                if (actualParent != null)
-                    actualParent.AddChild(ve);
-                else
-                    Debug.LogWarning("Cannot insert element in hierarchy, parent has no childContainer");
+                for (int i = 0; i < root.stylesheets.Count; i++)
+                {
+                    ve.AddStyleSheetPath(root.stylesheets[i]);
+                }
             }
 
-            var container = ve as VisualContainer;
-            if (container != null)
+            List<VisualElementAsset> children;
+            if (dict.TryGetValue(root.id, out children))
             {
-                if (root.stylesheets != null)
+                foreach (var childVea in children)
                 {
-                    for (int i = 0; i < root.stylesheets.Count; i++)
-                    {
-                        container.AddStyleSheetPath(root.stylesheets[i]);
-                    }
-                }
-
-                List<VisualElementAsset> children;
-                if (dict.TryGetValue(root.id, out children))
-                {
-                    foreach (var childVea in children)
-                    {
-                        VisualElement childVe = CloneSetupRecursively(childVea, container, dict, panel);
-                        if (childVe != null)
-                            container.AddChild(childVe);
-                    }
+                    VisualElement childVe = CloneSetupRecursively(childVea, dict);
+                    if (childVe != null)
+                        ve.Add(childVe);
                 }
             }
 
             return ve;
         }
 
-        internal VisualTreeAsset ResolveUsing(BaseVisualElementPanel panel, string templateAlias)
+        internal VisualTreeAsset ResolveUsing(string templateAlias)
         {
             if (m_Usings == null || m_Usings.Count == 0)
                 return null;
@@ -158,7 +146,7 @@ namespace UnityEngine.Experimental.UIElements
                 return null;
 
             string path = m_Usings[index].path;
-            return panel.loadResourceFunc == null ? null : panel.loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
+            return Panel.loadResourceFunc == null ? null : Panel.loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
         }
 
         internal bool AliasExists(string templateAlias)
@@ -241,24 +229,26 @@ namespace UnityEngine.Experimental.UIElements
             set { m_Stylesheets = value; }
         }
 
-        public abstract VisualElement Create(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset);
+        public abstract VisualElement Create(VisualTreeAsset visualTreeAsset);
     }
 
     [Serializable]
     internal abstract class VisualElementAsset<T> : VisualElementAsset where T : VisualElement
     {
-        protected abstract T CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset);
+        protected abstract T CreateElementInstance(VisualTreeAsset visualTreeAsset);
 
-        public override VisualElement Create(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        public override VisualElement Create(VisualTreeAsset visualTreeAsset)
         {
-            var res = CreateElementInstance(panel, visualTreeAsset);
+            var res = CreateElementInstance(visualTreeAsset);
             res.name = name;
             for (int i = 0; classes != null && i < classes.Length; i++)
             {
                 res.AddToClassList(classes[i]);
             }
-
-            res.text = text;
+            if (!string.IsNullOrEmpty(text))
+            {
+                res.text = text;
+            }
             return res;
         }
     }
@@ -275,20 +265,20 @@ namespace UnityEngine.Experimental.UIElements
             set { m_TemplateAlias = value; }
         }
 
-        protected override TemplateContainer CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override TemplateContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
-            VisualTreeAsset vea = visualTreeAsset.ResolveUsing(panel, m_TemplateAlias);
+            VisualTreeAsset vea = visualTreeAsset.ResolveUsing(m_TemplateAlias);
+
             var tc = new TemplateContainer(m_TemplateAlias);
-            VisualElement content = vea == null
-                ? (VisualElement) new Label(string.Format("Unknown Element: '{0}'", m_TemplateAlias))
-                : vea.CloneTree(panel);
 
             if (vea == null)
-            {
-                Debug.LogErrorFormat("Could not resolve template with alias '{0}'", m_TemplateAlias);
-            }
+                tc.Add(new Label(string.Format("Unknown Element: '{0}'", m_TemplateAlias)));
+            else
+                vea.CloneTree(tc);
 
-            tc.AddChild(content);
+            if (vea == null)
+                Debug.LogErrorFormat("Could not resolve template with alias '{0}'", m_TemplateAlias);
+
             return tc;
         }
     }
@@ -296,7 +286,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ButtonAsset : VisualElementAsset<Button>
     {
-        protected override Button CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Button CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Button(null);
         }
@@ -305,7 +295,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ImageAsset : VisualElementAsset<Image>
     {
-        protected override Image CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Image CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Image();
         }
@@ -314,7 +304,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class LabelAsset : VisualElementAsset<Label>
     {
-        protected override Label CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Label CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Label();
         }
@@ -328,7 +318,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal long m_Interval;
 
-        protected override RepeatButton CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override RepeatButton CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new RepeatButton(null, m_Delay, m_Interval);
         }
@@ -344,7 +334,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal float m_HighValue;
 
-        protected override Scroller CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Scroller CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Scroller(m_LowValue, m_HighValue, null, m_Direction);
         }
@@ -358,7 +348,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal long m_Interval;
 
-        protected override ScrollerButton CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override ScrollerButton CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new ScrollerButton(null, m_Delay, m_Interval);
         }
@@ -367,7 +357,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ScrollViewAsset : VisualElementAsset<ScrollView>
     {
-        protected override ScrollView CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override ScrollView CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new ScrollView();
         }
@@ -383,7 +373,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal Slider.Direction m_Direction;
 
-        protected override Slider CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Slider CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Slider(m_LowValue, m_HighValue == m_LowValue ? m_LowValue + 1 : m_HighValue, null, m_Direction);
         }
@@ -392,7 +382,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class TextFieldAsset : VisualElementAsset<TextField>
     {
-        protected override TextField CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override TextField CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new TextField();
         }
@@ -401,7 +391,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ToggleAsset : VisualElementAsset<Toggle>
     {
-        protected override Toggle CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override Toggle CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new Toggle(null);
         }
@@ -410,7 +400,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class VisualContainerAsset : VisualElementAsset<VisualContainer>
     {
-        protected override VisualContainer CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override VisualContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new VisualContainer();
         }
@@ -419,7 +409,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class IMGUIContainerAsset : VisualElementAsset<IMGUIContainer>
     {
-        protected override IMGUIContainer CreateElementInstance(BaseVisualElementPanel panel, VisualTreeAsset visualTreeAsset)
+        protected override IMGUIContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
         {
             return new IMGUIContainer(null);
         }

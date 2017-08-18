@@ -394,13 +394,17 @@ public enum TextureImporterCompression
 {
     Uncompressed = 0,
     Compressed = 1,
+    
     CompressedHQ = 2,
+    
     CompressedLQ = 3
 }
 
 public enum TextureResizeAlgorithm
 {
+    
     Mitchell = 0,
+    
     Bilinear = 1
 }
 
@@ -417,6 +421,18 @@ public enum SpriteImportMode
     Single = 1,
     Multiple = 2,
     Polygon = 3
+}
+
+public enum AndroidETC2FallbackOverride
+{
+    
+    UseBuildSettings = 0,
+    
+    Quality32Bit = 1,
+    
+    Quality16Bit = 2,
+    
+    Quality32BitDownscaled = 3
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -480,6 +496,16 @@ public sealed partial class TextureImporter : AssetImporter
     }
 
     public extern bool allowAlphaSplitting
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern  AndroidETC2FallbackOverride androidETC2FallbackOverride
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1509,58 +1535,66 @@ public sealed partial class TextureImporterPlatformSettings
             int m_CrunchedCompression = 0;
     [SerializeField]
             int m_AllowsAlphaSplitting = 0;
+    [SerializeField]
+            int m_AndroidETC2FallbackOverride = (int)AndroidETC2FallbackOverride.UseBuildSettings;
     
             public string name
         {
-            get {return m_Name; }
+            get { return m_Name; }
             set { m_Name = value; }
         }
     
             public bool overridden
         {
-            get {return m_Overridden != 0; }
+            get { return m_Overridden != 0; }
             set { m_Overridden = value ? 1 : 0; }
         }
     
             public int maxTextureSize
         {
-            get {return m_MaxTextureSize; }
+            get { return m_MaxTextureSize; }
             set { m_MaxTextureSize = value; }
         }
     
             public TextureResizeAlgorithm resizeAlgorithm
         {
-            get {return (TextureResizeAlgorithm)m_ResizeAlgorithm; }
+            get { return (TextureResizeAlgorithm)m_ResizeAlgorithm; }
             set { m_ResizeAlgorithm = (int)value; }
         }
     
             public TextureImporterFormat format
         {
-            get {return (TextureImporterFormat)m_TextureFormat; }
+            get { return (TextureImporterFormat)m_TextureFormat; }
             set { m_TextureFormat = (int)value; }
         }
             public TextureImporterCompression textureCompression
         {
-            get {return (TextureImporterCompression)m_TextureCompression; }
+            get { return (TextureImporterCompression)m_TextureCompression; }
             set { m_TextureCompression = (int)value; }
         }
     
             public int compressionQuality
         {
-            get {return m_CompressionQuality; }
+            get { return m_CompressionQuality; }
             set { m_CompressionQuality = value; }
         }
     
             public bool crunchedCompression
         {
-            get {return m_CrunchedCompression != 0; }
+            get { return m_CrunchedCompression != 0; }
             set { m_CrunchedCompression = value ? 1 : 0; }
         }
     
             public bool allowsAlphaSplitting
         {
-            get {return m_AllowsAlphaSplitting != 0; }
+            get { return m_AllowsAlphaSplitting != 0; }
             set { m_AllowsAlphaSplitting = value ? 1 : 0; }
+        }
+    
+            public AndroidETC2FallbackOverride androidETC2FallbackOverride
+        {
+            get { return (AndroidETC2FallbackOverride)m_AndroidETC2FallbackOverride; }
+            set { m_AndroidETC2FallbackOverride = (int)value; }
         }
     
     

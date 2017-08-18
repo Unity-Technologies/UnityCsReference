@@ -121,26 +121,22 @@ namespace UnityEditor
             m_Clip = clip;
             m_Start = 0;
             m_Length = clip.length;
-            //optimized = false;
+        }
+
+        protected override void InternalDispose()
+        {
+            base.InternalDispose();
+            KillAndClearStreamers();
+            m_StreamedSegments = null;
         }
 
         protected override void OnModifications(MessageFlags cFlags)
         {
             bool restartStreaming = false;
 
-            Action killStreamers = () =>
-                {
-                    foreach (var c in m_Contexts)
-                    {
-                        c.Key.Stop();
-                    }
-
-                    m_Contexts.Clear();
-                };
-
             if (HasFlag(cFlags, MessageFlags.TextureChanged) || HasFlag(cFlags, MessageFlags.Size) || HasFlag(cFlags, MessageFlags.Length) || HasFlag(cFlags, MessageFlags.Looping))
             {
-                killStreamers();
+                KillAndClearStreamers();
 
                 if (length <= 0)
                     return;
@@ -155,7 +151,7 @@ namespace UnityEditor
 
             if (!optimized)
             {
-                killStreamers();
+                KillAndClearStreamers();
                 restartStreaming = false;
             }
             else if (HasFlag(cFlags, MessageFlags.Optimization) && !restartStreaming)
@@ -182,6 +178,16 @@ namespace UnityEditor
             }
 
             base.OnModifications(cFlags);
+        }
+
+        void KillAndClearStreamers()
+        {
+            foreach (var c in m_Contexts)
+            {
+                c.Key.Stop();
+            }
+
+            m_Contexts.Clear();
         }
 
         Segment[] CalculateAndStartStreamers(double localStart, double localLength)

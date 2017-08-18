@@ -11,12 +11,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal class Node : GraphElement
     {
-        protected virtual VisualContainer mainContainer { get; private set; }
-        protected virtual VisualContainer leftContainer { get; private set; }
-        protected virtual VisualContainer rightContainer { get; private set; }
-        protected virtual VisualContainer titleContainer { get; private set; }
-        protected virtual VisualContainer inputContainer { get; private set; }
-        protected virtual VisualContainer outputContainer { get; private set; }
+        protected virtual VisualElement mainContainer { get; private set; }
+        protected virtual VisualElement leftContainer { get; private set; }
+        protected virtual VisualElement rightContainer { get; private set; }
+        protected virtual VisualElement titleContainer { get; private set; }
+        protected virtual VisualElement inputContainer { get; private set; }
+        protected virtual VisualElement outputContainer { get; private set; }
 
         private readonly Label m_TitleLabel;
 
@@ -45,16 +45,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (nodePresenter.orientation == Orientation.Vertical)
             {
-                if (leftContainer.ContainsChild(titleContainer))
+                if (leftContainer.Contains(titleContainer))
                 {
-                    leftContainer.RemoveChild(titleContainer);
+                    leftContainer.Remove(titleContainer);
                 }
             }
             else
             {
-                if (!leftContainer.ContainsChild(titleContainer))
+                if (!leftContainer.Contains(titleContainer))
                 {
-                    leftContainer.InsertChild(0, titleContainer);
+                    leftContainer.Insert(0, titleContainer);
                 }
             }
 
@@ -64,7 +64,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected virtual void OnAnchorRemoved(NodeAnchor anchor)
         {}
 
-        private void ProcessRemovedAnchors(IList<NodeAnchor> currentAnchors, VisualContainer anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
+        private void ProcessRemovedAnchors(IList<NodeAnchor> currentAnchors, VisualElement anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
         {
             foreach (var anchor in currentAnchors)
             {
@@ -82,12 +82,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (!contains)
                 {
                     OnAnchorRemoved(anchor);
-                    anchorContainer.RemoveChild(anchor);
+                    anchorContainer.Remove(anchor);
                 }
             }
         }
 
-        private void ProcessAddedAnchors(IList<NodeAnchor> currentAnchors, VisualContainer anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
+        private void ProcessAddedAnchors(IList<NodeAnchor> currentAnchors, VisualElement anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
         {
             int index = 0;
             foreach (var newPres in currentPresenters)
@@ -104,7 +104,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!contains)
                 {
-                    anchorContainer.InsertChild(index, InstantiateNodeAnchor(newPres));
+                    anchorContainer.Insert(index, InstantiateNodeAnchor(newPres));
                 }
 
                 index++;
@@ -161,16 +161,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Show output container only if we have one or more child
             if (outputCount > 0)
             {
-                if (!mainContainer.ContainsChild(rightContainer))
+                if (!mainContainer.Contains(rightContainer))
                 {
-                    mainContainer.AddChild(rightContainer);
+                    mainContainer.Add(rightContainer);
                 }
             }
             else
             {
-                if (mainContainer.ContainsChild(rightContainer))
+                if (mainContainer.Contains(rightContainer))
                 {
-                    mainContainer.RemoveChild(rightContainer);
+                    mainContainer.Remove(rightContainer);
                 }
             }
         }
@@ -199,32 +199,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Node()
         {
             usePixelCaching = true;
-            mainContainer = new VisualContainer
+            mainContainer = new VisualElement
             {
                 name = "pane",
                 pickingMode = PickingMode.Ignore,
             };
-            leftContainer = new VisualContainer
+            leftContainer = new VisualElement
             {
                 name = "left",
                 pickingMode = PickingMode.Ignore,
             };
-            rightContainer = new VisualContainer
+            rightContainer = new VisualElement
             {
                 name = "right",
                 pickingMode = PickingMode.Ignore,
             };
-            titleContainer = new VisualContainer
+            titleContainer = new VisualElement
             {
                 name = "title",
                 pickingMode = PickingMode.Ignore,
             };
-            inputContainer = new VisualContainer
+            inputContainer = new VisualElement
             {
                 name = "input",
                 pickingMode = PickingMode.Ignore,
             };
-            outputContainer = new VisualContainer
+            outputContainer = new VisualElement
             {
                 name = "output",
                 pickingMode = PickingMode.Ignore,
@@ -238,15 +238,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
 
-            AddChild(mainContainer);
-            mainContainer.AddChild(leftContainer);
-            mainContainer.AddChild(rightContainer);
+            Add(mainContainer);
+            mainContainer.Add(leftContainer);
+            mainContainer.Add(rightContainer);
 
-            titleContainer.AddChild(m_TitleLabel);
-            titleContainer.AddChild(m_CollapseButton);
+            titleContainer.Add(m_TitleLabel);
+            titleContainer.Add(m_CollapseButton);
 
-            leftContainer.AddChild(inputContainer);
-            rightContainer.AddChild(outputContainer);
+            leftContainer.Add(inputContainer);
+            rightContainer.Add(outputContainer);
 
             ClearClassList();
             AddToClassList("node");

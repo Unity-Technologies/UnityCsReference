@@ -58,7 +58,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ConnectorBox.name = "connector";
             m_ConnectorBox.pickingMode = PickingMode.Ignore;
 
-            AddChild(m_ConnectorBox);
+            Add(m_ConnectorBox);
             m_ConnectorBox.AddToClassList("connector");
 
             m_ConnectorText = new VisualElement
@@ -66,7 +66,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 name = "type",
                 pickingMode = PickingMode.Ignore
             };
-            AddChild(m_ConnectorText);
+            Add(m_ConnectorText);
             m_ConnectorText.AddToClassList("type");
         }
 

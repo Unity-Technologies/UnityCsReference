@@ -127,6 +127,16 @@ public enum MobileTextureSubtarget
     ASTC = 6,
 }
 
+public enum AndroidETC2Fallback
+{
+    
+    Quality32Bit = 0,
+    
+    Quality16Bit = 1,
+    
+    Quality32BitDownscaled = 2,
+}
+
 public enum WSASubtarget
 {
     AnyDevice = 0,
@@ -553,6 +563,16 @@ public sealed partial class EditorUserBuildSettings
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetCompressionType (BuildTargetGroup targetGroup, Compression type) ;
 
+    public extern static AndroidETC2Fallback androidETC2Fallback
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern static AndroidBuildSystem androidBuildSystem
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -635,6 +655,16 @@ public sealed partial class EditorUserBuildSettings
     }
 
     public extern static string wsaUWPSDK
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static string wsaUWPVisualStudioVersion
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

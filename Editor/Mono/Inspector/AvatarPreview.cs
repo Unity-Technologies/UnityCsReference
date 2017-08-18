@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -121,33 +122,20 @@ namespace UnityEditor
         }
         private static Styles s_Styles;
 
-        void ShowHidePreviewProxies(bool enabled)
+        private static void SetEnabledRecursive(GameObject go, bool enabled)
         {
-            if (m_PreviewInstance != null)
-                GameObjectInspector.SetEnabledRecursive(m_PreviewInstance, enabled);
-
-            GameObjectInspector.SetEnabledRecursive(m_ReferenceInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_DirectionInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_PivotInstance, enabled);
-            GameObjectInspector.SetEnabledRecursive(m_RootInstance, enabled);
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
         }
 
-        void AddPreviewProxiesForRender(bool showReference)
+        void SetPreviewCharacterEnabled(bool enabled, bool showReference)
         {
-            if (m_PreviewUtility == null)
-                return;
-
-
             if (m_PreviewInstance != null)
-                m_PreviewUtility.AddSingleGO(m_PreviewInstance);
-
-            if (!showReference)
-                return;
-
-            m_PreviewUtility.AddSingleGO(m_ReferenceInstance);
-            m_PreviewUtility.AddSingleGO(m_DirectionInstance);
-            m_PreviewUtility.AddSingleGO(m_PivotInstance);
-            m_PreviewUtility.AddSingleGO(m_RootInstance);
+                SetEnabledRecursive(m_PreviewInstance, enabled);
+            SetEnabledRecursive(m_ReferenceInstance, showReference && enabled);
+            SetEnabledRecursive(m_DirectionInstance, showReference && enabled);
+            SetEnabledRecursive(m_PivotInstance, showReference && enabled);
+            SetEnabledRecursive(m_RootInstance, showReference && enabled);
         }
 
         static AnimationClip GetFirstAnimationClipFromMotion(Motion motion)
@@ -279,6 +267,7 @@ namespace UnityEditor
             if (go != null)
             {
                 m_PreviewInstance = EditorUtility.InstantiateForAnimatorPreview(go);
+                previewUtility.AddSingleGO(m_PreviewInstance);
 
                 Bounds bounds = new Bounds(m_PreviewInstance.transform.position, Vector3.zero);
                 GameObjectInspector.GetRenderableBoundsRecurse(ref bounds, m_PreviewInstance);
@@ -314,6 +303,7 @@ namespace UnityEditor
                 GameObject referenceGO = (GameObject)EditorGUIUtility.Load("Avatar/dial_flat.prefab");
                 m_ReferenceInstance = (GameObject)Object.Instantiate(referenceGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_ReferenceInstance);
+                previewUtility.AddSingleGO(m_ReferenceInstance);
             }
 
             if (m_DirectionInstance == null)
@@ -321,6 +311,7 @@ namespace UnityEditor
                 GameObject directionGO = (GameObject)EditorGUIUtility.Load("Avatar/arrow.fbx");
                 m_DirectionInstance = (GameObject)Object.Instantiate(directionGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_DirectionInstance);
+                previewUtility.AddSingleGO(m_DirectionInstance);
             }
 
             if (m_PivotInstance == null)
@@ -328,6 +319,7 @@ namespace UnityEditor
                 GameObject pivotGO = (GameObject)EditorGUIUtility.Load("Avatar/root.fbx");
                 m_PivotInstance = (GameObject)Object.Instantiate(pivotGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_PivotInstance);
+                previewUtility.AddSingleGO(m_PivotInstance);
             }
 
             if (m_RootInstance == null)
@@ -335,6 +327,7 @@ namespace UnityEditor
                 GameObject rootGO = (GameObject)EditorGUIUtility.Load("Avatar/root.fbx");
                 m_RootInstance = (GameObject)Object.Instantiate(rootGO, Vector3.zero, Quaternion.identity);
                 EditorUtility.InitInstantiatedPreviewRecursive(m_RootInstance);
+                previewUtility.AddSingleGO(m_RootInstance);
             }
 
             // Load preview settings from prefs
@@ -342,7 +335,7 @@ namespace UnityEditor
             m_ShowReference = EditorPrefs.GetBool(kReferencePref, true);
             timeControl.playbackSpeed = EditorPrefs.GetFloat(kSpeedPref, 1f);
 
-            ShowHidePreviewProxies(false);
+            SetPreviewCharacterEnabled(false, false);
         }
 
         private PreviewRenderUtility previewUtility
@@ -415,16 +408,6 @@ namespace UnityEditor
                 m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
             }
-
-            Object.DestroyImmediate(m_PreviewInstance);
-            Object.DestroyImmediate(m_FloorMaterial);
-            Object.DestroyImmediate(m_FloorMaterialSmall);
-            Object.DestroyImmediate(m_ShadowMaskMaterial);
-            Object.DestroyImmediate(m_ShadowPlaneMaterial);
-            Object.DestroyImmediate(m_ReferenceInstance);
-            Object.DestroyImmediate(m_RootInstance);
-            Object.DestroyImmediate(m_PivotInstance);
-            Object.DestroyImmediate(m_DirectionInstance);
 
             if (timeControl != null)
                 timeControl.OnDisable();
@@ -514,10 +497,8 @@ namespace UnityEditor
             cam.targetTexture = rt;
 
             // Enable character and render with camera into the shadowmap
-            ShowHidePreviewProxies(true);
-            AddPreviewProxiesForRender(false);
-            previewUtility.Render(false, false);
-            previewUtility.FinishFrame();
+            SetPreviewCharacterEnabled(true, false);
+            m_PreviewUtility.camera.Render();
 
             // Draw a quad, with shader that will produce white color everywhere
             // where something was rendered (via inverted depth test)
@@ -564,6 +545,7 @@ namespace UnityEditor
 
         public void DoRenderPreview(Rect previewRect, GUIStyle background)
         {
+            var probe = RenderSettings.ambientProbe;
             previewUtility.BeginPreview(previewRect, background);
 
             Quaternion bodyRot;
@@ -600,7 +582,7 @@ namespace UnityEditor
                 pivotPos = Vector3.zero;
             }
 
-            SetupPreviewLightingAndFx();
+            SetupPreviewLightingAndFx(probe);
 
             Vector3 direction = bodyRot * Vector3.forward;
             direction[1] = 0;
@@ -641,7 +623,6 @@ namespace UnityEditor
             previewUtility.camera.nearClipPlane = 0.5f * m_ZoomFactor;
             previewUtility.camera.farClipPlane = 100.0f * m_AvatarScale;
             Quaternion camRot = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
-
             // Add panning offset
             Vector3 camPos = camRot * (Vector3.forward * -5.5f * m_ZoomFactor) + bodyPos + m_PivotPositionOffset;
             previewUtility.camera.transform.position = camPos;
@@ -680,20 +661,21 @@ namespace UnityEditor
                 Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
             }
 
-            ShowHidePreviewProxies(true);
-            AddPreviewProxiesForRender(m_ShowReference);
+            SetPreviewCharacterEnabled(true, m_ShowReference);
             previewUtility.Render();
-            ShowHidePreviewProxies(false);
+            SetPreviewCharacterEnabled(false, false);
 
             RenderTexture.ReleaseTemporary(shadowMap);
         }
 
-        private void SetupPreviewLightingAndFx()
+        private void SetupPreviewLightingAndFx(SphericalHarmonicsL2 probe)
         {
             previewUtility.lights[0].intensity = 1.4f;
             previewUtility.lights[0].transform.rotation = Quaternion.Euler(40f, 40f, 0);
             previewUtility.lights[1].intensity = 1.4f;
-            previewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
+            RenderSettings.ambientMode = AmbientMode.Custom;
+            RenderSettings.ambientLight = new Color(0.1f, 0.1f, 0.1f, 1.0f);
+            RenderSettings.ambientProbe = probe;
         }
 
         private float m_LastNormalizedTime = -1000;

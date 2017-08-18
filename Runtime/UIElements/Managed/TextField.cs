@@ -7,7 +7,7 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TextField : VisualElement
+    public class TextField : VisualContainer
     {
         public Action<string> OnTextChanged;
         public Action OnTextChangeValidated;
@@ -92,6 +92,9 @@ namespace UnityEngine.Experimental.UIElements
                 editor = new KeyboardTextEditor(this);
             }
 
+            // Make the editor style unique across all textfields
+            editor.style = new GUIStyle(editor.style);
+
             // TextField are focusable by default.
             focusIndex = 0;
 
@@ -120,7 +123,6 @@ namespace UnityEngine.Experimental.UIElements
 
             effectiveStyle.ApplyCustomProperty(SelectionColorProperty, ref m_SelectionColor); // TODO: Switch over to default style properties
             effectiveStyle.ApplyCustomProperty(CursorColorProperty, ref m_CursorColor);
-
             effectiveStyle.WriteToGUIStyle(editor.style);
         }
 
@@ -194,17 +196,10 @@ namespace UnityEngine.Experimental.UIElements
 
             IStyle style = this.style;
 
-            var textParams = new TextStylePainterParameters
-            {
-                text = " ",
-                wordWrapWidth = 0.0f,
-                wordWrap = false,
-                font = style.font,
-                fontSize = style.fontSize,
-                fontStyle = style.fontStyle,
-                anchor = style.textAlignment,
-                richText = false
-            };
+            var textParams = painter.GetDefaultTextParameters(this);
+            textParams.text = " ";
+            textParams.wordWrapWidth = 0.0f;
+            textParams.wordWrap = false;
 
             float lineHeight = painter.ComputeTextHeight(textParams);
             float wordWrapWidth = style.wordWrap ? contentRect.width : 0.0f;
@@ -226,32 +221,24 @@ namespace UnityEngine.Experimental.UIElements
             // Draw highlighted section, if any
             if (cursorIndex != selectionEndIndex)
             {
-                var painterParams = new RectStylePainterParameters
-                {
-                    layout = layout,
-                    color = selectionColor,
-                    borderLeftWidth = 0.0f,
-                    borderTopWidth = 0.0f,
-                    borderRightWidth = 0.0f,
-                    borderBottomWidth = 0.0f,
-                    borderRadius = 0.0f
-                };
+                var painterParams = painter.GetDefaultRectParameters(this);
+                painterParams.color = selectionColor;
+                painterParams.borderLeftWidth = 0.0f;
+                painterParams.borderTopWidth = 0.0f;
+                painterParams.borderRightWidth = 0.0f;
+                painterParams.borderBottomWidth = 0.0f;
+                painterParams.borderTopLeftRadius = 0.0f;
+                painterParams.borderTopRightRadius = 0.0f;
+                painterParams.borderBottomRightRadius = 0.0f;
+                painterParams.borderBottomLeftRadius = 0.0f;
 
                 int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
                 int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
 
-                cursorParams = new CursorPositionStylePainterParameters
-                {
-                    layout = contentRect,
-                    text = keyboardTextEditor.text,
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    anchor = style.textAlignment,
-                    wordWrapWidth = wordWrapWidth,
-                    richText = false,
-                    cursorIndex = min
-                };
+                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams.text = keyboardTextEditor.text;
+                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.cursorIndex = min;
 
                 Vector2 minPos = painter.GetCursorPosition(cursorParams);
                 cursorParams.cursorIndex = max;
@@ -288,29 +275,28 @@ namespace UnityEngine.Experimental.UIElements
             // Draw the border as in VisualElement
             painter.DrawBorder(this);
 
-            // Draw the text as in VisualElement
-            painter.DrawText(this);
+            // Draw the text with the scroll offset
+            if (!string.IsNullOrEmpty(keyboardTextEditor.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+            {
+                textParams = painter.GetDefaultTextParameters(this);
+                textParams.layout = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width, contentRect.height);
+                textParams.text = keyboardTextEditor.text;
+                painter.DrawText(textParams);
+            }
 
             // Draw the cursor
             if (cursorIndex == selectionEndIndex && (Font)style.font != null)
             {
-                cursorParams = new CursorPositionStylePainterParameters
-                {
-                    layout = contentRect,
-                    text = keyboardTextEditor.text,
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    anchor = style.textAlignment,
-                    wordWrapWidth = wordWrapWidth,
-                    richText = false,
-                    cursorIndex = cursorIndex
-                };
+                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams.text = keyboardTextEditor.text;
+                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.cursorIndex = cursorIndex;
+
                 Vector2 cursorPosition = painter.GetCursorPosition(cursorParams);
                 cursorPosition -= scrollOffset;
                 var painterParams = new RectStylePainterParameters
                 {
-                    layout = new Rect(cursorPosition.x - scrollOffset.x, cursorPosition.y - scrollOffset.y, 1f, lineHeight),
+                    layout = new Rect(cursorPosition.x, cursorPosition.y, 1f, lineHeight),
                     color = drawCursorColor
                 };
                 painter.DrawRect(painterParams);
@@ -319,24 +305,17 @@ namespace UnityEngine.Experimental.UIElements
             // Draw alternate cursor, if any
             if (keyboardTextEditor.altCursorPosition != -1)
             {
-                cursorParams = new CursorPositionStylePainterParameters
-                {
-                    layout = contentRect,
-                    text = keyboardTextEditor.text.Substring(0, keyboardTextEditor.altCursorPosition),
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    anchor = style.textAlignment,
-                    wordWrapWidth = wordWrapWidth,
-                    richText = false,
-                    cursorIndex = keyboardTextEditor.altCursorPosition
-                };
+                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams.text = keyboardTextEditor.text.Substring(0, keyboardTextEditor.altCursorPosition);
+                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.cursorIndex = keyboardTextEditor.altCursorPosition;
+
                 Vector2 altCursorPosition = painter.GetCursorPosition(cursorParams);
                 altCursorPosition -= scrollOffset;
 
                 var painterParams = new RectStylePainterParameters
                 {
-                    layout = new Rect(altCursorPosition.x - scrollOffset.x, altCursorPosition.y - scrollOffset.y, 1f, lineHeight),
+                    layout = new Rect(altCursorPosition.x, altCursorPosition.y, 1f, lineHeight),
                     color = drawCursorColor
                 };
                 painter.DrawRect(painterParams);

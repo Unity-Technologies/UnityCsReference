@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.CSSLayout;
+using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -383,6 +385,66 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        StyleValue<float> IStyle.borderRadius
+        {
+            get { return style.borderTopLeftRadius; }
+            set
+            {
+                style.borderTopLeftRadius = value;
+                style.borderTopRightRadius = value;
+                style.borderBottomLeftRadius = value;
+                style.borderBottomRightRadius = value;
+            }
+        }
+
+        StyleValue<float> IStyle.borderTopLeftRadius
+        {
+            get { return effectiveStyle.borderTopLeftRadius; }
+            set
+            {
+                if (ApplyAndCompare(ref inlineStyle.borderTopLeftRadius, value))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleValue<float> IStyle.borderTopRightRadius
+        {
+            get { return effectiveStyle.borderTopRightRadius; }
+            set
+            {
+                if (ApplyAndCompare(ref inlineStyle.borderTopRightRadius, value))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleValue<float> IStyle.borderBottomRightRadius
+        {
+            get { return effectiveStyle.borderBottomRightRadius; }
+            set
+            {
+                if (ApplyAndCompare(ref inlineStyle.borderBottomRightRadius, value))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        StyleValue<float> IStyle.borderBottomLeftRadius
+        {
+            get { return effectiveStyle.borderBottomLeftRadius; }
+            set
+            {
+                if (ApplyAndCompare(ref inlineStyle.borderBottomLeftRadius, value))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
         StyleValue<float> IStyle.paddingLeft
         {
             get { return effectiveStyle.paddingLeft; }
@@ -671,18 +733,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        StyleValue<float> IStyle.borderRadius
-        {
-            get { return effectiveStyle.borderRadius; }
-            set
-            {
-                if (ApplyAndCompare(ref inlineStyle.borderRadius, value))
-                {
-                    Dirty(ChangeType.Repaint);
-                }
-            }
-        }
-
         StyleValue<int> IStyle.sliceLeft
         {
             get { return effectiveStyle.sliceLeft; }
@@ -739,6 +789,80 @@ namespace UnityEngine.Experimental.UIElements
                 if (ApplyAndCompare(ref inlineStyle.opacity, value))
                 {
                     Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        private List<StyleSheet> m_StyleSheets;
+
+        internal IEnumerable<StyleSheet> styleSheets
+        {
+            get
+            {
+                if (m_StyleSheets == null && m_StyleSheetPaths != null)
+                {
+                    LoadStyleSheetsFromPaths();
+                }
+                return m_StyleSheets;
+            }
+        }
+
+        private List<string> m_StyleSheetPaths;
+
+        public void AddStyleSheetPath(string sheetPath)
+        {
+            if (m_StyleSheetPaths == null)
+            {
+                m_StyleSheetPaths = new List<string>();
+            }
+            m_StyleSheetPaths.Add(sheetPath);
+            //will trigger a reload on next access
+            m_StyleSheets = null;
+            Dirty(ChangeType.Styles);
+        }
+
+        public void RemoveStyleSheetPath(string sheetPath)
+        {
+            if (m_StyleSheetPaths == null)
+            {
+                Debug.LogWarning("Attempting to remove from null style sheet path list");
+                return;
+            }
+            m_StyleSheetPaths.Remove(sheetPath);
+            //will trigger a reload on next access
+            m_StyleSheets = null;
+            Dirty(ChangeType.Styles);
+        }
+
+        public bool HasStyleSheetPath(string sheetPath)
+        {
+            return m_StyleSheetPaths != null && m_StyleSheetPaths.Contains(sheetPath);
+        }
+
+        internal void LoadStyleSheetsFromPaths()
+        {
+            if (m_StyleSheetPaths == null || elementPanel == null)
+            {
+                return;
+            }
+
+            m_StyleSheets = new List<StyleSheet>();
+            foreach (var styleSheetPath in m_StyleSheetPaths)
+            {
+                StyleSheet sheetAsset = Panel.loadResourceFunc(styleSheetPath, typeof(StyleSheet)) as StyleSheet;
+
+                if (sheetAsset != null)
+                {
+                    // Every time we load a new style sheet, we cache some data on them
+                    for (int i = 0, count = sheetAsset.complexSelectors.Length; i < count; i++)
+                    {
+                        sheetAsset.complexSelectors[i].CachePseudoStateMasks();
+                    }
+                    m_StyleSheets.Add(sheetAsset);
+                }
+                else
+                {
+                    Debug.LogWarning(string.Format("Style sheet not found for path \"{0}\"", styleSheetPath));
                 }
             }
         }

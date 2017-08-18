@@ -119,11 +119,13 @@ namespace UnityEditor
 
         public void ClearInstructionHighlighter()
         {
-            if (m_PaddingHighlighter != null && m_PaddingHighlighter.parent != null)
+            if (m_PaddingHighlighter != null && m_PaddingHighlighter.shadow.parent != null)
             {
-                var parent = m_PaddingHighlighter.parent;
-                parent.RemoveChild(m_PaddingHighlighter);
-                parent.RemoveChild(m_ContentHighlighter);
+                var parent = m_PaddingHighlighter.shadow.parent;
+
+                m_PaddingHighlighter.RemoveFromHierarchy();
+                m_ContentHighlighter.RemoveFromHierarchy();
+
                 parent.Dirty(ChangeType.Repaint);
             }
         }
@@ -143,11 +145,11 @@ namespace UnityEditor
                 m_ContentHighlighter.style.backgroundColor = Styles.contentHighlighterColor;
             }
             m_PaddingHighlighter.layout = instructionRect;
-            view.visualTree.AddChild(m_PaddingHighlighter);
+            view.visualTree.Add(m_PaddingHighlighter);
             if (style != null)
                 instructionRect = style.padding.Remove(instructionRect);
             m_ContentHighlighter.layout = instructionRect;
-            view.visualTree.AddChild(m_ContentHighlighter);
+            view.visualTree.Add(m_ContentHighlighter);
         }
 
         InstructionType instructionType

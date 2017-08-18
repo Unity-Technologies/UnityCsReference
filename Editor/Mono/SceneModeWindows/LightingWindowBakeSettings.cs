@@ -290,8 +290,8 @@ namespace UnityEditor
                     m_LightModeUtil.GetModes(out realtimeMode, out mixedMode);
                     int newMixedMode = EditorGUILayout.IntPopup(Styles.MixedLightMode, mixedMode, Styles.MixedModeStrings, Styles.MixedModeValues);
 
-                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer && newMixedMode != 0)
-                        EditorGUILayout.HelpBox(Styles.NoShadowMaskInProgressive.text, MessageType.Warning);
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
+                        EditorGUILayout.HelpBox(Styles.NoMixedLightsInProgressive.text, MessageType.Warning);
 
                     if (LightModeUtil.Get().AreBakedLightmapsEnabled())
                     {
@@ -570,7 +570,7 @@ namespace UnityEditor
             public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TextContent("Lightmapping Settings|Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent NoDirectionalInSM2AndGLES2 = EditorGUIUtility.TextContent("Directional lightmaps cannot be decoded on SM2.0 hardware nor when using GLES2.0. They will fallback to Non-Directional lightmaps.");
             public static readonly GUIContent NoRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
-            public static readonly GUIContent NoShadowMaskInProgressive = EditorGUIUtility.TextContent("'Shadowmask' and 'Distance Shadowmask' modes are not supported in this preview version of the Progressive Lightmapper.");
+            public static readonly GUIContent NoMixedLightsInProgressive = EditorGUIUtility.TextContent("Mixed lights are not supported in this preview version of the Progressive Lightmapper.");
             public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TextContent("Concurrent Jobs|The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TextContent("Force White Albedo|Force white albedo during lighting calculations.");
             public static readonly GUIContent ForceUpdates = EditorGUIUtility.TextContent("Force Updates|Force continuous updates of runtime indirect lighting calculations.");
@@ -588,7 +588,7 @@ namespace UnityEditor
             public static readonly GUIContent FinalGatherRayCount = EditorGUIUtility.TextContent("Ray Count|Controls the number of rays emitted for every final gather point.");
             public static readonly GUIContent FinalGatherFiltering = EditorGUIUtility.TextContent("Denoising|Controls whether a denoising filter is applied to the final gather output.");
             public static readonly GUIContent SubtractiveShadowColor = EditorGUIUtility.TextContent("Realtime Shadow Color|The color used for mixing realtime shadows with baked lightmaps in Subtractive lighting mode. The color defines the darkest point of the realtime shadow.");
-            public static readonly GUIContent MixedLightMode = EditorGUIUtility.TextContent("Lighting Mode|Specifies which Scene lighting mode will be used for all Mixed lights in the Scene. Options are Baked Indirect, Distance Shadowmask, Shadowmask and Subtractive.");
+            public static readonly GUIContent MixedLightMode = EditorGUIUtility.TextContent("Lighting Mode|Specifies which Scene lighting mode will be used for all Mixed lights in the Scene. Options are Baked Indirect, Shadowmask and Subtractive.");
             public static readonly GUIContent UseRealtimeGI = EditorGUIUtility.TextContent("Realtime Global Illumination|Controls whether Realtime lights in the Scene contribute indirect light. If enabled, Realtime lights contribute both direct and indirect light. If disabled, Realtime lights only contribute direct light. This can be disabled on a per-light basis in the light component Inspector by setting Indirect Multiplier to 0.");
             public static readonly GUIContent BakedGIDisabledInfo = EditorGUIUtility.TextContent("All Baked and Mixed lights in the Scene are currently being overridden to Realtime light modes. Enable Baked Global Illumination to allow the use of Baked and Mixed light modes.");
             public static readonly GUIContent BakeBackend = EditorGUIUtility.TextContent("Lightmapper|Specifies which baking system will be used to generate baked lightmaps.");

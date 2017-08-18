@@ -326,7 +326,7 @@ namespace UnityEngine
         public int leftBorder, rightBorder, topBorder, bottomBorder;
         public Color32 color;
         public Vector4 borderWidths;
-        public float cornerRadius;
+        public Vector4 cornerRadiuses;
         public int pass;
         public Texture texture;
         public Material mat;

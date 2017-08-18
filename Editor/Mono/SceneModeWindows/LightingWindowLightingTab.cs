@@ -166,7 +166,7 @@ namespace UnityEditor
 //                    m_ShouldUpdateStatistics = updateStatistics;
 //                }
 
-                m_ShowProbeDebugSettings = EditorGUILayout.Foldout(m_ShowProbeDebugSettings, Styles.LightProbeVisualization);
+                m_ShowProbeDebugSettings = EditorGUILayout.Foldout(m_ShowProbeDebugSettings, Styles.LightProbeVisualization, true);
 
                 if (m_ShowProbeDebugSettings)
                 {

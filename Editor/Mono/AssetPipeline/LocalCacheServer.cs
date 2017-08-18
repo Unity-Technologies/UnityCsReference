@@ -109,11 +109,13 @@ namespace UnityEditor
 
         public static bool WaitForServerToComeAlive(int port)
         {
-            for (int i = 0; i < 500; i++)
+            DateTime start = DateTime.Now;
+            DateTime maximum = start.AddSeconds(5);
+            while (DateTime.Now < maximum)
             {
                 if (PingHost("localhost", port, 10))
                 {
-                    System.Console.WriteLine("Server Came alive after " + (i * 10) + "ms");
+                    System.Console.WriteLine("Server Came alive after {0} ms", (DateTime.Now - start).TotalMilliseconds);
                     return true;
                 }
             }

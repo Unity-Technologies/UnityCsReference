@@ -51,7 +51,7 @@ namespace UnityEditor.Scripting.Compilers
             var text = File.ReadAllText(ProjectLockFile);
             var lockFile = (Dictionary<string, object>)Json.Deserialize(text);
             var targets = (Dictionary<string, object>)lockFile["targets"];
-            var target = (Dictionary<string, object>)targets[TargetMoniker];
+            var target = FindUWPTarget(targets);
 
             var references = new List<string>();
             var packagesPath = ConvertToWindowsPath(GetPackagesPath());
@@ -89,6 +89,17 @@ namespace UnityEditor.Scripting.Compilers
 
             ResolvedReferences = references.ToArray();
             return ResolvedReferences;
+        }
+
+        private Dictionary<string, object> FindUWPTarget(Dictionary<string, object> targets)
+        {
+            foreach (var target in targets)
+            {
+                if (target.Key.StartsWith(TargetMoniker) && !target.Key.Contains("/"))
+                    return (Dictionary<string, object>)target.Value;
+            }
+
+            throw new InvalidOperationException("Could not find suitable target for " + TargetMoniker + " in project.lock.json file.");
         }
 
         private string GetPackagesPath()

@@ -21,6 +21,16 @@ namespace UnityEditor.Experimental.UIElements
     [ScriptedImporter(1, "uxml", 0)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
+        private const string k_XmlTemplate = "<" + k_TemplateNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
+  <ui:Label text=""New UXML"" />
+</" + k_TemplateNode + ">";
+
+        [MenuItem("Assets/Create/UIElements View")]
+        public static void CreateTemplateMenuItem()
+        {
+            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate);
+        }
+
         internal struct Error
         {
             public readonly Level level;

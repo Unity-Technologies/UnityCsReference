@@ -563,8 +563,7 @@ namespace UnityEditor
             AudioMixerController controller = (AudioMixerController)obj;
             if (controller != null)
             {
-                Selection.activeObject = controller;
-                ProjectBrowser.DeleteSelectedAssets(true);
+                ProjectWindowUtil.DeleteAssets(new[] { controller.GetInstanceID() }.ToList(), true);
             }
         }
 
@@ -639,13 +638,13 @@ namespace UnityEditor
                 {
                     Event.current.Use();
                     if (execute)
-                        ProjectBrowser.DeleteSelectedAssets(true);
+                        ProjectWindowUtil.DeleteAssets(m_TreeView.GetSelection().ToList(), true);
                 }
                 else if (Event.current.commandName == "Duplicate")
                 {
                     Event.current.Use();
                     if (execute)
-                        ProjectWindowUtil.DuplicateSelectedAssets();
+                        ProjectWindowUtil.DuplicateAssets(m_TreeView.GetSelection());
                 }
             }
         }

@@ -154,23 +154,13 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            if (separateAxesChanged)
+            // Remove old curves from curve editor
+            if (separateAxesChanged && !separateAxes)
             {
-                // Remove old curves from curve editor
-                if (separateAxes)
-                {
-                    m_StrengthX.RemoveCurveFromEditor();
-                    m_RemapX.RemoveCurveFromEditor();
-                }
-                else
-                {
-                    m_StrengthX.RemoveCurveFromEditor();
-                    m_StrengthY.RemoveCurveFromEditor();
-                    m_StrengthZ.RemoveCurveFromEditor();
-                    m_RemapX.RemoveCurveFromEditor();
-                    m_RemapY.RemoveCurveFromEditor();
-                    m_RemapZ.RemoveCurveFromEditor();
-                }
+                m_StrengthY.RemoveCurveFromEditor();
+                m_StrengthZ.RemoveCurveFromEditor();
+                m_RemapY.RemoveCurveFromEditor();
+                m_RemapZ.RemoveCurveFromEditor();
             }
 
             // Keep states in sync
@@ -209,7 +199,18 @@ namespace UnityEditor
 
             GUIPopup(s_Texts.quality, m_Quality, s_Texts.qualityDropdown);
 
+            EditorGUI.BeginChangeCheck();
             bool remapEnabled = GUIToggle(s_Texts.remap, m_RemapEnabled);
+            bool remapEnabledChanged = EditorGUI.EndChangeCheck();
+
+            // Remove old curves from curve editor
+            if (remapEnabledChanged && !remapEnabled)
+            {
+                m_RemapX.RemoveCurveFromEditor();
+                m_RemapY.RemoveCurveFromEditor();
+                m_RemapZ.RemoveCurveFromEditor();
+            }
+
             using (new EditorGUI.DisabledScope(remapEnabled == false))
             {
                 if (separateAxes)

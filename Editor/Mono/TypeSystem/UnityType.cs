@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -53,17 +54,24 @@ namespace UnityEditor
             return (runtimeTypeIndex - baseClass.runtimeTypeIndex) < baseClass.descendantCount;
         }
 
-        public static UnityType FindTypeByPersistentTypeID(int id)
+        public static UnityType FindTypeByPersistentTypeID(int persistentTypeId)
         {
             UnityType result = null;
-            ms_idToTypeInfo.TryGetValue(id, out result);
+            ms_idToType.TryGetValue(persistentTypeId, out result);
             return result;
+        }
+
+        public static uint TypeCount { get { return (uint)ms_types.Length; } }
+
+        public static UnityType GetTypeByRuntimeTypeIndex(uint index)
+        {
+            return ms_types[index];
         }
 
         public static UnityType FindTypeByName(string name)
         {
             UnityType result = null;
-            ms_nameToTypeInfo.TryGetValue(name, out result);
+            ms_nameToType.TryGetValue(name, out result);
             return result;
         }
 
@@ -82,8 +90,8 @@ namespace UnityEditor
             var types = UnityType.Internal_GetAllTypes();
 
             ms_types = new UnityType[types.Length];
-            ms_idToTypeInfo = new Dictionary<int, UnityType>();
-            ms_nameToTypeInfo = new Dictionary<string, UnityType>();
+            ms_idToType = new Dictionary<int, UnityType>();
+            ms_nameToType = new Dictionary<string, UnityType>();
 
             for (int i = 0; i < types.Length; ++i)
             {
@@ -103,16 +111,18 @@ namespace UnityEditor
                     flags = (UnityTypeFlags)types[i].flags
                 };
 
+                Debug.Assert(types[i].runtimeTypeIndex == i);
+
                 ms_types[i] = newType;
                 ms_typesReadOnly = new ReadOnlyCollection<UnityType>(ms_types);
-                ms_idToTypeInfo[newType.persistentTypeID] = newType;
-                ms_nameToTypeInfo[newType.name] = newType;
+                ms_idToType[newType.persistentTypeID] = newType;
+                ms_nameToType[newType.name] = newType;
             }
         }
 
         static UnityType[] ms_types;
         static ReadOnlyCollection<UnityType> ms_typesReadOnly;
-        static Dictionary<int, UnityType> ms_idToTypeInfo;
-        static Dictionary<string, UnityType> ms_nameToTypeInfo;
+        static Dictionary<int, UnityType> ms_idToType;
+        static Dictionary<string, UnityType> ms_nameToType;
     }
 }

@@ -39,6 +39,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         BorderRightWidth,
         BorderBottomWidth,
         BorderRadius,
+        BorderTopLeftRadius,
+        BorderTopRightRadius,
+        BorderBottomRightRadius,
+        BorderBottomLeftRadius,
         // All enum values
         FlexDirection,
         FlexWrap,

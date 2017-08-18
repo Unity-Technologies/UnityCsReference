@@ -806,6 +806,7 @@ namespace UnityEditor
             m_Alignment.intValue = settings.spriteAlignment;
 
             m_WrapU.intValue = (int)settings.wrapMode;
+            m_WrapV.intValue = (int)settings.wrapMode;
             m_FilterMode.intValue = (int)settings.filterMode;
             m_Aniso.intValue = settings.aniso;
 

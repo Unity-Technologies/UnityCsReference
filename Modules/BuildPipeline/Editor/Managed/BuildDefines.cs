@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Build
 {
-    internal delegate void GetScriptCompilationDefinesDelegate(BuildTarget target, ref HashSet<string> defines);
+    internal delegate void GetScriptCompilationDefinesDelegate(BuildTarget target, HashSet<string> defines);
 
     [RequiredByNativeCode]
     internal class BuildDefines
@@ -21,7 +21,7 @@ namespace UnityEditor.Build
         {
             var hashSet = new HashSet<string>(defines);
             if (getScriptCompilationDefinesDelegates != null)
-                getScriptCompilationDefinesDelegates(target, ref hashSet);
+                getScriptCompilationDefinesDelegates(target, hashSet);
             var array = new string[hashSet.Count];
             hashSet.CopyTo(array);
             return array;

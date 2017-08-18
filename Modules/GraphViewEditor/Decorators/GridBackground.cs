@@ -62,7 +62,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private VisualContainer m_Container;
+        private VisualElement m_Container;
 
         public GridBackground()
         {

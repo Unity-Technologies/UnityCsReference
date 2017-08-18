@@ -620,9 +620,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 m_Target = value;
                 m_Hierarchy.Clear();
                 m_Hierarchy.Add(value);
-                VisualContainer cursor = value as VisualContainer;
-                if (cursor == null)
-                    cursor = value.parent;
+                VisualElement cursor = value;
+
                 while (cursor != null)
                 {
                     if (cursor.styleSheets != null)
@@ -635,7 +634,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     }
 
                     m_Hierarchy.Add(cursor);
-                    cursor = cursor.parent;
+                    cursor = cursor.shadow.parent;
                 }
                 m_Index = m_Hierarchy.Count - 1;
             }

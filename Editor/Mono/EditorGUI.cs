@@ -383,6 +383,7 @@ namespace UnityEditor
             private int controlThatHadFocus = 0, messageControl = 0;
             internal string controlThatHadFocusValue = "";
             private GUIView viewThatHadFocus;
+            private bool m_CommitCommandSentOnLostFocus;
 
             private bool m_IgnoreBeginGUI = false;
 
@@ -415,7 +416,7 @@ namespace UnityEditor
                     controlThatHadFocus = 0;
                 }
 
-                if (sendID != 0)
+                if (sendID != 0 && !m_CommitCommandSentOnLostFocus)
                 {
                     messageControl = sendID;
                     //              Debug.Log ("" + messageControl + " lost focus to " + GUIUtility.keyboardControl+ " in " + type+". Sending Message. value:" + controlThatHadFocusValue);
@@ -437,6 +438,23 @@ namespace UnityEditor
             //*undocumented*
             public override void EndEditing()
             {
+                //The following block handles the case where a different window is focus while editing delayed text box
+                if (Event.current == null)
+                {
+                    // We set this flag because of a bug that was trigger when you switched focus to another window really fast
+                    // right after focusing on the text box. For some reason keyboardControl was changed and the commit message
+                    // was being sent twice which caused layout issues.
+                    m_CommitCommandSentOnLostFocus = true;
+                    m_IgnoreBeginGUI = true;
+                    messageControl = controlID;
+                    var temp = GUIUtility.keyboardControl;
+                    viewThatHadFocus.SetKeyboardControl(0);
+
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    m_IgnoreBeginGUI = false;
+                    viewThatHadFocus.SetKeyboardControl(temp);
+                }
+
                 base.EndEditing();
                 messageControl = 0;
             }
@@ -447,6 +465,7 @@ namespace UnityEditor
                 Event evt = Event.current;
                 if (evt.type == EventType.ExecuteCommand && evt.commandName == "DelayedControlShouldCommit" && id == messageControl)
                 {
+                    m_CommitCommandSentOnLostFocus = false;
                     changed = value != controlThatHadFocusValue;
                     // Only set changed to true if the value has actually changed. Otherwise EditorGUI.EndChangeCheck will report false positives,
                     // which could for example cause unwanted undo's to be registered (in the case of e.g. editing terrain resolution, this can cause several seconds of delay)
@@ -2245,8 +2264,16 @@ namespace UnityEditor
                     {
                         pm.AddSeparator("");
                     }
-                    pm.AddItem(EditorGUIUtility.TextContent("Duplicate Array Element"), false, TargetChoiceHandler.DuplicateArrayElement, propertyWithPath);
-                    pm.AddItem(EditorGUIUtility.TextContent("Delete Array Element"), false, TargetChoiceHandler.DeleteArrayElement, propertyWithPath);
+                    pm.AddItem(EditorGUIUtility.TextContent("Duplicate Array Element"), false, (a) =>
+                        {
+                            TargetChoiceHandler.DuplicateArrayElement(a);
+                            EditorGUIUtility.editingTextField = false;
+                        }, propertyWithPath);
+                    pm.AddItem(EditorGUIUtility.TextContent("Delete Array Element"), false, (a) =>
+                        {
+                            TargetChoiceHandler.DeleteArrayElement(a);
+                            EditorGUIUtility.editingTextField = false;
+                        }, propertyWithPath);
                 }
             }
 

@@ -120,6 +120,19 @@ namespace UnityEditor
             SetChanged();
         }
 
+        // Android fallback format in case ETC2 is not supported
+        [SerializeField]
+        private bool m_AndroidETC2FallbackOverrideIsDifferent = false;
+        public AndroidETC2FallbackOverride androidETC2FallbackOverride { get { return m_PlatformSettings.androidETC2FallbackOverride; } }
+        public bool androidETC2FallbackOverrideIsDifferent { get { return m_AndroidETC2FallbackOverrideIsDifferent; } }
+        public void SetAndroidETC2FallbackOverrideForAll(AndroidETC2FallbackOverride value)
+        {
+            Debug.Assert(allAreOverridden, "Attempting to set android ETC2 fallback format for all platforms even though settings are not overridden for all platforms.");
+            m_PlatformSettings.androidETC2FallbackOverride = value;
+            m_AndroidETC2FallbackOverrideIsDifferent = false;
+            SetChanged();
+        }
+
         [SerializeField] public BuildTarget m_Target;
         [SerializeField] TextureImporter[] m_Importers;
         public TextureImporter[] importers { get { return m_Importers; } }
@@ -163,6 +176,8 @@ namespace UnityEditor
                         m_CrunchedCompressionIsDifferent = true;
                     if (curPlatformSettings.allowsAlphaSplitting != m_PlatformSettings.allowsAlphaSplitting)
                         m_AlphaSplitIsDifferent = true;
+                    if (curPlatformSettings.androidETC2FallbackOverride != m_PlatformSettings.androidETC2FallbackOverride)
+                        m_AndroidETC2FallbackOverrideIsDifferent = true;
                 }
             }
 
@@ -243,6 +258,7 @@ namespace UnityEditor
                 m_CrunchedCompressionIsDifferent = defaultSettings.m_CrunchedCompressionIsDifferent;
                 m_PlatformSettings.allowsAlphaSplitting = defaultSettings.allowsAlphaSplitting;
                 m_AlphaSplitIsDifferent = defaultSettings.m_AlphaSplitIsDifferent;
+                m_AndroidETC2FallbackOverrideIsDifferent = defaultSettings.m_AndroidETC2FallbackOverrideIsDifferent;
             }
 
             if ((overridden || m_OverriddenIsDifferent) && m_PlatformSettings.format < 0)
@@ -304,6 +320,8 @@ namespace UnityEditor
                     platformSettings.crunchedCompression = m_PlatformSettings.crunchedCompression;
                 if (!m_AlphaSplitIsDifferent)
                     platformSettings.allowsAlphaSplitting = m_PlatformSettings.allowsAlphaSplitting;
+                if (!m_AndroidETC2FallbackOverrideIsDifferent)
+                    platformSettings.androidETC2FallbackOverride = m_PlatformSettings.androidETC2FallbackOverride;
 
                 imp.SetPlatformTextureSettings(platformSettings);
             }
@@ -446,6 +464,14 @@ namespace UnityEditor
         {
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.BC4,
+        };
+
+        public static readonly int[] kAndroidETC2FallbackOverrideValues =
+        {
+            (int)AndroidETC2FallbackOverride.UseBuildSettings,
+            (int)AndroidETC2FallbackOverride.Quality32Bit,
+            (int)AndroidETC2FallbackOverride.Quality16Bit,
+            (int)AndroidETC2FallbackOverride.Quality32BitDownscaled,
         };
     }
 }

@@ -26,14 +26,14 @@ namespace UnityEngine.Experimental.UIElements
             PositionYX
         }
 
-        public VisualElementFocusRing(VisualContainer root, DefaultFocusOrder dfo = DefaultFocusOrder.ChildOrder)
+        public VisualElementFocusRing(VisualElement root, DefaultFocusOrder dfo = DefaultFocusOrder.ChildOrder)
         {
             defaultFocusOrder = dfo;
             this.root = root;
             m_FocusRing = new List<FocusRingRecord>();
         }
 
-        public VisualContainer root;
+        public VisualElement root;
 
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
@@ -147,11 +147,11 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        void BuildRingRecursive(VisualContainer vc, ref int focusIndex)
+        void BuildRingRecursive(VisualElement vc, ref int focusIndex)
         {
-            for (int i = 0; i < vc.childrenCount; i++)
+            for (int i = 0; i < vc.shadow.childCount; i++)
             {
-                var child = vc.GetChildAt(i);
+                var child = vc.shadow[i];
 
                 if (child.canGrabFocus)
                 {
@@ -162,10 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                     });
                 }
 
-                if (child is VisualContainer)
-                {
-                    BuildRingRecursive(child as VisualContainer, ref focusIndex);
-                }
+                BuildRingRecursive(child, ref focusIndex);
             }
         }
 

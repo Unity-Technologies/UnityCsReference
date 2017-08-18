@@ -54,6 +54,9 @@ namespace UnityEditor
 
         public void AddGameObject(GameObject go)
         {
+            if (m_GameObjects.Contains(go))
+                return;
+
             SceneManager.MoveGameObjectToScene(go, m_Scene);
             m_GameObjects.Add(go);
         }
@@ -61,12 +64,6 @@ namespace UnityEditor
         public void AddManagedGO(GameObject go)
         {
             SceneManager.MoveGameObjectToScene(go, m_Scene);
-        }
-
-        public void DestroyGameObject(GameObject go)
-        {
-            m_GameObjects.Remove(go);
-            Object.DestroyImmediate(go);
         }
 
         public void Dispose()
@@ -87,7 +84,6 @@ namespace UnityEditor
         private RenderTexture m_RenderTexture;
         private Rect m_TargetRect;
         private SavedRenderTargetState m_SavedState;
-        private readonly List<GameObject> m_TempGameObjects = new List<GameObject>();
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
 
@@ -195,6 +191,13 @@ namespace UnityEditor
                 new Color(.5f, .5f, .5f, 1),
                 null
                 );
+
+
+            if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = ambientColor;
+            }
         }
 
         public void BeginStaticPreview(Rect r)
@@ -284,13 +287,9 @@ namespace UnityEditor
             return m_RenderTexture;
         }
 
-        internal void FinishFrame()
+        private void FinishFrame()
         {
-            foreach (var go in m_TempGameObjects)
-                previewScene.DestroyGameObject(go);
-
-            m_TempGameObjects.Clear();
-
+            Unsupported.RestoreOverrideRenderSettings();
             foreach (var light in lights)
                 light.enabled = false;
         }
@@ -323,11 +322,15 @@ namespace UnityEditor
             return copy;
         }
 
-        public void AddSingleGO(GameObject go, bool instantiateAtZero = false)
+        [Obsolete("AddSingleGO(GameObject go, bool instantiateAtZero) has been deprecated, use AddSingleGo(GameObject go) instead. instantiateAtZero has no effect and is not supported.")]
+        public void AddSingleGO(GameObject go, bool instantiateAtZero)
         {
-            var copy = instantiateAtZero ? Object.Instantiate(go, Vector3.zero, Quaternion.identity) : Object.Instantiate(go);
-            previewScene.AddGameObject(copy);
-            m_TempGameObjects.Add(copy);
+            AddSingleGO(go);
+        }
+
+        public void AddSingleGO(GameObject go)
+        {
+            previewScene.AddGameObject(go);
         }
 
         public GameObject InstantiatePrefabInScene(GameObject prefab)
@@ -390,40 +393,7 @@ namespace UnityEditor
 
         public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
         {
-            var meshGo = EditorUtility.CreateGameObjectWithHideFlags("Mesh", HideFlags.HideAndDontSave, typeof(MeshFilter), typeof(MeshRenderer));
-            meshGo.transform.position = pos;
-            meshGo.transform.rotation = rot;
-
-            var filter = meshGo.GetComponent<MeshFilter>();
-            filter.sharedMesh = mesh;
-
-            var renderer = meshGo.GetComponent<MeshRenderer>();
-
-            var materials = new Material[mesh.subMeshCount];
-
-            for (int i = 0; i < materials.Length; ++i)
-                materials[i] = (i == subMeshIndex) ? mat : GetInvisibleMaterial();
-
-            renderer.sharedMaterials = materials;
-
-            renderer.SetPropertyBlock(customProperties);
-            renderer.probeAnchor = probeAnchor;
-            renderer.lightProbeUsage = useLightProbe ? LightProbeUsage.BlendProbes : LightProbeUsage.Off;
-
-            previewScene.AddGameObject(meshGo);
-            m_TempGameObjects.Add(meshGo);
-
-            if (probeAnchor != null)
-            {
-                var probe = Object.Instantiate(probeAnchor.gameObject);
-                ReflectionProbe previewProbe = probe.GetComponent<ReflectionProbe>();
-                previewProbe.mode = ReflectionProbeMode.Custom;
-                previewProbe.customBakedTexture = probeAnchor.GetComponent<ReflectionProbe>().texture;
-                previewProbe.transform.position = Vector3.zero;
-
-                previewScene.AddGameObject(probe);
-                m_TempGameObjects.Add(probe);
-            }
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, Vector3.one), mat, 1, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
         }
 
         internal static Mesh GetPreviewSphere()
@@ -453,7 +423,6 @@ namespace UnityEditor
         {
             foreach (var light in lights)
                 light.enabled = true;
-
             var oldAllowPipes = Unsupported.useScriptableRenderPipeline;
             Unsupported.useScriptableRenderPipeline = allowScriptableRenderPipeline;
 

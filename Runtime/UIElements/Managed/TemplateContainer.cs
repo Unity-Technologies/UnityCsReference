@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TemplateContainer : VisualContainer
+    public class TemplateContainer : VisualElement
     {
         public readonly string templateId;
 

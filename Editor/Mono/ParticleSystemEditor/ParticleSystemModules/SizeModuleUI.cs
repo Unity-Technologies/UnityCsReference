@@ -54,13 +54,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 // Remove old curves from curve editor
-                if (separateAxes)
+                if (!separateAxes)
                 {
-                    m_X.RemoveCurveFromEditor();
-                }
-                else
-                {
-                    m_X.RemoveCurveFromEditor();
                     m_Y.RemoveCurveFromEditor();
                     m_Z.RemoveCurveFromEditor();
                 }

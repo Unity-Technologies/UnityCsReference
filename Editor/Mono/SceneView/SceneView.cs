@@ -388,12 +388,6 @@ namespace UnityEditor
             base.SetSearchFilter(searchFilter, mode, setAll);
         }
 
-        internal void OnFocus()
-        {
-            if (!Application.isPlaying && m_AudioPlay && m_Camera != null)
-                RefreshAudioPlay();
-        }
-
         internal void OnLostFocus()
         {
             // don't bleed our scene view rendering into game view
@@ -438,6 +432,8 @@ namespace UnityEditor
             m_RenderDocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc.");
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             EditorApplication.modifierKeysChanged += RepaintAll; // Because we show handles on shift
             m_DraggingLockedState = DraggingLockedState.NotDragging;
@@ -499,6 +495,8 @@ namespace UnityEditor
         {
             EditorApplication.modifierKeysChanged -= RepaintAll;
 
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
             if (m_Camera)
                 DestroyImmediate(m_Camera.gameObject, true);
             if (m_Light[0])
@@ -523,6 +521,15 @@ namespace UnityEditor
         }
 
         public void OnDestroy()
+        {
+            if (m_AudioPlay)
+            {
+                m_AudioPlay = false;
+                RefreshAudioPlay();
+            }
+        }
+
+        internal void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (m_AudioPlay)
             {

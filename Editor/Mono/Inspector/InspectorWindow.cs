@@ -129,7 +129,6 @@ namespace UnityEditor
 
         void OnLostFocus()
         {
-            EditorGUI.EndEditingActiveTextField();
             m_LabelGUI.OnLostFocus();
         }
 

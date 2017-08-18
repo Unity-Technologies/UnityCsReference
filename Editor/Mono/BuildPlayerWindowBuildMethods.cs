@@ -142,7 +142,7 @@ namespace UnityEditor
                         // with a build.
                         var errStr = string.Format("Could not switch to build target '{0}', '{1}'.",
                                 BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
-                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.target));
+                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
                         throw new BuildMethodException(errStr);
                     }
 
@@ -314,12 +314,15 @@ namespace UnityEditor
                     var exportProjectTitle  = "Export Google Android Project";
                     var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
 
+                    if (exportProjectFolder == String.Empty)
+                        return false;
+
                     EditorUserBuildSettings.SetBuildLocation(target, exportProjectFolder);
                     return true;
                 }
 
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
-                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
+                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
                 if (path == string.Empty)

@@ -33,7 +33,7 @@ namespace UnityEditor
         // keep this constant in sync with PLAYER_DIRECT_URL_CONNECT_GUID in GeneralConnection.h
         const int PLAYER_DIRECT_URL_CONNECT_GUID = 0xFEEE;
 
-        void SelectProfilerClick(object userData, string[] options, int selected)
+        protected void SelectProfilerClick(object userData, string[] options, int selected)
         {
             var profilers = (List<ProfilerChoise>)userData;
             if (selected < profilers.Count())
@@ -193,6 +193,11 @@ namespace UnityEditor
 
             AddEnterIPProfiler(profilers, GUIUtility.GUIToScreenRect(connectRect));
 
+            OnGUIMenu(connectRect, profilers);
+        }
+
+        protected virtual void OnGUIMenu(Rect connectRect, List<ProfilerChoise> profilers)
+        {
             string[] names = profilers.Select(p => p.Name).ToArray();
             bool[] enabled = profilers.Select(p => p.Enabled).ToArray();
             int[] selected;
