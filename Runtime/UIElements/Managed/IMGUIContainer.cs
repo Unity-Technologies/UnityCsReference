@@ -31,7 +31,7 @@ namespace UnityEngine.Experimental.UIElements
 
         bool lostFocus = false;
         bool receivedFocus = false;
-        FocusChangeDirection focusChangeDirection = FocusChangeDirection.kUnspecified;
+        FocusChangeDirection focusChangeDirection = FocusChangeDirection.unspecified;
         bool hasFocusableControls = false;
 
         public override bool canGrabFocus
@@ -135,20 +135,20 @@ namespace UnityEngine.Experimental.UIElements
             {
                 // If we just received the focus and GUIUtility.keyboardControl is not already one of our control,
                 // set the GUIUtility.keyboardControl to our first or last focusable control.
-                if (focusChangeDirection != FocusChangeDirection.kUnspecified && focusChangeDirection != FocusChangeDirection.kNone)
+                if (focusChangeDirection != FocusChangeDirection.unspecified && focusChangeDirection != FocusChangeDirection.none)
                 {
                     // We assume we are using the VisualElementFocusRing.
-                    if (focusChangeDirection == VisualElementFocusChangeDirection.kLeft)
+                    if (focusChangeDirection == VisualElementFocusChangeDirection.left)
                     {
                         GUIUtility.SetKeyboardControlToLastControlId();
                     }
-                    else if (focusChangeDirection == VisualElementFocusChangeDirection.kRight)
+                    else if (focusChangeDirection == VisualElementFocusChangeDirection.right)
                     {
                         GUIUtility.SetKeyboardControlToFirstControlId();
                     }
                 }
                 receivedFocus = false;
-                focusChangeDirection = FocusChangeDirection.kUnspecified;
+                focusChangeDirection = FocusChangeDirection.unspecified;
                 if (focusController != null)
                 {
                     focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
@@ -192,15 +192,17 @@ namespace UnityEngine.Experimental.UIElements
                     KeyDownEvent e = null;
                     if (result == -1)
                     {
-                        e = new KeyDownEvent('\t', KeyCode.Tab, EventModifiers.None);
+                        e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.None);
                     }
                     else if (result == -2)
                     {
-                        e = new KeyDownEvent('\t', KeyCode.Tab, EventModifiers.Shift);
+                        e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.Shift);
                     }
 
                     var currentFocusedElement = focusController.focusedElement;
                     focusController.SwitchFocusOnEvent(e);
+
+                    KeyDownEvent.ReleasePooled(e);
 
                     if (currentFocusedElement == this)
                     {
@@ -350,7 +352,7 @@ namespace UnityEngine.Experimental.UIElements
             // - we dont want to set the PseudoState.Focus flag on IMGUIContainer.
             //   They are focusable, but only for the purpose of focusing their children.
 
-            if (evt.GetEventTypeId() == BlurEvent.s_EventClassId)
+            if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 BlurEvent be = evt as BlurEvent;
                 if (be.relatedTarget == null || !be.relatedTarget.canGrabFocus)
@@ -358,7 +360,7 @@ namespace UnityEngine.Experimental.UIElements
                     lostFocus = true;
                 }
             }
-            else if (evt.GetEventTypeId() == FocusEvent.s_EventClassId)
+            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
                 FocusEvent fe = evt as FocusEvent;
                 receivedFocus = true;

@@ -56,7 +56,7 @@ namespace UnityEditor
             public GUIContent randomizeRotationDirection = EditorGUIUtility.TextContent("Randomize Rotation|Cause some particles to spin in the opposite direction. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent autoplay = EditorGUIUtility.TextContent("Play On Awake*|If enabled, the system will start playing automatically. Note that this setting is shared between all Particle Systems in the current particle effect.");
             public GUIContent gravity = EditorGUIUtility.TextContent("Gravity Modifier|Scales the gravity defined in Physics Manager");
-            public GUIContent scalingMode = EditorGUIUtility.TextContent("Scaling Mode|Should we use the combined scale from our entire hierarchy, just this particle node, or just apply scale to the shape module?");
+            public GUIContent scalingMode = EditorGUIUtility.TextContent("Scaling Mode|Use the combined scale from our entire hierarchy, just this local particle node, or only apply scale to the shape module.");
             public GUIContent simulationSpace = EditorGUIUtility.TextContent("Simulation Space|Makes particle positions simulate in world, local or custom space. In local space they stay relative to their own Transform, and in custom space they are relative to the custom Transform.");
             public GUIContent customSimulationSpace = EditorGUIUtility.TextContent("Custom Simulation Space|Makes particle positions simulate relative to a custom Transform component.");
             public GUIContent simulationSpeed = EditorGUIUtility.TextContent("Simulation Speed|Scale the playback speed of the Particle System.");
@@ -186,13 +186,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 // Remove old curves from curve editor
-                if (size3D)
+                if (!size3D)
                 {
-                    m_SizeX.RemoveCurveFromEditor();
-                }
-                else
-                {
-                    m_SizeX.RemoveCurveFromEditor();
                     m_SizeY.RemoveCurveFromEditor();
                     m_SizeZ.RemoveCurveFromEditor();
                 }
@@ -222,15 +217,10 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 // Remove old curves from curve editor
-                if (rotation3D)
-                {
-                    m_RotationZ.RemoveCurveFromEditor();
-                }
-                else
+                if (!rotation3D)
                 {
                     m_RotationX.RemoveCurveFromEditor();
                     m_RotationY.RemoveCurveFromEditor();
-                    m_RotationZ.RemoveCurveFromEditor();
                 }
             }
 
@@ -262,7 +252,7 @@ namespace UnityEditor
             GUIFloat(s_Texts.simulationSpeed, m_SimulationSpeed);
             GUIBoolAsPopup(s_Texts.deltaTime, m_UseUnscaledTime, new string[] { "Scaled", "Unscaled" });
 
-            bool anyNonMesh = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.shapeType != ParticleSystemShapeType.SkinnedMeshRenderer && o.shape.shapeType != ParticleSystemShapeType.MeshRenderer) != null;
+            bool anyNonMesh = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => !o.shape.enabled || (o.shape.shapeType != ParticleSystemShapeType.SkinnedMeshRenderer && o.shape.shapeType != ParticleSystemShapeType.MeshRenderer)) != null;
             if (anyNonMesh)
                 GUIPopup(s_Texts.scalingMode, m_ScalingMode, s_Texts.scalingModes);
 

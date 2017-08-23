@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         protected CallbackPhase m_Phase;
 
-        public EventCallbackFunctorBase(CallbackPhase phase)
+        protected EventCallbackFunctorBase(CallbackPhase phase)
         {
             m_Phase = phase;
         }
@@ -42,7 +42,7 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase where TEventType : EventBase, new()
+    internal class EventCallbackFunctor<TEventType> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
     {
         EventCallback<TEventType> m_Callback;
         long m_EventTypeId;
@@ -50,7 +50,7 @@ namespace UnityEngine.Experimental.UIElements
         public EventCallbackFunctor(EventCallback<TEventType> callback, CallbackPhase phase) : base(phase)
         {
             m_Callback = callback;
-            m_EventTypeId = new TEventType().GetEventTypeId();
+            m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
         public override void Invoke(EventBase evt)
@@ -73,7 +73,7 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase where TEventType : EventBase, new()
+    internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
     {
         EventCallback<TEventType, TCallbackArgs> m_Callback;
         TCallbackArgs m_UserArgs;
@@ -83,7 +83,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_Callback = callback;
             m_UserArgs = userArgs;
-            m_EventTypeId = new TEventType().GetEventTypeId();
+            m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
         public override void Invoke(EventBase evt)

@@ -20,6 +20,8 @@ public sealed partial class PreferenceItem : Attribute
     
     
     public string name;
+    [RequiredSignature]
+    private static void signature() {}
 }
 
 }

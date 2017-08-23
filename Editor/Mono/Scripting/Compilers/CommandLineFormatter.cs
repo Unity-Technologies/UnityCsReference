@@ -27,9 +27,9 @@ namespace UnityEditor.Scripting.Compilers
         public static string PrepareFileName(string input)
         {
             input = FileUtil.ResolveSymlinks(input);
-            if (Application.platform == RuntimePlatform.OSXEditor)
-                return EscapeCharsQuote(input);
-            return EscapeCharsWindows(input);
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                return EscapeCharsWindows(input);
+            return EscapeCharsQuote(input);
         }
 
         public static string EscapeCharsWindows(string input)

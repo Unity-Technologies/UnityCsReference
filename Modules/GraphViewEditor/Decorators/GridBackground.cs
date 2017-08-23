@@ -9,7 +9,8 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class GridBackground : VisualElement
+    internal
+    class GridBackground : VisualElement
     {
         const string k_SpacingProperty = "spacing";
         const string k_ThickLinesProperty = "thick-lines";
@@ -62,7 +63,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private VisualContainer m_Container;
+        private VisualElement m_Container;
 
         public GridBackground()
         {

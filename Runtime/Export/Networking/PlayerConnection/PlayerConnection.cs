@@ -142,6 +142,7 @@ namespace UnityEngine.Networking.PlayerConnection
         [RequiredByNativeCode]
         private static void DisconnectedCallback(int playerId)
         {
+            instance.m_connectedPlayers.Remove(playerId);
             instance.m_PlayerEditorConnectionEvents.disconnectionEvent.Invoke(playerId);
         }
     }

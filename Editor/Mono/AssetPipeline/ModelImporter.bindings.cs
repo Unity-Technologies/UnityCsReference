@@ -262,6 +262,13 @@ namespace UnityEditor
         High = 3,
     }
 
+    public enum ModelImporterIndexFormat
+    {
+        Auto = 0,
+        UInt16 = 1,
+        UInt32 = 2,
+    }
+
     [NativeType(Header = "Editor/Src/AssetPipeline/ModelImporting/ModelImporter.h")]
     public enum ModelImporterAnimationCompression
     {
@@ -475,6 +482,12 @@ namespace UnityEditor
         }
 
         public extern bool keepQuads
+        {
+            get;
+            set;
+        }
+
+        public extern ModelImporterIndexFormat indexFormat
         {
             get;
             set;

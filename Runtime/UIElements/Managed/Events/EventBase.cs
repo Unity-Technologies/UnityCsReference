@@ -8,13 +8,9 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class EventBase
     {
-        // Automatic event type id.
-        private static long s_LastClassId = 0;
+        private static long s_LastTypeId = 0;
 
-        protected static long RegisterEventClass()
-        {
-            return ++s_LastClassId;
-        }
+        protected static long RegisterEventType() { return ++s_LastTypeId; }
 
         public abstract long GetEventTypeId();
 
@@ -23,17 +19,23 @@ namespace UnityEngine.Experimental.UIElements
         {
             None = 0,
             Bubbles = 1,
-            Cancellable = 2,
+            Capturable = 2,
+            Cancellable = 4,
         }
 
         // Read-only state
         public long timestamp { get; private set; }
 
-        private EventFlags flags;
+        protected EventFlags flags;
 
         public bool bubbles
         {
-            get { return (flags & EventFlags.Bubbles) == 0 ? false : true; }
+            get { return (flags & EventFlags.Bubbles) != 0; }
+        }
+
+        public bool capturable
+        {
+            get { return (flags & EventFlags.Capturable) != 0; }
         }
 
         public IEventHandler target { get; internal set; }
@@ -66,7 +68,7 @@ namespace UnityEngine.Experimental.UIElements
         // Propagation state
         public PropagationPhase propagationPhase { get; internal set; }
 
-        IEventHandler m_CurrentTarget;
+        protected IEventHandler m_CurrentTarget;
 
         public virtual IEventHandler currentTarget
         {
@@ -89,22 +91,59 @@ namespace UnityEngine.Experimental.UIElements
         public bool dispatch { get; internal set; }
 
         // We aim to make this internal.
-        public /*internal*/ Event imguiEvent { get; private set; }
+        public /*internal*/ Event imguiEvent { get; protected set; }
 
-        public EventBase(EventFlags flags, Event imguiEvent)
+        protected virtual void Init()
         {
-            this.flags = flags;
             timestamp = DateTime.Now.Ticks;
 
+            flags = EventFlags.None;
+
             target = null;
-            currentTarget = null;
-            propagationPhase = PropagationPhase.None;
 
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;
             isDefaultPrevented = false;
 
-            this.imguiEvent = imguiEvent;
+            propagationPhase = PropagationPhase.None;
+
+            m_CurrentTarget = null;
+
+            dispatch = false;
+            imguiEvent = null;
+        }
+
+        protected EventBase()
+        {
+            Init();
+        }
+    }
+
+    public abstract class EventBase<T> : EventBase where T : EventBase<T>, new()
+    {
+        static readonly long s_TypeId = RegisterEventType();
+        static readonly EventPool<T> s_Pool = new EventPool<T>();
+
+        public static long TypeId()
+        {
+            return s_TypeId;
+        }
+
+        public static T GetPooled()
+        {
+            T t = s_Pool.Get();
+            t.Init();
+            return t;
+        }
+
+        public static void ReleasePooled(T evt)
+        {
+            s_Pool.Release(evt);
+        }
+
+        public override long GetEventTypeId()
+        {
+            return s_TypeId;
         }
     }
 }

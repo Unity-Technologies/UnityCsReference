@@ -120,6 +120,7 @@ namespace UnityEditor
             public GUIContent position = EditorGUIUtility.TextContent("Position|Translate the emission shape.");
             public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Rotate the emission shape.");
             public GUIContent scale = EditorGUIUtility.TextContent("Scale|Scale the emission shape.");
+            public GUIContent warningNon16BitIndex = EditorGUIUtility.TextContent("Only 16 bit index buffer meshes are supported.");
 
             public GUIContent[] shapeTypes = new GUIContent[]
             {
@@ -336,6 +337,7 @@ namespace UnityEditor
                         if (guiType == ParticleSystemShapeType.Mesh)
                         {
                             GUIObject(s_Texts.mesh, m_Mesh);
+                            srcMesh = (Mesh)m_Mesh.objectReferenceValue;
                         }
                         else if (guiType == ParticleSystemShapeType.MeshRenderer)
                         {
@@ -358,6 +360,11 @@ namespace UnityEditor
                                 srcMesh = mesh.sharedMesh;
                             }
                         }
+                        if (srcMesh != null && srcMesh.indexFormat != UnityEngine.Rendering.IndexFormat.UInt16)
+                        {
+                            EditorGUILayout.HelpBox(s_Texts.warningNon16BitIndex.text, MessageType.Warning, true);
+                        }
+
 
                         GUIToggleWithIntField(s_Texts.meshMaterialIndex, m_UseMeshMaterialIndex, m_MeshMaterialIndex, false);
                         bool useMeshColors = GUIToggle(s_Texts.useMeshColors, m_UseMeshColors);

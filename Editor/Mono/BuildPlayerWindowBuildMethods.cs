@@ -19,6 +19,7 @@ namespace UnityEditor
     {
         static Func<BuildPlayerOptions, BuildPlayerOptions> getBuildPlayerOptionsHandler;
         static Action<BuildPlayerOptions> buildPlayerHandler;
+        static bool m_Building = false;
 
         /// <summary>
         /// Exception thrown when an abort or error condition is reached within a build method delegate.
@@ -69,8 +70,12 @@ namespace UnityEditor
         /// <param name="defaultBuildOptions"></param>
         static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
         {
+            // One build at a time!
+            if (m_Building)
+                return;
             try
             {
+                m_Building = true;
                 BuildPlayerOptions options = new BuildPlayerOptions();
                 options.options = defaultBuildOptions;
 
@@ -88,6 +93,10 @@ namespace UnityEditor
             {
                 if (!string.IsNullOrEmpty(e.Message))
                     Debug.LogError(e);
+            }
+            finally
+            {
+                m_Building = false;
             }
         }
 
@@ -142,7 +151,7 @@ namespace UnityEditor
                         // with a build.
                         var errStr = string.Format("Could not switch to build target '{0}', '{1}'.",
                                 BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
-                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.target));
+                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
                         throw new BuildMethodException(errStr);
                     }
 
@@ -314,12 +323,15 @@ namespace UnityEditor
                     var exportProjectTitle  = "Export Google Android Project";
                     var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
 
+                    if (exportProjectFolder == String.Empty)
+                        return false;
+
                     EditorUserBuildSettings.SetBuildLocation(target, exportProjectFolder);
                     return true;
                 }
 
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
-                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
+                string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
                 if (path == string.Empty)

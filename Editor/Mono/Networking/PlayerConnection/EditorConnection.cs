@@ -25,11 +25,32 @@ namespace UnityEditor.Networking.PlayerConnection
             m_PlayerId = playerId;
         }
 
+        public ConnectedPlayer(int playerId, string name)
+        {
+            m_PlayerId = playerId;
+            m_PlayerName = name;
+        }
+
         [SerializeField]
         private int m_PlayerId;
+
+        [SerializeField]
+        private string m_PlayerName;
+
+        [Obsolete("Use playerId instead (UnityUpgradable) -> playerId", true)]
         public int PlayerId
         {
             get { return m_PlayerId; }
+        }
+
+        public int playerId
+        {
+            get { return m_PlayerId; }
+        }
+
+        public string name
+        {
+            get { return m_PlayerName; }
         }
     }
 
@@ -42,11 +63,11 @@ namespace UnityEditor.Networking.PlayerConnection
         private PlayerEditorConnectionEvents m_PlayerEditorConnectionEvents = new PlayerEditorConnectionEvents();
 
         [SerializeField]
-        private List<int> m_connectedPlayers = new List<int>();
+        private List<ConnectedPlayer> m_connectedPlayers = new List<ConnectedPlayer>();
 
         public List<ConnectedPlayer> ConnectedPlayers
         {
-            get { return m_connectedPlayers.Select(x => new ConnectedPlayer(x)).ToList(); }
+            get { return m_connectedPlayers; }
         }
 
         public void Initialize()
@@ -102,9 +123,9 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public void RegisterConnection(UnityAction<int> callback)
         {
-            foreach (var playerId in m_connectedPlayers)
+            foreach (var players in m_connectedPlayers)
             {
-                callback.Invoke(playerId);
+                callback.Invoke(players.playerId);
             }
             m_PlayerEditorConnectionEvents.connectionEvent.AddPersistentListener(callback, UnityEventCallState.EditorAndRuntime);
         }
@@ -148,16 +169,16 @@ namespace UnityEditor.Networking.PlayerConnection
         }
 
         [RequiredByNativeCode]
-        private static void ConnectedCallbackInternal(int playerId)
+        private static void ConnectedCallbackInternal(int playerId, string playerName)
         {
-            instance.m_connectedPlayers.Add(playerId);
+            instance.m_connectedPlayers.Add(new ConnectedPlayer(playerId, playerName));
             instance.m_PlayerEditorConnectionEvents.connectionEvent.Invoke(playerId);
         }
 
         [RequiredByNativeCode]
         private static void DisconnectedCallback(int playerId)
         {
-            instance.m_connectedPlayers.Remove(playerId);
+            instance.m_connectedPlayers.RemoveAll(c => c.playerId == playerId);
             instance.m_PlayerEditorConnectionEvents.disconnectionEvent.Invoke(playerId);
 
             if (!instance.ConnectedPlayers.Any())

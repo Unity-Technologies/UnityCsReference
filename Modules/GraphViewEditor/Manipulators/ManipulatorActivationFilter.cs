@@ -7,17 +7,18 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal struct ManipulatorActivationFilter
+    internal
+    struct ManipulatorActivationFilter
     {
         public MouseButton button;
         public EventModifiers modifiers;
 
-        public bool Matches(MouseEventBase evt)
+        public bool Matches(IMouseEvent evt)
         {
             return button == (MouseButton)evt.button && HasModifiers(evt);
         }
 
-        private bool HasModifiers(MouseEventBase evt)
+        private bool HasModifiers(IMouseEvent evt)
         {
             if ((modifiers & EventModifiers.Alt) != 0 && !evt.altKey ||
                 (modifiers & EventModifiers.Alt) == 0 && evt.altKey)

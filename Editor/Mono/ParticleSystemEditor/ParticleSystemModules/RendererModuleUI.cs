@@ -90,6 +90,8 @@ namespace UnityEditor
             public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TextContent("Custom Vertex Streams|Choose whether to send custom particle data to the shader.");
 
+            public GUIContent warningNon16BitIndex = EditorGUIUtility.TextContent("Only 16 bit index buffer meshes are supported.");
+
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
             {
@@ -138,11 +140,18 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Visible Outside Mask")
             };
 
-            public string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz" };
+            private string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz" };
             public string[] vertexStreamsPacked = { "Position", "Normal", "Tangent", "Color", "UV", "UV2", "UV3", "UV4", "AnimBlend", "AnimFrame", "Center", "VertexID", "Size", "Size.xy", "Size.xyz", "Rotation", "Rotation3D", "RotationSpeed", "RotationSpeed3D", "Velocity", "Speed", "AgePercent", "InverseStartLifetime", "StableRandom.x", "StableRandom.xy", "StableRandom.xyz", "StableRandom.xyzw", "VariableRandom.x", "VariableRandom.xy", "VariableRandom.xyz", "VariableRandom.xyzw", "Custom1.x", "Custom1.xy", "Custom1.xyz", "Custom1.xyzw", "Custom2.x", "Custom2.xy", "Custom2.xyz", "Custom2.xyzw", "NoiseSum.x", "NoiseSum.xy", "NoiseSum.xyz", "NoiseImpulse.x", "NoiseImpulse.xy", "NoiseImpulse.xyz" }; // Keep in sync with enums in ParticleSystemRenderer.h and ParticleSystem.bindings
             public string[] vertexStreamPackedTypes = { "POSITION.xyz", "NORMAL.xyz", "TANGENT.xyzw", "COLOR.xyzw" }; // all other types are floats
             public int[] vertexStreamTexCoordChannels = { 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 3, 1, 1, 2, 3, 1, 3, 1, 3, 3, 1, 1, 1, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3 };
             public string channels = "xyzw|xyz";
+
+            public GUIContent[] vertexStreamsMenuContent;
+
+            public Texts()
+            {
+                vertexStreamsMenuContent = vertexStreamsMenu.Select(x => new GUIContent(x)).ToArray();
+            }
         }
         private static Texts s_Texts;
 
@@ -354,29 +363,41 @@ namespace UnityEditor
                     m_ShownMeshes = shownMeshes.ToArray();
                 }
             }
+
+            for (var i = 0; i < m_Meshes.Length; ++i)
+            {
+                var mesh = m_Meshes[i].objectReferenceValue as Mesh;
+                if (mesh != null && mesh.indexFormat != UnityEngine.Rendering.IndexFormat.UInt16)
+                {
+                    EditorGUILayout.HelpBox(s_Texts.warningNon16BitIndex.text, MessageType.Warning, true);
+                }
+            }
         }
 
         private class StreamCallbackData
         {
-            public StreamCallbackData(SerializedProperty prop, int s)
+            public StreamCallbackData(UnityEditorInternal.ReorderableList l, SerializedProperty prop, int s)
             {
+                list = l;
                 streamProp = prop;
                 stream = s;
             }
 
+            public UnityEditorInternal.ReorderableList list;
             public SerializedProperty streamProp;
             public int stream;
         }
 
-        static void SelectVertexStreamCallback(object obj)
+        void SelectVertexStreamCallback(object obj)
         {
             StreamCallbackData data = (StreamCallbackData)obj;
 
-            int index = data.streamProp.arraySize;
-            data.streamProp.InsertArrayElementAtIndex(index);
+            ReorderableList.defaultBehaviours.DoAddButton(data.list);
 
-            var element = data.streamProp.GetArrayElementAtIndex(index);
+            var element = data.streamProp.GetArrayElementAtIndex(data.list.index);
             element.intValue = data.stream;
+
+            m_ParticleSystemUI.m_RendererSerializedObject.ApplyModifiedProperties();
         }
 
         private void DoVertexStreamsGUI(RenderMode renderMode)
@@ -467,7 +488,7 @@ namespace UnityEditor
 
             GenericMenu menu = new GenericMenu();
             for (int i = 0; i < notEnabled.Count; ++i)
-                menu.AddItem(EditorGUIUtility.TempContent(s_Texts.vertexStreamsMenu[notEnabled[i]]), false, SelectVertexStreamCallback, new StreamCallbackData(m_VertexStreams, notEnabled[i]));
+                menu.AddItem(s_Texts.vertexStreamsMenuContent[notEnabled[i]], false, SelectVertexStreamCallback, new StreamCallbackData(list, m_VertexStreams, notEnabled[i]));
             menu.ShowAsContext();
             Event.current.Use();
         }

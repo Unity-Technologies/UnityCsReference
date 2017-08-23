@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Linq;
 using System;
+using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.CSSLayout;
 
@@ -38,23 +39,49 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 240);
 
-        VisualContainer m_RootVisualContainer;
+        VisualElement m_RootVisualContainer;
 
-        internal VisualContainer rootVisualContainer
+        internal
+        VisualElement rootVisualContainer
         {
             get
             {
                 if (m_RootVisualContainer == null)
                 {
-                    m_RootVisualContainer = new VisualContainer()
+                    m_RootVisualContainer = new VisualElement()
                     {
                         name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
-                        pickingMode = PickingMode.Ignore // do not eat events so IMGUI gets them
+                        pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                        persistenceKey = "rootVisualContainer"
                     };
                 }
                 return m_RootVisualContainer;
             }
         }
+
+        private SerializableJsonDictionary m_PersistentViewDataDictionary;
+        internal SerializableJsonDictionary viewDataDictionary
+        {
+            get
+            {
+                if (m_PersistentViewDataDictionary == null)
+                {
+                    string editorPrefFileName = this.GetType().ToString();
+                    m_PersistentViewDataDictionary = EditorWindowPersistentViewData.instance[editorPrefFileName];
+                }
+                return m_PersistentViewDataDictionary;
+            }
+        }
+
+        internal void SavePersistentViewData()
+        {
+            if (m_PersistentViewDataDictionary != null)
+            {
+                string editorPrefFileName = this.GetType().ToString();
+                EditorWindowPersistentViewData.instance.Save(editorPrefFileName, m_PersistentViewDataDictionary);
+            }
+        }
+
 
 
         // The GameView rect is in GUI space of the view
@@ -919,7 +946,7 @@ namespace UnityEditor
     {
         public static class UIElementsEntryPoint
         {
-            public static VisualContainer GetRootVisualContainer(this EditorWindow window)
+            public static VisualElement GetRootVisualContainer(this EditorWindow window)
             {
                 return window.rootVisualContainer;
             }

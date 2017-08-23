@@ -34,17 +34,23 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             {
                 { UIElementsNamespace, "ui" }
             };
+
+            HashSet<string> usings = new HashSet<string>();
+
             var doc = new XDocument();
-            XElement template = new XElement("Template",
-                    new XAttribute("id", templateId)
-                    );
+            XElement template = new XElement("UXML");
             doc.Add(template);
 
-            Recurse(template, nsToPrefix, selectedElement, options);
+            Recurse(template, nsToPrefix, usings, selectedElement, options);
 
             foreach (var it in nsToPrefix)
             {
                 template.Add(new XAttribute(XNamespace.Xmlns + it.Value, it.Key));
+            }
+
+            foreach (var it in usings.OrderByDescending(x => x))
+            {
+                template.AddFirst(new XElement("Using", new XAttribute("alias", it), new XAttribute("path", it)));
             }
 
             XmlWriterSettings settings = new XmlWriterSettings
@@ -64,7 +70,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             return sb.ToString();
         }
 
-        private static void Recurse(XElement parent, Dictionary<XNamespace, string> nsToPrefix, VisualElement ve, ExportOptions options)
+        private static void Recurse(XElement parent, Dictionary<XNamespace, string> nsToPrefix, HashSet<string> usings, VisualElement ve, ExportOptions options)
         {
             //todo: handle namespace
             XElement elt;
@@ -74,7 +80,13 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             Dictionary<string, string> attrs = new Dictionary<string, string>();
 
             string nsp;
-            if (nsToPrefix.TryGetValue(ns, out nsp))
+            if (ve is TemplateContainer)
+            {
+                var templateId = ((TemplateContainer)ve).templateId;
+                elt = new XElement(templateId);
+                usings.Add(templateId);
+            }
+            else if (nsToPrefix.TryGetValue(ns, out nsp))
             {
                 elt = new XElement((XNamespace)ns + typeName);
             }
@@ -102,15 +114,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             if (classes.Any())
                 elt.SetAttributeValue("class", string.Join(" ", classes.ToArray()));
 
-            var container = ve as VisualContainer;
-            if (container != null)
+            if (ve is TemplateContainer)
             {
-                var childContainer = container;
+                return;
+            }
 
-                for (int i = 0; i < childContainer.childrenCount; i++)
-                {
-                    Recurse(elt, nsToPrefix, childContainer.GetChildAt(i), options);
-                }
+            foreach (var childElement in ve.Children())
+            {
+                Recurse(elt, nsToPrefix, usings, childElement, options);
             }
         }
     }

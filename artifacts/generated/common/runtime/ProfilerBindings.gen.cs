@@ -69,6 +69,18 @@ public sealed partial class Profiler
     extern public static  void AddFramesFromFile (string file) ;
 
     [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void BeginThreadProfiling (string threadGroupName, string threadName) ;
+
+    [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void EndThreadProfiling () ;
+
+    [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
     public static void BeginSample(string name)
         {
             BeginSampleOnly(name);

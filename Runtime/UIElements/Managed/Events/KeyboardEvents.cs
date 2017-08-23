@@ -2,40 +2,25 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class KeyboardEventBase : UIEvent
+    public interface IKeyboardEvent
     {
-        static List<long> s_EventSubTypeIds;
+        EventModifiers modifiers { get; }
+        char character { get; }
+        KeyCode keyCode { get; }
 
-        protected new static long RegisterEventClass()
-        {
-            if (s_EventSubTypeIds == null)
-            {
-                s_EventSubTypeIds = new List<long>();
-            }
+        bool shiftKey { get; }
+        bool ctrlKey { get; }
+        bool commandKey { get; }
+        bool altKey { get; }
+    }
 
-            long id = UIEvent.RegisterEventClass();
-            s_EventSubTypeIds.Add(id);
-            return id;
-        }
-
-        public static bool Is(EventBase evt)
-        {
-            if (s_EventSubTypeIds == null || evt == null)
-            {
-                return false;
-            }
-
-            return s_EventSubTypeIds.Contains(evt.GetEventTypeId());
-        }
-
-        public EventModifiers modifiers { get; private set; }
-        public char character { get; private set; }
-        public KeyCode keyCode { get; private set; }
+    public abstract class KeyboardEventBase<T> : EventBase<T>, IKeyboardEvent where T : KeyboardEventBase<T>, new()
+    {
+        public EventModifiers modifiers { get; protected set; }
+        public char character { get; protected set; }
+        public KeyCode keyCode { get; protected set; }
 
         public bool shiftKey
         {
@@ -58,79 +43,48 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // FIXME: see https://www.w3.org/TR/DOM-Level-3-Events/#interface-keyboardevent for key, code and location values.
-        public KeyboardEventBase(EventFlags flags, Event systemEvent)
-            : base(flags, systemEvent)
+        protected override void Init()
         {
+            base.Init();
+            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
+            modifiers = default(EventModifiers);
+            character = default(char);
+            keyCode = default(KeyCode);
+        }
+
+        public static T GetPooled(char c, KeyCode keyCode, EventModifiers modifiers)
+        {
+            T e = GetPooled();
+            e.modifiers = modifiers;
+            e.character = c;
+            e.keyCode = keyCode;
+            return e;
+        }
+
+        public static T GetPooled(Event systemEvent)
+        {
+            T e = GetPooled();
+            e.imguiEvent = systemEvent;
             if (systemEvent != null)
             {
-                modifiers = systemEvent.modifiers;
-                character = systemEvent.character;
-                keyCode = systemEvent.keyCode;
+                e.modifiers = systemEvent.modifiers;
+                e.character = systemEvent.character;
+                e.keyCode = systemEvent.keyCode;
             }
+            return e;
         }
 
-        public KeyboardEventBase(EventFlags flags, char character, KeyCode keyCode, EventModifiers modifiers)
-            : base(flags, null)
+        protected KeyboardEventBase()
         {
-            this.modifiers = modifiers;
-            this.character = character;
-            this.keyCode = keyCode;
+            Init();
         }
     }
 
-    public class KeyDownEvent : KeyboardEventBase
+    public class KeyDownEvent : KeyboardEventBase<KeyDownEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static KeyDownEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public KeyDownEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public KeyDownEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
-        }
-
-        public KeyDownEvent(char character, KeyCode keyCode, EventModifiers modifiers)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, character, keyCode, modifiers)
-        {
-        }
     }
 
-    public class KeyUpEvent : KeyboardEventBase
+    public class KeyUpEvent : KeyboardEventBase<KeyUpEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static KeyUpEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public KeyUpEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public KeyUpEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
-        }
-
-        public KeyUpEvent(char character, KeyCode keyCode, EventModifiers modifiers)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, character, keyCode, modifiers)
-        {
-        }
     }
 }

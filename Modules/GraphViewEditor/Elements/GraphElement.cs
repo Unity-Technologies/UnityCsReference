@@ -7,7 +7,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class GraphElement : DataWatchContainer, ISelectable
+    internal
+    abstract class GraphElement : DataWatchContainer, ISelectable
     {
         GraphElementPresenter m_Presenter;
 

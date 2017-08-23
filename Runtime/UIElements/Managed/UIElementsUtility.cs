@@ -19,7 +19,7 @@ namespace UnityEngine.Experimental.UIElements
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         internal static Action<IMGUIContainer> s_EndContainerCallback;
 
-        internal static IDispatcher eventDispatcher
+        internal static IEventDispatcher eventDispatcher
         {
             get
             {
@@ -118,7 +118,7 @@ namespace UnityEngine.Experimental.UIElements
             if (s_BeginContainerCallback != null)
                 s_BeginContainerCallback(container);
 
-            GUI.enabled = container.enabled;
+            GUI.enabled = container.enabledInHierarchy;
             GUILayoutUtility.BeginContainer(cache);
             GUIUtility.ResetGlobalState();
 
@@ -173,27 +173,46 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.s_SkinMode == 0 ? ContextType.Player : ContextType.Editor;
         }
 
-        static internal EventBase CreateEvent(Event systemEvent)
+        internal static EventBase CreateEvent(Event systemEvent)
         {
             switch (systemEvent.type)
             {
-                case EventType.MouseDown:
-                    return new MouseDownEvent(systemEvent);
-                case EventType.MouseUp:
-                    return new MouseUpEvent(systemEvent);
                 case EventType.MouseMove:
-                    return new MouseMoveEvent(systemEvent);
+                    return MouseMoveEvent.GetPooled(systemEvent);
                 case EventType.MouseDrag:
-                    return new MouseMoveEvent(systemEvent);
-                case EventType.KeyDown:
-                    return new KeyDownEvent(systemEvent);
-                case EventType.KeyUp:
-                    return new KeyUpEvent(systemEvent);
+                    return MouseMoveEvent.GetPooled(systemEvent);
+                case EventType.MouseDown:
+                    return MouseDownEvent.GetPooled(systemEvent);
+                case EventType.MouseUp:
+                    return MouseUpEvent.GetPooled(systemEvent);
                 case EventType.ScrollWheel:
-                    return new WheelEvent(systemEvent);
+                    return WheelEvent.GetPooled(systemEvent);
+                case EventType.KeyDown:
+                    return KeyDownEvent.GetPooled(systemEvent);
+                case EventType.KeyUp:
+                    return KeyUpEvent.GetPooled(systemEvent);
                 default:
-                    return new IMGUIEvent(systemEvent);
+                    return IMGUIEvent.GetPooled(systemEvent);
             }
+        }
+
+        internal static void ReleaseEvent(EventBase evt)
+        {
+            long id = evt.GetEventTypeId();
+            if (id == MouseMoveEvent.TypeId())
+                MouseMoveEvent.ReleasePooled((MouseMoveEvent)evt);
+            else if (id == MouseDownEvent.TypeId())
+                MouseDownEvent.ReleasePooled((MouseDownEvent)evt);
+            else if (id == MouseUpEvent.TypeId())
+                MouseUpEvent.ReleasePooled((MouseUpEvent)evt);
+            else if (id == WheelEvent.TypeId())
+                WheelEvent.ReleasePooled((WheelEvent)evt);
+            else if (id == KeyDownEvent.TypeId())
+                KeyDownEvent.ReleasePooled((KeyDownEvent)evt);
+            else if (id == KeyUpEvent.TypeId())
+                KeyUpEvent.ReleasePooled((KeyUpEvent)evt);
+            else if (id == IMGUIEvent.TypeId())
+                IMGUIEvent.ReleasePooled((IMGUIEvent)evt);
         }
 
         static bool DoDispatch(BaseVisualElementPanel panel)
@@ -225,6 +244,7 @@ namespace UnityEngine.Experimental.UIElements
                     panel.visualTree.Dirty(ChangeType.Repaint);
                 }
                 usesEvent = evt.isPropagationStopped;
+                ReleaseEvent(evt);
             }
 
             return usesEvent;
@@ -235,18 +255,19 @@ namespace UnityEngine.Experimental.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        internal static Panel FindOrCreatePanel(int instanceId, ContextType contextType, IDataWatchService dataWatch = null, LoadResourceFunction loadResourceFunction = null)
+        internal static Panel FindOrCreatePanel(int instanceId, ContextType contextType, IDataWatchService dataWatch = null)
         {
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
             {
-                panel = new Panel(instanceId, contextType, loadResourceFunction, dataWatch, eventDispatcher);
+                panel = new Panel(instanceId, contextType, dataWatch, eventDispatcher);
                 s_UIElementsCache.Add(instanceId, panel);
             }
             else
             {
                 Debug.Assert(contextType == panel.contextType, "Context type mismatch");
             }
+
             return panel;
         }
 

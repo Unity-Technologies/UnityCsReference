@@ -51,7 +51,7 @@ namespace UnityEngine.Experimental.UIElements
     // For example 2: A keydown with Textfocus in TextField C
     // result ==> Phase Capture [ root, A], Phase Target [C], Phase BubbleUp [ A, root ]
 
-    public interface IDispatcher
+    public interface IEventDispatcher
     {
         IEventHandler capture { get; }
 
@@ -67,7 +67,7 @@ namespace UnityEngine.Experimental.UIElements
         void DispatchEvent(EventBase evt, IPanel panel);
     }
 
-    internal class EventDispatcher : IDispatcher
+    internal class EventDispatcher : IEventDispatcher
     {
         // 0. global capture
         public IEventHandler capture { get; set; }
@@ -101,47 +101,109 @@ namespace UnityEngine.Experimental.UIElements
             capture = handler;
         }
 
-        private HashSet<VisualElement> m_ElementsUnderMouse;
-        private void ClearHoverOnElementsUnderMouse()
+        VisualElement m_TopElementUnderMouse;
+
+        void DispatchMouseEnterMouseLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
         {
-            if (m_ElementsUnderMouse == null)
+            if (previousTopElementUnderMouse == currentTopElementUnderMouse)
             {
                 return;
             }
 
-            foreach (var element in m_ElementsUnderMouse)
-            {
-                // if we set/unset the hover state on the PanelContainer, when the mouse exits
-                // the panel window, all hover states are unset as expected but after the draw
-                // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
-                    continue;
+            // We want to find the common ancestor CA of previousTopElementUnderMouse and currentTopElementUnderMouse,
+            // send MouseLeave events to elements between CA and previousTopElementUnderMouse
+            // and send MouseEnter events to elements between CA and currentTopElementUnderMouse.
 
-                // let element know
-                element.pseudoStates = element.pseudoStates & ~PseudoStates.Hover;
-                // TODO send mouse enter event
+            VisualElement p;
+            int prevDepth = 0;
+            p = previousTopElementUnderMouse;
+            while (p != null)
+            {
+                prevDepth++;
+                p = p.shadow.parent;
             }
-            m_ElementsUnderMouse.Clear();
+
+            VisualElement c;
+            int currDepth = 0;
+            c = currentTopElementUnderMouse;
+            while (c != null)
+            {
+                currDepth++;
+                c = c.shadow.parent;
+            }
+
+            p = previousTopElementUnderMouse;
+            c = currentTopElementUnderMouse;
+
+            while (prevDepth > currDepth)
+            {
+                var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent);
+                leaveEvent.target = p;
+                DispatchEvent(leaveEvent, p.panel);
+                MouseLeaveEvent.ReleasePooled(leaveEvent);
+
+                prevDepth--;
+                p = p.shadow.parent;
+            }
+
+            // We want to send enter events after all the leave events.
+            // We will store the elements being entered in this list.
+            List<VisualElement> enteringElements = new List<VisualElement>(currDepth);
+
+            while (currDepth > prevDepth)
+            {
+                enteringElements.Add(c);
+
+                currDepth--;
+                c = c.shadow.parent;
+            }
+
+            // Now p and c are at the same depth. Go up the tree until p == c.
+            while (p != c)
+            {
+                var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent);
+                leaveEvent.target = p;
+                DispatchEvent(leaveEvent, p.panel);
+                MouseLeaveEvent.ReleasePooled(leaveEvent);
+
+                enteringElements.Add(c);
+
+                p = p.shadow.parent;
+                c = c.shadow.parent;
+            }
+
+            for (var i = enteringElements.Count - 1; i >= 0; i--)
+            {
+                var enterEvent = MouseEnterEvent.GetPooled(triggerEvent);
+                enterEvent.target = enteringElements[i];
+                DispatchEvent(enterEvent, enteringElements[i].panel);
+                MouseEnterEvent.ReleasePooled(enterEvent);
+            }
         }
 
-        private void SetHoverOnElementsUnderMouse()
+        void DispatchMouseOverMouseOut(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
         {
-            if (m_ElementsUnderMouse == null)
+            if (previousTopElementUnderMouse == currentTopElementUnderMouse)
             {
                 return;
             }
 
-            foreach (var element in m_ElementsUnderMouse)
+            // Send MouseOut event for element no longer under the mouse.
+            if (previousTopElementUnderMouse != null)
             {
-                // if we set/unset the hover state on the PanelContainer, when the mouse exits
-                // the panel window, all hover states are unset as expected but after the draw
-                // of the panel so the hover states "look" still active until the panel redraws
-                if (element.parent == null)
-                    continue;
+                var outEvent = MouseOutEvent.GetPooled(triggerEvent);
+                outEvent.target = previousTopElementUnderMouse;
+                DispatchEvent(outEvent, previousTopElementUnderMouse.panel);
+                MouseOutEvent.ReleasePooled(outEvent);
+            }
 
-                // let element know
-                element.pseudoStates = element.pseudoStates | PseudoStates.Hover;
-                // TODO send mouse leave event
+            // Send MouseOver event for element now under the mouse
+            if (currentTopElementUnderMouse != null)
+            {
+                var overEvent = MouseOverEvent.GetPooled(triggerEvent);
+                overEvent.target = currentTopElementUnderMouse;
+                DispatchEvent(overEvent, currentTopElementUnderMouse.panel);
+                MouseOverEvent.ReleasePooled(overEvent);
             }
         }
 
@@ -172,7 +234,7 @@ namespace UnityEngine.Experimental.UIElements
 
             // Send all IMGUI events (for backward compatibility) and MouseEvents (because thats what we want to do in the new system)
             // to the capture, if there is one.
-            if ((MouseEventBase.Is(evt) || e != null) && capture != null)
+            if ((evt is IMouseEvent || e != null) && capture != null)
             {
                 if (panel != null)
                 {
@@ -195,7 +257,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (!evt.isPropagationStopped)
             {
-                if (KeyboardEventBase.Is(evt))
+                if (evt is IKeyboardEvent)
                 {
                     if (panel.focusController.focusedElement != null)
                     {
@@ -225,7 +287,15 @@ namespace UnityEngine.Experimental.UIElements
                         invokedHandleEvent = false;
                     }
                 }
-                else if (MouseEventBase.Is(evt) || (
+                else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId() ||
+                         evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+                {
+                    // Need to send to all parents of the event's target as well.
+                    Debug.Assert(evt.target != null);
+                    invokedHandleEvent = true;
+                    PropagateEvent(evt);
+                }
+                else if (evt is IMouseEvent || (
                              e != null && (
                                  e.type == EventType.ContextClick ||
                                  e.type == EventType.MouseEnterWindow ||
@@ -239,56 +309,44 @@ namespace UnityEngine.Experimental.UIElements
                     // FIXME: we should not change hover state when capture is true.
                     // However, when doing drag and drop, drop target should be highlighted.
 
-                    VisualElement topElementUnderMouse = null;
-
                     // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
                     // this is a problem in itself but it could leave some elements as "hover"
+                    VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
+
                     if (e != null && e.type == EventType.MouseLeaveWindow)
                     {
-                        ClearHoverOnElementsUnderMouse();
-                        topElementUnderMouse = null;
+                        m_TopElementUnderMouse = null;
+                        DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
+                        DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
                     }
                     // update element under mouse and fire necessary events
-                    else if (MouseEventBase.Is(evt))
+                    else if (evt is IMouseEvent || e != null)
                     {
-                        if (m_ElementsUnderMouse == null)
+                        if (evt.target == null)
                         {
-                            m_ElementsUnderMouse = new HashSet<VisualElement>();
+                            if (evt is IMouseEvent)
+                            {
+                                m_TopElementUnderMouse = panel.Pick((evt as IMouseEvent).localMousePosition);
+                            }
+                            else if (e != null)
+                            {
+                                m_TopElementUnderMouse = panel.Pick(e.mousePosition);
+                            }
+
+                            evt.target = m_TopElementUnderMouse;
                         }
 
-                        var picked = new List<VisualElement>();
-                        topElementUnderMouse = panel.PickAll((evt as MouseEventBase).localMousePosition, picked);
-
-                        if (!m_ElementsUnderMouse.SetEquals(picked))
+                        if (evt.target != null)
                         {
-                            ClearHoverOnElementsUnderMouse();
-                            m_ElementsUnderMouse.UnionWith(picked);
-                            SetHoverOnElementsUnderMouse();
-                        }
-                    }
-                    else if (e != null)
-                    {
-                        if (m_ElementsUnderMouse == null)
-                        {
-                            m_ElementsUnderMouse = new HashSet<VisualElement>();
+                            invokedHandleEvent = true;
+                            PropagateEvent(evt);
                         }
 
-                        var picked = new List<VisualElement>();
-                        topElementUnderMouse = panel.PickAll(e.mousePosition, picked);
-
-                        if (!m_ElementsUnderMouse.SetEquals(picked))
+                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId())
                         {
-                            ClearHoverOnElementsUnderMouse();
-                            m_ElementsUnderMouse.UnionWith(picked);
-                            SetHoverOnElementsUnderMouse();
+                            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
+                            DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
                         }
-                    }
-
-                    if (topElementUnderMouse != null)
-                    {
-                        invokedHandleEvent = true;
-                        evt.target = topElementUnderMouse;
-                        PropagateEvent(evt);
                     }
                 }
                 else if (e != null && (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand))
@@ -311,8 +369,16 @@ namespace UnityEngine.Experimental.UIElements
                         PropagateEvent(evt);
                     }
                 }
-                else if (FocusEventBase.Is(evt))
+                else if (evt is IFocusEvent ||
+                         evt.GetEventTypeId() == PostLayoutEvent.TypeId())
                 {
+                    Debug.Assert(evt.target != null);
+                    invokedHandleEvent = true;
+                    PropagateEvent(evt);
+                }
+                else if (evt is IPanelEvent)
+                {
+                    // Need to send to all parents of the event's target as well.
                     Debug.Assert(evt.target != null);
                     invokedHandleEvent = true;
                     PropagateEvent(evt);
@@ -354,12 +420,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var container = root as VisualContainer;
-                if (container != null)
+                if (root != null)
                 {
-                    for (int i = 0; i < container.childrenCount; i++)
+                    for (int i = 0; i < root.shadow.childCount; i++)
                     {
-                        PropagateToIMGUIContainer(container.GetChildAt(i), evt, capture);
+                        PropagateToIMGUIContainer(root.shadow[i], evt, capture);
                         if (evt.isPropagationStopped)
                             break;
                     }
@@ -379,17 +444,20 @@ namespace UnityEngine.Experimental.UIElements
 
             evt.dispatch = true;
 
-            // Phase 1: Capture phase
-            // Propagate event from root to target.parent
-            evt.propagationPhase = PropagationPhase.Capture;
-
-            for (int i = 0; i < path.Count; i++)
+            if (evt.capturable)
             {
-                if (evt.isPropagationStopped)
-                    break;
+                // Phase 1: Capture phase
+                // Propagate event from root to target.parent
+                evt.propagationPhase = PropagationPhase.Capture;
 
-                evt.currentTarget = path[i];
-                evt.currentTarget.HandleEvent(evt);
+                for (int i = 0; i < path.Count; i++)
+                {
+                    if (evt.isPropagationStopped)
+                        break;
+
+                    evt.currentTarget = path[i];
+                    evt.currentTarget.HandleEvent(evt);
+                }
             }
 
             // Phase 2: Target
@@ -443,13 +511,13 @@ namespace UnityEngine.Experimental.UIElements
             if (elem == null)
                 return ret;
 
-            while (elem.parent != null)
+            while (elem.shadow.parent != null)
             {
-                if (elem.parent.enabled)
+                if (elem.shadow.parent.enabledInHierarchy)
                 {
-                    ret.Add(elem.parent);
+                    ret.Add(elem.shadow.parent);
                 }
-                elem = elem.parent;
+                elem = elem.shadow.parent;
             }
 
             ret.Reverse();

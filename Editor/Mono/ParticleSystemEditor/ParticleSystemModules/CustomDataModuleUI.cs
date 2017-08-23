@@ -56,7 +56,7 @@ namespace UnityEditor
                 m_ColorLabels[i] = GetProperty("colorLabel" + i);
                 for (int j = 0; j < k_NumChannelsPerStream; j++)
                 {
-                    m_Vectors[i, j] = new SerializedMinMaxCurve(this, null, "vector" + i + "_" + j, kUseSignedRange);
+                    m_Vectors[i, j] = new SerializedMinMaxCurve(this, GUIContent.none, "vector" + i + "_" + j, kUseSignedRange);
                     m_VectorLabels[i, j] = GetProperty("vectorLabel" + i + "_" + j);
                 }
             }

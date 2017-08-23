@@ -511,6 +511,13 @@ namespace UnityEngine
 
 namespace UnityEngine.Rendering
 {
+    // Match IndexFormat on C++ side
+    public enum IndexFormat
+    {
+        UInt16 = 0,
+        UInt32 = 1,
+    }
+
     // Match Camera::OpaqueSortMode on C++ side
     public enum OpaqueSortMode
     {

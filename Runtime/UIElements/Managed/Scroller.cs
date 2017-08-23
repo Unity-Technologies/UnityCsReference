@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.Experimental.UIElements
@@ -19,7 +20,7 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    public class Scroller : VisualContainer
+    public class Scroller : VisualElement
     {
         // Usually set by the owner of the scroller
         public event System.Action<float> valueChanged;
@@ -68,42 +69,18 @@ namespace UnityEngine.Experimental.UIElements
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider"};
-            AddChild(slider);
+            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider", persistenceKey = "Slider"};
+            Add(slider);
             lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
-            AddChild(lowButton);
+            Add(lowButton);
             highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
-            AddChild(highButton);
-        }
-
-        internal override VisualContainer GetChildContainer()
-        {
-            // Scroller  can't have children
-            return null;
-        }
-
-        public override bool enabled
-        {
-            get { return base.enabled; }
-            set { base.enabled = value; PropagateEnabled(this, value); }
-        }
-
-        public void PropagateEnabled(VisualContainer c, bool enabled)
-        {
-            if (c != null)
-            {
-                foreach (var child in c)
-                {
-                    child.enabled = enabled;
-                    PropagateEnabled(child as VisualContainer, enabled);
-                }
-            }
+            Add(highButton);
         }
 
         public void Adjust(float factor)
         {
             // Any factor smaller than 1f will enable the scroller (and its children)
-            enabled = (factor < 1f);
+            SetEnabled(factor < 1f);
             slider.AdjustDragElement(factor);
         }
 

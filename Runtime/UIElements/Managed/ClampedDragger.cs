@@ -55,7 +55,7 @@ namespace UnityEngine.Experimental.UIElements
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }
 
-        new void OnMouseDown(MouseEventBase evt)
+        new void OnMouseDown(MouseDownEvent evt)
         {
             if (CanStartManipulation(evt))
             {
@@ -65,7 +65,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        new void OnMouseMove(MouseEventBase evt)
+        new void OnMouseMove(MouseMoveEvent evt)
         {
             if (target.HasCapture())
             {

@@ -2,9 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEngine.Assertions;
+using UnityEngine.Profiling;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -194,6 +200,45 @@ namespace UnityEditor
             ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
             ObjectSelector.get.objectSelectorReceiver = objectSelectorReceiver;
             ObjectSelector.get.searchFilter = searchFilter;
+        }
+
+        private delegate bool HeaderItemDelegate(Rect rectangle, Object[] targets);
+        private static List<HeaderItemDelegate> s_EditorHeaderItemsMethods = null;
+        internal static Rect DrawEditorHeaderItems(Rect rectangle, Object[] targetObjs)
+        {
+            if (targetObjs.Length == 0 || (targetObjs.Length == 1 && targetObjs[0].GetType() == typeof(System.Object)))
+                return rectangle;
+
+            if (s_EditorHeaderItemsMethods == null)
+            {
+                List<Type> targetObjTypes = new List<Type>();
+                var type = targetObjs[0].GetType();
+                while (type.BaseType != null)
+                {
+                    targetObjTypes.Add(type);
+                    type = type.BaseType;
+                }
+
+                AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                Func<EditorHeaderItemAttribute, bool> filter = (a) => targetObjTypes.Any(c => a.TargetType == c);
+                var methodInfos = methods.FilterAndSortOnAttribute(filter, (a) => a.callbackOrder);
+                s_EditorHeaderItemsMethods = new List<HeaderItemDelegate>();
+                foreach (MethodInfo methodInfo in methodInfos)
+                {
+                    s_EditorHeaderItemsMethods.Add((HeaderItemDelegate)Delegate.CreateDelegate(typeof(HeaderItemDelegate), methodInfo));
+                }
+            }
+
+            for (var index = 0; index < s_EditorHeaderItemsMethods.Count; index++)
+            {
+                HeaderItemDelegate dele = s_EditorHeaderItemsMethods[index];
+                if (dele(rectangle, targetObjs))
+                {
+                    rectangle.x -= rectangle.width;
+                }
+            }
+
+            return rectangle;
         }
     }
 }

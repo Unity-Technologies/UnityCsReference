@@ -10,10 +10,11 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class GraphView : DataWatchContainer, ISelection
+    internal
+    abstract class GraphView : DataWatchContainer, ISelection
     {
         // Layer class. Used for queries below.
-        class Layer : VisualContainer {}
+        class Layer : VisualElement {}
 
         private GraphViewPresenter m_Presenter;
 
@@ -37,7 +38,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        class ContentViewContainer : VisualContainer
+        class ContentViewContainer : VisualElement
         {
             public override bool Overlaps(Rect r)
             {
@@ -47,9 +48,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected GraphViewTypeFactory typeFactory { get; set; }
 
-        public VisualContainer contentViewContainer { get; private set; }
+        public VisualElement contentViewContainer { get; private set; }
 
-        public VisualContainer viewport
+        public VisualElement viewport
         {
             get { return this; }
         }
@@ -94,7 +95,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
-            AddChild(contentViewContainer);
+            Add(contentViewContainer);
 
             typeFactory = new GraphViewTypeFactory();
             typeFactory[typeof(EdgePresenter)] = typeof(Edge);
@@ -112,12 +113,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             foreach (var layer in m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value))
             {
                 if (layer.parent != null)
-                    contentViewContainer.RemoveChild(layer);
-                contentViewContainer.AddChild(layer);
+                    contentViewContainer.Remove(layer);
+                contentViewContainer.Add(layer);
             }
         }
 
-        VisualContainer GetLayer(int index)
+        VisualElement GetLayer(int index)
         {
             return m_ContainerLayers[index];
         }
@@ -204,7 +205,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // been removed?
                 if (!m_Presenter.elements.Contains(c.presenter))
                 {
-                    c.parent.RemoveChild(c);
+                    c.parent.Remove(c);
                     selection.Remove(c);
                 }
             }
@@ -288,7 +289,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if ((elementPresenter.capabilities & Capabilities.Resizable) != 0)
             {
-                newElem.AddChild(new Resizer());
+                newElem.Add(new Resizer());
                 newElem.style.borderBottom = 6;
             }
 
@@ -300,11 +301,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     AddLayer(newLayer);
                 }
-                GetLayer(newLayer).AddChild(newElem);
+                GetLayer(newLayer).Add(newElem);
             }
             else
             {
-                AddChild(newElem);
+                Add(newElem);
             }
         }
 
@@ -375,7 +376,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public EventPropagation FramePrev()
         {
-            if (contentViewContainer.childrenCount == 0)
+            if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
 
             List<GraphElement> childrenList = graphElements.ToList();
@@ -385,7 +386,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public EventPropagation FrameNext()
         {
-            if (contentViewContainer.childrenCount == 0)
+            if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
             return FramePrevNext(graphElements.ToList());
         }

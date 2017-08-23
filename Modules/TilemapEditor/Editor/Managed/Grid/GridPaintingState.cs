@@ -24,37 +24,30 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            Selection.selectionChanged += OnSelectionChange;
             EditorApplication.hierarchyWindowChanged += HierarchyChanged;
-            m_FlushPaintTargetCache = true;
-        }
-
-        private void OnBrushChanged(GridBrushBase gridBrushBase)
-        {
+            Selection.selectionChanged += OnSelectionChange;
             m_FlushPaintTargetCache = true;
         }
 
         void OnDisable()
         {
-            Selection.selectionChanged -= OnSelectionChange;
             EditorApplication.hierarchyWindowChanged -= HierarchyChanged;
+            Selection.selectionChanged -= OnSelectionChange;
             FlushCache();
-        }
-
-        private void HierarchyChanged()
-        {
-            if (scenePaintTarget == null)
-                AutoSelectPaintTarget();
         }
 
         private void OnSelectionChange()
         {
-            m_FlushPaintTargetCache = true;
-
-            if (ValidatePaintTarget(Selection.activeGameObject))
+            if (validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
+            {
                 scenePaintTarget = Selection.activeGameObject;
+            }
+        }
 
-            if (scenePaintTarget == null)
+        private void HierarchyChanged()
+        {
+            m_FlushPaintTargetCache = true;
+            if (validTargets == null || !validTargets.Contains(scenePaintTarget))
                 AutoSelectPaintTarget();
         }
 
@@ -143,7 +136,7 @@ namespace UnityEditor
 
         public static bool ValidatePaintTarget(GameObject candidate)
         {
-            if (candidate == null || candidate.GetComponentInParent<Grid>() == null || activeBrushEditor == null)
+            if (candidate == null || candidate.GetComponentInParent<Grid>() == null && candidate.GetComponent<Grid>() == null)
                 return false;
 
             if (validTargets != null && !validTargets.Contains(candidate))

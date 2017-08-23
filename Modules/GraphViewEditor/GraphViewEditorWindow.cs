@@ -7,7 +7,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class GraphViewEditorWindow : EditorWindow
+    internal
+    abstract class GraphViewEditorWindow : EditorWindow
     {
         public GraphView graphView { get; private set; }
         public GraphViewPresenter presenter { get; private set; }
@@ -27,22 +28,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             graphView.name = "theView";
             graphView.presenter = presenter;
             graphView.StretchToParentSize();
-            graphView.onEnter += OnEnterPanel;
-            graphView.onLeave += OnLeavePanel;
+            graphView.RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
+            graphView.RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
 
-            this.GetRootVisualContainer().AddChild(graphView);
+            this.GetRootVisualContainer().Add(graphView);
         }
 
         protected void OnDisable()
         {
-            this.GetRootVisualContainer().RemoveChild(graphView);
+            this.GetRootVisualContainer().Remove(graphView);
         }
 
         // Override these methods to properly support domain reload & enter/exit playmode
         protected abstract GraphView BuildView();
         protected abstract GraphViewPresenter BuildPresenters();
 
-        void OnEnterPanel()
+        void OnEnterPanel(AttachToPanelEvent e)
         {
             if (presenter == null)
             {
@@ -52,7 +53,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             handle = graphView.panel.dataWatch.AddWatch(graphView, presenter, OnChanged);
         }
 
-        void OnLeavePanel()
+        void OnLeavePanel(DetachFromPanelEvent e)
         {
             if (handle != null)
             {

@@ -93,18 +93,7 @@ namespace UnityEditor
             }
             EditorGUI.EndProperty();
 
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_WrapMode, Styles.WrapModeContent);
-            if (EditorGUI.EndChangeCheck())
-            {
-                // case 876701 - we need to explicitly set the property so any playing graphs get
-                //  updated with the new wrap mode
-                DirectorWrapMode mode = (DirectorWrapMode)m_WrapMode.enumValueIndex;
-                foreach (var t in targets.OfType<PlayableDirector>())
-                {
-                    t.extrapolationMode = mode;
-                }
-            }
 
             PropertyFieldAsFloat(m_InitialTime, Styles.InitialTimeContent);
 
@@ -191,7 +180,7 @@ namespace UnityEditor
             }
         }
 
-        private void SynchSceneBindings()
+        void SynchSceneBindings()
         {
             if (targets.Length > 1)
                 return;
@@ -216,11 +205,16 @@ namespace UnityEditor
 
             serializedObject.Update();
 
+            var serializedProperties = new SerializedProperty[m_SceneBindings.arraySize];
+            for (int i = 0; i < m_SceneBindings.arraySize; ++i)
+            {
+                serializedProperties[i] = m_SceneBindings.GetArrayElementAtIndex(i);
+            }
+
             foreach (var binding in m_SynchedPlayableBindings)
             {
-                for (int i = 0; i < m_SceneBindings.arraySize; ++i)
+                foreach (var prop in serializedProperties)
                 {
-                    var prop = m_SceneBindings.GetArrayElementAtIndex(i);
                     if (prop.FindPropertyRelative("key").objectReferenceValue == binding.sourceObject)
                     {
                         m_BindingPropertiesCache.Add(new BindingPropertyPair { binding = binding, property = prop.FindPropertyRelative("value")});

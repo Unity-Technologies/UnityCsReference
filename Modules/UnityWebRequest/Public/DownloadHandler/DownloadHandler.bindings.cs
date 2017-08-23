@@ -14,7 +14,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Networking
 {
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/DownloadHandler/DownloadHandler.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandler.h")]
     public class DownloadHandler : IDisposable
     {
         [System.NonSerialized]
@@ -133,7 +133,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/DownloadHandler/DownloadHandlerBuffer.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerBuffer.h")]
     public sealed class DownloadHandlerBuffer : DownloadHandler
     {
         private extern static IntPtr Create(DownloadHandlerBuffer obj);
@@ -166,7 +166,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/DownloadHandler/DownloadHandlerScript.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerScript.h")]
     public class DownloadHandlerScript : DownloadHandler
     {
         private extern static IntPtr Create(DownloadHandlerScript obj);
@@ -196,7 +196,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/DownloadHandler/DownloadHandlerAssetBundle.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerAssetBundle.h")]
     public sealed class DownloadHandlerAssetBundle : DownloadHandler
     {
         private extern static IntPtr Create(DownloadHandlerAssetBundle obj, string url, uint crc);
@@ -252,7 +252,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/DownloadHandler/DownloadHandlerVFS.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerVFS.h")]
     public sealed class DownloadHandlerFile : DownloadHandler
     {
         [NativeThrows]

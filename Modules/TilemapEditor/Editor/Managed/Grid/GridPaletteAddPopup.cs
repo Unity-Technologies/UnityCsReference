@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditorInternal;
+using System;
 using UnityEngine;
 
 namespace UnityEditor
@@ -60,12 +60,13 @@ namespace UnityEditor
             m_CellSizing = (GridPalette.CellSizing)EditorGUILayout.EnumPopup(m_CellSizing);
             GUILayout.EndHorizontal();
 
-            EditorGUI.BeginDisabledGroup(m_CellSizing == GridPalette.CellSizing.Automatic);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(GUIContent.none, GUILayout.Width(90f));
-            m_CellSize = EditorGUILayout.Vector3Field(GUIContent.none, m_CellSize);
-            GUILayout.EndHorizontal();
-            EditorGUI.EndDisabledGroup();
+            using (new EditorGUI.DisabledScope(m_CellSizing == GridPalette.CellSizing.Automatic))
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(GUIContent.none, GUILayout.Width(90f));
+                m_CellSize = EditorGUILayout.Vector3Field(GUIContent.none, m_CellSize);
+                GUILayout.EndHorizontal();
+            }
 
             GUILayout.Space(5f);
 
@@ -77,16 +78,20 @@ namespace UnityEditor
                 Close();
             }
 
-            if (GUILayout.Button(Styles.ok))
+            using (new EditorGUI.DisabledScope(String.IsNullOrEmpty(m_Name)))
             {
-                GameObject go = GridPaletteUtility.CreateNewPaletteNamed(m_Name, m_Layout, m_CellSizing, m_CellSize);
-                if (go != null)
+                if (GUILayout.Button(Styles.ok))
                 {
-                    m_Owner.palette = go;
-                    m_Owner.Repaint();
+                    GameObject go = GridPaletteUtility.CreateNewPaletteNamed(m_Name, m_Layout, m_CellSizing, m_CellSize);
+                    if (go != null)
+                    {
+                        m_Owner.palette = go;
+                        m_Owner.Repaint();
+                    }
+                    Close();
                 }
-                Close();
             }
+
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
         }

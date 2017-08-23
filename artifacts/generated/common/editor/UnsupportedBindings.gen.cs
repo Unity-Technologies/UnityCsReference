@@ -207,13 +207,13 @@ public sealed partial class Unsupported
 
     public static void CopyStateMachineDataToPasteboard(Object stateMachineObject, AnimatorController controller, int layerIndex)
         {
-            CopyStateMachineDataToPasteboard(new Object[] {stateMachineObject}, new Vector3[] {new Vector3()}, controller, layerIndex);
+            CopyStateMachineDataToPasteboard(new Object[] {stateMachineObject}, null, new Vector3[] {new Vector3()}, controller, layerIndex);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void CopyStateMachineDataToPasteboard (Object[] stateMachineObjects, Vector3[] monoPositions, AnimatorController controller, int layerIndex) ;
+    extern internal static  void CopyStateMachineDataToPasteboard (Object[] stateMachineObjects, AnimatorStateMachine context, Vector3[] monoPositions, AnimatorController controller, int layerIndex) ;
 
     public static void PasteToStateMachineFromPasteboard(AnimatorStateMachine sm, AnimatorController controller, int layerIndex, Vector3 position)
         {

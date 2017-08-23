@@ -4,11 +4,10 @@
 
 using System;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    class WaveformPreview
+    class WaveformPreview : IDisposable
     {
         static int s_BaseTextureWidth = 4096;
         static Material s_Material;
@@ -91,6 +90,7 @@ namespace UnityEditor
         bool m_Looping;
         bool m_Optimized;
         bool m_Dirty;
+        bool m_Disposed;
         MessageFlags m_Flags;
 
         protected WaveformPreview(UnityEngine.Object presentedObject, int samplesAndWidth, int channels)
@@ -115,6 +115,22 @@ namespace UnityEditor
             if (!deferTextureCreation)
                 UpdateTexture(samplesAndWidth, channels);
         }
+
+        public void Dispose()
+        {
+            if (!m_Disposed)
+            {
+                m_Disposed = true;
+                InternalDispose();
+
+                if (m_Texture != null)
+                    UnityEngine.Object.Destroy(m_Texture);
+
+                m_Texture = null;
+            }
+        }
+
+        protected virtual void InternalDispose() {}
 
         public void Render(Rect rect)
         {

@@ -5,6 +5,7 @@
 //#define ENABLE_CAPTURE_DEBUG
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine.CSSLayout;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -44,7 +45,35 @@ namespace UnityEngine.Experimental.UIElements
         string m_TypeName;
         string m_FullTypeName;
 
-        public override bool canGrabFocus { get { return enabled && base.canGrabFocus; } }
+        // Used for view data persistence, like expanded states.
+        private string m_PersistenceKey;
+        public string persistenceKey
+        {
+            get { return m_PersistenceKey; }
+            set
+            {
+                if (m_PersistenceKey != value)
+                {
+                    m_PersistenceKey = value;
+
+                    if (!string.IsNullOrEmpty(value))
+                        Dirty(ChangeType.PersistentData);
+                }
+            }
+        }
+
+        // It seems worse to have unwanted/unpredictable persistence
+        // than to expect it and not have it. This internal check, set
+        // by Panel.ValidatePersistentDataOnSubTree() controls whether
+        // persistency is enabled or not. Persistence will be disabled
+        // on any VisualElement that does not have a persistenceKey, but
+        // it will also be disabled if any of its parents does not have
+        // a persistenceKey.
+        internal bool enablePersistence { get; private set; }
+
+        public object userData { get; set; }
+
+        public override bool canGrabFocus { get { return enabledInHierarchy && base.canGrabFocus; } }
 
         public override FocusController focusController
         {
@@ -226,9 +255,9 @@ namespace UnityEngine.Experimental.UIElements
                 if (IsDirty(ChangeType.Transform))
                 {
                     {
-                        if (parent != null)
+                        if (shadow.parent != null)
                         {
-                            renderData.worldTransForm = parent.worldTransform * Matrix4x4.Translate(new Vector3(parent.layout.x, parent.layout.y, 0)) * transform.matrix;
+                            renderData.worldTransForm = shadow.parent.worldTransform * Matrix4x4.Translate(new Vector3(shadow.parent.layout.x, shadow.parent.layout.y, 0)) * transform.matrix;
                         }
                         else
                         {
@@ -254,32 +283,6 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
         }
-
-        // parent in visual tree
-        private VisualContainer m_Parent;
-        public VisualContainer parent
-        {
-            get { return m_Parent; }
-            set
-            {
-                m_Parent = value;
-
-                if (value != null)
-                {
-                    ChangePanel(m_Parent.elementPanel);
-                    // This is needed because Dirty on the child might have called before setting the parent, which cause the any Dirty on the child after the parent is assigned to not do anything ( because flags are already set on it ).
-                    PropagateChangesToParents();
-                }
-                else
-                    ChangePanel(null);
-            }
-        }
-
-        // each element has a ref to the root panel for internal bookkeeping
-        // this will be null until a visual tree is added to a panel
-        internal BaseVisualElementPanel elementPanel { get; private set; }
-
-        public IPanel panel { get { return elementPanel; } }
 
         public PickingMode pickingMode { get; set; }
 
@@ -387,10 +390,12 @@ namespace UnityEngine.Experimental.UIElements
         {
             controlid = ++s_NextId;
 
+            shadow = new Hierarchy(this);
+
             m_ClassList = new HashSet<string>();
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
-            enabled = true;
+            SetEnabled(true);
             visible = true;
 
             // Make element non focusable by default.
@@ -400,17 +405,26 @@ namespace UnityEngine.Experimental.UIElements
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = 0; // not in a tree yet so not dirty, they will stack up as we get inserted somewhere.
+            clipChildren = true;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == BlurEvent.s_EventClassId)
+            if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            {
+                pseudoStates |= PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+            {
+                pseudoStates &= ~PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 pseudoStates = pseudoStates & ~PseudoStates.Focus;
             }
-            else if (evt.GetEventTypeId() == FocusEvent.s_EventClassId)
+            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
@@ -421,16 +435,33 @@ namespace UnityEngine.Experimental.UIElements
             if (panel == p)
                 return;
 
-            if (panel != null && onLeave != null)
+            if (panel != null)
             {
-                onLeave();
+                var e = DetachFromPanelEvent.GetPooled();
+                e.target = this;
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                DetachFromPanelEvent.ReleasePooled(e);
             }
 
             elementPanel = p;
 
-            if (panel != null && onEnter != null)
+            if (panel != null)
             {
-                onEnter();
+                var e = AttachToPanelEvent.GetPooled();
+                e.target = this;
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                AttachToPanelEvent.ReleasePooled(e);
+            }
+
+            Dirty(ChangeType.Styles);
+
+            if (m_Children != null)
+            {
+                foreach (var child in m_Children)
+                {
+                    // make sure the child enters and leaves panel too
+                    child.ChangePanel(p);
+                }
             }
         }
 
@@ -454,10 +485,9 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             // propagate to children
-            var container = this as VisualContainer;
-            if (container != null)
+            if (m_Children != null)
             {
-                foreach (var child in container)
+                foreach (var child in m_Children)
                 {
                     // recurse down
                     child.PropagateToChildren(type);
@@ -483,16 +513,23 @@ namespace UnityEngine.Experimental.UIElements
                     // it is less expensive than a full styles re-pass
                     parentChanges |= ChangeType.StylesPath;
                 }
+
+                if ((changesNeeded & (ChangeType.PersistentData | ChangeType.PersistentDataPath)) > 0)
+                {
+                    // Parents do not need their OnPersistentDataReady() called but they need to call still
+                    // propagate it to their children so it gets back to us.
+                    parentChanges |= ChangeType.PersistentDataPath;
+                }
             }
 
-            var current = parent;
+            var current = shadow.parent;
             while (current != null)
             {
                 if ((current.changesNeeded & parentChanges) == parentChanges)
                     break;
 
                 current.changesNeeded |= parentChanges;
-                current = current.parent;
+                current = current.shadow.parent;
             }
         }
 
@@ -526,17 +563,6 @@ namespace UnityEngine.Experimental.UIElements
             changesNeeded &= ~type;
         }
 
-        // A VisualElement should not animate or update until it is in a panel. Entering or leaving a panel is the right place to
-        // register and unregister to IScheduler time events. It is the right place to robustly connect and disconnect from events in general
-        //
-        // OnEnterPanel is called:
-        // 1) When a VisualElement is set as the visualTree of a Panel "Panel.visualTree = myVisualElement"
-        // 2) When a VisualElement is added to a visualTree already in a panel. VisualContainer.AddChild() will call it before it returns
-        // 3) When a VisualElement is anywhere in a subtree that meets the above two requirements
-        // TODO will be renamed & moved to a unified event system in a later iteration
-        public event Action onEnter;
-        public event Action onLeave;
-
         [SerializeField]
         private string m_Text;
         public string text
@@ -545,29 +571,63 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
         }
 
+        [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.", true)]
         public virtual bool enabled
         {
-            get
-            {
-                return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled;
-            }
-            set
-            {
-                if (value)
-                    pseudoStates &= ~PseudoStates.Disabled;
-                else
-                    pseudoStates |= PseudoStates.Disabled;
-            }
+            get { return enabledInHierarchy; }
+            set { SetEnabled(value); }
         }
 
-        // used by uxml importer to determine where to insert child nodes/elements
-        // temporary, until the content/hierarchy trees PR lands
-        internal virtual VisualContainer GetChildContainer()
+        private bool m_Enabled;
+
+        //TODO: Make private once VisualContainer is merged with VisualElement
+        protected internal bool SetEnabledFromHierarchy(bool state)
         {
-            return null;
+            //returns false if state hasn't changed
+            if (state == ((pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled))
+                return false;
+
+            if (state && m_Enabled && (parent == null || parent.enabledInHierarchy))
+                pseudoStates &= ~PseudoStates.Disabled;
+            else
+                pseudoStates |= PseudoStates.Disabled;
+
+            return true;
         }
 
-        protected internal virtual void OnPostLayout(bool hasNewLayout) {}
+        //Returns true if 'this' can be enabled relative to the enabled state of its panel
+        public bool enabledInHierarchy
+        {
+            get { return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled; }
+        }
+
+        //Returns the local enabled state
+        public bool enabledSelf
+        {
+            get { return m_Enabled; }
+        }
+
+        //TODO: Remove virtual once VisualContainer is merged with VisualElement
+        public virtual void SetEnabled(bool value)
+        {
+            if (m_Enabled != value)
+            {
+                m_Enabled = value;
+
+                PropagateEnabledToChildren(value);
+            }
+        }
+
+        void PropagateEnabledToChildren(bool value)
+        {
+            if (SetEnabledFromHierarchy(value))
+            {
+                for (int i = 0; i < shadow.childCount; ++i)
+                {
+                    shadow[i].PropagateEnabledToChildren(value);
+                }
+            }
+        }
 
         public bool visible
         {
@@ -601,6 +661,93 @@ namespace UnityEngine.Experimental.UIElements
             DoRepaint();
         }
 
+        private void GetFullHierarchicalPersistenceKey(StringBuilder key)
+        {
+            const string keySeparator = "__";
+
+            if (parent != null)
+                parent.GetFullHierarchicalPersistenceKey(key);
+
+            if (!string.IsNullOrEmpty(persistenceKey))
+            {
+                key.Append(keySeparator);
+                key.Append(persistenceKey);
+            }
+        }
+
+        public string GetFullHierarchicalPersistenceKey()
+        {
+            StringBuilder key = new StringBuilder();
+
+            GetFullHierarchicalPersistenceKey(key);
+
+            return key.ToString();
+        }
+
+        public T GetOrCreatePersistentData<T>(object existing, string key) where T : class, new()
+        {
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
+
+            var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
+
+            // If persistency is disable (no data, no key, no key one of the parents), just return the
+            // existing data or create a local one if none exists.
+            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            {
+                if (existing != null)
+                    return existing as T;
+
+                return new T();
+            }
+
+            string keyWithType = key + "__" + typeof(T).ToString();
+
+            if (!persistentData.ContainsKey(keyWithType))
+                persistentData.Set(keyWithType, new T());
+
+            return persistentData.Get<T>(keyWithType);
+        }
+
+        public T GetOrCreatePersistentData<T>(ScriptableObject existing, string key) where T : ScriptableObject
+        {
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
+
+            var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
+
+            // If persistency is disable (no data, no key, no key one of the parents), just return the
+            // existing data or create a local one if none exists.
+            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            {
+                if (existing != null)
+                    return existing as T;
+
+                return ScriptableObject.CreateInstance<T>();
+            }
+
+            string keyWithType = key + "__" + typeof(T).ToString();
+
+            if (!persistentData.ContainsKey(keyWithType))
+                persistentData.Set(keyWithType, ScriptableObject.CreateInstance<T>());
+
+            return persistentData.GetScriptable<T>(keyWithType);
+        }
+
+        public void SavePersistentData()
+        {
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot save persistent data.");
+
+            if (elementPanel != null && elementPanel.savePersistentViewData != null && !string.IsNullOrEmpty(persistenceKey))
+                elementPanel.savePersistentViewData();
+        }
+
+        internal void OnPersistentDataReady(bool enablePersistence)
+        {
+            this.enablePersistence = enablePersistence;
+            OnPersistentDataReady();
+        }
+
+        public virtual void OnPersistentDataReady() {}
+
         // position should be in local space
         // override to customize intersection between point and shape
         public virtual bool ContainsPoint(Vector2 localPoint)
@@ -622,8 +769,14 @@ namespace UnityEngine.Experimental.UIElements
 
         protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
-            float measuredWidth;
-            float measuredHeight;
+            var stylePainter = elementPanel.stylePainter;
+
+            float measuredWidth = float.NaN;
+            float measuredHeight = float.NaN;
+
+            Font usedFont = style.font;
+            if (m_Text  == null || usedFont == null)
+                return new Vector2(measuredWidth, measuredHeight);
 
             if (widthMode == MeasureMode.Exactly)
             {
@@ -631,19 +784,14 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var textParams = new TextStylePainterParameters
-                {
-                    text = text,
-                    wordWrapWidth = 0.0f,
-                    wordWrap = false,
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    anchor = style.textAlignment,
-                    richText = true
-                };
+                var textParams = stylePainter.GetDefaultTextParameters(this);
+                textParams.text = text;
+                textParams.font = usedFont;
+                textParams.wordWrapWidth = 0.0f;
+                textParams.wordWrap = false;
+                textParams.richText = true;
 
-                measuredWidth = elementPanel.stylePainter.ComputeTextWidth(textParams);
+                measuredWidth = stylePainter.ComputeTextWidth(textParams);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -657,19 +805,13 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var textParams = new TextStylePainterParameters
-                {
-                    text = text,
-                    wordWrapWidth = measuredWidth,
-                    wordWrap = style.wordWrap,
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    anchor = style.textAlignment,
-                    richText = true
-                };
+                var textParams = stylePainter.GetDefaultTextParameters(this);
+                textParams.text = text;
+                textParams.font = usedFont;
+                textParams.wordWrapWidth = measuredWidth;
+                textParams.richText = true;
 
-                measuredHeight = elementPanel.stylePainter.ComputeTextHeight(textParams);
+                measuredHeight = stylePainter.ComputeTextHeight(textParams);
 
                 if (heightMode == MeasureMode.AtMost)
                 {
@@ -858,6 +1000,20 @@ namespace UnityEngine.Experimental.UIElements
         {
             return m_ClassList != null && m_ClassList.Contains(cls);
         }
+
+        public object FindAncestorUserData()
+        {
+            VisualElement p = parent;
+
+            while (p != null)
+            {
+                if (p.userData != null)
+                    return p.userData;
+                p = p.parent;
+            }
+
+            return null;
+        }
     }
 
     public static class VisualElementExtensions
@@ -917,29 +1073,6 @@ namespace UnityEngine.Experimental.UIElements
             styleAccess.positionBottom = 0.0f;
         }
 
-        public static T GetFirstOfType<T>(this VisualElement self) where T : class
-        {
-            T casted = self as T;
-            if (casted != null)
-                return casted;
-            return GetFirstAncestorOfType<T>(self);
-        }
-
-        public static T GetFirstAncestorOfType<T>(this VisualElement self) where T : class
-        {
-            VisualElement ancestor = self.parent;
-            while (ancestor != null)
-            {
-                T castedAncestor = ancestor as T;
-                if (castedAncestor != null)
-                {
-                    return castedAncestor;
-                }
-                ancestor = ancestor.parent;
-            }
-            return null;
-        }
-
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
         {
             manipulator.target = ele;
@@ -975,43 +1108,107 @@ namespace UnityEngine.Experimental.UIElements
 
     internal static class StylePainterExtensionMethods
     {
+        internal static TextureStylePainterParameters GetDefaultTextureParameters(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+            var painterParams = new TextureStylePainterParameters
+            {
+                layout = ve.layout,
+                color = Color.white,
+                texture = style.backgroundImage,
+                scaleMode = style.backgroundSize,
+                borderLeftWidth = style.borderLeftWidth,
+                borderTopWidth = style.borderTopWidth,
+                borderRightWidth = style.borderRightWidth,
+                borderBottomWidth = style.borderBottomWidth,
+                borderTopLeftRadius = style.borderTopLeftRadius,
+                borderTopRightRadius = style.borderTopRightRadius,
+                borderBottomRightRadius = style.borderBottomRightRadius,
+                borderBottomLeftRadius = style.borderBottomLeftRadius,
+                sliceLeft = style.sliceLeft,
+                sliceTop = style.sliceTop,
+                sliceRight = style.sliceRight,
+                sliceBottom = style.sliceBottom
+            };
+            return painterParams;
+        }
+
+        internal static RectStylePainterParameters GetDefaultRectParameters(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+            var painterParams = new RectStylePainterParameters
+            {
+                layout = ve.layout,
+                color = style.backgroundColor,
+                borderLeftWidth = style.borderLeftWidth,
+                borderTopWidth = style.borderTopWidth,
+                borderRightWidth = style.borderRightWidth,
+                borderBottomWidth = style.borderBottomWidth,
+                borderTopLeftRadius = style.borderTopLeftRadius,
+                borderTopRightRadius = style.borderTopRightRadius,
+                borderBottomRightRadius = style.borderBottomRightRadius,
+                borderBottomLeftRadius = style.borderBottomLeftRadius
+            };
+            return painterParams;
+        }
+
+        internal static TextStylePainterParameters GetDefaultTextParameters(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+            var painterParams = new TextStylePainterParameters
+            {
+                layout = ve.contentRect,
+                text = ve.text,
+                font = style.font,
+                fontSize = style.fontSize,
+                fontStyle = style.fontStyle,
+                fontColor = style.textColor,
+                anchor = style.textAlignment,
+                wordWrap = style.wordWrap,
+                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                richText = false,
+                clipping = style.textClipping
+            };
+            return painterParams;
+        }
+
+        internal static CursorPositionStylePainterParameters GetDefaultCursorPositionParameters(this IStylePainter painter, VisualElement ve)
+        {
+            IStyle style = ve.style;
+            var painterParams = new CursorPositionStylePainterParameters() {
+                layout = ve.contentRect,
+                text = ve.text,
+                font = style.font,
+                fontSize = style.fontSize,
+                fontStyle = style.fontStyle,
+                anchor = style.textAlignment,
+                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                richText = false,
+                cursorIndex = 0
+            };
+            return painterParams;
+        }
+
         internal static void DrawBackground(this IStylePainter painter, VisualElement ve)
         {
             IStyle style = ve.style;
-
             if (style.backgroundColor != Color.clear)
             {
-                var painterParams = new RectStylePainterParameters
-                {
-                    layout = ve.layout,
-                    color = style.backgroundColor,
-                    borderLeftWidth = 0.0f,
-                    borderTopWidth = 0.0f,
-                    borderRightWidth = 0.0f,
-                    borderBottomWidth = 0.0f,
-                    borderRadius = style.borderRadius,
-                };
+                var painterParams = painter.GetDefaultRectParameters(ve);
+                painterParams.borderLeftWidth = 0.0f;
+                painterParams.borderTopWidth = 0.0f;
+                painterParams.borderRightWidth = 0.0f;
+                painterParams.borderBottomWidth = 0.0f;
                 painter.DrawRect(painterParams);
             }
 
             if (style.backgroundImage.value != null)
             {
-                var painterParams = new TextureStylePainterParameters
-                {
-                    layout = ve.layout,
-                    color = Color.white,
-                    texture = style.backgroundImage,
-                    scaleMode = style.backgroundSize,
-                    borderLeftWidth = 0.0f,
-                    borderTopWidth = 0.0f,
-                    borderRightWidth = 0.0f,
-                    borderBottomWidth = 0.0f,
-                    borderRadius = style.borderRadius,
-                    sliceLeft = style.sliceLeft,
-                    sliceTop = style.sliceTop,
-                    sliceRight = style.sliceRight,
-                    sliceBottom = style.sliceBottom
-                };
+                var painterParams = painter.GetDefaultTextureParameters(ve);
+                painterParams.borderLeftWidth = 0.0f;
+                painterParams.borderTopWidth = 0.0f;
+                painterParams.borderRightWidth = 0.0f;
+                painterParams.borderBottomWidth = 0.0f;
                 painter.DrawTexture(painterParams);
             }
         }
@@ -1021,16 +1218,8 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
             {
-                var painterParams = new RectStylePainterParameters
-                {
-                    layout = ve.layout,
-                    color = ve.style.borderColor,
-                    borderLeftWidth = ve.style.borderLeftWidth,
-                    borderTopWidth = ve.style.borderTopWidth,
-                    borderRightWidth = ve.style.borderRightWidth,
-                    borderBottomWidth = ve.style.borderBottomWidth,
-                    borderRadius = ve.style.borderRadius
-                };
+                var painterParams = painter.GetDefaultRectParameters(ve);
+                painterParams.color = style.borderColor;
                 painter.DrawRect(painterParams);
             }
         }
@@ -1039,22 +1228,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (!string.IsNullOrEmpty(ve.text) && ve.contentRect.width > 0.0f && ve.contentRect.height > 0.0f)
             {
-                IStyle style = ve.style;
-                var painterParams = new TextStylePainterParameters
-                {
-                    layout = ve.contentRect,
-                    text = ve.text,
-                    font = style.font,
-                    fontSize = style.fontSize,
-                    fontStyle = style.fontStyle,
-                    fontColor = style.textColor,
-                    anchor = style.textAlignment,
-                    wordWrap = style.wordWrap,
-                    wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
-                    richText = false,
-                    clipping = style.textClipping
-                };
-                painter.DrawText(painterParams);
+                painter.DrawText(painter.GetDefaultTextParameters(ve));
             }
         }
     }

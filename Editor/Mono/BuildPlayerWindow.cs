@@ -608,14 +608,14 @@ namespace UnityEditor
                         "Your {0} build will include a Unity Personal Edition splash screen." +
                         "\n\nYou must be eligible to use Unity Personal Edition to use this build option. " +
                         "Please refer to our EULA for further information.",
-                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTarget));
+                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(infoText, EditorStyles.wordWrappedMiniLabel);
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("EULA", EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/legal/eula");
-                if (GUILayout.Button(string.Format("Add {0} to your Unity Pro license", BuildPlatforms.instance.GetBuildTargetDisplayName(buildTarget)), EditorStyles.miniButton))
+                if (GUILayout.Button(string.Format("Add {0} to your Unity Pro license", BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget)), EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/get-unity");
                 GUILayout.EndHorizontal();
                 GUILayout.EndVertical();

@@ -138,6 +138,7 @@ namespace UnityEngine.Bindings
         public bool IsFreeFunction { get; set; }
         public bool ThrowsException { get; set; }
         public bool HasExplicitThis { get; set; }
+        public bool WritableSelf { get; set; }
 
         public NativeMethodAttribute()
         {

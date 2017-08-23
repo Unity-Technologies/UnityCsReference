@@ -18,9 +18,19 @@ using StyleSheet = UnityEngine.StyleSheets.StyleSheet;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    [ScriptedImporter(1, "uxml", 0)]
+    [ScriptedImporter(2, "uxml", 0)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
+        private const string k_XmlTemplate = "<" + k_TemplateNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
+  <ui:Label text=""New UXML"" />
+</" + k_TemplateNode + ">";
+
+        [MenuItem("Assets/Create/UIElements View")]
+        public static void CreateTemplateMenuItem()
+        {
+            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate);
+        }
+
         internal struct Error
         {
             public readonly Level level;
@@ -56,17 +66,29 @@ namespace UnityEditor.Experimental.UIElements
                     case ImportErrorCode.InvalidRootElement:
                         return "Expected the XML Root element name to be 'Template', found '{0}'";
                     case ImportErrorCode.UsingHasEmptyAlias:
-                        return "'Using' declaration requires a non-empty alias";
+                        return "'" + k_UsingNode + "' declaration requires a non-empty '" + k_UsingAliasAttr + "' attribute";
                     case ImportErrorCode.MissingPathAttributeOnUsing:
-                        return "'Using' declaration requires a 'path' attribute referencing another uxml file";
+                        return "'" + k_UsingNode + "' declaration requires a '" + k_UsingPathAttr + "' attribute referencing another uxml file";
                     case ImportErrorCode.DuplicateUsingAlias:
                         return "Duplicate alias '{0}'";
                     case ImportErrorCode.UnknownElement:
-                        return "Could not resolve the element name '{0}'";
+                        return "Unknown element name '{0}'";
                     case ImportErrorCode.UnknownAttribute:
                         return "Unknown attribute: '{0}'";
                     case ImportErrorCode.InvalidCssInStyleAttribute:
-                        return "USS in style attribute is invalid: {0}";
+                        return "USS in 'style' attribute is invalid: {0}";
+                    case ImportErrorCode.StyleReferenceEmptyOrMissingPathAttr:
+                        return "USS in 'style' attribute is invalid: {0}";
+                    case ImportErrorCode.DuplicateSlotDefinition:
+                        return "Slot definition '{0}' is defined more than once";
+                    case ImportErrorCode.SlotUsageInNonTemplate:
+                        return "Element has an assigned slot, but its parent '{0}' is not a template reference";
+                    case ImportErrorCode.SlotDefinitionHasEmptyName:
+                        return "Slot definition has an empty name";
+                    case ImportErrorCode.SlotUsageHasEmptyName:
+                        return "Slot usage has an empty name";
+                    case ImportErrorCode.DuplicateContentContainer:
+                        return "'contentContainer' attribute must be defined once at most";
                     default:
                         throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
                 }
@@ -130,6 +152,10 @@ namespace UnityEditor.Experimental.UIElements
         private const string k_UsingNode = "Using";
         private const string k_UsingAliasAttr = "alias";
         private const string k_UsingPathAttr = "path";
+        private const string k_StyleReferenceNode = "Style";
+        private const string k_StylePathAttr = "path";
+        private const string k_SlotDefinitionAttr = "slot-name";
+        private const string k_SlotUsageAttr = "slot";
 
         internal static DefaultLogger logger = new DefaultLogger();
 
@@ -149,6 +175,7 @@ namespace UnityEditor.Experimental.UIElements
                 if (s_EltTypes == null)
                 {
                     s_EltTypes = new Dictionary<string, Type>(k_Comparer);
+
                     foreach (var tt in typeof(VisualElementAsset).Assembly.GetTypes())
                     {
                         if (typeof(VisualElementAsset).IsAssignableFrom(tt) &&
@@ -225,73 +252,80 @@ namespace UnityEditor.Experimental.UIElements
 
             foreach (var child in elt.Elements())
             {
-                if (child.Name.LocalName != k_UsingNode)
+                switch (child.Name.LocalName)
                 {
-                    LoadXml(child, null, vta, ssb);
-                    continue;
+                    case k_UsingNode:
+                        LoadUsingNode(vta, elt, child);
+                        break;
+                    default:
+                        LoadXml(child, null, vta, ssb);
+                        continue;
                 }
-
-                bool hasPath = false;
-                string alias = null;
-                string path = null;
-                foreach (var xAttribute in child.Attributes())
-                {
-                    switch (xAttribute.Name.LocalName)
-                    {
-                        case k_UsingPathAttr:
-                            hasPath = true;
-                            path = xAttribute.Value;
-                            break;
-                        case k_UsingAliasAttr:
-                            alias = xAttribute.Value;
-                            if (alias == String.Empty)
-                            {
-                                logger.LogError(ImportErrorType.Semantic,
-                                    ImportErrorCode.UsingHasEmptyAlias,
-                                    child,
-                                    Error.Level.Fatal,
-                                    child
-                                    );
-                            }
-                            break;
-                        default:
-                            logger.LogError(ImportErrorType.Semantic,
-                            ImportErrorCode.UnknownAttribute,
-                            xAttribute.Name.LocalName,
-                            Error.Level.Fatal,
-                            child
-                            );
-                            break;
-                    }
-                }
-
-                if (!hasPath)
-                {
-                    logger.LogError(ImportErrorType.Semantic,
-                        ImportErrorCode.MissingPathAttributeOnUsing,
-                        null,
-                        Error.Level.Fatal,
-                        elt
-                        );
-                    continue;
-                }
-
-                if (String.IsNullOrEmpty(alias))
-                    alias = Path.GetFileNameWithoutExtension(path);
-
-                if (vta.AliasExists(alias))
-                {
-                    logger.LogError(ImportErrorType.Semantic,
-                        ImportErrorCode.DuplicateUsingAlias,
-                        alias,
-                        Error.Level.Fatal,
-                        elt
-                        );
-                    continue;
-                }
-
-                vta.RegisterUsing(alias, path);
             }
+        }
+
+        private static void LoadUsingNode(VisualTreeAsset vta, XElement elt, XElement child)
+        {
+            bool hasPath = false;
+            string alias = null;
+            string path = null;
+            foreach (var xAttribute in child.Attributes())
+            {
+                switch (xAttribute.Name.LocalName)
+                {
+                    case k_UsingPathAttr:
+                        hasPath = true;
+                        path = xAttribute.Value;
+                        break;
+                    case k_UsingAliasAttr:
+                        alias = xAttribute.Value;
+                        if (alias == String.Empty)
+                        {
+                            logger.LogError(ImportErrorType.Semantic,
+                                ImportErrorCode.UsingHasEmptyAlias,
+                                child,
+                                Error.Level.Fatal,
+                                child
+                                );
+                        }
+                        break;
+                    default:
+                        logger.LogError(ImportErrorType.Semantic,
+                        ImportErrorCode.UnknownAttribute,
+                        xAttribute.Name.LocalName,
+                        Error.Level.Fatal,
+                        child
+                        );
+                        break;
+                }
+            }
+
+            if (!hasPath)
+            {
+                logger.LogError(ImportErrorType.Semantic,
+                    ImportErrorCode.MissingPathAttributeOnUsing,
+                    null,
+                    Error.Level.Fatal,
+                    elt
+                    );
+                return;
+            }
+
+            if (String.IsNullOrEmpty(alias))
+                alias = Path.GetFileNameWithoutExtension(path);
+
+            if (vta.AliasExists(alias))
+            {
+                logger.LogError(ImportErrorType.Semantic,
+                    ImportErrorCode.DuplicateUsingAlias,
+                    alias,
+                    Error.Level.Fatal,
+                    elt
+                    );
+                return;
+            }
+
+            vta.RegisterUsing(alias, path);
         }
 
         private static void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, StyleSheetBuilder ssb)
@@ -302,17 +336,18 @@ namespace UnityEditor.Experimental.UIElements
 
             if (!ResolveType(elt, out vea, out ser, out serializedProperties, vta))
             {
-                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownElement, elt.Name.ToString(), Error.Level.Fatal, elt);
+                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownElement, elt.Name.LocalName, Error.Level.Fatal, elt);
                 return;
             }
 
-            bool startedRule = ParseAttributes(elt, vea, ser, serializedProperties, ssb);
 
             var parentId = (parent == null ? 0 : parent.id);
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
             int id = (parentId << 1) ^ vea.GetHashCode();
             vea.parentId = parentId;
             vea.id = id;
+
+            bool startedRule = ParseAttributes(elt, vea, ser, serializedProperties, ssb, vta, parent);
 
             // each vea will creates 0 or 1 style rule, with one or more properties
             // they don't have selectors and are directly referenced by index
@@ -322,12 +357,25 @@ namespace UnityEditor.Experimental.UIElements
 
             if (elt.HasElements)
             {
-                foreach (var child in elt.Elements())
+                foreach (XElement child in elt.Elements())
                 {
-                    if (child != null)
+                    if (child.Name.LocalName == k_StyleReferenceNode)
+                        LoadStyleReferenceNode(vea, child);
+                    else
                         LoadXml(child, vea, vta, ssb);
                 }
             }
+        }
+
+        private static void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt)
+        {
+            XAttribute pathAttr = styleElt.Attribute(k_StylePathAttr);
+            if (pathAttr == null || String.IsNullOrEmpty(pathAttr.Value))
+            {
+                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.StyleReferenceEmptyOrMissingPathAttr, null, Error.Level.Warning, styleElt);
+                return;
+            }
+            vea.stylesheets.Add(pathAttr.Value);
         }
 
         private static bool ResolveType(XElement elt, out VisualElementAsset vea, out SerializedObject ser, out Dictionary<string, string> serializedProperties, VisualTreeAsset visualTreeAsset)
@@ -348,6 +396,10 @@ namespace UnityEditor.Experimental.UIElements
                 ? elt.Name.LocalName
                 : elt.Name.NamespaceName + "." + elt.Name.LocalName;
 
+            // HACK: wait for Theo's PR OR go with that
+            if (fullName == typeof(VisualElement).FullName)
+                fullName = typeof(VisualContainer).FullName;
+
             if (elementTypes.TryGetValue(fullName, out t))
             {
                 vea = (VisualElementAsset)ScriptableObject.CreateInstance(t);
@@ -363,7 +415,7 @@ namespace UnityEditor.Experimental.UIElements
             return false;
         }
 
-        private static bool ParseAttributes(XElement elt, VisualElementAsset res, SerializedObject properties, Dictionary<string, string> serializedProperties, StyleSheetBuilder ssb)
+        private static bool ParseAttributes(XElement elt, VisualElementAsset res, SerializedObject properties, Dictionary<string, string> serializedProperties, StyleSheetBuilder ssb, VisualTreeAsset vta, VisualElementAsset parent)
         {
             // underscore means "unnamed element but it would not look pretty in the project window without one"
             res.name = "_" + res.GetType().Name;
@@ -385,6 +437,34 @@ namespace UnityEditor.Experimental.UIElements
                         continue;
                     case "class":
                         res.classes = xattr.Value.Split(' ');
+                        continue;
+                    case "contentContainer":
+                        if (vta.contentContainer != null)
+                        {
+                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, Error.Level.Fatal, elt);
+                            continue;
+                        }
+                        vta.contentContainer = res;
+                        continue;
+                    case k_SlotDefinitionAttr:
+                        if (String.IsNullOrEmpty(xattr.Value))
+                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotDefinitionHasEmptyName, null, Error.Level.Fatal, elt);
+                        else if (!vta.AddSlotDefinition(xattr.Value, res.id))
+                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateSlotDefinition, xattr.Value, Error.Level.Fatal, elt);
+                        continue;
+                    case k_SlotUsageAttr:
+                        var templateAsset = parent as TemplateAsset;
+                        if (!(templateAsset != null))
+                        {
+                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, Error.Level.Fatal, elt);
+                            continue;
+                        }
+                        if (string.IsNullOrEmpty(xattr.Value))
+                        {
+                            logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotUsageHasEmptyName, null, Error.Level.Fatal, elt);
+                            continue;
+                        }
+                        templateAsset.AddSlotUsage(xattr.Value, res.id);
                         continue;
                     case "style":
                         ExCSS.StyleSheet parsed = new ExCSS.Parser().Parse("* { " + xattr.Value + " }");
@@ -418,6 +498,14 @@ namespace UnityEditor.Experimental.UIElements
                             ssb.EndProperty();
                         }
                         // Don't call ssb.EndRule() here, it's done in LoadXml to get the rule index at the same time !
+                        continue;
+                    case "pickingMode":
+                        if (!Enum.IsDefined(typeof(PickingMode), xattr.Value))
+                        {
+                            Debug.LogErrorFormat("Could not parse value of '{0}', because it isn't defined in the PickingMode enum.", xattr.Value);
+                            continue;
+                        }
+                        res.pickingMode = (PickingMode)Enum.Parse(typeof(PickingMode), xattr.Value);
                         continue;
                 }
 
@@ -559,6 +647,7 @@ namespace UnityEditor.Experimental.UIElements
             if (!ParseValue(type, attr, out value))
                 return false;
 
+            serProp.serializedObject.Update();
             switch (serProp.propertyType)
             {
                 case SerializedPropertyType.Integer:
@@ -603,7 +692,13 @@ namespace UnityEditor.Experimental.UIElements
         InvalidXml,
         InvalidCssInStyleAttribute,
         MissingPathAttributeOnUsing,
-        UsingHasEmptyAlias
+        UsingHasEmptyAlias,
+        StyleReferenceEmptyOrMissingPathAttr,
+        DuplicateSlotDefinition,
+        SlotUsageInNonTemplate,
+        SlotDefinitionHasEmptyName,
+        SlotUsageHasEmptyName,
+        DuplicateContentContainer
     }
 
     internal enum ImportErrorType

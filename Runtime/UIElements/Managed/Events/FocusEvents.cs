@@ -2,130 +2,77 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class FocusEventBase : UIEvent
+    public interface IFocusEvent
     {
-        static List<long> s_EventSubTypeIds;
+        Focusable relatedTarget { get; }
 
-        protected new static long RegisterEventClass()
+        FocusChangeDirection direction { get; }
+    }
+
+    public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent where T : FocusEventBase<T>, new()
+    {
+        public Focusable relatedTarget { get; protected set; }
+
+        public FocusChangeDirection direction { get; protected set; }
+
+        protected override void Init()
         {
-            if (s_EventSubTypeIds == null)
-            {
-                s_EventSubTypeIds = new List<long>();
-            }
-
-            long id = UIEvent.RegisterEventClass();
-            s_EventSubTypeIds.Add(id);
-            return id;
+            base.Init();
+            flags = EventFlags.Capturable;
+            relatedTarget = null;
+            direction = FocusChangeDirection.unspecified;
         }
 
-        public static bool Is(EventBase evt)
+        public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
         {
-            if (s_EventSubTypeIds == null || evt == null)
-            {
-                return false;
-            }
-
-            return s_EventSubTypeIds.Contains(evt.GetEventTypeId());
+            T e = GetPooled();
+            e.target = target;
+            e.relatedTarget = relatedTarget;
+            e.direction = direction;
+            return e;
         }
 
-        public Focusable relatedTarget { get; internal set; }
-
-        public FocusChangeDirection direction { get; internal set; }
-
-        public FocusEventBase(EventFlags flags, IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
-            : base(flags, null)
+        protected FocusEventBase()
         {
-            this.target = target;
-            this.relatedTarget = relatedTarget;
-            this.direction = direction;
+            Init();
         }
     }
 
-    public class FocusOutEvent : FocusEventBase
+    public class FocusOutEvent : FocusEventBase<FocusOutEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static FocusOutEvent()
+        protected override void Init()
         {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
+            base.Init();
+            flags = EventFlags.Bubbles | EventFlags.Capturable;
         }
 
         public FocusOutEvent()
-            : base(EventFlags.Bubbles, null, null, FocusChangeDirection.kUnspecified) {}
-
-        public FocusOutEvent(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
-            : base(EventFlags.Bubbles, target, relatedTarget, direction) {}
+        {
+            Init();
+        }
     }
 
-    public class BlurEvent : FocusEventBase
+    public class BlurEvent : FocusEventBase<BlurEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static BlurEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public BlurEvent()
-            : base(EventFlags.Bubbles, null, null, FocusChangeDirection.kUnspecified) {}
-
-        public BlurEvent(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
-            : base(EventFlags.None, target, relatedTarget, direction) {}
     }
 
-    public class FocusInEvent : FocusEventBase
+    public class FocusInEvent : FocusEventBase<FocusInEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static FocusInEvent()
+        protected override void Init()
         {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
+            base.Init();
+            flags = EventFlags.Bubbles | EventFlags.Capturable;
         }
 
         public FocusInEvent()
-            : base(EventFlags.Bubbles, null, null, FocusChangeDirection.kUnspecified) {}
-
-        public FocusInEvent(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
-            : base(EventFlags.Bubbles, target, relatedTarget, direction) {}
+        {
+            Init();
+        }
     }
 
-    public class FocusEvent : FocusEventBase
+    public class FocusEvent : FocusEventBase<FocusEvent>
     {
-        public static readonly long s_EventClassId;
-
-        static FocusEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public FocusEvent()
-            : base(EventFlags.Bubbles, null, null, FocusChangeDirection.kUnspecified) {}
-
-        public FocusEvent(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
-            : base(EventFlags.None, target, relatedTarget, direction) {}
     }
 }

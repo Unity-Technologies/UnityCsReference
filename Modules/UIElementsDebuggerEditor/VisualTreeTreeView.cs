@@ -32,6 +32,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             : base(state) {}
 
         public Panel panel;
+        public bool includeShadowHierarchy;
 
         protected override TreeViewItem BuildRoot()
         {
@@ -40,17 +41,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             return root;
         }
 
-        private static void Recurse(TreeViewItem tree, VisualElement elt)
+        private void Recurse(TreeViewItem tree, VisualElement elt)
         {
             var child = new VisualTreeItem(elt, tree.depth + 1);
             tree.AddChild(child);
-            var container = elt as VisualContainer;
-            if (container != null)
+
+            foreach (var childElement in includeShadowHierarchy ? elt.shadow.Children() : elt.Children())
             {
-                for (int i = 0; i < container.childrenCount; i++)
-                {
-                    Recurse(child, container.GetChildAt(i));
-                }
+                Recurse(child, childElement);
             }
         }
 

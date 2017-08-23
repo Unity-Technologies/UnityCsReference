@@ -104,6 +104,7 @@ namespace UnityEditor
         private Vector2 m_PaneScroll_AudioDSP = Vector2.zero;
         private Vector2 m_PaneScroll_AudioClips = Vector2.zero;
 
+        [SerializeField]
         private string m_ActiveNativePlatformSupportModule;
 
         static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
@@ -524,7 +525,7 @@ namespace UnityEditor
             m_Recording = SessionState.GetBool(kProfilerEnabledSessionKey, true);
 
             // This event gets called every time when some other window is maximized and then unmaximized
-            Profiler.enabled = m_Recording;
+            ProfilerDriver.enabled = m_Recording;
 
             m_SelectedMemRecordMode = ProfilerDriver.memoryRecordMode;
         }
@@ -533,14 +534,14 @@ namespace UnityEditor
         {
             // When window is destroyed, we disable profiling
             if (Profiler.supported && !EditorApplication.isPlayingOrWillChangePlaymode)
-                Profiler.enabled = false;
+                ProfilerDriver.enabled = false;
         }
 
         void OnFocus()
         {
             // set the real state of profiler. OnDestroy is called not only when window is destroyed, but also when maximized state is changed
             if (Profiler.supported)
-                Profiler.enabled = m_Recording;
+                ProfilerDriver.enabled = m_Recording;
         }
 
         void OnLostFocus()
@@ -1468,7 +1469,7 @@ namespace UnityEditor
                 if (ProfilerDriver.LoadProfile(selected, keepExistingData))
                 {
                     // Stop current profiling if data was loaded successfully
-                    Profiler.enabled = m_Recording = false;
+                    ProfilerDriver.enabled = m_Recording = false;
                     SessionState.SetBool(kProfilerEnabledSessionKey, m_Recording);
                     NetworkDetailStats.m_NetworkOperations.Clear();
                 }
@@ -1499,7 +1500,7 @@ namespace UnityEditor
             var profilerEnabled = GUILayout.Toggle(m_Recording, Styles.profilerRecord, EditorStyles.toolbarButton);
             if (profilerEnabled != m_Recording)
             {
-                Profiler.enabled = profilerEnabled;
+                ProfilerDriver.enabled = profilerEnabled;
                 m_Recording = profilerEnabled;
                 SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             }
@@ -1628,7 +1629,7 @@ namespace UnityEditor
 
         void SetCurrentFrame(int frame)
         {
-            if (frame != -1 && Profiler.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame && EditorApplication.isPlayingOrWillChangePlaymode)
+            if (frame != -1 && ProfilerDriver.enabled && !ProfilerDriver.profileEditor && m_CurrentFrame != frame && EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorApplication.isPaused = true;
 
             if (ProfilerInstrumentationPopup.InstrumentationEnabled)

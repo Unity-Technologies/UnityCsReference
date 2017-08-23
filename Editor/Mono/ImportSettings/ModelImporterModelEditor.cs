@@ -34,6 +34,7 @@ namespace UnityEditor
         SerializedProperty m_OptimizeMeshForGPU;
         SerializedProperty m_IsReadable;
         SerializedProperty m_KeepQuads;
+        SerializedProperty m_IndexFormat;
         SerializedProperty m_WeldVertices;
         SerializedProperty m_ImportCameras;
         SerializedProperty m_ImportLights;
@@ -69,6 +70,7 @@ namespace UnityEditor
             m_OptimizeMeshForGPU = serializedObject.FindProperty("optimizeMeshForGPU");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
             m_KeepQuads = serializedObject.FindProperty("keepQuads");
+            m_IndexFormat = serializedObject.FindProperty("indexFormat");
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
             m_ImportVisibility = serializedObject.FindProperty("m_ImportVisibility");
             m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
@@ -145,6 +147,14 @@ namespace UnityEditor
                 new GUIContent("High")
             };
 
+            public GUIContent IndexFormatLabel = new GUIContent("Index Format", "Format of mesh index buffer. Auto mode picks 16 or 32 bit depending on mesh vertex count.");
+            public GUIContent[] IndexFormatOpt =
+            {
+                new GUIContent("Auto"),
+                new GUIContent("16 bit"),
+                new GUIContent("32 bit")
+            };
+
             public GUIContent OptimizeMeshForGPU = EditorGUIUtility.TextContent("Optimize Mesh|The vertices and indices will be reordered for better GPU performance.");
             public GUIContent KeepQuads = EditorGUIUtility.TextContent("Keep Quads|If model contains quad faces, they are kept for DX11 tessellation.");
             public GUIContent WeldVertices = EditorGUIUtility.TextContent("Weld Vertices|Combine vertices that share the same position in space.");
@@ -213,6 +223,8 @@ namespace UnityEditor
 
             // Keep Quads
             EditorGUILayout.PropertyField(m_KeepQuads, styles.KeepQuads);
+
+            EditorGUILayout.Popup(m_IndexFormat, styles.IndexFormatOpt, styles.IndexFormatLabel);
 
             // Weld Vertices
             EditorGUILayout.PropertyField(m_WeldVertices, styles.WeldVertices);

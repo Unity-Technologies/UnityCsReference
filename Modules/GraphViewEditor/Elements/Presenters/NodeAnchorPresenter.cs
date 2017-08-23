@@ -9,7 +9,8 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal abstract class NodeAnchorPresenter : GraphElementPresenter
+    internal
+    abstract class NodeAnchorPresenter : GraphElementPresenter
     {
         protected object m_Source;
         public object source

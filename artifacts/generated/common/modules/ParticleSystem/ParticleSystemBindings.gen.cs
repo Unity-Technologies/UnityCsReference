@@ -4366,11 +4366,6 @@ internal ParticleSystemVertexStreams Internal_GetEnabledVertexStreams(ParticleSy
 
 }
 
-[RequireComponent(typeof(Transform))]
-internal sealed partial class WorldParticleCollider : Component
-{
-}
-
 [RequiredByNativeCode(Optional = true)]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct ParticleCollisionEvent

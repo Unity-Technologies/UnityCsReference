@@ -9,15 +9,18 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal interface IEdgeConnectorListener
+    internal
+    interface IEdgeConnectorListener
     {
         void OnDropOutsideAnchor(EdgePresenter edge, Vector2 position);
     }
 
-    internal abstract class EdgeConnector : MouseManipulator
+    internal
+    abstract class EdgeConnector : MouseManipulator
     {}
 
-    internal class EdgeConnector<TEdgePresenter> : EdgeConnector where TEdgePresenter : EdgePresenter
+    internal
+    class EdgeConnector<TEdgePresenter> : EdgeConnector where TEdgePresenter : EdgePresenter
     {
         private List<NodeAnchorPresenter> m_CompatibleAnchors;
         private TEdgePresenter m_EdgePresenterCandidate;

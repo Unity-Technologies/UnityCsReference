@@ -14,6 +14,9 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    internal sealed partial class RequiredSignatureAttribute : Attribute {}
+
     internal class AttributeHelper
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -208,6 +211,122 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        private static bool AreSignaturesMatching(MethodInfo left, MethodInfo right)
+        {
+            if (left.IsStatic != right.IsStatic)
+                return false;
+            if (left.ReturnType != right.ReturnType)
+                return false;
+
+
+            ParameterInfo[] leftParams = left.GetParameters();
+            ParameterInfo[] rightParams = right.GetParameters();
+            if (leftParams.Length != rightParams.Length)
+                return false;
+            for (int i = 0; i < leftParams.Length; i++)
+            {
+                if (leftParams[i].ParameterType != rightParams[i].ParameterType)
+                    return false;
+            }
+
+            return true;
+        }
+
+        internal static string MethodToString(MethodInfo method)
+        {
+            return (method.IsStatic ? "static " : "") + method.ToString();
+        }
+
+        internal static bool MethodMatchesAnyRequiredSignatureOfAttribute(MethodInfo method, Type attributeType)
+        {
+            List<MethodInfo> validSignatures = new List<MethodInfo>();
+            foreach (var signature in attributeType.GetMethods(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                var requiredSignatureAttributes = signature.GetCustomAttributes(typeof(RequiredSignatureAttribute), false);
+                if (requiredSignatureAttributes.Length > 0)
+                {
+                    if (AreSignaturesMatching(method, signature))
+                    {
+                        return true;
+                    }
+                    validSignatures.Add(signature);
+                }
+            }
+            if (validSignatures.Count == 0)
+                Debug.LogError(MethodToString(method) + " has an invalid attribute : " + attributeType + ". " + attributeType +  " must have at least one required signature declaration");
+            else if (validSignatures.Count == 1)
+                Debug.LogError(MethodToString(method) + " does not match " + attributeType + " expected signature.\n Use " + MethodToString(validSignatures[0]));
+            else
+                Debug.LogError(MethodToString(method) + " does not match any of " + attributeType + " expected signatures.\n Valid signatures are: " + string.Join(" , ", validSignatures.Select((a) => MethodToString(a)).ToArray()));
+            return false;
+        }
+
+        internal class MethodWithAttribute
+        {
+            public MethodInfo info;
+            public Attribute attribute;
+        }
+
+        internal class MethodInfoSorter
+        {
+            internal MethodInfoSorter(List<MethodWithAttribute> methodsWithAttributes)
+            {
+                MethodsWithAttributes = methodsWithAttributes;
+            }
+
+            public IEnumerable<MethodInfo> FilterAndSortOnAttribute<T>(Func<T, bool> filter, Func<T, IComparable> sorter) where T : Attribute
+            {
+                return MethodsWithAttributes.Where(a => filter((T)a.attribute)).OrderBy(c => sorter((T)c.attribute)).Select(o => o.info);
+            }
+
+            public List<MethodWithAttribute> MethodsWithAttributes { get; }
+        }
+
+        static Dictionary<Type, MethodInfoSorter> m_Cache = new Dictionary<Type, MethodInfoSorter>();
+
+        internal static MethodInfoSorter GetMethodsWithAttribute<T>(
+            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly) where T : Attribute
+        {
+            if (!m_Cache.ContainsKey(typeof(T)))
+            {
+                List<MethodWithAttribute> tmp = new List<MethodWithAttribute>();
+                foreach (var assembly in EditorAssemblies.loadedAssemblies)
+                {
+                    foreach (var type in AssemblyHelper.GetTypesFromAssembly(assembly))
+                    {
+                        foreach (var method in type.GetMethods(flags))
+                        {
+                            var customAttributes = method.GetCustomAttributes(typeof(T), false);
+                            if (customAttributes.Length > 0)
+                            {
+                                if (method.IsGenericMethod)
+                                {
+                                    Debug.LogError(MethodToString(method) + " is a generic method. " + typeof(T).ToString() + " can't be applied to it.");
+                                }
+                                else
+                                {
+                                    foreach (T attr in customAttributes)
+                                    {
+                                        if (MethodMatchesAnyRequiredSignatureOfAttribute(method, typeof(T)))
+                                        {
+                                            tmp.Add(new MethodWithAttribute()
+                                            {
+                                                info = method,
+                                                attribute = attr
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                m_Cache.Add(typeof(T), new MethodInfoSorter(tmp));
+            }
+            return m_Cache[typeof(T)];
         }
     }
 }

@@ -36,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements
             target.UnregisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
         }
 
-        void OnMouseUpDownEvent(MouseEventBase evt)
+        void OnMouseUpDownEvent(MouseDownEvent evt)
         {
             SyncTextEditor();
             textField.TakeCapture();

@@ -17,7 +17,10 @@ namespace UnityEngine
         public float borderTopWidth;
         public float borderRightWidth;
         public float borderBottomWidth;
-        public float borderRadius;
+        public float borderTopLeftRadius;
+        public float borderTopRightRadius;
+        public float borderBottomRightRadius;
+        public float borderBottomLeftRadius;
         public int sliceLeft;
         public int sliceTop;
         public int sliceRight;
@@ -32,7 +35,10 @@ namespace UnityEngine
         public float borderTopWidth;
         public float borderRightWidth;
         public float borderBottomWidth;
-        public float borderRadius;
+        public float borderTopLeftRadius;
+        public float borderTopRightRadius;
+        public float borderBottomRightRadius;
+        public float borderBottomLeftRadius;
     }
 
     internal struct TextStylePainterParameters
@@ -103,14 +109,19 @@ namespace UnityEngine
         {
             Rect screenRect = painterParams.layout;
             Color color = painterParams.color;
-            float borderRadius = painterParams.borderRadius;
 
             var borderWidths = new Vector4(
                     painterParams.borderLeftWidth,
                     painterParams.borderTopWidth,
                     painterParams.borderRightWidth,
                     painterParams.borderBottomWidth);
-            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidths, borderRadius);
+            var borderRadiuses = new Vector4(
+                    painterParams.borderTopLeftRadius,
+                    painterParams.borderTopRightRadius,
+                    painterParams.borderBottomRightRadius,
+                    painterParams.borderBottomLeftRadius);
+
+            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidths, borderRadiuses);
         }
 
         public void DrawTexture(TextureStylePainterParameters painterParams)
@@ -119,7 +130,6 @@ namespace UnityEngine
             Texture texture = painterParams.texture;
             Color color = painterParams.color;
             ScaleMode scaleMode = painterParams.scaleMode;
-            float borderRadius = painterParams.borderRadius;
             int sliceLeft = painterParams.sliceLeft;
             int sliceTop = painterParams.sliceTop;
             int sliceRight = painterParams.sliceRight;
@@ -166,8 +176,13 @@ namespace UnityEngine
                     painterParams.borderTopWidth,
                     painterParams.borderRightWidth,
                     painterParams.borderBottomWidth);
+            var borderRadiuses = new Vector4(
+                    painterParams.borderTopLeftRadius,
+                    painterParams.borderTopRightRadius,
+                    painterParams.borderBottomRightRadius,
+                    painterParams.borderBottomLeftRadius);
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadius, sliceLeft, sliceTop, sliceRight, sliceBottom);
+            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom);
         }
 
         public void DrawText(TextStylePainterParameters painterParams)

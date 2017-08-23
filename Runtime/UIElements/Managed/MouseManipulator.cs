@@ -16,7 +16,7 @@ namespace UnityEngine.Experimental.UIElements
             activators = new List<ManipulatorActivationFilter>();
         }
 
-        protected bool CanStartManipulation(MouseEventBase e)
+        protected bool CanStartManipulation(IMouseEvent e)
         {
             foreach (var activator in activators)
             {
@@ -30,7 +30,7 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        protected bool CanStopManipulation(MouseEventBase e)
+        protected bool CanStopManipulation(IMouseEvent e)
         {
             return ((MouseButton)e.button == m_currentActivator.button) && target.HasCapture();
         }

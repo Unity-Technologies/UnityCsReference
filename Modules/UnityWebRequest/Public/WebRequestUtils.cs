@@ -430,7 +430,7 @@ namespace UnityEngineInternal
 {
     static class WebRequestUtils
     {
-        private static Regex domainRegex = new Regex("^\\s*\\w+(?:\\.\\w+)+\\s*$");
+        private static Regex domainRegex = new Regex("^\\s*\\w+(?:\\.\\w+)+(\\/.*)?$");
 
         [RequiredByNativeCode]
         internal static string RedirectTo(string baseUri, string redirectUri)

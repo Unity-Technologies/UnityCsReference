@@ -411,12 +411,6 @@ namespace UnityEditor
         {
             // Added because this window uses RenameOverlay
             treeView.EndNameEditing(true);
-
-            // When typing in search field and then opening a dropdown (e.g type filters)
-            // the text field is not properly ending its editing which results in a bug where
-            // the search text added from the dropdown is removed when clicking directly on
-            // the search field
-            EditorGUI.EndEditingActiveTextField();
         }
 
         public static bool IsSceneHeaderInHierarchyWindow(Scene scene)

@@ -8,7 +8,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class NodeAnchor : GraphElement
+    internal
+    class NodeAnchor : GraphElement
     {
         protected EdgeConnector m_EdgeConnector;
 
@@ -53,20 +54,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // currently we don't want to be styled as .graphElement since we're contained in a Node
             ClearClassList();
 
-            m_ConnectorBox = CreateConnector();
-
-            m_ConnectorBox.name = "connector";
-            m_ConnectorBox.pickingMode = PickingMode.Ignore;
-
-            AddChild(m_ConnectorBox);
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/NodeAnchor.uxml") as VisualTreeAsset;
+            tpl.CloneTree(this, null);
+            m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorBox.AddToClassList("connector");
 
-            m_ConnectorText = new VisualElement
-            {
-                name = "type",
-                pickingMode = PickingMode.Ignore
-            };
-            AddChild(m_ConnectorText);
+            m_ConnectorText = this.Q(name: "type");
             m_ConnectorText.AddToClassList("type");
         }
 

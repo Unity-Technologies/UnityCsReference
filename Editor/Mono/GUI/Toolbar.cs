@@ -413,7 +413,7 @@ namespace UnityEditor
             }
             s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
 
-            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, "Command");
+            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, "Command", GUI.ToolbarButtonSize.FitToContents);
             if (GUI.changed)
             {
                 Tools.current = (Tool)displayTool;

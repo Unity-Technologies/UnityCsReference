@@ -280,15 +280,16 @@ namespace UnityEditor
                     }
                 }
 
-                string[] devEnvPaths = VisualStudioUtil.FindVisualStudioDevEnvPaths((int)VisualStudioVersion.VisualStudio2017, "Microsoft.VisualStudio.Workload.ManagedGame");
+                var requiredWorkloads = new[] {"Microsoft.VisualStudio.Workload.ManagedGame"};
+                var raw = VisualStudioUtil.FindVisualStudioDevEnvPaths((int)VisualStudioVersion.VisualStudio2017, requiredWorkloads);
 
-                if (devEnvPaths != null && devEnvPaths.Length > 0)
+                var visualStudioPaths = VisualStudioUtil.ParseRawDevEnvPaths(raw)
+                    .Where(vs => !requiredWorkloads.Except(vs.Workloads).Any()) // All required workloads must be present
+                    .Select(vs => new VisualStudioPath(vs.DevEnvPath, vs.Edition))
+                    .ToArray();
+
+                if (visualStudioPaths.Length != 0)
                 {
-                    var visualStudioPaths = new VisualStudioPath[devEnvPaths.Length / 2];
-
-                    for (int i = 0; i < devEnvPaths.Length / 2; ++i)
-                        visualStudioPaths[i] = new VisualStudioPath(devEnvPaths[i * 2], devEnvPaths[(i * 2) + 1]);
-
                     versions[VisualStudioVersion.VisualStudio2017] = visualStudioPaths;
                 }
             }

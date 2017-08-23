@@ -54,19 +54,23 @@ namespace UnityEditor
         [SerializeField] private GridPaintPaletteWindow m_Owner;
 
         public bool activeDragAndDrop { get { return DragAndDrop.objectReferences.Length > 0 && guiRect.Contains(Event.current.mousePosition); } }
-        private PreviewRenderUtility m_PreviewUtility;
+
+        [SerializeField] private bool m_CameraInitializedToBounds;
+        [SerializeField] public bool m_CameraPositionSaved;
+        [SerializeField] public Vector3 m_CameraPosition;
+        [SerializeField] public float m_CameraOrthographicSize;
 
         private RectInt? m_ActivePick;
         private Dictionary<Vector2Int, Object> m_HoverData;
         private bool m_Unlocked;
         private bool m_PingTileAsset = false;
 
-
         public GameObject palette { get { return m_Owner.palette; } }
         public GameObject paletteInstance { get { return m_Owner.paletteInstance; } }
         public Tilemap tilemap { get { return paletteInstance != null ? paletteInstance.GetComponentInChildren<Tilemap>() : null; } }
         private Grid grid { get { return paletteInstance != null ? paletteInstance.GetComponent<Grid>() : null; } }
         private Grid prefabGrid { get { return palette != null ? palette.GetComponent<Grid>() : null; } }
+        public PreviewRenderUtility previewUtility { get { return m_Owner.previewUtility; } }
 
         private GridBrushBase gridBrush { get { return GridPaintingState.gridBrush; } }
 
@@ -93,6 +97,9 @@ namespace UnityEditor
         {
             get
             {
+                if (tilemap == null)
+                    return new RectInt();
+
                 RectInt r = new RectInt(tilemap.origin.x, tilemap.origin.y, tilemap.size.x, tilemap.size.y);
                 if (TilemapIsEmpty(tilemap))
                     return r;
@@ -122,8 +129,8 @@ namespace UnityEditor
             get
             {
                 float GUIAspect = m_GUIRect.width / m_GUIRect.height;
-                float paddingW = m_PreviewUtility.camera.orthographicSize * GUIAspect * k_Padding * 2f;
-                float paddingH = m_PreviewUtility.camera.orthographicSize * k_Padding * 2f;
+                float paddingW = previewUtility.camera.orthographicSize * GUIAspect * k_Padding * 2f;
+                float paddingH = previewUtility.camera.orthographicSize * k_Padding * 2f;
 
                 RectInt size = bounds;
                 Vector2 min = grid.CellToLocal(new Vector3Int(size.xMin, size.yMin, 0));
@@ -228,29 +235,35 @@ namespace UnityEditor
         public void OnAfterPaletteSelectionChanged()
         {
             m_PaletteUsed = false;
-
-            if (m_PreviewUtility == null)
-                InitPreview();
-
             ResetPreviewInstance();
 
             if (palette != null)
                 ResetPreviewCamera();
         }
 
-        void InitPreview()
+        public void SetupPreviewCameraOnInit()
         {
-            m_PreviewUtility = new PreviewRenderUtility(true, true);
-            m_PreviewUtility.camera.cullingMask = 1 << Camera.PreviewCullingLayer;
-            m_PreviewUtility.camera.gameObject.layer = Camera.PreviewCullingLayer;
-            m_PreviewUtility.lights[0].gameObject.layer = Camera.PreviewCullingLayer;
-            m_PreviewUtility.camera.orthographic = true;
-            m_PreviewUtility.camera.orthographicSize = 5f;
-            m_PreviewUtility.ambientColor = new Color(1f, 1f, 1f, 0);
+            if (m_CameraPositionSaved)
+                LoadSavedCameraPosition();
+            else
+                ResetPreviewCamera();
+        }
 
-            ResetPreviewInstance();
-            ResetPreviewCamera();
-            ClampZoomAndPan();
+        private void LoadSavedCameraPosition()
+        {
+            previewUtility.camera.transform.position = m_CameraPosition;
+            previewUtility.camera.orthographicSize = m_CameraOrthographicSize;
+            previewUtility.camera.nearClipPlane = 0.01f;
+            previewUtility.camera.farClipPlane = 100f;
+        }
+
+        private void ResetPreviewCamera()
+        {
+            previewUtility.camera.transform.position = new Vector3(0, 0, -10f);
+            previewUtility.camera.transform.rotation = Quaternion.identity;
+            previewUtility.camera.nearClipPlane = 0.01f;
+            previewUtility.camera.farClipPlane = 100f;
+            FrameEntirePalette();
         }
 
         private void DestroyPreviewInstance()
@@ -263,15 +276,6 @@ namespace UnityEditor
             m_Owner.ResetPreviewInstance();
         }
 
-        void ResetPreviewCamera()
-        {
-            m_PreviewUtility.camera.transform.position = new Vector3(0, 0, -10f);
-            m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
-            m_PreviewUtility.camera.nearClipPlane = 0.01f;
-            m_PreviewUtility.camera.farClipPlane = 100f;
-            FrameEntirePalette();
-        }
-
         public void ResetPreviewMesh()
         {
             if (m_GridMesh != null)
@@ -282,15 +286,18 @@ namespace UnityEditor
             m_GridMaterial = null;
         }
 
-        void FrameEntirePalette()
+        public void FrameEntirePalette()
         {
             Frame(bounds);
         }
 
         void Frame(RectInt rect)
         {
-            m_PreviewUtility.camera.transform.position = grid.CellToLocalInterpolated(new Vector3(rect.center.x, rect.center.y, 0));
-            m_PreviewUtility.camera.transform.position.Set(m_PreviewUtility.camera.transform.position.x, m_PreviewUtility.camera.transform.position.y, -10f);
+            if (grid == null)
+                return;
+
+            previewUtility.camera.transform.position = grid.CellToLocalInterpolated(new Vector3(rect.center.x, rect.center.y, 0));
+            previewUtility.camera.transform.position.Set(previewUtility.camera.transform.position.x, previewUtility.camera.transform.position.y, -10f);
 
             float height = (grid.CellToLocal(new Vector3Int(0, rect.yMax, 0)) - grid.CellToLocal(new Vector3Int(0, rect.yMin, 0))).magnitude;
             float width = (grid.CellToLocal(new Vector3Int(rect.xMax, 0, 0)) - grid.CellToLocal(new Vector3Int(rect.xMin, 0, 0))).magnitude;
@@ -301,9 +308,9 @@ namespace UnityEditor
             float GUIAspect = m_GUIRect.width / m_GUIRect.height;
             float contentAspect = width / height;
             if (GUIAspect > contentAspect)
-                m_PreviewUtility.camera.orthographicSize = height / 2f;
+                previewUtility.camera.orthographicSize = height / 2f;
             else
-                m_PreviewUtility.camera.orthographicSize = width / GUIAspect / 2f;
+                previewUtility.camera.orthographicSize = width / GUIAspect / 2f;
 
             ClampZoomAndPan();
         }
@@ -324,6 +331,9 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
+            m_CameraPosition = previewUtility.camera.transform.position;
+            m_CameraOrthographicSize = previewUtility.camera.orthographicSize;
+            m_CameraPositionSaved = true;
             SavePaletteIfNecessary();
             DestroyPreviewInstance();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
@@ -332,9 +342,7 @@ namespace UnityEditor
 
         private void OnDestroy()
         {
-            if (m_PreviewUtility != null)
-                m_PreviewUtility.Cleanup();
-            m_PreviewUtility = null;
+            previewUtility.Cleanup();
         }
 
         public override void OnGUI()
@@ -344,24 +352,23 @@ namespace UnityEditor
 
             bool mouseUp = Event.current.type == EventType.MouseUp;
 
-            if (m_PreviewUtility != null)
-                UpdateMouseGridPosition();
+            UpdateMouseGridPosition();
 
             HandleDragAndDrop();
 
             if (palette == null)
                 return;
 
-            if (m_PreviewUtility == null && Event.current.type == EventType.Layout)
-                return;
-
-            if (m_PreviewUtility == null)
-                InitPreview();
-
             HandlePanAndZoom();
 
             if (showNewEmptyClipboardInfo)
                 return;
+
+            if (Event.current.type == EventType.Repaint && !m_CameraInitializedToBounds)
+            {
+                Frame(bounds);
+                m_CameraInitializedToBounds = true;
+            }
 
             HandleMouseEnterLeave();
 
@@ -401,10 +408,10 @@ namespace UnityEditor
 
         public void OnViewSizeChanged(Rect oldSize, Rect newSize)
         {
-            if (m_PreviewUtility == null || oldSize.height * oldSize.width * newSize.height * newSize.width == 0f)
+            if (oldSize.height * oldSize.width * newSize.height * newSize.width == 0f)
                 return;
 
-            Camera cam = m_PreviewUtility.camera;
+            Camera cam = previewUtility.camera;
 
             Vector2 sizeDelta = new Vector2(
                     newSize.width / LocalToScreenRatio(newSize.height) - oldSize.width / LocalToScreenRatio(oldSize.height),
@@ -453,7 +460,7 @@ namespace UnityEditor
                     if (guiRect.Contains(Event.current.mousePosition))
                     {
                         float zoomDelta = HandleUtility.niceMouseDeltaZoom * (Event.current.shift ? -9 : -3) * k_ZoomSpeed;
-                        Camera camera = m_PreviewUtility.camera;
+                        Camera camera = previewUtility.camera;
                         Vector3 oldLocalPos = ScreenToLocal(Event.current.mousePosition);
                         camera.orthographicSize = Mathf.Max(.0001f, camera.orthographicSize * (1 + zoomDelta * .001f));
                         ClampZoomAndPan();
@@ -468,7 +475,7 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == m_MousePanningID)
                     {
                         Vector3 delta = new Vector3(-Event.current.delta.x, Event.current.delta.y, 0f) / LocalToScreenRatio();
-                        m_PreviewUtility.camera.transform.Translate(delta);
+                        previewUtility.camera.transform.Translate(delta);
                         ClampZoomAndPan();
                         Event.current.Use();
                     }
@@ -524,7 +531,7 @@ namespace UnityEditor
                 case EventType.Repaint:
                     if (GUIUtility.hotControl == m_KeyboardPanningID)
                     {
-                        m_PreviewUtility.camera.transform.Translate(m_KeyboardPanning);
+                        previewUtility.camera.transform.Translate(m_KeyboardPanning);
                         ClampZoomAndPan();
                         Repaint();
                     }
@@ -541,16 +548,16 @@ namespace UnityEditor
             return (Event.current.button == 0 && Event.current.alt || Event.current.button > 0);
         }
 
-        private void ClampZoomAndPan()
+        public void ClampZoomAndPan()
         {
             float pixelsPerCell = grid.cellSize.y * LocalToScreenRatio();
 
             if (pixelsPerCell < k_MinZoom)
-                m_PreviewUtility.camera.orthographicSize = (grid.cellSize.y * guiRect.height) / (k_MinZoom * 2f);
+                previewUtility.camera.orthographicSize = (grid.cellSize.y * guiRect.height) / (k_MinZoom * 2f);
             else if (pixelsPerCell > k_MaxZoom)
-                m_PreviewUtility.camera.orthographicSize = (grid.cellSize.y * guiRect.height) / (k_MaxZoom * 2f);
+                previewUtility.camera.orthographicSize = (grid.cellSize.y * guiRect.height) / (k_MaxZoom * 2f);
 
-            Camera cam = m_PreviewUtility.camera;
+            Camera cam = previewUtility.camera;
             Rect r = paddedBounds;
 
             Vector3 camPos = cam.transform.position;
@@ -590,7 +597,7 @@ namespace UnityEditor
                 ResetPreviewMesh();
             }
 
-            m_PreviewUtility.BeginPreview(guiRect, Styles.background);
+            previewUtility.BeginPreview(guiRect, Styles.background);
 
             BeginPreviewInstance();
             RenderGrid();
@@ -600,7 +607,7 @@ namespace UnityEditor
             RenderSelectedBrushMarquee();
             DoBrush();
 
-            m_PreviewUtility.EndAndDrawPreview(guiRect);
+            previewUtility.EndAndDrawPreview(guiRect);
             m_LastGridHash = GetGridHash();
         }
 
@@ -650,19 +657,24 @@ namespace UnityEditor
             CallOnPaintSceneGUI(mouseGridPosition);
         }
 
+        private void SetEnabledRecursive(GameObject go, bool enabled)
+        {
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+        }
+
         private void BeginPreviewInstance()
         {
             m_OldFog = RenderSettings.fog;
             Unsupported.SetRenderSettingsUseFogNoDirty(false);
-            Handles.DrawCameraImpl(m_GUIRect, m_PreviewUtility.camera, DrawCameraMode.Textured, false, new DrawGridParameters(), true, false);
-            GameObjectInspector.SetEnabledRecursive(paletteInstance, true);
-            m_PreviewUtility.AddManagedGO(paletteInstance);
+            Handles.DrawCameraImpl(m_GUIRect, previewUtility.camera, DrawCameraMode.Textured, false, new DrawGridParameters(), true, false);
+            SetEnabledRecursive(paletteInstance, true);
         }
 
         private void EndPreviewInstance()
         {
-            m_PreviewUtility.Render();
-            GameObjectInspector.SetEnabledRecursive(paletteInstance, false);
+            previewUtility.Render();
+            SetEnabledRecursive(paletteInstance, false);
             Unsupported.SetRenderSettingsUseFogNoDirty(m_OldFog);
         }
 
@@ -712,7 +724,10 @@ namespace UnityEditor
                     SavePaletteIfNecessary();
 
                     if (wasEmpty)
+                    {
+                        ResetPreviewInstance();
                         FrameEntirePalette();
+                    }
 
                     Event.current.Use();
                     GUIUtility.ExitGUI();
@@ -1024,7 +1039,7 @@ namespace UnityEditor
 
         public Vector2 ScreenToLocal(Vector2 screenPosition)
         {
-            Vector2 viewPosition = m_PreviewUtility.camera.transform.position;
+            Vector2 viewPosition = previewUtility.camera.transform.position;
             screenPosition -= new Vector2(guiRect.xMin, guiRect.yMin);
             Vector2 offsetFromCenter = new Vector2(screenPosition.x - guiRect.width * .5f, guiRect.height * .5f - screenPosition.y);
             return viewPosition + offsetFromCenter / LocalToScreenRatio();
@@ -1032,19 +1047,19 @@ namespace UnityEditor
 
         protected Vector2 LocalToScreen(Vector2 localPosition)
         {
-            Vector2 viewPosition = m_PreviewUtility.camera.transform.position;
+            Vector2 viewPosition = previewUtility.camera.transform.position;
             Vector2 offsetFromCenter = new Vector2(localPosition.x - viewPosition.x, viewPosition.y - localPosition.y);
             return offsetFromCenter * LocalToScreenRatio() + new Vector2(guiRect.width * .5f + guiRect.xMin, guiRect.height * .5f + guiRect.yMin);
         }
 
         private float LocalToScreenRatio()
         {
-            return guiRect.height / (m_PreviewUtility.camera.orthographicSize * 2f);
+            return guiRect.height / (previewUtility.camera.orthographicSize * 2f);
         }
 
         private float LocalToScreenRatio(float viewHeight)
         {
-            return viewHeight / (m_PreviewUtility.camera.orthographicSize * 2f);
+            return viewHeight / (previewUtility.camera.orthographicSize * 2f);
         }
 
         protected Vector2Int GetPivot(Vector2Int corner, Vector2Int position)

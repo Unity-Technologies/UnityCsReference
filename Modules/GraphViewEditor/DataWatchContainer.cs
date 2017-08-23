@@ -6,7 +6,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class DataWatchContainer : VisualContainer
+    internal
+    abstract class DataWatchContainer : VisualElement
     {
         IDataWatchHandle[] handles;
 
@@ -14,9 +15,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected DataWatchContainer()
         {
-            // trigger data source reset when entering leaving panel
-            onEnter += AddWatch;
-            onLeave += RemoveWatch;
         }
 
         // called when Serialized object has changed
@@ -49,6 +47,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (handle != null)
                         handle.Dispose();
                 handles = null;
+            }
+        }
+
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            {
+                AddWatch();
+            }
+            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            {
+                RemoveWatch();
             }
         }
     }

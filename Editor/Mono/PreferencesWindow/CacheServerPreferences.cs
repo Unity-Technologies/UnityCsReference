@@ -104,7 +104,7 @@ namespace UnityEditor
         }
 
         [PreferenceItem("Cache Server")]
-        public static void OnGUI()
+        private static void OnGUI()
         {
             // Get event type before the event is used.
             var eventType = Event.current.type;

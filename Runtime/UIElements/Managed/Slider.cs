@@ -7,7 +7,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Slider : VisualContainer
+    public class Slider : VisualElement
     {
         public enum Direction
         {
@@ -27,25 +27,36 @@ namespace UnityEngine.Experimental.UIElements
         internal ClampedDragger clampedDragger { get; private set; }
         Rect m_DragElementStartPos;
 
-        float m_Value;
+        [Serializable]
+        class SliderValue
+        {
+            public float m_Value = 0.0f;
+        }
+        SliderValue m_SliderValue;
+
         public float value
         {
-            get { return m_Value; }
+            get { return m_SliderValue == null ? 0.0f : m_SliderValue.m_Value; }
             set
             {
+                if (m_SliderValue == null)
+                    m_SliderValue = new SliderValue() { m_Value = lowValue };
+
                 var newValue = Mathf.Clamp(value, lowValue, highValue);
 
-                if (Mathf.Approximately(m_Value, newValue))
+                if (Mathf.Approximately(m_SliderValue.m_Value, newValue))
                     return;
 
-                m_Value = newValue;
+                m_SliderValue.m_Value = newValue;
 
                 UpdateDragElementPosition();
 
                 if (valueChanged != null)
-                    valueChanged(m_Value);
+                    valueChanged(m_SliderValue.m_Value);
 
                 this.Dirty(ChangeType.Repaint);
+
+                SavePersistentData();
             }
         }
 
@@ -78,17 +89,23 @@ namespace UnityEngine.Experimental.UIElements
             lowValue = start;
             highValue = end;
 
-            AddChild(new VisualElement() { name = "TrackElement" });
-
-            // Explicitly set m_Value
-            m_Value = lowValue;
+            Add(new VisualElement() { name = "TrackElement" });
 
             dragElement = new VisualElement() { name = "DragElement" };
 
-            AddChild(dragElement);
+            Add(dragElement);
 
             clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             this.AddManipulator(clampedDragger);
+        }
+
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+
+            var key = GetFullHierarchicalPersistenceKey();
+
+            m_SliderValue = GetOrCreatePersistentData<SliderValue>(m_SliderValue, key);
         }
 
         // Handles slider drags
@@ -206,7 +223,7 @@ namespace UnityEngine.Experimental.UIElements
             if (panel == null)
                 return;
 
-            float pos = m_Value - lowValue;
+            float pos = value - lowValue;
             float dragElementWidth = dragElement.style.width;
             float dragElementHeight = dragElement.style.height;
 
@@ -222,7 +239,18 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        protected internal override void OnPostLayout(bool hasNewLayout)
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
+            {
+                var postLayoutEvt = (PostLayoutEvent)evt;
+                OnPostLayout(postLayoutEvt.hasNewLayout);
+            }
+        }
+
+        private void OnPostLayout(bool hasNewLayout)
         {
             if (!hasNewLayout)
                 return;

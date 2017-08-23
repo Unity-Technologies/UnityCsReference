@@ -10,7 +10,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class RectangleSelector : MouseManipulator
+    internal
+    class RectangleSelector : MouseManipulator
     {
         private readonly RectangleSelect m_Rectangle;
         bool m_Active;
@@ -71,7 +72,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     graphView.ClearSelection();
                 }
 
-                graphView.AddChild(m_Rectangle);
+                graphView.Add(m_Rectangle);
 
                 m_Rectangle.start = e.localMousePosition;
                 m_Rectangle.end = m_Rectangle.start;
@@ -94,7 +95,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!CanStopManipulation(e))
                 return;
 
-            graphView.RemoveChild(m_Rectangle);
+            graphView.Remove(m_Rectangle);
 
             m_Rectangle.end = e.localMousePosition;
 

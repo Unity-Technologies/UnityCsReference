@@ -13,7 +13,7 @@ namespace UnityEditor
 {
     internal class GameViewGUI
     {
-        private static string FormatNumber(int num)
+        private static string FormatNumber(long num)
         {
             if (num < 1000)
                 return num.ToString();
@@ -142,7 +142,7 @@ namespace UnityEditor
             else
                 gfxStats.Append(String.Format("  CPU: main {0:F1}ms  render thread <b>{1:F1}</b>ms\n", m_ClientFrameTime * 1000.0f, m_RenderFrameTime * 1000.0f));
             gfxStats.Append(String.Format("  Batches: <b>{0}</b> \tSaved by batching: {1}\n", UnityStats.batches, batchesSavedByDynamicBatching + batchesSavedByStaticBatching + batchesSavedByInstancing));
-            gfxStats.Append(String.Format("  Tris: {0} \tVerts: {1} \n", FormatNumber(UnityStats.triangles), FormatNumber(UnityStats.vertices)));
+            gfxStats.Append(String.Format("  Tris: {0} \tVerts: {1} \n", FormatNumber(UnityStats.trianglesLong), FormatNumber(UnityStats.verticesLong)));
             gfxStats.Append(String.Format("  Screen: {0} - {1}\n", UnityStats.screenRes, EditorUtility.FormatBytes(screenBytes)));
             gfxStats.Append(String.Format("  SetPass calls: {0} \tShadow casters: {1} \n", UnityStats.setPassCalls, UnityStats.shadowCasters));
             gfxStats.Append(String.Format("  Visible skinned meshes: {0}  Animations: {1}", UnityStats.visibleSkinnedMeshes, UnityStats.visibleAnimations));

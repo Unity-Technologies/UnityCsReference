@@ -19,10 +19,10 @@ namespace UnityEditor.Animations
             hierarchy.Add(parent);
             if (parent == toFind)
                 return true;
-
-            for (int i = 0; i < parent.stateMachines.Length; i++)
+            var childStateMachines = AnimatorStateMachine.StateMachineCache.GetChildStateMachines(parent);
+            for (int i = 0; i < childStateMachines.Length; i++)
             {
-                if (StateMachineRelativePath(parent.stateMachines[i].stateMachine, toFind, ref hierarchy))
+                if (StateMachineRelativePath(childStateMachines[i].stateMachine, toFind, ref hierarchy))
                     return true;
             }
             hierarchy.Remove(parent);

@@ -148,7 +148,7 @@ namespace UnityEditor
             rect.width /= 4;
 
             // Time
-            FloatDraggable(rect, burstTime, 1.0f, k_BurstDragWidth, "n2");
+            FloatDraggable(rect, burstTime, 1.0f, k_BurstDragWidth, "n3");
             rect.x += rect.width;
 
             // Count
@@ -173,7 +173,7 @@ namespace UnityEditor
             rect.x += rect.width;
 
             // Repeat Interval
-            FloatDraggable(rect, burstRepeatInterval, 1.0f, k_BurstDragWidth, "n2");
+            FloatDraggable(rect, burstRepeatInterval, 1.0f, k_BurstDragWidth, "n3");
             rect.x += rect.width;
         }
 

@@ -124,11 +124,11 @@ namespace UnityEditor.Build
 
         public BuildPlatform[] buildPlatforms;
 
-        public string GetBuildTargetDisplayName(BuildTarget target)
+        public string GetBuildTargetDisplayName(BuildTargetGroup group, BuildTarget target)
         {
             foreach (BuildPlatform cur in buildPlatforms)
             {
-                if (cur.defaultTarget == target)
+                if (cur.defaultTarget == target && cur.targetGroup == group)
                     return cur.title.text;
             }
 
@@ -160,7 +160,7 @@ namespace UnityEditor.Build
                 case BuildTargetGroup.Facebook:
                     return BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup);
                 default:
-                    return GetBuildTargetDisplayName(buildTarget);
+                    return GetBuildTargetDisplayName(buildTargetGroup, buildTarget);
             }
         }
 

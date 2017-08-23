@@ -127,7 +127,6 @@ namespace UnityEditor
 
             GUILayout.Space(toolbarPadding);
             ModeToggle();
-            GUILayout.FlexibleSpace();
             DrawHelpGUI();
             if (m_Mode == Mode.LightingSettings)
                 DrawSettingsGUI();
@@ -227,8 +226,11 @@ namespace UnityEditor
 
         void ModeToggle()
         {
-            float toolbarWidth = position.width - toolbarPadding * 2;
-            m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, Styles.ModeToggles, Styles.ButtonStyle, GUILayout.Width(toolbarWidth));
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, Styles.ModeToggles, Styles.ButtonStyle, GUI.ToolbarButtonSize.FitToContents);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         void BakeDropDownCallback(object data)
@@ -512,8 +514,8 @@ namespace UnityEditor
             public static readonly GUIContent[] ModeToggles =
             {
                 EditorGUIUtility.TextContent("Scene"),
-                EditorGUIUtility.TextContent("Global maps"),
-                EditorGUIUtility.TextContent("Object maps")
+                EditorGUIUtility.TextContent("Global Maps"),
+                EditorGUIUtility.TextContent("Object Maps")
             };
 
             public static readonly GUIContent ContinuousBakeLabel = EditorGUIUtility.TextContent("Auto Generate|Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");

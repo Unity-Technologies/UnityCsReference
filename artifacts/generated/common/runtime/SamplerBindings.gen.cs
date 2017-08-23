@@ -98,6 +98,7 @@ public sealed partial class CustomSampler : Sampler
     extern private static  CustomSampler CreateInternal (string name) ;
 
     [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void Begin () ;
@@ -109,11 +110,13 @@ public sealed partial class CustomSampler : Sampler
         }
     
     
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void BeginWithObject (UnityEngine.Object targetObject) ;
 
     [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void End () ;

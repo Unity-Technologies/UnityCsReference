@@ -14,11 +14,15 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Look Dev", useTypeNameAsIconName = true)]
     internal class LookDevView : EditorWindow, IHasCustomMenu
     {
+        static readonly Vector2 s_MinWindowSize = new Vector2(300, 60);
+
         // Note: Color init in OnEnable
         public static Color32 m_FirstViewGizmoColor;
         public static Color32 m_SecondViewGizmoColor;
 
         private static string m_configAssetPath = "Library/LookDevConfig.asset";
+
+        bool m_IsSaveRegistered = false;
 
         public class Styles
         {
@@ -254,6 +258,8 @@ namespace UnityEditor
             }
 
             wantsMouseMove = true;
+
+            minSize = s_MinWindowSize;
         }
 
         private void Initialize()
@@ -1187,6 +1193,21 @@ namespace UnityEditor
             SaveLookDevConfig();
         }
 
+        void DelayedSaveLookDevConfig()
+        {
+            if (!m_IsSaveRegistered)
+            {
+                m_IsSaveRegistered = true;
+                EditorApplication.delayCall += DoDelayedSaveLookDevConfig;
+            }
+        }
+
+        void DoDelayedSaveLookDevConfig()
+        {
+            m_IsSaveRegistered = false;
+            SaveLookDevConfig();
+        }
+
         private void RenderPreviewSingle()
         {
             int index = m_LookDevConfig.lookDevMode == LookDevMode.Single1 ? 0 : 1;
@@ -1219,6 +1240,9 @@ namespace UnityEditor
 
         void RenderCompositing(Rect previewRect, PreviewContext previewContext0, PreviewContext previewContext1, bool dualView)
         {
+            if (m_FinalCompositionTexture.width < 1 || m_FinalCompositionTexture.height < 1)
+                return;
+
             Vector4 gizmoPosition = new Vector4(m_LookDevConfig.gizmo.center.x, m_LookDevConfig.gizmo.center.y, 0.0f, 0.0f);
             Vector4 gizmoZoneCenter = new Vector4(m_LookDevConfig.gizmo.point2.x, m_LookDevConfig.gizmo.point2.y, 0.0f, 0.0f);
             Vector4 gizmoThickness = new Vector4(m_GizmoThickness, m_GizmoThicknessSelected, 0.0f, 0.0f);
@@ -1487,6 +1511,8 @@ namespace UnityEditor
                     m_LookDevConfig.cameraState[0].UpdateCamera(m_PreviewUtilityContexts[0].m_PreviewUtility[i].camera);
                     m_LookDevConfig.cameraState[1].UpdateCamera(m_PreviewUtilityContexts[1].m_PreviewUtility[i].camera);
                 }
+
+                DelayedSaveLookDevConfig();
             }
         }
 
@@ -1593,6 +1619,7 @@ namespace UnityEditor
 
                                     // Set current window
                                     bool bothViewUpdated = m_LookDevConfig.SetCurrentPreviewObject(go);
+                                    DelayedSaveLookDevConfig();
 
                                     Frame(m_LookDevConfig.currentEditionContext, false);
                                     // Frame the other view if required
@@ -1635,7 +1662,7 @@ namespace UnityEditor
                         }
 
                         GameObject go = o as GameObject;
-                        if (go)
+                        if (go && EditorUtility.IsPersistent(go) && PrefabUtility.GetPrefabObject(go) != null)
                         {
                             if (GameObjectInspector.HasRenderableParts(go))
                             {

@@ -79,7 +79,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         public void OnGUI()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.ExpandWidth(true));
-            bool dropDownPick = false;
+            bool refresh = false;
             if (m_PickingData == null)
                 m_PickingData = new PickingData();
 
@@ -87,11 +87,18 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             m_PickingData.DoSelectDropDown();
             if (EditorGUI.EndChangeCheck())
             {
-                dropDownPick = true;
+                refresh = true;
             }
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(50)))
             {
                 m_PickingData.Refresh();
+            }
+
+            bool includeShadowHierarchy = GUILayout.Toggle(m_VisualTreeTreeView.includeShadowHierarchy, Styles.includeShadowHierarchyContent, EditorStyles.toolbarButton);
+            if (includeShadowHierarchy != m_VisualTreeTreeView.includeShadowHierarchy)
+            {
+                m_VisualTreeTreeView.includeShadowHierarchy = includeShadowHierarchy;
+                refresh = true;
             }
 
             if (m_CurPanel.HasValue)
@@ -109,7 +116,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             EditorGUILayout.EndHorizontal();
 
-            if (dropDownPick)
+            if (refresh)
             {
                 EndPicking(m_PickingData.Selected);
             }
@@ -582,6 +589,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             public static readonly GUIContent uxmlContent = new GUIContent("UXML Dump");
             public static readonly GUIContent stylesheetsContent = new GUIContent("Stylesheets");
             public static readonly GUIContent selectorsContent = new GUIContent("Matching Selectors");
+            public static readonly GUIContent includeShadowHierarchyContent = new GUIContent("Include Shadow Hierarchy");
 
             private static readonly Color k_SeparatorColorPro = new Color(0.15f, 0.15f, 0.15f);
             private static readonly Color k_SeparatorColorNonPro = new Color(0.6f, 0.6f, 0.6f);
@@ -620,9 +628,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 m_Target = value;
                 m_Hierarchy.Clear();
                 m_Hierarchy.Add(value);
-                VisualContainer cursor = value as VisualContainer;
-                if (cursor == null)
-                    cursor = value.parent;
+                VisualElement cursor = value;
+
                 while (cursor != null)
                 {
                     if (cursor.styleSheets != null)
@@ -635,7 +642,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     }
 
                     m_Hierarchy.Add(cursor);
-                    cursor = cursor.parent;
+                    cursor = cursor.shadow.parent;
                 }
                 m_Index = m_Hierarchy.Count - 1;
             }

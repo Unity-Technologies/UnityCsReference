@@ -491,7 +491,6 @@ namespace UnityEditor
         internal virtual void DrawHeaderHelpAndSettingsGUI(Rect r)
         {
             // Help
-            UnityObject helpObject = target;
             var settingsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.titleSettingsIcon);
 
             float currentOffset = settingsSize.x;
@@ -504,8 +503,8 @@ namespace UnityEditor
                 EditorUtility.DisplayObjectContextMenu(settingsRect, targets, 0);
             currentOffset += settingsSize.x;
 
-            // Show help if available.
-            EditorGUI.HelpIconButton(new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y), helpObject);
+            // Show Editor Header Items.
+            EditorGUIUtility.DrawEditorHeaderItems(new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y), targets);
         }
 
         // If we call DrawHeaderGUI from inside an an editor's OnInspectorGUI call, we have to do special handling.

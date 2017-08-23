@@ -193,9 +193,9 @@ namespace UnityEditor
                     EditorGUILayout.ObjectField(Styles.spriteLabel, m_SelectionSprites[0], typeof(Sprite), false, GUILayout.Height(EditorGUI.kSingleLineHeight));
                     EditorGUI.showMixedValue = m_SelectionColliderTypes.Any(colliderType => colliderType != m_SelectionColliderTypes.First());
                     EditorGUILayout.EnumPopup(Styles.colliderTypeLabel, m_SelectionColliderTypes[0]);
-                    EditorGUI.showMixedValue = colorFlagsAllEqual;
+                    EditorGUI.showMixedValue = !colorFlagsAllEqual;
                     EditorGUILayout.Toggle(Styles.lockColorLabel, (m_SelectionFlagsArray[0] & TileFlags.LockColor) != 0);
-                    EditorGUI.showMixedValue = transformFlagsAllEqual;
+                    EditorGUI.showMixedValue = !transformFlagsAllEqual;
                     EditorGUILayout.Toggle(Styles.lockTransformLabel, (m_SelectionFlagsArray[0] & TileFlags.LockTransform) != 0);
                 }
 
@@ -384,11 +384,11 @@ namespace UnityEditor
             int hash = 0;
             unchecked
             {
-                hash = hash * 33 + gridLayout.GetHashCode();
-                hash = hash * 33 + brushTarget.GetHashCode();
+                hash = hash * 33 + (gridLayout != null ? gridLayout.GetHashCode() : 0);
+                hash = hash * 33 + (brushTarget != null ? brushTarget.GetHashCode() : 0);
                 hash = hash * 33 + position.GetHashCode();
                 hash = hash * 33 + tool.GetHashCode();
-                hash = hash * 33 + brush.GetHashCode();
+                hash = hash * 33 + (brush != null ? brush.GetHashCode() : 0);
             }
 
             return hash;

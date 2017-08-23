@@ -285,15 +285,22 @@ namespace UnityEditor
 
         void ModeToggle()
         {
-            m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, s_Styles.ModeToggles, "LargeButton");
-            if (GUI.changed)
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            using (var check = new EditorGUI.ChangeCheckScope())
             {
-                if (m_Mode == Mode.Visualization && StaticOcclusionCulling.umbraDataSize > 0)
-                    StaticOcclusionCullingVisualization.showPreVisualization = false;
-                else
-                    StaticOcclusionCullingVisualization.showPreVisualization = true;
-                SceneView.RepaintAll();
+                m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, s_Styles.ModeToggles, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+                if (check.changed)
+                {
+                    if (m_Mode == Mode.Visualization && StaticOcclusionCulling.umbraDataSize > 0)
+                        StaticOcclusionCullingVisualization.showPreVisualization = false;
+                    else
+                        StaticOcclusionCullingVisualization.showPreVisualization = true;
+                    SceneView.RepaintAll();
+                }
             }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         void OnGUI()

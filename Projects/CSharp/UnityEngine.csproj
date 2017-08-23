@@ -14,7 +14,8 @@
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<WarningLevel>4</WarningLevel>
-    <NoWarn>0169;0649;0626</NoWarn>
+	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>0626</NoWarn>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -22,13 +23,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_STV_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;ENABLE_SPRITE_MASKING;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -132,6 +133,9 @@
 <Compile Include="..\..\Runtime\Export\Mesh.cs" >
 <Link>Runtime\Export\Mesh.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Cache.bindings.cs" >
+<Link>Runtime\Export\Cache.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\AndroidJavaImpl.cs" >
 <Link>Runtime\Export\AndroidJavaImpl.cs</Link>
 </Compile>
@@ -212,9 +216,6 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Application.cs" >
 <Link>Runtime\Export\Application.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Export\Caching.cs" >
-<Link>Runtime\Export\Caching.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\AssemblyInfo.cs" >
 <Link>Runtime\Export\AssemblyInfo.cs</Link>
@@ -302,6 +303,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_2.cs" >
 <Link>Runtime\Export\UnityEvent_2.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Caching.bindings.cs" >
+<Link>Runtime\Export\Caching.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\TouchScreenKeyboardType.cs" >
 <Link>Runtime\Export\TouchScreenKeyboardType.cs</Link>
@@ -589,7 +593,10 @@
 <Link>Runtime\Export\Assertions\Must\MustFloat.cs</Link>
 </Compile><Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs" >
 <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-</Compile><Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs" >
+</Compile><Compile Include="..\..\Runtime\Scripting\ScriptedObjectTests.Resources.cs" >
+<Link>Runtime\Scripting\ScriptedObjectTests.Resources.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs" >
 <Link>Runtime\Scripting\Marshalling\Test\MarshallingTests.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Scripting\Marshalling\Test\MarshallingTests2.bindings.cs" >
@@ -1130,30 +1137,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\IMGUI\StylePainterBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\IMGUI\StylePainterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\WebRequest\Managed\WebRequestExtensions.cs" >
-<Link>Runtime\WebRequest\Managed\WebRequestExtensions.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\Managed\MultipartFormHelper.cs" >
-<Link>Runtime\WebRequest\Managed\MultipartFormHelper.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\Managed\WebRequestUtils.cs" >
-<Link>Runtime\WebRequest\Managed\WebRequestUtils.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\Managed\FriendAttributes.cs" >
-<Link>Runtime\WebRequest\Managed\FriendAttributes.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\ScriptBindings\WebRequest.deprecated.cs" >
-<Link>Runtime\WebRequest\ScriptBindings\WebRequest.deprecated.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\ScriptBindings\DownloadHandler.bindings.cs" >
-<Link>Runtime\WebRequest\ScriptBindings\DownloadHandler.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\WebRequest\ScriptBindings\UploadHandler.bindings.cs" >
-<Link>Runtime\WebRequest\ScriptBindings\UploadHandler.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityWebRequest\WebRequestBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityWebRequest\WebRequestBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\Networking\Managed\UNETInterface.cs" >
 <Link>Runtime\Networking\Managed\UNETInterface.cs</Link>
 </Compile>
@@ -1193,8 +1176,8 @@
 <Compile Include="..\..\artifacts\generated\common\modules\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\CrashReporting\CrashReportHandlerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\CrashReporting\CrashReportHandlerBindings.gen.cs</Link>
+<Compile Include="..\..\Runtime\CrashReporting\ScriptBindings\CrashReportHandler.bindings.cs" >
+<Link>Runtime\CrashReporting\ScriptBindings\CrashReportHandler.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs</Link>
@@ -1328,6 +1311,9 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\IMGUIContainer.cs" >
 <Link>Runtime\UIElements\Managed\IMGUIContainer.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\ISerializableJsonDictionary.cs" >
+<Link>Runtime\UIElements\Managed\ISerializableJsonDictionary.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\IStyle.cs" >
 <Link>Runtime\UIElements\Managed\IStyle.cs</Link>
 </Compile>
@@ -1406,6 +1392,9 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElement.cs" >
 <Link>Runtime\UIElements\Managed\VisualElement.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementHierarchy.cs" >
+<Link>Runtime\UIElements\Managed\VisualElementHierarchy.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\VisualElementFocusRing.cs" >
 <Link>Runtime\UIElements\Managed\VisualElementFocusRing.cs</Link>
 </Compile>
@@ -1430,14 +1419,23 @@
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\EventHandler.cs" >
 <Link>Runtime\UIElements\Managed\Events\EventHandler.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventPool.cs" >
+<Link>Runtime\UIElements\Managed\Events\EventPool.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\FocusEvents.cs" >
 <Link>Runtime\UIElements\Managed\Events\FocusEvents.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\KeyboardEvents.cs" >
 <Link>Runtime\UIElements\Managed\Events\KeyboardEvents.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\Events\LayoutEvents.cs" >
+<Link>Runtime\UIElements\Managed\Events\LayoutEvents.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\MouseEvents.cs" >
 <Link>Runtime\UIElements\Managed\Events\MouseEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\UIElements\Managed\Events\PanelEvents.cs" >
+<Link>Runtime\UIElements\Managed\Events\PanelEvents.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UIElements\Managed\Events\UIEvent.cs" >
 <Link>Runtime\UIElements\Managed\Events\UIEvent.cs</Link>
@@ -1553,8 +1551,11 @@
 <Compile Include="..\..\Modules\Grid\Managed\Grid.cs" >
 <Link>Modules\Grid\Managed\Grid.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Grid\GridBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Grid\GridBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\Grid\ScriptBindings\Grid.bindings.cs" >
+<Link>Modules\Grid\ScriptBindings\Grid.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Grid\ScriptBindings\GridLayout.bindings.cs" >
+<Link>Modules\Grid\ScriptBindings\GridLayout.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs</Link>
@@ -1571,8 +1572,8 @@
 <Compile Include="..\..\artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.cs" >
-<Link>Modules\Physics2D\ScriptBindings\Physics2D.cs</Link>
+<Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs" >
+<Link>Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs" >
 <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
@@ -1598,11 +1599,8 @@
 <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs" >
 <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Terrain\TerrainDataBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Terrain\TerrainsBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\Terrain\Public\TerrainData.bindings.cs" >
+<Link>Modules\Terrain\Public\TerrainData.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Tilemap\Managed\CustomGridBrushAttribute.cs" >
 <Link>Modules\Tilemap\Managed\CustomGridBrushAttribute.cs</Link>
@@ -1619,8 +1617,35 @@
 <Compile Include="..\..\Modules\Tilemap\Managed\TileBase.cs" >
 <Link>Modules\Tilemap\Managed\TileBase.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs" >
+<Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\FriendAttributes.cs" >
+<Link>Modules\UnityWebRequest\FriendAttributes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\MultipartFormHelper.cs" >
+<Link>Modules\UnityWebRequest\Public\MultipartFormHelper.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\UnityWebRequest.bindings.cs" >
+<Link>Modules\UnityWebRequest\Public\UnityWebRequest.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequest.deprecated.cs" >
+<Link>Modules\UnityWebRequest\Public\WebRequest.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestExtensions.cs" >
+<Link>Modules\UnityWebRequest\Public\WebRequestExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestUtils.cs" >
+<Link>Modules\UnityWebRequest\Public\WebRequestUtils.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\DownloadHandler\DownloadHandler.bindings.cs" >
+<Link>Modules\UnityWebRequest\Public\DownloadHandler\DownloadHandler.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityWebRequest\Public\UploadHandler\UploadHandler.bindings.cs" >
+<Link>Modules\UnityWebRequest\Public\UploadHandler\UploadHandler.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityWebRequestAudio\UnityWebRequestMultimedia.cs" >
 <Link>Modules\UnityWebRequestAudio\UnityWebRequestMultimedia.cs</Link>

@@ -56,7 +56,7 @@ namespace UnityEditor
                 0, // This value will be overriden during runtime
             };
 
-            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable Instancing");
+            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable GPU Instancing");
             public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TextContent("Double Sided Global Illumination|When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
             public static readonly GUIContent emissionLabel = EditorGUIUtility.TextContent("Emission");
         }
@@ -115,7 +115,21 @@ namespace UnityEditor
         string      m_CustomEditorClassName;
 
         bool                                m_InsidePropertiesGUI;
-        Renderer                            m_RendererForAnimationMode;
+        Renderer[]                          m_RenderersForAnimationMode;
+
+        private Renderer rendererForAnimationMode
+        {
+            get
+            {
+                if (m_RenderersForAnimationMode == null)
+                    return null;
+
+                if (m_RenderersForAnimationMode.Length == 0)
+                    return null;
+
+                return m_RenderersForAnimationMode[0];
+            }
+        }
 
         private struct AnimatedCheckData
         {
@@ -132,7 +146,7 @@ namespace UnityEditor
 
         private static Stack<AnimatedCheckData> s_AnimatedCheckStack = new Stack<AnimatedCheckData>();
 
-        internal delegate void MaterialPropertyCallbackFunction(GenericMenu menu, MaterialProperty property, Renderer target);
+        internal delegate void MaterialPropertyCallbackFunction(GenericMenu menu, MaterialProperty property, Renderer[] renderers);
         internal static MaterialPropertyCallbackFunction contextualPropertyMenu;
 
         internal class ReflectionProbePicker : PopupWindowContent
@@ -950,19 +964,24 @@ namespace UnityEditor
 
         public void BeginAnimatedCheck(Rect totalPosition, MaterialProperty prop)
         {
-            if (m_RendererForAnimationMode == null)
+            if (rendererForAnimationMode == null)
                 return;
 
             s_AnimatedCheckStack.Push(new AnimatedCheckData(prop, totalPosition, GUI.backgroundColor));
 
             Color overrideColor;
-            if (MaterialAnimationUtility.OverridePropertyColor(prop, m_RendererForAnimationMode, out overrideColor))
+            if (MaterialAnimationUtility.OverridePropertyColor(prop, rendererForAnimationMode, out overrideColor))
                 GUI.backgroundColor = overrideColor;
+        }
+
+        public void BeginAnimatedCheck(MaterialProperty prop)
+        {
+            BeginAnimatedCheck(Rect.zero, prop);
         }
 
         public void EndAnimatedCheck()
         {
-            if (m_RendererForAnimationMode == null)
+            if (rendererForAnimationMode == null)
                 return;
 
             AnimatedCheckData data = s_AnimatedCheckStack.Pop();
@@ -979,7 +998,7 @@ namespace UnityEditor
             if (contextualPropertyMenu != null)
             {
                 GenericMenu pm = new GenericMenu();
-                contextualPropertyMenu(pm, prop, m_RendererForAnimationMode);
+                contextualPropertyMenu(pm, prop, m_RenderersForAnimationMode);
 
                 if (pm.GetItemCount() > 0)
                     pm.ShowAsContext();
@@ -1323,18 +1342,22 @@ namespace UnityEditor
 
         class ForwardApplyMaterialModification
         {
-            readonly Renderer renderer;
+            readonly Renderer[] renderers;
             bool        isMaterialEditable;
 
-            public ForwardApplyMaterialModification(Renderer r, bool inIsMaterialEditable)
+            public ForwardApplyMaterialModification(Renderer[] r, bool inIsMaterialEditable)
             {
-                renderer = r;
+                renderers = r;
                 isMaterialEditable = inIsMaterialEditable;
             }
 
             public bool DidModifyAnimationModeMaterialProperty(MaterialProperty property, int changedMask, object previousValue)
             {
-                bool didModify = MaterialAnimationUtility.ApplyMaterialModificationToAnimationRecording(property, changedMask, renderer, previousValue);
+                bool didModify = false;
+                foreach (Renderer renderer in renderers)
+                {
+                    didModify = didModify | MaterialAnimationUtility.ApplyMaterialModificationToAnimationRecording(property, changedMask, renderer, previousValue);
+                }
 
                 if (didModify)
                     return true;
@@ -1345,35 +1368,48 @@ namespace UnityEditor
             }
         }
 
-        static Renderer GetAssociatedRenderFromInspector()
+        static Renderer[] GetAssociatedRenderersFromInspector()
         {
+            List<Renderer> renderers = new List<Renderer>();
             if (InspectorWindow.s_CurrentInspectorWindow)
             {
                 Editor[] editors = InspectorWindow.s_CurrentInspectorWindow.tracker.activeEditors;
                 foreach (var editor in editors)
                 {
-                    var renderer = editor.target as Renderer;
-                    if (renderer)
-                        return renderer;
+                    foreach (Object target in editor.targets)
+                    {
+                        var renderer = target as Renderer;
+                        if (renderer)
+                            renderers.Add(renderer);
+                    }
                 }
             }
-            return null;
+
+            return renderers.ToArray();
         }
 
         public static Renderer PrepareMaterialPropertiesForAnimationMode(MaterialProperty[] properties, bool isMaterialEditable)
         {
-            return PrepareMaterialPropertiesForAnimationMode(properties, GetAssociatedRenderFromInspector(), isMaterialEditable);
+            Renderer[] renderers = PrepareMaterialPropertiesForAnimationMode(properties, GetAssociatedRenderersFromInspector(), isMaterialEditable);
+            return (renderers != null && renderers.Length > 0) ? renderers[0] : null;
         }
 
         internal static Renderer PrepareMaterialPropertiesForAnimationMode(MaterialProperty[] properties, Renderer renderer, bool isMaterialEditable)
         {
+            Renderer[] renderers = PrepareMaterialPropertiesForAnimationMode(properties, new Renderer[] {renderer}, isMaterialEditable);
+            return (renderers != null && renderers.Length > 0) ? renderers[0] : null;
+        }
+
+        internal static Renderer[] PrepareMaterialPropertiesForAnimationMode(MaterialProperty[] properties, Renderer[] renderers, bool isMaterialEditable)
+        {
             bool isInAnimationMode = AnimationMode.InAnimationMode();
 
-            if (renderer != null)
+            if (renderers != null && renderers.Length > 0)
             {
-                var callback = new ForwardApplyMaterialModification(renderer, isMaterialEditable);
+                var callback = new ForwardApplyMaterialModification(renderers, isMaterialEditable);
                 var block = new MaterialPropertyBlock();
-                renderer.GetPropertyBlock(block);
+
+                renderers[0].GetPropertyBlock(block);
                 foreach (MaterialProperty prop in properties)
                 {
                     prop.ReadFromMaterialPropertyBlock(block);
@@ -1383,7 +1419,7 @@ namespace UnityEditor
             }
 
             if (isInAnimationMode)
-                return renderer;
+                return renderers;
             else
                 return null;
         }
@@ -1446,9 +1482,9 @@ namespace UnityEditor
 
             // In animation mode we are actually animating the Renderer instead of the material.
             // Thus all properties are editable even if the material is not editable.
-            m_RendererForAnimationMode = PrepareMaterialPropertiesForAnimationMode(props, GUI.enabled);
+            m_RenderersForAnimationMode = PrepareMaterialPropertiesForAnimationMode(props, GetAssociatedRenderersFromInspector(), GUI.enabled);
             bool wasEnabled = GUI.enabled;
-            if (m_RendererForAnimationMode != null)
+            if (m_RenderersForAnimationMode != null)
                 GUI.enabled = true;
 
             m_InsidePropertiesGUI = true;
@@ -1463,12 +1499,12 @@ namespace UnityEditor
                 else
                     PropertiesDefaultGUI(props);
 
-                Renderer renderer = GetAssociatedRenderFromInspector();
-                if (renderer != null)
+                Renderer[] renderers = GetAssociatedRenderersFromInspector();
+                if (renderers != null && renderers.Length > 0)
                 {
                     if (Event.current.type == EventType.Layout)
                     {
-                        renderer.GetPropertyBlock(m_PropertyBlock);
+                        renderers[0].GetPropertyBlock(m_PropertyBlock);
                     }
 
                     if (m_PropertyBlock != null && !m_PropertyBlock.isEmpty)
@@ -1479,13 +1515,13 @@ namespace UnityEditor
             {
                 GUI.enabled = wasEnabled;
                 m_InsidePropertiesGUI = false;
-                m_RendererForAnimationMode = null;
+                m_RenderersForAnimationMode = null;
                 throw;
             }
 
             GUI.enabled = wasEnabled;
             m_InsidePropertiesGUI = false;
-            m_RendererForAnimationMode = null;
+            m_RenderersForAnimationMode = null;
 
             return EditorGUI.EndChangeCheck();
         }

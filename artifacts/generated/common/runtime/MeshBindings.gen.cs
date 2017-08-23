@@ -95,78 +95,113 @@ public sealed partial class Mesh : Object
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private int[] GetTrianglesImpl (int submesh) ;
+    extern private int[] GetTrianglesImpl (int submesh, bool applyBaseVertex) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void GetTrianglesNonAllocImpl (object values, int submesh) ;
+    extern private void GetTrianglesNonAllocImpl (object values, int submesh, bool applyBaseVertex) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private int[] GetIndicesImpl (int submesh) ;
+    extern private int[] GetIndicesImpl (int submesh, bool applyBaseVertex) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void GetIndicesNonAllocImpl (object values, int submesh) ;
+    extern private void GetIndicesNonAllocImpl (object values, int submesh, bool applyBaseVertex) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void SetTrianglesImpl (int submesh, System.Array triangles, int arraySize, [uei.DefaultValue("true")]  bool calculateBounds ) ;
+    extern private void SetTrianglesImpl (int submesh, System.Array triangles, int arraySize, [uei.DefaultValue("true")]  bool calculateBounds , [uei.DefaultValue("0")]  int baseVertex ) ;
+
+    [uei.ExcludeFromDocs]
+    private void SetTrianglesImpl (int submesh, System.Array triangles, int arraySize, bool calculateBounds ) {
+        int baseVertex = 0;
+        SetTrianglesImpl ( submesh, triangles, arraySize, calculateBounds, baseVertex );
+    }
 
     [uei.ExcludeFromDocs]
     private void SetTrianglesImpl (int submesh, System.Array triangles, int arraySize) {
+        int baseVertex = 0;
         bool calculateBounds = true;
-        SetTrianglesImpl ( submesh, triangles, arraySize, calculateBounds );
+        SetTrianglesImpl ( submesh, triangles, arraySize, calculateBounds, baseVertex );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void SetIndicesImpl (int submesh, MeshTopology topology, System.Array indices, int arraySize, [uei.DefaultValue("true")]  bool calculateBounds ) ;
+    extern private void SetIndicesImpl (int submesh, MeshTopology topology, System.Array indices, int arraySize, [uei.DefaultValue("true")]  bool calculateBounds , [uei.DefaultValue("0")]  int baseVertex ) ;
 
     [uei.ExcludeFromDocs]
-    private void SetIndicesImpl (int submesh, MeshTopology topology, System.Array indices, int arraySize) {
-        bool calculateBounds = true;
-        SetIndicesImpl ( submesh, topology, indices, arraySize, calculateBounds );
+    private void SetIndicesImpl (int submesh, MeshTopology topology, System.Array indices, int arraySize, bool calculateBounds ) {
+        int baseVertex = 0;
+        SetIndicesImpl ( submesh, topology, indices, arraySize, calculateBounds, baseVertex );
     }
 
     [uei.ExcludeFromDocs]
+    private void SetIndicesImpl (int submesh, MeshTopology topology, System.Array indices, int arraySize) {
+        int baseVertex = 0;
+        bool calculateBounds = true;
+        SetIndicesImpl ( submesh, topology, indices, arraySize, calculateBounds, baseVertex );
+    }
+
+    [uei.ExcludeFromDocs]
+public void SetTriangles (int[] triangles, int submesh, bool calculateBounds ) {
+    int baseVertex = 0;
+    SetTriangles ( triangles, submesh, calculateBounds, baseVertex );
+}
+
+[uei.ExcludeFromDocs]
 public void SetTriangles (int[] triangles, int submesh) {
+    int baseVertex = 0;
     bool calculateBounds = true;
-    SetTriangles ( triangles, submesh, calculateBounds );
+    SetTriangles ( triangles, submesh, calculateBounds, baseVertex );
 }
 
-public void SetTriangles(int[] triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
+public void SetTriangles(int[] triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds , [uei.DefaultValue("0")]  int baseVertex )
         {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, triangles, NoAllocHelpers.SafeLength(triangles), calculateBounds);
+                SetTrianglesImpl(submesh, triangles, NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
         }
 
     
     
     [uei.ExcludeFromDocs]
+public void SetTriangles (List<int> triangles, int submesh, bool calculateBounds ) {
+    int baseVertex = 0;
+    SetTriangles ( triangles, submesh, calculateBounds, baseVertex );
+}
+
+[uei.ExcludeFromDocs]
 public void SetTriangles (List<int> triangles, int submesh) {
+    int baseVertex = 0;
     bool calculateBounds = true;
-    SetTriangles ( triangles, submesh, calculateBounds );
+    SetTriangles ( triangles, submesh, calculateBounds, baseVertex );
 }
 
-public void SetTriangles(List<int> triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
+public void SetTriangles(List<int> triangles, int submesh, [uei.DefaultValue("true")]  bool calculateBounds , [uei.DefaultValue("0")]  int baseVertex )
         {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), calculateBounds);
+                SetTrianglesImpl(submesh, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
         }
 
     
     
     [uei.ExcludeFromDocs]
-public void SetIndices (int[] indices, MeshTopology topology, int submesh) {
-    bool calculateBounds = true;
-    SetIndices ( indices, topology, submesh, calculateBounds );
+public void SetIndices (int[] indices, MeshTopology topology, int submesh, bool calculateBounds ) {
+    int baseVertex = 0;
+    SetIndices ( indices, topology, submesh, calculateBounds, baseVertex );
 }
 
-public void SetIndices(int[] indices, MeshTopology topology, int submesh, [uei.DefaultValue("true")]  bool calculateBounds )
+[uei.ExcludeFromDocs]
+public void SetIndices (int[] indices, MeshTopology topology, int submesh) {
+    int baseVertex = 0;
+    bool calculateBounds = true;
+    SetIndices ( indices, topology, submesh, calculateBounds, baseVertex );
+}
+
+public void SetIndices(int[] indices, MeshTopology topology, int submesh, [uei.DefaultValue("true")]  bool calculateBounds , [uei.DefaultValue("0")]  int baseVertex )
         {
             if (CheckCanAccessSubmeshIndices(submesh))
-                SetIndicesImpl(submesh, topology, indices, NoAllocHelpers.SafeLength(indices), calculateBounds);
+                SetIndicesImpl(submesh, topology, indices, NoAllocHelpers.SafeLength(indices), calculateBounds, baseVertex);
         }
 
     

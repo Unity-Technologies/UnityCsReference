@@ -527,7 +527,7 @@ namespace UnityEditorInternal
 
         bool AllowSearching()
         {
-            bool collectingSamples = Profiler.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
+            bool collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
             if (collectingSamples && ProfilerDriver.deepProfiling)
                 return false;
 

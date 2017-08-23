@@ -4,7 +4,8 @@
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class SimpleElement : GraphElement
+    internal
+    class SimpleElement : GraphElement
     {
         public SimpleElement()
         {

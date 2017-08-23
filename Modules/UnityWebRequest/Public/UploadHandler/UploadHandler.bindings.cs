@@ -12,7 +12,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.Networking
 {
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/UploadHandler/UploadHandler.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/UploadHandler/UploadHandler.h")]
     public class UploadHandler : IDisposable
     {
         [System.NonSerialized]
@@ -72,7 +72,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/UploadHandler/UploadHandlerRaw.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/UploadHandler/UploadHandlerRaw.h")]
     public sealed class UploadHandlerRaw : UploadHandler
     {
         private static extern IntPtr Create(UploadHandlerRaw self, byte[] data);

@@ -232,7 +232,39 @@ namespace UnityEditor.Animations
         private PushUndoIfNeeded undoHandler = new PushUndoIfNeeded(true);
         internal bool pushUndo { set { undoHandler.pushUndo = value; } }
 
+        internal class StateMachineCache
+        {
+            static Dictionary<AnimatorStateMachine, ChildAnimatorStateMachine[]> m_ChildStateMachines;
+            static bool m_Initialized;
 
+            static void Init()
+            {
+                if (!m_Initialized)
+                {
+                    m_ChildStateMachines = new Dictionary<AnimatorStateMachine, ChildAnimatorStateMachine[]>();
+                    m_Initialized = true;
+                }
+            }
+
+            static public void Clear()
+            {
+                Init();
+                m_ChildStateMachines.Clear();
+            }
+
+            static public ChildAnimatorStateMachine[] GetChildStateMachines(AnimatorStateMachine parent)
+            {
+                Init();
+
+                ChildAnimatorStateMachine[] children;
+                if (m_ChildStateMachines.TryGetValue(parent, out children) == false)
+                {
+                    children = parent.stateMachines;
+                    m_ChildStateMachines.Add(parent, children);
+                }
+                return children;
+            }
+        }
         internal List<ChildAnimatorState> statesRecursive
         {
             get
@@ -253,11 +285,12 @@ namespace UnityEditor.Animations
             get
             {
                 List<ChildAnimatorStateMachine> ret = new List<ChildAnimatorStateMachine>();
-                ret.AddRange(stateMachines);
+                var childStateMachines = AnimatorStateMachine.StateMachineCache.GetChildStateMachines(this);
+                ret.AddRange(childStateMachines);
 
-                for (int j = 0; j < stateMachines.Length; j++)
+                for (int j = 0; j < childStateMachines.Length; j++)
                 {
-                    ret.AddRange(stateMachines[j].stateMachine.stateMachinesRecursive);
+                    ret.AddRange(childStateMachines[j].stateMachine.stateMachinesRecursive);
                 }
                 return ret;
             }
@@ -636,10 +669,11 @@ namespace UnityEditor.Animations
             // first element is always Root statemachine 'this'
             AnimatorStateMachine currentSM = this;
             // last element is state name, we don't care
+            var childStateMachines = AnimatorStateMachine.StateMachineCache.GetChildStateMachines(currentSM);
             for (int i = 1; i < smNames.Length - 1 && currentSM != null; ++i)
             {
-                int index = System.Array.FindIndex(currentSM.stateMachines, t => t.stateMachine.name == smNames[i]);
-                currentSM = index >= 0 ? currentSM.stateMachines[index].stateMachine : null;
+                int index = System.Array.FindIndex(childStateMachines, t => t.stateMachine.name == smNames[i]);
+                currentSM = index >= 0 ? childStateMachines[index].stateMachine : null;
             }
 
             return (currentSM == null) ? this : currentSM;

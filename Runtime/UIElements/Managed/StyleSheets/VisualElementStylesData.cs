@@ -80,7 +80,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<float> borderTopWidth;
         internal StyleValue<float> borderRightWidth;
         internal StyleValue<float> borderBottomWidth;
-        internal StyleValue<float> borderRadius;
+        internal StyleValue<float> borderTopLeftRadius;
+        internal StyleValue<float> borderTopRightRadius;
+        internal StyleValue<float> borderBottomRightRadius;
+        internal StyleValue<float> borderBottomLeftRadius;
         internal StyleValue<int> sliceLeft;
         internal StyleValue<int> sliceTop;
         internal StyleValue<int> sliceRight;
@@ -143,7 +146,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             borderTopWidth.Apply(other.borderTopWidth, mode);
             borderRightWidth.Apply(other.borderRightWidth, mode);
             borderBottomWidth.Apply(other.borderBottomWidth, mode);
-            borderRadius.Apply(other.borderRadius, mode);
+            borderTopLeftRadius.Apply(other.borderTopLeftRadius, mode);
+            borderTopRightRadius.Apply(other.borderTopRightRadius, mode);
+            borderBottomRightRadius.Apply(other.borderBottomRightRadius, mode);
+            borderBottomLeftRadius.Apply(other.borderBottomLeftRadius, mode);
             sliceLeft.Apply(other.sliceLeft, mode);
             sliceTop.Apply(other.sliceTop, mode);
             sliceRight.Apply(other.sliceRight, mode);
@@ -399,7 +405,26 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         break;
 
                     case StylePropertyID.BorderRadius:
-                        registry.Apply(handle, specificity, ref borderRadius);
+                        registry.Apply(handle, specificity, ref borderTopLeftRadius);
+                        registry.Apply(handle, specificity, ref borderTopRightRadius);
+                        registry.Apply(handle, specificity, ref borderBottomLeftRadius);
+                        registry.Apply(handle, specificity, ref borderBottomRightRadius);
+                        break;
+
+                    case StylePropertyID.BorderTopLeftRadius:
+                        registry.Apply(handle, specificity, ref borderTopLeftRadius);
+                        break;
+
+                    case StylePropertyID.BorderTopRightRadius:
+                        registry.Apply(handle, specificity, ref borderTopRightRadius);
+                        break;
+
+                    case StylePropertyID.BorderBottomRightRadius:
+                        registry.Apply(handle, specificity, ref borderBottomRightRadius);
+                        break;
+
+                    case StylePropertyID.BorderBottomLeftRadius:
+                        registry.Apply(handle, specificity, ref borderBottomLeftRadius);
                         break;
 
                     case StylePropertyID.SliceLeft:

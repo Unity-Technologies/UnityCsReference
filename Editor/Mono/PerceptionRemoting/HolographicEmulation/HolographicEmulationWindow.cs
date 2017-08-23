@@ -292,7 +292,18 @@ namespace UnityEditorInternal.VR
             EditorGUI.EndDisabledGroup();
 
             if (pressed)
-                HandleButtonPress();
+            {
+                if (EditorGUIUtility.editingTextField)
+                {
+                    EditorGUIUtility.editingTextField = false;
+                    GUIUtility.keyboardControl = 0;
+                }
+                //we delay the call to let the RemoteMachineAddress control commit the value
+                EditorApplication.CallDelayed(() =>
+                    {
+                        HandleButtonPress();
+                    }, 0f);
+            }
         }
 
         private bool IsWindowsMixedRealityCurrentTarget()

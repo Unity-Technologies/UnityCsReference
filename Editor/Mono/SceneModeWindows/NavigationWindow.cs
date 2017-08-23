@@ -255,7 +255,11 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, s_Styles.m_ModeToggles, "LargeButton");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            m_Mode = (Mode)GUILayout.Toolbar((int)m_Mode, s_Styles.m_ModeToggles, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         private void GetAreaListRects(Rect rect, out Rect stripeRect, out Rect labelRect, out Rect nameRect, out Rect costRect)

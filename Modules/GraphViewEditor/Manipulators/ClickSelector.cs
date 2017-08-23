@@ -6,7 +6,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class ClickSelector : MouseManipulator
+    internal
+    class ClickSelector : MouseManipulator
     {
         public ClickSelector()
         {
@@ -36,10 +37,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 var ge = e.currentTarget as GraphElement;
                 if (ge != null)
                 {
-                    VisualContainer c = ge.parent;
+                    VisualElement c = ge.shadow.parent;
                     while (c != null && !(c is GraphView))
                     {
-                        c = c.parent;
+                        c = c.shadow.parent;
                     }
 
                     var gv = c as GraphView;

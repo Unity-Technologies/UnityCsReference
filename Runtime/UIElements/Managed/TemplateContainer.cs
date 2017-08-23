@@ -6,13 +6,25 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TemplateContainer : VisualContainer
+    public class TemplateContainer : VisualElement
     {
         public readonly string templateId;
+        private VisualElement m_ContentContainer;
 
         public TemplateContainer(string templateId)
         {
             this.templateId = templateId;
+            m_ContentContainer = this;
+        }
+
+        public override VisualElement contentContainer
+        {
+            get { return m_ContentContainer; }
+        }
+
+        internal void SetContentContainer(VisualElement content)
+        {
+            m_ContentContainer = content;
         }
     }
 }

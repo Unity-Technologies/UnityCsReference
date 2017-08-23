@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
+using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.StyleSheets;
 
@@ -25,28 +26,36 @@ namespace UnityEditor
         internal static event Action<GUIView> positionChanged = null;
 
 
-        Panel panel
+        protected Panel panel
         {
             get
             {
-                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, DataWatchService.sharedInstance, StyleSheetResourceUtil.LoadResource);
-                if (p.visualTree.styleSheets == null)
-                {
-                    p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
-                    if (EditorGUIUtility.isProSkin)
-                    {
-                        p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
-                    }
-                    else
-                    {
-                        p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
-                    }
-                }
+                if (Panel.loadResourceFunc == null)
+                    Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+
+                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, DataWatchService.sharedInstance);
+                AddDefaultEditorStyleSheets(p.visualTree);
                 return p;
             }
         }
 
-        public VisualContainer visualTree
+        internal static void AddDefaultEditorStyleSheets(VisualElement p)
+        {
+            if (p.styleSheets == null)
+            {
+                p.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
+                if (EditorGUIUtility.isProSkin)
+                {
+                    p.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
+                }
+                else
+                {
+                    p.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
+                }
+            }
+        }
+
+        public VisualElement visualTree
         {
             get
             {
@@ -164,14 +173,15 @@ namespace UnityEditor
         {
             imguiContainer = new IMGUIContainer(OldOnGUI);
             imguiContainer.StretchToParentSize();
-            visualTree.InsertChild(0, imguiContainer);
+            imguiContainer.persistenceKey = "Dockarea";
+            visualTree.Insert(0, imguiContainer);
         }
 
         protected virtual void OnDisable()
         {
             if (imguiContainer.HasCapture())
                 imguiContainer.RemoveCapture();
-            visualTree.RemoveChild(imguiContainer);
+            visualTree.Remove(imguiContainer);
         }
 
         protected virtual void OldOnGUI() {}

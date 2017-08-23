@@ -81,6 +81,7 @@ namespace UnityEditor
             var tilemapGO = new GameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
             tilemapGO.transform.SetParent(root.transform);
             tilemapGO.transform.position = Vector3.zero;
+            Undo.RegisterCreatedObjectUndo(tilemapGO, "Create Tilemap");
         }
 
         private static GameObject FindOrCreateRootGrid()
@@ -106,6 +107,7 @@ namespace UnityEditor
 
                 var grid = gridGO.GetComponent<Grid>();
                 grid.cellSize = new Vector3(1.0f, 1.0f, 0.0f);
+                Undo.RegisterCreatedObjectUndo(gridGO, "Create Grid");
             }
 
             return gridGO;

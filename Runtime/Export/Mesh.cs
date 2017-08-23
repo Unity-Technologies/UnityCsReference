@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -328,7 +329,7 @@ namespace UnityEngine
         {
             get
             {
-                if (canAccess) return GetTrianglesImpl(-1);
+                if (canAccess) return GetTrianglesImpl(-1, true);
                 else           PrintErrorCantAccessIndices();
                 return new int[0];
             }
@@ -341,10 +342,20 @@ namespace UnityEngine
 
         public int[] GetTriangles(int submesh)
         {
-            return CheckCanAccessSubmeshTriangles(submesh) ? GetTrianglesImpl(submesh) : new int[0];
+            return GetTriangles(submesh, true);
+        }
+
+        public int[] GetTriangles(int submesh, [DefaultValue("true")] bool applyBaseVertex)
+        {
+            return CheckCanAccessSubmeshTriangles(submesh) ? GetTrianglesImpl(submesh, applyBaseVertex) : new int[0];
         }
 
         public void GetTriangles(List<int> triangles, int submesh)
+        {
+            GetTriangles(triangles, submesh, true);
+        }
+
+        public void GetTriangles(List<int> triangles, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
             if (triangles == null)
                 throw new ArgumentNullException("The result triangles list cannot be null.", "triangles");
@@ -354,15 +365,25 @@ namespace UnityEngine
 
             PrepareUserBuffer(triangles, (int)GetIndexCount(submesh));
 
-            GetTrianglesNonAllocImpl(triangles, submesh);
+            GetTrianglesNonAllocImpl(triangles, submesh, applyBaseVertex);
         }
 
         public int[] GetIndices(int submesh)
         {
-            return CheckCanAccessSubmeshIndices(submesh) ? GetIndicesImpl(submesh) : new int[0];
+            return GetIndices(submesh, true);
+        }
+
+        public int[] GetIndices(int submesh, [DefaultValue("true")] bool applyBaseVertex)
+        {
+            return CheckCanAccessSubmeshIndices(submesh) ? GetIndicesImpl(submesh, applyBaseVertex) : new int[0];
         }
 
         public void GetIndices(List<int> indices, int submesh)
+        {
+            GetIndices(indices, submesh, true);
+        }
+
+        public void GetIndices(List<int> indices, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
             if (indices == null)
                 throw new ArgumentNullException("The result indices list cannot be null.", "indices");
@@ -373,7 +394,7 @@ namespace UnityEngine
             PrepareUserBuffer(indices, (int)GetIndexCount(submesh));
             indices.Clear();
 
-            GetIndicesNonAllocImpl(indices, submesh);
+            GetIndicesNonAllocImpl(indices, submesh, applyBaseVertex);
         }
 
         public UInt32 GetIndexStart(int submesh)
@@ -388,6 +409,13 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
             return GetIndexCountImpl(submesh);
+        }
+
+        public UInt32 GetBaseVertex(int submesh)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+            return GetBaseVertexImpl(submesh);
         }
 
         //

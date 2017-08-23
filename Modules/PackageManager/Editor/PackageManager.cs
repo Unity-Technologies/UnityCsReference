@@ -88,18 +88,33 @@ namespace UnityEditor.PackageManager
         private string m_OriginLocation;
         private RelationType m_RelationType;
         private string m_ResolvedPath;
+        private string m_Name;
+        private string m_DisplayName;
+        private string m_Category;
+        private string m_Description;
 
         private UpmPackageInfo() {}
 
-        public UpmPackageInfo(string packageId)
+        public UpmPackageInfo(
+            string packageId,
+            string displayName = "",
+            string category = "",
+            string description = "")
         {
             // Set the default values
             m_OriginType = OriginType.Unknown;
             m_RelationType = RelationType.Unknown;
-            m_Tag = "";
+            m_Tag = string.Empty;
             m_OriginLocation = "not implemented";
             m_PackageId = packageId;
-            m_Version = packageId.Substring(packageId.IndexOf("@") + 1);
+            m_DisplayName = displayName;
+            m_Category = category;
+            m_Description = description;
+
+            // Populate name and version
+            var nameAndVersion = packageId.Split('@');
+            m_Name = nameAndVersion[0];
+            m_Version = nameAndVersion[1];
         }
 
         public string packageId { get { return m_PackageId;  } }
@@ -109,6 +124,10 @@ namespace UnityEditor.PackageManager
         public string originLocation { get { return m_OriginLocation;  } }
         public RelationType relationType { get { return m_RelationType;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
+        public string name { get { return m_Name;  } }
+        public string displayName { get { return m_DisplayName;  } }
+        public string category { get { return m_Category;  } }
+        public string description { get { return m_Description;  } }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -122,18 +141,6 @@ namespace UnityEditor.PackageManager
 
         public UpmPackageInfo current { get { return m_Current;  } }
         public UpmPackageInfo latest { get { return m_Latest;  } }
-    }
-
-    internal class Utilities
-    {
-        public static int GetFreePort()
-        {
-            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
-            l.Start();
-            int port = ((IPEndPoint)l.LocalEndpoint).Port;
-            l.Stop();
-            return port;
-        }
     }
 }
 
