@@ -9,12 +9,12 @@ namespace UnityEngine.Experimental.UIElements
         public MouseButton button;
         public EventModifiers modifiers;
 
-        public bool Matches(MouseEventBase e)
+        public bool Matches(IMouseEvent e)
         {
             return button == (MouseButton)e.button && HasModifiers(e);
         }
 
-        private bool HasModifiers(MouseEventBase e)
+        private bool HasModifiers(IMouseEvent e)
         {
             if (((modifiers & EventModifiers.Alt) != 0 && !e.altKey) ||
                 ((modifiers & EventModifiers.Alt) == 0 && e.altKey))

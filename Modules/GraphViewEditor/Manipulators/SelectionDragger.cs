@@ -8,7 +8,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class SelectionDragger : Dragger
+    internal
+    class SelectionDragger : Dragger
     {
         // selectedElement is used to store a unique selection candidate for cases where user clicks on an item not to
         // drag it but just to reset the selection -- we only know this after the manipulation has ended

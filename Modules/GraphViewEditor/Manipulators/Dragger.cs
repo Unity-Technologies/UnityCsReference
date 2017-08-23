@@ -8,7 +8,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class Dragger : MouseManipulator
+    internal
+    class Dragger : MouseManipulator
     {
         private Vector2 m_Start;
         protected bool m_Active;

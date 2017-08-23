@@ -9,7 +9,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class Resizer : VisualElement
+    internal
+    class Resizer : VisualElement
     {
         private Vector2 m_Start;
         private Rect m_StartPos;

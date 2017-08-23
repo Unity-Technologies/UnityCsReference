@@ -10,7 +10,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class RectangleSelector : MouseManipulator
+    internal
+    class RectangleSelector : MouseManipulator
     {
         private readonly RectangleSelect m_Rectangle;
         bool m_Active;

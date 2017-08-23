@@ -293,6 +293,9 @@ namespace UnityEditor
 
         void Frame(RectInt rect)
         {
+            if (grid == null)
+                return;
+
             previewUtility.camera.transform.position = grid.CellToLocalInterpolated(new Vector3(rect.center.x, rect.center.y, 0));
             previewUtility.camera.transform.position.Set(previewUtility.camera.transform.position.x, previewUtility.camera.transform.position.y, -10f);
 
@@ -721,7 +724,10 @@ namespace UnityEditor
                     SavePaletteIfNecessary();
 
                     if (wasEmpty)
+                    {
+                        ResetPreviewInstance();
                         FrameEntirePalette();
+                    }
 
                     Event.current.Use();
                     GUIUtility.ExitGUI();

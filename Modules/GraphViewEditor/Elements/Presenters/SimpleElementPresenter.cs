@@ -8,7 +8,8 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal class SimpleElementPresenter : GraphElementPresenter
+    internal
+    class SimpleElementPresenter : GraphElementPresenter
     {
         [SerializeField]
         private string m_Title;

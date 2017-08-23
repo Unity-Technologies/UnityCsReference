@@ -54,13 +54,26 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (m_PersistenceKey != value)
                 {
-                    Dirty(ChangeType.PersistentData);
                     m_PersistenceKey = value;
+
+                    if (!string.IsNullOrEmpty(value))
+                        Dirty(ChangeType.PersistentData);
                 }
             }
         }
 
-        public override bool canGrabFocus { get { return enabled && base.canGrabFocus; } }
+        // It seems worse to have unwanted/unpredictable persistence
+        // than to expect it and not have it. This internal check, set
+        // by Panel.ValidatePersistentDataOnSubTree() controls whether
+        // persistency is enabled or not. Persistence will be disabled
+        // on any VisualElement that does not have a persistenceKey, but
+        // it will also be disabled if any of its parents does not have
+        // a persistenceKey.
+        internal bool enablePersistence { get; private set; }
+
+        public object userData { get; set; }
+
+        public override bool canGrabFocus { get { return enabledInHierarchy && base.canGrabFocus; } }
 
         public override FocusController focusController
         {
@@ -382,7 +395,7 @@ namespace UnityEngine.Experimental.UIElements
             m_ClassList = new HashSet<string>();
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
-            enabled = true;
+            SetEnabled(true);
             visible = true;
 
             // Make element non focusable by default.
@@ -399,11 +412,19 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == BlurEvent.s_EventClassId)
+            if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            {
+                pseudoStates |= PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+            {
+                pseudoStates &= ~PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 pseudoStates = pseudoStates & ~PseudoStates.Focus;
             }
-            else if (evt.GetEventTypeId() == FocusEvent.s_EventClassId)
+            else if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
             }
@@ -414,16 +435,22 @@ namespace UnityEngine.Experimental.UIElements
             if (panel == p)
                 return;
 
-            if (panel != null && onLeave != null)
+            if (panel != null)
             {
-                onLeave();
+                var e = DetachFromPanelEvent.GetPooled();
+                e.target = this;
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                DetachFromPanelEvent.ReleasePooled(e);
             }
 
             elementPanel = p;
 
-            if (panel != null && onEnter != null)
+            if (panel != null)
             {
-                onEnter();
+                var e = AttachToPanelEvent.GetPooled();
+                e.target = this;
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                AttachToPanelEvent.ReleasePooled(e);
             }
 
             Dirty(ChangeType.Styles);
@@ -487,7 +514,7 @@ namespace UnityEngine.Experimental.UIElements
                     parentChanges |= ChangeType.StylesPath;
                 }
 
-                if ((changesNeeded & ChangeType.PersistentData) > 0)
+                if ((changesNeeded & (ChangeType.PersistentData | ChangeType.PersistentDataPath)) > 0)
                 {
                     // Parents do not need their OnPersistentDataReady() called but they need to call still
                     // propagate it to their children so it gets back to us.
@@ -536,17 +563,6 @@ namespace UnityEngine.Experimental.UIElements
             changesNeeded &= ~type;
         }
 
-        // A VisualElement should not animate or update until it is in a panel. Entering or leaving a panel is the right place to
-        // register and unregister to IScheduler time events. It is the right place to robustly connect and disconnect from events in general
-        //
-        // OnEnterPanel is called:
-        // 1) When a VisualElement is set as the visualTree of a Panel "Panel.visualTree = myVisualElement"
-        // 2) When a VisualElement is added to a visualTree already in a panel. VisualContainer.AddChild() will call it before it returns
-        // 3) When a VisualElement is anywhere in a subtree that meets the above two requirements
-        // TODO will be renamed & moved to a unified event system in a later iteration
-        public event Action onEnter;
-        public event Action onLeave;
-
         [SerializeField]
         private string m_Text;
         public string text
@@ -555,22 +571,63 @@ namespace UnityEngine.Experimental.UIElements
             set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
         }
 
+        [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.", true)]
         public virtual bool enabled
         {
-            get
+            get { return enabledInHierarchy; }
+            set { SetEnabled(value); }
+        }
+
+        private bool m_Enabled;
+
+        //TODO: Make private once VisualContainer is merged with VisualElement
+        protected internal bool SetEnabledFromHierarchy(bool state)
+        {
+            //returns false if state hasn't changed
+            if (state == ((pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled))
+                return false;
+
+            if (state && m_Enabled && (parent == null || parent.enabledInHierarchy))
+                pseudoStates &= ~PseudoStates.Disabled;
+            else
+                pseudoStates |= PseudoStates.Disabled;
+
+            return true;
+        }
+
+        //Returns true if 'this' can be enabled relative to the enabled state of its panel
+        public bool enabledInHierarchy
+        {
+            get { return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled; }
+        }
+
+        //Returns the local enabled state
+        public bool enabledSelf
+        {
+            get { return m_Enabled; }
+        }
+
+        //TODO: Remove virtual once VisualContainer is merged with VisualElement
+        public virtual void SetEnabled(bool value)
+        {
+            if (m_Enabled != value)
             {
-                return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled;
-            }
-            set
-            {
-                if (value)
-                    pseudoStates &= ~PseudoStates.Disabled;
-                else
-                    pseudoStates |= PseudoStates.Disabled;
+                m_Enabled = value;
+
+                PropagateEnabledToChildren(value);
             }
         }
 
-        protected internal virtual void OnPostLayout(bool hasNewLayout) {}
+        void PropagateEnabledToChildren(bool value)
+        {
+            if (SetEnabledFromHierarchy(value))
+            {
+                for (int i = 0; i < shadow.childCount; ++i)
+                {
+                    shadow[i].PropagateEnabledToChildren(value);
+                }
+            }
+        }
 
         public bool visible
         {
@@ -633,10 +690,9 @@ namespace UnityEngine.Experimental.UIElements
 
             var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
 
-            // If we have no persistent data or no persistent key, persistence is
-            // essentially disabled. Just return the existing data or create a local
-            // one if none exists.
-            if (persistentData == null || string.IsNullOrEmpty(persistenceKey))
+            // If persistency is disable (no data, no key, no key one of the parents), just return the
+            // existing data or create a local one if none exists.
+            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
             {
                 if (existing != null)
                     return existing as T;
@@ -658,10 +714,9 @@ namespace UnityEngine.Experimental.UIElements
 
             var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
 
-            // If we have no persistent data or no persistent key, persistence is
-            // essentially disabled. Just return the existing data or create a local
-            // one if none exists.
-            if (persistentData == null || string.IsNullOrEmpty(persistenceKey))
+            // If persistency is disable (no data, no key, no key one of the parents), just return the
+            // existing data or create a local one if none exists.
+            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
             {
                 if (existing != null)
                     return existing as T;
@@ -681,8 +736,14 @@ namespace UnityEngine.Experimental.UIElements
         {
             Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot save persistent data.");
 
-            if (elementPanel != null && elementPanel.savePersistentViewData != null)
+            if (elementPanel != null && elementPanel.savePersistentViewData != null && !string.IsNullOrEmpty(persistenceKey))
                 elementPanel.savePersistentViewData();
+        }
+
+        internal void OnPersistentDataReady(bool enablePersistence)
+        {
+            this.enablePersistence = enablePersistence;
+            OnPersistentDataReady();
         }
 
         public virtual void OnPersistentDataReady() {}
@@ -938,6 +999,20 @@ namespace UnityEngine.Experimental.UIElements
         public bool ClassListContains(string cls)
         {
             return m_ClassList != null && m_ClassList.Contains(cls);
+        }
+
+        public object FindAncestorUserData()
+        {
+            VisualElement p = parent;
+
+            while (p != null)
+            {
+                if (p.userData != null)
+                    return p.userData;
+                p = p.parent;
+            }
+
+            return null;
         }
     }
 

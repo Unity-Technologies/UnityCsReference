@@ -60,13 +60,13 @@ internal sealed partial class SpriteAtlasTextureSettings
 internal sealed partial class SpriteAtlasPackingParameters
 {
     internal uint m_BlockOffset;
-    internal uint m_PaddingPower;
+    internal uint m_Padding;
     internal int m_AllowAlphaSplitting;
     internal int m_EnableRotation;
     internal int m_EnableTightPacking;
     
             public uint blockOffset { get {return m_BlockOffset; } set {m_BlockOffset = value; } }
-            public uint paddingPower { get {return m_PaddingPower; } set {m_PaddingPower = value; } }
+            public uint padding { get {return m_Padding; } set {m_Padding = value; } }
             public bool allowAlphaSplitting { get {return m_AllowAlphaSplitting != 0; } set {m_AllowAlphaSplitting = value ? 1 : 0; } }
             public bool enableRotation { get {return m_EnableRotation != 0; } set {m_EnableRotation = value ? 1 : 0; } }
             public bool enableTightPacking { get {return m_EnableTightPacking != 0; } set {m_EnableTightPacking = value ? 1 : 0; } }

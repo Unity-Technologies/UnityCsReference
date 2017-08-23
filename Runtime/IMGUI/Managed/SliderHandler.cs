@@ -8,9 +8,11 @@ using UnityEngine.Scripting;
 namespace UnityEngine
 {
     // State for when we're dragging a slider.
-    [RequiredByNativeCode] // Created by reflection from SliderHandler.SliderState
     internal class SliderState
     {
+        [RequiredByNativeCode] // Created by reflection from SliderHandler.SliderState
+        public SliderState() {}
+
         public float dragStartPos;
         public float dragStartValue;
         public bool isDragging;

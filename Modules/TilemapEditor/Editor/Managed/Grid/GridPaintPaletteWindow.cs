@@ -296,6 +296,9 @@ namespace UnityEditor
 
         public void ResetPreviewInstance()
         {
+            if (m_PreviewUtility == null)
+                InitPreviewUtility();
+
             DestroyPreviewInstance();
             if (palette != null)
             {

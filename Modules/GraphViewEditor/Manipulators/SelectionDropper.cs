@@ -9,7 +9,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal delegate void DropEvent(IMGUIEvent evt, List<ISelectable> selection, IDropTarget dropTarget);
+    internal
+    delegate void DropEvent(IMGUIEvent evt, List<ISelectable> selection, IDropTarget dropTarget);
 
     // TODO: Should stay internal when GraphView becomes public
     internal class DragAndDropDelay
@@ -31,7 +32,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
     // Manipulates movable objects, can also initiate a Drag and Drop operation
     // FIXME: update this code once we have support for drag and drop events in UIElements.
-    internal class SelectionDropper : Manipulator
+    internal
+    class SelectionDropper : Manipulator
     {
         readonly DragAndDropDelay m_DragAndDropDelay;
 
@@ -214,9 +216,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                             IDropTarget dropTarget = pickElem != null ? pickElem.GetFirstAncestorOfType<IDropTarget>() : null;
                             if (prevDropTarget != dropTarget && prevDropTarget != null)
                             {
-                                IMGUIEvent eexit = new IMGUIEvent(e.imguiEvent);
+                                IMGUIEvent eexit = IMGUIEvent.GetPooled(e.imguiEvent);
                                 eexit.imguiEvent.type = EventType.DragExited;
                                 OnDrop(eexit, selection, prevDropTarget);
+                                IMGUIEvent.ReleasePooled(eexit);
                             }
                             OnDrop(e, selection, dropTarget);
                             prevDropTarget = dropTarget;

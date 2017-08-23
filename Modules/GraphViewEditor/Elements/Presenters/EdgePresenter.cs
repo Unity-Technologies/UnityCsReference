@@ -8,7 +8,8 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal class EdgePresenter : GraphElementPresenter
+    internal
+    class EdgePresenter : GraphElementPresenter
     {
         [SerializeField]
         private NodeAnchorPresenter m_OutputPresenter;

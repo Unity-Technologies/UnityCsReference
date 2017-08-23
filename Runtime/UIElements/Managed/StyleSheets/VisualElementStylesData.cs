@@ -80,7 +80,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<float> borderTopWidth;
         internal StyleValue<float> borderRightWidth;
         internal StyleValue<float> borderBottomWidth;
-        internal StyleValue<float> borderRadius;
         internal StyleValue<float> borderTopLeftRadius;
         internal StyleValue<float> borderTopRightRadius;
         internal StyleValue<float> borderBottomRightRadius;
@@ -147,7 +146,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             borderTopWidth.Apply(other.borderTopWidth, mode);
             borderRightWidth.Apply(other.borderRightWidth, mode);
             borderBottomWidth.Apply(other.borderBottomWidth, mode);
-            borderRadius.Apply(other.borderRadius, mode);
             borderTopLeftRadius.Apply(other.borderTopLeftRadius, mode);
             borderTopRightRadius.Apply(other.borderTopRightRadius, mode);
             borderBottomRightRadius.Apply(other.borderBottomRightRadius, mode);
@@ -407,7 +405,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         break;
 
                     case StylePropertyID.BorderRadius:
-                        registry.Apply(handle, specificity, ref borderRadius);
+                        registry.Apply(handle, specificity, ref borderTopLeftRadius);
+                        registry.Apply(handle, specificity, ref borderTopRightRadius);
+                        registry.Apply(handle, specificity, ref borderBottomLeftRadius);
+                        registry.Apply(handle, specificity, ref borderBottomRightRadius);
                         break;
 
                     case StylePropertyID.BorderTopLeftRadius:

@@ -60,14 +60,14 @@ namespace UnityEngine.Experimental.UIElements
     {
         VisualElement visualTree { get; }
 
-        IDispatcher dispatcher { get; }
+        IEventDispatcher dispatcher { get; }
         IScheduler scheduler { get; }
         IDataWatchService dataWatch { get; }
         ContextType contextType { get; }
 
         FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
-        VisualElement LoadTemplate(string path);
+        VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
 
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
@@ -88,14 +88,14 @@ namespace UnityEngine.Experimental.UIElements
         internal virtual IStylePainter stylePainter { get; set; }
         //IPanel
         public abstract VisualElement visualTree { get; }
-        public abstract IDispatcher dispatcher { get; protected set; }
+        public abstract IEventDispatcher dispatcher { get; protected set; }
         public abstract IScheduler scheduler { get; }
         public abstract IDataWatchService dataWatch { get; protected set; }
         public abstract ContextType contextType { get; protected set; }
         public abstract ISerializableJsonDictionary viewDataDictionary { get; set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
-        public abstract VisualElement LoadTemplate(string path);
+        public abstract VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
 
         public BasePanelDebug panelDebug { get; set; }
     }
@@ -117,7 +117,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RootContainer; }
         }
 
-        public override IDispatcher dispatcher { get; protected set; }
+        public override IEventDispatcher dispatcher { get; protected set; }
 
         public override IDataWatchService dataWatch { get; protected set; }
 
@@ -155,7 +155,7 @@ namespace UnityEngine.Experimental.UIElements
         public override SavePersistentViewData savePersistentViewData { get; set; }
 
         public override int IMGUIContainersCount { get; set; }
-        public Panel(int instanceID, ContextType contextType, IDataWatchService dataWatch = null, IDispatcher dispatcher = null)
+        public Panel(int instanceID, ContextType contextType, IDataWatchService dataWatch = null, IEventDispatcher dispatcher = null)
         {
             this.instanceID = instanceID;
             this.contextType = contextType;
@@ -164,6 +164,7 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter = new StylePainter();
             m_RootContainer = new VisualElement();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
+            m_RootContainer.persistenceKey = "PanelContainer"; // Required!
             visualTree.ChangePanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
@@ -186,7 +187,7 @@ namespace UnityEngine.Experimental.UIElements
                 return null;
             }
 
-            if (picked != null && root.enabled)
+            if (picked != null && root.enabledInHierarchy && root.pickingMode == PickingMode.Position)
             {
                 picked.Add(root);
             }
@@ -194,20 +195,23 @@ namespace UnityEngine.Experimental.UIElements
             // reset ref to upper left
             localPoint = localPoint - new Vector3(root.layout.position.x, root.layout.position.y, 0);
 
+            VisualElement returnedChild = null;
             // Depth first in reverse order, do children
             for (int i = root.shadow.childCount - 1; i >= 0; i--)
             {
                 var child = root.shadow[i];
                 var result = PickAll(child, localPoint, picked);
-                if (result != null)
-                    return result;
+                if (returnedChild == null && result != null)
+                    returnedChild = result;
             }
+            if (returnedChild != null)
+                return returnedChild;
 
             switch (root.pickingMode)
             {
                 case PickingMode.Position:
                 {
-                    if (containsPoint && root.enabled)
+                    if (containsPoint && root.enabledInHierarchy)
                     {
                         return root;
                     }
@@ -219,7 +223,7 @@ namespace UnityEngine.Experimental.UIElements
             return null;
         }
 
-        public override VisualElement LoadTemplate(string path)
+        public override VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null)
         {
             VisualTreeAsset vta = loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
             if (vta == null)
@@ -227,7 +231,7 @@ namespace UnityEngine.Experimental.UIElements
                 return null;
             }
 
-            return vta.CloneTree();
+            return vta.CloneTree(slots);
         }
 
         public override VisualElement PickAll(Vector2 point, List<VisualElement> picked)
@@ -254,7 +258,7 @@ namespace UnityEngine.Experimental.UIElements
             int validatePersistentDataCount = 0;
             while (visualTree.IsDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
             {
-                ValidatePersistentDataOnSubTree(visualTree);
+                ValidatePersistentDataOnSubTree(visualTree, true);
                 validatePersistentDataCount++;
 
                 if (validatePersistentDataCount > kMaxValidatePersistentDataCount)
@@ -265,19 +269,24 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        void ValidatePersistentDataOnSubTree(VisualElement root)
+        void ValidatePersistentDataOnSubTree(VisualElement root, bool enablePersistence)
         {
+            // As soon as we encounter an element with no persistence key, we disable
+            // persistence it and all its children.
+            if (string.IsNullOrEmpty(root.persistenceKey))
+                enablePersistence = false;
+
             if (root.IsDirty(ChangeType.PersistentData))
             {
-                root.OnPersistentDataReady();
+                root.OnPersistentDataReady(enablePersistence);
                 root.ClearDirty(ChangeType.PersistentData);
             }
 
             if (root.IsDirty(ChangeType.PersistentDataPath))
             {
-                foreach (var child in root)
+                for (int i = 0; i < root.shadow.childCount; ++i)
                 {
-                    ValidatePersistentDataOnSubTree(child);
+                    ValidatePersistentDataOnSubTree(root.shadow[i], enablePersistence);
                 }
 
                 root.ClearDirty(ChangeType.PersistentDataPath);
@@ -335,11 +344,15 @@ namespace UnityEngine.Experimental.UIElements
             {
                 for (int i = 0; i < root.shadow.childCount; ++i)
                 {
-                    hasNewLayout |= ValidateSubTree(root.shadow[i]);
+                    ValidateSubTree(root.shadow[i]);
                 }
             }
 
-            root.OnPostLayout(hasNewLayout);
+            var evt = PostLayoutEvent.GetPooled(hasNewLayout);
+            evt.target = root;
+
+            UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+            PostLayoutEvent.ReleasePooled(evt);
 
             // reset both flags at the end
             root.ClearDirty(ChangeType.Layout);

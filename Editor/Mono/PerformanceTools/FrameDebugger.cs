@@ -852,7 +852,11 @@ namespace UnityEditor
             GUILayout.Space(15.0f);
 
             // preview / properties
-            m_AdditionalInfo = (ShowAdditionalInfo)GUILayout.Toolbar((int)m_AdditionalInfo, m_AdditionalInfoGuiContents);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            m_AdditionalInfo = (ShowAdditionalInfo)GUILayout.Toolbar((int)m_AdditionalInfo, m_AdditionalInfoGuiContents, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
             switch (m_AdditionalInfo)
             {
                 case ShowAdditionalInfo.Preview:

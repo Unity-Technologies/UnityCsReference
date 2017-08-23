@@ -419,12 +419,13 @@ namespace UnityEditor
 
         void EditingGUI()
         {
-            GUILayout.BeginHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
             {
                 int tabIndex = m_TabIndex;
                 bool wasEnable = GUI.enabled;
                 GUI.enabled = !(avatar == null || !avatar.isHuman);
-                tabIndex = GUILayout.Toolbar(tabIndex, styles.tabs);
+                tabIndex = GUILayout.Toolbar(tabIndex, styles.tabs, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
                 GUI.enabled = wasEnable;
                 if (tabIndex != m_TabIndex)
                 {
@@ -435,7 +436,8 @@ namespace UnityEditor
                     CreateEditor();
                 }
             }
-            GUILayout.EndHorizontal();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
 
             editor.OnInspectorGUI();
         }

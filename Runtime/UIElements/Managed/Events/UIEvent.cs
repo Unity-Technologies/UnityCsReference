@@ -4,37 +4,26 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class UIEvent : EventBase
-    {
-        public UIEvent(EventFlags flags, Event systemEvent)
-            : base(flags, systemEvent)
-        {
-        }
-    }
-
     // This is an event to hold unimplemented UnityEngine.Event EventType.
     // The goal of this is to be able to pass these events to IMGUI.
-    public class IMGUIEvent : UIEvent
+    public class IMGUIEvent : EventBase<IMGUIEvent>
     {
-        static readonly long s_EventClassId;
-        static IMGUIEvent()
+        public static IMGUIEvent GetPooled(Event systemEvent)
         {
-            s_EventClassId = EventBase.RegisterEventClass();
+            IMGUIEvent e = GetPooled();
+            e.imguiEvent = systemEvent;
+            return e;
         }
 
-        public override long GetEventTypeId()
+        protected override void Init()
         {
-            return s_EventClassId;
+            base.Init();
+            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
         }
 
         public IMGUIEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null)
         {
-        }
-
-        public IMGUIEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
+            Init();
         }
     }
 }

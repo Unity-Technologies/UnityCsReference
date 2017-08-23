@@ -12,17 +12,20 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     // types of port to adapt
-    internal class PortSource<T>
+    internal
+    class PortSource<T>
     {
     }
 
     // attribute to declare and adapter
-    internal class TypeAdapter : Attribute
+    internal
+    class TypeAdapter : Attribute
     {
     }
 
     // TODO: This is a straight port from Canvas2D. I don't think that having to check for types in the assembly using reflection is the way we want to go.
-    internal class NodeAdapter
+    internal
+    class NodeAdapter
     {
         private static List<MethodInfo> s_TypeAdapters;
         private static Dictionary<int, MethodInfo> s_NodeAdapterDictionary;

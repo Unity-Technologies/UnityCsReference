@@ -708,7 +708,34 @@ namespace UnityEditor
 
             int humanId = HumanTrait.BoneFromMuscle(muscleId);
             if (humanId != -1)
+            {
+                if (!m_Modified[humanId].boolValue)
+                {
+                    int mx = HumanTrait.MuscleFromBone(humanId, 0);
+                    int my = HumanTrait.MuscleFromBone(humanId, 1);
+                    int mz = HumanTrait.MuscleFromBone(humanId, 2);
+
+                    if (mx != -1 && mx != muscleId)
+                    {
+                        m_MuscleMin[mx].floatValue = HumanTrait.GetMuscleDefaultMin(mx);
+                        m_MuscleMax[mx].floatValue = HumanTrait.GetMuscleDefaultMax(mx);
+                    }
+
+                    if (my != -1 && my != muscleId)
+                    {
+                        m_MuscleMin[my].floatValue = HumanTrait.GetMuscleDefaultMin(my);
+                        m_MuscleMax[my].floatValue = HumanTrait.GetMuscleDefaultMax(my);
+                    }
+
+                    if (mz != -1 && mz != muscleId)
+                    {
+                        m_MuscleMin[mz].floatValue = HumanTrait.GetMuscleDefaultMin(mz);
+                        m_MuscleMax[mz].floatValue = HumanTrait.GetMuscleDefaultMax(mz);
+                    }
+                }
+
                 m_Modified[humanId].boolValue = true;
+            }
 
             // OnSceneGUI need focused muscle to know which one to draw
             m_FocusedMuscle = muscleId;

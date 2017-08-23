@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
@@ -103,6 +104,8 @@ namespace UnityEngine
         extern public bool castShadows { get; set; }
 
         extern public ReflectionProbeUsage reflectionProbeUsage { get; set; }
+
+        extern public void GetClosestReflectionProbes(List<ReflectionProbeBlendInfo> result);
 
         extern public Terrain.MaterialType materialType { get; set; }
 

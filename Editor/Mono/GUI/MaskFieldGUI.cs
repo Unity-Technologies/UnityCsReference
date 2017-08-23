@@ -130,11 +130,29 @@ namespace UnityEditor
                 EditorUtility.DisplayCustomMenu(position, optionNames,
                     // Only show selections if we are not multi-editing
                     EditorGUI.showMixedValue ? new int[] {} : selectedOptions,
-                    MaskCallbackInfo.m_Instance.SetMaskValueDelegate, optionMaskValues);
+                    // optionMaskValues is from the pool so use a clone of the values for the current control
+                    MaskCallbackInfo.m_Instance.SetMaskValueDelegate, optionMaskValues.Clone());
                 EditorGUIUtility.keyboardControl = controlID;
             }
 
             return mask;
+        }
+
+        private static readonly List<string[]> s_OptionNames = new List<string[]>();
+        private static readonly List<int[]> s_OptionValues = new List<int[]>();
+        private static readonly List<int[]> s_SelectedOptions = new List<int[]>();
+        private static readonly HashSet<int> s_SelectedOptionsSet = new HashSet<int>();
+
+        private static T[] GetBuffer<T>(List<T[]> pool, int bufferLength)
+        {
+            for (int i = pool.Count; i <= bufferLength; ++i)
+                pool.Add(null);
+            if (pool[bufferLength] == null)
+                pool[bufferLength] = new T[bufferLength];
+            var buffer = pool[bufferLength];
+            for (int i = 0, length = buffer.Length; i < length; ++i)
+                buffer[i] = default(T);
+            return buffer;
         }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
@@ -169,7 +187,7 @@ namespace UnityEditor
             }
 
             // Options names
-            optionNames = new string[optionCount];
+            optionNames = GetBuffer(s_OptionNames, optionCount);
             optionNames[0] = nothingName;
             optionNames[1] = everythingName;
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
@@ -182,11 +200,11 @@ namespace UnityEditor
             var intermediateMask = 0; // Mask used to compute new mask value for each option
 
             // Selected options
-            var selectedOptionsSet = new HashSet<int>();
+            s_SelectedOptionsSet.Clear();
             if (mask == 0)
-                selectedOptionsSet.Add(0);
+                s_SelectedOptionsSet.Add(0);
             if (mask == ~0)
-                selectedOptionsSet.Add(1);
+                s_SelectedOptionsSet.Add(1);
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
             {
                 var flagValue = flagValues[flagIndex];
@@ -194,14 +212,20 @@ namespace UnityEditor
                 if ((mask & flagValue) == flagValue)
                 {
                     var optionIndex = flagIndex - flagStartIndex + 2;
-                    selectedOptionsSet.Add(optionIndex);
+                    s_SelectedOptionsSet.Add(optionIndex);
                     intermediateMask |= flagValue;
                 }
             }
-            selectedOptions = selectedOptionsSet.ToArray();
+            selectedOptions = GetBuffer(s_SelectedOptions, s_SelectedOptionsSet.Count);
+            var x = 0;
+            foreach (var selected in s_SelectedOptionsSet)
+            {
+                selectedOptions[x] = selected;
+                ++x;
+            }
 
             // Option mask values
-            optionMaskValues = new int[optionCount];
+            optionMaskValues = GetBuffer(s_OptionValues, optionCount);
             optionMaskValues[0] = 0;
             optionMaskValues[1] = ~0;
             for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)

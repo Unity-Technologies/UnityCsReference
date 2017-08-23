@@ -7,7 +7,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class MouseManipulator : Manipulator
+    internal
+    abstract class MouseManipulator : Manipulator
     {
         public List<ManipulatorActivationFilter> activators { get; private set; }
         private ManipulatorActivationFilter m_CurrentActivator;
@@ -17,7 +18,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             activators = new List<ManipulatorActivationFilter>();
         }
 
-        protected bool CanStartManipulation(MouseEventBase e)
+        protected bool CanStartManipulation(IMouseEvent e)
         {
             foreach (var activator in activators)
             {
@@ -31,7 +32,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return false;
         }
 
-        protected bool CanStopManipulation(MouseEventBase e)
+        protected bool CanStopManipulation(IMouseEvent e)
         {
             return (MouseButton)e.button == m_CurrentActivator.button;
         }

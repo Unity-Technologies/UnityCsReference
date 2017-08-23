@@ -26,6 +26,16 @@ public sealed partial class NativeInputSystem
         get;
     }
 
+    public extern static bool hasDeviceDiscoveredCallback
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public static void SendInput<TInputEvent>(TInputEvent inputEvent)
             where TInputEvent : struct
         {

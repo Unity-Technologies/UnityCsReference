@@ -20,9 +20,9 @@ namespace UnityEditorInternal.VR
     {
         static class Styles
         {
-            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TextContent("Single-pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
-            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi-pass stereo rendering will be used on Android devices that don't support single-pass stereo rendering.");
-            public static readonly GUIContent singlePassStereoRendering = EditorGUIUtility.TextContent("Single-Pass Stereo Rendering");
+            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
+            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
+            public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
@@ -146,6 +146,8 @@ namespace UnityEditorInternal.VR
                     TangoGUI(targetGroup);
 
                     VuforiaGUI(targetGroup);
+
+                    ErrorOnARDeviceIncompatibility(targetGroup);
                 }
 
                 InstallGUI(targetGroup);
@@ -184,7 +186,7 @@ namespace UnityEditorInternal.VR
 
             if (!m_VuforiaInstalled)
             {
-                if (EditorGUILayout.LinkLabel("Vuforia"))
+                if (EditorGUILayout.LinkLabel("Vuforia Augmented Reality"))
                 {
                     string downloadUrl = BuildPlayerWindow.GetPlaybackEngineDownloadURL("Vuforia-AR");
                     Application.OpenURL(downloadUrl);
@@ -299,6 +301,10 @@ namespace UnityEditorInternal.VR
                 {
                     EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning.text, MessageType.Warning);
                 }
+            }
+            else if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing) && (targetGroup == BuildTargetGroup.Standalone))
+            {
+                EditorGUILayout.HelpBox(Styles.singlePassInstancedWarning.text, MessageType.Warning);
             }
         }
 
@@ -455,6 +461,17 @@ namespace UnityEditorInternal.VR
             }
         }
 
+        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+            {
+                if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
+                {
+                    EditorGUILayout.HelpBox("Tango and Vuforia Augmented Reality cannot be used at the same time. Please disable one of the two.", MessageType.Error);
+                }
+            }
+        }
+
         internal bool TargetGroupSupportsTango(BuildTargetGroup targetGroup)
         {
             return targetGroup == BuildTargetGroup.Android;
@@ -506,7 +523,7 @@ namespace UnityEditorInternal.VR
                 vuforiaEnabled = PlayerSettings.GetPlatformVuforiaEnabled(targetGroup);
 
                 EditorGUI.BeginChangeCheck();
-                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Vuforia AR"), vuforiaEnabled);
+                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Vuforia Augmented Reality Supported"), vuforiaEnabled);
                 if (EditorGUI.EndChangeCheck())
                 {
                     PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, vuforiaEnabled);
@@ -515,7 +532,7 @@ namespace UnityEditorInternal.VR
 
             if (shouldDisableScope)
             {
-                EditorGUILayout.HelpBox("Vuforia AR is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
+                EditorGUILayout.HelpBox("Vuforia Augmented Reality is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
             }
         }
     }

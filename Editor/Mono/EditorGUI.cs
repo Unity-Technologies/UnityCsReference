@@ -2633,25 +2633,18 @@ namespace UnityEditor
         }
 
         // Make an enum popup selection field.
-        private static System.Enum EnumPopupInternal(Rect position, GUIContent label, System.Enum selected, GUIStyle style)
+        private static Enum EnumPopupInternal(Rect position, GUIContent label, Enum selected, GUIStyle style)
         {
-            System.Type enumType = selected.GetType();
+            var enumType = selected.GetType();
             if (!enumType.IsEnum)
             {
                 throw new ArgumentException("Parameter selected must be of type System.Enum", "selected");
             }
-            // sa and values are sorted in the same order
-            int[] values;
-            String[] names = GetNonObsoleteEnumNames(enumType, out values);
-            int i = System.Array.IndexOf(values, Convert.ToInt32(selected));
-            i = Popup(position, label, i, EditorGUIUtility.TempContent(names.Select(x => ObjectNames.NicifyVariableName(x)).ToArray()), style);
 
-            if (i < 0 || i >= names.Length)
-            {
-                return selected;
-            }
-
-            return IntToEnumFlags(enumType, values[i]);
+            var enumData = GetNonObsoleteEnumData(enumType);
+            var i = Array.IndexOf(enumData.values, selected);
+            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.names), style);
+            return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
         }
 
         /// *listonly*
@@ -3045,37 +3038,60 @@ namespace UnityEditor
             return layer;
         }
 
-        // Get names of enum members that are not obsolete
-        internal static String[] GetNonObsoleteEnumNames(Type enumType)
+        struct EnumData
         {
-            var allNames = Enum.GetNames(enumType);
-            var validIndices = GetNonObsoleteEnumIndices(enumType, allNames);
-            var count = validIndices.Length;
-            String[] names = new String[count];
-            for (int i = 0; i < count; i++)
-                names[i] = allNames[validIndices[i]];
-            return names;
+            public Enum[] values;
+            public int[] flagValues;
+            public string[] names;
+            public bool flags;
+            public Type underlyingType;
+            public bool unsigned;
+            public bool serializable;
         }
 
-        internal static String[] GetNonObsoleteEnumNames(Type enumType, out int[] values)
+        private static readonly Dictionary<Type, EnumData> s_NonObsoleteEnumData = new Dictionary<Type, EnumData>();
+
+        private static EnumData GetNonObsoleteEnumData(Type enumType)
         {
-            var allNames = Enum.GetNames(enumType);
-            var validIndices = GetNonObsoleteEnumIndices(enumType, allNames);
-            var count = validIndices.Length;
-            String[] names = new String[count];
-            var allValues = Enum.GetValues(enumType);
-            values = new int[count];
-            for (int i = 0; i < count; i++)
+            EnumData enumData;
+            if (!s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
             {
-                names[i] = allNames[validIndices[i]];
-                values[i] = (int)allValues.GetValue(validIndices[i]);
+                enumData = new EnumData();
+                enumData.underlyingType = Enum.GetUnderlyingType(enumType);
+                enumData.unsigned =
+                    enumData.underlyingType == typeof(byte)
+                    || enumData.underlyingType == typeof(ushort)
+                    || enumData.underlyingType == typeof(uint)
+                    || enumData.underlyingType == typeof(ulong);
+                enumData.names = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
+                enumData.values = enumData.names.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
+                enumData.flagValues = enumData.unsigned ?
+                    enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
+                    enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
+                for (int i = 0, length = enumData.names.Length; i < length; ++i)
+                    enumData.names[i] = ObjectNames.NicifyVariableName(enumData.names[i]);
+                // convert "everything" values to ~0 for unsigned 8- and 16-bit types
+                if (enumData.underlyingType == typeof(ushort))
+                {
+                    for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
+                    {
+                        if (enumData.flagValues[i] == 0xFFFFu)
+                            enumData.flagValues[i] = ~0;
+                    }
+                }
+                else if (enumData.underlyingType == typeof(byte))
+                {
+                    for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
+                    {
+                        if (enumData.flagValues[i] == 0xFFu)
+                            enumData.flagValues[i] = ~0;
+                    }
+                }
+                enumData.flags = enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
+                enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
+                s_NonObsoleteEnumData[enumType] = enumData;
             }
-            return names;
-        }
-
-        internal static int[] GetNonObsoleteEnumIndices(Type enumType, String[] names)
-        {
-            return Enumerable.Range(0, names.Length).Where(index => (enumType.GetField(names[index]).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0)).ToArray();
+            return enumData;
         }
 
         /// *listonly*
@@ -3138,15 +3154,22 @@ namespace UnityEditor
             var enumType = enumValue.GetType();
             if (!enumType.IsEnum)
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", "enumValue");
-            if (Enum.GetUnderlyingType(enumType) != typeof(int))
-                throw new ArgumentException("Underlying type of parameter enumValue must be int", "enumValue");
+
+            var enumData = GetNonObsoleteEnumData(enumType);
+            if (!enumData.serializable)
+                // this is the same message used in ScriptPopupMenus.cpp
+                throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
 
             var id = GUIUtility.GetControlID(s_EnumFlagsField, FocusType.Keyboard, position);
             position = PrefixLabel(position, id, label);
 
-            int[] values;
-            var names = GetNonObsoleteEnumNames(enumType, out values).Select(ObjectNames.NicifyVariableName).ToArray();
-            var flagsInt = MaskFieldGUI.DoMaskField(position, id, Convert.ToInt32(enumValue), names, values, style, out changedFlags, out changedToValue);
+            var flagsInt = EnumFlagsToInt(enumData, enumValue);
+
+            EditorGUI.BeginChangeCheck();
+            flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.names, enumData.flagValues, style, out changedFlags, out changedToValue);
+            if (!EditorGUI.EndChangeCheck())
+                return enumValue;
+
             return IntToEnumFlags(enumType, flagsInt);
         }
 
@@ -4661,12 +4684,10 @@ namespace UnityEditor
                 }
             }
 
-            Rect helpRect = settingsRect;
-            helpRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
-            if (HelpIconButton(helpRect, targetObjs[0]))
-            {
-                textRect.xMax = helpRect.xMin - kInspTitlebarSpacing;
-            }
+            Rect headerItemRect = settingsRect;
+            headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
+            headerItemRect = EditorGUIUtility.DrawEditorHeaderItems(headerItemRect, targetObjs);
+            textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
 
 
             if (evt.type == EventType.Repaint)
@@ -4742,8 +4763,10 @@ namespace UnityEditor
             return EditorGUIInternal.DoToggleForward(IndentedRect(position), id, foldout, GUIContent.none, GUIStyle.none);
         }
 
-        internal static bool HelpIconButton(Rect position, Object obj)
+        [EditorHeaderItem(typeof(Object), -1000)]
+        internal static bool HelpIconButton(Rect position, Object[] objs)
         {
+            var obj = objs[0];
             bool isDevBuild = Unsupported.IsDeveloperBuild();
             // For efficiency, only check in development builds if this script is a user script.
             bool monoBehaviourFallback = !isDevBuild;
@@ -5920,10 +5943,55 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return false;
         }
 
-        static System.Enum IntToEnumFlags(System.Type type, int value)
+        static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
         {
-            // Yes, going through a string seems to be the only way to go from a flags int to an enum value
-            return Enum.Parse(type, value.ToString()) as System.Enum;
+            if (enumData.unsigned)
+            {
+                if (enumData.underlyingType == typeof(uint))
+                {
+                    return unchecked((int)Convert.ToUInt32(enumValue));
+                }
+                // ensure unsigned 16- and 8-bit variants will display using "Everything" label
+                else if (enumData.underlyingType == typeof(ushort))
+                {
+                    var unsigned = Convert.ToUInt16(enumValue);
+                    return unchecked(unsigned == ushort.MaxValue ? ~0 : (int)unsigned);
+                }
+                else
+                {
+                    var unsigned = Convert.ToByte(enumValue);
+                    return unchecked(unsigned == byte.MaxValue ? ~0 : (int)unsigned);
+                }
+            }
+
+            return Convert.ToInt32(enumValue);
+        }
+
+        static Enum IntToEnumFlags(Type enumType, int value)
+        {
+            var enumData = GetNonObsoleteEnumData(enumType);
+
+            // parsing a string seems to be the only way to go from a flags int to an enum value
+            if (enumData.unsigned)
+            {
+                if (enumData.underlyingType == typeof(uint))
+                {
+                    var unsigned = unchecked((uint)value);
+                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
+                }
+                else if (enumData.underlyingType == typeof(ushort))
+                {
+                    var unsigned = unchecked((ushort)value);
+                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
+                }
+                else
+                {
+                    var unsigned = unchecked((byte)value);
+                    return Enum.Parse(enumType, unsigned.ToString()) as Enum;
+                }
+            }
+
+            return Enum.Parse(enumType, value.ToString()) as Enum;
         }
 
         internal static bool isCollectingTooltips
@@ -6033,11 +6101,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             var position = s_LastRect = GUILayoutUtility.GetRect(label, EditorStyles.linkLabel, options);
 
-            Handles.BeginGUI();
             Handles.color = EditorStyles.linkLabel.normal.textColor;
             Handles.DrawLine(new Vector3(position.xMin, position.yMax), new Vector3(position.xMax, position.yMax));
             Handles.color = Color.white;
-            Handles.EndGUI();
 
             EditorGUIUtility.AddCursorRect(position, MouseCursor.Link);
 

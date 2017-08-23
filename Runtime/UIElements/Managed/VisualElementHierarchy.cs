@@ -186,6 +186,9 @@ namespace UnityEngine.Experimental.UIElements
                 if (index > childCount)
                     throw new IndexOutOfRangeException("Index out of range: " + index);
 
+                if (child == m_Owner)
+                    throw new ArgumentException("Cannot insert element as its own child");
+
                 child.RemoveFromHierarchy();
 
                 child.shadow.SetParent(m_Owner);
@@ -210,13 +213,15 @@ namespace UnityEngine.Experimental.UIElements
                     m_Owner.cssNode.Insert(index, child.cssNode);
                 }
 
+                child.SetEnabledFromHierarchy(m_Owner.enabledInHierarchy);
 
                 // child styles are dependent on topology
                 child.Dirty(ChangeType.Styles);
                 m_Owner.Dirty(ChangeType.Layout);
 
                 // persistent data key may have changed or needs initialization
-                child.Dirty(ChangeType.PersistentData);
+                if (!string.IsNullOrEmpty(child.persistenceKey))
+                    child.Dirty(ChangeType.PersistentData);
             }
 
             public void Remove(VisualElement child)

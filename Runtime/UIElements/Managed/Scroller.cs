@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.Experimental.UIElements
@@ -68,7 +69,7 @@ namespace UnityEngine.Experimental.UIElements
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider"};
+            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider", persistenceKey = "Slider"};
             Add(slider);
             lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
             Add(lowButton);
@@ -76,29 +77,10 @@ namespace UnityEngine.Experimental.UIElements
             Add(highButton);
         }
 
-        public override bool enabled
-        {
-            get { return base.enabled; }
-            set { base.enabled = value; PropagateEnabled(this, value); }
-        }
-
-        public void PropagateEnabled(VisualElement c, bool enabled)
-        {
-            if (c != null)
-            {
-                for (int i = 0; i < c.shadow.childCount; ++i)
-                {
-                    var child = c.shadow[i];
-                    child.enabled = enabled;
-                    PropagateEnabled(child, enabled);
-                }
-            }
-        }
-
         public void Adjust(float factor)
         {
             // Any factor smaller than 1f will enable the scroller (and its children)
-            enabled = (factor < 1f);
+            SetEnabled(factor < 1f);
             slider.AdjustDragElement(factor);
         }
 

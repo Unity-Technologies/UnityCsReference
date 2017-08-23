@@ -8,9 +8,21 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class VisualElementFocusChangeDirection : FocusChangeDirection
     {
-        public static VisualElementFocusChangeDirection kLeft = new VisualElementFocusChangeDirection(FocusChangeDirection.kLastValue + 1);
-        public static VisualElementFocusChangeDirection kRight = new VisualElementFocusChangeDirection(FocusChangeDirection.kLastValue + 2);
-        protected new static VisualElementFocusChangeDirection kLastValue = kRight;
+        static readonly VisualElementFocusChangeDirection s_Left = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 1);
+
+        public static FocusChangeDirection left
+        {
+            get { return s_Left; }
+        }
+
+        static readonly VisualElementFocusChangeDirection s_Right = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 2);
+
+        public static FocusChangeDirection right
+        {
+            get { return s_Right; }
+        }
+
+        protected new static VisualElementFocusChangeDirection lastValue { get { return s_Right; } }
 
         protected VisualElementFocusChangeDirection(int value) : base(value)
         {
@@ -33,7 +45,7 @@ namespace UnityEngine.Experimental.UIElements
             m_FocusRing = new List<FocusRingRecord>();
         }
 
-        public VisualElement root;
+        VisualElement root;
 
         public DefaultFocusOrder defaultFocusOrder { get; set; }
 
@@ -47,6 +59,7 @@ namespace UnityEngine.Experimental.UIElements
 
         int FocusRingSort(FocusRingRecord a, FocusRingRecord b)
         {
+            // FIXME: Write specialized methods for each defaultFocusOrder.
             if (a.m_Focusable.focusIndex == 0 && b.m_Focusable.focusIndex == 0)
             {
                 switch (defaultFocusOrder)
@@ -190,10 +203,10 @@ namespace UnityEngine.Experimental.UIElements
             if (currentFocusable as IMGUIContainer != null && e.imguiEvent != null)
             {
                 // Let IMGUIContainer manage the focus change.
-                return FocusChangeDirection.kNone;
+                return FocusChangeDirection.none;
             }
 
-            if (e.GetEventTypeId() == KeyDownEvent.s_EventClassId)
+            if (e.GetEventTypeId() == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = e as KeyDownEvent;
                 EventModifiers modifiers = kde.modifiers;
@@ -203,25 +216,25 @@ namespace UnityEngine.Experimental.UIElements
                     if (currentFocusable == null)
                     {
                         // Dont start going around a focus ring if there is no current focused element.
-                        return FocusChangeDirection.kNone;
+                        return FocusChangeDirection.none;
                     }
                     else if ((modifiers & EventModifiers.Shift) == 0)
                     {
-                        return VisualElementFocusChangeDirection.kRight;
+                        return VisualElementFocusChangeDirection.right;
                     }
                     else
                     {
-                        return VisualElementFocusChangeDirection.kLeft;
+                        return VisualElementFocusChangeDirection.left;
                     }
                 }
             }
 
-            return FocusChangeDirection.kNone;
+            return FocusChangeDirection.none;
         }
 
         public Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction)
         {
-            if (direction == FocusChangeDirection.kNone || direction == FocusChangeDirection.kUnspecified)
+            if (direction == FocusChangeDirection.none || direction == FocusChangeDirection.unspecified)
             {
                 return currentFocusable;
             }
@@ -235,7 +248,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 int index = 0;
-                if (direction == VisualElementFocusChangeDirection.kRight)
+                if (direction == VisualElementFocusChangeDirection.right)
                 {
                     index = GetFocusableInternalIndex(currentFocusable) + 1;
                     if (index == m_FocusRing.Count)
@@ -243,7 +256,7 @@ namespace UnityEngine.Experimental.UIElements
                         index = 0;
                     }
                 }
-                else if (direction == VisualElementFocusChangeDirection.kLeft)
+                else if (direction == VisualElementFocusChangeDirection.left)
                 {
                     index = GetFocusableInternalIndex(currentFocusable) - 1;
                     if (index == -1)

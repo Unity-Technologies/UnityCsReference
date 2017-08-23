@@ -152,13 +152,19 @@ namespace UnityEngine
         /// *listonly*
         public static int Toolbar(int selected, Texture[] images, params GUILayoutOption[] options)                    { return Toolbar(selected, GUIContent.Temp(images), GUI.skin.button, options); }
         /// *listonly*
-        public static int Toolbar(int selected, GUIContent[] content, params GUILayoutOption[] options)                { return Toolbar(selected, content, GUI.skin.button, options); }
+        public static int Toolbar(int selected, GUIContent[] contents, params GUILayoutOption[] options)                { return Toolbar(selected, contents, GUI.skin.button, options); }
         /// *listonly*
         public static int Toolbar(int selected, string[] texts, GUIStyle style, params GUILayoutOption[] options)      { return Toolbar(selected, GUIContent.Temp(texts), style, options); }
         /// *listonly*
         public static int Toolbar(int selected, Texture[] images, GUIStyle style, params GUILayoutOption[] options)    { return Toolbar(selected, GUIContent.Temp(images), style, options); }
+        /// *listonly*
+        public static int Toolbar(int selected, string[] texts, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)   { return Toolbar(selected, GUIContent.Temp(texts), style, buttonSize, options); }
+        /// *listonly*
+        public static int Toolbar(int selected, Texture[] images, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options) { return Toolbar(selected, GUIContent.Temp(images), style, buttonSize, options); }
+        /// *listonly*
+        public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, style, GUI.ToolbarButtonSize.Fixed, options); }
         // Make a toolbar
-        public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, params GUILayoutOption[] options)
+        public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
         {
             GUIStyle firstStyle, midStyle, lastStyle;
             GUI.FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
@@ -168,34 +174,48 @@ namespace UnityEngine
             GUIStyle currentStyle = count > 1 ? firstStyle : style;
             GUIStyle nextStyle = count > 1 ? midStyle : style;
             GUIStyle endStyle = count > 1 ? lastStyle : style;
-            int margins = currentStyle.margin.left;
+            float margins = 0;
 
             for (int i = 0; i < contents.Length; i++)
             {
                 if (i == count - 2)
-                {
-                    currentStyle = nextStyle;
                     nextStyle = endStyle;
-                }
-                if (i == count - 1)
-                    currentStyle = endStyle;
 
                 Vector2 thisSize = currentStyle.CalcSize(contents[i]);
+                switch (buttonSize)
+                {
+                    case GUI.ToolbarButtonSize.Fixed:
+                        if (thisSize.x > size.x)
+                            size.x = thisSize.x;
+                        break;
+                    case GUI.ToolbarButtonSize.FitToContents:
+                        size.x += thisSize.x;
+                        break;
+                }
 
-                if (thisSize.x > size.x)
-                    size.x = thisSize.x;
                 if (thisSize.y > size.y)
                     size.y = thisSize.y;
 
+                // add spacing
                 if (i == count - 1)
                     margins += currentStyle.margin.right;
                 else
                     margins += Mathf.Max(currentStyle.margin.right, nextStyle.margin.left);
+
+                currentStyle = nextStyle;
             }
 
-            size.x = size.x * contents.Length + margins;
+            switch (buttonSize)
+            {
+                case GUI.ToolbarButtonSize.Fixed:
+                    size.x = size.x * contents.Length + margins;
+                    break;
+                case GUI.ToolbarButtonSize.FitToContents:
+                    size.x += margins;
+                    break;
+            }
 
-            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, style);
+            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, style, buttonSize);
         }
 
         /// *listonly*

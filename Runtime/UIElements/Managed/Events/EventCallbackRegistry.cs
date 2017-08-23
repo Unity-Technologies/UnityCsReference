@@ -172,9 +172,9 @@ namespace UnityEngine.Experimental.UIElements
             return callbackList.Remove(eventTypeId, callback, callbackPhase);
         }
 
-        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
+        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
         {
-            long eventTypeId = new TEventType().GetEventTypeId();
+            long eventTypeId = EventBase<TEventType>.TypeId();
             var callbackPhase = useCapture == Capture.Capture ? CallbackPhase.CaptureAndTarget : CallbackPhase.TargetAndBubbleUp;
             if (ShouldRegisterCallback(eventTypeId, callback, callbackPhase))
             {
@@ -183,9 +183,9 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
+        public void RegisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
         {
-            long eventTypeId = new TEventType().GetEventTypeId();
+            long eventTypeId = EventBase<TEventType>.TypeId();
             var callbackPhase = useCapture == Capture.Capture ? CallbackPhase.CaptureAndTarget : CallbackPhase.TargetAndBubbleUp;
             if (ShouldRegisterCallback(eventTypeId, callback, callbackPhase))
             {
@@ -194,15 +194,15 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
+        public bool UnregisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
         {
-            long eventTypeId = new TEventType().GetEventTypeId();
+            long eventTypeId = EventBase<TEventType>.TypeId();
             return UnregisterCallback(eventTypeId, callback, useCapture);
         }
 
-        public bool UnregisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase, new()
+        public bool UnregisterCallback<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
         {
-            long eventTypeId = new TEventType().GetEventTypeId();
+            long eventTypeId = EventBase<TEventType>.TypeId();
             return UnregisterCallback(eventTypeId, callback, useCapture);
         }
 

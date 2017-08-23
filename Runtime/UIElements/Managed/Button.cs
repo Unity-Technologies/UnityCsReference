@@ -6,7 +6,7 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Button : VisualElement
     {
-        Clickable clickable;
+        public Clickable clickable;
 
         public Button(System.Action clickEvent)
         {

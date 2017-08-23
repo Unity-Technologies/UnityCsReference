@@ -44,7 +44,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseDownEvent.s_EventClassId)
+            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
             {
                 MouseDownEvent mde = evt as MouseDownEvent;
                 if (mde.button == (int)MouseButton.LeftMouse)
@@ -62,9 +62,21 @@ namespace UnityEngine.Experimental.UIElements
 
     public class FocusChangeDirection
     {
-        public static FocusChangeDirection kUnspecified = new FocusChangeDirection(-1);
-        public static FocusChangeDirection kNone = new FocusChangeDirection(0);
-        protected static FocusChangeDirection kLastValue = kNone;
+        static readonly FocusChangeDirection s_Unspecified = new FocusChangeDirection(-1);
+
+        public static FocusChangeDirection unspecified
+        {
+            get { return s_Unspecified; }
+        }
+
+        static readonly FocusChangeDirection s_None = new FocusChangeDirection(0);
+
+        public static FocusChangeDirection none
+        {
+            get { return s_None; }
+        }
+
+        protected static FocusChangeDirection lastValue { get { return s_None; } }
 
         int m_Value;
 
@@ -107,31 +119,35 @@ namespace UnityEngine.Experimental.UIElements
 
         static void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
         {
-            FocusOutEvent e = new FocusOutEvent(focusable, willGiveFocusTo, direction);
+            FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction);
             UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            FocusOutEvent.ReleasePooled(e);
         }
 
         static void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
         {
-            BlurEvent e = new BlurEvent(focusable, willGiveFocusTo, direction);
+            BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction);
             UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            BlurEvent.ReleasePooled(e);
         }
 
         static void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            FocusInEvent e = new FocusInEvent(focusable, willTakeFocusFrom, direction);
+            FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction);
             UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            FocusInEvent.ReleasePooled(e);
         }
 
         static void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            FocusEvent e = new FocusEvent(focusable, willTakeFocusFrom, direction);
+            FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction);
             UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            FocusEvent.ReleasePooled(e);
         }
 
         internal void SwitchFocus(Focusable newFocusedElement)
         {
-            SwitchFocus(newFocusedElement, FocusChangeDirection.kUnspecified);
+            SwitchFocus(newFocusedElement, FocusChangeDirection.unspecified);
         }
 
         void SwitchFocus(Focusable newFocusedElement, FocusChangeDirection direction)
@@ -175,7 +191,7 @@ namespace UnityEngine.Experimental.UIElements
         public void SwitchFocusOnEvent(EventBase e)
         {
             FocusChangeDirection direction = focusRing.GetFocusChangeDirection(focusedElement, e);
-            if (direction != FocusChangeDirection.kNone)
+            if (direction != FocusChangeDirection.none)
             {
                 Focusable f = focusRing.GetNextFocusable(focusedElement, direction);
                 SwitchFocus(f, direction);
@@ -193,11 +209,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (GUIUtility.keyboardControl != 0)
                 {
-                    SwitchFocus(imguiContainerHavingKeyboardControl, FocusChangeDirection.kUnspecified);
+                    SwitchFocus(imguiContainerHavingKeyboardControl, FocusChangeDirection.unspecified);
                 }
                 else
                 {
-                    SwitchFocus(null, FocusChangeDirection.kUnspecified);
+                    SwitchFocus(null, FocusChangeDirection.unspecified);
                 }
             }
         }

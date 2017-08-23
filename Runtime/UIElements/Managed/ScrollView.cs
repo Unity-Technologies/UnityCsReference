@@ -95,7 +95,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
                 }, Slider.Direction.Horizontal)
-            {name = "HorizontalScroller"};
+            {name = "HorizontalScroller", persistenceKey = "HorizontalScroller"};
             shadow.Add(horizontalScroller);
 
             verticalScroller = new Scroller(verticalScrollerValues.x, verticalScrollerValues.y,
@@ -103,13 +103,24 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
                 }, Slider.Direction.Vertical)
-            {name = "VerticalScroller"};
+            {name = "VerticalScroller", persistenceKey = "VerticalScroller"};
             shadow.Add(verticalScroller);
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
         }
 
-        protected internal override void OnPostLayout(bool hasNewLayout)
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
+            {
+                var postLayoutEvt = (PostLayoutEvent)evt;
+                OnPostLayout(postLayoutEvt.hasNewLayout);
+            }
+        }
+
+        private void OnPostLayout(bool hasNewLayout)
         {
             if (!hasNewLayout)
                 return;
@@ -120,12 +131,32 @@ namespace UnityEngine.Experimental.UIElements
                 verticalScroller.Adjust(contentViewport.layout.height / contentContainer.layout.height);
 
             // Set availability
-            horizontalScroller.enabled = (contentContainer.layout.width - layout.width > 0);
-            verticalScroller.enabled = (contentContainer.layout.height - layout.height > 0);
+            horizontalScroller.SetEnabled(contentContainer.layout.width - layout.width > 0);
+            verticalScroller.SetEnabled(contentContainer.layout.height - layout.height > 0);
 
-            // Set visibility
-            horizontalScroller.visible = needsHorizontal;
-            verticalScroller.visible = needsVertical;
+            // Set visibility and remove/add content viewport margin as necessary
+            if (horizontalScroller.visible != needsHorizontal)
+            {
+                horizontalScroller.visible = needsHorizontal;
+                if (needsHorizontal)
+                    contentViewport.AddToClassList("HorizontalScroll");
+                else
+                    contentViewport.RemoveFromClassList("HorizontalScroll");
+            }
+            if (verticalScroller.visible != needsVertical)
+            {
+                verticalScroller.visible = needsVertical;
+                if (needsVertical)
+                    contentViewport.AddToClassList("VerticalScroll");
+                else
+                    contentViewport.RemoveFromClassList("VerticalScroll");
+            }
+
+            // Expand content if scrollbars are hidden
+            contentViewport.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
+            horizontalScroller.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
+            contentViewport.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
+            verticalScroller.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
 
             UpdateContentViewTransform();
         }

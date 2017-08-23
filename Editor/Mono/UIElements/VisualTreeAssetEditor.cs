@@ -50,7 +50,7 @@ namespace UnityEditor.Experimental.UIElements
             if (vta != m_LastTree || !m_LastTree)
             {
                 m_LastTree = vta;
-                m_Tree = vta.CloneTree();
+                m_Tree = vta.CloneTree(null);
                 m_Tree.StretchToParentSize();
                 dirty = true;
             }

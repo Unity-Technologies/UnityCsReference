@@ -10,7 +10,8 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal abstract class GraphView : DataWatchContainer, ISelection
+    internal
+    abstract class GraphView : DataWatchContainer, ISelection
     {
         // Layer class. Used for queries below.
         class Layer : VisualElement {}

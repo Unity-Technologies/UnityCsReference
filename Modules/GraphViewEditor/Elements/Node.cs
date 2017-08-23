@@ -9,7 +9,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class Node : GraphElement
+    internal
+    class Node : GraphElement
     {
         protected virtual VisualElement mainContainer { get; private set; }
         protected virtual VisualElement leftContainer { get; private set; }
@@ -41,21 +42,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (ClassListContains("vertical") || ClassListContains("horizontal"))
             {
                 return;
-            }
-
-            if (nodePresenter.orientation == Orientation.Vertical)
-            {
-                if (leftContainer.Contains(titleContainer))
-                {
-                    leftContainer.Remove(titleContainer);
-                }
-            }
-            else
-            {
-                if (!leftContainer.Contains(titleContainer))
-                {
-                    leftContainer.Insert(0, titleContainer);
-                }
             }
 
             AddToClassList(nodePresenter.orientation == Orientation.Vertical ? "vertical" : "horizontal");
@@ -199,54 +185,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Node()
         {
             usePixelCaching = true;
-            mainContainer = new VisualElement
-            {
-                name = "pane",
-                pickingMode = PickingMode.Ignore,
-            };
-            leftContainer = new VisualElement
-            {
-                name = "left",
-                pickingMode = PickingMode.Ignore,
-            };
-            rightContainer = new VisualElement
-            {
-                name = "right",
-                pickingMode = PickingMode.Ignore,
-            };
-            titleContainer = new VisualElement
-            {
-                name = "title",
-                pickingMode = PickingMode.Ignore,
-            };
-            inputContainer = new VisualElement
-            {
-                name = "input",
-                pickingMode = PickingMode.Ignore,
-            };
-            outputContainer = new VisualElement
-            {
-                name = "output",
-                pickingMode = PickingMode.Ignore,
-            };
 
-            m_TitleLabel = new Label("");
-            m_CollapseButton = new Button(ToggleCollapse)
-            {
-                text = "collapse"
-            };
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
+            mainContainer = tpl.CloneTree(null);
+            leftContainer = mainContainer.Q(name: "left");
+            rightContainer = mainContainer.Q(name: "right");
+            titleContainer = mainContainer.Q(name: "title");
+            inputContainer = mainContainer.Q(name: "input");
+            outputContainer = mainContainer.Q(name: "output");
+
+            m_TitleLabel = mainContainer.Q<Label>(name: "titleLabel");
+            m_CollapseButton = mainContainer.Q<Button>(name: "collapseButton");
+            m_CollapseButton.clickable.clicked += ToggleCollapse;
 
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
 
             Add(mainContainer);
-            mainContainer.Add(leftContainer);
-            mainContainer.Add(rightContainer);
-
-            titleContainer.Add(m_TitleLabel);
-            titleContainer.Add(m_CollapseButton);
-
-            leftContainer.Add(inputContainer);
-            rightContainer.Add(outputContainer);
+            mainContainer.AddToClassList("mainContainer");
 
             ClearClassList();
             AddToClassList("node");

@@ -21,7 +21,7 @@ namespace UnityEngine.Networking
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/WebRequest/WebRequest.h")]
+    [NativeHeader("Modules/UnityWebRequest/Public/UnityWebRequest.h")]
     public partial class UnityWebRequest : IDisposable
     {
         [System.NonSerialized]

@@ -21,11 +21,20 @@ namespace UnityEngine
             [NativeMethod(Name = "MeshScripting::SetSubMeshCount", IsFreeFunction = true, HasExplicitThis = true)] set;
         }
 
+        extern public UnityEngine.Rendering.IndexFormat indexFormat
+        {
+            [NativeMethod(Name = "GetIndexFormat")] get;
+            [NativeMethod(Name = "SetIndexFormat")] set;
+        }
+
         [NativeMethod(Name = "MeshScripting::GetIndexStart", IsFreeFunction = true, HasExplicitThis = true)]
         extern private UInt32 GetIndexStartImpl(int submesh);
 
         [NativeMethod(Name = "MeshScripting::GetIndexCount", IsFreeFunction = true, HasExplicitThis = true)]
         extern private UInt32 GetIndexCountImpl(int submesh);
+
+        [NativeMethod(Name = "MeshScripting::GetBaseVertex", IsFreeFunction = true, HasExplicitThis = true)]
+        extern private UInt32 GetBaseVertexImpl(int submesh);
 
         [NativeMethod(Name = "Clear")]                  extern private void ClearImpl(bool keepVertexLayout);
         [NativeMethod(Name = "RecalculateBounds")]      extern private void RecalculateBoundsImpl();

@@ -41,6 +41,7 @@ namespace UnityEditor
             }
         }
 
+        static int s_SceneDragUndoIndex;
         static List<Object> s_SceneDragObjects;
         static DragType s_DragType;
         enum DragType { NotInitialized, SpriteAnimation, CreateMultiple }
@@ -134,13 +135,15 @@ namespace UnityEditor
                         {
                             foreach (GameObject dragGO in s_SceneDragObjects)
                             {
-                                Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
                                 dragGO.hideFlags = HideFlags.None;
+                                Undo.RecordObject(dragGO, "Create Sprite");
                             }
-
                             Selection.objects = s_SceneDragObjects.ToArray();
-                        }
 
+                            // Collapse all Create Sprite actions done during this Drag action into one Undo
+                            Undo.SetCurrentGroupName("Create Sprite");
+                            Undo.CollapseUndoOperations(s_SceneDragUndoIndex);
+                        }
                         CleanUp(!createGameObject);
                         evt.Use();
                     }
@@ -148,6 +151,11 @@ namespace UnityEditor
                 case EventType.DragExited:
                     if (s_SceneDragObjects != null)
                     {
+                        if (s_SceneDragObjects.Count > 0 && s_SceneDragUndoIndex < Undo.GetCurrentGroup())
+                        {
+                            // Revert any Undo actions as part of Cleanup
+                            Undo.RevertAllDownToGroup(s_SceneDragUndoIndex);
+                        }
                         CleanUp(true);
                         evt.Use();
                     }
@@ -205,6 +213,7 @@ namespace UnityEditor
             if (s_SceneDragObjects == null)
                 s_SceneDragObjects = new List<Object>();
 
+            s_SceneDragUndoIndex = Undo.GetCurrentGroup();
             if (s_DragType == DragType.CreateMultiple)
             {
                 foreach (Sprite sprite in sprites)
@@ -214,6 +223,8 @@ namespace UnityEditor
             {
                 s_SceneDragObjects.Add(CreateDragGO(sprites[0], Vector3.zero));
             }
+            // Increment Undo group as future drag update events may force an Undo for current group
+            Undo.IncrementCurrentGroup();
         }
 
         private static void CleanUp(bool deleteTempSceneObject)
@@ -416,7 +427,8 @@ namespace UnityEditor
             spriteRenderer.sprite = frame;
 
             go.transform.position = position;
-            go.hideFlags = HideFlags.HideInHierarchy;
+            go.hideFlags = HideFlags.HideAndDontSave;
+            Undo.RegisterCreatedObjectUndo(go, "Create Sprite");
 
             return go;
         }

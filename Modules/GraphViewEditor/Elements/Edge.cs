@@ -10,7 +10,8 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal class Edge : GraphElement
+    internal
+    class Edge : GraphElement
     {
         const float k_EndPointRadius = 4.0f;
         const float k_InterceptWidth = 3.0f;

@@ -7,12 +7,14 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal interface IDroppable
+    internal
+    interface IDroppable
     {
         bool IsDroppable();
     }
 
-    internal interface IDropTarget
+    internal
+    interface IDropTarget
     {
         bool CanAcceptDrop(List<ISelectable> selection);
 

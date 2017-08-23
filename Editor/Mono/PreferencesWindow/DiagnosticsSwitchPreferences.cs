@@ -158,7 +158,7 @@ namespace UnityEditor
         }
 
         [PreferenceItem("Diagnostics")]
-        public static void OnGUI()
+        private static void OnGUI()
         {
             List<DiagnosticSwitch> switches = new List<DiagnosticSwitch>();
             Debug.GetDiagnosticSwitches(switches);

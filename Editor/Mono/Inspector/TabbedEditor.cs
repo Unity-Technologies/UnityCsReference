@@ -18,9 +18,9 @@ namespace UnityEditor
 
         internal virtual void OnEnable()
         {
-            m_ActiveEditorIndex = EditorPrefs.GetInt(this.GetType().Name + "ActiveEditorIndex", 0);
+            m_ActiveEditorIndex = EditorPrefs.GetInt(GetType().Name + "ActiveEditorIndex", 0);
             if (m_ActiveEditor == null)
-                m_ActiveEditor = Editor.CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]);
+                m_ActiveEditor = CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]);
         }
 
         void OnDestroy()
@@ -30,20 +30,23 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            EditorGUI.BeginChangeCheck();
-            m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_SubEditorNames);
-            if (EditorGUI.EndChangeCheck())
+            using (new GUILayout.HorizontalScope())
             {
-                EditorPrefs.SetInt(this.GetType().Name + "ActiveEditorIndex", m_ActiveEditorIndex);
-                var oldEditor = activeEditor;
-                m_ActiveEditor = null;
-                DestroyImmediate(oldEditor);
-                m_ActiveEditor = Editor.CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]);
+                GUILayout.FlexibleSpace();
+                using (var check = new EditorGUI.ChangeCheckScope())
+                {
+                    m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_SubEditorNames, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+                    if (check.changed)
+                    {
+                        EditorPrefs.SetInt(GetType().Name + "ActiveEditorIndex", m_ActiveEditorIndex);
+                        var oldEditor = activeEditor;
+                        m_ActiveEditor = null;
+                        DestroyImmediate(oldEditor);
+                        m_ActiveEditor = CreateEditor(targets, m_SubEditorTypes[m_ActiveEditorIndex]);
+                    }
+                }
+                GUILayout.FlexibleSpace();
             }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
 
             activeEditor.OnInspectorGUI();
         }
@@ -124,19 +127,22 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(false)) // this doesn't enable the UI, but it seems correct to push the stack
             {
                 GUI.enabled = true;
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                EditorGUI.BeginChangeCheck();
-                m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_TabNames);
-                if (EditorGUI.EndChangeCheck())
+                using (new GUILayout.HorizontalScope())
                 {
-                    EditorPrefs.SetInt(this.GetType().Name + "ActiveEditorIndex", m_ActiveEditorIndex);
-                    activeTab = m_Tabs[m_ActiveEditorIndex];
+                    GUILayout.FlexibleSpace();
+                    using (var check = new EditorGUI.ChangeCheckScope())
+                    {
+                        m_ActiveEditorIndex = GUILayout.Toolbar(m_ActiveEditorIndex, m_TabNames, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+                        if (check.changed)
+                        {
+                            EditorPrefs.SetInt(GetType().Name + "ActiveEditorIndex", m_ActiveEditorIndex);
+                            activeTab = m_Tabs[m_ActiveEditorIndex];
 
-                    activeTab.OnInspectorGUI();
+                            activeTab.OnInspectorGUI();
+                        }
+                    }
+                    GUILayout.FlexibleSpace();
                 }
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
             }
 
             // the activeTab can get destroyed when opening particular sub-editors (such as the Avatar configuration editor on the Rig tab)

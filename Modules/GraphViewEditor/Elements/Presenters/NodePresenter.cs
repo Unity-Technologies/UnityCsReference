@@ -10,7 +10,8 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal class NodePresenter : SimpleElementPresenter
+    internal
+    class NodePresenter : SimpleElementPresenter
     {
         [SerializeField]
         protected List<NodeAnchorPresenter> m_InputAnchors;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEditor;
 using UnityEditorInternal;
 
@@ -32,8 +33,8 @@ namespace UnityEditor
         bool[] m_RectSelection;
         int m_MouseOver = -1;
         int m_MeshVerticesPerSelectionVertex = 0;
-        Mesh[] m_SelectionMesh;
-        Mesh[] m_SelectedMesh;
+        Mesh m_SelectionMesh;
+        Mesh m_SelectedMesh;
         Mesh m_VertexMesh;
         Mesh m_VertexMeshSelected;
         Vector3[] m_LastVertices;
@@ -50,7 +51,6 @@ namespace UnityEditor
         static Material s_SelectionMaterialBackfaces = null;
         static Material s_SelectedMaterial = null;
         static Texture2D s_ColorTexture = null;
-        static int s_MaxVertices;
 
         const float kDisabledValue = float.MaxValue;
 
@@ -173,43 +173,36 @@ namespace UnityEditor
 
             if (m_SelectionMesh != null)
             {
-                foreach (var m in m_SelectionMesh)
-                    DestroyImmediate(m);
-                foreach (var m in m_SelectedMesh)
-                    DestroyImmediate(m);
+                DestroyImmediate(m_SelectionMesh);
+                DestroyImmediate(m_SelectedMesh);
             }
 
-            int meshes = length / s_MaxVertices + 1;
-            m_SelectionMesh = new Mesh[meshes];
-            m_SelectedMesh = new Mesh[meshes];
+            m_SelectionMesh = new Mesh();
+            m_SelectionMesh.indexFormat = IndexFormat.UInt32;
+            m_SelectionMesh.hideFlags |= HideFlags.DontSave;
+
+            m_SelectedMesh = new Mesh();
+            m_SelectedMesh.indexFormat = IndexFormat.UInt32;
+            m_SelectedMesh.hideFlags |= HideFlags.DontSave;
 
             m_LastVertices = new Vector3[length];
             m_MeshVerticesPerSelectionVertex = m_VertexMesh.vertices.Length;
             Transform t = smr.actualRootBone;
 
-            for (int m = 0; m < meshes; m++)
             {
-                m_SelectionMesh[m] = new Mesh();
-                m_SelectionMesh[m].hideFlags |= HideFlags.DontSave;
-                m_SelectedMesh[m] = new Mesh();
-                m_SelectedMesh[m].hideFlags |= HideFlags.DontSave;
-
-                int numVertices = length - (m * s_MaxVertices);
-                if (numVertices > s_MaxVertices)
-                    numVertices = s_MaxVertices;
+                int numVertices = length;
                 CombineInstance[] combine = new CombineInstance[numVertices];
-                int offset = m * s_MaxVertices;
                 for (int i = 0; i < numVertices; i++)
                 {
-                    m_LastVertices[offset + i] = t.rotation * vertices[offset + i] + t.position;
+                    m_LastVertices[i] = t.rotation * vertices[i] + t.position;
                     combine[i].mesh = m_VertexMesh;
-                    combine[i].transform = Matrix4x4.TRS(m_LastVertices[offset + i], Quaternion.identity, Vector3.one);
+                    combine[i].transform = Matrix4x4.TRS(m_LastVertices[i], Quaternion.identity, Vector3.one);
                 }
-                m_SelectionMesh[m].CombineMeshes(combine);
+                m_SelectionMesh.CombineMeshes(combine);
 
                 for (int i = 0; i < numVertices; i++)
                     combine[i].mesh = m_VertexMeshSelected;
-                m_SelectedMesh[m].CombineMeshes(combine);
+                m_SelectedMesh.CombineMeshes(combine);
             }
 
             SetupSelectionMeshColors();
@@ -267,7 +260,6 @@ namespace UnityEditor
             m_VertexMeshSelected.tangents = tangents;
             m_VertexMeshSelected.triangles = m_VertexMesh.triangles;
 
-            s_MaxVertices = 65536 / m_VertexMesh.vertices.Length;
             GenerateSelectionMesh();
             SetupSelectedMeshColors();
 
@@ -294,21 +286,6 @@ namespace UnityEditor
                 return Color.Lerp(Color.magenta, Color.yellow, (val - 0.2f) / 0.5f);
             else
                 return Color.Lerp(Color.yellow, Color.green, (val - 0.7f) / 0.3f);
-        }
-
-        void AssignColorsToMeshArray(Color[] colors, Mesh[] meshArray)
-        {
-            int length = colors.Length / m_MeshVerticesPerSelectionVertex;
-            int meshes = length / s_MaxVertices + 1;
-            for (int m = 0; m < meshes; m++)
-            {
-                int numVertices = length - (m * s_MaxVertices);
-                if (numVertices > s_MaxVertices)
-                    numVertices = s_MaxVertices;
-                Color[] meshColors = new Color[numVertices * m_MeshVerticesPerSelectionVertex];
-                System.Array.Copy(colors, m * s_MaxVertices * m_MeshVerticesPerSelectionVertex, meshColors, 0, numVertices * m_MeshVerticesPerSelectionVertex);
-                meshArray[m].colors = meshColors;
-            }
         }
 
         void SetupSelectionMeshColors()
@@ -353,8 +330,7 @@ namespace UnityEditor
 
             m_MaxVisualizedValue[(int)drawMode] = max;
             m_MinVisualizedValue[(int)drawMode] = min;
-
-            AssignColorsToMeshArray(colors, m_SelectionMesh);
+            m_SelectionMesh.colors = colors;
         }
 
         void SetupSelectedMeshColors()
@@ -390,7 +366,7 @@ namespace UnityEditor
                     colors[i * m_MeshVerticesPerSelectionVertex + j] = color;
             }
 
-            AssignColorsToMeshArray(colors, m_SelectedMesh);
+            m_SelectedMesh.colors = colors;
         }
 
         void OnDisable()
@@ -399,10 +375,8 @@ namespace UnityEditor
 
             if (m_SelectionMesh != null)
             {
-                foreach (var m in m_SelectionMesh)
-                    DestroyImmediate(m);
-                foreach (var m in m_SelectedMesh)
-                    DestroyImmediate(m);
+                DestroyImmediate(m_SelectionMesh);
+                DestroyImmediate(m_SelectedMesh);
             }
             DestroyImmediate(m_VertexMesh);
             DestroyImmediate(m_VertexMeshSelected);
@@ -686,8 +660,7 @@ namespace UnityEditor
                 for (int i = 0; i < s_SelectedMaterial.passCount; i++)
                 {
                     s_SelectedMaterial.SetPass(i);
-                    foreach (var m in m_SelectedMesh)
-                        Graphics.DrawMeshNow(m, Matrix4x4.identity);
+                    Graphics.DrawMeshNow(m_SelectedMesh, Matrix4x4.identity);
                 }
             }
 
@@ -695,8 +668,7 @@ namespace UnityEditor
             for (int i = 0; i < mat.passCount; i++)
             {
                 mat.SetPass(i);
-                foreach (var m in m_SelectionMesh)
-                    Graphics.DrawMeshNow(m, Matrix4x4.identity);
+                Graphics.DrawMeshNow(m_SelectionMesh, Matrix4x4.identity);
             }
 
             if (m_MouseOver != -1)
@@ -709,9 +681,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    int meshIndex = m_MouseOver / s_MaxVertices;
-                    int vertexIndex = m_MouseOver - (s_MaxVertices * meshIndex);
-                    mat.color = m_SelectionMesh[meshIndex].colors[vertexIndex];
+                    mat.color = m_SelectionMesh.colors[m_MouseOver];
                 }
 
                 for (int i = 0; i < mat.passCount; i++)
@@ -966,7 +936,7 @@ namespace UnityEditor
             }
 
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
-            if (m_Selection.Length != coefficients.Length && m_Selection.Length != s_MaxVertices)
+            if (m_Selection.Length != coefficients.Length)
                 // Recreate selection if underlying mesh has changed.
                 OnEnable();
 
@@ -1135,17 +1105,23 @@ namespace UnityEditor
             if (Tools.current != Tool.None)
                 state.ToolMode = (ToolMode)(-1);
 
-            ToolMode oldToolMode = state.ToolMode;
-
-            state.ToolMode = (ToolMode)GUILayout.Toolbar((int)state.ToolMode, s_ToolIcons);
-            if (state.ToolMode != oldToolMode)
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            using (var check = new EditorGUI.ChangeCheckScope())
             {
-                // delselect text, so we don't end up having a text field highlighted in the new tab
-                GUIUtility.keyboardControl = 0;
-                SceneView.RepaintAll();
-                SetupSelectionMeshColors();
-                SetupSelectedMeshColors();
+                state.ToolMode = (ToolMode)GUILayout.Toolbar((int)state.ToolMode, s_ToolIcons);
+                if (check.changed)
+                {
+                    // delselect text, so we don't end up having a text field highlighted in the new tab
+                    GUIUtility.keyboardControl = 0;
+                    SceneView.RepaintAll();
+                    SetupSelectionMeshColors();
+                    SetupSelectedMeshColors();
+                }
             }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
             switch (state.ToolMode)
             {
                 case ToolMode.Select:

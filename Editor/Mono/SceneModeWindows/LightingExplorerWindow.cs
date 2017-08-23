@@ -151,11 +151,8 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
 
-            GUILayout.Space(toolbarPadding);
-
-            float toolbarWidth = position.width - toolbarPadding * 2;
-            m_SelectedTab = (TabType)GUILayout.Toolbar((int)m_SelectedTab, Styles.TabTypes, "LargeButton", GUILayout.Width(toolbarWidth));
-
+            GUILayout.FlexibleSpace();
+            m_SelectedTab = (TabType)GUILayout.Toolbar((int)m_SelectedTab, Styles.TabTypes, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
             GUILayout.FlexibleSpace();
 
             EditorGUILayout.EndHorizontal();

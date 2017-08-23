@@ -2,43 +2,31 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class MouseEventBase : UIEvent
+    public interface IMouseEvent
     {
-        static List<long> s_EventSubTypeIds;
+        EventModifiers modifiers { get; }
+        Vector2 mousePosition { get; }
+        Vector2 localMousePosition { get; }
+        Vector2 mouseDelta { get; }
+        int clickCount { get; }
+        int button { get; }
 
-        protected new static long RegisterEventClass()
-        {
-            if (s_EventSubTypeIds == null)
-            {
-                s_EventSubTypeIds = new List<long>();
-            }
+        bool shiftKey { get; }
+        bool ctrlKey { get; }
+        bool commandKey { get; }
+        bool altKey { get; }
+    }
 
-            long id = UIEvent.RegisterEventClass();
-            s_EventSubTypeIds.Add(id);
-            return id;
-        }
-
-        public static bool Is(EventBase evt)
-        {
-            if (s_EventSubTypeIds == null || evt == null)
-            {
-                return false;
-            }
-
-            return s_EventSubTypeIds.Contains(evt.GetEventTypeId());
-        }
-
-        public EventModifiers modifiers { get; private set; }
-        public Vector2 mousePosition { get; private set; }
+    public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent where T : MouseEventBase<T>, new()
+    {
+        public EventModifiers modifiers { get; protected set; }
+        public Vector2 mousePosition { get; protected set; }
         public Vector2 localMousePosition { get; internal set; }
-        public Vector2 mouseDelta { get; private set; }
-        public int clickCount { get; private set; }
-        public int button { get; private set; }
+        public Vector2 mouseDelta { get; protected set; }
+        public int clickCount { get; protected set; }
+        public int button { get; protected set; }
 
         public bool shiftKey
         {
@@ -60,18 +48,16 @@ namespace UnityEngine.Experimental.UIElements
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
-        public MouseEventBase(EventFlags flags, Event systemEvent)
-            : base(flags, systemEvent)
+        protected override void Init()
         {
-            if (systemEvent != null)
-            {
-                modifiers = systemEvent.modifiers;
-                mousePosition = systemEvent.mousePosition;
-                localMousePosition = systemEvent.mousePosition;
-                mouseDelta = systemEvent.delta;
-                button = systemEvent.button;
-                clickCount = systemEvent.clickCount;
-            }
+            base.Init();
+            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
+            modifiers = EventModifiers.None;
+            mousePosition = Vector2.zero;
+            localMousePosition = Vector2.zero;
+            mouseDelta = Vector2.zero;
+            clickCount = 0;
+            button = 0;
         }
 
         public override IEventHandler currentTarget
@@ -88,96 +74,116 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
         }
+
+        public static T GetPooled(Event systemEvent)
+        {
+            T e = GetPooled();
+            e.imguiEvent = systemEvent;
+            if (systemEvent != null)
+            {
+                e.modifiers = systemEvent.modifiers;
+                e.mousePosition = systemEvent.mousePosition;
+                e.localMousePosition = systemEvent.mousePosition;
+                e.mouseDelta = systemEvent.delta;
+                e.button = systemEvent.button;
+                e.clickCount = systemEvent.clickCount;
+            }
+            return e;
+        }
+
+        public static T GetPooled(IMouseEvent triggerEvent)
+        {
+            T e = GetPooled();
+            if (triggerEvent != null)
+            {
+                e.modifiers = triggerEvent.modifiers;
+                e.mousePosition = triggerEvent.mousePosition;
+                e.localMousePosition = triggerEvent.mousePosition;
+                e.mouseDelta = triggerEvent.mouseDelta;
+                e.button = triggerEvent.button;
+                e.clickCount = triggerEvent.clickCount;
+            }
+            return e;
+        }
+
+        protected MouseEventBase()
+        {
+            Init();
+        }
     }
 
-    public class MouseDownEvent : MouseEventBase
+    public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
-        public static readonly long s_EventClassId;
-        static MouseDownEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public MouseDownEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public MouseDownEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
-        }
     }
 
-    public class MouseUpEvent : MouseEventBase
+    public class MouseUpEvent : MouseEventBase<MouseUpEvent>
     {
-        public static readonly long s_EventClassId;
-        static MouseUpEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public MouseUpEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public MouseUpEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
-        }
     }
 
-    public class MouseMoveEvent : MouseEventBase
+    public class MouseMoveEvent : MouseEventBase<MouseMoveEvent>
     {
-        public static readonly long s_EventClassId;
-        static MouseMoveEvent()
-        {
-            s_EventClassId = RegisterEventClass();
-        }
-
-        public override long GetEventTypeId()
-        {
-            return s_EventClassId;
-        }
-
-        public MouseMoveEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public MouseMoveEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
-        {
-        }
     }
 
-    public class WheelEvent : MouseEventBase
+    public class WheelEvent : MouseEventBase<WheelEvent>
     {
         public Vector3 delta { get; private set; }
 
-        public static readonly long s_EventClassId;
-        static WheelEvent()
+        public new static WheelEvent GetPooled(Event systemEvent)
         {
-            s_EventClassId = RegisterEventClass();
+            WheelEvent e = MouseEventBase<WheelEvent>.GetPooled(systemEvent);
+            e.imguiEvent = systemEvent;
+            if (systemEvent != null)
+            {
+                e.delta = systemEvent.delta;
+            }
+            return e;
         }
 
-        public override long GetEventTypeId()
+        protected override void Init()
         {
-            return s_EventClassId;
+            base.Init();
+            delta = Vector3.zero;
         }
 
         public WheelEvent()
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, null) {}
-
-        public WheelEvent(Event systemEvent)
-            : base(EventFlags.Bubbles | EventFlags.Cancellable, systemEvent)
         {
-            delta = systemEvent.delta;
+            Init();
         }
+    }
+
+    public class MouseEnterEvent : MouseEventBase<MouseEnterEvent>
+    {
+        protected override void Init()
+        {
+            base.Init();
+            flags = EventFlags.Capturable;
+        }
+
+        public MouseEnterEvent()
+        {
+            Init();
+        }
+    }
+
+    public class MouseLeaveEvent : MouseEventBase<MouseLeaveEvent>
+    {
+        protected override void Init()
+        {
+            base.Init();
+            flags = EventFlags.Capturable;
+        }
+
+        public MouseLeaveEvent()
+        {
+            Init();
+        }
+    }
+
+    public class MouseOverEvent : MouseEventBase<MouseOverEvent>
+    {
+    }
+
+    public class MouseOutEvent : MouseEventBase<MouseOutEvent>
+    {
     }
 }

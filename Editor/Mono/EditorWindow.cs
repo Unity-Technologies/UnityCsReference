@@ -41,7 +41,8 @@ namespace UnityEditor
 
         VisualElement m_RootVisualContainer;
 
-        internal VisualElement rootVisualContainer
+        internal
+        VisualElement rootVisualContainer
         {
             get
             {
@@ -50,7 +51,8 @@ namespace UnityEditor
                     m_RootVisualContainer = new VisualElement()
                     {
                         name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
-                        pickingMode = PickingMode.Ignore // do not eat events so IMGUI gets them
+                        pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                        persistenceKey = "rootVisualContainer"
                     };
                 }
                 return m_RootVisualContainer;

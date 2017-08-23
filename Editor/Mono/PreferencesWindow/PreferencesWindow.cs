@@ -240,31 +240,23 @@ namespace UnityEditor
 
         private void AddCustomSections()
         {
-            foreach (var assembly in EditorAssemblies.loadedAssemblies)
+            AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            var methodsWithAttributes = methods.MethodsWithAttributes;
+            foreach (var method in methodsWithAttributes)
             {
-                Type[] types = AssemblyHelper.GetTypesFromAssembly(assembly);
-                foreach (Type type in types)
+                OnGUIDelegate callback = Delegate.CreateDelegate(typeof(OnGUIDelegate), method.info) as OnGUIDelegate;
+                if (callback != null)
                 {
-                    foreach (MethodInfo methodInfo in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                    var attributeName = (method.attribute as PreferenceItem).name;
+                    // Group Preference sections with the same name
+                    int idx = m_Sections.FindIndex(section => section.content.text.Equals(attributeName));
+                    if (idx >= 0)
                     {
-                        PreferenceItem attr = Attribute.GetCustomAttribute(methodInfo, typeof(PreferenceItem)) as PreferenceItem;
-                        if (attr == null)
-                            continue;
-
-                        OnGUIDelegate callback = Delegate.CreateDelegate(typeof(OnGUIDelegate), methodInfo) as OnGUIDelegate;
-                        if (callback != null)
-                        {
-                            // Group Preference sections with the same name
-                            int idx = m_Sections.FindIndex(section => section.content.text.Equals(attr.name));
-                            if (idx >= 0)
-                            {
-                                m_Sections[idx].guiFunc += callback;
-                            }
-                            else
-                            {
-                                m_Sections.Add(new Section(attr.name, callback));
-                            }
-                        }
+                        m_Sections[idx].guiFunc += callback;
+                    }
+                    else
+                    {
+                        m_Sections.Add(new Section(attributeName, callback));
                     }
                 }
             }

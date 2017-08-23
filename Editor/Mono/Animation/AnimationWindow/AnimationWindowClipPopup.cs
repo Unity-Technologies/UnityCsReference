@@ -69,15 +69,21 @@ namespace UnityEditor
             return content.ToArray();
         }
 
-        private string[] GetClipNames()
+        private AnimationClip[] GetOrderedClipList()
         {
-            string[] clipNames;
-
             AnimationClip[] clips = new AnimationClip[0];
-            if (state.activeRootGameObject != null && state.activeAnimationClip != null)
+            if (state.activeRootGameObject != null)
                 clips = AnimationUtility.GetAnimationClips(state.activeRootGameObject);
 
-            clipNames = new string[clips.Length];
+            Array.Sort(clips, (AnimationClip clip1, AnimationClip clip2) => CurveUtility.GetClipName(clip1).CompareTo(CurveUtility.GetClipName(clip2)));
+
+            return clips;
+        }
+
+        private string[] GetClipNames()
+        {
+            AnimationClip[] clips = GetOrderedClipList();
+            string[] clipNames = new string[clips.Length];
 
             for (int i = 0; i < clips.Length; i++)
                 clipNames[i] = CurveUtility.GetClipName(clips[i]);
@@ -90,9 +96,9 @@ namespace UnityEditor
         {
             if (state.activeRootGameObject != null)
             {
-                AnimationClip[] clips = AnimationUtility.GetAnimationClips(state.activeRootGameObject);
+                AnimationClip[] clips = GetOrderedClipList();
                 if (index >= 0 && index < clips.Length)
-                    return AnimationUtility.GetAnimationClips(state.activeRootGameObject)[index];
+                    return clips[index];
             }
 
             return null;
@@ -104,7 +110,8 @@ namespace UnityEditor
             if (state.activeRootGameObject != null)
             {
                 int index = 0;
-                foreach (AnimationClip other in AnimationUtility.GetAnimationClips(state.activeRootGameObject))
+                AnimationClip[] clips = GetOrderedClipList();
+                foreach (AnimationClip other in clips)
                 {
                     if (clip == other)
                         return index;

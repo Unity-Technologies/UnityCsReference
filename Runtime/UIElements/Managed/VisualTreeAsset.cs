@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.StyleSheets;
 
@@ -38,6 +39,33 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Serializable]
+        internal struct SlotDefinition
+        {
+            [SerializeField]
+            public string name;
+
+            [SerializeField]
+            public int insertionPointId;
+        }
+
+
+        [Serializable]
+        internal struct SlotUsageEntry
+        {
+            [SerializeField]
+            public string slotName;
+            [SerializeField]
+            public int assetId;
+
+            public SlotUsageEntry(string slotName, int assetId)
+            {
+                this.slotName = slotName;
+                this.assetId = assetId;
+            }
+        }
+
+
         [SerializeField]
         private List<UsingEntry> m_Usings;
 
@@ -53,46 +81,86 @@ namespace UnityEngine.Experimental.UIElements
             set { m_VisualElementAssets = value; }
         }
 
-        public TemplateContainer CloneTree()
+        [SerializeField]
+        private List<SlotDefinition> m_Slots;
+
+        internal List<SlotDefinition> slots
         {
-            var tc = new TemplateContainer(this.name);
-            CloneTree(tc);
+            get { return m_Slots; }
+            set { m_Slots = value; }
+        }
+
+        [SerializeField]
+        private VisualElementAsset m_ContentContainer;
+
+        internal  VisualElementAsset contentContainer
+        {
+            get { return m_ContentContainer; }
+            set { m_ContentContainer = value; }
+        }
+
+        internal VisualElement CloneTree(Dictionary<string, VisualElement> slotInsertionPoints)
+        {
+            var tc = new TemplateContainer(name);
+            CloneTree(tc, slotInsertionPoints ?? new Dictionary<string, VisualElement>());
             return tc;
         }
 
-        public void CloneTree(VisualElement target)
+        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints)
         {
-            if (m_VisualElementAssets == null || m_VisualElementAssets.Count <= 0)
-                return;
-
-            Dictionary<int, List<VisualElementAsset>> dict = new Dictionary<int, List<VisualElementAsset>>();
-            for (int i = 0; i < m_VisualElementAssets.Count; i++)
+            if (m_VisualElementAssets != null && m_VisualElementAssets.Count > 0)
             {
-                VisualElementAsset asset = m_VisualElementAssets[i];
-                List<VisualElementAsset> children;
-                if (!dict.TryGetValue(asset.parentId, out children))
+                Dictionary<int, List<VisualElementAsset>> dict = new Dictionary<int, List<VisualElementAsset>>();
+                for (int i = 0; i < m_VisualElementAssets.Count; i++)
                 {
-                    dict.Add(asset.parentId, children = new List<VisualElementAsset>());
+                    VisualElementAsset asset = m_VisualElementAssets[i];
+                    List<VisualElementAsset> children;
+                    if (!dict.TryGetValue(asset.parentId, out children))
+                    {
+                        dict.Add(asset.parentId, children = new List<VisualElementAsset>());
+                    }
+
+                    children.Add(asset);
                 }
 
-                children.Add(asset);
-            }
-
-            List<VisualElementAsset> rootAssets;
-            if (dict.TryGetValue(0, out rootAssets) && rootAssets != null)
-            {
-                foreach (VisualElementAsset rootElement in rootAssets)
+                // all nodes under the tree root have a parentId == 0
+                List<VisualElementAsset> rootAssets;
+                if (dict.TryGetValue(0, out rootAssets) && rootAssets != null)
                 {
-                    VisualElement rootVe = CloneSetupRecursively(rootElement, dict);
-                    target.Add(rootVe);
+                    foreach (VisualElementAsset rootElement in rootAssets)
+                    {
+                        VisualElement rootVe = CloneSetupRecursively(rootElement, dict, new CreationContext(slotInsertionPoints, this, target));
+                        // if contentContainer == this, the shadow and the logical hierarchy are identical
+                        // otherwise, if there is a CC, we want to insert in the shadow
+                        target.shadow.Add(rootVe);
+                    }
                 }
             }
         }
 
-        private VisualElement CloneSetupRecursively(VisualElementAsset root, Dictionary<int, List<VisualElementAsset>> dict)
+        private VisualElement CloneSetupRecursively(VisualElementAsset root, Dictionary<int, List<VisualElementAsset>> dict, CreationContext context)
         {
-            VisualElement ve = root.Create(this);
+            VisualElement ve = root.Create(context);
+
+            // context.target is the created templateContainer
+            if (root == context.visualTreeAsset.contentContainer)
+            {
+                if (context.target is TemplateContainer)
+                    ((TemplateContainer)context.target).SetContentContainer(ve);
+                else
+                    Debug.LogErrorFormat("Cannot clone a template in an existing element which is not a Templatecontainer if the template defines a custom contentcontainer");
+            }
+
             ve.name = root.name;
+            ve.pickingMode = root.pickingMode;
+
+            // if the current element had a slot-name attribute, put it in the resulting slot mapping
+            string slotName;
+            if (context.slotInsertionPoints != null && TryGetSlotInsertionPoint(root.id, out slotName))
+            {
+                context.slotInsertionPoints.Add(slotName, ve as VisualContainer);
+            }
+
             if (root.classes != null)
             {
                 for (int i = 0; i < root.classes.Length; i++)
@@ -123,18 +191,89 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
+            var templateAsset = root as TemplateAsset;
             List<VisualElementAsset> children;
-            if (dict.TryGetValue(root.id, out children))
+            if (!dict.TryGetValue(root.id, out children))
+                return ve;
+
+            foreach (var childVea in children)
             {
-                foreach (var childVea in children)
+                // this will fill the slotInsertionPoints mapping
+                VisualElement childVe = CloneSetupRecursively(childVea, dict, context);
+                if (childVe == null)
+                    continue;
+
+                // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
+                // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place
+                if (templateAsset == null)
                 {
-                    VisualElement childVe = CloneSetupRecursively(childVea, dict);
-                    if (childVe != null)
+                    ve.Add(childVe);
+                    continue;
+                }
+
+                int index = templateAsset.slotUsages.FindIndex(u => u.assetId == childVea.id);
+                if (index != -1)
+                {
+                    VisualElement parentSlot;
+                    var key = templateAsset.slotUsages[index].slotName;
+                    if (context.slotInsertionPoints == null || !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
+                    {
+                        Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key, context.slotInsertionPoints == null ? String.Empty : String.Join(", ", context.slotInsertionPoints.Keys.ToArray()));
                         ve.Add(childVe);
+                    }
+                    else
+                        parentSlot.Add(childVe);
+                }
+                else
+                    ve.Add(childVe);
+            }
+
+            if (templateAsset != null && context.slotInsertionPoints != null)
+                context.slotInsertionPoints.Clear();
+
+            return ve;
+        }
+
+        internal bool SlotDefinitionExists(string slotName)
+        {
+            if (m_Slots == null)
+                return false;
+            return m_Slots.Exists(s => s.name == slotName);
+        }
+
+        internal bool AddSlotDefinition(string slotName, int resId)
+        {
+            if (SlotDefinitionExists(slotName))
+            {
+                return false;
+            }
+            if (m_Slots == null)
+                m_Slots = new List<SlotDefinition>(1);
+            m_Slots.Add(new SlotDefinition { insertionPointId = resId, name = slotName });
+            return true;
+        }
+
+
+        internal bool TryGetSlotInsertionPoint(int insertionPointId, out string slotName)
+        {
+            if (m_Slots == null)
+            {
+                slotName = null;
+                return false;
+            }
+
+            for (var index = 0; index < m_Slots.Count; index++)
+            {
+                var slotDefinition = m_Slots[index];
+                if (slotDefinition.insertionPointId == insertionPointId)
+                {
+                    slotName = slotDefinition.name;
+                    return true;
                 }
             }
 
-            return ve;
+            slotName = null;
+            return false;
         }
 
         internal VisualTreeAsset ResolveUsing(string templateAlias)
@@ -170,6 +309,21 @@ namespace UnityEngine.Experimental.UIElements
             m_Usings.Insert(i, new UsingEntry(alias, path));
         }
 
+    }
+
+    internal struct CreationContext
+    {
+        public readonly VisualElement target;
+        public static readonly CreationContext Default = new CreationContext();
+        internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints, VisualTreeAsset vta, VisualElement target)
+        {
+            this.target = target;
+            this.slotInsertionPoints = slotInsertionPoints;
+            visualTreeAsset = vta;
+        }
+
+        public VisualTreeAsset visualTreeAsset { get; internal set; }
+        public Dictionary<string, VisualElement> slotInsertionPoints { get; private set; }
     }
 
     [Serializable]
@@ -229,17 +383,26 @@ namespace UnityEngine.Experimental.UIElements
             set { m_Stylesheets = value; }
         }
 
-        public abstract VisualElement Create(VisualTreeAsset visualTreeAsset);
+        [SerializeField]
+        PickingMode m_PickingMode;
+
+        public PickingMode pickingMode
+        {
+            get { return m_PickingMode; }
+            set { m_PickingMode = value; }
+        }
+
+        public abstract VisualElement Create(CreationContext creationContext);
     }
 
     [Serializable]
     internal abstract class VisualElementAsset<T> : VisualElementAsset where T : VisualElement
     {
-        protected abstract T CreateElementInstance(VisualTreeAsset visualTreeAsset);
+        protected abstract T CreateElementInstance(CreationContext creationContext);
 
-        public override VisualElement Create(VisualTreeAsset visualTreeAsset)
+        public override VisualElement Create(CreationContext creationContext)
         {
-            var res = CreateElementInstance(visualTreeAsset);
+            T res = CreateElementInstance(creationContext);
             res.name = name;
             for (int i = 0; classes != null && i < classes.Length; i++)
             {
@@ -265,28 +428,43 @@ namespace UnityEngine.Experimental.UIElements
             set { m_TemplateAlias = value; }
         }
 
-        protected override TemplateContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        [SerializeField]
+        private List<VisualTreeAsset.SlotUsageEntry> m_SlotUsages;
+
+        internal List<VisualTreeAsset.SlotUsageEntry> slotUsages
         {
-            VisualTreeAsset vea = visualTreeAsset.ResolveUsing(m_TemplateAlias);
+            get { return m_SlotUsages; }
+            set { m_SlotUsages = value; }
+        }
+
+        protected override TemplateContainer CreateElementInstance(CreationContext ctx)
+        {
+            VisualTreeAsset vta = ctx.visualTreeAsset.ResolveUsing(m_TemplateAlias);
 
             var tc = new TemplateContainer(m_TemplateAlias);
-
-            if (vea == null)
-                tc.Add(new Label(string.Format("Unknown Element: '{0}'", m_TemplateAlias)));
-            else
-                vea.CloneTree(tc);
-
-            if (vea == null)
+            if (vta == null)
+            {
                 Debug.LogErrorFormat("Could not resolve template with alias '{0}'", m_TemplateAlias);
+                tc.Add(new Label(string.Format("Unknown Element: '{0}'", m_TemplateAlias)));
+            }
+            else
+                vta.CloneTree(tc, ctx.slotInsertionPoints);
 
             return tc;
+        }
+
+        public void AddSlotUsage(string slotName, int resId)
+        {
+            if (m_SlotUsages == null)
+                m_SlotUsages = new List<VisualTreeAsset.SlotUsageEntry>();
+            m_SlotUsages.Add(new VisualTreeAsset.SlotUsageEntry(slotName, resId));
         }
     }
 
     [Serializable]
     internal class ButtonAsset : VisualElementAsset<Button>
     {
-        protected override Button CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Button CreateElementInstance(CreationContext ctx)
         {
             return new Button(null);
         }
@@ -295,7 +473,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ImageAsset : VisualElementAsset<Image>
     {
-        protected override Image CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Image CreateElementInstance(CreationContext ctx)
         {
             return new Image();
         }
@@ -304,7 +482,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class LabelAsset : VisualElementAsset<Label>
     {
-        protected override Label CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Label CreateElementInstance(CreationContext ctx)
         {
             return new Label();
         }
@@ -318,7 +496,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal long m_Interval;
 
-        protected override RepeatButton CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override RepeatButton CreateElementInstance(CreationContext ctx)
         {
             return new RepeatButton(null, m_Delay, m_Interval);
         }
@@ -334,7 +512,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal float m_HighValue;
 
-        protected override Scroller CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Scroller CreateElementInstance(CreationContext ctx)
         {
             return new Scroller(m_LowValue, m_HighValue, null, m_Direction);
         }
@@ -348,7 +526,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal long m_Interval;
 
-        protected override ScrollerButton CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override ScrollerButton CreateElementInstance(CreationContext ctx)
         {
             return new ScrollerButton(null, m_Delay, m_Interval);
         }
@@ -357,7 +535,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ScrollViewAsset : VisualElementAsset<ScrollView>
     {
-        protected override ScrollView CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override ScrollView CreateElementInstance(CreationContext ctx)
         {
             return new ScrollView();
         }
@@ -373,7 +551,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         internal Slider.Direction m_Direction;
 
-        protected override Slider CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Slider CreateElementInstance(CreationContext ctx)
         {
             return new Slider(m_LowValue, m_HighValue == m_LowValue ? m_LowValue + 1 : m_HighValue, null, m_Direction);
         }
@@ -382,7 +560,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class TextFieldAsset : VisualElementAsset<TextField>
     {
-        protected override TextField CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override TextField CreateElementInstance(CreationContext ctx)
         {
             return new TextField();
         }
@@ -391,7 +569,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class ToggleAsset : VisualElementAsset<Toggle>
     {
-        protected override Toggle CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override Toggle CreateElementInstance(CreationContext ctx)
         {
             return new Toggle(null);
         }
@@ -400,7 +578,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class VisualContainerAsset : VisualElementAsset<VisualContainer>
     {
-        protected override VisualContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override VisualContainer CreateElementInstance(CreationContext ctx)
         {
             return new VisualContainer();
         }
@@ -409,7 +587,7 @@ namespace UnityEngine.Experimental.UIElements
     [Serializable]
     internal class IMGUIContainerAsset : VisualElementAsset<IMGUIContainer>
     {
-        protected override IMGUIContainer CreateElementInstance(VisualTreeAsset visualTreeAsset)
+        protected override IMGUIContainer CreateElementInstance(CreationContext ctx)
         {
             return new IMGUIContainer(null);
         }

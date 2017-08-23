@@ -173,6 +173,7 @@ namespace UnityEditor
         {
             imguiContainer = new IMGUIContainer(OldOnGUI);
             imguiContainer.StretchToParentSize();
+            imguiContainer.persistenceKey = "Dockarea";
             visualTree.Insert(0, imguiContainer);
         }
 

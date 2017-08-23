@@ -849,6 +849,12 @@ namespace UnityEngine
             return DoToggle(position, id, value, content, style.m_Ptr);
         }
 
+        public enum ToolbarButtonSize
+        {
+            Fixed,
+            FitToContents
+        };
+
         /// *listonly*
         public static int Toolbar(Rect position, int selected, string[] texts)
         {
@@ -862,9 +868,9 @@ namespace UnityEngine
         }
 
         /// *listonly*
-        public static int Toolbar(Rect position, int selected, GUIContent[] content)
+        public static int Toolbar(Rect position, int selected, GUIContent[] contents)
         {
-            return Toolbar(position, selected, content, s_Skin.button);
+            return Toolbar(position, selected, contents, s_Skin.button);
         }
 
         /// *listonly*
@@ -879,13 +885,19 @@ namespace UnityEngine
             return Toolbar(position, selected, GUIContent.Temp(images), style);
         }
 
-        // Make a toolbar
+        /// *listonly*
         public static int Toolbar(Rect position, int selected, GUIContent[] contents, GUIStyle style)
         {
-            return Toolbar(position, selected, contents, null, style);
+            return Toolbar(position, selected, contents, null, style, ToolbarButtonSize.Fixed);
         }
 
-        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style)
+        // Make a toolbar
+        public static int Toolbar(Rect position, int selected, GUIContent[] contents, GUIStyle style, ToolbarButtonSize buttonSize)
+        {
+            return Toolbar(position, selected, contents, null, style, buttonSize);
+        }
+
+        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style, ToolbarButtonSize buttonSize)
         {
             GUIUtility.CheckOnGUI();
 
@@ -893,7 +905,7 @@ namespace UnityEngine
             GUIStyle firstStyle, midStyle, lastStyle;
             FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
 
-            return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle);
+            return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle, buttonSize);
         }
 
         /// *listonly*
@@ -930,7 +942,7 @@ namespace UnityEngine
         public static int SelectionGrid(Rect position, int selected, GUIContent[] contents, int xCount, GUIStyle style)
         {
             if (style == null) style = s_Skin.button;
-            return DoButtonGrid(position, selected, contents, null, xCount, style, style, style, style);
+            return DoButtonGrid(position, selected, contents, null, xCount, style, style, style, style, ToolbarButtonSize.Fixed);
         }
 
         // Find many GUIStyles from style.name permutations (Helper function for toolbars).
@@ -962,7 +974,7 @@ namespace UnityEngine
         }
 
         // Make a button grid
-        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle)
+        private static int DoButtonGrid(Rect position, int selected, GUIContent[] contents, string[] controlNames, int xCount, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize)
         {
             GUIUtility.CheckOnGUI();
             int count = contents.Length;
@@ -988,7 +1000,7 @@ namespace UnityEngine
             if (style.fixedHeight != 0)
                 elemHeight = style.fixedHeight;
 
-            Rect[] buttonRects = CalcMouseRects(position, count, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false);
+            Rect[] buttonRects = CalcMouseRects(position, contents, xCount, elemWidth, elemHeight, style, firstStyle, midStyle, lastStyle, false, buttonSize);
             GUIStyle selectedButtonStyle = null;
             int selectedButtonID = 0;
             for (int buttonIndex = 0; buttonIndex < count; ++buttonIndex)
@@ -1060,25 +1072,37 @@ namespace UnityEngine
         }
 
         // Helper function: Get all mouse rects
-        private static Rect[] CalcMouseRects(Rect position, int count, int xCount, float elemWidth, float elemHeight, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, bool addBorders)
+        private static Rect[] CalcMouseRects(Rect position, GUIContent[] contents, int xCount, float elemWidth, float elemHeight, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, bool addBorders, ToolbarButtonSize buttonSize)
         {
+            int count = contents.Length;
             int y = 0;
             int x = 0;
             float xPos = position.xMin, yPos = position.yMin;
-            GUIStyle currentButtonStyle = style;
+            GUIStyle currentStyle = style;
             Rect[] retval = new Rect[count];
             if (count > 1)
-                currentButtonStyle = firstStyle;
+                currentStyle = firstStyle;
             for (int i = 0; i < count; i++)
             {
+                float w = 0;
+                switch (buttonSize)
+                {
+                    case ToolbarButtonSize.Fixed:
+                        w = elemWidth;
+                        break;
+                    case ToolbarButtonSize.FitToContents:
+                        w = currentStyle.CalcSize(contents[i]).x;
+                        break;
+                }
+
                 if (!addBorders)
-                    retval[i] = new Rect(xPos, yPos, elemWidth, elemHeight);
+                    retval[i] = new Rect(xPos, yPos, w, elemHeight);
                 else
-                    retval[i] = currentButtonStyle.margin.Add(new Rect(xPos, yPos, elemWidth, elemHeight));
+                    retval[i] = currentStyle.margin.Add(new Rect(xPos, yPos, w, elemHeight));
 
                 // Correct way to get the rounded width:
                 retval[i].width = Mathf.Round(retval[i].xMax) - Mathf.Round(retval[i].x);
-                // Round the position *after* the position has been rounded:
+                // Round the position *after* the width has been rounded:
                 retval[i].x = Mathf.Round(retval[i].x);
 
                 // Don't round xPos here. If rounded, the right edge of this rect may
@@ -1087,9 +1111,10 @@ namespace UnityEngine
                 // (See case 366967)
 
                 GUIStyle nextStyle = midStyle;
-                if (i == count - 2)
+                if (i == count - 2 || i == xCount - 2)
                     nextStyle = lastStyle;
-                xPos += elemWidth + Mathf.Max(currentButtonStyle.margin.right, nextStyle.margin.left);
+
+                xPos += w + Mathf.Max(currentStyle.margin.right, nextStyle.margin.left);
 
                 x++;
                 if (x >= xCount)
@@ -1098,7 +1123,10 @@ namespace UnityEngine
                     x = 0;
                     yPos += elemHeight + Mathf.Max(style.margin.top, style.margin.bottom);
                     xPos = position.xMin;
+                    nextStyle = firstStyle;
                 }
+
+                currentStyle = nextStyle;
             }
             return retval;
         }
