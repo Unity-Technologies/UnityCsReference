@@ -368,7 +368,7 @@ namespace UnityEditor
             CreatePopupMenu("Mode", spritePackerPopupList, index, SetSpritePackerMode);
 
             index = Mathf.Clamp((int)(EditorSettings.spritePackerPaddingPower - 1), 0, 2);
-            CreatePopupMenu("Padding Power", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
+            CreatePopupMenu("Padding Power (Legacy Sprite Packer)", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
 
             DoProjectGenerationSettings();
             DoEtcTextureCompressionSettings(editorEnabled);

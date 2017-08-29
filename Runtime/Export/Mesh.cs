@@ -420,9 +420,14 @@ namespace UnityEngine
         //
         //
 
-        public void Clear(bool keepVertexLayout = true)
+        public void Clear(bool keepVertexLayout)
         {
             ClearImpl(keepVertexLayout);
+        }
+
+        public void Clear()
+        {
+            ClearImpl(true);
         }
 
         public void RecalculateBounds()

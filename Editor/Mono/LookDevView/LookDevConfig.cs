@@ -339,12 +339,6 @@ namespace UnityEditor
             }
         }
 
-        public void SetEnabledRecursive(GameObject go, bool enabled)
-        {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
-        }
-
         internal static void DisableRendererProperties(GameObject go)
         {
             foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
@@ -436,7 +430,7 @@ namespace UnityEditor
                     m_PreviewObjects[index][i].transform.rotation = Quaternion.identity;
                     EditorUtility.InitInstantiatedPreviewRecursive(m_PreviewObjects[index][i]);
                     DisableRendererProperties(m_PreviewObjects[index][i]); // Avoid light probe influence from the main scene (but still have the default probe lighting)
-                    SetEnabledRecursive(m_PreviewObjects[index][i], false);
+                    PreviewRenderUtility.SetEnabledRecursive(m_PreviewObjects[index][i], false);
                 }
 
                 UpdateCurrentObjectArray();

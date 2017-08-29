@@ -406,171 +406,260 @@ namespace UnityEngine.XR.WSA.Input
 
 #pragma warning disable 0618
         [RequiredByNativeCode]
-        private void InvokeHoldCanceled(HoldCanceledEventArgs eventArgs)
+        private void InvokeHoldCanceled(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var holdCanceledEvent = HoldCanceledEvent;
             if (holdCanceledEvent != null)
-                holdCanceledEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                holdCanceledEvent(source.m_SourceKind, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var holdCanceled = HoldCanceled;
             if (holdCanceled != null)
+            {
+                HoldCanceledEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 holdCanceled(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeHoldCompleted(HoldCompletedEventArgs eventArgs)
+        private void InvokeHoldCompleted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var holdCompletedEvent = HoldCompletedEvent;
             if (holdCompletedEvent != null)
-                holdCompletedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                holdCompletedEvent(source.m_SourceKind, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var holdCompleted = HoldCompleted;
             if (holdCompleted != null)
+            {
+                HoldCompletedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 holdCompleted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeHoldStarted(HoldStartedEventArgs eventArgs)
+        private void InvokeHoldStarted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var holdStartedEvent = HoldStartedEvent;
             if (holdStartedEvent != null)
-                holdStartedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                holdStartedEvent(source.m_SourceKind, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var holdStarted = HoldStarted;
             if (holdStarted != null)
+            {
+                HoldStartedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 holdStarted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeTapped(TappedEventArgs eventArgs)
+        private void InvokeTapped(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose, int tapCount)
         {
             var tappedEvent = TappedEvent;
             if (tappedEvent != null)
-                tappedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_TapCount, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                tappedEvent(source.m_SourceKind, tapCount, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var tapped = Tapped;
             if (tapped != null)
+            {
+                TappedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
+                eventArgs.m_TapCount = tapCount;
                 tapped(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationCanceled(ManipulationCanceledEventArgs eventArgs)
+        private void InvokeManipulationCanceled(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var manipulationCanceledEvent = ManipulationCanceledEvent;
             if (manipulationCanceledEvent != null)
-                manipulationCanceledEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                manipulationCanceledEvent(source.m_SourceKind, Vector3.zero, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var manipulationCanceled = ManipulationCanceled;
             if (manipulationCanceled != null)
+            {
+                ManipulationCanceledEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 manipulationCanceled(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationCompleted(ManipulationCompletedEventArgs eventArgs)
+        private void InvokeManipulationCompleted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose, Vector3 cumulativeDelta)
         {
             var manipulationCompletedEvent = ManipulationCompletedEvent;
             if (manipulationCompletedEvent != null)
-                manipulationCompletedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_CumulativeDelta, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                manipulationCompletedEvent(source.m_SourceKind, cumulativeDelta, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var manipulationCompleted = ManipulationCompleted;
             if (manipulationCompleted != null)
+            {
+                ManipulationCompletedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
+                eventArgs.m_CumulativeDelta = cumulativeDelta;
                 manipulationCompleted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationStarted(ManipulationStartedEventArgs eventArgs)
+        private void InvokeManipulationStarted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var manipulationStartedEvent = ManipulationStartedEvent;
             if (manipulationStartedEvent != null)
-                manipulationStartedEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                manipulationStartedEvent(source.m_SourceKind, Vector3.zero, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var manipulationStarted = ManipulationStarted;
             if (manipulationStarted != null)
+            {
+                ManipulationStartedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 manipulationStarted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationUpdated(ManipulationUpdatedEventArgs eventArgs)
+        private void InvokeManipulationUpdated(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose, Vector3 cumulativeDelta)
         {
             var manipulationUpdatedEvent = ManipulationUpdatedEvent;
             if (manipulationUpdatedEvent != null)
-                manipulationUpdatedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_CumulativeDelta, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                manipulationUpdatedEvent(source.m_SourceKind, cumulativeDelta, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var manipulationUpdated = ManipulationUpdated;
             if (manipulationUpdated != null)
+            {
+                ManipulationUpdatedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
+                eventArgs.m_CumulativeDelta = cumulativeDelta;
                 manipulationUpdated(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationCanceled(NavigationCanceledEventArgs eventArgs)
+        private void InvokeNavigationCanceled(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var navigationCanceledEvent = NavigationCanceledEvent;
             if (navigationCanceledEvent != null)
-                navigationCanceledEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                navigationCanceledEvent(source.m_SourceKind, Vector3.zero, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var navigationCanceled = NavigationCanceled;
             if (navigationCanceled != null)
+            {
+                NavigationCanceledEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 navigationCanceled(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationCompleted(NavigationCompletedEventArgs eventArgs)
+        private void InvokeNavigationCompleted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose, Vector3 normalizedOffset)
         {
             var navigationCompletedEvent = NavigationCompletedEvent;
             if (navigationCompletedEvent != null)
-                navigationCompletedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_NormalizedOffset, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                navigationCompletedEvent(source.m_SourceKind, normalizedOffset, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var navigationCompleted = NavigationCompleted;
             if (navigationCompleted != null)
+            {
+                NavigationCompletedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
+                eventArgs.m_NormalizedOffset = normalizedOffset;
                 navigationCompleted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationStarted(NavigationStartedEventArgs eventArgs)
+        private void InvokeNavigationStarted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var navigationStartedEvent = NavigationStartedEvent;
             if (navigationStartedEvent != null)
-                navigationStartedEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                navigationStartedEvent(source.m_SourceKind, Vector3.zero, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var navigationStarted = NavigationStarted;
             if (navigationStarted != null)
+            {
+                NavigationStartedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 navigationStarted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationUpdated(NavigationUpdatedEventArgs eventArgs)
+        private void InvokeNavigationUpdated(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose, Vector3 normalizedOffset)
         {
             var navigationUpdatedEvent = NavigationUpdatedEvent;
             if (navigationUpdatedEvent != null)
-                navigationUpdatedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_NormalizedOffset, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                navigationUpdatedEvent(source.m_SourceKind, normalizedOffset, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var navigationUpdated = NavigationUpdated;
             if (navigationUpdated != null)
+            {
+                NavigationUpdatedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
+                eventArgs.m_NormalizedOffset = normalizedOffset;
                 navigationUpdated(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeRecognitionEnded(RecognitionEndedEventArgs eventArgs)
+        private void InvokeRecognitionEnded(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var recognitionEndedEvent = RecognitionEndedEvent;
             if (recognitionEndedEvent != null)
-                recognitionEndedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                recognitionEndedEvent(source.m_SourceKind, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var recognitionEnded = RecognitionEnded;
             if (recognitionEnded != null)
+            {
+                RecognitionEndedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 recognitionEnded(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]
-        private void InvokeRecognitionStarted(RecognitionStartedEventArgs eventArgs)
+        private void InvokeRecognitionStarted(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
             var recognitionStartedEvent = RecognitionStartedEvent;
             if (recognitionStartedEvent != null)
-                recognitionStartedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+                recognitionStartedEvent(source.m_SourceKind, new Ray(headPose.position, headPose.rotation * Vector3.forward));
 
             var recognitionStarted = RecognitionStarted;
             if (recognitionStarted != null)
+            {
+                RecognitionStartedEventArgs eventArgs;
+                eventArgs.m_Source = source;
+                eventArgs.m_SourcePose = sourcePose;
+                eventArgs.m_HeadPose = headPose;
                 recognitionStarted(eventArgs);
+            }
         }
 
         [RequiredByNativeCode]

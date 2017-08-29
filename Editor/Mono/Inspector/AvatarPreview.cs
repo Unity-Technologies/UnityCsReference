@@ -122,20 +122,14 @@ namespace UnityEditor
         }
         private static Styles s_Styles;
 
-        private static void SetEnabledRecursive(GameObject go, bool enabled)
-        {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
-        }
-
         void SetPreviewCharacterEnabled(bool enabled, bool showReference)
         {
             if (m_PreviewInstance != null)
-                SetEnabledRecursive(m_PreviewInstance, enabled);
-            SetEnabledRecursive(m_ReferenceInstance, showReference && enabled);
-            SetEnabledRecursive(m_DirectionInstance, showReference && enabled);
-            SetEnabledRecursive(m_PivotInstance, showReference && enabled);
-            SetEnabledRecursive(m_RootInstance, showReference && enabled);
+                PreviewRenderUtility.SetEnabledRecursive(m_PreviewInstance, enabled);
+            PreviewRenderUtility.SetEnabledRecursive(m_ReferenceInstance, showReference && enabled);
+            PreviewRenderUtility.SetEnabledRecursive(m_DirectionInstance, showReference && enabled);
+            PreviewRenderUtility.SetEnabledRecursive(m_PivotInstance, showReference && enabled);
+            PreviewRenderUtility.SetEnabledRecursive(m_RootInstance, showReference && enabled);
         }
 
         static AnimationClip GetFirstAnimationClipFromMotion(Motion motion)

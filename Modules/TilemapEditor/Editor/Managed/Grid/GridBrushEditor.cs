@@ -384,11 +384,11 @@ namespace UnityEditor
             int hash = 0;
             unchecked
             {
-                hash = hash * 33 + gridLayout.GetHashCode();
-                hash = hash * 33 + brushTarget.GetHashCode();
+                hash = hash * 33 + (gridLayout != null ? gridLayout.GetHashCode() : 0);
+                hash = hash * 33 + (brushTarget != null ? brushTarget.GetHashCode() : 0);
                 hash = hash * 33 + position.GetHashCode();
                 hash = hash * 33 + tool.GetHashCode();
-                hash = hash * 33 + brush.GetHashCode();
+                hash = hash * 33 + (brush != null ? brush.GetHashCode() : 0);
             }
 
             return hash;

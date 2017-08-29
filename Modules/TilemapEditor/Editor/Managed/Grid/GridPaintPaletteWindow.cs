@@ -296,14 +296,11 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = 0;
         }
 
-        private void SetEnabledRecursive(GameObject go, bool enabled)
-        {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
-        }
-
         public void ResetPreviewInstance()
         {
+            if (m_PreviewUtility == null)
+                InitPreviewUtility();
+
             DestroyPreviewInstance();
             if (palette != null)
             {
@@ -344,7 +341,7 @@ namespace UnityEditor
                 foreach (var transform in m_PaletteInstance.GetComponentsInChildren<Transform>())
                     transform.gameObject.hideFlags = HideFlags.HideAndDontSave;
 
-                SetEnabledRecursive(m_PaletteInstance, false);
+                PreviewRenderUtility.SetEnabledRecursive(m_PaletteInstance, false);
 
                 clipboardView.ResetPreviewMesh();
             }

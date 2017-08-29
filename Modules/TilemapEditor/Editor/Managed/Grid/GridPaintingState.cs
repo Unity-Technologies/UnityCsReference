@@ -29,11 +29,6 @@ namespace UnityEditor
             m_FlushPaintTargetCache = true;
         }
 
-        private void OnBrushChanged(GridBrushBase gridBrushBase)
-        {
-            m_FlushPaintTargetCache = true;
-        }
-
         void OnDisable()
         {
             EditorApplication.hierarchyWindowChanged -= HierarchyChanged;
@@ -141,7 +136,7 @@ namespace UnityEditor
 
         public static bool ValidatePaintTarget(GameObject candidate)
         {
-            if (candidate == null || candidate.GetComponentInParent<Grid>() == null || activeBrushEditor == null)
+            if (candidate == null || candidate.GetComponentInParent<Grid>() == null && candidate.GetComponent<Grid>() == null)
                 return false;
 
             if (validTargets != null && !validTargets.Contains(candidate))

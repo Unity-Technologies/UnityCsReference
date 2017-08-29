@@ -85,8 +85,6 @@ namespace UnityEditor
                 }
                 if (s_CollabToolbarWindow == null)
                     s_CollabToolbarWindow = CreateInstance<CollabToolbarWindow>() as CollabToolbarWindow;
-                // Has to be done before calling Show / ShowWithMode
-                buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
                 var windowSize = new Vector2(kWindowWidth, kWindowHeight);
                 s_CollabToolbarWindow.initialOpenUrl = "file:///" + EditorApplication.userJavascriptPackagesPath + "unityeditor-collab-toolbar/dist/index.html";
                 s_CollabToolbarWindow.Init();

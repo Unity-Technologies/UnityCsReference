@@ -48,6 +48,7 @@ namespace UnityEditor
             EditMode.editModeEnded += OnEditModeEnd;
             GridPaintingState.brushChanged += OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
             m_RegisteredEventHandlers = true;
         }
@@ -72,6 +73,11 @@ namespace UnityEditor
             UpdateCache();
         }
 
+        private void OnUndoRedoPerformed()
+        {
+            FlushCachedGridProxy();
+        }
+
         void OnDisable()
         {
             FlushCachedGridProxy();
@@ -82,6 +88,7 @@ namespace UnityEditor
             EditMode.editModeEnded -= OnEditModeEnd;
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             m_RegisteredEventHandlers = false;
         }
 

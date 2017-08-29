@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.XR.Tango
 {
-    public enum AreaLearningMode
+    internal enum AreaLearningMode
     {
         None = 0,
         LocalAreaDescriptionWithoutLearning,
@@ -15,18 +15,21 @@ namespace UnityEngine.XR.Tango
         CloudAreaDescription
     }
 
-    public partial class TangoConfig
+    internal partial class TangoConfig
     {
-        public bool enableMotionTracking
-        {
-            set { AddConfigParameter("config_enable_motion_tracking", value); }
-        }
-
-        public bool enableDepth
+        internal bool enableMotionTracking
         {
             set
             {
+                AddConfigParameter("config_enable_motion_tracking", value);
                 AddConfigParameter("config_enable_auto_recovery", value);
+            }
+        }
+
+        internal bool enableDepth
+        {
+            set
+            {
                 AddConfigParameter("config_enable_depth", value);
 
                 if (value)
@@ -36,12 +39,12 @@ namespace UnityEngine.XR.Tango
             }
         }
 
-        public bool enableColorCamera
+        internal bool enableColorCamera
         {
             set { AddConfigParameter("config_enable_color_camera", value); }
         }
 
-        public AreaLearningMode areaLearningMode
+        internal AreaLearningMode areaLearningMode
         {
             set
             {
@@ -75,32 +78,32 @@ namespace UnityEngine.XR.Tango
         internal Dictionary<string, long> m_longParams = new Dictionary<string, long>();
         internal Dictionary<string, string> m_stringParams = new Dictionary<string, string>();
 
-        public void AddConfigParameter(string name, bool value)
+        internal void AddConfigParameter(string name, bool value)
         {
             m_boolParams[name] = value;
         }
 
-        public void AddConfigParameter(string name, double value)
+        internal void AddConfigParameter(string name, double value)
         {
             m_doubleParams[name] = value;
         }
 
-        public void AddConfigParameter(string name, int value)
+        internal void AddConfigParameter(string name, int value)
         {
             m_intParams[name] = value;
         }
 
-        public void AddConfigParameter(string name, long value)
+        internal void AddConfigParameter(string name, long value)
         {
             m_longParams[name] = value;
         }
 
-        public void AddConfigParameter(string name, string value)
+        internal void AddConfigParameter(string name, string value)
         {
             m_stringParams[name] = value;
         }
 
-        public void RemoveConfigParameter(string name)
+        internal void RemoveConfigParameter(string name)
         {
             m_stringParams.Remove(name);
             m_longParams.Remove(name);

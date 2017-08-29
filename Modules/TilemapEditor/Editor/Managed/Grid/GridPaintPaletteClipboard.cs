@@ -293,6 +293,9 @@ namespace UnityEditor
 
         void Frame(RectInt rect)
         {
+            if (grid == null)
+                return;
+
             previewUtility.camera.transform.position = grid.CellToLocalInterpolated(new Vector3(rect.center.x, rect.center.y, 0));
             previewUtility.camera.transform.position.Set(previewUtility.camera.transform.position.x, previewUtility.camera.transform.position.y, -10f);
 
@@ -654,24 +657,18 @@ namespace UnityEditor
             CallOnPaintSceneGUI(mouseGridPosition);
         }
 
-        private void SetEnabledRecursive(GameObject go, bool enabled)
-        {
-            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
-                renderer.enabled = enabled;
-        }
-
         private void BeginPreviewInstance()
         {
             m_OldFog = RenderSettings.fog;
             Unsupported.SetRenderSettingsUseFogNoDirty(false);
             Handles.DrawCameraImpl(m_GUIRect, previewUtility.camera, DrawCameraMode.Textured, false, new DrawGridParameters(), true, false);
-            SetEnabledRecursive(paletteInstance, true);
+            PreviewRenderUtility.SetEnabledRecursive(paletteInstance, true);
         }
 
         private void EndPreviewInstance()
         {
             previewUtility.Render();
-            SetEnabledRecursive(paletteInstance, false);
+            PreviewRenderUtility.SetEnabledRecursive(paletteInstance, false);
             Unsupported.SetRenderSettingsUseFogNoDirty(m_OldFog);
         }
 
@@ -721,7 +718,10 @@ namespace UnityEditor
                     SavePaletteIfNecessary();
 
                     if (wasEmpty)
+                    {
+                        ResetPreviewInstance();
                         FrameEntirePalette();
+                    }
 
                     Event.current.Use();
                     GUIUtility.ExitGUI();

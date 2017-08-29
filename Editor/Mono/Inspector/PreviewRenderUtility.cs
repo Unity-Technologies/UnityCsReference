@@ -114,6 +114,12 @@ namespace UnityEditor
             m_PixelPerfect = false;
         }
 
+        internal static void SetEnabledRecursive(GameObject go, bool enabled)
+        {
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+        }
+
         [Obsolete("Use the property camera instead (UnityUpgradable) -> camera", false)]
         public Camera m_Camera;
 

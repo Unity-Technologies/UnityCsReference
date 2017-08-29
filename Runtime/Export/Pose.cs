@@ -8,7 +8,7 @@ using System;
 namespace UnityEngine
 {
     [Serializable]
-    public struct Pose
+    public partial struct Pose
     {
         public Vector3 position;
         public Quaternion rotation;

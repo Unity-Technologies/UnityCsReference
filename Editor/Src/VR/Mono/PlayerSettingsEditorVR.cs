@@ -20,9 +20,9 @@ namespace UnityEditorInternal.VR
     {
         static class Styles
         {
-            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TextContent("Single-pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
-            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi-pass stereo rendering will be used on Android devices that don't support single-pass stereo rendering.");
-            public static readonly GUIContent singlePassStereoRendering = EditorGUIUtility.TextContent("Single-Pass Stereo Rendering");
+            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
+            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
+            public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
@@ -55,7 +55,6 @@ namespace UnityEditorInternal.VR
         private SerializedProperty m_StereoRenderingPath;
 
         private SerializedProperty m_AndroidEnableTango;
-        private SerializedProperty m_AndroidTangoUsesCamera;
 
         private bool m_InstallsRequired = false;
         private bool m_VuforiaInstalled = false;
@@ -68,7 +67,6 @@ namespace UnityEditorInternal.VR
             m_StereoRenderingPath = m_Settings.serializedObject.FindProperty("m_StereoRenderingPath");
 
             m_AndroidEnableTango = m_Settings.FindPropertyAssert("AndroidEnableTango");
-            m_AndroidTangoUsesCamera = m_Settings.FindPropertyAssert("AndroidTangoUsesCamera");
         }
 
         private void RefreshVRDeviceList(BuildTargetGroup targetGroup)
@@ -302,6 +300,10 @@ namespace UnityEditorInternal.VR
                     EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning.text, MessageType.Warning);
                 }
             }
+            else if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing) && (targetGroup == BuildTargetGroup.Standalone))
+            {
+                EditorGUILayout.HelpBox(Styles.singlePassInstancedWarning.text, MessageType.Warning);
+            }
         }
 
         private void AddVRDeviceMenuSelected(object userData, string[] options, int selected)
@@ -492,11 +494,10 @@ namespace UnityEditorInternal.VR
             if (PlayerSettings.Android.androidTangoEnabled)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_AndroidTangoUsesCamera, EditorGUIUtility.TextContent("Tango Uses Camera"));
 
-                if ((int)PlayerSettings.Android.minSdkVersion < 23)
+                if ((int)PlayerSettings.Android.minSdkVersion < 24)
                 {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 6.0");
+                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 7.0");
                     EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
                 }
                 EditorGUI.indentLevel--;

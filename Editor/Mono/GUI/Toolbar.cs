@@ -501,12 +501,14 @@ namespace UnityEditor
 
         void ShowPopup(Rect rect)
         {
-            // save all the assets
-            AssetDatabase.SaveAssets();
             // window should be centered on the button
             ReserveRight(kCollabButtonWidth / 2, ref rect);
             ReserveBottom(5, ref rect);
-            if (CollabToolbarWindow.ShowCenteredAtPosition(rect))
+            // calculate screen rect before saving assets since it might open the AssetSaveDialog window
+            var screenRect = GUIUtility.GUIToScreenRect(rect);
+            // save all the assets
+            AssetDatabase.SaveAssets();
+            if (CollabToolbarWindow.ShowCenteredAtPosition(screenRect))
             {
                 GUIUtility.ExitGUI();
             }
