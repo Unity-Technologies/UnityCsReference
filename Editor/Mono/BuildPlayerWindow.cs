@@ -233,7 +233,7 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        static BuildTarget CalculateSelectedBuildTarget()
+        internal static BuildTarget CalculateSelectedBuildTarget()
         {
             BuildTargetGroup targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
             switch (targetGroup)
@@ -319,7 +319,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
-            EditorGUILayout.HelpBox("Because you are not a member of this project this build will not access Unity services.", MessageType.Warning);
+            EditorGUILayout.HelpBox(EditorGUIUtility.TextContent("Unable to access Unity services. Please log in, or request membership to this project to use these services.").text, MessageType.Warning);
             GUILayout.EndVertical();
             GUILayout.Space(5);
             GUILayout.EndHorizontal();
@@ -842,10 +842,6 @@ namespace UnityEditor
             if (platform.targetGroup == BuildTargetGroup.Android
                 && EditorUserBuildSettings.exportAsGoogleAndroidProject)
                 buildButton = styles.export;
-
-            if (platform.targetGroup == BuildTargetGroup.iOS)
-                if (Application.platform != RuntimePlatform.OSXEditor)
-                    enableBuildAndRunButton = false;
 
             // Build Button
             GUI.enabled = enableBuildButton;

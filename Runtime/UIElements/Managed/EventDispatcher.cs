@@ -440,22 +440,22 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            var path = BuildPropagationPath(evt.target as VisualElement);
+            var paths = BuildPropagationPath(evt.target as VisualElement);
 
             evt.dispatch = true;
 
-            if (evt.capturable)
+            if (evt.capturable && paths.capturePath.Count > 0)
             {
                 // Phase 1: Capture phase
                 // Propagate event from root to target.parent
                 evt.propagationPhase = PropagationPhase.Capture;
 
-                for (int i = 0; i < path.Count; i++)
+                for (int i = paths.capturePath.Count - 1; i >= 0; i--)
                 {
                     if (evt.isPropagationStopped)
                         break;
 
-                    evt.currentTarget = path[i];
+                    evt.currentTarget = paths.capturePath[i];
                     evt.currentTarget.HandleEvent(evt);
                 }
             }
@@ -470,16 +470,16 @@ namespace UnityEngine.Experimental.UIElements
 
             // Phase 3: bubble Up phase
             // Propagate event from target parent up to root
-            if (evt.bubbles)
+            if (evt.bubbles && paths.bubblePath.Count > 0)
             {
                 evt.propagationPhase = PropagationPhase.BubbleUp;
 
-                for (int i = path.Count - 1; i >= 0; i--)
+                for (int i = 0; i < paths.bubblePath.Count; i++)
                 {
                     if (evt.isPropagationStopped)
                         break;
 
-                    evt.currentTarget = path[i];
+                    evt.currentTarget = paths.bubblePath[i];
                     evt.currentTarget.HandleEvent(evt);
                 }
             }
@@ -505,9 +505,22 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private static List<VisualElement> BuildPropagationPath(VisualElement elem)
+        struct PropagationPaths
         {
-            var ret = new List<VisualElement>(16);
+            public List<VisualElement> capturePath;
+            public List<VisualElement> bubblePath;
+
+            public PropagationPaths(int initialSize)
+            {
+                capturePath = new List<VisualElement>(initialSize);
+                bubblePath = new List<VisualElement>(initialSize);
+            }
+        }
+
+        private static PropagationPaths BuildPropagationPath(VisualElement elem)
+        {
+            var ret = new PropagationPaths(16);
+
             if (elem == null)
                 return ret;
 
@@ -515,12 +528,17 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (elem.shadow.parent.enabledInHierarchy)
                 {
-                    ret.Add(elem.shadow.parent);
+                    if (elem.shadow.parent.HasCaptureHandlers())
+                    {
+                        ret.capturePath.Add(elem.shadow.parent);
+                    }
+                    if (elem.shadow.parent.HasBubbleHandlers())
+                    {
+                        ret.bubblePath.Add(elem.shadow.parent);
+                    }
                 }
                 elem = elem.shadow.parent;
             }
-
-            ret.Reverse();
 
             return ret;
         }

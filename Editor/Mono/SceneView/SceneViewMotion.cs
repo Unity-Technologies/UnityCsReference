@@ -230,6 +230,7 @@ namespace UnityEditor
 
                     if (Toolbar.get)
                         Toolbar.get.Repaint();
+                    EditorGUIUtility.SetWantsMouseJumping(1);
 
                     evt.Use();
 
@@ -250,6 +251,7 @@ namespace UnityEditor
             s_Motion = Vector3.zero;
             if (Toolbar.get)
                 Toolbar.get.Repaint();
+            EditorGUIUtility.SetWantsMouseJumping(0);
         }
 
         private static void HandleMouseUp(SceneView view, int id, int button, int clickCount)

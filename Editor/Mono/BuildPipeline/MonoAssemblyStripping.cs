@@ -177,7 +177,7 @@ namespace UnityEditor
 
         static public void MonoCilStrip(BuildTarget buildTarget, string managedLibrariesDirectory, string[] fileNames)
         {
-            string basePath = BuildPipeline.GetBuildToolsDirectory(buildTarget);
+            string basePath = MonoInstallationFinder.GetProfileDirectory(BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_4_6), MonoInstallationFinder.MonoBleedingEdgeInstallation);
             string cilStripper = Path.Combine(basePath, "mono-cil-strip.exe");
 
             foreach (string fileName in fileNames)

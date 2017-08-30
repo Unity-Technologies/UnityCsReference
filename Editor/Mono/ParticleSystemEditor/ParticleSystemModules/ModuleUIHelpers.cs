@@ -450,11 +450,9 @@ namespace UnityEditor
             rect.width = floatFieldWidth;
             rect.xMin -= kDragSpace;
             range.x = FloatDraggable(rect, range.x, 1f, kDragSpace, kFormatString);
-            range.x = Mathf.Clamp(range.x, 0f, range.y - 0.01f);
 
             rect.x += floatFieldWidth + kDragSpace;
             range.y = FloatDraggable(rect, range.y, 1f, kDragSpace, kFormatString);
-            range.y = Mathf.Max(range.x + 0.01f, range.y);
 
             if (EditorGUI.EndChangeCheck())
                 vec2Prop.vector2Value = range;

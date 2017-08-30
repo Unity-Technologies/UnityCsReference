@@ -34,21 +34,21 @@ namespace UnityEditorInternal
 
         internal static IL2CPPBuilder RunIl2Cpp(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool debugBuild)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild);
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunIl2Cpp(string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool debugBuild)
         {
-            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild);
+            var builder = new IL2CPPBuilder(stagingAreaData, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
             builder.Run();
             return builder;
         }
 
         internal static IL2CPPBuilder RunCompileAndLink(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool debugBuild)
         {
-            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild);
+            var builder = new IL2CPPBuilder(tempFolder, stagingAreaData, platformProvider, modifyOutputBeforeCompile, runtimeClassRegistry, debugBuild, IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(platformProvider.target)));
             builder.RunCompileAndLink();
             return builder;
         }
@@ -110,6 +110,13 @@ namespace UnityEditorInternal
                     throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported by IL2CPP!", compatibilityLevel));
             }
         }
+
+        internal static bool UseIl2CppCodegenWithMonoBackend(BuildTargetGroup targetGroup)
+        {
+            return EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest &&
+                EditorApplication.useLibmonoBackendForIl2cpp &&
+                PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
+        }
     }
 
     internal class IL2CPPBuilder
@@ -121,8 +128,9 @@ namespace UnityEditorInternal
         private readonly RuntimeClassRegistry m_RuntimeClassRegistry;
         private readonly bool m_DebugBuild;
         private readonly LinkXmlReader m_linkXmlReader = new LinkXmlReader();
+        private readonly bool m_BuildForMonoRuntime;
 
-        public IL2CPPBuilder(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool debugBuild)
+        public IL2CPPBuilder(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool debugBuild, bool buildForMonoRuntime)
         {
             m_TempFolder = tempFolder;
             m_StagingAreaData = stagingAreaData;
@@ -130,6 +138,7 @@ namespace UnityEditorInternal
             m_ModifyOutputBeforeCompile = modifyOutputBeforeCompile;
             m_RuntimeClassRegistry = runtimeClassRegistry;
             m_DebugBuild = debugBuild;
+            m_BuildForMonoRuntime = buildForMonoRuntime;
         }
 
         public void Run()
@@ -264,6 +273,9 @@ namespace UnityEditorInternal
 
             if (m_PlatformProvider.developmentMode)
                 arguments.Add("--development-mode");
+
+            if (m_BuildForMonoRuntime)
+                arguments.Add("--mono-runtime");
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)

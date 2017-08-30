@@ -96,6 +96,16 @@ namespace UnityEngine
         PositionOnly = 2
     }
 
+    [Flags]
+    public enum MeshColliderCookingOptions
+    {
+        None,
+        InflateConvexMesh = 1 << 0,
+        CookForFasterSimulation = 1 << 1,
+        EnableMeshCleaning = 1 << 2,
+        WeldColocatedVertices = 1 << 3
+    }
+
     // WheelFrictionCurve is used by the [[WheelCollider]] to describe friction properties of the wheel tire.
     public struct WheelFrictionCurve
     {

@@ -162,6 +162,12 @@ namespace UnityEngine.Events
                 Delegate();
         }
 
+        public void Invoke()
+        {
+            if (AllowInvoke(Delegate))
+                Delegate();
+        }
+
         public override bool Find(object targetObj, MethodInfo method)
         {
             // Case 827748: You can't compare Delegate.GetMethodInfo() == method, because sometimes it will not work, that's why we're using Equals instead, because it will compare that actual method inside.
@@ -197,6 +203,12 @@ namespace UnityEngine.Events
                 Delegate((T1)args[0]);
         }
 
+        public virtual void Invoke(T1 args0)
+        {
+            if (AllowInvoke(Delegate))
+                Delegate(args0);
+        }
+
         public override bool Find(object targetObj, MethodInfo method)
         {
             return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
@@ -227,6 +239,12 @@ namespace UnityEngine.Events
 
             if (AllowInvoke(Delegate))
                 Delegate((T1)args[0], (T2)args[1]);
+        }
+
+        public void Invoke(T1 args0, T2 args1)
+        {
+            if (AllowInvoke(Delegate))
+                Delegate(args0, args1);
         }
 
         public override bool Find(object targetObj, MethodInfo method)
@@ -260,6 +278,12 @@ namespace UnityEngine.Events
 
             if (AllowInvoke(Delegate))
                 Delegate((T1)args[0], (T2)args[1], (T3)args[2]);
+        }
+
+        public void Invoke(T1 args0, T2 args1, T3 args2)
+        {
+            if (AllowInvoke(Delegate))
+                Delegate(args0, args1, args2);
         }
 
         public override bool Find(object targetObj, MethodInfo method)
@@ -296,6 +320,12 @@ namespace UnityEngine.Events
                 Delegate((T1)args[0], (T2)args[1], (T3)args[2], (T4)args[3]);
         }
 
+        public void Invoke(T1 args0, T2 args1, T3 args2, T4 args3)
+        {
+            if (AllowInvoke(Delegate))
+                Delegate(args0, args1, args2, args3);
+        }
+
         public override bool Find(object targetObj, MethodInfo method)
         {
             return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
@@ -304,15 +334,20 @@ namespace UnityEngine.Events
 
     class CachedInvokableCall<T> : InvokableCall<T>
     {
-        private readonly object[] m_Arg1 = new object[1];
+        private readonly T m_Arg1;
 
         public CachedInvokableCall(Object target, MethodInfo theFunction, T argument)
             : base(target, theFunction)
         {
-            m_Arg1[0] = argument;
+            m_Arg1 = argument;
         }
 
         public override void Invoke(object[] args)
+        {
+            base.Invoke(m_Arg1);
+        }
+
+        public override void Invoke(T arg0)
         {
             base.Invoke(m_Arg1);
         }
@@ -629,7 +664,7 @@ namespace UnityEngine.Events
             m_NeedsUpdate = true;
         }
 
-        public void Invoke(object[] parameters)
+        public List<BaseInvokableCall> PrepareInvoke()
         {
             if (m_NeedsUpdate)
             {
@@ -639,8 +674,7 @@ namespace UnityEngine.Events
                 m_NeedsUpdate = false;
             }
 
-            for (var i = 0; i < m_ExecutingCalls.Count; i++)
-                m_ExecutingCalls[i].Invoke(parameters);
+            return m_ExecutingCalls;
         }
     }
 
@@ -773,10 +807,18 @@ namespace UnityEngine.Events
             m_Calls.Clear();
         }
 
-        protected void Invoke(object[] parameters)
+        internal List<BaseInvokableCall> PrepareInvoke()
         {
             RebuildPersistentCallsIfNeeded();
-            m_Calls.Invoke(parameters);
+            return m_Calls.PrepareInvoke();
+        }
+
+        protected void Invoke(object[] parameters)
+        {
+            List<BaseInvokableCall> calls = PrepareInvoke();
+
+            for (var i = 0; i < calls.Count; i++)
+                calls[i].Invoke(parameters);
         }
 
         public override string ToString()

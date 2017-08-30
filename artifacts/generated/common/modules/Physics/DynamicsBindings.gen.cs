@@ -2916,7 +2916,7 @@ public sealed partial class MeshCollider : Collider
         set;
     }
 
-    public extern bool inflateMesh
+    public extern MeshColliderCookingOptions cookingOptions
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2926,6 +2926,22 @@ public sealed partial class MeshCollider : Collider
         set;
     }
 
+    public bool inflateMesh
+        {
+            get
+            {
+                return (cookingOptions & MeshColliderCookingOptions.InflateConvexMesh) != 0;
+            }
+            set
+            {
+                MeshColliderCookingOptions newOptions = cookingOptions & ~MeshColliderCookingOptions.InflateConvexMesh;
+                if (value)
+                    newOptions |= MeshColliderCookingOptions.InflateConvexMesh;
+                cookingOptions = newOptions;
+            }
+        }
+    
+    
     public extern float skinWidth
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

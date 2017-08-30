@@ -70,6 +70,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Presenter.position = newPosition;
                 m_Presenter.scale = newScale;
             }
+
+            UpdatePersistedViewTransform();
         }
 
         bool m_FrameAnimate = false;
@@ -126,6 +128,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
         public UQuery.QueryState<Node> nodes { get; private set; }
 
+        [Serializable]
+        class PersistedViewTransform
+        {
+            public Vector3 position = Vector3.zero;
+            public Vector3 scale = Vector3.one;
+        }
+        PersistedViewTransform m_PersistedViewTransform;
+
         ContentZoomer m_Zoomer;
         Vector3 m_MinScale = ContentZoomer.DefaultMinScale;
         Vector3 m_MaxScale = ContentZoomer.DefaultMaxScale;
@@ -150,6 +160,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_MinScale = minScaleSetup;
             m_MaxScale = maxScaleSetup;
             UpdateContentZoomer();
+        }
+
+        private void UpdatePersistedViewTransform()
+        {
+            if (m_PersistedViewTransform == null)
+                return;
+
+            m_PersistedViewTransform.position = contentViewContainer.transform.position;
+            m_PersistedViewTransform.scale = contentViewContainer.transform.scale;
+
+            SavePersistentData();
+        }
+
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+
+            string key = GetFullHierarchicalPersistenceKey();
+
+            m_PersistedViewTransform = GetOrCreatePersistentData<PersistedViewTransform>(m_PersistedViewTransform, key);
+
+            UpdateViewTransform(m_PersistedViewTransform.position, m_PersistedViewTransform.scale);
         }
 
         void UpdateContentZoomer()
@@ -196,6 +228,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             contentViewContainer.transform.position = m_Presenter.position;
             contentViewContainer.transform.scale = m_Presenter.scale != Vector3.zero ? m_Presenter.scale : Vector3.one;
             ValidateTransform();
+            UpdatePersistedViewTransform();
 
             // process removals
             List<GraphElement> current = graphElements.ToList();
@@ -486,6 +519,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             contentViewContainer.Dirty(ChangeType.Repaint);
+
+            UpdatePersistedViewTransform();
 
             return EventPropagation.Stop;
         }

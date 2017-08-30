@@ -39,6 +39,8 @@ namespace UnityEngine
         extern public bool  orthographic     { get; set; }
         extern public float orthographicSize { get; set; }
         extern public int   ignoreLayers     { get; set; }
+
+        extern public Material material { get; set; }
     }
 
     [RequireComponent(typeof(Transform))]
@@ -62,6 +64,12 @@ namespace UnityEngine
 
         extern public bool alreadyLightmapped {[NativeName("IsActuallyBaked")] get; [NativeName("SetIsBakedFromScript")] set; }
         extern public bool isBaked            {[NativeName("IsActuallyBaked")] get; }
-        [NativeProperty("CullingMask")] extern public int cullingMask { get; set; }
+        extern public int  cullingMask        { get; set; }
+    }
+
+    [NativeHeader("Runtime/Camera/Skybox.h")]
+    public sealed partial class Skybox : Behaviour
+    {
+        extern public Material material { get; set; }
     }
 }

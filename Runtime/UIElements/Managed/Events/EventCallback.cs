@@ -12,11 +12,11 @@ namespace UnityEngine.Experimental.UIElements
 
     internal abstract class EventCallbackFunctorBase
     {
-        protected CallbackPhase m_Phase;
+        public CallbackPhase phase { get; private set; }
 
         protected EventCallbackFunctorBase(CallbackPhase phase)
         {
-            m_Phase = phase;
+            this.phase = phase;
         }
 
         public abstract void Invoke(EventBase evt);
@@ -25,7 +25,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected bool PhaseMatches(EventBase evt)
         {
-            switch (m_Phase)
+            switch (phase)
             {
                 case CallbackPhase.CaptureAndTarget:
                     if (evt.propagationPhase != PropagationPhase.Capture && evt.propagationPhase != PropagationPhase.AtTarget)
@@ -69,7 +69,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_Phase == phase));
+            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
         }
     }
 
@@ -102,7 +102,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override bool IsEquivalentTo(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (m_Phase == phase));
+            return ((m_EventTypeId == eventTypeId) && ((Delegate)m_Callback) == callback && (this.phase == phase));
         }
     }
 }

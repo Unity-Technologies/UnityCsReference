@@ -18,7 +18,7 @@ namespace UnityEngine
         extern public int subMeshCount
         {
             [NativeMethod(Name = "GetSubMeshCount")] get;
-            [NativeMethod(Name = "MeshScripting::SetSubMeshCount", IsFreeFunction = true, HasExplicitThis = true)] set;
+            [FreeFunction(Name = "MeshScripting::SetSubMeshCount", HasExplicitThis = true)] set;
         }
 
         extern public UnityEngine.Rendering.IndexFormat indexFormat
@@ -27,10 +27,10 @@ namespace UnityEngine
             [NativeMethod(Name = "SetIndexFormat")] set;
         }
 
-        [NativeMethod(Name = "MeshScripting::GetIndexStart", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetIndexStart", HasExplicitThis = true)]
         extern private UInt32 GetIndexStartImpl(int submesh);
 
-        [NativeMethod(Name = "MeshScripting::GetIndexCount", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetIndexCount", HasExplicitThis = true)]
         extern private UInt32 GetIndexCountImpl(int submesh);
 
         [NativeMethod(Name = "MeshScripting::GetBaseVertex", IsFreeFunction = true, HasExplicitThis = true)]
@@ -43,39 +43,48 @@ namespace UnityEngine
         [NativeMethod(Name = "MarkDynamic")]            extern private void MarkDynamicImpl();
         [NativeMethod(Name = "UploadMeshData")]         extern private void UploadMeshDataImpl(bool markNoLogerReadable);
 
-        [NativeMethod(Name = "MeshScripting::PrintErrorCantAccessChannel", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::PrintErrorCantAccessChannel", HasExplicitThis = true)]
         extern private void PrintErrorCantAccessChannel(InternalShaderChannel ch);
 
         // access to native underlying graphics API resources (mostly for native code plugins)
         extern public int vertexBufferCount
         {
-            [NativeMethod(Name = "MeshScripting::GetVertexBufferCount", IsFreeFunction = true, HasExplicitThis = true)] get;
+            [FreeFunction(Name = "MeshScripting::GetVertexBufferCount", HasExplicitThis = true)] get;
         }
 
         [NativeThrows]
-        [NativeMethod(Name = "MeshScripting::GetNativeVertexBufferPtr", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetNativeVertexBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeVertexBufferPtr(int index);
 
-        [NativeMethod(Name = "MeshScripting::GetNativeIndexBufferPtr", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetNativeIndexBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeIndexBufferPtr();
 
         // blend shapes
 
         extern public int blendShapeCount {[NativeMethod(Name = "GetBlendShapeChannelCount")] get; }
 
-        [NativeMethod(Name = "MeshScripting::ClearBlendShapes", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::ClearBlendShapes", HasExplicitThis = true)]
         extern public void ClearBlendShapes();
 
-        [NativeMethod(Name = "MeshScripting::GetBlendShapeName", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeName", HasExplicitThis = true)]
         extern public string GetBlendShapeName(int shapeIndex);
 
-        [NativeMethod(Name = "MeshScripting::GetBlendShapeIndex", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeIndex", HasExplicitThis = true)]
         extern public int GetBlendShapeIndex(string blendShapeName);
 
-        [NativeMethod(Name = "MeshScripting::GetBlendShapeFrameCount", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameCount", HasExplicitThis = true)]
         extern public int GetBlendShapeFrameCount(int shapeIndex);
 
-        [NativeMethod(Name = "MeshScripting::GetBlendShapeFrameWeight", IsFreeFunction = true, HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetBlendShapeFrameWeight", HasExplicitThis = true)]
         extern public float GetBlendShapeFrameWeight(int shapeIndex, int frameIndex);
+    }
+
+    [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]
+    internal struct StaticBatchingHelper
+    {
+        [FreeFunction("MeshScripting::CombineMeshVerticesForStaticBatching")]
+        extern internal static Mesh InternalCombineVertices(MeshSubsetCombineUtility.MeshInstance[] meshes, string meshName);
+        [FreeFunction("MeshScripting::CombineMeshIndicesForStaticBatching")]
+        extern internal static void InternalCombineIndices(MeshSubsetCombineUtility.SubMeshInstance[] submeshes, Mesh combinedMesh);
     }
 }
