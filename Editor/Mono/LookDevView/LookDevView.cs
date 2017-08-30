@@ -582,7 +582,7 @@ namespace UnityEditor
                     lodGroup.ForceLOD(lookDevContext.lodIndex);
                 }
 
-                m_LookDevConfig.SetEnabledRecursive(currentObject, true);
+                PreviewRenderUtility.SetEnabledRecursive(currentObject, true);
                 oldAngles = currentObject.transform.eulerAngles;
                 oldTranslation = currentObject.transform.localPosition;
 
@@ -611,7 +611,7 @@ namespace UnityEditor
                 // restore initial transform
                 currentObject.transform.eulerAngles = oldAngles;
                 currentObject.transform.position = oldTranslation;
-                m_LookDevConfig.SetEnabledRecursive(currentObject, false);
+                PreviewRenderUtility.SetEnabledRecursive(currentObject, false);
             }
 
             if (needDebugMode && !shadowPass) // Even with the debug modes we need to keep the shadow mask white.
@@ -1340,7 +1340,7 @@ namespace UnityEditor
 
                     EditorUtility.InitInstantiatedPreviewRecursive(currentObject); // hide objects in hierarchy
                     LookDevConfig.DisableRendererProperties(currentObject);
-                    m_LookDevConfig.SetEnabledRecursive(currentObject, false);
+                    PreviewRenderUtility.SetEnabledRecursive(currentObject, false);
                 }
             }
         }

@@ -52,19 +52,6 @@ internal partial struct CombineInstanceHelper
 
 }
 
-[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-internal partial struct StaticBatchingHelper
-{
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  Mesh InternalCombineVertices (MeshSubsetCombineUtility.MeshInstance[] meshes, string meshName) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void InternalCombineIndices (MeshSubsetCombineUtility.SubMeshInstance[] submeshes, [Writable] Mesh combinedMesh) ;
-
-}
-
 public sealed partial class Mesh : Object
 {
     public Mesh()

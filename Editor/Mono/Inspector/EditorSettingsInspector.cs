@@ -132,16 +132,6 @@ namespace UnityEditor
             new PopupElement("ETCPACK Best"),
         };
 
-        private PopupElement[] etcTexturePresetCompressorPopupList =
-        {
-            new PopupElement("Allegorithmic"),       // Legacy Fast
-            new PopupElement("ETCPACK Fast"),        // Legacy Normal
-            new PopupElement("ETCPACK Best"),        // Legacy Best
-            new PopupElement("etcpak"),              // Default Fast
-            new PopupElement("ETCPACK Fast"),        // Default Normal
-            new PopupElement("Etc2Comp Best"),       // Default Best
-        };
-
         public void OnEnable()
         {
             Plugin[] availvc = Plugin.availablePlugins;
@@ -423,38 +413,18 @@ namespace UnityEditor
             CreatePopupMenu("Behavior", etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
 
             EditorGUI.indentLevel++;
+            EditorGUI.BeginDisabledGroup(index < 2);
 
-            if (index > 1)  // Custom behavior
-            {
-                index = Mathf.Clamp((int)EditorSettings.etcTextureFastCompressor, 0, etcTextureFastCompressorPopupList.Length - 1);
-                CreatePopupMenu("Fast", etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
+            index = Mathf.Clamp((int)EditorSettings.etcTextureFastCompressor, 0, etcTextureFastCompressorPopupList.Length - 1);
+            CreatePopupMenu("Fast", etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
 
-                index = Mathf.Clamp((int)EditorSettings.etcTextureNormalCompressor, 0, etcTextureNormalCompressorPopupList.Length - 1);
-                CreatePopupMenu("Normal", etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
+            index = Mathf.Clamp((int)EditorSettings.etcTextureNormalCompressor, 0, etcTextureNormalCompressorPopupList.Length - 1);
+            CreatePopupMenu("Normal", etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
 
-                index = Mathf.Clamp((int)EditorSettings.etcTextureBestCompressor, 0, etcTextureBestCompressorPopupList.Length - 1);
-                CreatePopupMenu("Best", etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
-            }
-            else
-            {
-                EditorGUI.BeginDisabledGroup(true);
+            index = Mathf.Clamp((int)EditorSettings.etcTextureBestCompressor, 0, etcTextureBestCompressorPopupList.Length - 1);
+            CreatePopupMenu("Best", etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
 
-                if (index == 0)     // Legacy behavior
-                {
-                    CreatePopupMenu("Fast", etcTexturePresetCompressorPopupList, 0, null);
-                    CreatePopupMenu("Normal", etcTexturePresetCompressorPopupList, 1, null);
-                    CreatePopupMenu("Best", etcTexturePresetCompressorPopupList, 2, null);
-                }
-                else                // Default behavior
-                {
-                    CreatePopupMenu("Fast", etcTexturePresetCompressorPopupList, 3, null);
-                    CreatePopupMenu("Normal", etcTexturePresetCompressorPopupList, 4, null);
-                    CreatePopupMenu("Best", etcTexturePresetCompressorPopupList, 5, null);
-                }
-
-                EditorGUI.EndDisabledGroup();
-            }
-
+            EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
         }
 

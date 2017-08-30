@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -63,6 +64,16 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    public sealed partial class GL
+    {
+        public const int TRIANGLES      = 0x0004;
+        public const int TRIANGLE_STRIP = 0x0005;
+        public const int QUADS          = 0x0007;
+        public const int LINES          = 0x0001;
+        public const int LINE_STRIP     = 0x0002;
+    }
+
+
     [NativeHeader("Runtime/GfxDevice/GfxDevice.h")]
     [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
     public sealed partial class GL
@@ -87,21 +98,70 @@ namespace UnityEngine
 
         extern public static void Flush();
         extern public static void RenderTargetBarrier();
+
+        extern private static Matrix4x4 GetWorldViewMatrix();
+        extern private static void SetViewMatrix(Matrix4x4 m);
+        static public Matrix4x4 modelview { get { return GetWorldViewMatrix(); } set { SetViewMatrix(value); } }
+
+        [NativeName("SetWorldMatrix")] extern public static void MultMatrix(Matrix4x4 m);
+
+        [Obsolete("IssuePluginEvent(eventID) is deprecated. Use IssuePluginEvent(callback, eventID) instead.", false)]
+        [NativeName("InsertCustomMarker")] extern public static void IssuePluginEvent(int eventID);
+
+        [Obsolete("SetRevertBackfacing(revertBackFaces) is deprecated. Use invertCulling property instead.", false)]
+        [NativeName("SetUserBackfaceMode")] extern public static void SetRevertBackfacing(bool revertBackFaces);
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     public sealed partial class GL
     {
-        [FreeFunction("GLPushMatrixScript")]        extern public static void PushMatrix();
-        [FreeFunction("GLPopMatrixScript")]         extern public static void PopMatrix();
-        [FreeFunction("GLLoadIdentityScript")]      extern public static void LoadIdentity();
-        [FreeFunction("GLLoadOrthoScript")]         extern public static void LoadOrtho();
-        [FreeFunction("GLLoadPixelMatrixScript")]   extern public static void LoadPixelMatrix();
+        [FreeFunction("GLPushMatrixScript")]            extern public static void PushMatrix();
+        [FreeFunction("GLPopMatrixScript")]             extern public static void PopMatrix();
+        [FreeFunction("GLLoadIdentityScript")]          extern public static void LoadIdentity();
+        [FreeFunction("GLLoadOrthoScript")]             extern public static void LoadOrtho();
+        [FreeFunction("GLLoadPixelMatrixScript")]       extern public static void LoadPixelMatrix();
+        [FreeFunction("GLLoadProjectionMatrixScript")]  extern public static void LoadProjectionMatrix(Matrix4x4 mat);
+        [FreeFunction("GLInvalidateState")]             extern public static void InvalidateState();
+        [FreeFunction("GLGetGPUProjectionMatrix")]      extern public static Matrix4x4 GetGPUProjectionMatrix(Matrix4x4 proj, bool renderIntoTexture);
 
-        [FreeFunction("GLLoadPixelMatrixScript")] extern private static void LoadPixelMatrixArgs(float left, float right, float bottom, float top);
+        [FreeFunction] extern private static void GLLoadPixelMatrixScript(float left, float right, float bottom, float top);
         public static void LoadPixelMatrix(float left, float right, float bottom, float top)
         {
-            LoadPixelMatrixArgs(left, right, bottom, top);
+            GLLoadPixelMatrixScript(left, right, bottom, top);
         }
+
+        [FreeFunction] extern private static void GLIssuePluginEvent(IntPtr callback, int eventID);
+        public static void IssuePluginEvent(IntPtr callback, int eventID)
+        {
+            if (callback == IntPtr.Zero)
+                throw new ArgumentException("Null callback specified.", "callback");
+            GLIssuePluginEvent(callback, eventID);
+        }
+
+        [FreeFunction("GLBegin", ThrowsException = true)] extern public static void Begin(int mode);
+        [FreeFunction("GLEnd")]                         extern public static void End();
+
+        [FreeFunction] extern private static void GLClear(bool clearDepth, bool clearColor, Color backgroundColor, float depth);
+        static public void Clear(bool clearDepth, bool clearColor, Color backgroundColor, [uei.DefaultValue("1.0f")] float depth)
+        {
+            GLClear(clearDepth, clearColor, backgroundColor, depth);
+        }
+
+        static public void Clear(bool clearDepth, bool clearColor, Color backgroundColor)
+        {
+            GLClear(clearDepth, clearColor, backgroundColor, 1.0f);
+        }
+    }
+
+    [NativeHeader("Runtime/Camera/CameraUtil.h")]
+    public sealed partial class GL
+    {
+        [FreeFunction("SetGLViewport")] extern public static void Viewport(Rect pixelRect);
+    }
+
+    [NativeHeader("Runtime/Camera/Camera.h")]
+    public sealed partial class GL
+    {
+        [FreeFunction("ClearWithSkybox")] extern public static void ClearWithSkybox(bool clearDepth, Camera camera);
     }
 }

@@ -802,9 +802,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\iOSReplayKitBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\iOSReplayKitBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\OnDemandResourcesBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\OnDemandResourcesBindings.gen.cs</Link>
 </Compile>

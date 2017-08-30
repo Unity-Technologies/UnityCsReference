@@ -580,10 +580,6 @@ internal sealed partial class TerrainInspectorUtil
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool PrototypeIsRenderable (TerrainData terrainData, int prototypeIndex) ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void RefreshPhysicsInEditMode () ;
-
 }
 
 internal sealed partial class PhysicsManager : ProjectSettingsBase

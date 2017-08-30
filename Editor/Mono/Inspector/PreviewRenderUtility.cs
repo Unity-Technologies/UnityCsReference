@@ -114,6 +114,12 @@ namespace UnityEditor
             m_PixelPerfect = false;
         }
 
+        internal static void SetEnabledRecursive(GameObject go, bool enabled)
+        {
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+        }
+
         [Obsolete("Use the property camera instead (UnityUpgradable) -> camera", false)]
         public Camera m_Camera;
 
@@ -372,8 +378,13 @@ namespace UnityEditor
         {
             var quat = Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
             var pos = m.GetColumn(3);
+            var scale = new Vector3(
+                    m.GetColumn(0).magnitude,
+                    m.GetColumn(1).magnitude,
+                    m.GetColumn(2).magnitude
+                    );
 
-            DrawMesh(mesh, pos, quat, mat, subMeshIndex, customProperties, probeAnchor, useLightProbe);
+            DrawMesh(mesh, pos, scale, quat, mat, subMeshIndex, customProperties, probeAnchor, useLightProbe);
         }
 
         public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex)
@@ -393,7 +404,12 @@ namespace UnityEditor
 
         public void DrawMesh(Mesh mesh, Vector3 pos, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
         {
-            Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, Vector3.one), mat, 1, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
+            DrawMesh(mesh, pos, Vector3.one, rot, mat, subMeshIndex, customProperties, probeAnchor, useLightProbe);
+        }
+
+        public void DrawMesh(Mesh mesh, Vector3 pos, Vector3 scale, Quaternion rot, Material mat, int subMeshIndex, MaterialPropertyBlock customProperties, Transform probeAnchor, bool useLightProbe)
+        {
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, scale), mat, 1, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
         }
 
         internal static Mesh GetPreviewSphere()

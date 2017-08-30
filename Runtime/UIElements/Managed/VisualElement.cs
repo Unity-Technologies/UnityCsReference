@@ -1162,7 +1162,7 @@ namespace UnityEngine.Experimental.UIElements
                 font = style.font,
                 fontSize = style.fontSize,
                 fontStyle = style.fontStyle,
-                fontColor = style.textColor,
+                fontColor = style.textColor.GetSpecifiedValueOrDefault(Color.black),
                 anchor = style.textAlignment,
                 wordWrap = style.wordWrap,
                 wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,

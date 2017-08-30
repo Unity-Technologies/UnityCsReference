@@ -26,6 +26,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             presenter = BuildPresenters();
             graphView = BuildView();
             graphView.name = "theView";
+            graphView.persistenceKey = "theView";
             graphView.presenter = presenter;
             graphView.StretchToParentSize();
             graphView.RegisterCallback<AttachToPanelEvent>(OnEnterPanel);

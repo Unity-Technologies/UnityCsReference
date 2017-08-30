@@ -20,7 +20,7 @@ namespace UnityEditor
         //TODO: move this out of here
         internal class Constants
         {
-            public static bool ms_Loaded;
+            private static bool ms_Loaded;
             public static GUIStyle Box;
             public static GUIStyle Button;
             public static GUIStyle MiniButton;
@@ -30,6 +30,9 @@ namespace UnityEditor
             public static GUIStyle LogStyle;
             public static GUIStyle WarningStyle;
             public static GUIStyle ErrorStyle;
+            public static GUIStyle IconLogStyle;
+            public static GUIStyle IconWarningStyle;
+            public static GUIStyle IconErrorStyle;
             public static GUIStyle EvenBackground;
             public static GUIStyle OddBackground;
             public static GUIStyle MessageStyle;
@@ -38,6 +41,12 @@ namespace UnityEditor
             public static GUIStyle StatusLog;
             public static GUIStyle Toolbar;
             public static GUIStyle CountBadge;
+            public static GUIStyle LogSmallStyle;
+            public static GUIStyle WarningSmallStyle;
+            public static GUIStyle ErrorSmallStyle;
+            public static GUIStyle IconLogSmallStyle;
+            public static GUIStyle IconWarningSmallStyle;
+            public static GUIStyle IconErrorSmallStyle;
             public static readonly string ClearLabel = L10n.Tr("Clear");
             public static readonly string ClearOnPlayLabel = L10n.Tr("Clear on Play");
             public static readonly string ErrorPauseLabel = L10n.Tr("Error Pause");
@@ -45,34 +54,58 @@ namespace UnityEditor
             public static readonly string StopForAssertLabel = L10n.Tr("Stop for Assert");
             public static readonly string StopForErrorLabel = L10n.Tr("Stop for Error");
 
+            public static int LogStyleLineCount { get; set; }
+
             public static void Init()
             {
                 if (ms_Loaded)
                     return;
                 ms_Loaded = true;
-                Box = "CN Box";
-                Button = "Button";
+                Box = new GUIStyle("CN Box");
+                Button = new GUIStyle("Button");
 
-                MiniButton = "ToolbarButton";
-                MiniButtonLeft = "ToolbarButton";
-                MiniButtonMiddle = "ToolbarButton";
-                MiniButtonRight = "ToolbarButton";
-                Toolbar = "Toolbar";
+                MiniButton = new GUIStyle("ToolbarButton");
+                MiniButtonLeft = new GUIStyle("ToolbarButton");
+                MiniButtonMiddle = new GUIStyle("ToolbarButton");
+                MiniButtonRight = new GUIStyle("ToolbarButton");
+                Toolbar = new GUIStyle("Toolbar");
+                LogStyle = new GUIStyle("CN EntryInfo");
+                LogSmallStyle = new GUIStyle("CN EntryInfoSmall");
+                WarningStyle = new GUIStyle("CN EntryWarn");
+                WarningSmallStyle = new GUIStyle("CN EntryWarnSmall");
+                ErrorStyle = new GUIStyle("CN EntryError");
+                ErrorSmallStyle = new GUIStyle("CN EntryErrorSmall");
+                IconLogStyle = new GUIStyle("CN EntryInfoIcon");
+                IconLogSmallStyle = new GUIStyle("CN EntryInfoIconSmall");
+                IconWarningStyle = new GUIStyle("CN EntryWarnIcon");
+                IconWarningSmallStyle = new GUIStyle("CN EntryWarnIconSmall");
+                IconErrorStyle = new GUIStyle("CN EntryErrorIcon");
+                IconErrorSmallStyle = new GUIStyle("CN EntryErrorIconSmall");
+                EvenBackground = new GUIStyle("CN EntryBackEven");
+                OddBackground = new GUIStyle("CN EntryBackodd");
+                MessageStyle = new GUIStyle("CN Message");
+                StatusError = new GUIStyle("CN StatusError");
+                StatusWarn = new GUIStyle("CN StatusWarn");
+                StatusLog = new GUIStyle("CN StatusInfo");
+                CountBadge = new GUIStyle("CN CountBadge");
 
-                LogStyle = "CN EntryInfo";
-                WarningStyle = "CN EntryWarn";
-                ErrorStyle = "CN EntryError";
-                EvenBackground = "CN EntryBackEven";
-                OddBackground = "CN EntryBackodd";
-                MessageStyle = "CN Message";
-                StatusError = "CN StatusError";
-                StatusWarn = "CN StatusWarn";
-                StatusLog = "CN StatusInfo";
-                CountBadge = "CN CountBadge";
+                UpdateLogStyleFixedHeights();
+            }
+
+            public static void UpdateLogStyleFixedHeights()
+            {
+                // Whenever we change the line height count or the styles are set we need to update the fixed height
+                // of the following GuiStyles so the entries do not get cropped incorrectly.
+                ErrorStyle.fixedHeight = (LogStyleLineCount * ErrorStyle.lineHeight) + ErrorStyle.border.top;
+                WarningStyle.fixedHeight = (LogStyleLineCount * WarningStyle.lineHeight) + WarningStyle.border.top;
+                LogStyle.fixedHeight = (LogStyleLineCount * LogStyle.lineHeight) + LogStyle.border.top;
             }
         }
 
-        const int m_RowHeight = 32;
+        int m_LineHeight;
+        int m_BorderHeight;
+
+        bool m_HasUpdatedGuiStyles;
 
         ListViewState m_ListView;
         string m_ActiveText = "";
@@ -275,8 +308,8 @@ namespace UnityEditor
 
         public ConsoleWindow()
         {
-            position = new Rect(200, 200, 800, 400); //TODO:
-            m_ListView = new ListViewState(0, m_RowHeight);
+            position = new Rect(200, 200, 800, 400);
+            m_ListView = new ListViewState(0, 0);
         }
 
         void OnEnable()
@@ -284,12 +317,22 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperBuild();
+
+            Constants.LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
         }
 
         void OnDisable()
         {
             if (ms_ConsoleWindow == this)
                 ms_ConsoleWindow = null;
+        }
+
+        private int RowHeight
+        {
+            get
+            {
+                return (Constants.LogStyleLineCount * m_LineHeight) + m_BorderHeight;
+            }
         }
 
         private static bool HasMode(int mode, Mode modeToCheck) { return (mode & (int)modeToCheck) != 0; }
@@ -315,18 +358,61 @@ namespace UnityEditor
             return null;
         }
 
-        static internal GUIStyle GetStyleForErrorMode(int mode)
+        static internal GUIStyle GetStyleForErrorMode(int mode, bool isIcon, bool isSmall)
         {
             // Errors
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
                     Mode.Error | Mode.ScriptingError |
                     Mode.AssetImportError | Mode.ScriptCompileError |
                     Mode.GraphCompileError | Mode.ScriptingAssertion))
+            {
+                if (isIcon)
+                {
+                    if (isSmall)
+                    {
+                        return Constants.IconErrorSmallStyle;
+                    }
+                    return Constants.IconErrorStyle;
+                }
+
+                if (isSmall)
+                {
+                    return Constants.ErrorSmallStyle;
+                }
                 return Constants.ErrorStyle;
+            }
             // Warnings
             if (HasMode(mode, Mode.ScriptCompileWarning | Mode.ScriptingWarning | Mode.AssetImportWarning))
+            {
+                if (isIcon)
+                {
+                    if (isSmall)
+                    {
+                        return Constants.IconWarningSmallStyle;
+                    }
+                    return Constants.IconWarningStyle;
+                }
+
+                if (isSmall)
+                {
+                    return Constants.WarningSmallStyle;
+                }
                 return Constants.WarningStyle;
+            }
             // Logs
+            if (isIcon)
+            {
+                if (isSmall)
+                {
+                    return Constants.IconLogSmallStyle;
+                }
+                return Constants.IconLogStyle;
+            }
+
+            if (isSmall)
+            {
+                return Constants.LogSmallStyle;
+            }
             return Constants.LogStyle;
         }
 
@@ -410,6 +496,7 @@ namespace UnityEditor
             }
         }
 
+        // Used implicitly with CallStaticMonoMethod("ConsoleWindow", "ShowConsoleRow", param);
         static void ShowConsoleRow(int row)
         {
             ShowConsoleWindow(false);
@@ -422,10 +509,28 @@ namespace UnityEditor
             }
         }
 
+        void UpdateListView()
+        {
+            m_HasUpdatedGuiStyles = true;
+            int newRowHeight = RowHeight;
+
+            // We reset the scroll list to auto scrolling whenever the log entry count is modified
+            m_ListView.rowHeight = newRowHeight;
+            m_ListView.row = -1;
+            m_ListView.scrollPos.y = LogEntries.GetCount() * newRowHeight;
+        }
+
         void OnGUI()
         {
             Event e = Event.current;
             LoadIcons();
+
+            if (!m_HasUpdatedGuiStyles)
+            {
+                m_LineHeight = Mathf.RoundToInt(Constants.ErrorStyle.lineHeight);
+                m_BorderHeight = Constants.ErrorStyle.border.top + Constants.ErrorStyle.border.bottom;
+                UpdateListView();
+            }
 
             GUILayout.BeginHorizontal(Constants.Toolbar);
 
@@ -442,7 +547,7 @@ namespace UnityEditor
                 // scroll bar was at the bottom?
                 if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
                 {
-                    m_ListView.scrollPos.y = currCount * m_RowHeight - ms_LVHeight;
+                    m_ListView.scrollPos.y = currCount * RowHeight - ms_LVHeight;
                 }
             }
 
@@ -458,7 +563,7 @@ namespace UnityEditor
                 m_ListView.row = -1;
 
                 // scroll to bottom
-                m_ListView.scrollPos.y = LogEntries.GetCount() * m_RowHeight;
+                m_ListView.scrollPos.y = LogEntries.GetCount() * RowHeight;
             }
 
             SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButtonMiddle));
@@ -496,7 +601,8 @@ namespace UnityEditor
             m_ListView.totalRows = LogEntries.StartGettingEntries();
 
             SplitterGUILayout.BeginVerticalSplit(spl);
-            EditorGUIUtility.SetIconSize(new Vector2(m_RowHeight, m_RowHeight));
+            int rowHeight = RowHeight;
+            EditorGUIUtility.SetIconSize(new Vector2(rowHeight, rowHeight));
             GUIContent tempContent = new GUIContent();
             int id = GUIUtility.GetControlID(0);
 
@@ -522,13 +628,21 @@ namespace UnityEditor
                     {
                         int mode = 0;
                         string text = null;
-                        LogEntries.GetFirstTwoLinesEntryTextAndModeInternal(el.row, ref mode, ref text);
+                        LogEntries.GetLinesAndModeFromEntryInternal(el.row, Constants.LogStyleLineCount, ref mode, ref text);
 
+                        // Draw the background
                         GUIStyle s = el.row % 2 == 0 ? Constants.OddBackground : Constants.EvenBackground;
                         s.Draw(el.position, false, false, m_ListView.row == el.row, false);
+
+                        // Draw the icon
+                        GUIStyle iconStyle = GetStyleForErrorMode(mode, true, Constants.LogStyleLineCount == 1);
+                        iconStyle.Draw(el.position, false, false, m_ListView.row == el.row, false);
+
+                        // Draw the text
                         tempContent.text = text;
-                        GUIStyle errorModeStyle = GetStyleForErrorMode(mode);
+                        GUIStyle errorModeStyle = GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
                         errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
+
 
                         if (collapsed)
                         {
@@ -637,7 +751,22 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
             menu.AddItem(new GUIContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
+            for (int i = 1; i <= 10; ++i)
+            {
+                menu.AddItem(new GUIContent(string.Format("Log Entry/{0} Lines", i)), i == Constants.LogStyleLineCount, SetLogLineCount, i);
+            }
+
             AddStackTraceLoggingMenu(menu);
+        }
+
+        private void SetLogLineCount(object obj)
+        {
+            int count = (int)obj;
+            Constants.LogStyleLineCount = count;
+            EditorPrefs.SetInt("ConsoleWindowLogLineCount", count);
+
+            Constants.UpdateLogStyleFixedHeights();
+            UpdateListView();
         }
 
         private void AddStackTraceLoggingMenu(GenericMenu menu)

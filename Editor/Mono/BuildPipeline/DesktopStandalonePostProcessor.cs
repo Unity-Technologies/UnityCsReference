@@ -36,6 +36,8 @@ internal abstract class DesktopStandalonePostProcessor
             config.AddKey("single-instance");
         if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
             config.Set("scripting-runtime-version", "latest");
+        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
+            config.Set("mono-codegen", "il2cpp");
     }
 
     private void CopyNativePlugins()
@@ -174,6 +176,10 @@ internal abstract class DesktopStandalonePostProcessor
             FileUtil.CreateOrCleanDirectory(metadataDirectory);
             IL2CPPUtils.CopyMetadataFiles(stagingAreaDirectory, metadataDirectory);
             IL2CPPUtils.CopySymmapFile(stagingAreaDirectory + "/Native/Data", managedDataDirectory);
+
+            // Are we using IL2CPP code generation with the Mono runtime? If so, strip the assemblies so we can use them for metadata.
+            if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(m_PostProcessArgs.target)))
+                StripAssembliesToLeaveOnlyMetadata(m_PostProcessArgs.target, managedDataDirectory);
         }
 
         if (InstallingIntoBuildsFolder)
@@ -189,6 +195,15 @@ internal abstract class DesktopStandalonePostProcessor
 
         m_PostProcessArgs.report.AddFilesRecursive(StagingArea, "");
         m_PostProcessArgs.report.RelocateFiles(StagingArea, "");
+    }
+
+    static void StripAssembliesToLeaveOnlyMetadata(BuildTarget target, string stagingAreaDataManaged)
+    {
+        AssemblyReferenceChecker checker = new AssemblyReferenceChecker();
+        checker.CollectReferences(stagingAreaDataManaged, true, 0.0f, false);
+
+        EditorUtility.DisplayProgressBar("Removing bytecode from assemblies", "Stripping assemblies so that only metadata remains", 0.95F);
+        MonoAssemblyStripping.MonoCilStrip(target, stagingAreaDataManaged, checker.GetAssemblyFileNames());
     }
 
     // Creates app.info which is used by Standalone player (when run in Low Integrity mode) when creating log file path at program start.
@@ -242,6 +257,17 @@ internal abstract class DesktopStandalonePostProcessor
     protected abstract string StagingAreaPluginsFolder { get; }
 
     protected abstract void DeleteDestination();
+
+    protected void DeleteUnusedMono(string dataFolder)
+    {
+        // Mono is built by the il2cpp builder, so we dont need the libs copied
+        bool deleteBoth = IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
+
+        if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            FileUtil.DeleteFileOrDirectory(Path.Combine(dataFolder, "Mono"));
+        if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+            FileUtil.DeleteFileOrDirectory(Path.Combine(dataFolder, "MonoBleedingEdge"));
+    }
 
     protected abstract string DestinationFolderForInstallingIntoBuildsFolder { get; }
 

@@ -958,7 +958,6 @@ namespace UnityEngine
 
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Modules/Physics2D/Public/Collider2D.h")]
-    [NativeWritableSelf]
     public partial class Collider2D : Behaviour
     {
         // The density of the collider.
@@ -1578,7 +1577,6 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics2D/Public/PhysicsMaterial2D.h")]
-    [NativeWritableSelf]
     public sealed partial class PhysicsMaterial2D : Object
     {
         // Creates a new material.

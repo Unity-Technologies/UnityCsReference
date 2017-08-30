@@ -12,6 +12,10 @@ namespace UnityEngine.Experimental.UIElements
         void OnLostCapture();
 
         void HandleEvent(EventBase evt);
+
+        bool HasCaptureHandlers();
+
+        bool HasBubbleHandlers();
     }
 
     public static class EventHandlerExtensions
@@ -90,6 +94,16 @@ namespace UnityEngine.Experimental.UIElements
             {
                 ExecuteDefaultAction(evt);
             }
+        }
+
+        public bool HasCaptureHandlers()
+        {
+            return m_CallbackRegistry != null && m_CallbackRegistry.HasCaptureHandlers();
+        }
+
+        public bool HasBubbleHandlers()
+        {
+            return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
         }
 
         protected internal virtual void ExecuteDefaultAction(EventBase evt) {}

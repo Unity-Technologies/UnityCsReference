@@ -10,23 +10,30 @@ namespace UnityEngine
 {
     // Representation of RGBA colors in 32 bit format
     [UsedByNativeCode]
-    [IL2CPPStructAlignment(Align = 4)]
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Explicit)]
     public partial struct Color32
     {
+        // An rgba int has been unioned with the four r g b a bytes.
+        // This ensures the struct is 4 byte aligned for webgl.
+        [FieldOffset(0)]
+        private int rgba;
         // Red component of the color.
+        [FieldOffset(0)]
         public byte r;
         // Green component of the color.
+        [FieldOffset(1)]
         public byte g;
         // Blue component of the color.
+        [FieldOffset(2)]
         public byte b;
         // Alpha component of the color.
+        [FieldOffset(3)]
         public byte a;
 
         // Constructs a new Color with given r, g, b, a components.
         public Color32(byte r, byte g, byte b, byte a)
         {
-            this.r = r; this.g = g; this.b = b; this.a = a;
+            rgba = 0; this.r = r; this.g = g; this.b = b; this.a = a;
         }
 
         // Color32 can be implicitly converted to and from [[Color]].

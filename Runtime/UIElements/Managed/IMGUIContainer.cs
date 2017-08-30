@@ -181,69 +181,71 @@ namespace UnityEngine.Experimental.UIElements
                     throw;
                 }
             }
-
-            int result = GUIUtility.CheckForTabEvent(evt);
-            if (focusController != null)
+            finally
             {
-                if (result < 0)
+                int result = GUIUtility.CheckForTabEvent(evt);
+                if (focusController != null)
                 {
-                    // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
-                    // We should switch the focus to the next VisualElement.
-                    KeyDownEvent e = null;
-                    if (result == -1)
+                    if (result < 0)
                     {
-                        e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.None);
-                    }
-                    else if (result == -2)
-                    {
-                        e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.Shift);
-                    }
-
-                    var currentFocusedElement = focusController.focusedElement;
-                    focusController.SwitchFocusOnEvent(e);
-
-                    KeyDownEvent.ReleasePooled(e);
-
-                    if (currentFocusedElement == this)
-                    {
-                        if (focusController.focusedElement == this)
+                        // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
+                        // We should switch the focus to the next VisualElement.
+                        KeyDownEvent e = null;
+                        if (result == -1)
                         {
-                            // We still have the focus. We should cycle around our controls.
-                            if (result == -2)
-                            {
-                                GUIUtility.SetKeyboardControlToLastControlId();
-                            }
-                            else if (result == -1)
-                            {
-                                GUIUtility.SetKeyboardControlToFirstControlId();
-                            }
-
-                            focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                            e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.None);
                         }
-                        else
+                        else if (result == -2)
                         {
-                            // We lost the focus. Set it to 0 until next IMGUIContainer have a chance to set it to its own control.
-                            // Doing this will ensure we draw ourselves without any focused control.
-                            GUIUtility.keyboardControl = 0;
-                            focusController.imguiKeyboardControl = 0;
+                            e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.Shift);
+                        }
+
+                        var currentFocusedElement = focusController.focusedElement;
+                        focusController.SwitchFocusOnEvent(e);
+
+                        KeyDownEvent.ReleasePooled(e);
+
+                        if (currentFocusedElement == this)
+                        {
+                            if (focusController.focusedElement == this)
+                            {
+                                // We still have the focus. We should cycle around our controls.
+                                if (result == -2)
+                                {
+                                    GUIUtility.SetKeyboardControlToLastControlId();
+                                }
+                                else if (result == -1)
+                                {
+                                    GUIUtility.SetKeyboardControlToFirstControlId();
+                                }
+
+                                focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                            }
+                            else
+                            {
+                                // We lost the focus. Set it to 0 until next IMGUIContainer have a chance to set it to its own control.
+                                // Doing this will ensure we draw ourselves without any focused control.
+                                GUIUtility.keyboardControl = 0;
+                                focusController.imguiKeyboardControl = 0;
+                            }
                         }
                     }
+                    else if (result > 0)
+                    {
+                        // A positive result indicates that the focused control has changed.
+                        focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                    }
+                    else if (result == 0 && originalEventType == EventType.MouseDown)
+                    {
+                        // This means the event is not a tab but a MouseDown.
+                        // Synchronize our focus info with IMGUI.
+                        focusController.SyncIMGUIFocus(this);
+                    }
                 }
-                else if (result > 0)
-                {
-                    // A positive result indicates that the focused control has changed.
-                    focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
-                }
-                else if (result == 0 && originalEventType == EventType.MouseDown)
-                {
-                    // This means the event is not a tab but a MouseDown.
-                    // Synchronize our focus info with IMGUI.
-                    focusController.SyncIMGUIFocus(this);
-                }
+
+                // Cache the fact that we have focusable controls or not.
+                hasFocusableControls = GUIUtility.HasFocusableControls();
             }
-
-            // Cache the fact that we have focusable controls or not.
-            hasFocusableControls = GUIUtility.HasFocusableControls();
 
             // The Event will probably be nuked with the next function call, so we get its type now.
             EventType eventType = Event.current.type;

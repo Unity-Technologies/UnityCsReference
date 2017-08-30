@@ -62,9 +62,6 @@ namespace UnityEditor
 
         private float m_PrevScollPos;
         private float m_PrevTotalHeight;
-        public event System.Action scrollPositionChanged;
-        public event System.Action scrollHeightChanged;
-        public event System.Action mouseAndKeyboardInput;
         internal delegate void OnHeaderGUIDelegate(Rect availableRect, string scenePath);
         internal static OnHeaderGUIDelegate OnPostHeaderGUI = null;
 
@@ -80,34 +77,46 @@ namespace UnityEditor
             m_PrevTotalHeight = m_TreeView.GetTotalRect().height;
         }
 
-        void DetectScrollChange()
+        public bool DetectUserInput()
         {
+            if (DetectScrollChange())
+                return true;
+            if (DetectTotalRectChange())
+                return true;
+            if (DetectMouseDownInTreeViewRect())
+                return true;
+
+            return false;
+        }
+
+        bool DetectScrollChange()
+        {
+            bool changed = false;
             float curScroll = m_TreeView.state.scrollPos.y;
-            if (scrollPositionChanged != null && !Mathf.Approximately(curScroll, m_PrevScollPos))
-                scrollPositionChanged();
+            if (!Mathf.Approximately(curScroll, m_PrevScollPos))
+                changed = true;
             m_PrevScollPos = curScroll;
+            return changed;
         }
 
-        void DetectTotalRectChange()
+        bool DetectTotalRectChange()
         {
+            bool changed = false;
             float curHeight = m_TreeView.GetTotalRect().height;
-            if (scrollHeightChanged != null && !Mathf.Approximately(curHeight, m_PrevTotalHeight))
-            {
-                scrollHeightChanged();
-            }
+            if (!Mathf.Approximately(curHeight, m_PrevTotalHeight))
+                changed = true;
             m_PrevTotalHeight = curHeight;
+            return changed;
         }
 
-        void DetectMouseDownInTreeViewRect()
+        bool DetectMouseDownInTreeViewRect()
         {
-            if (mouseAndKeyboardInput == null)
-                return;
-
             var evt = Event.current;
             var mouseEvent = evt.type == EventType.MouseDown || evt.type == EventType.MouseUp;
             var keyboardEvent = evt.type == EventType.KeyDown || evt.type == EventType.KeyUp;
             if ((mouseEvent && m_TreeView.GetTotalRect().Contains(evt.mousePosition)) || keyboardEvent)
-                mouseAndKeyboardInput();
+                return true;
+            return false;
         }
 
         bool showingStickyHeaders { get { return SceneManager.sceneCount > 1; } }
@@ -182,9 +191,11 @@ namespace UnityEditor
 
         public override void BeginRowGUI()
         {
-            DetectScrollChange();
-            DetectTotalRectChange();
-            DetectMouseDownInTreeViewRect();
+            if (DetectUserInput())
+            {
+                var data = (GameObjectTreeViewDataSource)m_TreeView.data;
+                data.EnsureFullyInitialized();
+            }
 
             base.BeginRowGUI();
 

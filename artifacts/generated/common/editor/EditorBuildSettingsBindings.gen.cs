@@ -198,6 +198,7 @@ public enum AndroidBuildSystem
 {
     Internal = 0,
     Gradle = 1,
+    [System.Obsolete ("ADT/eclipse project export for Android is no longer supported - please use Gradle export instead", true)]
     ADT = 2,
     VisualStudio = 3,
 }

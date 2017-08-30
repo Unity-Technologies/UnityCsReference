@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine.Apple.ReplayKit
 {
@@ -91,15 +92,53 @@ namespace UnityEngine.Apple.ReplayKit
         [FreeFunction("ReplayKitScripting::StartRecording")]
         extern private static bool StartRecordingImpl(bool enableMicrophone, bool enableCamera);
 
-        public static bool StartRecording(bool enableMicrophone = false, bool enableCamera = false)
+        public delegate void BroadcastStatusCallback(bool hasStarted, string errorMessage);
+
+        [NativeConditional("PLATFORM_IPHONE || PLATFORM_TVOS")]
+        [FreeFunction("ReplayKitScripting::StartBroadcasting")]
+        extern private static void StartBroadcastingImpl(BroadcastStatusCallback callback, bool enableMicrophone, bool enableCamera);
+
+        // we cannot have default args in public api yet (because we still support js that doesnt have it)
+        // public static bool StartRecording(bool enableMicrophone = false, bool enableCamera = false);
+        // public static bool StartBroadcasting(BroadcastStatusCallback callback, bool enableMicrophone = false, bool enableCamera = false);
+        public static bool StartRecording([uei.DefaultValue("false")] bool enableMicrophone, [uei.DefaultValue("false")] bool enableCamera)
         {
             return StartRecordingImpl(enableMicrophone, enableCamera);
+        }
+
+        public static bool StartRecording(bool enableMicrophone)
+        {
+            return StartRecording(enableMicrophone, false);
+        }
+
+        public static bool StartRecording()
+        {
+            return StartRecording(false, false);
+        }
+
+        public static void StartBroadcasting(BroadcastStatusCallback callback, [uei.DefaultValue("false")] bool enableMicrophone, [uei.DefaultValue("false")] bool enableCamera)
+        {
+            StartBroadcastingImpl(callback, enableMicrophone, enableCamera);
+        }
+
+        public static void StartBroadcasting(BroadcastStatusCallback callback, bool enableMicrophone)
+        {
+            StartBroadcasting(callback, enableMicrophone, false);
+        }
+
+        public static void StartBroadcasting(BroadcastStatusCallback callback)
+        {
+            StartBroadcasting(callback, false, false);
         }
 
 
         [NativeConditional("PLATFORM_IPHONE || PLATFORM_TVOS")]
         [FreeFunction("UnityReplayKitStopRecording")]
         extern public static bool StopRecording();
+
+        [NativeConditional("PLATFORM_IPHONE || PLATFORM_TVOS")]
+        [FreeFunction("UnityReplayKitStopBroadcasting")]
+        extern public static void StopBroadcasting();
 
         [NativeConditional("PLATFORM_IPHONE || PLATFORM_TVOS")]
         [FreeFunction("UnityReplayKitPreview")]

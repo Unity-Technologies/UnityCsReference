@@ -860,8 +860,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var references = unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences);
 
-            if (assemblyBuilder.additionalReferences != null)
+            if (assemblyBuilder.additionalReferences != null && assemblyBuilder.additionalReferences.Length > 0)
                 references = references.Concat(assemblyBuilder.additionalReferences);
+
+            if (assemblyBuilder.excludeReferences != null && assemblyBuilder.excludeReferences.Length > 0)
+                references = references.Where(r => !assemblyBuilder.excludeReferences.Contains(r));
 
             scriptAssembly.References = references.ToArray();
 

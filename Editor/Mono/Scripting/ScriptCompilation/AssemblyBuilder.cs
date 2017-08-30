@@ -32,6 +32,7 @@ namespace UnityEditor.Compilation
         public string assemblyPath { get; private set; }
         public string[] additionalDefines { get; set; }
         public string[] additionalReferences { get; set; }
+        public string[] excludeReferences { get; set; }
 
         public AssemblyBuilderFlags flags { get; set; }
         public BuildTargetGroup buildTargetGroup { get; set; }

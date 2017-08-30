@@ -9,6 +9,7 @@ using UnityEditorInternal;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 
 namespace UnityEditor
@@ -61,15 +62,6 @@ namespace UnityEditor
             m_RootInstanceID = rootInstanceID;
             showRootItem = showRoot;
             rootIsCollapsable = rootItemIsCollapsable;
-        }
-
-        public override void OnInitialize()
-        {
-            base.OnInitialize();
-            var gui = (GameObjectTreeViewGUI)m_TreeView.gui;
-            gui.scrollHeightChanged += EnsureFullyInitialized;
-            gui.scrollPositionChanged += EnsureFullyInitialized;
-            gui.mouseAndKeyboardInput += EnsureFullyInitialized;
         }
 
         internal void SetupChildParentReferencesIfNeeded()
@@ -305,7 +297,10 @@ namespace UnityEditor
             AllocateBackingArrayIfNeeded();
 
             if (m_ListOfRows.Count != count)
+            {
                 Resize(m_ListOfRows, count);
+                Assert.AreEqual(m_ListOfRows.Count, count, "List of rows count incorrect");
+            }
         }
 
         private void AllocateBackingArrayIfNeeded()
@@ -344,6 +339,10 @@ namespace UnityEditor
                 Log("Init full (" + m_RowCount + ")");
 
             HierarchyProperty property = CreateHierarchyProperty();
+            m_RowCount = property.CountRemaining(m_TreeView.state.expandedIDs.ToArray());
+            ResizeItemList(m_RowCount);
+            property.Reset();
+
             InitializeRows(property, 0, m_RowCount - 1);
         }
 

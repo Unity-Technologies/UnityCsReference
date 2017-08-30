@@ -40,16 +40,21 @@ namespace UnityEditor
             // will otherwise be stripped if scene only uses default materials not explicitly referenced
             // (ie some components will get a default material if a material reference is null)
             "Material",
+
             // those are used to create builtin textures and availability is checked at runtime
             "Cubemap",
             "Texture3D",
             "Texture2DArray",
             "RenderTexture",
+
             "Mesh", // Used by IMGUI (even on empty projects, it draws development console & watermarks)
             "MeshFilter", // Used in the VR Splash screen.
             "MeshRenderer", // Used in the VR Splash screen.
             "Sprite", // Used by Unity splash screen.
             "LowerResBlitTexture",
+
+            "Transform",        // well, Transform is always used
+            "RectTransform",    // Transform depends on RectTransform's TransformHierarchyChangeDispatch
         };
 
         static UnityType[] s_blackListNativeClasses;

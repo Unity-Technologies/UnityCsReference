@@ -49,18 +49,31 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
-    internal class EventCallbackList : List<EventCallbackFunctorBase>
+    internal class EventCallbackList
     {
-        public EventCallbackList() {}
+        List<EventCallbackFunctorBase> m_List;
+        public int capturingCallbackCount { get; private set; }
+        public int bubblingCallbackCount { get; private set; }
+
+        public EventCallbackList()
+        {
+            m_List = new List<EventCallbackFunctorBase>();
+            capturingCallbackCount = 0;
+            bubblingCallbackCount = 0;
+        }
 
         public EventCallbackList(EventCallbackList source)
-            : base(source) {}
+        {
+            m_List = new List<EventCallbackFunctorBase>(source.m_List);
+            capturingCallbackCount = 0;
+            bubblingCallbackCount = 0;
+        }
 
         public bool Contains(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            for (int i = 0; i < Count; i++)
+            for (int i = 0; i < m_List.Count; i++)
             {
-                if (this[i].IsEquivalentTo(eventTypeId, callback, phase))
+                if (m_List[i].IsEquivalentTo(eventTypeId, callback, phase))
                 {
                     return true;
                 }
@@ -70,15 +83,74 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool Remove(long eventTypeId, Delegate callback, CallbackPhase phase)
         {
-            for (int i = 0; i < Count; i++)
+            for (int i = 0; i < m_List.Count; i++)
             {
-                if (this[i].IsEquivalentTo(eventTypeId, callback, phase))
+                if (m_List[i].IsEquivalentTo(eventTypeId, callback, phase))
                 {
-                    RemoveAt(i);
+                    m_List.RemoveAt(i);
+
+                    if (phase == CallbackPhase.CaptureAndTarget)
+                    {
+                        capturingCallbackCount--;
+                    }
+                    else if (phase == CallbackPhase.TargetAndBubbleUp)
+                    {
+                        bubblingCallbackCount--;
+                    }
+
                     return true;
                 }
             }
             return false;
+        }
+
+        public void Add(EventCallbackFunctorBase item)
+        {
+            m_List.Add(item);
+
+            if (item.phase == CallbackPhase.CaptureAndTarget)
+            {
+                capturingCallbackCount++;
+            }
+            else if (item.phase == CallbackPhase.TargetAndBubbleUp)
+            {
+                bubblingCallbackCount++;
+            }
+        }
+
+        public void AddRange(EventCallbackList list)
+        {
+            m_List.AddRange(list.m_List);
+
+            foreach (var item in list.m_List)
+            {
+                if (item.phase == CallbackPhase.CaptureAndTarget)
+                {
+                    capturingCallbackCount++;
+                }
+                else if (item.phase == CallbackPhase.TargetAndBubbleUp)
+                {
+                    bubblingCallbackCount++;
+                }
+            }
+        }
+
+        public int Count
+        {
+            get { return m_List.Count; }
+        }
+
+        public EventCallbackFunctorBase this[int i]
+        {
+            get { return m_List[i]; }
+            set { m_List[i] = value; }
+        }
+
+        public void Clear()
+        {
+            m_List.Clear();
+            capturingCallbackCount = 0;
+            bubblingCallbackCount = 0;
         }
     }
 
@@ -236,6 +308,16 @@ namespace UnityEngine.Experimental.UIElements
                     m_TemporaryCallbacks = null;
                 }
             }
+        }
+
+        public bool HasCaptureHandlers()
+        {
+            return m_Callbacks != null && m_Callbacks.capturingCallbackCount > 0;
+        }
+
+        public bool HasBubbleHandlers()
+        {
+            return m_Callbacks != null && m_Callbacks.bubblingCallbackCount > 0;
         }
     }
 }

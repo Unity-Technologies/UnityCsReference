@@ -239,6 +239,7 @@ namespace UnityEditorInternal.VR
             {
                 case BuildTargetGroup.WSA:
                 case BuildTargetGroup.Standalone:
+                case BuildTargetGroup.PS4:
                     return true;
                 default:
                     return false;

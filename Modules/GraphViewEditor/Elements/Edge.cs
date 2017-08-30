@@ -24,6 +24,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Edge()
         {
             clipChildren = false;
+            ClearClassList();
+            AddToClassList("edge");
         }
 
         public override void OnDataChanged()

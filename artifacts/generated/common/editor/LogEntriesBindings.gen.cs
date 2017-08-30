@@ -74,7 +74,7 @@ internal sealed partial class LogEntries
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void GetFirstTwoLinesEntryTextAndModeInternal (int row, ref int mask, ref string outString) ;
+    extern public static  void GetLinesAndModeFromEntryInternal (int row, int numberOfLines, ref int mask, ref string outString) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
