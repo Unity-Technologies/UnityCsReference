@@ -716,61 +716,74 @@ public void SetRandomWriteTarget(int index, ComputeBuffer buffer, [uei.DefaultVa
     private extern static void INTERNAL_CALL_Blit_Identifier (CommandBuffer self, ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, ref Vector2 scale, ref Vector2 offset);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void GetTemporaryRT (int nameID, int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("FilterMode.Point")]  FilterMode filter , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("false")]  bool enableRandomWrite , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode ) ;
+    extern public void GetTemporaryRT (int nameID, int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("FilterMode.Point")]  FilterMode filter , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("false")]  bool enableRandomWrite , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode , [uei.DefaultValue("false")]  bool useDynamicScale ) ;
+
+    [uei.ExcludeFromDocs]
+    public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing , bool enableRandomWrite , RenderTextureMemoryless memorylessMode ) {
+        bool useDynamicScale = false;
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
+    }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing , bool enableRandomWrite ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter , RenderTextureFormat format ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer , FilterMode filter ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
         RenderTextureFormat format = RenderTextureFormat.Default;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height, int depthBuffer ) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
         RenderTextureFormat format = RenderTextureFormat.Default;
         FilterMode filter = FilterMode.Point;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRT (int nameID, int width, int height) {
+        bool useDynamicScale = false;
         RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
@@ -778,7 +791,7 @@ public void SetRandomWriteTarget(int index, ComputeBuffer buffer, [uei.DefaultVa
         RenderTextureFormat format = RenderTextureFormat.Default;
         FilterMode filter = FilterMode.Point;
         int depthBuffer = 0;
-        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode );
+        GetTemporaryRT ( nameID, width, height, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale );
     }
 
     public void GetTemporaryRT (int nameID, RenderTextureDescriptor desc, [uei.DefaultValue("FilterMode.Point")]  FilterMode filter ) {
@@ -796,57 +809,69 @@ public void SetRandomWriteTarget(int index, ComputeBuffer buffer, [uei.DefaultVa
     private extern static void INTERNAL_CALL_GetTemporaryRT (CommandBuffer self, int nameID, ref RenderTextureDescriptor desc, FilterMode filter);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void GetTemporaryRTArray (int nameID, int width, int height, int slices, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("FilterMode.Point")]  FilterMode filter , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("false")]  bool enableRandomWrite ) ;
+    extern public void GetTemporaryRTArray (int nameID, int width, int height, int slices, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("FilterMode.Point")]  FilterMode filter , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("false")]  bool enableRandomWrite , [uei.DefaultValue("false")]  bool useDynamicScale ) ;
+
+    [uei.ExcludeFromDocs]
+    public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing , bool enableRandomWrite ) {
+        bool useDynamicScale = false;
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
+    }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing ) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer , FilterMode filter , RenderTextureFormat format , RenderTextureReadWrite readWrite ) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer , FilterMode filter , RenderTextureFormat format ) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer , FilterMode filter ) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
         RenderTextureFormat format = RenderTextureFormat.Default;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices, int depthBuffer ) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
         RenderTextureFormat format = RenderTextureFormat.Default;
         FilterMode filter = FilterMode.Point;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [uei.ExcludeFromDocs]
     public void GetTemporaryRTArray (int nameID, int width, int height, int slices) {
+        bool useDynamicScale = false;
         bool enableRandomWrite = false;
         int antiAliasing = 1;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
         RenderTextureFormat format = RenderTextureFormat.Default;
         FilterMode filter = FilterMode.Point;
         int depthBuffer = 0;
-        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite );
+        GetTemporaryRTArray ( nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, enableRandomWrite, useDynamicScale );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

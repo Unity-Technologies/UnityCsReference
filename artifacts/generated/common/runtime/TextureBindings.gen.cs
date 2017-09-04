@@ -973,57 +973,69 @@ public partial class RenderTexture : Texture
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetDescriptor (RenderTexture self, out RenderTextureDescriptor value);
     [uei.ExcludeFromDocs]
+public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing , RenderTextureMemoryless memorylessMode , VRTextureUsage vrUsage ) {
+    bool useDynamicScale = false;
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
+}
+
+[uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing , RenderTextureMemoryless memorylessMode ) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
 [uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite , int antiAliasing ) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
     RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
 [uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format , RenderTextureReadWrite readWrite ) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
     RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
     int antiAliasing = 1;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
 [uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height, int depthBuffer , RenderTextureFormat format ) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
     RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
     int antiAliasing = 1;
     RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
 [uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height, int depthBuffer ) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
     RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
     int antiAliasing = 1;
     RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
     RenderTextureFormat format = RenderTextureFormat.Default;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
 [uei.ExcludeFromDocs]
 public static RenderTexture GetTemporary (int width, int height) {
+    bool useDynamicScale = false;
     VRTextureUsage vrUsage = VRTextureUsage.None;
     RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None;
     int antiAliasing = 1;
     RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
     RenderTextureFormat format = RenderTextureFormat.Default;
     int depthBuffer = 0;
-    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage );
+    return GetTemporary ( width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale );
 }
 
-public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode , [uei.DefaultValue("VRTextureUsage.None")]  VRTextureUsage vrUsage )
+public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValue("0")]  int depthBuffer , [uei.DefaultValue("RenderTextureFormat.Default")]  RenderTextureFormat format , [uei.DefaultValue("RenderTextureReadWrite.Default")]  RenderTextureReadWrite readWrite , [uei.DefaultValue("1")]  int antiAliasing , [uei.DefaultValue("RenderTextureMemoryless.None")]  RenderTextureMemoryless memorylessMode , [uei.DefaultValue("VRTextureUsage.None")]  VRTextureUsage vrUsage , [uei.DefaultValue("false")]  bool useDynamicScale )
         {
             var desc = new RenderTextureDescriptor(width, height);
             desc.depthBufferBits = depthBuffer;
@@ -1032,6 +1044,7 @@ public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValu
             desc.sRGB = (readWrite != RenderTextureReadWrite.Linear);
             desc.msaaSamples = antiAliasing;
             desc.memoryless = memorylessMode;
+            desc.useDynamicScale = useDynamicScale;
             return GetTemporary(desc);
         }
 
@@ -1047,6 +1060,22 @@ public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValu
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ReleaseTemporary (RenderTexture temp) ;
+
+    public void ResolveAntiAliasedSurface()
+        {
+            Internal_ResolveAntiAliasedSurface(null);
+        }
+    
+    
+    public void ResolveAntiAliasedSurface(RenderTexture target)
+        {
+            Internal_ResolveAntiAliasedSurface(target);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_ResolveAntiAliasedSurface (RenderTexture target) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1210,7 +1239,27 @@ public static RenderTexture GetTemporary(int width, int height, [uei.DefaultValu
         set;
     }
 
+    public extern bool bindTextureMS
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern bool enableRandomWrite
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern bool useDynamicScale
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

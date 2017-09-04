@@ -5,6 +5,8 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
+using UnityEditorInternal;
+using UnityEditor.Build;
 
 namespace UnityEditor
 {
@@ -32,7 +34,7 @@ namespace UnityEditor
             ShowProp(materialEditor, FindProperty("_Tint", props));
             ShowProp(materialEditor, FindProperty("_Exposure", props));
             ShowProp(materialEditor, FindProperty("_Rotation", props));
-            ShowProp(materialEditor, FindProperty("_Tex", props));
+            ShowProp(materialEditor, FindProperty("_MainTex", props));
             EditorGUIUtility.labelWidth = lw;
 
             m_ShowLatLongLayout.target = ShowProp(materialEditor, FindProperty("_Mapping", props)) == 1;
@@ -47,8 +49,16 @@ namespace UnityEditor
                 }
                 EditorGUILayout.EndFadeGroup();
 
-                // No 3D settings unless PlayerSettings have VR support.
-                m_Show3DControl.value = PlayerSettings.virtualRealitySupported;
+                // Show 3D settings if VR support is enabled on ANY platform.
+                m_Show3DControl.value = false;
+                foreach (BuildPlatform cur in BuildPlatforms.instance.buildPlatforms)
+                {
+                    if (UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(cur.targetGroup))
+                    {
+                        m_Show3DControl.value = true;
+                        break;
+                    }
+                }
                 if (EditorGUILayout.BeginFadeGroup(m_Show3DControl.faded))
                     ShowProp(materialEditor, FindProperty("_Layout", props));
                 EditorGUILayout.EndFadeGroup();

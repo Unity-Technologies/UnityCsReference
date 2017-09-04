@@ -14,16 +14,15 @@ namespace UnityEditor.Experimental.AssetImporters
 {
     // Class concept: helper class that holds a generated asset object, during the import phase of scripted importer.
     //
-    // Motivation: A source asset file can produce multiple assets (a main one and multple sub assets). Needed a way to genericaly hold these sub assets of the source Asset.
+    // Motivation: A source asset file can produce multiple objects. Needed a way to generically hold these objects and keep track of which one is the main object.
     class ImportedObject
     {
         // Is this the main part of the asset being imported?
-        public bool mainAsset { get; set; }
+        public bool mainAssetObject { get; set; }
 
-        public Object asset { get; set; }
+        public Object obj { get; set; }
 
-        // Unique identifier, within imported asset context, of asset
-        public string identifier { get; set; }
+        public string localIdentifier { get; set; }
 
         public Texture2D thumbnail { get; set; }
     }
@@ -33,70 +32,62 @@ namespace UnityEditor.Experimental.AssetImporters
         public string assetPath { get; internal set; }
         public BuildTarget selectedBuildTarget { get; internal set;  }
 
-        List<ImportedObject> m_SubAssets = new List<ImportedObject>();
-        internal List<ImportedObject> subAssets
+        List<ImportedObject> m_ImportedObjects = new List<ImportedObject>();
+        internal List<ImportedObject> importedObjects
         {
-            get { return m_SubAssets; }
+            get { return m_ImportedObjects; }
         }
 
         internal AssetImportContext()
         {
         }
 
-        // Adds an asset object to the resulting asset list and tags it as the main asset.
-        // A minimum and a maximum of one asset must be tagged as the main asset.
-        // param identifier: Unique identifier, within the source asset, that remains the same accross re-import events of the given source asset file.
-        public void SetMainAsset(string identifier, Object asset)
+        public void SetMainObject(Object obj)
         {
-            AddAsset(true, identifier, asset, null);
-        }
+            if (obj == null)
+                return;
 
-        // Adds an asset object to the resulting asset list and tags it as the main asset.
-        // A minimum and a maximum of one asset must be tagged as the main asset.
-        // param identifier: Unique identifier, within the source asset, that remains the same accross re-import events of the given source asset file.
-        public void SetMainAsset(string identifier, Object asset, Texture2D thumbnail)
-        {
-            AddAsset(true, identifier, asset, thumbnail);
-        }
-
-        // Adds a sub asset object to the resulting asset list, that is Not the main asset.
-        // param identifier: Unique identifier, within the source asset, that remains the same accross re-import events of the given source asset file.
-        public void AddSubAsset(string identifier, Object asset)
-        {
-            AddAsset(false, identifier, asset, null);
-        }
-
-        // Adds a sub asset object to the resulting asset list, that is Not the main asset.
-        // param identifier: Unique identifier, within the source asset, that remains the same accross re-import events of the given source asset file.
-        public void AddSubAsset(string identifier, Object asset, Texture2D thumbnail)
-        {
-            AddAsset(false, identifier, asset, thumbnail);
-        }
-
-        void AddAsset(bool main, string identifier, Object asset, Texture2D thumbnail)
-        {
-            if (asset == null)
+            var mainObject = m_ImportedObjects.FirstOrDefault(x => x.mainAssetObject);
+            if (mainObject != null)
             {
-                throw new ArgumentNullException("asset", "Cannot add a null asset : " + (identifier ?? "<null>"));
+                if (mainObject.obj == obj)
+                    return;
+
+                Debug.LogWarning(string.Format(@"An object was already set as the main object: ""{0}"" conflicting on ""{1}""", assetPath, mainObject.localIdentifier));
+                mainObject.mainAssetObject = false;
             }
 
-            var mainAsset = m_SubAssets.FirstOrDefault(x => x.mainAsset);
-            if (main && mainAsset != null)
+            mainObject = m_ImportedObjects.FirstOrDefault(x => x.obj == obj);
+            if (mainObject == null)
             {
-                throw new Exception(String.Format(@"A Main asset has already been added and only one is allowed: ""{0}"" conflicting on ""{1}"" and ""{2}""", assetPath, mainAsset.identifier, identifier));
+                throw new Exception("Before an object can be set as main, it must first be added using AddObjectToAsset.");
+            }
+
+            mainObject.mainAssetObject = true;
+            m_ImportedObjects.Remove(mainObject);
+            m_ImportedObjects.Insert(0, mainObject);
+        }
+
+        public void AddObjectToAsset(string identifier, Object obj)
+        {
+            AddObjectToAsset(identifier, obj, null);
+        }
+
+        public void AddObjectToAsset(string identifier, Object obj, Texture2D thumbnail)
+        {
+            if (obj == null)
+            {
+                throw new ArgumentNullException("obj", "Cannot add a null object : " + (identifier ?? "<null>"));
             }
 
             var desc = new ImportedObject()
             {
-                mainAsset = main,
-                identifier = identifier,
-                asset = asset,
+                mainAssetObject = false,
+                localIdentifier = identifier,
+                obj = obj,
                 thumbnail = thumbnail
             };
-            if (main)
-                m_SubAssets.Insert(0, desc);
-            else
-                m_SubAssets.Add(desc);
+            m_ImportedObjects.Add(desc);
         }
     }
 
@@ -135,14 +126,11 @@ namespace UnityEditor.Experimental.AssetImporters
 
             OnImportAsset(ctx);
 
-            if (!ctx.subAssets.Any((x) => x.mainAsset))
-                throw new Exception("Import failed/rejected as none of the sub assets was set as the 'main asset':" + ctx.assetPath);
-
             var result = new ImportResult
             {
-                m_Assets = ctx.subAssets.Select(x => x.asset).ToArray(),
-                m_AssetNames = ctx.subAssets.Select(x => x.identifier).ToArray(),
-                m_Thumbnails = ctx.subAssets.Select(x => x.thumbnail).ToArray()
+                m_Assets = ctx.importedObjects.Select(x => x.obj).ToArray(),
+                m_AssetNames = ctx.importedObjects.Select(x => x.localIdentifier).ToArray(),
+                m_Thumbnails = ctx.importedObjects.Select(x => x.thumbnail).ToArray()
             };
 
             return result;

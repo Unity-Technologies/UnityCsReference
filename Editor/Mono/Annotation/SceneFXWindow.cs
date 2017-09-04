@@ -21,7 +21,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            var windowHeight = 2f * kFrameWidth + EditorGUI.kSingleLineHeight * 5;
+            var windowHeight = 2f * kFrameWidth + EditorGUI.kSingleLineHeight * 6;
             var windowSize = new Vector2(160, windowHeight);
             return windowSize;
         }
@@ -83,6 +83,9 @@ namespace UnityEditor
             drawPos.y += EditorGUI.kSingleLineHeight;
 
             DrawListElement(drawPos, "Image Effects", state.showImageEffects, value => state.showImageEffects = value);
+            drawPos.y += EditorGUI.kSingleLineHeight;
+
+            DrawListElement(drawPos, "Particle Systems", state.showParticleSystems, value => state.showParticleSystems = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
         }
 

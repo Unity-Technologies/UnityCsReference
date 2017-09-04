@@ -13,6 +13,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using UnityEngine.Video;
+using UnityEditor.Build;
 
 namespace UnityEditor
 {
@@ -388,8 +389,15 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(m_TargetCamera, s_Styles.cameraContent);
                 EditorGUILayout.Slider(m_TargetCameraAlpha, 0.0f, 1.0f, s_Styles.alphaContent);
-                if (PlayerSettings.virtualRealitySupported)
-                    EditorGUILayout.PropertyField(m_TargetCamera3DLayout, s_Styles.camera3DLayout);
+                // If VR is enabled in PlayerSettings on ANY platform, show the 3D layout option
+                foreach (BuildPlatform cur in BuildPlatforms.instance.buildPlatforms)
+                {
+                    if (UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(cur.targetGroup))
+                    {
+                        EditorGUILayout.PropertyField(m_TargetCamera3DLayout, s_Styles.camera3DLayout);
+                        break;
+                    }
+                }
             }
             EditorGUILayout.EndFadeGroup();
 

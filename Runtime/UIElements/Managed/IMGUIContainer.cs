@@ -12,7 +12,25 @@ namespace UnityEngine.Experimental.UIElements
         // Set this delegate to have your IMGUI code execute inside the container
         private readonly Action m_OnGUIHandler;
 
-        public int executionContext { get; set; }
+        // If needed, an IMGUIContainer will allocate native state via this utility object to store control IDs
+        ObjectGUIState m_ObjectGUIState;
+
+        internal ObjectGUIState guiState
+        {
+            get
+            {
+                Debug.Assert(!useOwnerObjectGUIState);
+                if (m_ObjectGUIState == null)
+                {
+                    m_ObjectGUIState = new ObjectGUIState();
+                }
+                return m_ObjectGUIState;
+            }
+        }
+
+        // This is not nice but needed until we properly remove the dependency on GUIView's own ObjectGUIState
+        // At least this implementation is not needed for users, only for containers created to wrap each GUIView
+        internal bool useOwnerObjectGUIState;
         internal Rect lastWorldClip { get; set; }
 
         private GUILayoutUtility.LayoutCache m_Cache = null;
@@ -118,8 +136,8 @@ namespace UnityEngine.Experimental.UIElements
             int guiClipCount = GUIClip.Internal_GetCount();
 
             SaveGlobals();
-            int ctx = executionContext != 0 ? executionContext : elementPanel.instanceID;
-            UIElementsUtility.BeginContainerGUI(cache, ctx, evt, this);
+
+            UIElementsUtility.BeginContainerGUI(cache, evt, this);
 
             if (lostFocus)
             {

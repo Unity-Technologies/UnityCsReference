@@ -1090,6 +1090,7 @@ namespace UnityEditor
                 {
                     m_LookDevConfig = config;
                 }
+                m_IsSaveRegistered = false;
             }
 
             m_LookDevConfig.SetLookDevView(this);
@@ -1511,6 +1512,9 @@ namespace UnityEditor
                     m_LookDevConfig.cameraState[0].UpdateCamera(m_PreviewUtilityContexts[0].m_PreviewUtility[i].camera);
                     m_LookDevConfig.cameraState[1].UpdateCamera(m_PreviewUtilityContexts[1].m_PreviewUtility[i].camera);
                 }
+
+                m_LookDevConfig.cameraStateLeft.Copy(m_LookDevConfig.cameraState[0]);
+                m_LookDevConfig.cameraStateRight.Copy(m_LookDevConfig.cameraState[1]);
 
                 DelayedSaveLookDevConfig();
             }

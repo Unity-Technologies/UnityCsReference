@@ -844,4 +844,9 @@ namespace UnityEngine
     public sealed partial class ImageEffectOpaque : Attribute
     {
     }
+
+    [UsedByNativeCode]
+    public sealed partial class ImageEffectAfterScale : Attribute
+    {
+    }
 }

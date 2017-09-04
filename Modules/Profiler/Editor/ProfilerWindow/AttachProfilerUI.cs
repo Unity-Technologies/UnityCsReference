@@ -24,7 +24,6 @@ namespace UnityEditor
 
     internal class AttachProfilerUI
     {
-        private GUIContent m_CurrentProfiler;
         private static string kEnterIPText = "<Enter IP>";
         private static GUIContent ms_NotificationMessage;
 
@@ -70,11 +69,7 @@ namespace UnityEditor
 
         public void OnGUILayout(EditorWindow window)
         {
-            if (m_CurrentProfiler == null)
-                m_CurrentProfiler = EditorGUIUtility.TextContent("Connected Player|Select player to connect to for receiving profiler and log data.");
-
-            Rect connectRect = GUILayoutUtility.GetRect(m_CurrentProfiler, EditorStyles.toolbarDropDown, GUILayout.Width(100));
-            OnGUI(connectRect, m_CurrentProfiler);
+            OnGUI();
 
             if (ms_NotificationMessage != null)
                 window.ShowNotification(ms_NotificationMessage);
@@ -159,9 +154,13 @@ namespace UnityEditor
             });
         }
 
-        public void OnGUI(Rect connectRect, GUIContent profilerLabel)
+        public void OnGUI()
         {
-            if (!EditorGUI.DropdownButton(connectRect, profilerLabel, FocusType.Passive, EditorStyles.toolbarDropDown))
+            var m_CurrentProfiler = EditorGUIUtility.TextContent(GetConnectedProfiler() + "|Specifies the target player for receiving profiler and log data.");
+            var size = EditorStyles.toolbarDropDown.CalcSize(m_CurrentProfiler);
+            Rect connectRect = GUILayoutUtility.GetRect(size.x, size.y);
+
+            if (!EditorGUI.DropdownButton(connectRect, m_CurrentProfiler, FocusType.Passive, EditorStyles.toolbarDropDown))
                 return;
 
             var profilers = new List<ProfilerChoise>();

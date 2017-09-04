@@ -15,16 +15,19 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/PluginImporter.h")]
     public sealed partial class PluginImporter : AssetImporter
     {
-        private static bool IsCompatible(PluginImporter imp, string platformName)
+        [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
+        extern private bool GetCompatibleWithPlatformOrAnyPlatformBuildTarget(string buildTarget);
+
+        [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
+        extern private bool GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(string buildTargetGroup, string buildTarget);
+
+        private static bool IsCompatible(PluginImporter imp, string buildTarget)
         {
             if (string.IsNullOrEmpty(imp.assetPath))
                 return false;
 
-            if (!imp.GetCompatibleWithPlatform(platformName) &&
-                !(imp.GetCompatibleWithAnyPlatform() && !imp.GetExcludeFromAnyPlatform(platformName)))
-            {
+            if (!imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(buildTarget))
                 return false;
-            }
 
             return imp.ShouldIncludeInBuild();
         }
@@ -34,7 +37,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(imp.assetPath))
                 return false;
 
-            return imp.GetCompatibleWithPlatform(buildTargetGroup, buildTarget) || imp.GetCompatibleWithAnyPlatform();
+            if (!imp.GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(buildTargetGroup, buildTarget))
+                return false;
+
+            return imp.ShouldIncludeInBuild();
         }
 
         public static PluginImporter[] GetImporters(string platformName)

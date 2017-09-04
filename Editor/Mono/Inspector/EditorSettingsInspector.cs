@@ -69,6 +69,13 @@ namespace UnityEditor
             new PopupElement("Always Enabled"),
         };
 
+        private PopupElement[] lineEndingsPopupList =
+        {
+            new PopupElement("OS Native"),
+            new PopupElement("Unix"),
+            new PopupElement("Windows"),
+        };
+
         private PopupElement[] spritePackerPaddingPowerPopupList =
         {
             new PopupElement("1"),
@@ -363,6 +370,7 @@ namespace UnityEditor
             DoProjectGenerationSettings();
             DoEtcTextureCompressionSettings();
             DoInternalSettings();
+            DoLineEndingsSettings();
         }
 
         private void DoProjectGenerationSettings()
@@ -387,7 +395,7 @@ namespace UnityEditor
                 return;
 
             GUILayout.Space(10);
-            GUILayout.Label("Internal settings", EditorStyles.boldLabel);
+            GUILayout.Label("Internal Settings", EditorStyles.boldLabel);
 
             var postfix = "-testable";
             EditorGUI.BeginChangeCheck();
@@ -426,6 +434,15 @@ namespace UnityEditor
 
             EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
+        }
+
+        private void DoLineEndingsSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("Line Endings For New Scripts", EditorStyles.boldLabel);
+
+            int index = (int)EditorSettings.lineEndingsForNewScripts;
+            CreatePopupMenu("Mode", lineEndingsPopupList, index, SetLineEndingsForNewScripts);
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
@@ -679,6 +696,13 @@ namespace UnityEditor
         private void SetEtcTextureBestCompressor(object data)
         {
             EditorSettings.etcTextureBestCompressor = (int)data;
+        }
+
+        private void SetLineEndingsForNewScripts(object data)
+        {
+            int popupIndex = (int)data;
+
+            EditorSettings.lineEndingsForNewScripts = (LineEndingsMode)popupIndex;
         }
     }
 }

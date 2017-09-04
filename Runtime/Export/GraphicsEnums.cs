@@ -273,6 +273,8 @@ namespace UnityEngine
         BC6H        = 24,
         BC7         = 25,
 
+        DXT1Crunched = 28,
+        DXT5Crunched = 29,
 
         PVRTC_RGB2  = 30,
         PVRTC_RGBA2 = 31,
@@ -310,6 +312,9 @@ namespace UnityEngine
 
         RG16 = 62,
         R8 = 63,
+
+        ETC_RGB4Crunched = 64,
+        ETC2_RGBA8Crunched = 65,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
@@ -390,6 +395,8 @@ namespace UnityEngine
         CreatedFromScript = 1 << 5, // always set by script.
         // SampleOnlyDepth = 1 << 6, // this is only used internally.
         AllowVerticalFlip = 1 << 7,
+        NoResolvedColorSurface = 1 << 8,
+        DynamicallyScalable = 1 << 10,
     }
 
     public enum RenderTextureReadWrite

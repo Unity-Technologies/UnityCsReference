@@ -108,7 +108,7 @@ namespace UnityEngine
         PSM = 26,
         // In the player on XboxOne
         XboxOne = 27,
-        //*undocumented*
+        [System.Obsolete("SamsungTVPlayer export is no longer supported in Unity 2017.3+.")]
         SamsungTVPlayer = 28,
         // Wii U
         WiiU = 30,

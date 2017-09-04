@@ -150,11 +150,6 @@ namespace UnityEngine
             return false;
         }
 
-        internal static void BeginContainer(int instanceID)
-        {
-            Internal_BeginContainer(instanceID);
-        }
-
         internal static void EndContainer()
         {
             Internal_EndContainer();

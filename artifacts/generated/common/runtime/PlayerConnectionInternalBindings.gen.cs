@@ -23,6 +23,7 @@ namespace UnityEngine
         void Initialize();
         void DisconnectAll();
         void SendMessage(Guid messageId, byte[] data, int playerId);
+        void Poll();
         void RegisterInternal(Guid messageId);
         void UnregisterInternal(Guid messageId);
         bool IsConnected();
@@ -40,6 +41,11 @@ internal sealed partial class PlayerConnectionInternal : IPlayerEditorConnection
             }
 
             SendMessage(messageId.ToString("N"), data, playerId);
+        }
+    
+    void IPlayerEditorConnectionNative.Poll()
+        {
+            PollInternal();
         }
     
     void IPlayerEditorConnectionNative.RegisterInternal(Guid messageId)
@@ -87,6 +93,10 @@ internal sealed partial class PlayerConnectionInternal : IPlayerEditorConnection
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SendMessage (string messageId, byte[] data, int playerId) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void PollInternal () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

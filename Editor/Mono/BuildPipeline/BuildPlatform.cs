@@ -67,8 +67,6 @@ namespace UnityEditor.Build
                         return BuildTarget.WebGL;
                     case BuildTargetGroup.WSA:
                         return BuildTarget.WSAPlayer;
-                    case BuildTargetGroup.SamsungTV:
-                        return BuildTarget.SamsungTV;
                     case BuildTargetGroup.Facebook:
                         return BuildTarget.StandaloneWindows64;
                     default:
@@ -109,7 +107,6 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatform("Wii U", "BuildSettings.WiiU", BuildTargetGroup.WiiU, false));
             buildPlatformsList.Add(new BuildPlatform("Universal Windows Platform", "BuildSettings.Metro", BuildTargetGroup.WSA, true));
             buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));
-            buildPlatformsList.Add(new BuildPlatform("Samsung TV", "BuildSettings.SamsungTV", BuildTargetGroup.SamsungTV, true));
             buildPlatformsList.Add(new BuildPlatform("Nintendo 3DS", "BuildSettings.N3DS", BuildTargetGroup.N3DS, false));
             buildPlatformsList.Add(new BuildPlatform("Facebook", "BuildSettings.Facebook", BuildTargetGroup.Facebook, true));
             buildPlatformsList.Add(new BuildPlatform("Nintendo Switch", "BuildSettings.Switch", BuildTargetGroup.Switch, false));

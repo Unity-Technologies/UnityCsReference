@@ -26,16 +26,41 @@ namespace UnityEngine.Playables
             return playable.GetHandle().GetGraph();
         }
 
+        [Obsolete("SetPlayState() has been deprecated. Use Play(), Pause() or SetDelay() instead", false)]
         public static void SetPlayState<U>(this U playable, PlayState value)
             where U : struct, IPlayable
         {
-            playable.GetHandle().SetPlayState(value);
+            if (value == PlayState.Delayed)
+                throw new ArgumentException("Can't set Delayed: use SetDelay() instead");
+
+            switch (value)
+            {
+                case PlayState.Playing:
+                    playable.GetHandle().Play();
+                    break;
+
+                case PlayState.Paused:
+                    playable.GetHandle().Pause();
+                    break;
+            }
         }
 
         public static PlayState GetPlayState<U>(this U playable)
             where U : struct, IPlayable
         {
             return playable.GetHandle().GetPlayState();
+        }
+
+        public static void Play<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            playable.GetHandle().Play();
+        }
+
+        public static void Pause<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            playable.GetHandle().Pause();
         }
 
         public static void SetSpeed<U>(this U playable, double value)
@@ -187,6 +212,24 @@ namespace UnityEngine.Playables
             playable.SetInputWeight(inputIndex, weight);
             playable.ConnectInput(inputIndex, sourcePlayable, sourceOutputIndex);
             return inputIndex;
+        }
+
+        public static void SetDelay<U>(this U playable, double delay)
+            where U : struct, IPlayable
+        {
+            playable.GetHandle().SetDelay(delay);
+        }
+
+        public static double GetDelay<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetDelay();
+        }
+
+        public static bool IsDelayed<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().IsDelayed();
         }
     }
 }

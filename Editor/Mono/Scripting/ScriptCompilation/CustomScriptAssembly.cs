@@ -91,7 +91,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Platforms[i++] = new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU);
             Platforms[i++] = new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("SamsungTV", BuildTarget.SamsungTV);
             Platforms[i++] = new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch);
 
             System.Diagnostics.Debug.Assert(Platforms.Length == i - 1);

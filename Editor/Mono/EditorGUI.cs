@@ -5402,27 +5402,46 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
                 GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear) && !TextureUtil.GetLinearSampled(image);
 
+                RenderTexture rt = image as RenderTexture;
+                bool manualResolve = (rt != null) && rt.bindTextureMS;
+
+                if (manualResolve)
+                {
+                    var desc = rt.descriptor;
+                    desc.bindMS = false;
+                    desc.msaaSamples = 1;
+                    RenderTexture resolved = RenderTexture.GetTemporary(desc);
+                    resolved.Create();
+                    rt.ResolveAntiAliasedSurface(resolved);
+                    image = resolved;
+                }
+
                 if (mat == null)
                 {
                     // fallback to GUI.DrawTexture() with blit material
                     GUI.DrawTexture(position, image, scaleMode, false, imageAspect);
-                    GL.sRGBWrite = false;
-                    return;
                 }
-
-                Rect screenRect = new Rect();
-                Rect sourceRect = new Rect();
-
-                GUI.CalculateScaledTextureRects(position, scaleMode, imageAspect, ref screenRect, ref sourceRect);
-                Texture2D t2d = image as Texture2D;
-                if (t2d != null && TextureUtil.GetUsageMode(image) == TextureUsageMode.AlwaysPadded)
+                else
                 {
-                    // In case of always padded textures, only show the non-padded area
-                    sourceRect.width *= (float)t2d.width / TextureUtil.GetGPUWidth(t2d);
-                    sourceRect.height *= (float)t2d.height / TextureUtil.GetGPUHeight(t2d);
+                    Rect screenRect = new Rect();
+                    Rect sourceRect = new Rect();
+
+                    GUI.CalculateScaledTextureRects(position, scaleMode, imageAspect, ref screenRect, ref sourceRect);
+                    Texture2D t2d = image as Texture2D;
+                    if (t2d != null && TextureUtil.GetUsageMode(image) == TextureUsageMode.AlwaysPadded)
+                    {
+                        // In case of always padded textures, only show the non-padded area
+                        sourceRect.width *= (float)t2d.width / TextureUtil.GetGPUWidth(t2d);
+                        sourceRect.height *= (float)t2d.height / TextureUtil.GetGPUHeight(t2d);
+                    }
+                    Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
                 }
-                Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
+
                 GL.sRGBWrite = false;
+                if (manualResolve)
+                {
+                    RenderTexture.ReleaseTemporary(image as RenderTexture);
+                }
             }
         }
 

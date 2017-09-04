@@ -86,12 +86,6 @@ namespace UnityEditor
 
                 m_RendererSerializedObject = new SerializedObject(renderers.ToArray());
                 m_Modules[m_Modules.Length - 1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames[s_ModuleNames.Length - 1]);
-
-                // Sync to state
-                foreach (ParticleSystemRenderer r in renderers)
-                {
-                    EditorUtility.SetSelectedRenderState(r, ParticleEffectUI.m_ShowWireframe ? EditorSelectedRenderState.Wireframe : EditorSelectedRenderState.Hidden);
-                }
             }
         }
 
@@ -347,22 +341,14 @@ namespace UnityEditor
                 return;
 
             // Render bounds
-            foreach (ParticleSystem ps in m_ParticleSystems)
+            if (ParticleEffectUI.m_ShowBounds)
             {
-                if (ps.particleCount > 0)
+                foreach (ParticleSystem ps in m_ParticleSystems)
                 {
-                    ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
-
-                    if (ParticleEffectUI.m_ShowBounds)
-                    {
-                        var oldCol = Handles.color;
-                        Handles.color = Color.yellow;
-                        var worldBounds = particleSystemRenderer.bounds;
-                        Handles.DrawWireCube(worldBounds.center, worldBounds.size);
-                        Handles.color = oldCol;
-                    }
-
-                    EditorUtility.SetSelectedRenderState(particleSystemRenderer, ParticleEffectUI.m_ShowWireframe ? EditorSelectedRenderState.Wireframe : EditorSelectedRenderState.Hidden);
+                    if (multiEdit)
+                        ShowBounds(ParticleSystemEditorUtils.GetRoot(ps));
+                    else
+                        ShowBounds(ps);
                 }
             }
 
@@ -380,6 +366,35 @@ namespace UnityEditor
             }
             // Apply the property, handle undo
             ApplyProperties();
+        }
+
+        private void ShowBounds(ParticleSystem ps)
+        {
+            if (ps.particleCount > 0)
+            {
+                ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
+
+                var oldCol = Handles.color;
+                Handles.color = Color.yellow;
+                var worldBounds = particleSystemRenderer.bounds;
+                Handles.DrawWireCube(worldBounds.center, worldBounds.size);
+                Handles.color = oldCol;
+            }
+
+            // In multi-edit, children are not stored, so render thir bounds manually
+            if (multiEdit)
+            {
+                ParticleSystem[] children = ps.transform.GetComponentsInChildren<ParticleSystem>();
+                foreach (ParticleSystem child in children)
+                {
+                    if (child != ps)
+                    {
+                        bool alreadySelected = m_ParticleSystems.FirstOrDefault(o => ParticleSystemEditorUtils.GetRoot(o) == child) != null;
+                        if (!alreadySelected)
+                            ShowBounds(child);
+                    }
+                }
+            }
         }
 
         public void ApplyProperties()

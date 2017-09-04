@@ -61,7 +61,7 @@ namespace UnityEditor
             List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
             foreach (var sc in scenes)
             {
-                var item = new BuildPlayerSceneTreeViewItem(sc.path.GetHashCode(), 0, sc.path, sc.enabled);
+                var item = new BuildPlayerSceneTreeViewItem(sc.guid.GetHashCode(), 0, sc.path, sc.enabled);
                 root.AddChild(item);
             }
             return root;
@@ -99,7 +99,9 @@ namespace UnityEditor
             var sceneItem = args.item as BuildPlayerSceneTreeViewItem;
             if (sceneItem != null)
             {
-                var sceneExists = File.Exists(sceneItem.fullName);
+                var sceneWasDeleted = sceneItem.guid.Empty();
+                var sceneExists = !sceneWasDeleted && File.Exists(sceneItem.fullName);
+
                 using (new EditorGUI.DisabledScope(!sceneExists))
                 {
                     var newState = sceneItem.active;
@@ -124,11 +126,16 @@ namespace UnityEditor
 
                         EditorBuildSettings.scenes = GetSceneList();
                     }
+
                     base.RowGUI(args);
 
                     if (sceneItem.counter != BuildPlayerSceneTreeViewItem.kInvalidCounter)
                     {
                         TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "" + sceneItem.counter, args.selected, args.focused);
+                    }
+                    else if (sceneItem.displayName == string.Empty || !sceneExists)
+                    {
+                        TreeView.DefaultGUI.LabelRightAligned(args.rowRect, "Deleted", args.selected, args.focused);
                     }
                 }
             }
@@ -192,7 +199,8 @@ namespace UnityEditor
                     {
                         if (AssetDatabase.GetMainAssetTypeAtPath(path) == typeof(SceneAsset))
                         {
-                            selection.Add(path.GetHashCode());
+                            var guid = new GUID(AssetDatabase.AssetPathToGUID(path));
+                            selection.Add(guid.GetHashCode());
 
                             bool unique = true;
                             foreach (var scene in scenes)

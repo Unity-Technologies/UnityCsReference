@@ -291,7 +291,7 @@ namespace UnityEditor
             m_ActualView.m_Parent = this;
 
             visualTree.Add(m_ActualView.rootVisualContainer);
-            panel.viewDataDictionary = m_ActualView.viewDataDictionary;
+            panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
             panel.savePersistentViewData = m_ActualView.SavePersistentViewData;
 
             if (GetPaneMethod("Update") != null)
@@ -329,7 +329,8 @@ namespace UnityEditor
             if (m_ActualView.rootVisualContainer.shadow.parent == visualTree)
             {
                 visualTree.Remove(m_ActualView.rootVisualContainer);
-                panel.viewDataDictionary = null;
+                panel.getViewDataDictionary = null;
+                panel.savePersistentViewData = null;
             }
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;

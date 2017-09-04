@@ -504,6 +504,7 @@ namespace UnityEditor
                 s.sceneViewState.showFog = false;
                 s.sceneViewState.showSkybox = false;
                 s.sceneViewState.showImageEffects = false;
+                s.sceneViewState.showParticleSystems = false;
                 s.FrameSelected();
             }
         }
@@ -520,6 +521,7 @@ namespace UnityEditor
                 state.view.sceneViewState.showMaterialUpdate = state.state.showMaterialUpdate;
                 state.view.sceneViewState.showSkybox = state.state.showSkybox;
                 state.view.sceneViewState.showImageEffects = state.state.showImageEffects;
+                state.view.sceneViewState.showParticleSystems = state.state.showParticleSystems;
             }
 
             m_EditMode = EditMode.Stopping;

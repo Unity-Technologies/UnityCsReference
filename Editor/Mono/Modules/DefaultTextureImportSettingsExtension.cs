@@ -135,11 +135,6 @@ namespace UnityEditor.Modules
                                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueApplePVR;
                                     formatStrings = TextureImporterInspector.s_TextureFormatStringsApplePVR;
                                 }
-                                else if (platformSettings.m_Target == BuildTarget.SamsungTV)
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueSTV;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsSTV;
-                                }
                                 else
                                 {
                                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueAndroid;
@@ -208,9 +203,22 @@ namespace UnityEditor.Modules
                 }
             }
 
+            if ((platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed) || (platformSettings.allAreOverridden && TextureImporterInspector.IsCompressedDXTTextureFormat((TextureImporterFormat)formatForAll)))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.crunchedCompressionIsDifferent;
+                bool crunchedCompression = EditorGUILayout.Toggle(TextureImporterInspector.s_Styles.crunchedCompression, platformSettings.crunchedCompression);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    platformSettings.SetCrunchedCompressionForAll(crunchedCompression);
+                }
+            }
 
             // compression quality
             if (
+                // Is it "crunched" enabled and the format is DXT1/5? (the only formats that support crunch)
+                (platformSettings.crunchedCompression && !platformSettings.crunchedCompressionIsDifferent && (platformSettings.textureCompression != TextureImporterCompression.Uncompressed || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT1 || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT5)) ||
                 (!platformSettings.textureFormatIsDifferent && ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, (TextureImporterFormat)formatForAll)))
             {
                 EditorGUI.BeginChangeCheck();
@@ -246,8 +254,7 @@ namespace UnityEditor.Modules
                 target == BuildTarget.iOS ||
                 target == BuildTarget.tvOS ||
                 target == BuildTarget.Android ||
-                target == BuildTarget.Tizen ||
-                target == BuildTarget.SamsungTV
+                target == BuildTarget.Tizen
             ;
 
             if (showAsEnum)

@@ -103,8 +103,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             typeFactory[typeof(EdgePresenter)] = typeof(Edge);
 
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
-
-            graphElements = this.Query<Layer>().Children<GraphElement>().Build();
+            graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
             nodes = this.Query<Layer>().Children<Node>().Build();
         }
 
@@ -137,6 +136,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         PersistedViewTransform m_PersistedViewTransform;
 
         ContentZoomer m_Zoomer;
+        int m_ZoomerMaxElementCountWithPixelCacheRegen = 100;
         Vector3 m_MinScale = ContentZoomer.DefaultMinScale;
         Vector3 m_MaxScale = ContentZoomer.DefaultMaxScale;
 
@@ -153,6 +153,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public float scale
         {
             get { return viewTransform.scale.x; }
+        }
+
+        public int zoomerMaxElementCountWithPixelCacheRegen
+        {
+            get { return m_ZoomerMaxElementCountWithPixelCacheRegen; }
+            set
+            {
+                if (m_ZoomerMaxElementCountWithPixelCacheRegen == value)
+                    return;
+
+                m_ZoomerMaxElementCountWithPixelCacheRegen = value;
+                if (m_Presenter != null)
+                    m_Zoomer.keepPixelCacheOnZoom = m_Presenter.elements.Count() > m_ZoomerMaxElementCountWithPixelCacheRegen;
+            }
         }
 
         public void SetupZoom(Vector3 minScaleSetup, Vector3 maxScaleSetup)
@@ -244,23 +258,56 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             // process additions
+            int elementCount = 0;
             foreach (GraphElementPresenter elementPresenter in m_Presenter.elements)
             {
+                elementCount++;
+
                 // been added?
                 var found = false;
 
-                foreach (var dc in current)
+                // For regular presenters we check inside the contentViewContainer
+                // for their VisualElements.
+                if ((elementPresenter.capabilities & Capabilities.Floating) == 0)
                 {
-                    if (dc != null && dc.presenter == elementPresenter)
+                    foreach (var dc in current)
                     {
-                        found = true;
-                        break;
+                        if (dc != null && dc.presenter == elementPresenter)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                // For floating presenters, like the MiniMap, we need to check the
+                // directly children of the GraphView for their VisualElements,
+                // excluding the contentViewContainer. That's where floating
+                // presenters are added.
+                else
+                {
+                    foreach (var dc in Children())
+                    {
+                        if (dc == contentViewContainer)
+                            continue;
+
+                        var graphElement = dc as GraphElement;
+                        if (graphElement == null)
+                            continue;
+
+                        if (graphElement.presenter == elementPresenter)
+                        {
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
                 if (!found)
                     InstantiateElement(elementPresenter);
             }
+
+            // Change Zoomer pixel caching setting based on number of GraphElements.
+            m_Zoomer.keepPixelCacheOnZoom = elementCount > m_ZoomerMaxElementCountWithPixelCacheRegen;
         }
 
         protected override UnityEngine.Object[] toWatch

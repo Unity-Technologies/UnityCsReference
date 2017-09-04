@@ -33,7 +33,14 @@ public enum SpritePackerMode
     BuildTimeOnly = 1,
     AlwaysOn = 2,
     BuildTimeOnlyAtlas = 3,
-    AlwaysOnAtlas = 4,
+    AlwaysOnAtlas = 4
+}
+
+public enum LineEndingsMode
+{
+    OSNative = 0,
+    Unix = 1,
+    Windows = 2
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -125,6 +132,16 @@ public sealed partial class EditorSettings : Object
     }
 
     public extern static SerializationMode serializationMode
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static LineEndingsMode lineEndingsForNewScripts
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

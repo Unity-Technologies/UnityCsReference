@@ -59,12 +59,17 @@ namespace UnityEditor
             }
         }
 
+        [SerializeField]
         private SerializableJsonDictionary m_PersistentViewDataDictionary;
+
+        private bool m_EnableViewDataPersistence;
+
         internal SerializableJsonDictionary viewDataDictionary
         {
             get
             {
-                if (m_PersistentViewDataDictionary == null)
+                // If persistence is disabled, just don't even create the dictionary. Return null.
+                if (m_EnableViewDataPersistence && m_PersistentViewDataDictionary == null)
                 {
                     string editorPrefFileName = this.GetType().ToString();
                     m_PersistentViewDataDictionary = EditorWindowPersistentViewData.instance[editorPrefFileName];
@@ -75,11 +80,30 @@ namespace UnityEditor
 
         internal void SavePersistentViewData()
         {
-            if (m_PersistentViewDataDictionary != null)
+            if (m_EnableViewDataPersistence && m_PersistentViewDataDictionary != null)
             {
                 string editorPrefFileName = this.GetType().ToString();
                 EditorWindowPersistentViewData.instance.Save(editorPrefFileName, m_PersistentViewDataDictionary);
             }
+        }
+
+        internal ISerializableJsonDictionary GetViewDataDictionary()
+        {
+            return viewDataDictionary;
+        }
+
+        // TODO: These should be made public when UIElements is no longer experimental.
+        internal void DisableViewDataPersistence()
+        {
+            m_EnableViewDataPersistence = false;
+        }
+
+        internal void ClearPersistentViewData()
+        {
+            string editorPrefFileName = this.GetType().ToString();
+            EditorWindowPersistentViewData.instance.Clear(editorPrefFileName);
+            DestroyImmediate(m_PersistentViewDataDictionary);
+            m_PersistentViewDataDictionary = null;
         }
 
 
@@ -893,6 +917,8 @@ namespace UnityEditor
 
         public EditorWindow()
         {
+            m_EnableViewDataPersistence = true;
+
             titleContent.text = GetType().ToString();
         }
 

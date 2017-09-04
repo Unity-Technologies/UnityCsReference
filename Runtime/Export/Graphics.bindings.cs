@@ -8,6 +8,8 @@ using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -163,5 +165,59 @@ namespace UnityEngine
     public sealed partial class GL
     {
         [FreeFunction("ClearWithSkybox")] extern public static void ClearWithSkybox(bool clearDepth, Camera camera);
+    }
+
+
+    // Scales render textures to support dynamic resolution.
+    [NativeHeader("Runtime/GfxDevice/ScalableBufferManager.h")]
+    [StaticAccessor("ScalableBufferManager::GetInstance()", StaticAccessorType.Dot)]
+    static public class ScalableBufferManager
+    {
+        static public float widthScaleFactor { get { return GetWidthScaleFactor(); } }
+        static public float heightScaleFactor { get { return GetHeightScaleFactor(); } }
+
+        static public extern void ResizeBuffers(float widthScale, float heightScale);
+
+        static private extern float GetWidthScaleFactor();
+        static private extern float GetHeightScaleFactor();
+    }
+
+    [NativeHeader("Runtime/GfxDevice/FrameTiming.h")]
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FrameTiming
+    {
+        // Keep in sync with managed FrameTiming struct
+
+        // CPU events
+        [NativeName("m_CPUTimePresentCalled")]
+        public UInt64 cpuTimePresentCalled;
+        [NativeName("m_CPUFrameTime")]
+        public double cpuFrameTime;
+
+        // GPU events
+        [NativeName("m_CPUTimeFrameComplete")]
+        public UInt64 cpuTimeFrameComplete; //This is the time the GPU finishes rendering the frame and interrupts the CPU
+        [NativeName("m_GPUFrameTime")]
+        public double gpuFrameTime;
+
+        //Linked data
+        [NativeName("m_HeightScale")]
+        public float heightScale;
+        [NativeName("m_WidthScale")]
+        public float widthScale;
+        [NativeName("m_SyncInterval")]
+        public UInt32 syncInterval;
+    }
+
+    [StaticAccessor("GetFrameTimingManager()", StaticAccessorType.Dot)]
+    static public class FrameTimingManager
+    {
+        static public extern void CaptureFrameTimings();
+        static public extern UInt32 GetLatestTimings(UInt32 numFrames, FrameTiming[] timings);
+
+        static public extern float GetVSyncsPerSecond();
+        static public extern UInt64 GetGpuTimerFrequency();
+        static public extern UInt64 GetCpuTimerFrequency();
     }
 }

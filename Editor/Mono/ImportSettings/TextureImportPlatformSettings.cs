@@ -204,9 +204,6 @@ namespace UnityEditor
                 case BuildTarget.Tizen:
                     testValues = kTextureFormatsValueTizen;
                     break;
-                case BuildTarget.SamsungTV:
-                    testValues = kTextureFormatsValueSTV;
-                    break;
 
                 default:
                     testValues = settings.textureType == TextureImporterType.NormalMap ? kNormalFormatsValueDefault : kTextureFormatsValueDefault;
@@ -357,6 +354,11 @@ namespace UnityEditor
             (int)TextureImporterFormat.ASTC_RGBA_10x10,
             (int)TextureImporterFormat.ASTC_RGBA_12x12,
 
+            (int)TextureImporterFormat.ETC_RGB4,
+            (int)TextureImporterFormat.ETC_RGB4Crunched,
+            (int)TextureImporterFormat.ETC2_RGBA8,
+            (int)TextureImporterFormat.ETC2_RGBA8Crunched,
+
             (int)TextureImporterFormat.RGB16,
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
@@ -367,14 +369,16 @@ namespace UnityEditor
         public static readonly int[] kTextureFormatsValueAndroid =
         {
             (int)TextureImporterFormat.DXT1,
+            (int)TextureImporterFormat.DXT1Crunched,
             (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT5Crunched,
 
             (int)TextureImporterFormat.ETC_RGB4,
-
+            (int)TextureImporterFormat.ETC_RGB4Crunched,
             (int)TextureImporterFormat.ETC2_RGB4,
             (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
             (int)TextureImporterFormat.ETC2_RGBA8,
-
+            (int)TextureImporterFormat.ETC2_RGBA8Crunched,
 
             (int)TextureImporterFormat.PVRTC_RGB2,
             (int)TextureImporterFormat.PVRTC_RGBA2,
@@ -415,21 +419,12 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBA32,
         };
 
-        public static readonly int[] kTextureFormatsValueSTV =
-        {
-            (int)TextureImporterFormat.ETC_RGB4,
-
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32,
-        };
-
         public static readonly int[] kTextureFormatsValueWebGL =
         {
             (int)TextureImporterFormat.DXT1,
             (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT1Crunched,
+            (int)TextureImporterFormat.DXT5Crunched,
             (int)TextureImporterFormat.RGB16,
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
@@ -442,6 +437,7 @@ namespace UnityEditor
             (int)TextureImporterFormat.BC5,
             (int)TextureImporterFormat.BC7,
             (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT5Crunched,
             (int)TextureImporterFormat.ARGB16,
             (int)TextureImporterFormat.RGBA32,
         };
@@ -449,6 +445,8 @@ namespace UnityEditor
         {
             (int)TextureImporterFormat.DXT1,
             (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT1Crunched,
+            (int)TextureImporterFormat.DXT5Crunched,
             (int)TextureImporterFormat.RGB16,
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,

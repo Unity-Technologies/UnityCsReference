@@ -105,12 +105,20 @@ namespace UnityEngine.Experimental.UIElements
             return GUIUtility.ShouldRethrowException(exception);
         }
 
-        internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, int instanceID, Event evt, IMGUIContainer container)
+        internal static void BeginContainerGUI(GUILayoutUtility.LayoutCache cache, Event evt, IMGUIContainer container)
         {
-            GUIUtility.BeginContainer(instanceID);
+            if (container.useOwnerObjectGUIState)
+            {
+                GUIUtility.BeginContainerFromOwner(container.elementPanel.ownerObject);
+            }
+            else
+            {
+                GUIUtility.BeginContainer(container.guiState);
+            }
+
             s_ContainerStack.Push(container);
             GUIUtility.s_SkinMode = (int)container.contextType;
-            GUIUtility.s_OriginalID = instanceID;
+            GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetInstanceID();
 
             Event.current = evt;
 
@@ -255,13 +263,13 @@ namespace UnityEngine.Experimental.UIElements
             return s_UIElementsCache.GetEnumerator();
         }
 
-        internal static Panel FindOrCreatePanel(int instanceId, ContextType contextType, IDataWatchService dataWatch = null)
+        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null)
         {
             Panel panel;
-            if (!s_UIElementsCache.TryGetValue(instanceId, out panel))
+            if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
             {
-                panel = new Panel(instanceId, contextType, dataWatch, eventDispatcher);
-                s_UIElementsCache.Add(instanceId, panel);
+                panel = new Panel(ownerObject, contextType, dataWatch, eventDispatcher);
+                s_UIElementsCache.Add(ownerObject.GetInstanceID(), panel);
             }
             else
             {
@@ -271,9 +279,9 @@ namespace UnityEngine.Experimental.UIElements
             return panel;
         }
 
-        internal static Panel FindOrCreatePanel(int instanceId)
+        internal static Panel FindOrCreatePanel(ScriptableObject ownerObject)
         {
-            return FindOrCreatePanel(instanceId, GetGUIContextType());
+            return FindOrCreatePanel(ownerObject, GetGUIContextType());
         }
     }
 }

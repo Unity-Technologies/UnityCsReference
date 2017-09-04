@@ -30,232 +30,276 @@ namespace UnityEngine.XR.WSA.Input
         NavigationRailsZ = 512
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct HoldCompletedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public HoldCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct HoldCanceledEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public HoldCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct HoldStartedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public HoldStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct TappedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public int tapCount { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public TappedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, int tapCount) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.tapCount = tapCount;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        public int tapCount
+        { get { return m_TapCount; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
+        internal int m_TapCount;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct ManipulationCanceledEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 cumulativeDelta { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public ManipulationCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.cumulativeDelta = cumulativeDelta;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct ManipulationCompletedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 cumulativeDelta { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public ManipulationCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.cumulativeDelta = cumulativeDelta;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        public Vector3 cumulativeDelta
+        { get { return m_CumulativeDelta; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
+        internal Vector3 m_CumulativeDelta;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct ManipulationStartedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 cumulativeDelta { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public ManipulationStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.cumulativeDelta = cumulativeDelta;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct ManipulationUpdatedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 cumulativeDelta { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public ManipulationUpdatedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.cumulativeDelta = cumulativeDelta;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        public Vector3 cumulativeDelta
+        { get { return m_CumulativeDelta; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
+        internal Vector3 m_CumulativeDelta;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct NavigationCanceledEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 normalizedOffset { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public NavigationCanceledEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.normalizedOffset = normalizedOffset;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct NavigationCompletedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 normalizedOffset { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public NavigationCompletedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.normalizedOffset = normalizedOffset;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        public Vector3 normalizedOffset
+        { get { return m_NormalizedOffset; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
+        internal Vector3 m_NormalizedOffset;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct NavigationStartedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 normalizedOffset { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public NavigationStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.normalizedOffset = normalizedOffset;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct NavigationUpdatedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
-        public Vector3 normalizedOffset { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public NavigationUpdatedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-            this.normalizedOffset = normalizedOffset;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        public Vector3 normalizedOffset
+        { get { return m_NormalizedOffset; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
+        internal Vector3 m_NormalizedOffset;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct RecognitionEndedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public RecognitionEndedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
+    [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public struct RecognitionStartedEventArgs
     {
-        public InteractionSource source { get; private set; }
-        public InteractionSourceLocation pose { get; private set; }
-        public InteractionSourceRay headRay { get; private set; }
+        public InteractionSource source
+        { get { return m_Source; } }
 
-        public RecognitionStartedEventArgs(InteractionSource source, InteractionSourceLocation pose, InteractionSourceRay headRay) : this()
-        {
-            this.source = source;
-            this.pose = pose;
-            this.headRay = headRay;
-        }
+        public InteractionSourcePose sourcePose
+        { get { return m_SourcePose; } }
+
+        public Pose headPose
+        { get { return m_HeadPose; } }
+
+        internal InteractionSource m_Source;
+        internal InteractionSourcePose m_SourcePose;
+        internal Pose m_HeadPose;
     }
 
     [MovedFrom("UnityEngine.VR.WSA.Input")]
@@ -274,21 +318,21 @@ namespace UnityEngine.XR.WSA.Input
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     sealed public partial class GestureRecognizer : IDisposable
     {
-        public event Action<HoldCanceledEventArgs> OnHoldCanceledEvent;
-        public event Action<HoldCompletedEventArgs> OnHoldCompletedEvent;
-        public event Action<HoldStartedEventArgs> OnHoldStartedEvent;
-        public event Action<TappedEventArgs> OnTappedEvent;
-        public event Action<ManipulationCanceledEventArgs> OnManipulationCanceledEvent;
-        public event Action<ManipulationCompletedEventArgs> OnManipulationCompletedEvent;
-        public event Action<ManipulationStartedEventArgs> OnManipulationStartedEvent;
-        public event Action<ManipulationUpdatedEventArgs> OnManipulationUpdatedEvent;
-        public event Action<NavigationCanceledEventArgs> OnNavigationCanceledEvent;
-        public event Action<NavigationCompletedEventArgs> OnNavigationCompletedEvent;
-        public event Action<NavigationStartedEventArgs> OnNavigationStartedEvent;
-        public event Action<NavigationUpdatedEventArgs> OnNavigationUpdatedEvent;
-        public event Action<RecognitionEndedEventArgs> OnRecognitionEndedEvent;
-        public event Action<RecognitionStartedEventArgs> OnRecognitionStartedEvent;
-        public event Action<GestureErrorEventArgs> OnGestureErrorEvent;
+        public event Action<HoldCanceledEventArgs> HoldCanceled;
+        public event Action<HoldCompletedEventArgs> HoldCompleted;
+        public event Action<HoldStartedEventArgs> HoldStarted;
+        public event Action<TappedEventArgs> Tapped;
+        public event Action<ManipulationCanceledEventArgs> ManipulationCanceled;
+        public event Action<ManipulationCompletedEventArgs> ManipulationCompleted;
+        public event Action<ManipulationStartedEventArgs> ManipulationStarted;
+        public event Action<ManipulationUpdatedEventArgs> ManipulationUpdated;
+        public event Action<NavigationCanceledEventArgs> NavigationCanceled;
+        public event Action<NavigationCompletedEventArgs> NavigationCompleted;
+        public event Action<NavigationStartedEventArgs> NavigationStarted;
+        public event Action<NavigationUpdatedEventArgs> NavigationUpdated;
+        public event Action<RecognitionEndedEventArgs> RecognitionEnded;
+        public event Action<RecognitionStartedEventArgs> RecognitionStarted;
+        public event Action<GestureErrorEventArgs> GestureError;
 
         //
         // startup and shutdown
@@ -360,295 +404,173 @@ namespace UnityEngine.XR.WSA.Input
         {
         }
 
-        // in sync with enum of the same name in Runtime/HoloLens/GestureRecognizer.h
-        private enum GestureEventType
-        {
-            InteractionDetected,
-            HoldCanceled,
-            HoldCompleted,
-            HoldStarted,
-            TapDetected,
-            ManipulationCanceled,
-            ManipulationCompleted,
-            ManipulationStarted,
-            ManipulationUpdated,
-            NavigationCanceled,
-            NavigationCompleted,
-            NavigationStarted,
-            NavigationUpdated,
-            RecognitionStarted,
-            RecognitionEnded
-        }
-
 #pragma warning disable 0618
         [RequiredByNativeCode]
-        private void InvokeHoldEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay)
+        private void InvokeHoldCanceled(HoldCanceledEventArgs eventArgs)
         {
-            switch (eventType)
-            {
-                case GestureEventType.HoldCanceled:
-                {
-                    var holdCanceledEvent = HoldCanceledEvent;
-                    if (holdCanceledEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        holdCanceledEvent(sourceKind, ray);
-                    }
+            var holdCanceledEvent = HoldCanceledEvent;
+            if (holdCanceledEvent != null)
+                holdCanceledEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-                    var onHoldCanceledEvent = OnHoldCanceledEvent;
-                    if (onHoldCanceledEvent != null)
-                        onHoldCanceledEvent(new HoldCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
-                }
-                break;
-
-                case GestureEventType.HoldCompleted:
-                {
-                    var holdCompletedEvent = HoldCompletedEvent;
-                    if (holdCompletedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        holdCompletedEvent(sourceKind, ray);
-                    }
-
-                    var onHoldCompletedEvent = OnHoldCompletedEvent;
-                    if (onHoldCompletedEvent != null)
-                        onHoldCompletedEvent(new HoldCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
-                }
-                break;
-
-                case GestureEventType.HoldStarted:
-                {
-                    var holdStartedEvent = HoldStartedEvent;
-                    if (holdStartedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        holdStartedEvent(sourceKind, ray);
-                    }
-
-                    var onHoldStartedEvent = OnHoldStartedEvent;
-                    if (onHoldStartedEvent != null)
-                        onHoldStartedEvent(new HoldStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
-                }
-                break;
-
-                default:
-                    // This means we've somehow gotten an event type that we weren't
-                    // expecting.  if you're adding new events, add a case here,
-                    // otherwise something upstream has gone awry.
-                    throw new ArgumentException("InvokeHoldEvent: Invalid GestureEventType");
-            }
+            var holdCanceled = HoldCanceled;
+            if (holdCanceled != null)
+                holdCanceled(eventArgs);
         }
 
         [RequiredByNativeCode]
-        private void InvokeTapEvent(uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, int tapCount)
+        private void InvokeHoldCompleted(HoldCompletedEventArgs eventArgs)
+        {
+            var holdCompletedEvent = HoldCompletedEvent;
+            if (holdCompletedEvent != null)
+                holdCompletedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var holdCompleted = HoldCompleted;
+            if (holdCompleted != null)
+                holdCompleted(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeHoldStarted(HoldStartedEventArgs eventArgs)
+        {
+            var holdStartedEvent = HoldStartedEvent;
+            if (holdStartedEvent != null)
+                holdStartedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var holdStarted = HoldStarted;
+            if (holdStarted != null)
+                holdStarted(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeTapped(TappedEventArgs eventArgs)
         {
             var tappedEvent = TappedEvent;
             if (tappedEvent != null)
-            {
-                Ray ray;
-                headRay.TryGetRay(out ray);
-                tappedEvent(sourceKind, tapCount, ray);
-            }
+                tappedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_TapCount, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-            var onTappedEvent = OnTappedEvent;
-            if (onTappedEvent != null)
-                onTappedEvent(new TappedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, tapCount));
+            var tapped = Tapped;
+            if (tapped != null)
+                tapped(eventArgs);
         }
 
         [RequiredByNativeCode]
-        private void InvokeManipulationEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 cumulativeDelta)
+        private void InvokeManipulationCanceled(ManipulationCanceledEventArgs eventArgs)
         {
-            switch (eventType)
-            {
-                case GestureEventType.ManipulationCanceled:
-                {
-                    var manipulationCanceledEvent = ManipulationCanceledEvent;
-                    if (manipulationCanceledEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        manipulationCanceledEvent(sourceKind, cumulativeDelta, ray);
-                    }
+            var manipulationCanceledEvent = ManipulationCanceledEvent;
+            if (manipulationCanceledEvent != null)
+                manipulationCanceledEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-                    var onManipulationCanceledEvent = OnManipulationCanceledEvent;
-                    if (onManipulationCanceledEvent != null)
-                        onManipulationCanceledEvent(new ManipulationCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
-                }
-                break;
-
-                case GestureEventType.ManipulationCompleted:
-                {
-                    var manipulationCompletedEvent = ManipulationCompletedEvent;
-                    if (manipulationCompletedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        manipulationCompletedEvent(sourceKind, cumulativeDelta, ray);
-                    }
-
-                    var onManipulationCompletedEvent = OnManipulationCompletedEvent;
-                    if (onManipulationCompletedEvent != null)
-                        onManipulationCompletedEvent(new ManipulationCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
-                }
-                break;
-
-                case GestureEventType.ManipulationStarted:
-                {
-                    var manipulationStartedEvent = ManipulationStartedEvent;
-                    if (manipulationStartedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        manipulationStartedEvent(sourceKind, cumulativeDelta, ray);
-                    }
-
-                    var onManipulationStartedEvent = OnManipulationStartedEvent;
-                    if (onManipulationStartedEvent != null)
-                        onManipulationStartedEvent(new ManipulationStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
-                }
-                break;
-
-                case GestureEventType.ManipulationUpdated:
-                {
-                    var manipulationUpdatedEvent = ManipulationUpdatedEvent;
-                    if (manipulationUpdatedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        manipulationUpdatedEvent(sourceKind, cumulativeDelta, ray);
-                    }
-
-                    var onManipulationUpdatedEvent = OnManipulationUpdatedEvent;
-                    if (onManipulationUpdatedEvent != null)
-                        onManipulationUpdatedEvent(new ManipulationUpdatedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, cumulativeDelta));
-                }
-                break;
-
-                default:
-                    throw new ArgumentException("InvokeManipulationEvent: Invalid GestureEventType");
-            }
+            var manipulationCanceled = ManipulationCanceled;
+            if (manipulationCanceled != null)
+                manipulationCanceled(eventArgs);
         }
 
         [RequiredByNativeCode]
-        private void InvokeNavigationEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay, Vector3 normalizedOffset)
+        private void InvokeManipulationCompleted(ManipulationCompletedEventArgs eventArgs)
         {
-            switch (eventType)
-            {
-                case GestureEventType.NavigationCanceled:
-                {
-                    var navigationCanceledEvent = NavigationCanceledEvent;
-                    if (navigationCanceledEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        navigationCanceledEvent(sourceKind, normalizedOffset, ray);
-                    }
+            var manipulationCompletedEvent = ManipulationCompletedEvent;
+            if (manipulationCompletedEvent != null)
+                manipulationCompletedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_CumulativeDelta, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-                    var onNavigationCanceledEvent = OnNavigationCanceledEvent;
-                    if (onNavigationCanceledEvent != null)
-                        onNavigationCanceledEvent(new NavigationCanceledEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
-                }
-                break;
-
-                case GestureEventType.NavigationCompleted:
-                {
-                    var navigationCompletedEvent = NavigationCompletedEvent;
-                    if (navigationCompletedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        navigationCompletedEvent(sourceKind, normalizedOffset, ray);
-                    }
-
-                    var onNavigationCompletedEvent = OnNavigationCompletedEvent;
-                    if (onNavigationCompletedEvent != null)
-                        onNavigationCompletedEvent(new NavigationCompletedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
-                }
-                break;
-
-                case GestureEventType.NavigationStarted:
-                {
-                    var navigationStartedEvent = NavigationStartedEvent;
-                    if (navigationStartedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        navigationStartedEvent(sourceKind, normalizedOffset, ray);
-                    }
-
-                    var onNavigationStartedEvent = OnNavigationStartedEvent;
-                    if (onNavigationStartedEvent != null)
-                        onNavigationStartedEvent(new NavigationStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
-                }
-                break;
-
-                case GestureEventType.NavigationUpdated:
-                {
-                    var navigationUpdatedEvent = NavigationUpdatedEvent;
-                    if (navigationUpdatedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        navigationUpdatedEvent(sourceKind, normalizedOffset, ray);
-                    }
-
-                    var onNavigationUpdatedEvent = OnNavigationUpdatedEvent;
-                    if (onNavigationUpdatedEvent != null)
-                        onNavigationUpdatedEvent(new NavigationUpdatedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay, normalizedOffset));
-                }
-                break;
-
-                default:
-                    throw new ArgumentException("InvokeNavigationEvent: Invalid GestureEventType");
-            }
+            var manipulationCompleted = ManipulationCompleted;
+            if (manipulationCompleted != null)
+                manipulationCompleted(eventArgs);
         }
 
         [RequiredByNativeCode]
-        private void InvokeRecognitionEvent(GestureEventType eventType, uint sourceId, InteractionSourceKind sourceKind, InteractionSourceLocation pose, InteractionSourceRay headRay)
+        private void InvokeManipulationStarted(ManipulationStartedEventArgs eventArgs)
         {
-            switch (eventType)
-            {
-                case GestureEventType.RecognitionEnded:
-                {
-                    var recognitionEndedEvent = RecognitionEndedEvent;
-                    if (recognitionEndedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        recognitionEndedEvent(sourceKind, ray);
-                    }
+            var manipulationStartedEvent = ManipulationStartedEvent;
+            if (manipulationStartedEvent != null)
+                manipulationStartedEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-                    var onRecognitionEndedEvent = OnRecognitionEndedEvent;
-                    if (onRecognitionEndedEvent != null)
-                        onRecognitionEndedEvent(new RecognitionEndedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
-                }
-                break;
+            var manipulationStarted = ManipulationStarted;
+            if (manipulationStarted != null)
+                manipulationStarted(eventArgs);
+        }
 
-                case GestureEventType.RecognitionStarted:
-                {
-                    var recognitionStartedEvent = RecognitionStartedEvent;
-                    if (recognitionStartedEvent != null)
-                    {
-                        Ray ray;
-                        headRay.TryGetRay(out ray);
-                        recognitionStartedEvent(sourceKind, ray);
-                    }
+        [RequiredByNativeCode]
+        private void InvokeManipulationUpdated(ManipulationUpdatedEventArgs eventArgs)
+        {
+            var manipulationUpdatedEvent = ManipulationUpdatedEvent;
+            if (manipulationUpdatedEvent != null)
+                manipulationUpdatedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_CumulativeDelta, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
 
-                    var onRecognitionStartedEvent = OnRecognitionStartedEvent;
-                    if (onRecognitionStartedEvent != null)
-                        onRecognitionStartedEvent(new RecognitionStartedEventArgs(new InteractionSource(sourceId, sourceKind), pose, headRay));
-                }
-                break;
+            var manipulationUpdated = ManipulationUpdated;
+            if (manipulationUpdated != null)
+                manipulationUpdated(eventArgs);
+        }
 
-                default:
-                    // this is pretty bad, it means we've somehow gotten an event type
-                    // that we weren't expecting.  if you're adding new events, add a
-                    // case here, otherwise something upstream has gone awry.
-                    throw new ArgumentException("InvokeRecognitionEvent: Invalid GestureEventType");
-            }
+        [RequiredByNativeCode]
+        private void InvokeNavigationCanceled(NavigationCanceledEventArgs eventArgs)
+        {
+            var navigationCanceledEvent = NavigationCanceledEvent;
+            if (navigationCanceledEvent != null)
+                navigationCanceledEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var navigationCanceled = NavigationCanceled;
+            if (navigationCanceled != null)
+                navigationCanceled(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeNavigationCompleted(NavigationCompletedEventArgs eventArgs)
+        {
+            var navigationCompletedEvent = NavigationCompletedEvent;
+            if (navigationCompletedEvent != null)
+                navigationCompletedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_NormalizedOffset, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var navigationCompleted = NavigationCompleted;
+            if (navigationCompleted != null)
+                navigationCompleted(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeNavigationStarted(NavigationStartedEventArgs eventArgs)
+        {
+            var navigationStartedEvent = NavigationStartedEvent;
+            if (navigationStartedEvent != null)
+                navigationStartedEvent(eventArgs.m_Source.m_SourceKind, Vector3.zero, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var navigationStarted = NavigationStarted;
+            if (navigationStarted != null)
+                navigationStarted(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeNavigationUpdated(NavigationUpdatedEventArgs eventArgs)
+        {
+            var navigationUpdatedEvent = NavigationUpdatedEvent;
+            if (navigationUpdatedEvent != null)
+                navigationUpdatedEvent(eventArgs.m_Source.m_SourceKind, eventArgs.m_NormalizedOffset, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var navigationUpdated = NavigationUpdated;
+            if (navigationUpdated != null)
+                navigationUpdated(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeRecognitionEnded(RecognitionEndedEventArgs eventArgs)
+        {
+            var recognitionEndedEvent = RecognitionEndedEvent;
+            if (recognitionEndedEvent != null)
+                recognitionEndedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var recognitionEnded = RecognitionEnded;
+            if (recognitionEnded != null)
+                recognitionEnded(eventArgs);
+        }
+
+        [RequiredByNativeCode]
+        private void InvokeRecognitionStarted(RecognitionStartedEventArgs eventArgs)
+        {
+            var recognitionStartedEvent = RecognitionStartedEvent;
+            if (recognitionStartedEvent != null)
+                recognitionStartedEvent(eventArgs.m_Source.m_SourceKind, new Ray(eventArgs.m_HeadPose.position, eventArgs.m_HeadPose.rotation * Vector3.forward));
+
+            var recognitionStarted = RecognitionStarted;
+            if (recognitionStarted != null)
+                recognitionStarted(eventArgs);
         }
 
         [RequiredByNativeCode]
@@ -658,7 +580,7 @@ namespace UnityEngine.XR.WSA.Input
             if (gestureErrorEvent != null)
                 gestureErrorEvent(error, hresult);
 
-            var onGestureErrorEvent = OnGestureErrorEvent;
+            var onGestureErrorEvent = GestureError;
             if (onGestureErrorEvent != null)
                 onGestureErrorEvent(new GestureErrorEventArgs(error, hresult));
         }

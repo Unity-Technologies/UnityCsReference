@@ -68,7 +68,7 @@ namespace UnityEditor
         private DesktopSingleCPUProperty m_LinuxX86;
         private DesktopSingleCPUProperty m_LinuxX86_X64;
 
-        private DesktopSingleCPUProperty m_OSXX86_X64;
+        private DesktopSingleCPUProperty m_OSX_X64;
 
 
         public DesktopPluginImporterExtension()
@@ -86,9 +86,7 @@ namespace UnityEditor
             m_LinuxX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux), DesktopPluginCPUArchitecture.x86);
             m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
 
-#pragma warning disable 612, 618
-            m_OSXX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSXIntel64));
-#pragma warning restore 612, 618
+            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX));
 
             properties.Add(m_WindowsX86);
             properties.Add(m_WindowsX86_X64);
@@ -96,7 +94,7 @@ namespace UnityEditor
             properties.Add(m_LinuxX86);
             properties.Add(m_LinuxX86_X64);
 
-            properties.Add(m_OSXX86_X64);
+            properties.Add(m_OSX_X64);
 
             return properties.ToArray();
         }
@@ -166,7 +164,7 @@ namespace UnityEditor
             if (IsUsableOnOSX(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TextContent("Mac OS X"), EditorStyles.boldLabel);
-                m_OSXX86_X64.OnGUI(inspector);
+                m_OSX_X64.OnGUI(inspector);
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -184,7 +182,7 @@ namespace UnityEditor
                 m_WindowsX86_X64,
                 m_LinuxX86,
                 m_LinuxX86_X64,
-                m_OSXX86_X64
+                m_OSX_X64
             };
 
             foreach (var target in singleCPUTargets)
@@ -209,12 +207,12 @@ namespace UnityEditor
                 importer.SetPlatformData(BuildTarget.StandaloneLinuxUniversal, "CPU", linuxUniversal.ToString());
             inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinuxUniversal), linuxX86Enabled || linuxX86_X64Enabled);
 
-            bool osxX86_X64Enabled = m_OSXX86_X64.IsTargetEnabled(inspector);
+            bool osxX64Enabled = m_OSX_X64.IsTargetEnabled(inspector);
 
-            DesktopPluginCPUArchitecture osxUniversal = CalculateMultiCPUArchitecture(true, osxX86_X64Enabled);
+            DesktopPluginCPUArchitecture osxUniversal = CalculateMultiCPUArchitecture(true, osxX64Enabled);
             foreach (var importer in inspector.importers)
                 importer.SetPlatformData(BuildTarget.StandaloneOSX, "CPU", osxUniversal.ToString());
-            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), osxX86_X64Enabled);
+            inspector.SetPlatformCompatibility(BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX), osxX64Enabled);
         }
 
         public override string CalculateFinalPluginPath(string platformName, PluginImporter imp)

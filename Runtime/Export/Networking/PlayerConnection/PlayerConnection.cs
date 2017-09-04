@@ -73,7 +73,7 @@ namespace UnityEngine.Networking.PlayerConnection
                 throw new ArgumentException("Cant be Guid.Empty", "messageId");
             }
 
-            if (!m_PlayerEditorConnectionEvents.messageTypeSubscribers.Any())
+            if (!m_PlayerEditorConnectionEvents.messageTypeSubscribers.Any(x => x.MessageTypeId == messageId))
             {
                 GetConnectionNativeApi().RegisterInternal(messageId);
             }
@@ -113,6 +113,20 @@ namespace UnityEngine.Networking.PlayerConnection
             }
 
             GetConnectionNativeApi().SendMessage(messageId, data, 0);
+        }
+
+        public bool BlockUntilRecvMsg(Guid messageId, int timeout)
+        {
+            bool msgReceived = false;
+            UnityAction<MessageEventArgs> callback = (args) => msgReceived = true;
+            DateTime startTime = DateTime.Now;
+            Register(messageId, callback);
+
+            while ((DateTime.Now - startTime).TotalMilliseconds < timeout && msgReceived == false)
+                GetConnectionNativeApi().Poll();
+
+            Unregister(messageId, callback);
+            return msgReceived;
         }
 
         public void DisconnectAll()

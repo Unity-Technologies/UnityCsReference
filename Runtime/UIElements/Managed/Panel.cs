@@ -77,8 +77,9 @@ namespace UnityEngine.Experimental.UIElements
     abstract class BaseVisualElementPanel : IPanel
     {
         public abstract EventInterests IMGUIEventInterests { get; set; }
-        public abstract int instanceID { get; protected set; }
+        public abstract ScriptableObject ownerObject { get; protected set; }
         public abstract SavePersistentViewData savePersistentViewData { get; set; }
+        public abstract GetViewDataDictionary getViewDataDictionary { get; set; }
         public abstract int IMGUIContainersCount { get; set; }
         public abstract FocusController focusController { get; set; }
 
@@ -91,17 +92,22 @@ namespace UnityEngine.Experimental.UIElements
         public abstract IEventDispatcher dispatcher { get; protected set; }
         public abstract IScheduler scheduler { get; }
         public abstract IDataWatchService dataWatch { get; protected set; }
+
         public abstract ContextType contextType { get; protected set; }
-        public abstract ISerializableJsonDictionary viewDataDictionary { get; set; }
         public abstract VisualElement Pick(Vector2 point);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
         public abstract VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
+
+        public abstract bool keepPixelCacheOnWorldBoundChange { get; set; }
 
         public BasePanelDebug panelDebug { get; set; }
     }
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
+
+    // Getting the view data dictionary relies on the Editor window.
+    internal delegate ISerializableJsonDictionary GetViewDataDictionary();
 
     // Strategy to save persistent data must be provided in the context of Editor or Runtime
     internal delegate void SavePersistentViewData();
@@ -138,13 +144,15 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_StyleContext; }
         }
 
-        public override int instanceID { get; protected set; }
+        public override ScriptableObject ownerObject { get; protected set; }
 
         public bool allowPixelCaching { get; set; }
 
         public override ContextType contextType { get; protected set; }
 
-        public override ISerializableJsonDictionary viewDataDictionary { get; set; }
+        public override SavePersistentViewData savePersistentViewData { get; set; }
+
+        public override GetViewDataDictionary getViewDataDictionary { get; set; }
 
         public override FocusController focusController { get; set; }
 
@@ -152,12 +160,32 @@ namespace UnityEngine.Experimental.UIElements
 
         internal static LoadResourceFunction loadResourceFunc = null;
 
-        public override SavePersistentViewData savePersistentViewData { get; set; }
+        private bool m_KeepPixelCacheOnWorldBoundChange;
+        public override bool keepPixelCacheOnWorldBoundChange
+        {
+            get { return m_KeepPixelCacheOnWorldBoundChange; }
+            set
+            {
+                if (m_KeepPixelCacheOnWorldBoundChange == value)
+                    return;
+
+                m_KeepPixelCacheOnWorldBoundChange = value;
+
+                // We only need to force a repaint if this flag was set from
+                // true (do NOT update pixel cache) to false (update pixel cache).
+                // When it was true, the pixel cache was just being transformed and
+                // now we want to regenerate it at the correct resolution. Going from
+                // false to true does not need a repaint because the pixel cache is
+                // already valid (was being updated each transform repaint).
+                if (!value)
+                    m_RootContainer.Dirty(ChangeType.Repaint | ChangeType.Transform);
+            }
+        }
 
         public override int IMGUIContainersCount { get; set; }
-        public Panel(int instanceID, ContextType contextType, IDataWatchService dataWatch = null, IEventDispatcher dispatcher = null)
+        public Panel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null, IEventDispatcher dispatcher = null)
         {
-            this.instanceID = instanceID;
+            this.ownerObject = ownerObject;
             this.contextType = contextType;
             this.dataWatch = dataWatch;
             this.dispatcher = dispatcher;
@@ -429,7 +457,7 @@ namespace UnityEngine.Experimental.UIElements
                 int textureHeight = (int)(worldBound.height * GUIUtility.pixelsPerPoint);
 
                 var cache = root.renderData.pixelCache;
-                if (cache != null &&
+                if (cache != null && !keepPixelCacheOnWorldBoundChange &&
                     (cache.width != textureWidth || cache.height != textureHeight))
                 {
                     Object.DestroyImmediate(cache);
@@ -513,7 +541,9 @@ namespace UnityEngine.Experimental.UIElements
             int count = root.shadow.childCount;
             for (int i = 0; i < count; i++)
             {
-                PaintSubTree(e, root.shadow[i], offset, textureClip);
+                VisualElement child = root.shadow[i];
+
+                PaintSubTree(e, child, offset, textureClip);
 
                 if (count != root.shadow.childCount)
                 {

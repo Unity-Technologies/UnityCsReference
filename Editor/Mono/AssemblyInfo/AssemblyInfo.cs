@@ -22,7 +22,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.AppleTV.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Tizen.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.SamsungTV.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PSP2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]

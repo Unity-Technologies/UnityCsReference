@@ -97,5 +97,9 @@ namespace UnityEngine
         public bool ClearCache() { return Cache_ClearCache(m_Handle); }
         [NativeThrows]
         extern internal static bool Cache_ClearCache(int handle);
+
+        public bool ClearCache(int expiration) { return Cache_ClearCache_Expiration(m_Handle, expiration); }
+        [NativeThrows]
+        extern internal static bool Cache_ClearCache_Expiration(int handle, int expiration);
     }
 }

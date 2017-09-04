@@ -35,6 +35,14 @@ namespace UnityEngine
         // Delete all AssetBundle content that has been cached by the current application.
         extern public static bool ClearCache();
 
+        public static bool ClearCache(int expiration)
+        {
+            return ClearCache_Int(expiration);
+        }
+
+        [NativeName("ClearCache")]
+        extern internal static bool ClearCache_Int(int expiration);
+
         // Clean the given version of the AssetBundle.
         public static bool ClearCachedVersion(string assetBundleName, Hash128 hash)
         {

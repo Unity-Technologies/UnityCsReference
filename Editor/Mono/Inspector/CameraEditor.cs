@@ -54,6 +54,7 @@ namespace UnityEditor
         SerializedProperty m_TargetTexture;
         SerializedProperty m_HDR;
         SerializedProperty m_AllowMSAA;
+        SerializedProperty m_AllowDynamicResolution;
         SerializedProperty[] m_NearAndFarClippingPlanes;
         SerializedProperty m_StereoConvergence;
         SerializedProperty m_StereoSeparation;
@@ -127,6 +128,7 @@ namespace UnityEditor
             m_TargetTexture = serializedObject.FindProperty("m_TargetTexture");
             m_HDR = serializedObject.FindProperty("m_HDR");
             m_AllowMSAA = serializedObject.FindProperty("m_AllowMSAA");
+            m_AllowDynamicResolution = serializedObject.FindProperty("m_AllowDynamicResolution");
 
             m_StereoConvergence = serializedObject.FindProperty("m_StereoConvergence");
             m_StereoSeparation = serializedObject.FindProperty("m_StereoSeparation");
@@ -330,6 +332,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_OcclusionCulling);
             EditorGUILayout.PropertyField(m_HDR, EditorGUIUtility.TempContent("Allow HDR"));
             EditorGUILayout.PropertyField(m_AllowMSAA);
+            EditorGUILayout.PropertyField(m_AllowDynamicResolution);
 
             DisplayCameraWarnings();
 

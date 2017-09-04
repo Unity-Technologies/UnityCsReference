@@ -367,7 +367,7 @@ namespace UnityEditorInternal
         internal static IEnumerable<string> GetAllScriptGUIDs()
         {
             return AssetDatabase.GetAllAssetPaths()
-                .Where(asset => IsScriptOrAssembly(asset))
+                .Where(asset => (IsScriptOrAssembly(asset) && !(AssetDatabase.IsPackagedAssetPath(asset) || AssetDatabase.IsInternalizedPackagedAssetPath(asset))))
                 .Select(asset => AssetDatabase.AssetPathToGUID(asset));
         }
 

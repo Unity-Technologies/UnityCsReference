@@ -21,8 +21,10 @@ namespace UnityEditor
             public readonly GUIContent depthBuffer = EditorGUIUtility.TextContent("Depth Buffer|Format of the depth buffer.");
             public readonly GUIContent dimension = EditorGUIUtility.TextContent("Dimension|Is the texture 2D, Cube or 3D?");
             public readonly GUIContent enableMipmaps = EditorGUIUtility.TextContent("Enable Mip Maps|This render texture will have Mip Maps.");
+            public readonly GUIContent bindMS = EditorGUIUtility.TextContent("Bind multisampled|If enabled, the texture will not go through an AA resolve if bound to a shader.");
             public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TextContent("Auto generate Mip Maps|This render texture automatically generate its Mip Maps.");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TextContent("sRGB (Color RenderTexture)|RenderTexture content is stored in gamma space. Non-HDR color textures should enable this flag.");
+            public readonly GUIContent useDynamicScale = EditorGUIUtility.TextContent("Dynamic Scaling|Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
 
             public readonly GUIContent[] renderTextureAntiAliasing =
             {
@@ -61,6 +63,7 @@ namespace UnityEditor
         SerializedProperty m_AutoGeneratesMipmaps;
         SerializedProperty m_Dimension;
         SerializedProperty m_sRGB;
+        SerializedProperty m_UseDynamicScale;
 
         protected override void OnEnable()
         {
@@ -75,6 +78,7 @@ namespace UnityEditor
             m_AutoGeneratesMipmaps = serializedObject.FindProperty("m_GenerateMips");
             m_Dimension = serializedObject.FindProperty("m_Dimension");
             m_sRGB = serializedObject.FindProperty("m_SRGB");
+            m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
         }
 
         public static bool IsHDRFormat(RenderTextureFormat format)
@@ -129,6 +133,8 @@ namespace UnityEditor
                 // Mip map generation is not supported yet for 3D textures.
                 EditorGUILayout.HelpBox("3D RenderTextures do not support Mip Maps.", MessageType.Info);
             }
+
+            EditorGUILayout.PropertyField(m_UseDynamicScale, styles.useDynamicScale);
 
             var rt = target as RenderTexture;
             if (GUI.changed && rt != null)

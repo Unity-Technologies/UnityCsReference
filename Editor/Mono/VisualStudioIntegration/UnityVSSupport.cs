@@ -347,7 +347,7 @@ namespace UnityEditor.VisualStudioIntegration
             if (!IsUnityVSEnabled())
                 return "";
 
-            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.Location == s_UnityVSBridgeToLoad);
+            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => GetAssemblyLocation(a) == s_UnityVSBridgeToLoad);
             if (assembly == null)
                 return "";
 

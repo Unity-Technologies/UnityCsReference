@@ -1494,6 +1494,7 @@ namespace UnityEditor
                 }
                 EditorUtility.DisplayCustomMenu(popupRect, names, enabled, null, AddAreaClick, null);
             }
+
             GUILayout.FlexibleSpace();
 
             // Record
@@ -1505,16 +1506,20 @@ namespace UnityEditor
                 SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             }
 
+            EditorGUI.BeginDisabledGroup(!m_AttachProfilerUI.IsEditor());
+
             // Deep profiling
             SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, Styles.deepProfile, EditorStyles.toolbarButton));
 
             // Profile Editor
             ProfilerDriver.profileEditor = GUILayout.Toggle(ProfilerDriver.profileEditor, Styles.profileEditor, EditorStyles.toolbarButton);
 
+            EditorGUI.EndDisabledGroup();
+
             // Engine attach
             m_AttachProfilerUI.OnGUILayout(this);
 
-            GUILayout.Space(5);
+            GUILayout.FlexibleSpace();
 
             // Clear
             if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
@@ -1534,8 +1539,6 @@ namespace UnityEditor
             }
 
             GUILayout.Space(5);
-
-            GUILayout.FlexibleSpace();
 
             FrameNavigationControls();
 

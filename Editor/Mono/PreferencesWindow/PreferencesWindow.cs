@@ -133,6 +133,8 @@ namespace UnityEditor
         private bool m_VerifySavingAssets;
         private bool m_AllowAttachedDebuggingOfEditor;
         private bool m_AllowAttachedDebuggingOfEditorStateChangedThisSession;
+        private string m_GpuDevice;
+        private string[] m_CachedGpuDevices;
 
         private struct GICacheSettings
         {
@@ -559,6 +561,30 @@ namespace UnityEditor
 
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
             m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle("Enable Alpha Numeric Sorting", m_AllowAlphaNumericHierarchy);
+
+            if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
+            {
+                // Cache gpu devices
+                if (m_CachedGpuDevices == null)
+                {
+                    var devices = InternalEditorUtility.GetGpuDevices();
+                    m_CachedGpuDevices = new string[devices.Length + 1];
+                    m_CachedGpuDevices[0] = "Automatic";
+                    Array.Copy(devices, 0, m_CachedGpuDevices, 1, devices.Length);
+                }
+
+                // Try to find selected gpu device
+                var currentGpuDeviceIndex = Array.FindIndex(m_CachedGpuDevices, (string gpuDevice) => m_GpuDevice == gpuDevice);
+                if (currentGpuDeviceIndex == -1)
+                    currentGpuDeviceIndex = 0;
+
+                var newGpuDeviceIndex = EditorGUILayout.Popup("Device To Use", currentGpuDeviceIndex, m_CachedGpuDevices);
+                if (currentGpuDeviceIndex != newGpuDeviceIndex)
+                {
+                    m_GpuDevice = m_CachedGpuDevices[newGpuDeviceIndex];
+                    InternalEditorUtility.SetGpuDeviceAndRecreateGraphics(newGpuDeviceIndex - 1, m_GpuDevice);
+                }
+            }
 
             ApplyChangesToPrefs();
 
@@ -1064,6 +1090,7 @@ namespace UnityEditor
             LocalizationDatabase.SetCurrentEditorLanguage(m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
+            EditorPrefs.SetString("GpuDevice", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
             EditorPrefs.SetInt("GICacheMaximumSizeGB", m_GICacheSettings.m_MaximumSize);
@@ -1170,6 +1197,8 @@ namespace UnityEditor
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
+
+            m_GpuDevice = EditorPrefs.GetString("GpuDevice");
 
             foreach (IPreferenceWindowExtension extension in prefWinExtensions)
             {

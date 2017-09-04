@@ -11,6 +11,7 @@ namespace UnityEditor
     {
         class Texts
         {
+            public GUIContent mode = new GUIContent("Mode", "Select how trails are generated on the particles.");
             public GUIContent ratio = new GUIContent("Ratio", "Choose what proportion of particles will receive a trail.");
             public GUIContent lifetime = EditorGUIUtility.TextContent("Lifetime|How long each trail will last, relative to the life of the particle.");
             public GUIContent minVertexDistance = EditorGUIUtility.TextContent("Minimum Vertex Distance|The minimum distance each trail can travel before adding a new vertex.");
@@ -24,6 +25,13 @@ namespace UnityEditor
             public GUIContent widthOverTrail = EditorGUIUtility.TextContent("Width over Trail|Select a width for the trail from its start to end vertex.");
             public GUIContent colorOverTrail = EditorGUIUtility.TextContent("Color over Trail|Select a color for the trail from its start to end vertex.");
             public GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
+            public GUIContent ribbonCount = EditorGUIUtility.TextContent("Ribbon Count|Select how many ribbons to render throughout the Particle System.");
+
+            public GUIContent[] trailModeOptions =
+            {
+                EditorGUIUtility.TextContent("Particles"),
+                EditorGUIUtility.TextContent("Ribbon")
+            };
 
             public GUIContent[] textureModeOptions = new GUIContent[]
             {
@@ -35,6 +43,7 @@ namespace UnityEditor
         }
         private static Texts s_Texts;
 
+        SerializedProperty m_Mode;
         SerializedProperty m_Ratio;
         SerializedMinMaxCurve m_Lifetime;
         SerializedProperty m_MinVertexDistance;
@@ -48,6 +57,7 @@ namespace UnityEditor
         SerializedMinMaxCurve m_WidthOverTrail;
         SerializedMinMaxGradient m_ColorOverTrail;
         SerializedProperty m_GenerateLightingData;
+        SerializedProperty m_RibbonCount;
 
         public TrailModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "TrailModule", displayName)
@@ -63,6 +73,7 @@ namespace UnityEditor
             if (s_Texts == null)
                 s_Texts = new Texts();
 
+            m_Mode = GetProperty("mode");
             m_Ratio = GetProperty("ratio");
             m_Lifetime = new SerializedMinMaxCurve(this, s_Texts.lifetime, "lifetime");
             m_MinVertexDistance = GetProperty("minVertexDistance");
@@ -76,18 +87,39 @@ namespace UnityEditor
             m_WidthOverTrail = new SerializedMinMaxCurve(this, s_Texts.widthOverTrail, "widthOverTrail");
             m_ColorOverTrail = new SerializedMinMaxGradient(this, "colorOverTrail");
             m_GenerateLightingData = GetProperty("generateLightingData");
+            m_RibbonCount = GetProperty("ribbonCount");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
         {
-            GUIFloat(s_Texts.ratio, m_Ratio);
-            GUIMinMaxCurve(s_Texts.lifetime, m_Lifetime);
-            GUIFloat(s_Texts.minVertexDistance, m_MinVertexDistance);
+            ParticleSystemTrailMode mode = (ParticleSystemTrailMode)GUIPopup(s_Texts.mode, m_Mode, s_Texts.trailModeOptions);
+            if (!m_Mode.hasMultipleDifferentValues)
+            {
+                if (mode == ParticleSystemTrailMode.PerParticle)
+                {
+                    GUIFloat(s_Texts.ratio, m_Ratio);
+                    GUIMinMaxCurve(s_Texts.lifetime, m_Lifetime);
+                    GUIFloat(s_Texts.minVertexDistance, m_MinVertexDistance);
+                    GUIToggle(s_Texts.worldSpace, m_WorldSpace);
+                    GUIToggle(s_Texts.dieWithParticles, m_DieWithParticles);
+                }
+                else
+                {
+                    GUIInt(s_Texts.ribbonCount, m_RibbonCount);
+                }
+            }
+
             GUIPopup(s_Texts.textureMode, m_TextureMode, s_Texts.textureModeOptions);
-            GUIToggle(s_Texts.worldSpace, m_WorldSpace);
-            GUIToggle(s_Texts.dieWithParticles, m_DieWithParticles);
             GUIToggle(s_Texts.sizeAffectsWidth, m_SizeAffectsWidth);
-            GUIToggle(s_Texts.sizeAffectsLifetime, m_SizeAffectsLifetime);
+
+            if (!m_Mode.hasMultipleDifferentValues)
+            {
+                if (mode == ParticleSystemTrailMode.PerParticle)
+                {
+                    GUIToggle(s_Texts.sizeAffectsLifetime, m_SizeAffectsLifetime);
+                }
+            }
+
             GUIToggle(s_Texts.inheritParticleColor, m_InheritParticleColor);
             GUIMinMaxGradient(s_Texts.colorOverLifetime, m_ColorOverLifetime, false);
             GUIMinMaxCurve(s_Texts.widthOverTrail, m_WidthOverTrail);

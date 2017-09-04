@@ -236,14 +236,14 @@ namespace UnityEditor
                 if (newState != isShowOnlySelected && m_ParticleEffectUI != null)
                     m_ParticleEffectUI.SetShowOnlySelectedMode(newState);
 
+                // Preview all toggle
+                ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, ParticleEffectUI.texts.previewAll, "ToolbarButton");
+
                 // Resimulation toggle
                 ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, ParticleEffectUI.texts.resimulation, "ToolbarButton");
 
-                // Wireframe toggle
-                ParticleEffectUI.m_ShowWireframe = GUILayout.Toggle(ParticleEffectUI.m_ShowWireframe, ParticleEffectUI.texts.wireframe, "ToolbarButton");
-
                 // Bounds toggle
-                ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.bounds, "ToolbarButton");
+                ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, "ToolbarButton");
 
                 // Editor layout
                 if (GUILayout.Button(ParticleEffectUI.m_VerticalLayout ? s_Icons[0] : s_Icons[1], "ToolbarButton"))

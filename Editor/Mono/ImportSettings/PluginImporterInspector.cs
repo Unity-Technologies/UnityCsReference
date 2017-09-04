@@ -148,10 +148,19 @@ namespace UnityEditor
             }
         }
 
+        internal static bool IsValidBuildTarget(BuildTarget buildTarget)
+        {
+            return buildTarget > 0;
+        }
+
         // Used by extensions, for ex., Standalone where we have options for enabling/disabling platform in platform specific extensions
         internal Compatibility GetPlatformCompatibility(string platformName)
         {
-            return m_CompatibleWithPlatform[(int)BuildPipeline.GetBuildTargetByName(platformName)];
+            var buildTarget = BuildPipeline.GetBuildTargetByName(platformName);
+            if (!IsValidBuildTarget(buildTarget))
+                return Compatibility.NotCompatible;
+
+            return m_CompatibleWithPlatform[(int)buildTarget];
         }
 
         internal void SetPlatformCompatibility(string platformName, bool compatible)
@@ -164,11 +173,11 @@ namespace UnityEditor
             if (compatibility == Compatibility.Mixed)
                 throw new ArgumentException("compatibility value cannot be Mixed");
 
-            int platformId = (int)BuildPipeline.GetBuildTargetByName(platformName);
-            if (m_CompatibleWithPlatform[platformId] == compatibility)
+            var buildTarget = BuildPipeline.GetBuildTargetByName(platformName);
+            if (!IsValidBuildTarget(buildTarget) || m_CompatibleWithPlatform[(int)buildTarget] == compatibility)
                 return;
 
-            m_CompatibleWithPlatform[platformId] = compatibility;
+            m_CompatibleWithPlatform[(int)buildTarget] = compatibility;
             m_HasModified = true;
         }
 
@@ -178,7 +187,7 @@ namespace UnityEditor
             foreach (BuildTarget platform in typeof(BuildTarget).EnumGetNonObsoleteValues())
             {
                 // We have some special enums with negative values which are not actual targets, ignore those
-                if ((int)platform <= 0)
+                if (!IsValidBuildTarget(platform))
                     continue;
 
                 // Ignore Unknown or deprectated value
