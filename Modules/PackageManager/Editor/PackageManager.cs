@@ -11,7 +11,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEditor.PackageManager
 {
-    public enum StatusCode : uint
+    enum StatusCode : uint
     {
         InQueue = 0,
         InProgress = 1,
@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager
         NotFound = 4
     }
 
-    public enum ErrorCode : uint
+    enum ErrorCode : uint
     {
         Success = 0,
         NotFound = 1,
@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager
         Unknown = 4,
     }
 
-    public enum OriginType : uint
+    enum OriginType : uint
     {
         Registry = 0,
         Url = 1,
@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager
         Unknown = 3
     }
 
-    public enum RelationType : uint
+    enum RelationType : uint
     {
         ReadOnly = 0,
         Excluded = 1,
@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class OperationStatus
+    class OperationStatus
     {
         private StatusCode m_Status;
         private string m_Id;
@@ -66,7 +66,7 @@ namespace UnityEditor.PackageManager
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class Error
+    class Error
     {
         private ErrorCode m_ErrorCode;
         private string m_Message;
@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class UpmPackageInfo
+    class UpmPackageInfo
     {
         private string m_PackageId;
         private string m_Tag;
@@ -113,7 +113,7 @@ namespace UnityEditor.PackageManager
 
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class OutdatedPackage
+    class OutdatedPackage
     {
         private UpmPackageInfo m_Current;
         private UpmPackageInfo m_Latest;

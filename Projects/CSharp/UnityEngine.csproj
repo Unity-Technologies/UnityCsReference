@@ -1234,9 +1234,6 @@
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoMeshReconstructionServer.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\TangoMeshReconstructionServer.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs" >
-<Link>Runtime\AR\Tango\ScriptBindings\TangoInputTracking.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\TangoDevice.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\TangoDevice.cs</Link>
 </Compile>

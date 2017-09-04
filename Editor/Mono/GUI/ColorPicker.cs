@@ -80,8 +80,6 @@ namespace UnityEditor
         [SerializeField]
         bool m_IsOSColorPicker = false;
         [SerializeField]
-        bool m_resetKeyboardControl = false;
-        [SerializeField]
         bool m_ShowAlpha = true;
 
         //draws RGBLayout
@@ -197,12 +195,6 @@ namespace UnityEditor
                 }
                 return s_SharedColorPicker;
             }
-        }
-
-        void OnSelectionChange()
-        {
-            m_resetKeyboardControl = true; // setting keyboardControl to 0 here won't work
-            Repaint();
         }
 
         void RGBToHSV()
@@ -1041,12 +1033,6 @@ namespace UnityEditor
         {
             InitIfNeeded();
 
-            if (m_resetKeyboardControl)
-            {
-                GUIUtility.keyboardControl = 0;
-                m_resetKeyboardControl = false;
-            }
-
             EventType type = Event.current.type;
 
             if (type == EventType.ExecuteCommand)
@@ -1452,7 +1438,6 @@ namespace UnityEditor
                 if (c.r > 1.0f || c.g > 1.0f || c.b > 1.0f)
                     Debug.LogError(string.Format("Invalid normalized color: {0}, normalize value: {1}", c, m_HDRValues.m_HDRScaleFactor));
 
-                m_resetKeyboardControl = true;
                 SetNormalizedColor(c);
                 Repaint();
             }
