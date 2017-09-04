@@ -315,7 +315,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         public readonly VisualElement target;
         public static readonly CreationContext Default = new CreationContext();
-        internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints, VisualTreeAsset vta, VisualElement target)
+        internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints, VisualTreeAsset vta, VisualElement target) : this()
         {
             this.target = target;
             this.slotInsertionPoints = slotInsertionPoints;

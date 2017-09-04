@@ -19,11 +19,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Vector3 minScale { get; set; }
         public Vector3 maxScale { get; set; }
 
+        public bool keepPixelCacheOnZoom { get; set; }
+
+        private bool delayRepaintScheduled { get; set; }
+
         public ContentZoomer()
         {
             zoomStep = 0.01f;
             minScale = DefaultMinScale;
             maxScale = DefaultMaxScale;
+            keepPixelCacheOnZoom = false;
         }
 
         public ContentZoomer(Vector3 minScale, Vector3 maxScale)
@@ -31,6 +36,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             zoomStep = 0.01f;
             this.minScale = minScale;
             this.maxScale = maxScale;
+            keepPixelCacheOnZoom = false;
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -47,6 +53,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected override void UnregisterCallbacksFromTarget()
         {
             target.UnregisterCallback<WheelEvent>(OnWheel);
+        }
+
+        private void OnTimer(TimerState timerState)
+        {
+            var graphView = target as GraphView;
+            if (graphView == null)
+                return;
+
+            if (graphView.elementPanel != null)
+                graphView.elementPanel.keepPixelCacheOnWorldBoundChange = false;
+
+            delayRepaintScheduled = false;
+            graphView.Unschedule(OnTimer);
         }
 
         void OnWheel(WheelEvent evt)
@@ -75,6 +94,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             scale.z = Mathf.Max(Mathf.Min(maxScale.z, scale.z), minScale.z);
 
             position -= Vector3.Scale(new Vector3(x, y, 0), scale);
+
+            // Delay updating of the pixel cache so the scrolling appears smooth.
+            if (graphView.elementPanel != null && keepPixelCacheOnZoom)
+            {
+                graphView.elementPanel.keepPixelCacheOnWorldBoundChange = true;
+
+                if (delayRepaintScheduled)
+                    graphView.Unschedule(OnTimer);
+
+                graphView.Schedule(OnTimer).StartingIn(500);
+                delayRepaintScheduled = true;
+            }
 
             graphView.UpdateViewTransform(position, scale);
 

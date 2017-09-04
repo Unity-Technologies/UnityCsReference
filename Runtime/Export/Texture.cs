@@ -12,6 +12,14 @@ namespace UnityEngine
         public int height { get; set; }
         public int msaaSamples { get; set; }
         public int volumeDepth { get; set; }
+
+        private int _bindMS;
+
+        public bool bindMS
+        {
+            get { return _bindMS != 0; }
+            set { _bindMS = value ? 1 : 0; }
+        }
         public RenderTextureFormat colorFormat { get; set; }
         private int _depthBufferBits;
         private static int[] depthFormatBits = new int[] { 0, 16, 24 };
@@ -92,6 +100,12 @@ namespace UnityEngine
         {
             get { return (_flags & RenderTextureCreationFlags.CreatedFromScript) != 0; }
             set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.CreatedFromScript); }
+        }
+
+        internal bool useDynamicScale
+        {
+            get { return (_flags & RenderTextureCreationFlags.DynamicallyScalable) != 0; }
+            set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.DynamicallyScalable); }
         }
     }
 

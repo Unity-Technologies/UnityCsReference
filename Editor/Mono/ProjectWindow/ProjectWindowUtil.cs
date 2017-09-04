@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor.Audio;
 using UnityEditor.ProjectWindowCallback;
 using UnityEditor.SceneManagement;
@@ -321,8 +322,41 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, action, assetName + ".png", icon, null);
         }
 
+        internal static string SetLineEndings(string content, LineEndingsMode lineEndingsMode)
+        {
+            const string windowsLineEndings = "\r\n";
+            const string unixLineEndings = "\n";
+
+            string preferredLineEndings;
+
+            switch (lineEndingsMode)
+            {
+                case LineEndingsMode.OSNative:
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
+                        preferredLineEndings = windowsLineEndings;
+                    else
+                        preferredLineEndings = unixLineEndings;
+                    break;
+                case LineEndingsMode.Unix:
+                    preferredLineEndings = unixLineEndings;
+                    break;
+                case LineEndingsMode.Windows:
+                    preferredLineEndings = windowsLineEndings;
+                    break;
+                default:
+                    preferredLineEndings = unixLineEndings;
+                    break;
+            }
+
+            content = Regex.Replace(content, @"\r\n?|\n", preferredLineEndings);
+
+            return content;
+        }
+
         internal static Object CreateScriptAssetWithContent(string pathName, string templateContent)
         {
+            templateContent = SetLineEndings(templateContent, EditorSettings.lineEndingsForNewScripts);
+
             string fullPath = Path.GetFullPath(pathName);
 
             // utf8-bom encoding was added for case 510374 in 2012. i think this was the wrong solution. BOM's are

@@ -342,8 +342,7 @@ namespace UnityEditor
             return targetGroup == BuildTargetGroup.iOS
                 ||  targetGroup == BuildTargetGroup.tvOS
                 ||  targetGroup == BuildTargetGroup.Android
-                ||  targetGroup == BuildTargetGroup.Tizen
-                ||  targetGroup == BuildTargetGroup.SamsungTV;
+                ||  targetGroup == BuildTargetGroup.Tizen;
         }
 
         public SerializedProperty FindPropertyAssert(string name)
@@ -638,7 +637,7 @@ namespace UnityEditor
 
                     bool enabled = GUI.enabled;
 
-                    if (targetGroup == BuildTargetGroup.SamsungTV || targetGroup == BuildTargetGroup.WebGL)
+                    if (targetGroup == BuildTargetGroup.WebGL)
                     {
                         ShowNoSettings();
                         EditorGUILayout.Space();

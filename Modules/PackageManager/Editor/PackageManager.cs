@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEditor;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -141,6 +142,21 @@ namespace UnityEditor.PackageManager
 
         public UpmPackageInfo current { get { return m_Current;  } }
         public UpmPackageInfo latest { get { return m_Latest;  } }
+    }
+
+    internal class Menu
+    {
+        [MenuItem("internal:Project/Packages/Reset to Editor defaults")]
+        public static void ResetProjectPackagesToEditorDefaults()
+        {
+            long operationId = 0;
+            var statusCode = Client.ResetToEditorDefaults(out operationId);
+            if (statusCode == StatusCode.Error)
+            {
+                var error = Client.GetOperationError(operationId);
+                Debug.LogError("Reset to Editor defaults failed, reason: " + error.message);
+            }
+        }
     }
 }
 

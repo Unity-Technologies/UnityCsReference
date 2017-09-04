@@ -24,23 +24,26 @@ namespace UnityEditor
         None = 3
     }
 
-    [NativeHeader("Runtime/Animation/AvatarMask.h")]
-    [StructLayoutAttribute(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Runtime/Animation/AvatarMask.h", IntermediateScriptingStructName = "MonoTransformMaskElement")]
+    [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/ModelImporter.bindings.h")]
     internal partial struct TransformMaskElement
     {
         public string path;
         public float weight;
     }
 
+    [UsedByNativeCode]
     [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoClipAnimationInfoCurve")]
     [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/ModelImporter.bindings.h")]
-    [StructLayoutAttribute(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct ClipAnimationInfoCurve
     {
         public string name;
         public AnimationCurve curve;
     }
 
+    [UsedByNativeCode]
     [System.Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom, IntermediateScriptingStructName = "MonoClipAnimationInfo")]
@@ -319,6 +322,7 @@ namespace UnityEditor
         X8 = 8
     }
 
+    [UsedByNativeCode]
     [NativeType(Header = "Editor/Src/Animation/HumanTemplate.h")]
     public sealed partial class HumanTemplate : Object
     {

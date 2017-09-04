@@ -109,7 +109,7 @@ namespace UnityEngine.Experimental.UIElements
             imguiKeyboardControl = 0;
         }
 
-        IFocusRing focusRing { get; }
+        IFocusRing focusRing { get; set; }
 
         public Focusable focusedElement
         {

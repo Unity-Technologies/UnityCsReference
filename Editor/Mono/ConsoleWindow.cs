@@ -89,6 +89,10 @@ namespace UnityEditor
                 StatusLog = new GUIStyle("CN StatusInfo");
                 CountBadge = new GUIStyle("CN CountBadge");
 
+                // If the console window isn't open OnEnable() won't trigger so it will end up with 0 lines,
+                // so we always make sure we read it up when we initialize here.
+                LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
+
                 UpdateLogStyleFixedHeights();
             }
 

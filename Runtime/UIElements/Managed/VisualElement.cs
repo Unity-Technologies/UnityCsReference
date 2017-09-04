@@ -688,7 +688,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
 
-            var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
+            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
 
             // If persistency is disable (no data, no key, no key one of the parents), just return the
             // existing data or create a local one if none exists.
@@ -712,7 +712,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
 
-            var persistentData = elementPanel == null ? null : elementPanel.viewDataDictionary;
+            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
 
             // If persistency is disable (no data, no key, no key one of the parents), just return the
             // existing data or create a local one if none exists.

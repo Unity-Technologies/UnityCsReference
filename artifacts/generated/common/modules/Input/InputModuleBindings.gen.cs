@@ -51,7 +51,7 @@ public sealed partial class NativeInputSystem
     public static bool SendOutput<TOutputEvent>(int deviceId, int type, TOutputEvent outputEvent)
             where TOutputEvent : struct
         {
-            return SendOutput(deviceId, type, UnsafeUtility.AddressOf(ref outputEvent));
+            return SendOutput(deviceId, type, UnsafeUtility.SizeOf<TOutputEvent>(), UnsafeUtility.AddressOf(ref outputEvent));
         }
     
     

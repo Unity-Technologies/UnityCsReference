@@ -42,7 +42,6 @@ namespace UnityEngine
         }
 
 
-
         [Obsolete("This was an internal method which is no longer used", true)]
         public static Assembly LoadAndVerifyAssembly(byte[] assemblyData, string authorizationKey)
         {

@@ -54,6 +54,7 @@ public enum BuildTargetGroup
     PS4 = 19,
     PSM = 20,
     XboxOne = 21,
+    [System.Obsolete ("SamsungTV has been removed as of 2017.3")]
     SamsungTV = 22,
     N3DS = 23,
     WiiU = 24,

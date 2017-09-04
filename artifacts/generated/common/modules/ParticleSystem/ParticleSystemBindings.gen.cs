@@ -401,6 +401,14 @@ public enum ParticleSystemSubEmitterProperties
     InheritLifetime = 1 << 3,
 }
 
+public enum ParticleSystemTrailMode
+{
+    
+    PerParticle = 0,
+    
+    Ribbon = 1
+}
+
 public enum ParticleSystemTrailTextureMode
 {
     
@@ -3238,6 +3246,7 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
+                    public ParticleSystemTrailMode mode { get { return (ParticleSystemTrailMode)GetMode(m_ParticleSystem); } set { SetMode(m_ParticleSystem, (int)value); } }
                     public float ratio { get { return GetRatio(m_ParticleSystem); } set { SetRatio(m_ParticleSystem, value); } }
                     public MinMaxCurve lifetime { set { SetLifetime(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetLifetime(m_ParticleSystem, ref r); return r; } }
                     public float lifetimeMultiplier { get { return GetLifetimeMultiplier(m_ParticleSystem); } set { SetLifetimeMultiplier(m_ParticleSystem, value); } }
@@ -3253,6 +3262,7 @@ public sealed partial class ParticleSystem : Component
                     public float widthOverTrailMultiplier { get { return GetWidthOverTrailMultiplier(m_ParticleSystem); } set { SetWidthOverTrailMultiplier(m_ParticleSystem, value); } }
                     public MinMaxGradient colorOverTrail { set { SetColorOverTrail(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxGradient(); GetColorOverTrail(m_ParticleSystem, ref r); return r; } }
                     public bool generateLightingData { set { SetGenerateLightingData(m_ParticleSystem, value); } get { return GetGenerateLightingData(m_ParticleSystem); } }
+                    public int ribbonCount { get { return GetRibbonCount(m_ParticleSystem); } set { SetRibbonCount(m_ParticleSystem, value); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3262,6 +3272,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  bool GetEnabled (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMode (ParticleSystem system, int value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  int GetMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3297,7 +3315,7 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetTextureMode (ParticleSystem system, float value) ;
+        extern private static  void SetTextureMode (ParticleSystem system, int value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3382,6 +3400,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  bool GetGenerateLightingData (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetRibbonCount (ParticleSystem system, int value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  int GetRibbonCount (ParticleSystem system) ;
 
     }
 

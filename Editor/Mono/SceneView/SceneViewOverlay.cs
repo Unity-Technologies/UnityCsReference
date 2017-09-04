@@ -18,13 +18,14 @@ namespace UnityEditor
         {
             // Lower order is below high order when showed together
             Camera = -100,
-            Cloth = 0,
-            OcclusionCulling = 100,
-            Lightmapping = 200,
-            NavMesh = 300,
-            PhysicsDebug = 350,
-            ParticleEffect = 400,
-            TilemapRenderer = 450,
+            ClothConstraints = 0,
+            ClothSelfAndInterCollision = 100,
+            OcclusionCulling = 200,
+            Lightmapping = 300,
+            NavMesh = 400,
+            PhysicsDebug = 450,
+            TilemapRenderer = 500,
+            ParticleEffect = 600
         }
 
         public enum WindowDisplayOption

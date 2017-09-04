@@ -199,14 +199,16 @@ namespace UnityEditor.Experimental.UIElements
             if (ImportXml(args.assetPath, out vta))
             {
                 foreach (VisualElementAsset vea in vta.visualElementAssets)
-                    args.AddSubAsset(string.Format("c_{0}_{1}", vea.name ?? "x", vea.GetType().Name), vea);
+                    args.AddObjectToAsset(string.Format("c_{0}_{1}", vea.name ?? "x", vea.GetType().Name), vea);
             }
 
-            args.SetMainAsset("tree", vta);
+            args.AddObjectToAsset("tree", vta);
+            args.SetMainObject(vta);
+
             if (!vta.inlineSheet)
                 vta.inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
 
-            args.AddSubAsset("inlineStyle", vta.inlineSheet);
+            args.AddObjectToAsset("inlineStyle", vta.inlineSheet);
         }
 
         internal static bool ImportXml(string xmlPath, out VisualTreeAsset vta)

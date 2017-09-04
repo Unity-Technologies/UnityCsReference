@@ -41,7 +41,6 @@ namespace UnityEditor
         static readonly string k_Extension = ".pref";
 
         protected string m_PreferencesFileName;
-        protected TValue m_Value;
 
         public static TDerived instance
         {
@@ -60,14 +59,7 @@ namespace UnityEditor
         {
             get
             {
-                if (preferencesFileName == m_PreferencesFileName)
-                    return m_Value;
-
-                if (m_Value != null)
-                    Save(m_PreferencesFileName, m_Value);
-
-                Load(preferencesFileName);
-                return m_Value;
+                return Load(preferencesFileName);
             }
         }
 
@@ -109,7 +101,14 @@ namespace UnityEditor
             InternalEditorUtility.SaveToSerializedFileAndForget(new[] { value }, GetProjectRelativePath(file), saveAsText);
         }
 
-        private void Load(string preferencesFileName)
+        public void Clear(string preferencesFileName)
+        {
+            string fullPath = Application.dataPath + "/../" + GetProjectRelativePath(preferencesFileName);
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+        }
+
+        private TValue Load(string preferencesFileName)
         {
             TValue value = null;
             string file = preferencesFileName;
@@ -125,7 +124,7 @@ namespace UnityEditor
             }
 
             m_PreferencesFileName = preferencesFileName;
-            m_Value = value ?? CreateNewValue();
+            return value ?? CreateNewValue();
         }
 
         private string GetFolderPath()

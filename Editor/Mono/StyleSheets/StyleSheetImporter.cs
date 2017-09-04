@@ -27,7 +27,7 @@ namespace UnityEditor.StyleSheets
             UnityStyleSheet asset = ScriptableObject.CreateInstance<UnityStyleSheet>();
             asset.hideFlags = HideFlags.NotEditable;
             importer.Import(asset, contents, ctx.assetPath);
-            ctx.SetMainAsset("stylesheet", asset);
+            ctx.AddObjectToAsset("stylesheet", asset);
 
             // Force the pre processor to rebuild its list of referenced asset paths
             // as paths may have changed with this import.

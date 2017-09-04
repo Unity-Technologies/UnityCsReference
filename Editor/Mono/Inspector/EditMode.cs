@@ -65,7 +65,8 @@ namespace UnityEditorInternal
         {
             None = 0,
             Collider,
-            Cloth,
+            ClothConstraints,
+            ClothSelfAndInterCollisionParticles,
             ReflectionProbeBox,
             ReflectionProbeOrigin,
             LightProbeProxyVolumeBox,

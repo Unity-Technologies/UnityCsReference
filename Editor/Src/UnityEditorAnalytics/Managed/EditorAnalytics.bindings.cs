@@ -10,24 +10,68 @@ namespace UnityEditor
 {
     [RequiredByNativeCode]
     [NativeHeader("Editor/Src/UnityEditorAnalytics/UnityEditorAnalytics.h")]
-    internal class EditorAnalytics
+    public static class EditorAnalytics
     {
-        public static bool SendEventServiceInfo(object parameters)
+        internal static bool SendEventServiceInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("serviceInfo", parameters);
         }
 
-        public static bool SendEventShowService(object parameters)
+        internal static bool SendEventShowService(object parameters)
         {
             return EditorAnalytics.SendEvent("showService", parameters);
         }
 
-        extern private static bool SendEvent(string eventName, object parameters);
-
-
-        public static bool SendEventTimelineInfo(object parameters)
+        internal static bool SendEventTimelineInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("timelineInfo", parameters);
+        }
+
+        public extern static bool enabled
+        {
+            get;
+        }
+
+        extern private static bool SendEvent(string eventName, object parameters);
+    }
+
+    [RequiredByNativeCode]
+    [NativeHeader("Editor/Src/UnityEditorAnalytics/UnityEditorAnalytics.h")]
+    public static class EditorAnalyticsSessionInfo
+    {
+        public extern static long id
+        {
+            [NativeMethod("GetSessionId")]
+            get;
+        }
+
+        public extern static long elapsedTime
+        {
+            [NativeMethod("GetSessionElapsedTime")]
+            get;
+        }
+
+        public extern static long focusedElapsedTime
+        {
+            [NativeMethod("GetSessionFocusedElapsedTime")]
+            get;
+        }
+
+        public extern static long playbackElapsedTime
+        {
+            [NativeMethod("GetSessionPlaybackElapsedTime")]
+            get;
+        }
+
+        public extern static long activeElapsedTime
+        {
+            [NativeMethod("GetSessionUserActiveElapsedTime")]
+            get;
+        }
+
+        public extern static string userId
+        {
+            get;
         }
     }
 }

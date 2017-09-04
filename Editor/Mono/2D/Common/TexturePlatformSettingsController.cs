@@ -135,8 +135,7 @@ namespace UnityEditor.U2D.Common
                     buildTarget == BuildTarget.iOS ||
                     buildTarget == BuildTarget.tvOS ||
                     buildTarget == BuildTarget.Android ||
-                    buildTarget == BuildTarget.Tizen ||
-                    buildTarget == BuildTarget.SamsungTV
+                    buildTarget == BuildTarget.Tizen
                 ;
 
                 if (showAsEnum)

@@ -31,6 +31,8 @@ namespace UnityEngine.Playables
         internal double m_DeltaTime;
         internal float m_Weight;
         internal float m_EffectiveWeight;
+        internal double m_EffectiveParentDelay;
+        internal float m_EffectiveParentSpeed;
         internal float m_EffectiveSpeed;
         internal Flags m_Flags;
 
@@ -38,6 +40,8 @@ namespace UnityEngine.Playables
         public float deltaTime                  { get { return (float)m_DeltaTime; } }
         public float weight                     { get { return m_Weight; } }
         public float effectiveWeight            { get { return m_EffectiveWeight; } }
+        public double effectiveParentDelay      { get { return m_EffectiveParentDelay; } }
+        public float effectiveParentSpeed       { get { return m_EffectiveParentSpeed; } }
         public float effectiveSpeed             { get { return m_EffectiveSpeed; } }
         public EvaluationType evaluationType    { get { return ((m_Flags & Flags.Evaluate) != 0) ? EvaluationType.Evaluate : EvaluationType.Playback; } }
         public bool seekOccurred                { get { return (m_Flags & Flags.SeekOccured) != 0; } }

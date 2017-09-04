@@ -73,6 +73,7 @@ namespace UnityEditor
             public bool showSkybox = true;
             public bool showFlares = true;
             public bool showImageEffects = true;
+            public bool showParticleSystems = true;
 
             public SceneViewState()
             {
@@ -85,11 +86,12 @@ namespace UnityEditor
                 showSkybox = other.showSkybox;
                 showFlares = other.showFlares;
                 showImageEffects = other.showImageEffects;
+                showParticleSystems = other.showParticleSystems;
             }
 
             public bool IsAllOn()
             {
-                return showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects;
+                return showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems;
             }
 
             public void Toggle(bool value)
@@ -99,6 +101,7 @@ namespace UnityEditor
                 showSkybox = value;
                 showFlares = value;
                 showImageEffects = value;
+                showParticleSystems = value;
             }
         }
 
@@ -425,7 +428,7 @@ namespace UnityEditor
             s_SceneViews.Add(this);
 
             m_Lighting = EditorGUIUtility.IconContent("SceneviewLighting", "Lighting|When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-            m_Fx = EditorGUIUtility.IconContent("SceneviewFx", "Effects|Toggle skybox, fog and lens flare effects.");
+            m_Fx = EditorGUIUtility.IconContent("SceneviewFx", "Effects|Toggle skybox, fog, and various other effects.");
             m_AudioPlayContent = EditorGUIUtility.IconContent("SceneviewAudio", "AudioPlay|Toggle audio on or off.");
             m_GizmosContent = EditorGUIUtility.TextContent("Gizmos|Toggle the visibility of different Gizmos in the Scene view.");
             m_2DModeContent = new GUIContent("2D", "When togggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
@@ -1634,20 +1637,19 @@ namespace UnityEditor
 
             CleanupCustomSceneLighting();
 
+
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            if (RenderTextureFormat.ARGBHalf == m_SceneTargetTexture.format)
+            var ldrSceneTargetTexture = m_SceneTargetTexture;
+            if (!UseSceneFiltering() && evt.type == EventType.Repaint && RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
             {
-                var oldActive = RenderTexture.active;
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.colorFormat = RenderTextureFormat.ARGB32;
                 rtDesc.depthBufferBits = 0;
-                var ldr = RenderTexture.GetTemporary(rtDesc);
-                Graphics.Blit(m_SceneTargetTexture, ldr);
-                Graphics.Blit(ldr, m_SceneTargetTexture);
-                RenderTexture.ReleaseTemporary(ldr);
-                RenderTexture.active = oldActive;
+                ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
+                Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
+                Graphics.SetRenderTarget(ldrSceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
             }
 
             if (!UseSceneFiltering())
@@ -1698,7 +1700,9 @@ namespace UnityEditor
                 if (evt.type == EventType.Repaint)
                 {
                     GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                    Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitColorspaceMaterial);
+                    Graphics.DrawTexture(guiRect, ldrSceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitColorspaceMaterial);
+                    if (RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
+                        RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
                     GL.sRGBWrite = false;
                     Profiler.EndSample();
                 }
@@ -1972,6 +1976,7 @@ namespace UnityEditor
             }
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
+            ParticleSystemEditorUtils.editorRenderInSceneView = m_SceneViewState.showParticleSystems;
 
             ResetIfNaN();
 

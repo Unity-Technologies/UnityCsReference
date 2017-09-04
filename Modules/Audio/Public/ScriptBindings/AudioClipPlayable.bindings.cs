@@ -90,9 +90,15 @@ namespace UnityEngine.Audio
             SetLoopedInternal(ref m_Handle, value);
         }
 
+        [Obsolete("IsPlaying() has been deprecated. Use IsChannelPlaying() instead (UnityUpgradable) -> IsChannelPlaying()", true)]
         public bool IsPlaying()
         {
-            return GetIsPlayingInternal(ref m_Handle);
+            return IsChannelPlaying();
+        }
+
+        public bool IsChannelPlaying()
+        {
+            return GetIsChannelPlayingInternal(ref m_Handle);
         }
 
         public double GetStartDelay()
@@ -147,7 +153,7 @@ namespace UnityEngine.Audio
             }
 
             m_Handle.SetTime(startTime);
-            m_Handle.SetPlayState(PlayState.Playing);
+            m_Handle.Play();
         }
 
         private void ValidateStartDelayInternal(double startDelay)
@@ -158,7 +164,7 @@ namespace UnityEngine.Audio
             const double validEndDelay = 0.05;
             const double validStartDelay = 0.00001; // for double/float errors
 
-            if (IsPlaying() &&
+            if (IsChannelPlaying() &&
                 (startDelay < validEndDelay || (currentDelay >= validStartDelay && currentDelay < validEndDelay)))
             {
                 Debug.LogWarning("AudioClipPlayable.StartDelay: Setting new delay when existing delay is too small or 0.0 ("
@@ -171,7 +177,7 @@ namespace UnityEngine.Audio
         extern private static void SetClipInternal(ref PlayableHandle hdl, AudioClip clip);
         extern private static bool GetLoopedInternal(ref PlayableHandle hdl);
         extern private static void SetLoopedInternal(ref PlayableHandle hdl, bool looped);
-        extern private static bool GetIsPlayingInternal(ref PlayableHandle hdl);
+        extern private static bool GetIsChannelPlayingInternal(ref PlayableHandle hdl);
         extern private static double GetStartDelayInternal(ref PlayableHandle hdl);
         extern private static void SetStartDelayInternal(ref PlayableHandle hdl, double delay);
         extern private static double GetPauseDelayInternal(ref PlayableHandle hdl);

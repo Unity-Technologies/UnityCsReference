@@ -716,7 +716,6 @@ namespace UnityEditor.Modules
                 case BuildTarget.PSM: return "PSM";
                 case BuildTarget.PS4: return "PS4";
                 case BuildTarget.WiiU: return "WiiU";
-                case BuildTarget.SamsungTV: return "SamsungTV";
                 case BuildTarget.WebGL: return "WebGL";
                 case BuildTarget.Android: return "Android";
                 case BuildTarget.N3DS: return "N3DS";
@@ -754,7 +753,6 @@ namespace UnityEditor.Modules
                 case BuildTargetGroup.PSM: return "PSM";
                 case BuildTargetGroup.PS4: return "PS4";
                 case BuildTargetGroup.WiiU: return "WiiU";
-                case BuildTargetGroup.SamsungTV: return "SamsungTV";
                 case BuildTargetGroup.WebGL: return "WebGL";
                 case BuildTargetGroup.Android: return "Android";
                 case BuildTargetGroup.N3DS: return "N3DS";

@@ -108,7 +108,7 @@ namespace UnityEditor
 
         internal static bool IsGLESMobileTargetPlatform(BuildTarget target)
         {
-            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android || target == BuildTarget.Tizen || target == BuildTarget.SamsungTV;
+            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android || target == BuildTarget.Tizen;
         }
 
         // Which platforms should we display?
@@ -153,7 +153,6 @@ namespace UnityEditor
                             requireASTC = true;
                             break;
                         case BuildTarget.Tizen:
-                        case BuildTarget.SamsungTV:
                             requireETC = true;
                             break;
                     }
@@ -219,6 +218,10 @@ namespace UnityEditor
                     (int)TextureImporterFormat.BC6H,
                     (int)TextureImporterFormat.BC7,
 
+                    (int)TextureImporterFormat.DXT1Crunched,
+                    (int)TextureImporterFormat.DXT5Crunched,
+                    (int)TextureImporterFormat.ETC_RGB4Crunched,
+                    (int)TextureImporterFormat.ETC2_RGBA8Crunched,
                 });
 
                 s_TextureFormatsValueAll = formatValues.ToArray();
@@ -314,6 +317,7 @@ namespace UnityEditor
 
                     (int)TextureImporterFormat.RGBA32,
 
+                    (int)TextureImporterFormat.DXT5Crunched
                 });
 
                 s_NormalFormatsValueAll = formatValues.ToArray();
@@ -324,6 +328,10 @@ namespace UnityEditor
 
         internal static readonly TextureImporterFormat[] kFormatsWithCompressionSettings =
         {
+            TextureImporterFormat.DXT1Crunched,
+            TextureImporterFormat.DXT5Crunched,
+            TextureImporterFormat.ETC_RGB4Crunched,
+            TextureImporterFormat.ETC2_RGBA8Crunched,
             TextureImporterFormat.PVRTC_RGB2,
             TextureImporterFormat.PVRTC_RGB4,
             TextureImporterFormat.PVRTC_RGBA2,
@@ -355,7 +363,6 @@ namespace UnityEditor
         internal static string[] s_TextureFormatStringsApplePVR;
         internal static string[] s_TextureFormatStringsAndroid;
         internal static string[] s_TextureFormatStringsTizen;
-        internal static string[] s_TextureFormatStringsSTV;
         internal static string[] s_TextureFormatStringsSingleChannel;
         internal static string[] s_TextureFormatStringsDefault;
         internal static string[] s_NormalFormatStringsDefault;
@@ -1458,8 +1465,6 @@ namespace UnityEditor
                 s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
             if (s_TextureFormatStringsTizen == null)
                 s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
-            if (s_TextureFormatStringsSTV == null)
-                s_TextureFormatStringsSTV = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSTV);
             if (s_TextureFormatStringsWebGL == null)
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsWiiU == null)

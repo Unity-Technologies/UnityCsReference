@@ -33,7 +33,7 @@ namespace UnityEditor
                 if (Panel.loadResourceFunc == null)
                     Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
 
-                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, DataWatchService.sharedInstance);
+                Panel p = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
                 AddDefaultEditorStyleSheets(p.visualTree);
                 return p;
             }
@@ -171,7 +171,7 @@ namespace UnityEditor
 
         protected virtual void OnEnable()
         {
-            imguiContainer = new IMGUIContainer(OldOnGUI);
+            imguiContainer = new IMGUIContainer(OldOnGUI) { useOwnerObjectGUIState = true };
             imguiContainer.StretchToParentSize();
             imguiContainer.persistenceKey = "Dockarea";
             visualTree.Insert(0, imguiContainer);

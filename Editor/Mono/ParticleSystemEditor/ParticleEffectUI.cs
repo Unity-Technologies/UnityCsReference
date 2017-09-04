@@ -28,7 +28,6 @@ namespace UnityEditor
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         bool m_ShowOnlySelectedMode;
         TimeHelper m_TimeHelper = new TimeHelper();
-        public static bool m_ShowWireframe = false;
         public static bool m_ShowBounds = false;
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
@@ -48,19 +47,19 @@ namespace UnityEditor
 
         internal class Texts
         {
-            public GUIContent previewSpeed = new GUIContent("Playback Speed");
-            public GUIContent previewTime = new GUIContent("Playback Time");
-            public GUIContent particleCount = new GUIContent("Particles");
-            public GUIContent subEmitterParticleCount = new GUIContent("Sub Emitter Particles");
-            public GUIContent particleSpeeds = new GUIContent("Speed Range");
-            public GUIContent play = new GUIContent("Play");
-            public GUIContent stop = new GUIContent("Stop");
-            public GUIContent pause = new GUIContent("Pause");
-            public GUIContent restart = new GUIContent("Restart");
-            public GUIContent addParticleSystem = new GUIContent("", "Create Particle System");
-            public GUIContent wireframe = new GUIContent("Selection", "Show particles with the selection outline/wireframe, based on the selection options in the Gizmos menu");
-            public GUIContent bounds = new GUIContent("Bounds", "Show world space bounding boxes");
-            public GUIContent resimulation = new GUIContent("Resimulate", "If resimulate is enabled the particle system will show changes made to the system immediately (including changes made to the particle system transform)");
+            public GUIContent previewSpeed = EditorGUIUtility.TextContent("Playback Speed");
+            public GUIContent previewTime = EditorGUIUtility.TextContent("Playback Time");
+            public GUIContent particleCount = EditorGUIUtility.TextContent("Particles");
+            public GUIContent subEmitterParticleCount = EditorGUIUtility.TextContent("Sub Emitter Particles");
+            public GUIContent particleSpeeds = EditorGUIUtility.TextContent("Speed Range");
+            public GUIContent play = EditorGUIUtility.TextContent("Play");
+            public GUIContent stop = EditorGUIUtility.TextContent("Stop");
+            public GUIContent pause = EditorGUIUtility.TextContent("Pause");
+            public GUIContent restart = EditorGUIUtility.TextContent("Restart");
+            public GUIContent addParticleSystem = EditorGUIUtility.TextContent("|Create Particle System");
+            public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes");
+            public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform)");
+            public GUIContent previewAll = EditorGUIUtility.TextContent("Simulate All|Choose whether to preview all Particle Systems in Edit Mode, or just the selected ones.");
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }
@@ -79,7 +78,6 @@ namespace UnityEditor
         static PrefKey kStop = new PrefKey("ParticleSystem/Stop", ".");
         static PrefKey kForward = new PrefKey("ParticleSystem/Forward", "m");
         static PrefKey kReverse = new PrefKey("ParticleSystem/Reverse", "n");
-
 
         public ParticleEffectUI(ParticleEffectUIOwner owner)
         {
@@ -527,6 +525,10 @@ namespace UnityEditor
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 
+            ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, s_Texts.previewAll, EditorStyles.toggle);
+            ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, s_Texts.resimulation, EditorStyles.toggle);
+            ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
+
             EditorGUIUtility.labelWidth = 0.0f;
         }
 
@@ -737,16 +739,8 @@ namespace UnityEditor
                     }
                 }
             }
+
             GUILayout.EndVertical();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, s_Texts.resimulation, EditorStyles.toggle);
-            ParticleEffectUI.m_ShowWireframe = GUILayout.Toggle(ParticleEffectUI.m_ShowWireframe, ParticleEffectUI.texts.wireframe, EditorStyles.toggle);
-            ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.bounds, EditorStyles.toggle);
-            GUILayout.EndHorizontal();
-
             GUILayout.FlexibleSpace();
 
             HandleKeyboardShortcuts();

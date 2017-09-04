@@ -92,6 +92,7 @@ namespace UnityEditor
         }
     }
 
+
     [CustomEditor(typeof(PhysicsManager))]
     internal class PhysicsManagerInspector : ProjectSettingsBaseEditor
     {
@@ -108,10 +109,50 @@ namespace UnityEditor
             Physics.IgnoreLayerCollision(layerA, layerB, !val);
         }
 
+        private static class Styles
+        {
+            public static readonly GUIContent interCollisionPropertiesLabel = EditorGUIUtility.TextContent("Cloth Inter-Collision");
+            public static readonly GUIContent interCollisionDistanceLabel = EditorGUIUtility.TextContent("Distance");
+            public static readonly GUIContent interCollisionStiffnessLabel = EditorGUIUtility.TextContent("Stiffness");
+        }
+
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector();
+            DrawPropertiesExcluding(serializedObject, "m_ClothInterCollisionDistance", "m_ClothInterCollisionStiffness", "m_ClothInterCollisionSettingsToggle");
             LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref show, ref scrollPos, GetValue, SetValue);
+
+            EditorGUI.BeginChangeCheck();
+            bool collisionSettings = EditorGUILayout.Toggle(Styles.interCollisionPropertiesLabel, Physics.interCollisionSettingsToggle);
+            bool settingsChanged = EditorGUI.EndChangeCheck();
+            if (settingsChanged)
+            {
+                Physics.interCollisionSettingsToggle = collisionSettings;
+            }
+
+            if (Physics.interCollisionSettingsToggle)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUI.BeginChangeCheck();
+                float distance = EditorGUILayout.FloatField(Styles.interCollisionDistanceLabel, Physics.interCollisionDistance);
+                bool distanceChanged = EditorGUI.EndChangeCheck();
+                if (distanceChanged)
+                {
+                    if (distance < 0.0f)
+                        distance = 0.0f;
+                    Physics.interCollisionDistance = distance;
+                }
+
+                EditorGUI.BeginChangeCheck();
+                float stiffness = EditorGUILayout.FloatField(Styles.interCollisionStiffnessLabel, Physics.interCollisionStiffness);
+                bool stiffnessChanged = EditorGUI.EndChangeCheck();
+                if (stiffnessChanged)
+                {
+                    if (stiffness < 0.0f)
+                        stiffness = 0.0f;
+                    Physics.interCollisionStiffness = stiffness;
+                }
+                EditorGUI.indentLevel--;
+            }
         }
     }
 }

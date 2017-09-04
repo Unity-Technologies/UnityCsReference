@@ -57,7 +57,7 @@ namespace UnityEditor.Experimental.UIElements
 
             if (m_Panel == null)
             {
-                m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree.GetInstanceID(), ContextType.Editor, new DataWatchService());
+                m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor, new DataWatchService());
                 if (m_Panel.visualTree.styleSheets == null)
                 {
                     GUIView.AddDefaultEditorStyleSheets(m_Panel.visualTree);

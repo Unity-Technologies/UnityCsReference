@@ -19,7 +19,8 @@ namespace UnityEngine.Playables
     public enum PlayState
     {
         Paused = 0,
-        Playing = 1
+        Playing = 1,
+        Delayed = 2
     }
 
     [NativeHeader("Runtime/Director/Core/HPlayable.h")]
@@ -134,7 +135,8 @@ namespace UnityEngine.Playables
         extern internal bool CanSetWeights();
         extern internal bool CanDestroy();
         extern internal PlayState GetPlayState();
-        extern internal void SetPlayState(PlayState value);
+        extern internal void Play();
+        extern internal void Pause();
         extern internal double GetSpeed();
         extern internal void SetSpeed(double value);
         extern internal double GetTime();
@@ -151,6 +153,9 @@ namespace UnityEngine.Playables
         extern internal int GetOutputCount();
         extern internal void SetOutputCount(int value);
         extern internal void SetInputWeight(PlayableHandle input, float weight);
+        extern internal void SetDelay(double delay);
+        extern internal double GetDelay();
+        extern internal bool IsDelayed();
 
         extern private object GetScriptInstance();
         extern private PlayableHandle GetInputHandle(int index);

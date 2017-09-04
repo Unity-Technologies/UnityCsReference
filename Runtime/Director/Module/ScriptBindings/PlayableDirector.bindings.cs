@@ -44,6 +44,12 @@ namespace UnityEngine.Playables
             get { return GetGraphHandle(); }
         }
 
+        public bool playOnAwake
+        {
+            get { return GetPlayOnAwake(); }
+            set { SetPlayOnAwake(value); }
+        }
+
         public void DeferredEvaluate()
         {
             EvaluateNextFrame();
@@ -86,5 +92,7 @@ namespace UnityEngine.Playables
         extern private DirectorWrapMode GetWrapMode();
         extern private void EvaluateNextFrame();
         extern private PlayableGraph GetGraphHandle();
+        extern private void SetPlayOnAwake(bool on);
+        extern private bool GetPlayOnAwake();
     }
 }

@@ -221,6 +221,9 @@ public enum TextureImporterFormat
     [System.Obsolete("Use textureCompression property instead")]
     AutomaticTruecolor = -3,
     
+    [System.Obsolete("Use crunchedCompression property instead")]
+    AutomaticCrunched = -5,
+    
     [System.Obsolete("HDR is handled automatically now")]
     AutomaticHDR = -6,
     
@@ -254,6 +257,10 @@ public enum TextureImporterFormat
     BC6H = 24,
     
     BC7 = 25,
+    
+    DXT1Crunched = 28,
+    
+    DXT5Crunched = 29,
     
     PVRTC_RGB2 = 30,
     
@@ -307,6 +314,10 @@ public enum TextureImporterFormat
     ASTC_RGBA_10x10 = 58,
     
     ASTC_RGBA_12x12 = 59,
+    
+    ETC_RGB4Crunched = 64,
+    
+    ETC2_RGBA8Crunched = 65,
 }
 
 public enum TextureImporterMipFilter

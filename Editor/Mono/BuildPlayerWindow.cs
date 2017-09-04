@@ -68,7 +68,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TextContent("Your license does not cover Wii U Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover SamsungTV Publishing"), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
@@ -88,7 +87,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TextContent("Wii U Player is not supported in this build.\nDownload a build that supports it."),  null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("SamsungTV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
@@ -492,7 +490,6 @@ namespace UnityEditor
                 RegexOptions.Compiled);
         static Dictionary<string, string> s_ModuleNames = new Dictionary<string, string>()
         {
-            { "SamsungTV", "Samsung-TV" },
             { "tvOS", "AppleTV" },
             { "OSXStandalone", "Mac" },
             { "WindowsStandalone", "Windows" },
@@ -847,7 +844,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildButton;
             if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
+                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer | BuildOptions.StrictMode);
                 GUIUtility.ExitGUI();
             }
             // Build and Run button

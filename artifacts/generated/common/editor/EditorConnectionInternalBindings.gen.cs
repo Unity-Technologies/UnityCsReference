@@ -33,6 +33,11 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
             SendMessage(messageId.ToString("N"), data, playerId);
         }
     
+    void IPlayerEditorConnectionNative.Poll()
+        {
+            PollInternal();
+        }
+    
     void IPlayerEditorConnectionNative.RegisterInternal(Guid messageId)
         {
             RegisterInternal(messageId.ToString("N"));
@@ -74,6 +79,10 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SendMessage (string messageId, byte[] data, int playerId) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void PollInternal () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
