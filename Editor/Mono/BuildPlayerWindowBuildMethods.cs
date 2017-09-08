@@ -272,6 +272,20 @@ namespace UnityEditor
                 updateExistingBuild = false;
                 var previousPath = EditorUserBuildSettings.GetBuildLocation(target);
 
+                string defaultFolder;
+                string defaultName;
+                if (previousPath == String.Empty)
+                {
+                    defaultFolder = FileUtil.DeleteLastPathNameComponent(Application.dataPath);
+                    defaultName = "";
+                }
+                else
+                {
+                    defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
+                    defaultName = FileUtil.GetLastPathNameComponent(previousPath);
+                }
+
+
                 // When exporting Eclipse project, we're saving a folder, not file,
                 // deal with it separately:
                 if (target == BuildTarget.Android
@@ -285,11 +299,7 @@ namespace UnityEditor
                 }
 
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
-
-                string defaultFolder = FileUtil.DeleteLastPathNameComponent(previousPath);
-                string defaultName = FileUtil.GetLastPathNameComponent(previousPath);
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(target);
-
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
                 if (path == string.Empty)

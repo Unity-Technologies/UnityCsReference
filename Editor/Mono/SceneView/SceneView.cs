@@ -1544,22 +1544,6 @@ namespace UnityEditor
 
             CleanupCustomSceneLighting();
 
-            //Ensure that the target texture is clamped [0-1]
-            //This is needed because otherwise gizmo rendering gets all
-            //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            if (RenderTextureFormat.ARGBHalf == m_SceneTargetTexture.format)
-            {
-                var oldActive = RenderTexture.active;
-                var rtDesc = m_SceneTargetTexture.descriptor;
-                rtDesc.colorFormat = RenderTextureFormat.ARGB32;
-                rtDesc.depthBufferBits = 0;
-                var ldr = RenderTexture.GetTemporary(rtDesc);
-                Graphics.Blit(m_SceneTargetTexture, ldr);
-                Graphics.Blit(ldr, m_SceneTargetTexture);
-                RenderTexture.ReleaseTemporary(ldr);
-                RenderTexture.active = oldActive;
-            }
-
             if (!UseSceneFiltering())
             {
                 // Blit to final target RT in deferred mode

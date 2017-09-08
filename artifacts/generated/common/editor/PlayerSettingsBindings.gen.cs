@@ -171,7 +171,8 @@ public enum IconKind
     Application = 0,
     Settings = 1,
     Notification = 2,
-    Spotlight = 3
+    Spotlight = 3,
+    Store = 4
 }
 
 public sealed partial class PlayerSettings : UnityEngine.Object
@@ -733,15 +734,13 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform, IconKind kind)
         {
             Texture2D[] icons = GetIconsForPlatform(GetPlatformName(platform), kind);
-            if (icons.Length == 0)
-                return new Texture2D[GetIconSizesForTargetGroup(platform, kind).Length];
             return icons;
         }
     
     
     public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform)
         {
-            return GetIconsForTargetGroup(platform, IconKind.Application);
+            return GetIconsForTargetGroup(platform, IconKind.Any);
         }
     
     
@@ -755,27 +754,40 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
 
     public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons, IconKind kind)
         {
-            IconKind[] kinds = Enumerable.Repeat(kind, icons.Length).ToArray();
-            SetIconsForPlatform(GetPlatformName(platform), icons, kinds);
+            SetIconsForPlatform(GetPlatformName(platform), icons, kind);
         }
     
     
     public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons)
         {
-            SetIconsForTargetGroup(platform, icons, IconKind.Application);
+            SetIconsForTargetGroup(platform, icons, IconKind.Any);
         }
     
     
     internal static void SetIconsForPlatform(string platform, Texture2D[] icons)
         {
-            IconKind[] kinds = Enumerable.Repeat(IconKind.Application, icons.Length).ToArray();
-            SetIconsForPlatform(platform, icons, kinds);
+            SetIconsForPlatform(platform, icons, IconKind.Any);
+        }
+    
+    
+    internal static void SetIconsForPlatform(string platform, Texture2D[] icons, IconKind[] kinds)
+        {
+            foreach (IconKind kind in GetSupportedIconKindsForPlatform(platform))
+            {
+                List<Texture2D> iconsForKind = new List<Texture2D>();
+                for (int i = 0; i < icons.Length; i++)
+                {
+                    if (kinds[i] == kind)
+                        iconsForKind.Add(icons[i]);
+                }
+                SetIconsForPlatform(platform, iconsForKind.ToArray(), kind);
+            }
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void SetIconsForPlatform (string platform, Texture2D[] icons, IconKind[] kinds) ;
+    extern internal static  void SetIconsForPlatform (string platform, Texture2D[] icons, IconKind kind) ;
 
     public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform, IconKind kind)
         {
@@ -785,7 +797,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     
     public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform)
         {
-            return GetIconSizesForTargetGroup(platform, IconKind.Application);
+            return GetIconSizesForTargetGroup(platform, IconKind.Any);
         }
     
     
@@ -809,6 +821,19 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  IconKind[] GetIconKindsForPlatform (string platform) ;
 
+    internal static IconKind[] GetSupportedIconKindsForPlatform(string platform)
+        {
+            List<IconKind> distinctKinds = new List<IconKind>();
+            IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platform);
+
+            foreach (var kind in kinds)
+                if (!distinctKinds.Contains(kind))
+                    distinctKinds.Add(kind);
+
+            return distinctKinds.ToArray();
+        }
+    
+    
     internal static string GetPlatformName(BuildTargetGroup targetGroup)
         {
             BuildPlatform platform = BuildPlatforms.instance.GetValidPlatforms().Find(p => p.targetGroup == targetGroup);

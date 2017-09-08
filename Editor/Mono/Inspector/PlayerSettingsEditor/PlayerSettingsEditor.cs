@@ -552,7 +552,6 @@ namespace UnityEditor
             string platformName = "";
             Texture2D[] icons = PlayerSettings.GetAllIconsForPlatform(platformName);
             int[] widths = PlayerSettings.GetIconWidthsOfAllKindsForPlatform(platformName);
-            IconKind[] kinds = PlayerSettings.GetIconKindsForPlatform(platformName);
 
             // Ensure the default icon list is always populated correctly
             if (icons.Length != widths.Length)
@@ -564,7 +563,7 @@ namespace UnityEditor
             if (GUI.changed)
             {
                 Undo.RecordObject(this.target, Styles.undoChangedIconString);
-                PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
+                PlayerSettings.SetIconsForPlatform(platformName, icons);
             }
 
             GUILayout.Space(3);
@@ -674,7 +673,7 @@ namespace UnityEditor
                                     icons = new Texture2D[0];
 
                                 if (GUI.changed)
-                                    PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
+                                    PlayerSettings.SetIconsForPlatform(platformName, icons);
                             }
                         }
 
@@ -705,6 +704,12 @@ namespace UnityEditor
                                 {
                                     Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
                                     GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "Notification icons", EditorStyles.boldLabel);
+                                }
+
+                                if (kinds[i] == IconKind.Store && kinds[i - 1] != IconKind.Store)
+                                {
+                                    Rect labelRect = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, 20);
+                                    GUI.Label(new Rect(labelRect.x, labelRect.y, EditorGUIUtility.labelWidth, 20), "App Store icons", EditorStyles.boldLabel);
                                 }
                             }
 
@@ -739,7 +744,7 @@ namespace UnityEditor
                         if (GUI.changed)
                         {
                             Undo.RecordObject(this.target, Styles.undoChangedIconString);
-                            PlayerSettings.SetIconsForPlatform(platformName, icons, kinds);
+                            PlayerSettings.SetIconsForPlatform(platformName, icons);
                         }
                         GUI.enabled = enabled;
 
