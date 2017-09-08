@@ -53,8 +53,10 @@ namespace UnityEditor.U2D
             public readonly GUIContent bindAsDefaultLabel = EditorGUIUtility.TextContent("Include in Build|Packed textures will be included in the build by default.");
             public readonly GUIContent enableRotationLabel = EditorGUIUtility.TextContent("Allow Rotation|Try rotating the sprite to fit better during packing.");
             public readonly GUIContent enableTightPackingLabel = EditorGUIUtility.TextContent("Tight Packing|Use the mesh outline to fit instead of the whole texture rect during packing.");
+            public readonly GUIContent paddingLabel = EditorGUIUtility.TextContent("Padding|The amount of extra padding between packed sprites.");
 
             public readonly GUIContent generateMipMapLabel = EditorGUIUtility.TextContent("Generate Mip Maps");
+            public readonly GUIContent sRGBLabel = EditorGUIUtility.TextContent("sRGB|Texture content is stored in gamma space.");
             public readonly GUIContent readWrite = EditorGUIUtility.TextContent("Read/Write Enabled|Enable to be able to access the raw pixel data from code.");
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TextContent("Scale|Down scale ratio.");
             public readonly GUIContent copyMasterButton = EditorGUIUtility.TextContent("Copy Master's Settings|Copy all master's settings into this variant.");
@@ -77,10 +79,17 @@ namespace UnityEditor.U2D
                 EditorGUIUtility.TextContent("Variant"),
             };
 
+            public readonly int[] paddingValues = { 2, 4, 8 };
+            public readonly GUIContent[] paddingOptions;
+
             public Styles()
             {
                 dropzoneStyle.alignment = TextAnchor.MiddleCenter;
                 dropzoneStyle.border = new RectOffset(10, 10, 10, 10);
+
+                paddingOptions = new GUIContent[paddingValues.Length];
+                for (var i = 0; i < paddingValues.Length; ++i)
+                    paddingOptions[i] = EditorGUIUtility.TextContent(paddingValues[i].ToString());
             }
         }
 
@@ -98,8 +107,10 @@ namespace UnityEditor.U2D
         private SerializedProperty m_AnisoLevel;
         private SerializedProperty m_GenerateMipMaps;
         private SerializedProperty m_Readable;
+        private SerializedProperty m_UseSRGB;
         private SerializedProperty m_EnableTightPacking;
         private SerializedProperty m_EnableRotation;
+        private SerializedProperty m_Padding;
         private SerializedProperty m_BindAsDefault;
         private SerializedProperty m_Packables;
 
@@ -171,9 +182,11 @@ namespace UnityEditor.U2D
             m_AnisoLevel = serializedObject.FindProperty("m_EditorData.textureSettings.anisoLevel");
             m_GenerateMipMaps = serializedObject.FindProperty("m_EditorData.textureSettings.generateMipMaps");
             m_Readable = serializedObject.FindProperty("m_EditorData.textureSettings.readable");
+            m_UseSRGB = serializedObject.FindProperty("m_EditorData.textureSettings.sRGB");
 
             m_EnableTightPacking = serializedObject.FindProperty("m_EditorData.packingParameters.enableTightPacking");
             m_EnableRotation = serializedObject.FindProperty("m_EditorData.packingParameters.enableRotation");
+            m_Padding = serializedObject.FindProperty("m_EditorData.packingParameters.padding");
 
             m_Hash = serializedObject.FindProperty("m_EditorData.hashString").stringValue;
             m_MasterAtlas = serializedObject.FindProperty("m_MasterAtlas");
@@ -389,6 +402,7 @@ namespace UnityEditor.U2D
 
             HandleBoolToIntPropertyField(m_EnableRotation, s_Styles.enableRotationLabel);
             HandleBoolToIntPropertyField(m_EnableTightPacking, s_Styles.enableTightPackingLabel);
+            EditorGUILayout.IntPopup(m_Padding, s_Styles.paddingOptions, s_Styles.paddingValues, s_Styles.paddingLabel);
 
             GUILayout.Space(EditorGUI.kSpacing);
         }
@@ -399,6 +413,7 @@ namespace UnityEditor.U2D
 
             HandleBoolToIntPropertyField(m_Readable, s_Styles.readWrite);
             HandleBoolToIntPropertyField(m_GenerateMipMaps, s_Styles.generateMipMapLabel);
+            HandleBoolToIntPropertyField(m_UseSRGB, s_Styles.sRGBLabel);
             EditorGUILayout.PropertyField(m_FilterMode);
 
             var showAniso = !m_FilterMode.hasMultipleDifferentValues && !m_GenerateMipMaps.hasMultipleDifferentValues

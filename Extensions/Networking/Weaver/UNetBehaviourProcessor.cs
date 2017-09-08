@@ -428,6 +428,7 @@ namespace Unity.UNetWeaver
                     awakeWorker.Append(awakeWorker.Create(OpCodes.Call, awake));
                     return;
                 }
+                t = t.Resolve().BaseType;
             }
         }
 
