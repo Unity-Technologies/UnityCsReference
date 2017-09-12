@@ -1128,6 +1128,11 @@ namespace UnityEditor.IMGUI.Controls
 
         void EnsureRowIsVisible(int row, bool animated)
         {
+            // We don't want to change the scroll to make the row visible,
+            // if it's disabled: Causes content to be moved/rendered out of bounds.
+            if (!m_UseScrollView)
+                return;
+
             if (row >= 0)
             {
                 // Adjusting for when the horizontal scrollbar is being shown. Before the TreeView has repainted

@@ -338,7 +338,6 @@ namespace UnityEditor
             if (m_Controller != null)
             {
                 m_Controller.SanitizeGroupViews();
-                m_Controller.OnSubAssetChanged();
             }
         }
 
@@ -407,9 +406,12 @@ namespace UnityEditor
         public void DuplicateGroups(List<AudioMixerGroupController> groups, bool recordUndo)
         {
             if (recordUndo)
+            {
                 Undo.RecordObject(m_Controller, "Duplicate group" + PluralIfNeeded(groups.Count));
+                Undo.RecordObject(m_Controller.masterGroup, "");
+            }
 
-            var duplicatedRoots = m_Controller.DuplicateGroups(groups.ToArray());
+            var duplicatedRoots = m_Controller.DuplicateGroups(groups.ToArray(), recordUndo);
             if (duplicatedRoots.Count > 0)
             {
                 ReloadTree();

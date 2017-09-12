@@ -1363,21 +1363,6 @@ namespace UnityEditor
                 s_LastInteractedProjectBrowser = null;
         }
 
-        static List<string> GetMainPaths(List<int> instanceIDs)
-        {
-            List<string> paths = new List<string>();
-            foreach (int instanceID in instanceIDs)
-            {
-                if (AssetDatabase.IsMainAsset(instanceID))
-                {
-                    string path = AssetDatabase.GetAssetPath(instanceID);
-                    paths.Add(path);
-                }
-            }
-
-            return paths;
-        }
-
         // Returns list of duplicated instanceIDs
         static internal int[] DuplicateFolders(int[] instanceIDs)
         {
@@ -2550,7 +2535,7 @@ namespace UnityEditor
 
         // FIXME: The validation logic is duplicated on the C++ side in CanDeleteSelectedAssets
         // Keep these in sync for now
-        static internal void DeleteSelectedAssets(bool askIfSure)
+        internal static void DeleteSelectedAssets(bool askIfSure)
         {
             int[] treeViewSelection = GetTreeViewFolderSelection();
 
@@ -2563,49 +2548,10 @@ namespace UnityEditor
             if (instanceIDs.Count == 0)
                 return;
 
-            bool foundAssetsFolder = instanceIDs.IndexOf(ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID()) >= 0;
-            if (foundAssetsFolder)
-            {
-                string title = "Cannot Delete";
-                EditorUtility.DisplayDialog(title, "Deleting the 'Assets' folder is not allowed", "Ok");
-            }
-            else
-            {
-                List<string> paths = GetMainPaths(instanceIDs);
+            ProjectWindowUtil.DeleteAssets(instanceIDs, askIfSure);
 
-                if (paths.Count == 0)
-                    return;
-
-                if (askIfSure)
-                {
-                    string title = "Delete selected asset";
-                    if (paths.Count > 1)
-                        title = title + "s";
-                    title = title + "?";
-
-                    int maxCount = 3;
-                    string infotext = "";
-                    for (int i = 0; i < paths.Count && i < maxCount; ++i)
-                        infotext += "   " + paths[i] + "\n";
-                    if (paths.Count > maxCount)
-                        infotext += "   ...\n";
-                    infotext += "\nYou cannot undo this action.";
-                    if (!EditorUtility.DisplayDialog(title, infotext, "Delete", "Cancel"))
-                    {
-                        return;
-                    }
-                }
-
-                AssetDatabase.StartAssetEditing();
-                foreach (string path in paths)
-                {
-                    AssetDatabase.MoveAssetToTrash(path);
-                }
-                AssetDatabase.StopAssetEditing();
-
-                // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
-                Selection.instanceIDs = new int[0];
-            }
+            // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
+            Selection.instanceIDs = new int[0];
         }
 
         internal IHierarchyProperty GetHierarchyPropertyUsingFilter(string textFilter)

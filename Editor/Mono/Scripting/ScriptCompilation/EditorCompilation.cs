@@ -27,6 +27,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CompilationComplete
         }
 
+        public enum DeleteFileOptions
+        {
+            NoLogError = 0,
+            LogError = 1,
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct TargetAssemblyInfo
         {
@@ -67,6 +73,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static EditorCompilation()
         {
+        }
+
+        public EditorCompilation()
+        {
+            SetAllCustomScriptAssemblyJsons(new string[0]);
         }
 
         internal string GetAssemblyTimestampPath(string editorAssemblyPath)
@@ -354,10 +365,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     deleteFiles.Remove(PDBPath(path));
                 }
             }
+
             foreach (var path in deleteFiles)
-            {
-                File.Delete(path);
-            }
+                DeleteFile(path);
         }
 
         public void CleanScriptAssemblies()
@@ -368,7 +378,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
 
             foreach (var path in Directory.GetFiles(fullEditorAssemblyPath))
+                DeleteFile(path);
+        }
+
+        static void DeleteFile(string path, DeleteFileOptions fileOptions = DeleteFileOptions.LogError)
+        {
+            try
+            {
                 File.Delete(path);
+            }
+            catch (Exception)
+            {
+                if (fileOptions == DeleteFileOptions.LogError)
+                    UnityEngine.Debug.LogErrorFormat("Could not delete file '{0}'\n", path);
+            }
         }
 
         static bool MoveOrReplaceFile(string sourcePath, string destinationPath)
@@ -385,14 +408,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!fileMoved)
             {
                 fileMoved = true;
+                var backupFile = destinationPath + ".bak";
+                DeleteFile(backupFile, DeleteFileOptions.NoLogError); // Delete any previous backup files.
+
                 try
                 {
-                    File.Replace(sourcePath, destinationPath, null);
+                    File.Replace(sourcePath, destinationPath, backupFile, true);
                 }
                 catch (IOException)
                 {
                     fileMoved = false;
                 }
+
+                // Try to delete backup file. Does not need to exist
+                // We will eventually delete the file in DeleteUnusedAssemblies.
+                DeleteFile(backupFile, DeleteFileOptions.NoLogError);
             }
             return fileMoved;
         }
@@ -418,7 +448,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (File.Exists(sourceMdb))
                 MoveOrReplaceFile(sourceMdb, destinationMdb);
             else if (File.Exists(destinationMdb))
-                File.Delete(destinationMdb);
+                DeleteFile(destinationMdb);
 
             string sourcePdb = PDBPath(sourcePath);
             string destinationPdb = PDBPath(destinationPath);
@@ -426,7 +456,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (File.Exists(sourcePdb))
                 MoveOrReplaceFile(sourcePdb, destinationPdb);
             else if (File.Exists(destinationPdb))
-                File.Delete(destinationPdb);
+                DeleteFile(destinationPdb);
 
             return true;
         }

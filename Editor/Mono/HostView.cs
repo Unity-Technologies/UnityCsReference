@@ -88,6 +88,8 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            ClearBackground();
+
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
             DoWindowDecorationStart();

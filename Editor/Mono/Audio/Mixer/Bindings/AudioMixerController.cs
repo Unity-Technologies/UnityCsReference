@@ -564,7 +564,7 @@ namespace UnityEditor.Audio
             return copiedEffect;
         }
 
-        private AudioMixerGroupController DuplicateGroupRecurse(AudioMixerGroupController sourceGroup)
+        private AudioMixerGroupController DuplicateGroupRecurse(AudioMixerGroupController sourceGroup, bool recordUndo)
         {
             var targetGroup = new AudioMixerGroupController(this);
 
@@ -578,7 +578,7 @@ namespace UnityEditor.Audio
             // Copy child groups
             var targetChildren = new List<AudioMixerGroupController>();
             foreach (var childGroup in sourceGroup.children)
-                targetChildren.Add(DuplicateGroupRecurse(childGroup));
+                targetChildren.Add(DuplicateGroupRecurse(childGroup, recordUndo));
 
             targetGroup.name = sourceGroup.name + " - Copy";
             targetGroup.PreallocateGUIDs();
@@ -595,7 +595,11 @@ namespace UnityEditor.Audio
                 if (s.GetValue(sourceGroup.GetGUIDForPitch(), out value))
                     s.SetValue(targetGroup.GetGUIDForPitch(), value);
             }
+
             AssetDatabase.AddObjectToAsset(targetGroup, this);
+
+            if (recordUndo)
+                Undo.RegisterCreatedObjectUndo(targetGroup, targetGroup.name);
 
             // Add to view if source is shown (so it's visible in the channelstrip)
             if (CurrentViewContainsGroup(sourceGroup.groupID))
@@ -605,7 +609,7 @@ namespace UnityEditor.Audio
         }
 
         // Returns duplicated root groups (traverse group.children to get all groups duplicated)
-        public List<AudioMixerGroupController> DuplicateGroups(AudioMixerGroupController[] sourceGroups)
+        public List<AudioMixerGroupController> DuplicateGroups(AudioMixerGroupController[] sourceGroups, bool recordUndo)
         {
             List<AudioMixerGroupController> filteredGroups = sourceGroups.ToList();
             RemoveAncestorGroups(filteredGroups);
@@ -617,7 +621,7 @@ namespace UnityEditor.Audio
                 AudioMixerGroupController parent = FindParentGroup(masterGroup, source);
                 if (parent != null && source != null)
                 {
-                    AudioMixerGroupController copy = DuplicateGroupRecurse(source);
+                    AudioMixerGroupController copy = DuplicateGroupRecurse(source, recordUndo);
 
                     var modifiedChildList = new List<AudioMixerGroupController>(parent.children);
                     modifiedChildList.Add(copy);

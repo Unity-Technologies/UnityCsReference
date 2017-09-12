@@ -852,7 +852,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildButton;
             if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
+                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer | BuildOptions.StrictMode);
                 GUIUtility.ExitGUI();
             }
             // Build and Run button

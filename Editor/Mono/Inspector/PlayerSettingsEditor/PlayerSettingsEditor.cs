@@ -1608,11 +1608,12 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.PSM ||
                 targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WSA)
+                targetGroup == BuildTargetGroup.WSA ||
+                targetGroup == BuildTargetGroup.Switch)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_SkinOnGPU,
-                    targetGroup != BuildTargetGroup.PS4 ? Styles.skinOnGPU : Styles.skinOnGPUPS4);
+                    targetGroup != BuildTargetGroup.PS4 && targetGroup != BuildTargetGroup.Switch ? Styles.skinOnGPU : Styles.skinOnGPUPS4);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();

@@ -10,7 +10,7 @@ namespace UnityEditorInternal
 {
     internal class TileUtility
     {
-        [MenuItem("Assets/Create/Tile")]
+        [MenuItem("Assets/Create/Tile", priority = 357)]
         public static void CreateNewTile()
         {
             string message = string.Format("Save tile'{0}':", "tile");

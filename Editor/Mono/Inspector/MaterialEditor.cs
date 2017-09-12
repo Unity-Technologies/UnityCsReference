@@ -961,6 +961,11 @@ namespace UnityEditor
                 GUI.backgroundColor = overrideColor;
         }
 
+        public void BeginAnimatedCheck(MaterialProperty prop)
+        {
+            BeginAnimatedCheck(Rect.zero, prop);
+        }
+
         public void EndAnimatedCheck()
         {
             if (m_RendererForAnimationMode == null)
