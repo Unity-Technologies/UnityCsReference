@@ -207,7 +207,7 @@ namespace UnityEditor
             var so = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
             m_EnableRealtimeGI = so.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
             m_EnableBakedGI = so.FindProperty("m_GISettings.m_EnableBakedLightmaps");
-            m_PathTracerBackend = (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer);
+            m_PathTracerBackend = (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer);
         }
 
         public override void OnGUI(Rect rect)

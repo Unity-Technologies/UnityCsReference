@@ -106,5 +106,76 @@ namespace UnityEditor
             get { return realtimeResolution; }
             set { realtimeResolution = value; }
         }
+        [System.Obsolete("GIBakeBackend has been renamed to Lightmapper. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper", false)]
+        public enum GIBakeBackend
+        {
+            Radiosity = 0,
+            PathTracer = 1
+        }
+        [System.Obsolete("The giBakeBackend property has been renamed to lightmapper. (UnityUpgradable) -> lightmapper", false)]
+        public static GIBakeBackend giBakeBackend
+        {
+            get
+            {
+                if (lightmapper == Lightmapper.PathTracer)
+                    return GIBakeBackend.PathTracer;
+                else
+                    return GIBakeBackend.Radiosity;
+            }
+            set
+            {
+                if (value == GIBakeBackend.PathTracer)
+                    lightmapper = Lightmapper.PathTracer;
+                else
+                    lightmapper = Lightmapper.Radiosity;
+            }
+        }
+        [System.Obsolete("PathTracerSampling has been renamed to Sampling. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Sampling", false)]
+        public enum PathTracerSampling
+        {
+            Auto = 0,
+            Fixed = 1
+        }
+        [System.Obsolete("The giPathTracerSampling property has been renamed to sampling. (UnityUpgradable) -> sampling", false)]
+        public static PathTracerSampling giPathTracerSampling
+        {
+            get
+            {
+                if (sampling == Sampling.Auto)
+                    return PathTracerSampling.Auto;
+                else
+                    return PathTracerSampling.Fixed;
+            }
+            set
+            {
+                if (value == PathTracerSampling.Auto)
+                    sampling = Sampling.Auto;
+                else
+                    sampling = Sampling.Fixed;
+            }
+        }
+        [System.Obsolete("PathTracerFilter has been renamed to FilterType. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/FilterType", false)]
+        public enum PathTracerFilter
+        {
+            Gaussian = 0,
+            ATrous = 1
+        }
+        [System.Obsolete("The giPathTracerFilter property has been deprecated. There are three independent properties to set individual filter types for direct, indirect and AO GI textures: filterTypeDirect, filterTypeIndirect and filterTypeAO.")]
+        public static PathTracerFilter giPathTracerFilter
+        {
+            get
+            {
+                if (LightmapEditorSettings.filterTypeDirect == FilterType.Gaussian)
+                    return PathTracerFilter.Gaussian;
+                else
+                    return PathTracerFilter.ATrous;
+            }
+            set
+            {
+                LightmapEditorSettings.filterTypeDirect = FilterType.Gaussian;
+                LightmapEditorSettings.filterTypeIndirect = FilterType.Gaussian;
+                LightmapEditorSettings.filterTypeAO = FilterType.Gaussian;
+            }
+        }
     }
 }

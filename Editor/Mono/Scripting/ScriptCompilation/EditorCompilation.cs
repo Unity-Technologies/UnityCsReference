@@ -25,6 +25,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             CompilationComplete
         }
 
+        public enum DeleteFileOptions
+        {
+            NoLogError = 0,
+            LogError = 1,
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct TargetAssemblyInfo
         {
@@ -106,6 +112,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public void SetAllPrecompiledAssemblies(PrecompiledAssembly[] precompiledAssemblies)
         {
             this.precompiledAssemblies = precompiledAssemblies;
+        }
+
+        public PrecompiledAssembly[] GetAllPrecompiledAssemblies()
+        {
+            return this.precompiledAssemblies;
         }
 
         static CustomScriptAssembly LoadCustomScriptAssemblyFromJson(string path)
@@ -222,10 +233,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     deleteFiles.Remove(PDBPath(path));
                 }
             }
+
             foreach (var path in deleteFiles)
-            {
-                File.Delete(path);
-            }
+                DeleteFile(path);
         }
 
         public void CleanScriptAssemblies()
@@ -236,7 +246,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
 
             foreach (var path in Directory.GetFiles(fullEditorAssemblyPath))
+                DeleteFile(path);
+        }
+
+        static void DeleteFile(string path, DeleteFileOptions fileOptions = DeleteFileOptions.LogError)
+        {
+            try
+            {
                 File.Delete(path);
+            }
+            catch (Exception)
+            {
+                if (fileOptions == DeleteFileOptions.LogError)
+                    UnityEngine.Debug.LogErrorFormat("Could not delete file '{0}'\n", path);
+            }
         }
 
         static bool MoveOrReplaceFile(string sourcePath, string destinationPath)
@@ -253,14 +276,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!fileMoved)
             {
                 fileMoved = true;
+                var backupFile = destinationPath + ".bak";
+                DeleteFile(backupFile, DeleteFileOptions.NoLogError); // Delete any previous backup files.
+
                 try
                 {
-                    File.Replace(sourcePath, destinationPath, null);
+                    File.Replace(sourcePath, destinationPath, backupFile, true);
                 }
                 catch (IOException)
                 {
                     fileMoved = false;
                 }
+
+                // Try to delete backup file. Does not need to exist
+                // We will eventually delete the file in DeleteUnusedAssemblies.
+                DeleteFile(backupFile, DeleteFileOptions.NoLogError);
             }
             return fileMoved;
         }
@@ -275,26 +305,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return dllPath + ".mdb";
         }
 
-        static void CopyAssembly(string sourcePath, string destinationPath)
+        static bool CopyAssembly(string sourcePath, string destinationPath)
         {
-            if (MoveOrReplaceFile(sourcePath, destinationPath))
-            {
-                string sourceMdb = MDBPath(sourcePath);
-                string destinationMdb = MDBPath(destinationPath);
+            if (!MoveOrReplaceFile(sourcePath, destinationPath))
+                return false;
 
-                if (File.Exists(sourceMdb))
-                    MoveOrReplaceFile(sourceMdb, destinationMdb);
-                else if (File.Exists(destinationMdb))
-                    File.Delete(destinationMdb);
+            string sourceMdb = MDBPath(sourcePath);
+            string destinationMdb = MDBPath(destinationPath);
 
-                string sourcePdb = PDBPath(sourcePath);
-                string destinationPdb = PDBPath(destinationPath);
+            if (File.Exists(sourceMdb))
+                MoveOrReplaceFile(sourceMdb, destinationMdb);
+            else if (File.Exists(destinationMdb))
+                DeleteFile(destinationMdb);
 
-                if (File.Exists(sourcePdb))
-                    MoveOrReplaceFile(sourcePdb, destinationPdb);
-                else if (File.Exists(destinationPdb))
-                    File.Delete(destinationPdb);
-            }
+            string sourcePdb = PDBPath(sourcePath);
+            string destinationPdb = PDBPath(destinationPath);
+
+            if (File.Exists(sourcePdb))
+                MoveOrReplaceFile(sourcePdb, destinationPdb);
+            else if (File.Exists(destinationPdb))
+                DeleteFile(destinationPdb);
+
+            return true;
         }
 
         internal CustomScriptAssembly FindCustomScriptAssembly(string scriptPath)
@@ -413,7 +445,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
 
                     // Copy from tempBuildDirectory to assembly output directory
-                    CopyAssembly(Path.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath);
+                    var sourcePath = Path.Combine(tempBuildDirectory, assembly.Filename);
+                    if (!CopyAssembly(sourcePath, assembly.FullPath))
+                    {
+                        UnityEngine.Debug.LogErrorFormat("Could not copy assembly from '{0}' to '{1}'", sourcePath, assembly.FullPath);
+                    }
                 };
 
             compilationTask.Poll();

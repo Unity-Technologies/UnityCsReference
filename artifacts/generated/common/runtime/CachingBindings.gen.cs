@@ -80,6 +80,10 @@ public partial struct Cache
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  bool ClearCacheInternal (int handle) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool ClearCacheExpirationInternal (int handle, int expiration) ;
+
 }
 
 public sealed partial class Caching
@@ -87,6 +91,16 @@ public sealed partial class Caching
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool ClearCache () ;
+
+    public static bool ClearCache(int expiration)
+        {
+            return ClearCacheExpiration(expiration);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  bool ClearCacheExpiration (int expiration) ;
 
     [System.Obsolete ("This function is obsolete and will always return -1. Use IsVersionCached instead.")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

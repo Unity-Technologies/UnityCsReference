@@ -139,7 +139,7 @@ namespace UnityEditor
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();
-            if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
             {
                 EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
                 serializedObject.ApplyModifiedProperties();
@@ -147,7 +147,7 @@ namespace UnityEditor
             }
             else
             {
-                using (new EditorGUI.DisabledScope(LightmapEditorSettings.giBakeBackend != LightmapEditorSettings.GIBakeBackend.PathTracer))
+                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.PathTracer))
                     EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
             }
             return false;

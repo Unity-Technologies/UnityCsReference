@@ -50,6 +50,7 @@ namespace UnityEngine
         public bool ready { get { return IsReadyInternal(m_Handle); } }
 
         public bool ClearCache() { return ClearCacheInternal(m_Handle); }
+        public bool ClearCache(int expiration) { return ClearCacheExpirationInternal(m_Handle, expiration); }
 
         public static bool operator==(Cache lhs, Cache rhs) { return lhs.handle == rhs.handle; }
         public static bool operator!=(Cache lhs, Cache rhs) { return lhs.handle != rhs.handle; }

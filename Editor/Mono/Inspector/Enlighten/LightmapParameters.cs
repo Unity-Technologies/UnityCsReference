@@ -65,7 +65,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_SystemTag, Styles.systemTagContent);
             EditorGUILayout.Space();
 
-            bool usesPathTracerBakeBackend = LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer;
+            bool usesPathTracerBakeBackend = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer;
 
             GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
             using (new EditorGUI.DisabledScope(usesPathTracerBakeBackend))
