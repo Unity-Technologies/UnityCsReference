@@ -57,9 +57,15 @@ namespace UnityEditor
         SerializedProperty m_PVRBounces;
         SerializedProperty m_PVRCulling;
         SerializedProperty m_PVRFilteringMode;
+        SerializedProperty m_PVRFilterTypeDirect;
+        SerializedProperty m_PVRFilterTypeIndirect;
+        SerializedProperty m_PVRFilterTypeAO;
         SerializedProperty m_PVRFilteringGaussRadiusDirect;
         SerializedProperty m_PVRFilteringGaussRadiusIndirect;
         SerializedProperty m_PVRFilteringGaussRadiusAO;
+        SerializedProperty m_PVRFilteringAtrousPositionSigmaDirect;
+        SerializedProperty m_PVRFilteringAtrousPositionSigmaIndirect;
+        SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
 
         SerializedProperty  m_BounceScale;
         SerializedProperty  m_UpdateThreshold;
@@ -105,9 +111,16 @@ namespace UnityEditor
             m_PVRBounces = so.FindProperty("m_LightmapEditorSettings.m_PVRBounces");
             m_PVRCulling = so.FindProperty("m_LightmapEditorSettings.m_PVRCulling");
             m_PVRFilteringMode = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringMode");
+            m_PVRFilterTypeDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeDirect");
+            m_PVRFilterTypeIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeIndirect");
+            m_PVRFilterTypeAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilterTypeAO");
             m_PVRFilteringGaussRadiusDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusDirect");
             m_PVRFilteringGaussRadiusIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusIndirect");
             m_PVRFilteringGaussRadiusAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringGaussRadiusAO");
+            m_PVRFilteringAtrousPositionSigmaDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaDirect");
+            m_PVRFilteringAtrousPositionSigmaIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaIndirect");
+            m_PVRFilteringAtrousPositionSigmaAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaAO");
+
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
@@ -142,6 +155,31 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(resolution, label);
 
             GUILayout.Label(" texels per unit", Styles.LabelStyle);
+            GUILayout.EndHorizontal();
+        }
+
+        static void DrawFilterSettingField(SerializedProperty gaussSetting,
+            SerializedProperty atrousSetting,
+            GUIContent gaussLabel,
+            GUIContent atrousLabel,
+            LightmapEditorSettings.FilterType type)
+        {
+            if (type == LightmapEditorSettings.FilterType.None)
+                return;
+
+            GUILayout.BeginHorizontal();
+
+            if (type == LightmapEditorSettings.FilterType.Gaussian)
+            {
+                EditorGUILayout.IntSlider(gaussSetting, 0, 5, gaussLabel);
+                GUILayout.Label(" texels", Styles.LabelStyle);
+            }
+            else if (type == LightmapEditorSettings.FilterType.ATrous)
+            {
+                EditorGUILayout.Slider(atrousSetting, 0.0f, 2.0f, atrousLabel);
+                GUILayout.Label(" sigma", Styles.LabelStyle);
+            }
+
             GUILayout.EndHorizontal();
         }
 
@@ -240,7 +278,7 @@ namespace UnityEditor
                     m_LightModeUtil.GetModes(out realtimeMode, out mixedMode);
                     int newMixedMode = EditorGUILayout.IntPopup(Styles.MixedLightMode, mixedMode, Styles.MixedModeStrings, Styles.MixedModeValues);
 
-                    if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer && newMixedMode != 0)
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer && newMixedMode != 0)
                         EditorGUILayout.HelpBox(Styles.NoShadowMaskInProgressive.text, MessageType.Warning);
 
                     if (LightModeUtil.Get().AreBakedLightmapsEnabled())
@@ -311,7 +349,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
                         if (EditorGUI.EndChangeCheck())
                             InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
-                        if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer)
+                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
                         {
                             EditorGUI.indentLevel++;
 
@@ -320,7 +358,7 @@ namespace UnityEditor
                             // Sampling type
                             //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
 
-                            if (LightmapEditorSettings.giPathTracerSampling != LightmapEditorSettings.PathTracerSampling.Auto)
+                            if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
                             {
                                 // Update those constants also in LightmapBake.cpp UpdateSamples().
                                 const int kMinSamples = 10;
@@ -350,27 +388,31 @@ namespace UnityEditor
                             // Filtering
                             EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.PVRFilteringMode);
 
-                            if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.PathTracerFilterMode.Advanced)
+                            if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
                             {
                                 EditorGUI.indentLevel++;
 
-                                // Configures the direct kernel width
-                                GUILayout.BeginHorizontal();
-                                EditorGUILayout.IntSlider(m_PVRFilteringGaussRadiusDirect, 0, 5, Styles.PVRFilteringGaussRadiusDirect);
-                                GUILayout.Label(" texels", Styles.LabelStyle);
-                                GUILayout.EndHorizontal();
+                                EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
+                                DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect, m_PVRFilteringAtrousPositionSigmaDirect,
+                                    Styles.PVRFilteringGaussRadiusDirect, Styles.PVRFilteringAtrousPositionSigmaDirect,
+                                    LightmapEditorSettings.filterTypeDirect);
 
-                                // Configures the indirect kernel width
-                                GUILayout.BeginHorizontal();
-                                EditorGUILayout.IntSlider(m_PVRFilteringGaussRadiusIndirect, 0, 5, Styles.PVRFilteringGaussRadiusIndirect);
-                                GUILayout.Label(" texels", Styles.LabelStyle);
-                                GUILayout.EndHorizontal();
+                                EditorGUILayout.Space();
 
-                                // Configures the AO kernel width
-                                GUILayout.BeginHorizontal();
-                                EditorGUILayout.IntSlider(m_PVRFilteringGaussRadiusAO, 0, 5, Styles.PVRFilteringGaussRadiusAO);
-                                GUILayout.Label(" texels", Styles.LabelStyle);
-                                GUILayout.EndHorizontal();
+                                EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
+                                DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect, m_PVRFilteringAtrousPositionSigmaIndirect,
+                                    Styles.PVRFilteringGaussRadiusIndirect, Styles.PVRFilteringAtrousPositionSigmaIndirect,
+                                    LightmapEditorSettings.filterTypeIndirect);
+
+                                using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
+                                {
+                                    EditorGUILayout.Space();
+
+                                    EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
+                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusAO, m_PVRFilteringAtrousPositionSigmaAO,
+                                        Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
+                                        LightmapEditorSettings.filterTypeAO);
+                                }
 
                                 EditorGUI.indentLevel--;
                             }
@@ -380,7 +422,7 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.PathTracer) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
+                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
                     {
                         DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                     }
@@ -410,7 +452,7 @@ namespace UnityEditor
                             EditorGUI.indentLevel--;
                         }
 
-                        if (LightmapEditorSettings.giBakeBackend == LightmapEditorSettings.GIBakeBackend.Radiosity)
+                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Radiosity)
                         {
                             EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
                             if (m_FinalGather.boolValue)
@@ -545,14 +587,17 @@ namespace UnityEditor
             public static readonly GUIContent PVRIndirectSampleCount = EditorGUIUtility.TextContent("Indirect Samples|Controls the number of samples the lightmapper will use for indirect lighting calculations. Increasing this value may improve the quality of lightmaps but increases the time required for baking to complete.");
             public static readonly GUIContent PVRBounces = EditorGUIUtility.TextContent("Bounces|Controls the maximum number of bounces the lightmapper will compute for indirect light.");
             public static readonly GUIContent PVRFilteringMode = EditorGUIUtility.TextContent("Filtering|Specifies the method used to reduce noise in baked lightmaps. Options are None, Automatic, or Advanced.");
-            public static readonly GUIContent PVRFiltering = EditorGUIUtility.TextContent("Filtering|Choose which filter kernel to apply to the lightmap.");
+            public static readonly GUIContent PVRFiltering = EditorGUIUtility.TextContent("Filtering|Specifies the filter kernel used to reduce the amount of noise in baked lightmaps.");
             public static readonly GUIContent PVRFilteringAdvanced = EditorGUIUtility.TextContent("Advanced Filter Settings|Show advanced settings to configure filtering on lightmaps.");
+            public static readonly GUIContent PVRFilterTypeDirect = EditorGUIUtility.TextContent("Direct Filter|Specifies the filter kernel applied to the direct light stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
+            public static readonly GUIContent PVRFilterTypeIndirect = EditorGUIUtility.TextContent("Indirect Filter|Specifies the filter kernel applied to the indirect light stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
+            public static readonly GUIContent PVRFilterTypeAO = EditorGUIUtility.TextContent("Ambient Occlusion Filter|Specifies the filter kernel applied to the ambient occlusion stored in the lightmap. Gaussian will blur the lightmap with some loss of detail. A-Trous will reduce noise based on a threshold while maintaining edge detail.");
             public static readonly GUIContent PVRFilteringGaussRadiusDirect = EditorGUIUtility.TextContent("Direct Radius|Controls the radius of the filter for direct light stored in the lightmap. A higher value will increase the strength of the blur, reducing noise from direct light in the lightmap.");
             public static readonly GUIContent PVRFilteringGaussRadiusIndirect = EditorGUIUtility.TextContent("Indirect Radius|Controls the radius of the filter for indirect light stored in the lightmap. A higher value will increase the strength of the blur, reducing noise from indirect light in the lightmap.");
             public static readonly GUIContent PVRFilteringGaussRadiusAO = EditorGUIUtility.TextContent("Ambient Occlusion Radius|The radius of the filter for ambient occlusion in the lightmap. A higher radius will increase the blur strength, reducing sampling noise from ambient occlusion in the lightmap.");
-            public static readonly GUIContent PVRFilteringAtrousColorSigma = EditorGUIUtility.TextContent("Color Sigma|How to weigh the color channel in the filter edge stopping condition.");
-            public static readonly GUIContent PVRFilteringAtrousNormalSigma = EditorGUIUtility.TextContent("Normal Sigma|How to weigh the normal channel in the filter edge stopping condition.");
-            public static readonly GUIContent PVRFilteringAtrousPositionSigma = EditorGUIUtility.TextContent("Position Sigma|How to weigh the position channel in the filter edge stopping condition.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaDirect = EditorGUIUtility.TextContent("Direct Sigma|Controls the threshold of the filter for direct light stored in the lightmap. A higher value will increase the threshold, reducing noise in the direct layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaIndirect = EditorGUIUtility.TextContent("Indirect Sigma|Controls the threshold of the filter for indirect light stored in the lightmap. A higher value will increase the threshold, reducing noise in the indirect layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
+            public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TextContent("Ambient Occlusion Sigma|Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value will increase the threshold, reducing noise in the ambient occlusion layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TextContent("Prioritize View|Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
         }
     }

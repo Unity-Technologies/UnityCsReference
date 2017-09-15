@@ -48,7 +48,7 @@ namespace UnityEditor
             public GUIContent audioOutputModeContent =
                 EditorGUIUtility.TextContent("Audio Output Mode|Where the audio in the movie will be output.");
             public GUIContent audioSourceContent =
-                EditorGUIUtility.TextContent("Audio Source|AudioSource component tha will receive this track's audio samples.");
+                EditorGUIUtility.TextContent("Audio Source|AudioSource component that will receive this track's audio samples.");
             public GUIContent aspectRatioLabel = EditorGUIUtility.TextContent("Aspect Ratio");
             public GUIContent muteLabel = EditorGUIUtility.TextContent("Mute");
             public GUIContent volumeLabel = EditorGUIUtility.TextContent("Volume");

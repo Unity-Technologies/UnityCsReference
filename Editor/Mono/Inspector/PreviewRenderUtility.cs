@@ -101,6 +101,12 @@ namespace UnityEditor
             Light1.color = new Color(.4f, .4f, .45f, 0f) * .7f;
         }
 
+        internal static void SetEnabledRecursive(GameObject go, bool enabled)
+        {
+            foreach (Renderer renderer in go.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+        }
+
         [Obsolete("Use the property camera instead (UnityUpgradable) -> camera", false)]
         public Camera m_Camera;
 

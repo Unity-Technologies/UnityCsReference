@@ -13,6 +13,7 @@ using System;
 using System.Reflection;
 using UnityEngineInternal;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
 
 namespace UnityEngine.Events
 {
@@ -49,10 +50,23 @@ namespace UnityEngine.Events
             return new InvokableCall(action);
         }
 
-        private readonly object[] m_InvokeArray = new object[0];
+        private object[] m_InvokeArray = null;
         public void Invoke()
         {
-            Invoke(m_InvokeArray);
+            List<BaseInvokableCall> calls = PrepareInvoke();
+            for (var i = 0; i < calls.Count; i++)
+            {
+                var curCall = calls[i] as InvokableCall;
+                if (curCall != null)
+                    curCall.Invoke();
+                else
+                {
+                    if (m_InvokeArray == null)
+                        m_InvokeArray = new object[0];
+
+                    Invoke(m_InvokeArray);
+                }
+            }
         }
 
 
