@@ -265,6 +265,19 @@ public void WaitOnGPUFence(GPUFence fence, [uei.DefaultValue("SynchronisationSta
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_DispatchComputeIndirect (ComputeShader computeShader, int kernelIndex, ComputeBuffer indirectBuffer, uint argsOffset) ;
 
+    public void GenerateMips(RenderTexture rt)
+        {
+            if (rt == null)
+                throw new ArgumentNullException("rt");
+
+            Internal_GenerateMips(rt);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void Internal_GenerateMips (RenderTexture rt) ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void CopyCounterValue (ComputeBuffer src, ComputeBuffer dst, uint dstOffsetBytes) ;

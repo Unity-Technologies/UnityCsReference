@@ -561,8 +561,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             else
             {
                 Matrix4x4.TRS(frameTranslation, Quaternion.identity, frameScaling);
-                viewTransform.position = frameTranslation;
-                viewTransform.scale = frameScaling;
+
+                UpdateViewTransform(frameTranslation, frameScaling);
             }
 
             contentViewContainer.Dirty(ChangeType.Repaint);

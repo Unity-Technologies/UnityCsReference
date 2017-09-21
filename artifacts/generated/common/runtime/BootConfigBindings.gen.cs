@@ -37,6 +37,12 @@ internal sealed partial class BootConfigData
         }
     
     
+    public string Get(string key)
+        {
+            return Get(m_Ptr, key);
+        }
+    
+    
     static BootConfigData Wrap(IntPtr nativeHandle)
         {
             return new BootConfigData(nativeHandle);
@@ -58,6 +64,10 @@ internal sealed partial class BootConfigData
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void Set (IntPtr nativeHandle, string key, string val) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  string Get (IntPtr nativeHandle, string key) ;
 
 }
 

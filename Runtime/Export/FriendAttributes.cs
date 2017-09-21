@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 // needed for UnityEngine.Playables internal methods
 [assembly: InternalsVisibleTo("UnityEngine.AudioModule")]
 [assembly: InternalsVisibleTo("UnityEngine.AnimationModule")]
+[assembly: InternalsVisibleTo("UnityEngine.VideoModule")]
 
 // needed for Graphics.Internal_DrawTexture
 [assembly: InternalsVisibleTo("UnityEngine.IMGUIModule")]

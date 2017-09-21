@@ -168,6 +168,12 @@ public partial struct AnimatorStateInfo
     private int    m_Loop;
 }
 
+public enum DurationUnit
+{
+    Fixed,
+    Normalized
+}
+
 [RequiredByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct AnimatorTransitionInfo
@@ -188,6 +194,12 @@ public partial struct AnimatorTransitionInfo
     public int userNameHash               { get { return m_UserName; } }
     
     
+    public DurationUnit durationUnit      { get { return m_HasFixedDuration ? DurationUnit.Fixed : DurationUnit.Normalized; } }
+    
+    
+    public float duration                 { get { return m_Duration; } }
+    
+    
     public float normalizedTime           { get { return m_NormalizedTime; } }
     
     
@@ -204,6 +216,8 @@ public partial struct AnimatorTransitionInfo
     private int   m_FullPath;
     private int   m_UserName;
     private int   m_Name;
+    private bool  m_HasFixedDuration;
+    private float m_Duration;
     private float m_NormalizedTime;
     private bool  m_AnyState;
     private int   m_TransitionType;
@@ -891,77 +905,109 @@ public void ForceStateNormalizedTime(float normalizedTime) { Play(0, 0, normaliz
     
     
     [uei.ExcludeFromDocs]
-public void CrossFadeInFixedTime (string stateName, float transitionDuration, int layer ) {
-    float fixedTime = 0.0f;
-    CrossFadeInFixedTime ( stateName, transitionDuration, layer, fixedTime );
+public void CrossFadeInFixedTime (string stateName, float fixedTransitionDuration, int layer , float fixedTimeOffset ) {
+    float normalizedTransitionTime = 0.0f;
+    CrossFadeInFixedTime ( stateName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
 }
 
 [uei.ExcludeFromDocs]
-public void CrossFadeInFixedTime (string stateName, float transitionDuration) {
-    float fixedTime = 0.0f;
-    int layer = -1;
-    CrossFadeInFixedTime ( stateName, transitionDuration, layer, fixedTime );
+public void CrossFadeInFixedTime (string stateName, float fixedTransitionDuration, int layer ) {
+    float normalizedTransitionTime = 0.0f;
+    float fixedTimeOffset = 0.0f;
+    CrossFadeInFixedTime ( stateName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
 }
 
-public void CrossFadeInFixedTime(string stateName, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTime )
+[uei.ExcludeFromDocs]
+public void CrossFadeInFixedTime (string stateName, float fixedTransitionDuration) {
+    float normalizedTransitionTime = 0.0f;
+    float fixedTimeOffset = 0.0f;
+    int layer = -1;
+    CrossFadeInFixedTime ( stateName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
+}
+
+public void CrossFadeInFixedTime(string stateName, float fixedTransitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTimeOffset , [uei.DefaultValue("0.0f")]  float normalizedTransitionTime )
         {
-            CrossFadeInFixedTime(StringToHash(stateName), transitionDuration, layer, fixedTime);
+            CrossFadeInFixedTime(StringToHash(stateName), fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime);
         }
 
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CrossFadeInFixedTime (int stateNameHash, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTime ) ;
+    extern public void CrossFadeInFixedTime (int stateHashName, float fixedTransitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("0.0f")]  float fixedTimeOffset , [uei.DefaultValue("0.0f")]  float normalizedTransitionTime ) ;
 
     [uei.ExcludeFromDocs]
-    public void CrossFadeInFixedTime (int stateNameHash, float transitionDuration, int layer ) {
-        float fixedTime = 0.0f;
-        CrossFadeInFixedTime ( stateNameHash, transitionDuration, layer, fixedTime );
+    public void CrossFadeInFixedTime (int stateHashName, float fixedTransitionDuration, int layer , float fixedTimeOffset ) {
+        float normalizedTransitionTime = 0.0f;
+        CrossFadeInFixedTime ( stateHashName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
     }
 
     [uei.ExcludeFromDocs]
-    public void CrossFadeInFixedTime (int stateNameHash, float transitionDuration) {
-        float fixedTime = 0.0f;
+    public void CrossFadeInFixedTime (int stateHashName, float fixedTransitionDuration, int layer ) {
+        float normalizedTransitionTime = 0.0f;
+        float fixedTimeOffset = 0.0f;
+        CrossFadeInFixedTime ( stateHashName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void CrossFadeInFixedTime (int stateHashName, float fixedTransitionDuration) {
+        float normalizedTransitionTime = 0.0f;
+        float fixedTimeOffset = 0.0f;
         int layer = -1;
-        CrossFadeInFixedTime ( stateNameHash, transitionDuration, layer, fixedTime );
+        CrossFadeInFixedTime ( stateHashName, fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime );
     }
 
     [uei.ExcludeFromDocs]
-public void CrossFade (string stateName, float transitionDuration, int layer ) {
-    float normalizedTime = float.NegativeInfinity;
-    CrossFade ( stateName, transitionDuration, layer, normalizedTime );
+public void CrossFade (string stateName, float normalizedTransitionDuration, int layer , float normalizedTimeOffset ) {
+    float normalizedTransitionTime = 0.0f;
+    CrossFade ( stateName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
 }
 
 [uei.ExcludeFromDocs]
-public void CrossFade (string stateName, float transitionDuration) {
-    float normalizedTime = float.NegativeInfinity;
-    int layer = -1;
-    CrossFade ( stateName, transitionDuration, layer, normalizedTime );
+public void CrossFade (string stateName, float normalizedTransitionDuration, int layer ) {
+    float normalizedTransitionTime = 0.0f;
+    float normalizedTimeOffset = float.NegativeInfinity;
+    CrossFade ( stateName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
 }
 
-public void CrossFade(string stateName, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime )
+[uei.ExcludeFromDocs]
+public void CrossFade (string stateName, float normalizedTransitionDuration) {
+    float normalizedTransitionTime = 0.0f;
+    float normalizedTimeOffset = float.NegativeInfinity;
+    int layer = -1;
+    CrossFade ( stateName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
+}
+
+public void CrossFade(string stateName, float normalizedTransitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTimeOffset , [uei.DefaultValue("0.0f")]  float normalizedTransitionTime )
         {
-            CrossFade(StringToHash(stateName), transitionDuration, layer, normalizedTime);
+            CrossFade(StringToHash(stateName), normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime);
         }
 
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CrossFade (int stateNameHash, float transitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTime ) ;
+    extern public void CrossFade (int stateHashName, float normalizedTransitionDuration, [uei.DefaultValue("-1")]  int layer , [uei.DefaultValue("float.NegativeInfinity")]  float normalizedTimeOffset , [uei.DefaultValue("0.0f")]  float normalizedTransitionTime ) ;
 
     [uei.ExcludeFromDocs]
-    public void CrossFade (int stateNameHash, float transitionDuration, int layer ) {
-        float normalizedTime = float.NegativeInfinity;
-        CrossFade ( stateNameHash, transitionDuration, layer, normalizedTime );
+    public void CrossFade (int stateHashName, float normalizedTransitionDuration, int layer , float normalizedTimeOffset ) {
+        float normalizedTransitionTime = 0.0f;
+        CrossFade ( stateHashName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
     }
 
     [uei.ExcludeFromDocs]
-    public void CrossFade (int stateNameHash, float transitionDuration) {
-        float normalizedTime = float.NegativeInfinity;
+    public void CrossFade (int stateHashName, float normalizedTransitionDuration, int layer ) {
+        float normalizedTransitionTime = 0.0f;
+        float normalizedTimeOffset = float.NegativeInfinity;
+        CrossFade ( stateHashName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
+    }
+
+    [uei.ExcludeFromDocs]
+    public void CrossFade (int stateHashName, float normalizedTransitionDuration) {
+        float normalizedTransitionTime = 0.0f;
+        float normalizedTimeOffset = float.NegativeInfinity;
         int layer = -1;
-        CrossFade ( stateNameHash, transitionDuration, layer, normalizedTime );
+        CrossFade ( stateHashName, normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime );
     }
 
     [uei.ExcludeFromDocs]

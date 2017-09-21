@@ -117,6 +117,15 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+
+            string key = GetFullHierarchicalPersistenceKey();
+
+            OverwriteFromPersistedData(this, key);
+        }
+
         public override void OnStyleResolved(ICustomStyle style)
         {
             base.OnStyleResolved(style);

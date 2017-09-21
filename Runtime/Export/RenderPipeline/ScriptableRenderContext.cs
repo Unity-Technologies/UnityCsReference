@@ -25,23 +25,22 @@ namespace UnityEngine.Experimental.Rendering
             Submit_Internal();
         }
 
-        public void DrawRenderers(ref DrawRendererSettings settings)
+        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings)
         {
             CheckValid();
-            DrawRenderers_Internal(ref settings);
+            DrawRenderers_Internal(renderers, ref drawSettings, filterSettings);
         }
 
-        public void DrawRenderers(ref DrawRendererSettings settings, RenderStateBlock stateBlock)
+        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, RenderStateBlock stateBlock)
         {
             CheckValid();
-            DrawRenderersWithState_Internal(ref settings, stateBlock);
+            DrawRenderers_StateBlock_Internal(renderers, ref drawSettings, filterSettings, stateBlock);
         }
 
-        public void DrawRenderers(ref DrawRendererSettings settings, List<RenderStateMapping> stateMap)
+        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, List<RenderStateMapping> stateMap)
         {
             CheckValid();
-            Array array = ExtractArrayFromList(stateMap);
-            DrawRenderersWithStateMap_Internal(ref settings, array, stateMap.Count);
+            DrawRenderers_StateMap_Internal(renderers, ref drawSettings, filterSettings, NoAllocHelpers.ExtractArrayFromList(stateMap), stateMap.Count);
         }
 
         public void DrawShadows(ref DrawShadowsSettings settings)
@@ -52,6 +51,9 @@ namespace UnityEngine.Experimental.Rendering
 
         public void ExecuteCommandBuffer(CommandBuffer commandBuffer)
         {
+            if (commandBuffer == null)
+                throw new ArgumentNullException("commandBuffer");
+
             CheckValid();
             ExecuteCommandBuffer_Internal(commandBuffer);
         }

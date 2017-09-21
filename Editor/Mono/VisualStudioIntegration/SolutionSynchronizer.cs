@@ -110,7 +110,7 @@ namespace UnityEditor.VisualStudioIntegration
             if (extension == ".dll")
                 return true;
 
-            if (file.ToLower().EndsWith(".assembly.json"))
+            if (file.ToLower().EndsWith(".asmdef"))
                 return true;
 
             return IsSupportedExtension(extension);
@@ -300,6 +300,9 @@ namespace UnityEditor.VisualStudioIntegration
             foreach (string reference in references.Union(island._references))
             {
                 if (reference.EndsWith("/UnityEditor.dll") || reference.EndsWith("/UnityEngine.dll") || reference.EndsWith("\\UnityEditor.dll") || reference.EndsWith("\\UnityEngine.dll"))
+                    continue;
+
+                if (AssemblyHelper.IsUnityEngineModule(Path.GetFileNameWithoutExtension(reference)))
                     continue;
 
                 match = scriptReferenceExpression.Match(reference);

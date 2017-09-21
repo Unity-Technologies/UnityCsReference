@@ -51,6 +51,17 @@ namespace UnityEditor
         public BuildPlayerSceneTreeView(TreeViewState state) : base(state)
         {
             showBorder = true;
+            EditorBuildSettings.sceneListChanged += HandleExternalSceneListChange;
+        }
+
+        internal void UnsubscribeListChange()
+        {
+            EditorBuildSettings.sceneListChanged -= HandleExternalSceneListChange;
+        }
+
+        private void HandleExternalSceneListChange()
+        {
+            Reload();
         }
 
         protected override TreeViewItem BuildRoot()

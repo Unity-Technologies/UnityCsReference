@@ -503,6 +503,7 @@ namespace UnityEditor
             public GUIContent treeColorVar = EditorGUIUtility.TextContent("Color Variation|Amount of random shading applied to trees");
             public GUIContent treeRotation = EditorGUIUtility.TextContent("Random Tree Rotation|Enable?");
             public GUIContent massPlaceTrees = EditorGUIUtility.TextContent("Mass Place Trees|The Mass Place Trees button is a very useful way to create an overall covering of trees without painting over the whole landscape. Following a mass placement, you can still use painting to add or remove trees to create denser or sparser areas.");
+            public GUIContent treeLightmapStatic = EditorGUIUtility.TextContent("Tree Lightmap Static|The state of the Lightmap Static flag for the tree prefab root GameObject. The flag can be changed on the prefab. When disabled, this tree will not be visible to the lightmapper. When enabled, any child GameObjects which also have the static flag enabled, will be present in lightmap calculations. Regardless of the Static flag, each tree instance receives its own light probe and no lightmap texels.");
 
             // Details
             public GUIContent details = EditorGUIUtility.TextContent("Details");
@@ -1071,6 +1072,14 @@ namespace UnityEditor
                 TreePainter.randomRotation = EditorGUILayout.Toggle(styles.treeRotation, TreePainter.randomRotation);
             else
                 TreePainter.treeColorAdjustment = EditorGUILayout.Slider(styles.treeColorVar, TreePainter.treeColorAdjustment, 0, 1);
+
+            GameObject prefab = m_Terrain.terrainData.treePrototypes[TreePainter.selectedTree].m_Prefab;
+            StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);
+            bool lightmapStatic = (staticEditorFlags & StaticEditorFlags.LightmapStatic) != 0;
+            using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
+            {
+                lightmapStatic = EditorGUILayout.Toggle(styles.treeLightmapStatic, lightmapStatic);
+            }
         }
 
         public void ShowDetails()

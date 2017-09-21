@@ -55,6 +55,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<WheelEvent>(OnWheel);
         }
 
+        private IVisualElementScheduledItem m_OnTimerTicker;
         private void OnTimer(TimerState timerState)
         {
             var graphView = target as GraphView;
@@ -65,7 +66,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 graphView.elementPanel.keepPixelCacheOnWorldBoundChange = false;
 
             delayRepaintScheduled = false;
-            graphView.Unschedule(OnTimer);
         }
 
         void OnWheel(WheelEvent evt)
@@ -100,10 +100,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 graphView.elementPanel.keepPixelCacheOnWorldBoundChange = true;
 
-                if (delayRepaintScheduled)
-                    graphView.Unschedule(OnTimer);
+                if (m_OnTimerTicker == null)
+                {
+                    m_OnTimerTicker = graphView.schedule.Execute(OnTimer);
+                }
 
-                graphView.Schedule(OnTimer).StartingIn(500);
+                m_OnTimerTicker.ExecuteLater(500);
+
                 delayRepaintScheduled = true;
             }
 

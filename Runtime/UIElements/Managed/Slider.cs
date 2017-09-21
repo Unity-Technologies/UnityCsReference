@@ -17,8 +17,34 @@ namespace UnityEngine.Experimental.UIElements
 
         public VisualElement dragElement { get; private set; }
 
-        public float lowValue { get; set; }
-        public float highValue { get; set; }
+        private float m_LowValue;
+        public float lowValue
+        {
+            get { return m_LowValue; }
+            set
+            {
+                if (!Mathf.Approximately(m_LowValue, value))
+                {
+                    m_LowValue = value;
+                    ClampValue();
+                }
+            }
+        }
+
+        private float m_HighValue;
+        public float highValue
+        {
+            get { return m_HighValue; }
+            set
+            {
+                if (!Mathf.Approximately(m_HighValue, value))
+                {
+                    m_HighValue = value;
+                    ClampValue();
+                }
+            }
+        }
+
         public float range { get { return highValue - lowValue; } }
         public float pageSize { get; set; }
 
@@ -97,6 +123,12 @@ namespace UnityEngine.Experimental.UIElements
 
             clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             this.AddManipulator(clampedDragger);
+        }
+
+        private void ClampValue()
+        {
+            //the property setter takes care of this
+            value = value;
         }
 
         public override void OnPersistentDataReady()

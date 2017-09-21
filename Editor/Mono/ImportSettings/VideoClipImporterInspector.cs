@@ -828,7 +828,8 @@ namespace UnityEditor
 
         public override void OnPreviewSettings()
         {
-            EditorGUI.BeginDisabledGroup(Application.isPlaying || HasModified());
+            VideoClipImporter importer = (VideoClipImporter)target;
+            EditorGUI.BeginDisabledGroup(Application.isPlaying || HasModified() || importer.useLegacyImporter);
             m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, s_Styles.playIcons) != 0;
             EditorGUI.EndDisabledGroup();
         }

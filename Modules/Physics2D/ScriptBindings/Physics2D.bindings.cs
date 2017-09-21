@@ -13,9 +13,8 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 
 namespace UnityEngine
 {
-    [NativeHeader("Modules/Physics2D/Public/PhysicsManager2D.h")]
-    [NativeHeader("Modules/Physics2D/Physics2DSettings.h")]
-    [StaticAccessor("GetPhysicsManager2D()")]
+    [NativeHeader("Modules/Physics2D/PhysicsManager2D.h")]
+    [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
     public partial class Physics2D
     {
         #region Global Physics Settings
@@ -224,7 +223,7 @@ namespace UnityEngine
             return Distance_Internal(colliderA, colliderB);
         }
 
-        [StaticAccessor("GetPhysicsQuery2D()")]
+        [StaticAccessor("GetPhysicsQuery2D()", StaticAccessorType.Arrow)]
         [NativeMethod("Distance")]
         extern private static ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D colliderA, [NotNull][Writable] Collider2D colliderB);
 

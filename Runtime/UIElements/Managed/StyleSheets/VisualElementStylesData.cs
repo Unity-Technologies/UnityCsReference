@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     internal struct CustomProperty
     {
         public int specificity;
-        public StyleValueHandle handle;
+        public StyleValueHandle[] handles;
         public StyleSheet data;
     }
 
@@ -209,242 +209,242 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             rect.bottom = (int)bottom.GetSpecifiedValueOrDefault(rect.bottom);
         }
 
-        internal void ApplyRule(StyleSheet registry, int specificity, StyleRule rule, StylePropertyID[] propertyIDs, LoadResourceFunction loadResourceFunc)
+        internal void ApplyRule(StyleSheet registry, int specificity, StyleRule rule, StylePropertyID[] propertyIDs)
         {
             for (int i = 0; i < rule.properties.Length; i++)
             {
                 UnityEngine.StyleSheets.StyleProperty styleProperty = rule.properties[i];
                 StylePropertyID propertyID = propertyIDs[i];
-                // no support for multiple values
-                StyleValueHandle handle = styleProperty.values[0];
 
+                var handles = styleProperty.values;
                 switch (propertyID)
                 {
                     case StylePropertyID.AlignContent:
-                        registry.Apply<Align>(handle, specificity, ref alignContent);
+                        registry.Apply(handles, specificity, ref alignContent, StyleSheetApplicator.ApplyEnum<Align>);
                         break;
 
                     case StylePropertyID.AlignItems:
-                        registry.Apply<Align>(handle, specificity, ref alignItems);
+                        registry.Apply(handles, specificity, ref alignItems, StyleSheetApplicator.ApplyEnum<Align>);
                         break;
 
                     case StylePropertyID.AlignSelf:
-                        registry.Apply<Align>(handle, specificity, ref alignSelf);
+                        registry.Apply(handles, specificity, ref alignSelf, StyleSheetApplicator.ApplyEnum<Align>);
                         break;
 
                     case StylePropertyID.BackgroundImage:
-                        registry.Apply(handle, specificity, loadResourceFunc, ref backgroundImage);
+                        registry.Apply(handles, specificity, ref backgroundImage, StyleSheetApplicator.ApplyResource);
                         break;
 
                     case StylePropertyID.BorderLeft:
-                        registry.Apply(handle, specificity, ref borderLeft);
+                        registry.Apply(handles, specificity, ref borderLeft, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderTop:
-                        registry.Apply(handle, specificity, ref borderTop);
+                        registry.Apply(handles, specificity, ref borderTop, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderRight:
-                        registry.Apply(handle, specificity, ref borderRight);
+                        registry.Apply(handles, specificity, ref borderRight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderBottom:
-                        registry.Apply(handle, specificity, ref borderBottom);
+                        registry.Apply(handles, specificity, ref borderBottom, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.Flex:
-                        registry.Apply(handle, specificity, ref flex);
+                        registry.Apply(handles, specificity, ref flex, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.Font:
-                        registry.Apply(handle, specificity, loadResourceFunc, ref font);
+                        registry.Apply(handles, specificity, ref font, StyleSheetApplicator.ApplyResource);
                         break;
 
                     case StylePropertyID.FontSize:
-                        registry.Apply(handle, specificity, ref fontSize);
+                        registry.Apply(handles, specificity, ref fontSize, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.FontStyle:
-                        registry.Apply<FontStyle>(handle, specificity, ref fontStyle);
+                        registry.Apply(handles, specificity, ref fontStyle, StyleSheetApplicator.ApplyEnum<FontStyle>);
                         break;
 
                     case StylePropertyID.FlexDirection:
-                        registry.Apply<FlexDirection>(handle, specificity, ref flexDirection);
+                        registry.Apply(handles, specificity, ref flexDirection, StyleSheetApplicator.ApplyEnum<FlexDirection>);
                         break;
 
                     case StylePropertyID.FlexWrap:
-                        registry.Apply<Wrap>(handle, specificity, ref flexWrap);
+                        registry.Apply(handles, specificity, ref flexWrap, StyleSheetApplicator.ApplyEnum<Wrap>);
                         break;
 
                     case StylePropertyID.Height:
-                        registry.Apply(handle, specificity, ref height);
+                        registry.Apply(handles, specificity, ref height, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.JustifyContent:
-                        registry.Apply<Justify>(handle, specificity, ref justifyContent);
+                        registry.Apply(handles, specificity, ref justifyContent, StyleSheetApplicator.ApplyEnum<Justify>);
                         break;
 
                     case StylePropertyID.MarginLeft:
-                        registry.Apply(handle, specificity, ref marginLeft);
+                        registry.Apply(handles, specificity, ref marginLeft, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MarginTop:
-                        registry.Apply(handle, specificity, ref marginTop);
+                        registry.Apply(handles, specificity, ref marginTop, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MarginRight:
-                        registry.Apply(handle, specificity, ref marginRight);
+                        registry.Apply(handles, specificity, ref marginRight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MarginBottom:
-                        registry.Apply(handle, specificity, ref marginBottom);
+                        registry.Apply(handles, specificity, ref marginBottom, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MaxHeight:
-                        registry.Apply(handle, specificity, ref maxHeight);
+                        registry.Apply(handles, specificity, ref maxHeight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MaxWidth:
-                        registry.Apply(handle, specificity, ref maxWidth);
+                        registry.Apply(handles, specificity, ref maxWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MinHeight:
-                        registry.Apply(handle, specificity, ref minHeight);
+                        registry.Apply(handles, specificity, ref minHeight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.MinWidth:
-                        registry.Apply(handle, specificity, ref minWidth);
+                        registry.Apply(handles, specificity, ref minWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.Overflow:
-                        registry.Apply<Overflow>(handle, specificity, ref overflow);
+                        registry.Apply(handles, specificity, ref overflow, StyleSheetApplicator.ApplyEnum<Overflow>);
                         break;
 
                     case StylePropertyID.PaddingLeft:
-                        registry.Apply(handle, specificity, ref paddingLeft);
+                        registry.Apply(handles, specificity, ref paddingLeft, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PaddingTop:
-                        registry.Apply(handle, specificity, ref paddingTop);
+                        registry.Apply(handles, specificity, ref paddingTop, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PaddingRight:
-                        registry.Apply(handle, specificity, ref paddingRight);
+                        registry.Apply(handles, specificity, ref paddingRight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PaddingBottom:
-                        registry.Apply(handle, specificity, ref paddingBottom);
+                        registry.Apply(handles, specificity, ref paddingBottom, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PositionType:
-                        registry.Apply<PositionType>(handle, specificity, ref positionType);
+                        registry.Apply(handles, specificity, ref positionType, StyleSheetApplicator.ApplyEnum<PositionType>);
                         break;
 
                     case StylePropertyID.PositionTop:
-                        registry.Apply(handle, specificity, ref positionTop);
+                        registry.Apply(handles, specificity, ref positionTop, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PositionBottom:
-                        registry.Apply(handle, specificity, ref positionBottom);
+                        registry.Apply(handles, specificity, ref positionBottom, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PositionLeft:
-                        registry.Apply(handle, specificity, ref positionLeft);
+                        registry.Apply(handles, specificity, ref positionLeft, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.PositionRight:
-                        registry.Apply(handle, specificity, ref positionRight);
+                        registry.Apply(handles, specificity, ref positionRight, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.TextAlignment:
-                        registry.Apply<TextAnchor>(handle, specificity, ref textAlignment);
+                        registry.Apply(handles, specificity, ref textAlignment, StyleSheetApplicator.ApplyEnum<TextAnchor>);
                         break;
 
                     case StylePropertyID.TextClipping:
-                        registry.Apply<TextClipping>(handle, specificity, ref textClipping);
+                        registry.Apply(handles, specificity, ref textClipping, StyleSheetApplicator.ApplyEnum<TextClipping>);
                         break;
 
                     case StylePropertyID.TextColor:
-                        registry.Apply(handle, specificity, ref textColor);
+                        registry.Apply(handles, specificity, ref textColor, StyleSheetApplicator.ApplyColor);
                         break;
 
                     case StylePropertyID.Width:
-                        registry.Apply(handle, specificity, ref width);
+                        registry.Apply(handles, specificity, ref width, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.WordWrap:
-                        registry.Apply(handle, specificity, ref wordWrap);
+                        registry.Apply(handles, specificity, ref wordWrap, StyleSheetApplicator.ApplyBool);
                         break;
 
                     case StylePropertyID.BackgroundColor:
-                        registry.Apply(handle, specificity, ref backgroundColor);
+                        registry.Apply(handles, specificity, ref backgroundColor, StyleSheetApplicator.ApplyColor);
                         break;
 
                     case StylePropertyID.BackgroundSize:
-                        registry.Apply(handle, specificity, ref backgroundSize);
+                        registry.Apply(handles, specificity, ref backgroundSize, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.BorderColor:
-                        registry.Apply(handle, specificity, ref borderColor);
+                        registry.Apply(handles, specificity, ref borderColor, StyleSheetApplicator.ApplyColor);
                         break;
 
                     case StylePropertyID.BorderLeftWidth:
-                        registry.Apply(handle, specificity, ref borderLeftWidth);
+                        registry.Apply(handles, specificity, ref borderLeftWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderTopWidth:
-                        registry.Apply(handle, specificity, ref borderTopWidth);
+                        registry.Apply(handles, specificity, ref borderTopWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderRightWidth:
-                        registry.Apply(handle, specificity, ref borderRightWidth);
+                        registry.Apply(handles, specificity, ref borderRightWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderBottomWidth:
-                        registry.Apply(handle, specificity, ref borderBottomWidth);
-                        break;
-
-                    case StylePropertyID.BorderRadius:
-                        registry.Apply(handle, specificity, ref borderTopLeftRadius);
-                        registry.Apply(handle, specificity, ref borderTopRightRadius);
-                        registry.Apply(handle, specificity, ref borderBottomLeftRadius);
-                        registry.Apply(handle, specificity, ref borderBottomRightRadius);
+                        registry.Apply(handles, specificity, ref borderBottomWidth, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderTopLeftRadius:
-                        registry.Apply(handle, specificity, ref borderTopLeftRadius);
+                        registry.Apply(handles, specificity, ref borderTopLeftRadius, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderTopRightRadius:
-                        registry.Apply(handle, specificity, ref borderTopRightRadius);
+                        registry.Apply(handles, specificity, ref borderTopRightRadius, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderBottomRightRadius:
-                        registry.Apply(handle, specificity, ref borderBottomRightRadius);
+                        registry.Apply(handles, specificity, ref borderBottomRightRadius, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.BorderBottomLeftRadius:
-                        registry.Apply(handle, specificity, ref borderBottomLeftRadius);
+                        registry.Apply(handles, specificity, ref borderBottomLeftRadius, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.SliceLeft:
-                        registry.Apply(handle, specificity, ref sliceLeft);
+                        registry.Apply(handles, specificity, ref sliceLeft, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.SliceTop:
-                        registry.Apply(handle, specificity, ref sliceTop);
+                        registry.Apply(handles, specificity, ref sliceTop, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.SliceRight:
-                        registry.Apply(handle, specificity, ref sliceRight);
+                        registry.Apply(handles, specificity, ref sliceRight, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.SliceBottom:
-                        registry.Apply(handle, specificity, ref sliceBottom);
+                        registry.Apply(handles, specificity, ref sliceBottom, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.Opacity:
-                        registry.Apply(handle, specificity, ref opacity);
+                        registry.Apply(handles, specificity, ref opacity, StyleSheetApplicator.ApplyFloat);
+                        break;
+
+                        // Shorthand values
+                    case StylePropertyID.BorderRadius:
+                        registry.Apply(handles, specificity, ref borderTopLeftRadius, StyleSheetApplicator.ApplyFloat);
+                        registry.Apply(handles, specificity, ref borderTopRightRadius, StyleSheetApplicator.ApplyFloat);
+                        registry.Apply(handles, specificity, ref borderBottomLeftRadius, StyleSheetApplicator.ApplyFloat);
+                        registry.Apply(handles, specificity, ref borderBottomRightRadius, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.Custom:
@@ -455,7 +455,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         CustomProperty customProp = default(CustomProperty);
                         if (!m_CustomProperties.TryGetValue(styleProperty.name, out customProp) || specificity >= customProp.specificity)
                         {
-                            customProp.handle = handle;
+                            customProp.handles = handles;
                             customProp.data = registry;
                             customProp.specificity = specificity;
                             m_CustomProperties[styleProperty.name] = customProp;
@@ -469,99 +469,27 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<float> target)
         {
-            CustomProperty property;
-            StyleValue<float> tmp = new StyleValue<float>(0.0f);
-
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
-            {
-                if (property.handle.valueType == StyleValueType.Float)
-                {
-                    property.data.Apply(property.handle, property.specificity, ref tmp);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("Trying to read value as float while parsed type is {0}", property.handle.valueType));
-                }
-            }
-            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+            ApplyCustomProperty(propertyName, ref target, StyleValueType.Float, StyleSheetApplicator.ApplyFloat);
         }
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<int> target)
         {
-            CustomProperty property;
-            StyleValue<int> tmp = new StyleValue<int>(0);
-
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
-            {
-                if (property.handle.valueType == StyleValueType.Float)
-                {
-                    property.data.Apply(property.handle, property.specificity, ref tmp);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("Trying to read value as int while parsed type is {0}", property.handle.valueType));
-                }
-            }
-            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+            ApplyCustomProperty(propertyName, ref target, StyleValueType.Float, StyleSheetApplicator.ApplyInt);
         }
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<bool> target)
         {
-            CustomProperty property;
-            StyleValue<bool> tmp = new StyleValue<bool>(false);
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
-            {
-                if (property.handle.valueType == StyleValueType.Keyword)
-                {
-                    property.data.Apply(property.handle, property.specificity, ref tmp);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("Trying to read value as bool while parsed type is {0}", property.handle.valueType));
-                }
-            }
-            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+            ApplyCustomProperty(propertyName, ref target, StyleValueType.Keyword, StyleSheetApplicator.ApplyBool);
         }
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<Color> target)
         {
-            CustomProperty property;
-            StyleValue<Color> tmp = new StyleValue<Color>(Color.clear);
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
-            {
-                if (property.handle.valueType == StyleValueType.Color)
-                {
-                    property.data.Apply(property.handle, property.specificity, ref tmp);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("Trying to read value as Color while parsed type is {0}", property.handle.valueType));
-                }
-            }
-            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+            ApplyCustomProperty(propertyName, ref target, StyleValueType.Color, StyleSheetApplicator.ApplyColor);
         }
 
         public void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target) where T : Object
         {
-            ApplyCustomProperty<T>(propertyName, Resources.Load, ref target);
-        }
-
-        internal void ApplyCustomProperty<T>(string propertyName, LoadResourceFunction function, ref StyleValue<T> target) where T : Object
-        {
-            CustomProperty property;
-            StyleValue<T> tmp = new StyleValue<T>(null);
-            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
-            {
-                if (property.handle.valueType == StyleValueType.ResourcePath)
-                {
-                    property.data.Apply(property.handle, property.specificity, function, ref tmp);
-                }
-                else
-                {
-                    Debug.LogWarning(string.Format("Trying to read value as Object while parsed type is {0}", property.handle.valueType));
-                }
-            }
-            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+            ApplyCustomProperty(propertyName, ref target, StyleValueType.ResourcePath, StyleSheetApplicator.ApplyResource);
         }
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<string> target)
@@ -570,8 +498,28 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             StyleValue<string> tmp = new StyleValue<string>(string.Empty);
             if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
             {
-                tmp.value = property.data.ReadAsString(property.handle);
+                tmp.value = property.data.ReadAsString(property.handles[0]);
                 tmp.specificity = property.specificity;
+            }
+            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
+        }
+
+        internal void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target, StyleValueType valueType, HandlesApplicatorFunction<T> applicatorFunc)
+        {
+            CustomProperty property;
+            StyleValue<T> tmp = new StyleValue<T>();
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
+            {
+                // CustomProperty only support one value
+                var handle = property.handles[0];
+                if (handle.valueType == valueType)
+                {
+                    property.data.Apply(property.handles, property.specificity, ref tmp, applicatorFunc);
+                }
+                else
+                {
+                    Debug.LogWarning(string.Format("Trying to read value as {0} while parsed type is {1}", valueType, handle.valueType));
+                }
             }
             target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }

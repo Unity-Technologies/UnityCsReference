@@ -156,6 +156,18 @@ namespace UnityEngine.Experimental.UIElements
             return contentContainer.Children();
         }
 
+        public void Sort(Comparison<VisualElement> comp)
+        {
+            if (contentContainer == this)
+            {
+                shadow.Sort(comp);
+            }
+            else
+            {
+                contentContainer.Sort(comp);
+            }
+        }
+
         public struct Hierarchy
         {
             private readonly VisualElement m_Owner;
@@ -314,6 +326,18 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     m_Owner.ChangePanel(null);
                 }
+            }
+
+            public void Sort(Comparison<VisualElement> comp)
+            {
+                m_Owner.m_Children.Sort(comp);
+
+                m_Owner.cssNode.Clear();
+                for (int i = 0; i < m_Owner.m_Children.Count; i++)
+                {
+                    m_Owner.cssNode.Insert(i, m_Owner.m_Children[i].cssNode);
+                }
+                m_Owner.Dirty(ChangeType.Layout);
             }
         }
 

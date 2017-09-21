@@ -332,6 +332,8 @@ namespace UnityEditor
             internal static bool s_ActuallyEditing = false; // internal so we can save this state.
             internal static bool s_AllowContextCutOrPaste = true; // e.g. selectable labels only allow for copying
 
+            IMECompositionMode m_IMECompositionModeBackup;
+
             // *undocumented*
             internal bool IsEditingControl(int id)
             {
@@ -360,6 +362,9 @@ namespace UnityEditor
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
                 UnityEditor.Undo.IncrementCurrentGroup();
+
+                m_IMECompositionModeBackup = Input.imeCompositionMode;
+                Input.imeCompositionMode = IMECompositionMode.On;
             }
 
             // *undocumented*
@@ -374,6 +379,8 @@ namespace UnityEditor
                 s_ActuallyEditing = false;
                 s_AllowContextCutOrPaste = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
+
+                Input.imeCompositionMode = m_IMECompositionModeBackup;
             }
         }
 
@@ -689,7 +696,7 @@ namespace UnityEditor
             // Inform editor that someone removed focus from us.
             if (editor.controlID == id && GUIUtility.keyboardControl != id)
             {
-                editor.controlID = 0;
+                editor.EndEditing();
             }
 
             bool mayHaveChanged = false;
@@ -2410,6 +2417,7 @@ namespace UnityEditor
 
         private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
         {
+            int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
             // Map some nonsensical edge cases to avoid breaking the UI.
             // A slider with such a large range is basically useless, anyway.
             left = Mathf.Clamp(left, float.MinValue, float.MaxValue);
@@ -2422,7 +2430,6 @@ namespace UnityEditor
                 BeginChangeCheck();
 
                 // While the text field is not being edited, we want to share the keyboard focus with the slider, so we temporarily set it to have focus
-                int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
                 if (EditorGUIUtility.keyboardControl == id && !s_RecycledEditor.IsEditingControl(id))
                 {
                     EditorGUIUtility.keyboardControl = sliderId;
@@ -3351,6 +3358,11 @@ namespace UnityEditor
 
                         if (objType != null)
                         {
+                            if (references[0].GetType() == typeof(GameObject) && typeof(Component).IsAssignableFrom(objType))
+                            {
+                                GameObject go = (GameObject)references[0];
+                                references = go.GetComponents(typeof(Component));
+                            }
                             foreach (Object i in references)
                             {
                                 if (i != null && objType.IsAssignableFrom(i.GetType()))
@@ -5452,10 +5464,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             TextureUsageMode usage = TextureUtil.GetUsageMode(t);
             TextureFormat format = TextureUtil.GetTextureFormat(t);
-            if (usage == TextureUsageMode.LightmapRGBM || usage == TextureUsageMode.RGBMEncoded)
+            if (usage == TextureUsageMode.RealtimeLightmapRGBM || usage == TextureUsageMode.BakedLightmapRGBM || usage == TextureUsageMode.RGBMEncoded)
                 return lightmapRGBMMaterial;
-            else if (usage == TextureUsageMode.LightmapDoubleLDR)
+            else if (usage == TextureUsageMode.BakedLightmapDoubleLDR)
                 return lightmapDoubleLDRMaterial;
+            else if (usage == TextureUsageMode.BakedLightmapFullHDR)
+                return lightmapFullHDRMaterial;
             else if (usage == TextureUsageMode.NormalmapDXT5nm || (usage == TextureUsageMode.NormalmapPlain && format == TextureFormat.BC5))
                 return normalmapMaterial;
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
@@ -5496,6 +5510,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal static Material lightmapDoubleLDRMaterial
         {
             get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedLightmapDoubleLDRMaterial.mat") as Material; }
+        }
+
+        internal static Material lightmapFullHDRMaterial
+        {
+            get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedLightmapFullHDRMaterial.mat") as Material; }
         }
 
         internal static Material normalmapMaterial

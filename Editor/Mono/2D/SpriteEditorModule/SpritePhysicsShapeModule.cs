@@ -49,7 +49,7 @@ namespace UnityEditor.U2D
             {
                 spriteRect.physicsShape = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture,
                         Math.Abs(spriteRect.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : spriteRect.tessellationDetail,
-                        kDefaultPhysicsAlphaTolerance);
+                        kDefaultPhysicsAlphaTolerance, spriteEditorWindow.spriteEditorDataProvider);
                 spriteEditorWindow.SetDataModified();
             }
         }

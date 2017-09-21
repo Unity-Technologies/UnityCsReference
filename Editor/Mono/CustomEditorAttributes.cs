@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine;
 using System;
 using System.Reflection;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -15,14 +16,13 @@ namespace UnityEditor
     {
         private static readonly List<MonoEditorType> kSCustomEditors = new List<MonoEditorType>();
         private static readonly List<MonoEditorType> kSCustomMultiEditors = new List<MonoEditorType>();
-        private static readonly Dictionary<Type, Type> kCachedEditorForType = new Dictionary<Type, Type>();
-        private static readonly Dictionary<Type, Type> kCachedMultiEditorForType = new Dictionary<Type, Type>();
         private static bool s_Initialized;
 
         class MonoEditorType
         {
             public Type       m_InspectedType;
             public Type       m_InspectorType;
+            public Type       m_RenderPipelineType;
             public bool       m_EditorForChildClasses;
             public bool       m_IsFallback;
         }
@@ -46,29 +46,35 @@ namespace UnityEditor
             if (type == null)
                 return null;
 
-            var cachedEditors = multiEdit ? kCachedMultiEditorForType : kCachedEditorForType;
-
-            Type resultEditorType;
-            if (cachedEditors.TryGetValue(type, out resultEditorType))
-                return resultEditorType;
-
             var editors = multiEdit ? kSCustomMultiEditors : kSCustomEditors;
             for (int pass = 0; pass < 2; ++pass)
             {
                 for (Type inspected = type; inspected != null; inspected = inspected.BaseType)
                 {
-                    for (int i = 0; i < editors.Count; ++i)
+                    // Capture for closure
+                    var inspected1 = inspected;
+                    var pass1 = pass;
+
+                    var validEditors = editors.Where(x => IsAppropriateEditor(x, inspected1, type != inspected1, pass1 == 1));
+
+                    // we have a render pipeline...
+                    // we need to select the one with the correct RP asset
+                    if (GraphicsSettings.renderPipelineAsset != null)
                     {
-                        if (IsAppropriateEditor(editors[i], inspected, type != inspected, pass == 1)) // pass=0 normal, pass=1 fallback
+                        var rpType = GraphicsSettings.renderPipelineAsset.GetType();
+                        foreach (var editor in validEditors)
                         {
-                            resultEditorType = editors[i].m_InspectorType;
-                            cachedEditors.Add(type, resultEditorType);
-                            return resultEditorType;
+                            if (editor.m_RenderPipelineType == rpType)
+                                return editor.m_InspectorType;
                         }
                     }
+
+                    // no RP, fallback!
+                    var found = validEditors.FirstOrDefault(x => x.m_RenderPipelineType == null);
+                    if (found != null)
+                        return found.m_InspectorType;
                 }
             }
-            cachedEditors.Add(type, null);
             return null;
         }
 
@@ -111,6 +117,9 @@ namespace UnityEditor
                         t.m_InspectorType = type;
                         t.m_EditorForChildClasses = inspectAttr.m_EditorForChildClasses;
                         t.m_IsFallback = inspectAttr.isFallback;
+                        var attr = inspectAttr as CustomEditorForRenderPipelineAttribute;
+                        if (attr != null)
+                            t.m_RenderPipelineType = attr.renderPipelineType;
                         kSCustomEditors.Add(t);
                         if (type.GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0)
                             kSCustomMultiEditors.Add(t);

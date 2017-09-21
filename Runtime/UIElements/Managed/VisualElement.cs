@@ -404,7 +404,7 @@ namespace UnityEngine.Experimental.UIElements
             name = string.Empty;
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
-            changesNeeded = 0; // not in a tree yet so not dirty, they will stack up as we get inserted somewhere.
+            changesNeeded = ChangeType.All;
             clipChildren = true;
         }
 
@@ -427,6 +427,18 @@ namespace UnityEngine.Experimental.UIElements
             else if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
                 pseudoStates = pseudoStates | PseudoStates.Focus;
+            }
+        }
+
+        public sealed override void Focus()
+        {
+            if (!canGrabFocus && shadow.parent != null)
+            {
+                shadow.parent.Focus();
+            }
+            else
+            {
+                base.Focus();
             }
         }
 
@@ -568,7 +580,17 @@ namespace UnityEngine.Experimental.UIElements
         public string text
         {
             get { return m_Text ?? String.Empty; }
-            set { if (m_Text != value) { m_Text = value; Dirty(ChangeType.Layout); } }
+            set
+            {
+                if (m_Text == value)
+                    return;
+
+                m_Text = value;
+                Dirty(ChangeType.Layout);
+
+                if (!string.IsNullOrEmpty(persistenceKey))
+                    SavePersistentData();
+            }
         }
 
         [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.", true)]
@@ -732,12 +754,49 @@ namespace UnityEngine.Experimental.UIElements
             return persistentData.GetScriptable<T>(keyWithType);
         }
 
+        public void OverwriteFromPersistedData(object obj, string key)
+        {
+            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot load persistent data.");
+
+            var persistentData = elementPanel == null || elementPanel.getViewDataDictionary == null ? null : elementPanel.getViewDataDictionary();
+
+            // If persistency is disable (no data, no key, no key one of the parents), just return the
+            // existing data or create a local one if none exists.
+            if (persistentData == null || string.IsNullOrEmpty(persistenceKey) || enablePersistence == false)
+            {
+                return;
+            }
+
+            string keyWithType = key + "__" + obj.GetType();
+
+            if (!persistentData.ContainsKey(keyWithType))
+            {
+                persistentData.Set(keyWithType, obj);
+                return;
+            }
+
+            persistentData.Overwrite(obj, keyWithType);
+        }
+
         public void SavePersistentData()
         {
-            Debug.Assert(elementPanel != null, "VisualElement.elementPanel is null! Cannot save persistent data.");
-
             if (elementPanel != null && elementPanel.savePersistentViewData != null && !string.IsNullOrEmpty(persistenceKey))
                 elementPanel.savePersistentViewData();
+        }
+
+        internal bool IsPersitenceSupportedOnChildren()
+        {
+            // We relax here the requirement that ALL parents of a VisualElement
+            // need to have a persistenceKey for persistence to work. Plain
+            // VisualElements are likely to be used just for layouting and
+            // grouping and requiring a key on each element is a bit tedious.
+            if (this.GetType() == typeof(VisualElement))
+                return true;
+
+            if (string.IsNullOrEmpty(persistenceKey))
+                return false;
+
+            return true;
         }
 
         internal void OnPersistentDataReady(bool enablePersistence)
@@ -899,6 +958,7 @@ namespace UnityEngine.Experimental.UIElements
         internal void SetInlineStyles(VisualElementStylesData inlineStyle)
         {
             Debug.Assert(!inlineStyle.isShared);
+            inlineStyle.Apply(m_Style, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
             m_Style = inlineStyle;
         }
 
@@ -1038,7 +1098,7 @@ namespace UnityEngine.Experimental.UIElements
             var inv = ele.worldTransform.inverse;
             Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
             r.position = position - ele.layout.position;
-            r.size = inv.MultiplyPoint3x4(r.size);
+            r.size = inv.MultiplyVector(r.size);
             return r;
         }
 
@@ -1047,7 +1107,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             var toWorldMatrix = ele.worldTransform;
             r.position = toWorldMatrix.MultiplyPoint3x4(ele.layout.position + r.position);
-            r.size = toWorldMatrix.MultiplyPoint3x4(r.size);
+            r.size = toWorldMatrix.MultiplyVector(r.size);
             return r;
         }
 
@@ -1081,28 +1141,6 @@ namespace UnityEngine.Experimental.UIElements
         public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)
         {
             manipulator.target = null;
-        }
-
-        public static ScheduleBuilder Schedule(this VisualElement self, Action<TimerState> timerUpdateEvent)
-        {
-            if (self.panel == null || self.panel.scheduler == null)
-            {
-                Debug.LogError("Cannot schedule an event without a valid panel");
-                return new ScheduleBuilder();
-            }
-
-            return self.panel.scheduler.Schedule(timerUpdateEvent, self);
-        }
-
-        public static void Unschedule(this VisualElement self, Action<TimerState> timerUpdateEvent)
-        {
-            if (self.panel == null || self.panel.scheduler == null)
-            {
-                Debug.LogError("Cannot unschedule an event without a valid panel");
-                return;
-            }
-
-            self.panel.scheduler.Unschedule(timerUpdateEvent);
         }
     }
 

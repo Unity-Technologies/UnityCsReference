@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -26,7 +27,23 @@ namespace UnityEngine
         }
     }
 
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    public sealed partial class LightmapData
+    {
+        internal Texture2D m_Light;
+        internal Texture2D m_Dir;
+        internal Texture2D m_ShadowMask;
+
+        [System.Obsolete("Use lightmapColor property (UnityUpgradable) -> lightmapColor", false)]
+        public Texture2D lightmapLight { get { return m_Light; }        set { m_Light = value; } }
+
+        public Texture2D lightmapColor { get { return m_Light; }        set { m_Light = value; } }
+        public Texture2D lightmapDir   { get { return m_Dir; }          set { m_Dir = value; } }
+        public Texture2D shadowMask    { get { return m_ShadowMask; }   set { m_ShadowMask = value; } }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct RenderBuffer
     {
         internal int m_RenderTextureInstanceID;
@@ -420,7 +437,7 @@ namespace UnityEngine
             if (matrices.Count > kMaxDrawMeshInstanceCount)
                 throw new ArgumentOutOfRangeException("matrices", String.Format("Matrix list count must be in the range of 0 to {0}.", kMaxDrawMeshInstanceCount));
 
-            DrawMeshInstancedImpl(mesh, submeshIndex, material, (Matrix4x4[])ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera);
+            DrawMeshInstancedImpl(mesh, submeshIndex, material, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera);
         }
 
         // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
@@ -472,7 +489,7 @@ namespace UnityEngine
         }
 
         public void SetFloatArray(string name, List<float> values) { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)  { SetFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
+        public void SetFloatArray(int nameID, List<float> values)  { SetFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetFloatArray(string name, float[] values)     { SetFloatArray(Shader.PropertyToID(name), values); }
         public void SetFloatArray(int nameID, float[] values)      { SetFloatArray(nameID, values, values.Length); }
         private void SetFloatArray(int nameID, float[] values, int count)
@@ -484,7 +501,7 @@ namespace UnityEngine
         }
 
         public void SetVectorArray(string name, List<Vector4> values) { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)  { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
+        public void SetVectorArray(int nameID, List<Vector4> values)  { SetVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)     { SetVectorArray(Shader.PropertyToID(name), values); }
         public void SetVectorArray(int nameID, Vector4[] values)      { SetVectorArray(nameID, values, values.Length); }
         private void SetVectorArray(int nameID, Vector4[] values, int count)
@@ -496,7 +513,7 @@ namespace UnityEngine
         }
 
         public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
+        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
         public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
         private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)
@@ -583,7 +600,7 @@ namespace UnityEngine
         public static void SetGlobalBuffer(string name, ComputeBuffer buffer) { SetGlobalBuffer(Shader.PropertyToID(name), buffer); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
         public static void SetGlobalFloatArray(int nameID, float[] values)      { SetGlobalFloatArray(nameID, values, values.Length); }
         private static void SetGlobalFloatArray(int nameID, float[] values, int count)
@@ -595,7 +612,7 @@ namespace UnityEngine
         }
 
         public static void SetGlobalVectorArray(string name, List<Vector4> values) { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)  { SetGlobalVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)  { SetGlobalVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalVectorArray(string name, Vector4[] values)     { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
         public static void SetGlobalVectorArray(int nameID, Vector4[] values)      { SetGlobalVectorArray(nameID, values, values.Length); }
         private static void SetGlobalVectorArray(int nameID, Vector4[] values, int count)
@@ -607,7 +624,7 @@ namespace UnityEngine
         }
 
         public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { SetGlobalMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { SetGlobalMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)     { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
         public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)      { SetGlobalMatrixArray(nameID, values, values.Length); }
         private static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values, int count)
@@ -703,7 +720,7 @@ namespace UnityEngine
 
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])ExtractArrayFromList(values), values.Count); }
+        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values); }
         public void SetFloatArray(int nameID, float[] values)       { SetFloatArray(nameID, values, values.Length); }
         private void SetFloatArray(int nameID, float[] values, int count)
@@ -715,7 +732,7 @@ namespace UnityEngine
         }
 
         public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), values); }
-        public void SetColorArray(int nameID, List<Color> values)   { SetColorArray(nameID, (Color[])ExtractArrayFromList(values), values.Count); }
+        public void SetColorArray(int nameID, List<Color> values)   { SetColorArray(nameID, (Color[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetColorArray(string name, Color[] values)      { SetColorArray(Shader.PropertyToID(name), values); }
         public void SetColorArray(int nameID, Color[] values)       { SetColorArray(nameID, values, values.Length); }
         private void SetColorArray(int nameID, Color[] values, int count)
@@ -727,7 +744,7 @@ namespace UnityEngine
         }
 
         public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])ExtractArrayFromList(values), values.Count); }
+        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values); }
         public void SetVectorArray(int nameID, Vector4[] values)        { SetVectorArray(nameID, values, values.Length); }
         private void SetVectorArray(int nameID, Vector4[] values, int count)
@@ -739,7 +756,7 @@ namespace UnityEngine
         }
 
         public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])ExtractArrayFromList(values), values.Count); }
+        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
         public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
         private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)

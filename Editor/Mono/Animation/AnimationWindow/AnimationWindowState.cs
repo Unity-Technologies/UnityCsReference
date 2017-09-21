@@ -565,6 +565,8 @@ namespace UnityEditorInternal
                                 if (!m_ActiveCurvesCache.Contains(curve))
                                     m_ActiveCurvesCache.Add(curve);
                         }
+
+                        m_ActiveCurvesCache.Sort();
                     }
                 }
 

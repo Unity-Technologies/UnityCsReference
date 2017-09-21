@@ -146,4 +146,9 @@ namespace UnityEngine.Experimental.UIElements
             return s_TypeId;
         }
     }
+
+    // IPropagatableEvent event interface cause the EventDispatcher to propagate this event to the element hierarchy under the target.
+    internal interface IPropagatableEvent
+    {
+    }
 }

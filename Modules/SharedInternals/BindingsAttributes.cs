@@ -215,9 +215,9 @@ namespace UnityEngine.Bindings
     {
         public string StructName { get; set; }
 
-        public NativeAsStructAttribute(string name)
+        public NativeAsStructAttribute(string structName)
         {
-            StructName = name;
+            StructName = structName;
         }
     }
 

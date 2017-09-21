@@ -27,35 +27,33 @@ namespace UnityEngine.Experimental.UIElements
             get { return showVertical || (contentContainer.layout.height - layout.height > 0); }
         }
 
-        Vector2 m_ScrollOffset;
         private VisualElement m_ContentContainer;
 
         public Vector2 scrollOffset
         {
-            get { return m_ScrollOffset; }
+            get { return new Vector2(horizontalScroller.value, verticalScroller.value); }
             set
             {
-                m_ScrollOffset = value;
-                UpdateContentViewTransform();
+                if (value != scrollOffset)
+                {
+                    horizontalScroller.value = value.x;
+                    verticalScroller.value = value.y;
+                    UpdateContentViewTransform();
+                }
             }
         }
 
+        private float scrollableWidth { get { return contentContainer.layout.width - contentViewport.layout.width; } }
+        private float scrollableHeight { get { return contentContainer.layout.height - contentViewport.layout.height; } }
+
         void UpdateContentViewTransform()
         {
-            // [0..1]
-            Vector2 normalizedOffset = m_ScrollOffset;
-            normalizedOffset.x -= horizontalScroller.lowValue;
-            normalizedOffset.x /= (horizontalScroller.highValue - horizontalScroller.lowValue);
-            normalizedOffset.y -= verticalScroller.lowValue;
-            normalizedOffset.y /= (verticalScroller.highValue - verticalScroller.lowValue);
-
             // Adjust contentContainer's position
-            float scrollableWidth = contentContainer.layout.width - contentViewport.layout.width;
-            float scrollableHeight = contentContainer.layout.height - contentViewport.layout.height;
-
             var t = contentContainer.transform.position;
-            t.x = -(normalizedOffset.x * scrollableWidth);
-            t.y = -(normalizedOffset.y * scrollableHeight);
+
+            var offset = scrollOffset;
+            t.x = -offset.x;
+            t.y = -offset.y;
             contentContainer.transform.position = t;
 
             this.Dirty(ChangeType.Repaint);
@@ -134,29 +132,59 @@ namespace UnityEngine.Experimental.UIElements
             horizontalScroller.SetEnabled(contentContainer.layout.width - layout.width > 0);
             verticalScroller.SetEnabled(contentContainer.layout.height - layout.height > 0);
 
-            // Set visibility and remove/add content viewport margin as necessary
-            if (horizontalScroller.visible != needsHorizontal)
-            {
-                horizontalScroller.visible = needsHorizontal;
-                if (needsHorizontal)
-                    contentViewport.AddToClassList("HorizontalScroll");
-                else
-                    contentViewport.RemoveFromClassList("HorizontalScroll");
-            }
-            if (verticalScroller.visible != needsVertical)
-            {
-                verticalScroller.visible = needsVertical;
-                if (needsVertical)
-                    contentViewport.AddToClassList("VerticalScroll");
-                else
-                    contentViewport.RemoveFromClassList("VerticalScroll");
-            }
-
             // Expand content if scrollbars are hidden
             contentViewport.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
             horizontalScroller.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
             contentViewport.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
             verticalScroller.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
+
+            if (needsHorizontal)
+            {
+                horizontalScroller.lowValue = 0.0f;
+                horizontalScroller.highValue = scrollableWidth;
+            }
+            else
+            {
+                horizontalScroller.value = 0.0f;
+            }
+
+            if (needsVertical)
+            {
+                verticalScroller.lowValue = 0.0f;
+                verticalScroller.highValue = scrollableHeight;
+            }
+            else
+            {
+                verticalScroller.value = 0.0f;
+            }
+
+            // Set visibility and remove/add content viewport margin as necessary
+            if (horizontalScroller.visible != needsHorizontal)
+            {
+                horizontalScroller.visible = needsHorizontal;
+                if (needsHorizontal)
+                {
+                    contentViewport.AddToClassList("HorizontalScroll");
+                }
+                else
+                {
+                    contentViewport.RemoveFromClassList("HorizontalScroll");
+                }
+            }
+
+            if (verticalScroller.visible != needsVertical)
+            {
+                verticalScroller.visible = needsVertical;
+                if (needsVertical)
+                {
+                    contentViewport.AddToClassList("VerticalScroll");
+                }
+                else
+                {
+                    contentViewport.RemoveFromClassList("VerticalScroll");
+                }
+            }
+
 
             UpdateContentViewTransform();
         }

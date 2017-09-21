@@ -24,6 +24,29 @@ namespace UnityEngine
             get { return LightmappingMode.Realtime; }
             set {}
         }
+
+        [System.Obsolete("Light.isBaked is no longer supported. Use Light.bakingOutput.isBaked (and other members of Light.bakingOutput) instead.", false)]
+        public bool isBaked
+        {
+            get { return bakingOutput.isBaked; }
+        }
+
+        [System.Obsolete("Light.alreadyLightmapped is no longer supported. Use Light.bakingOutput instead. Allowing to describe mixed light on top of realtime and baked ones.", false)]
+        public bool alreadyLightmapped
+        {
+            get { return bakingOutput.isBaked; }
+            set
+            {
+                var lightBakingOutput = new LightBakingOutput
+                {
+                    probeOcclusionLightIndex = -1,
+                    occlusionMaskChannel = -1,
+                    lightmapBakeType = (value) ? LightmapBakeType.Baked : LightmapBakeType.Realtime,
+                    isBaked = value
+                };
+                bakingOutput = lightBakingOutput;
+            }
+        }
     }
 }
 

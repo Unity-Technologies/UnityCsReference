@@ -19,7 +19,7 @@ namespace UnityEditor
 {
 
 
-public sealed partial class CustomEditor : System.Attribute
+public partial class CustomEditor : System.Attribute
 {
     public CustomEditor(System.Type inspectedType)
         {

@@ -11,20 +11,25 @@ namespace UnityEngine.Experimental.UIElements
     {
         protected Focusable()
         {
-            focusIndex = 0;
+            m_FocusIndex = 0;
         }
 
         public abstract FocusController focusController { get; }
 
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
-        public int focusIndex;
+        private int m_FocusIndex;
+        public int focusIndex
+        {
+            get { return m_FocusIndex; }
+            set { m_FocusIndex = value; }
+        }
 
         public virtual bool canGrabFocus
         {
-            get { return focusIndex >= 0; }
+            get { return m_FocusIndex >= 0; }
         }
 
-        public void Focus()
+        public virtual void Focus()
         {
             if (focusController != null)
             {

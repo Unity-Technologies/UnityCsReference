@@ -35,7 +35,7 @@ namespace UnityEditor
             public GUIContent addModules = new GUIContent("", "Show/Hide Modules");
             public string bulletPoint = "\u2022 ";
         }
-        private static Texts s_Texts = new Texts();
+        private static Texts s_Texts;
 
         public bool multiEdit { get { return (m_ParticleSystems != null) && (m_ParticleSystems.Length > 1); } }
 
@@ -43,6 +43,8 @@ namespace UnityEditor
         {
             if (s_ModuleNames == null)
                 s_ModuleNames = GetUIModuleNames();
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_ParticleEffectUI = owner;
             m_ParticleSystems = systems;

@@ -15,6 +15,13 @@ namespace UnityEngine
         [NativeProperty("IsOpen")] public extern bool open { get; set; }
     }
 
+    [NativeHeader("Runtime/Camera/OcclusionArea.h")]
+    public sealed partial class OcclusionArea : Component
+    {
+        public extern Vector3 center { get; set; }
+        public extern Vector3 size { get; set; }
+    }
+
     [NativeHeader("Runtime/Camera/Flare.h")]
     public sealed partial class Flare : Object
     {
@@ -43,6 +50,16 @@ namespace UnityEngine
         extern public Material material { get; set; }
     }
 
+    [NativeHeader("Runtime/Camera/SharedLightData.h")]
+    public struct LightBakingOutput
+    {
+        public int probeOcclusionLightIndex;
+        public int occlusionMaskChannel;
+        public LightmapBakeType lightmapBakeType;
+        public MixedLightingMode mixedLightingMode;
+        public bool isBaked;
+    }
+
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Camera/Light.h")]
     public sealed partial class Light : Behaviour
@@ -63,8 +80,7 @@ namespace UnityEngine
         extern public float range { get; set; }
         extern public Flare flare { get; set; }
 
-        extern public bool alreadyLightmapped {[NativeName("IsActuallyBaked")] get; [NativeName("SetIsBakedFromScript")] set; }
-        extern public bool isBaked            {[NativeName("IsActuallyBaked")] get; }
+        extern public LightBakingOutput bakingOutput { get; set; }
         extern public int  cullingMask        { get; set; }
     }
 
@@ -72,5 +88,23 @@ namespace UnityEngine
     public sealed partial class Skybox : Behaviour
     {
         extern public Material material { get; set; }
+    }
+
+    [RequireComponent(typeof(Transform))]
+    [NativeHeader("Runtime/Graphics/Mesh/MeshFilter.h")]
+    public sealed partial class MeshFilter : Component
+    {
+        extern public Mesh sharedMesh { get; set; }
+        extern public Mesh mesh
+        {
+            [NativeMethod(Name = "GetInstantiatedMeshFromScript")] get;
+            [NativeMethod(Name = "SetInstantiatedMesh")] set;
+        }
+    }
+
+    [RequireComponent(typeof(Transform))]
+    [NativeHeader("Runtime/Camera/HaloManager.h")]
+    internal sealed partial class Halo : Behaviour
+    {
     }
 }

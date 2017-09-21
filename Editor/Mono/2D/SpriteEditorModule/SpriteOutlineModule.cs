@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Experimental.U2D;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
 using UnityEditor.U2D.Interface;
@@ -261,7 +262,7 @@ namespace UnityEditor.U2D
 
         public bool CanBeActivated()
         {
-            return SpriteUtility.GetSpriteImportMode(assetDatabase, spriteEditorWindow.selectedTexture) != SpriteImportMode.None;
+            return SpriteUtility.GetSpriteImportMode(spriteEditorWindow.spriteEditorDataProvider) != SpriteImportMode.None;
         }
 
         private void RecordUndo()
@@ -443,7 +444,7 @@ namespace UnityEditor.U2D
         {
             if (spriteRect.outline == null || spriteRect.outline.Count == 0)
             {
-                spriteRect.outline = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture, spriteRect.tessellationDetail, 0);
+                spriteRect.outline = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture, spriteRect.tessellationDetail, 0, spriteEditorWindow.spriteEditorDataProvider);
                 if (spriteRect.outline.Count == 0)
                 {
                     Vector2 halfSize = spriteRect.rect.size * 0.5f;
@@ -548,7 +549,7 @@ namespace UnityEditor.U2D
             }
         }
 
-        protected static List<SpriteOutline> GenerateSpriteRectOutline(Rect rect, ITexture2D texture, float detail, byte alphaTolerance)
+        protected static List<SpriteOutline> GenerateSpriteRectOutline(Rect rect, ITexture2D texture, float detail, byte alphaTolerance, ISpriteEditorDataProvider spriteEditorDataProvider)
         {
             List<SpriteOutline> outline = new List<SpriteOutline>();
             if (texture != null)
@@ -559,8 +560,7 @@ namespace UnityEditor.U2D
                 // in that case, we need to convert values from capped space to actual texture space and back.
                 int actualWidth = 0, actualHeight = 0;
                 int cappedWidth, cappedHeight;
-                TextureImporter ti = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(texture)) as TextureImporter;
-                ti.GetWidthAndHeight(ref actualWidth, ref actualHeight);
+                spriteEditorDataProvider.GetTextureActualWidthAndHeight(out actualWidth, out actualHeight);
                 cappedWidth = texture.width;
                 cappedHeight = texture.height;
 

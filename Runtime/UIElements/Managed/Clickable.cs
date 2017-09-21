@@ -13,6 +13,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public Vector2 lastMousePosition { get; private set; }
 
+        private IVisualElementScheduledItem m_Repeater;
+
         // delay is used to determine when the event begins.  Applies if delay > 0.
         // interval is used to determine the time delta between event repetitions.  Applies if interval > 0.
         public Clickable(System.Action handler, long delay, long interval) : this(handler)
@@ -81,9 +83,14 @@ namespace UnityEngine.Experimental.UIElements
                         clicked();
                     }
 
-                    target.Schedule(OnTimer)
-                    .StartingIn(m_Delay)
-                    .Every(m_Interval);
+                    if (m_Repeater == null)
+                    {
+                        m_Repeater = target.schedule.Execute(OnTimer).Every(m_Interval).StartingIn(m_Delay);
+                    }
+                    else
+                    {
+                        m_Repeater.ExecuteLater(m_Delay);
+                    }
                 }
 
                 target.pseudoStates |= PseudoStates.Active;
@@ -110,7 +117,10 @@ namespace UnityEngine.Experimental.UIElements
                 if (IsRepeatable())
                 {
                     // Repeatable button clicks are performed on the MouseDown and at timer events only
-                    target.Unschedule(OnTimer);
+                    if (m_Repeater != null)
+                    {
+                        m_Repeater.Pause();
+                    }
                 }
                 else
                 {

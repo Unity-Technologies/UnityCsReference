@@ -38,14 +38,14 @@ namespace UnityEditor.Connect
 
         public void RetrievePackageInfo()
         {
-            if (Client.List(out m_listOperationId) == StatusCode.Error)
+            if (NativeClient.List(out m_listOperationId) == NativeClient.StatusCode.Error)
             {
                 Debug.LogWarning("Failed to call list packages!");
                 return;
             }
             m_listOperationRunning = true;
 
-            if (Client.Outdated(out m_outdatedOperationId) == StatusCode.Error)
+            if (NativeClient.Outdated(out m_outdatedOperationId) == NativeClient.StatusCode.Error)
             {
                 Debug.LogWarning("Failed to call outdated package!");
                 return;
@@ -81,7 +81,7 @@ namespace UnityEditor.Connect
             }
 
             long addOperationId = 0;
-            if (Client.Add(out addOperationId, m_outdatedPackages[packageName].packageId) == StatusCode.Error)
+            if (NativeClient.Add(out addOperationId, m_outdatedPackages[packageName].packageId) == NativeClient.StatusCode.Error)
             {
                 Debug.LogWarningFormat("Failed to update outdated package {0}!", packageName);
                 return false;
@@ -89,7 +89,7 @@ namespace UnityEditor.Connect
 
             if (WaitForPackageManagerOperation(addOperationId, string.Format("Updating Package {0} to version {1}", packageName, m_outdatedPackages[packageName].version)))
             {
-                UpmPackageInfo packageInfo = Client.GetAddOperationData(addOperationId);
+                UpmPackageInfo packageInfo = NativeClient.GetAddOperationData(addOperationId);
                 m_currentPackages[GetPackageRootName(packageInfo)] = packageInfo;
                 return true;
             }
@@ -100,18 +100,18 @@ namespace UnityEditor.Connect
         {
             if (m_outdatedOperationRunning)
             {
-                StatusCode status = Client.GetOperationStatus(m_outdatedOperationId);
+                NativeClient.StatusCode status = NativeClient.GetOperationStatus(m_outdatedOperationId);
                 switch (status)
                 {
-                    case StatusCode.Error:
-                    case StatusCode.NotFound:
+                    case NativeClient.StatusCode.Error:
+                    case NativeClient.StatusCode.NotFound:
                         m_outdatedOperationRunning = false;
                         Debug.LogWarning("Failed to retrieve outdated package list!");
                         break;
-                    case StatusCode.Done:
+                    case NativeClient.StatusCode.Done:
                     {
                         m_outdatedPackages.Clear();
-                        Dictionary<string, OutdatedPackage> outdatedData = Client.GetOutdatedOperationData(m_outdatedOperationId);
+                        Dictionary<string, OutdatedPackage> outdatedData = NativeClient.GetOutdatedOperationData(m_outdatedOperationId);
                         foreach (string key in outdatedData.Keys)
                         {
                             m_outdatedPackages[key] = outdatedData[key].latest;
@@ -119,8 +119,8 @@ namespace UnityEditor.Connect
                         m_outdatedOperationRunning = false;
                     }
                     break;
-                    case StatusCode.InProgress:
-                    case StatusCode.InQueue:
+                    case NativeClient.StatusCode.InProgress:
+                    case NativeClient.StatusCode.InQueue:
                     default:
                         break;
                 }
@@ -128,18 +128,18 @@ namespace UnityEditor.Connect
 
             if (m_listOperationRunning)
             {
-                StatusCode status = Client.GetOperationStatus(m_listOperationId);
+                NativeClient.StatusCode status = NativeClient.GetOperationStatus(m_listOperationId);
                 switch (status)
                 {
-                    case StatusCode.Error:
-                    case StatusCode.NotFound:
+                    case NativeClient.StatusCode.Error:
+                    case NativeClient.StatusCode.NotFound:
                         m_listOperationRunning = false;
                         Debug.LogWarning("Failed to retrieve package list!");
                         break;
-                    case StatusCode.Done:
+                    case NativeClient.StatusCode.Done:
                     {
                         m_currentPackages.Clear();
-                        OperationStatus listData = Client.GetListOperationData(m_listOperationId);
+                        OperationStatus listData = NativeClient.GetListOperationData(m_listOperationId);
                         for (int i = 0; i < listData.packageList.Length; ++i)
                         {
                             m_currentPackages[GetPackageRootName(listData.packageList[i])] = listData.packageList[i];
@@ -147,8 +147,8 @@ namespace UnityEditor.Connect
                         m_listOperationRunning = false;
                     }
                     break;
-                    case StatusCode.InProgress:
-                    case StatusCode.InQueue:
+                    case NativeClient.StatusCode.InProgress:
+                    case NativeClient.StatusCode.InQueue:
                     default:
                         break;
                 }

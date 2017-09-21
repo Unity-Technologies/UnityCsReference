@@ -2274,7 +2274,7 @@ namespace UnityEditor
                 if (folderNames.Length > 0 && folderNames[0] == AssetDatabase.GetPackagesMountPoint())
                 {
                     // Translate the packages root mount point
-                    folderNames[0] = "Packages";
+                    folderNames[0] = AssetDatabase.GetPackagesRootPath();
                 }
                 foreach (string folderName in folderNames)
                 {

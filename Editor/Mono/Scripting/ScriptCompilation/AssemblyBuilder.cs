@@ -97,37 +97,6 @@ namespace UnityEditor.Compilation
             }
         }
 
-        CompilerMessage[] ConvertCompilerMessages(List<UnityEditor.Scripting.Compilers.CompilerMessage> messages)
-        {
-            var newMessages = new CompilerMessage[messages.Count];
-
-            int index = 0;
-            foreach (var message in messages)
-            {
-                var newMessage = new CompilerMessage();
-
-                newMessage.message = message.message;
-                newMessage.file = message.file;
-                newMessage.line = message.line;
-                newMessage.column = message.column;
-
-                switch (message.type)
-                {
-                    case UnityEditor.Scripting.Compilers.CompilerMessageType.Error:
-                        newMessage.type = CompilerMessageType.Error;
-                        break;
-
-                    case UnityEditor.Scripting.Compilers.CompilerMessageType.Warning:
-                        newMessage.type = CompilerMessageType.Warning;
-                        break;
-                }
-
-                newMessages[index++] = newMessage;
-            }
-
-            return newMessages;
-        }
-
         void OnCompilationStarted(ScriptAssembly assembly, int phase)
         {
             if (buildStarted == null)
@@ -148,7 +117,7 @@ namespace UnityEditor.Compilation
             if (buildFinished == null)
                 return;
 
-            var convertedMessages = ConvertCompilerMessages(messages);
+            var convertedMessages = EditorCompilation.ConvertCompilerMessages(messages);
 
             try
             {

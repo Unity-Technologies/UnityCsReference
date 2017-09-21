@@ -10,7 +10,7 @@ using UnityEditorInternal;
 using UnityEditor.Scripting.Serialization;
 using UnityEngine;
 
-internal abstract class DesktopStandalonePostProcessor
+internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
 {
     protected BuildPostProcessArgs m_PostProcessArgs;
 
@@ -30,8 +30,10 @@ internal abstract class DesktopStandalonePostProcessor
         CopyStagingAreaIntoDestination();
     }
 
-    public void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
+    public override void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
     {
+        base.UpdateBootConfig(target, config, options);
+
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
         if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
@@ -221,7 +223,9 @@ internal abstract class DesktopStandalonePostProcessor
 
     protected virtual bool CopyFilter(string path)
     {
-        bool result = !path.Contains("UnityEngine.mdb");
+        bool result = true;
+        if (Path.GetExtension(path) == ".mdb" && Path.GetFileName(path).StartsWith("UnityEngine."))
+            result = false;
         result &= !path.Contains("UnityEngine.xml");
         return result;
     }

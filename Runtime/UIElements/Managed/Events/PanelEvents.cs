@@ -4,15 +4,11 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public interface IPanelEvent
+    public class AttachToPanelEvent : EventBase<AttachToPanelEvent>, IPropagatableEvent
     {
     }
 
-    public class AttachToPanelEvent : EventBase<AttachToPanelEvent>, IPanelEvent
-    {
-    }
-
-    public class DetachFromPanelEvent : EventBase<DetachFromPanelEvent>, IPanelEvent
+    public class DetachFromPanelEvent : EventBase<DetachFromPanelEvent>, IPropagatableEvent
     {
     }
 }

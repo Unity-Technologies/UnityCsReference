@@ -23,13 +23,11 @@ namespace UnityEngine.Experimental.Rendering
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct ShaderPassName
 {
-        #pragma warning disable 414
-            private int nameIndex;
-        #pragma warning restore 414
+            private int m_NameIndex;
     
             public ShaderPassName(string name)
         {
-            nameIndex = Init(name);
+            m_NameIndex = Init(name);
         }
     
     
@@ -37,33 +35,80 @@ public partial struct ShaderPassName
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  int Init (string name) ;
 
+    internal int nameIndex
+        {
+            get
+            {
+                return m_NameIndex;
+            }
+        }
+    
+    
 }
 
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-public partial struct DrawRendererSettings
+public unsafe partial struct DrawRendererSettings
 {
     
+            private const int kMaxShaderPasses = 16;
+            public static readonly int maxShaderPasses = kMaxShaderPasses;
+    
             public DrawRendererSortSettings sorting;
-            public ShaderPassName           shaderPassName;
-            public InputFilter              inputFilter;
+            private fixed int               shaderPassNames[kMaxShaderPasses];
             public RendererConfiguration    rendererConfiguration;
             public DrawRendererFlags        flags;
     
         #pragma warning disable 414
-            private IntPtr                  _cullResults;
+            private int                      m_OverrideMaterialInstanceId;
+            private int                      m_OverrideMaterialPassIdx;
         #pragma warning restore 414
-            public CullResults              cullResults { set { _cullResults = value.cullResults; } }
     
-            public DrawRendererSettings(CullResults cullResults, Camera camera, ShaderPassName shaderPassName)
+            public DrawRendererSettings(Camera camera, ShaderPassName shaderPassName)
         {
-            _cullResults = cullResults.cullResults;
-
-            this.shaderPassName = shaderPassName;
             rendererConfiguration = RendererConfiguration.None;
             flags = DrawRendererFlags.EnableInstancing;
 
-            inputFilter = InputFilter.Default();
+            m_OverrideMaterialInstanceId = 0;
+            m_OverrideMaterialPassIdx = 0;
+
+            fixed(int* p = shaderPassNames)
+            {
+                for (int i = 0; i < maxShaderPasses; i++)
+                {
+                    p[i] = -1;
+                }
+            }
+
+            fixed(int* p = shaderPassNames)
+            {
+                p[0] = shaderPassName.nameIndex;
+            }
+
+            rendererConfiguration = RendererConfiguration.None;
+            flags = DrawRendererFlags.EnableInstancing;
+
             InitializeSortSettings(camera, out sorting);
+        }
+    
+    public void SetOverrideMaterial(Material mat, int passIndex)
+        {
+            if (mat == null)
+                m_OverrideMaterialInstanceId = 0;
+            else
+                m_OverrideMaterialInstanceId = mat.GetInstanceID();
+
+            m_OverrideMaterialPassIdx = passIndex;
+        }
+    
+    public void SetShaderPassName(int index, ShaderPassName shaderPassName)
+        {
+            if (index >= maxShaderPasses || index < 0)
+                throw new ArgumentOutOfRangeException("index", string.Format("Index should range from 0 - DrawRendererSettings.maxShaderPasses ({0}), was {1}", maxShaderPasses, index));
+
+            fixed(int* p = shaderPassNames)
+            {
+                p[index] = shaderPassName.nameIndex;
+            }
         }
     
     
@@ -80,30 +125,34 @@ public partial struct ScriptableRenderContext
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Submit_Internal () ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void DrawRenderers_Internal (ref DrawRendererSettings settings) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  System.Array ExtractArrayFromList (object list) ;
-
-    
-    
-    private void DrawRenderersWithState_Internal (ref DrawRendererSettings settings, RenderStateBlock stateBlock) {
-        INTERNAL_CALL_DrawRenderersWithState_Internal ( ref this, ref settings, ref stateBlock );
+    private void DrawRenderers_Internal (FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings) {
+        INTERNAL_CALL_DrawRenderers_Internal ( ref this, ref renderers, ref drawSettings, ref filterSettings );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_DrawRenderersWithState_Internal (ref ScriptableRenderContext self, ref DrawRendererSettings settings, ref RenderStateBlock stateBlock);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void DrawRenderersWithStateMap_Internal (ref DrawRendererSettings settings, System.Array array, int length) ;
+    private extern static void INTERNAL_CALL_DrawRenderers_Internal (ref ScriptableRenderContext self, ref FilterResults renderers, ref DrawRendererSettings drawSettings, ref FilterRenderersSettings filterSettings);
+    private void DrawRenderers_StateBlock_Internal (FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, RenderStateBlock stateBlock) {
+        INTERNAL_CALL_DrawRenderers_StateBlock_Internal ( ref this, ref renderers, ref drawSettings, ref filterSettings, ref stateBlock );
+    }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_DrawRenderers_StateBlock_Internal (ref ScriptableRenderContext self, ref FilterResults renderers, ref DrawRendererSettings drawSettings, ref FilterRenderersSettings filterSettings, ref RenderStateBlock stateBlock);
+    private void DrawRenderers_StateMap_Internal (FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, System.Array stateMap, int stateMapLength) {
+        INTERNAL_CALL_DrawRenderers_StateMap_Internal ( ref this, ref renderers, ref drawSettings, ref filterSettings, stateMap, stateMapLength );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_DrawRenderers_StateMap_Internal (ref ScriptableRenderContext self, ref FilterResults renderers, ref DrawRendererSettings drawSettings, ref FilterRenderersSettings filterSettings, System.Array stateMap, int stateMapLength);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void DrawShadows_Internal (ref DrawShadowsSettings settings) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void EmitWorldGeometryForSceneView (Camera cullingCamera) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -201,6 +250,7 @@ public partial struct CullResults
             public List<VisibleLight>           visibleLights;
             public List<VisibleLight>           visibleOffscreenVertexLights;
             public List<VisibleReflectionProbe> visibleReflectionProbes;
+            public FilterResults                visibleRenderers;
             internal IntPtr                 cullResults;
     
     
@@ -209,6 +259,7 @@ public partial struct CullResults
             visibleLights = new List<VisibleLight>();
             visibleOffscreenVertexLights = new List<VisibleLight>();
             visibleReflectionProbes = new List<VisibleReflectionProbe>();
+            visibleRenderers = default(FilterResults);
             cullResults = IntPtr.Zero;
         }
     
@@ -247,7 +298,7 @@ public partial struct CullResults
     public static void Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, ref CullResults results)
         {
             if (results.visibleLights == null
-                || results.visibleLights == null
+                || results.visibleOffscreenVertexLights == null
                 || results.visibleReflectionProbes == null)
             {
                 results.Init();
@@ -262,6 +313,7 @@ public partial struct CullResults
             results.visibleLights = null;
             results.visibleOffscreenVertexLights = null;
             results.visibleReflectionProbes = null;
+            results.visibleRenderers = default(FilterResults);
 
             ScriptableCullingParameters cullingParams;
             if (!GetCullingParameters(camera, out cullingParams))

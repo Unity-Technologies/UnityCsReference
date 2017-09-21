@@ -18,6 +18,8 @@ namespace UnityEngine.Experimental.UIElements
 
         T GetScriptable<T>(string key) where T : ScriptableObject;
 
+        void Overwrite(object obj, string key);
+
         bool ContainsKey(string key);
 
         void OnBeforeSerialize();

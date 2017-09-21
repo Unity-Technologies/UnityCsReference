@@ -285,6 +285,10 @@ public sealed partial class Lightmapping
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void OnUpdateLightmapEncoding (BuildTargetGroup target) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void GetTerrainGIChunks (Terrain terrain, ref int numChunksX, ref int numChunksY) ;
 
     public extern static LightingDataAsset lightingDataAsset
@@ -397,10 +401,14 @@ public sealed partial class LightmapEditorSettings
 {
     public enum Lightmapper    
     {
-        
+        [System.Obsolete("Use Lightmapper.Enlighten instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.Enlighten", true)]
         Radiosity = 0,
         
-        PathTracer = 1
+        Enlighten = 0,
+        [System.Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
+        PathTracer = 1,
+        
+        ProgressiveCPU = 1
     }
 
     public enum Sampling    

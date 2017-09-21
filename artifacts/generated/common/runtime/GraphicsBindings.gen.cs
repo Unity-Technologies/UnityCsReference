@@ -16,39 +16,30 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-
-
-
-public sealed partial class OcclusionArea : Component
+internal sealed partial class NoAllocHelpers
 {
-    public Vector3 center
-    {
-        get { Vector3 tmp; INTERNAL_get_center(out tmp); return tmp;  }
-        set { INTERNAL_set_center(ref value); }
-    }
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void ResizeList (object list, int size) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_center (out Vector3 value) ;
+    extern public static  System.Array ExtractArrayFromList (object list) ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_center (ref Vector3 value) ;
-
-    public Vector3 size
-    {
-        get { Vector3 tmp; INTERNAL_get_size(out tmp); return tmp;  }
-        set { INTERNAL_set_size(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_size (out Vector3 value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_size (ref Vector3 value) ;
-
+    
+    
+    public static int SafeLength(System.Array values)
+        {
+            return values != null ? values.Length : 0;
+        }
+    
+    
+    public static int SafeLength<T>(List<T> values)
+        {
+            return values != null ? values.Count : 0;
+        }
+    
+    
 }
 
 public sealed partial class RenderSettings : Object
@@ -66,40 +57,6 @@ public sealed partial class RenderSettings : Object
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static void INTERNAL_set_ambientProbe (ref SphericalHarmonicsL2 value) ;
-
-    public static Color subtractiveShadowColor
-    {
-        get { Color tmp; INTERNAL_get_subtractiveShadowColor(out tmp); return tmp;  }
-        set { INTERNAL_set_subtractiveShadowColor(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static void INTERNAL_get_subtractiveShadowColor (out Color value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static void INTERNAL_set_subtractiveShadowColor (ref Color value) ;
-
-    public extern static Material skybox
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern static Light sun
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
 
     public extern static Cubemap customReflection
     {
@@ -220,36 +177,6 @@ public enum TextureCompressionQuality
     Best = 100
 }
 
-[RequireComponent(typeof(Transform))]
-internal sealed partial class Halo : Behaviour
-{
-}
-
-[RequireComponent(typeof(Transform))]
-public sealed partial class MeshFilter : Component
-{
-    public extern  Mesh mesh
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern  Mesh sharedMesh
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-}
-
 public partial class SkinnedMeshRenderer : Renderer
 {
     public extern  Transform[] bones
@@ -317,34 +244,6 @@ public sealed partial class TrailRenderer : Renderer
         set;
     }
 
-    public Color startColor
-    {
-        get { Color tmp; INTERNAL_get_startColor(out tmp); return tmp;  }
-        set { INTERNAL_set_startColor(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_startColor (out Color value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_startColor (ref Color value) ;
-
-    public Color endColor
-    {
-        get { Color tmp; INTERNAL_get_endColor(out tmp); return tmp;  }
-        set { INTERNAL_set_endColor(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_endColor (out Color value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_endColor (ref Color value) ;
-
     public extern  Gradient colorGradient
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -355,15 +254,6 @@ public sealed partial class TrailRenderer : Renderer
         set;
     }
 
-    public Vector3 GetPosition (int index) {
-        Vector3 result;
-        INTERNAL_CALL_GetPosition ( this, index, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetPosition (TrailRenderer self, int index, out Vector3 value);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public int GetPositions (Vector3[] positions) ;
@@ -382,34 +272,6 @@ public sealed partial class LineRenderer : Renderer
         set;
     }
 
-    public Color startColor
-    {
-        get { Color tmp; INTERNAL_get_startColor(out tmp); return tmp;  }
-        set { INTERNAL_set_startColor(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_startColor (out Color value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_startColor (ref Color value) ;
-
-    public Color endColor
-    {
-        get { Color tmp; INTERNAL_get_endColor(out tmp); return tmp;  }
-        set { INTERNAL_set_endColor(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_endColor (out Color value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_endColor (ref Color value) ;
-
     public extern  Gradient colorGradient
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -420,22 +282,6 @@ public sealed partial class LineRenderer : Renderer
         set;
     }
 
-    public void SetPosition (int index, Vector3 position) {
-        INTERNAL_CALL_SetPosition ( this, index, ref position );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetPosition (LineRenderer self, int index, ref Vector3 position);
-    public Vector3 GetPosition (int index) {
-        Vector3 result;
-        INTERNAL_CALL_GetPosition ( this, index, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetPosition (LineRenderer self, int index, out Vector3 value);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SetPositions (Vector3[] positions) ;
@@ -508,12 +354,6 @@ public sealed partial class MaterialPropertyBlock
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetColorImpl (MaterialPropertyBlock self, int nameID, ref Color value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  System.Array ExtractArrayFromList (object list) ;
-
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void SetFloatArrayImpl (int nameID, float[] values, int count) ;
@@ -610,12 +450,6 @@ internal partial struct RenderBufferHelper
 
 public sealed partial class Graphics
 {
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  System.Array ExtractArrayFromList (object list) ;
-
-    
-    
     [uei.ExcludeFromDocs]
 public static void DrawMesh (Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera , int submeshIndex , MaterialPropertyBlock properties , bool castShadows , bool receiveShadows ) {
     bool useLightProbes = true;
@@ -1310,38 +1144,6 @@ public static void SetRandomWriteTarget(int index, ComputeBuffer uav, [uei.Defau
 
 }
 
-[StructLayout(LayoutKind.Sequential)]
-[UsedByNativeCode]
-public sealed partial class LightmapData
-{
-    internal Texture2D m_Light;
-    internal Texture2D m_Dir;
-    internal Texture2D m_ShadowMask;
-    
-    
-    [System.Obsolete ("Use lightmapColor property (UnityUpgradable) -> lightmapColor")]
-    public Texture2D lightmapLight { get { return m_Light; } set { m_Light = value; } }
-    
-    
-    public Texture2D lightmapColor { get { return m_Light; } set { m_Light = value; } }
-    
-    
-    public Texture2D lightmapDir { get { return m_Dir; } set { m_Dir = value; } }
-    
-    
-    public Texture2D shadowMask { get { return m_ShadowMask; } set { m_ShadowMask = value; } }
-}
-
-public enum LightmapsModeLegacy
-{
-    
-    Single = 0,
-    
-    Dual = 1,
-    
-    Directional = 2,
-}
-
 public sealed partial class LightProbes : Object
 {
     public static void GetInterpolatedProbe (Vector3 position, Renderer renderer, out SphericalHarmonicsL2 probe) {
@@ -1424,33 +1226,6 @@ public sealed partial class LightmapSettings : Object
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void Reset () ;
 
-}
-
-public sealed partial class GeometryUtility
-{
-    private static void Internal_ExtractPlanes (Plane[] planes, Matrix4x4 worldToProjectionMatrix) {
-        INTERNAL_CALL_Internal_ExtractPlanes ( planes, ref worldToProjectionMatrix );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_Internal_ExtractPlanes (Plane[] planes, ref Matrix4x4 worldToProjectionMatrix);
-    public static bool TestPlanesAABB (Plane[] planes, Bounds bounds) {
-        return INTERNAL_CALL_TestPlanesAABB ( planes, ref bounds );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_TestPlanesAABB (Plane[] planes, ref Bounds bounds);
-    private static Bounds Internal_CalculateBounds (Vector3[] positions, Matrix4x4 transform) {
-        Bounds result;
-        INTERNAL_CALL_Internal_CalculateBounds ( positions, ref transform, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_Internal_CalculateBounds (Vector3[] positions, ref Matrix4x4 transform, out Bounds value);
 }
 
 public sealed partial class Screen

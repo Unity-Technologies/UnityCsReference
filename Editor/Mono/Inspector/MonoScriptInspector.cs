@@ -185,5 +185,32 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class MonoScriptInspector : TextAssetInspector
     {
+        public override void OnInspectorGUI()
+        {
+            if (targets.Length == 1)
+            {
+                GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
+
+                var assetPath = AssetDatabase.GetAssetPath(target);
+                var assembly = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
+                EditorGUILayout.LabelField("Filename", assembly);
+
+                var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
+
+                if (assemblyDefinitionFile != null)
+                {
+                    var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
+
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
+                    }
+                }
+
+                EditorGUILayout.Space();
+            }
+
+            base.OnInspectorGUI();
+        }
     }
 }

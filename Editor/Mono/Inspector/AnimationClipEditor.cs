@@ -217,6 +217,7 @@ namespace UnityEditor
 
             if (m_AvatarPreview != null && m_AvatarPreview.Animator != null)
             {
+                bool wasInitialized = true;
                 if (m_Controller == null)
                 {
                     m_Controller = new AnimatorController();
@@ -234,7 +235,9 @@ namespace UnityEditor
                         layers[0].avatarMask = mask;
                         m_Controller.layers = layers;
                     }
+                    wasInitialized = false;
                 }
+
                 if (m_State == null)
                 {
                     m_State = m_StateMachine.AddState("preview");
@@ -245,6 +248,7 @@ namespace UnityEditor
 
                     m_State.iKOnFeet = m_AvatarPreview.IKOnFeet;
                     m_State.hideFlags = HideFlags.HideAndDontSave;
+                    wasInitialized = false;
                 }
 
 
@@ -252,6 +256,12 @@ namespace UnityEditor
                 if (AnimatorController.GetEffectiveAnimatorController(m_AvatarPreview.Animator) != m_Controller)
                 {
                     AnimatorController.SetAnimatorController(m_AvatarPreview.Animator, m_Controller);
+                }
+                if (!wasInitialized)
+                {
+                    m_AvatarPreview.Animator.Play(0, 0, 0);
+                    m_AvatarPreview.Animator.Update(0);
+                    m_AvatarPreview.ResetPreviewFocus();
                 }
             }
         }

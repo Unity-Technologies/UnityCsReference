@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using UnityEditor.Experimental.U2D;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -121,6 +122,22 @@ namespace UnityEditor
             return outline;
         }
 
+        static public List<SpriteOutline> AcquireOutline(List<Vector2[]> outlineSP)
+        {
+            var outline = new List<SpriteOutline>();
+            if (outlineSP != null)
+            {
+                for (int j = 0; j < outlineSP.Count; ++j)
+                {
+                    SpriteOutline o = new SpriteOutline();
+                    o.m_Path.AddRange(outlineSP[j]);
+                    outline.Add(o);
+                }
+            }
+
+            return outline;
+        }
+
         static public void ApplyOutlineChanges(SerializedProperty outlineSP, List<SpriteOutline> outline)
         {
             outlineSP.ClearArray();
@@ -136,6 +153,20 @@ namespace UnityEditor
                     outlinePathSO.GetArrayElementAtIndex(k).vector2Value = o[k];
                 }
             }
+        }
+
+        static public List<Vector2[]> ApplyOutlineChanges(List<SpriteOutline> outline)
+        {
+            var result = new List<Vector2[]>();
+            if (outline != null)
+            {
+                for (int j = 0; j < outline.Count; ++j)
+                {
+                    result.Add(outline[j].m_Path.ToArray());
+                }
+            }
+
+            return result;
         }
 
         public void ApplyToSerializedProperty(SerializedProperty sp)
@@ -172,6 +203,30 @@ namespace UnityEditor
 
             outlineSP = sp.FindPropertyRelative("m_PhysicsShape");
             physicsShape = AcquireOutline(outlineSP);
+        }
+
+        public void LoadFromSpriteData(SpriteDataBase sp)
+        {
+            rect = sp.rect;
+            border = sp.border;
+            name = sp.name;
+            alignment = sp.alignment;
+            pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.pivot);
+            tessellationDetail = sp.tessellationDetail;
+            outline = AcquireOutline(sp.outline);
+            physicsShape = AcquireOutline(sp.physicsShape);
+        }
+
+        public void ApplyToSpriteData(SpriteDataBase sp)
+        {
+            sp.rect = rect;
+            sp.border = border;
+            sp.name = name;
+            sp.alignment = alignment;
+            sp.pivot = pivot;
+            sp.tessellationDetail = tessellationDetail;
+            sp.outline = ApplyOutlineChanges(outline);
+            sp.physicsShape = ApplyOutlineChanges(physicsShape);
         }
     }
 

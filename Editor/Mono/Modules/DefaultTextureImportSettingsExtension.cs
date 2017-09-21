@@ -203,7 +203,7 @@ namespace UnityEditor.Modules
                 }
             }
 
-            if ((platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed) || (platformSettings.allAreOverridden && TextureImporterInspector.IsCompressedDXTTextureFormat((TextureImporterFormat)formatForAll)))
+            if (platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.crunchedCompressionIsDifferent;
@@ -216,14 +216,21 @@ namespace UnityEditor.Modules
             }
 
             // compression quality
+            bool isCrunchedFormat = false
+                || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT1Crunched
+                || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT5Crunched
+                || (TextureImporterFormat)formatForAll == TextureImporterFormat.ETC_RGB4Crunched
+                || (TextureImporterFormat)formatForAll == TextureImporterFormat.ETC2_RGBA8Crunched
+            ;
+
             if (
-                // Is it "crunched" enabled and the format is DXT1/5? (the only formats that support crunch)
-                (platformSettings.crunchedCompression && !platformSettings.crunchedCompressionIsDifferent && (platformSettings.textureCompression != TextureImporterCompression.Uncompressed || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT1 || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT5)) ||
+                (platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed && platformSettings.crunchedCompression) ||
+                (!platformSettings.isDefault && isCrunchedFormat) ||
                 (!platformSettings.textureFormatIsDifferent && ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, (TextureImporterFormat)formatForAll)))
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.compressionQualityIsDifferent;
-                int compressionQuality = EditCompressionQuality(platformSettings.m_Target, platformSettings.compressionQuality);
+                int compressionQuality = EditCompressionQuality(platformSettings.m_Target, platformSettings.compressionQuality, isCrunchedFormat);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -248,14 +255,14 @@ namespace UnityEditor.Modules
             }
         }
 
-        private int EditCompressionQuality(BuildTarget target, int compression)
+        private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat)
         {
-            bool showAsEnum =
-                target == BuildTarget.iOS ||
-                target == BuildTarget.tvOS ||
-                target == BuildTarget.Android ||
-                target == BuildTarget.Tizen
-            ;
+            bool showAsEnum = !isCrunchedFormat && (
+                    target == BuildTarget.iOS ||
+                    target == BuildTarget.tvOS ||
+                    target == BuildTarget.Android ||
+                    target == BuildTarget.Tizen
+                    );
 
             if (showAsEnum)
             {

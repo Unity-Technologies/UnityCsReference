@@ -4,7 +4,7 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class PostLayoutEvent : EventBase<PostLayoutEvent>
+    public class PostLayoutEvent : EventBase<PostLayoutEvent>, IPropagatableEvent
     {
         public static PostLayoutEvent GetPooled(bool hasNewLayout)
         {

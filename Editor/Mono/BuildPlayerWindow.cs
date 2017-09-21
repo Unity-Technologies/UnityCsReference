@@ -106,6 +106,7 @@ namespace UnityEditor
             public GUIContent debugBuild = EditorGUIUtility.TextContent("Development Build");
             public GUIContent profileBuild = EditorGUIUtility.TextContent("Autoconnect Profiler");
             public GUIContent allowDebugging = EditorGUIUtility.TextContent("Script Debugging");
+            public GUIContent waitForManagedDebugger = EditorGUIUtility.TextContent("Wait For Managed Debugger|Show a dialog where you can attach a managed debugger before any script execution.");
             public GUIContent symlinkiOSLibraries = EditorGUIUtility.TextContent("Symlink Unity libraries");
             public GUIContent explicitNullChecks = EditorGUIUtility.TextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TextContent("Divide By Zero Checks");
@@ -144,6 +145,7 @@ namespace UnityEditor
 
 
         private const string kEditorBuildSettingsPath = "ProjectSettings/EditorBuildSettings.asset";
+        internal const string kSettingDebuggingWaitForManagedDebugger = "WaitForManagedDebugger";
 
         static Styles styles = null;
 
@@ -197,6 +199,12 @@ namespace UnityEditor
 
             Rect rect = GUILayoutUtility.GetRect(0, position.width, 0, position.height);
             m_TreeView.OnGUI(rect);
+        }
+
+        void OnDisable()
+        {
+            if (m_TreeView != null)
+                m_TreeView.UnsubscribeListChange();
         }
 
         void AddOpenScenes()
@@ -707,7 +715,20 @@ namespace UnityEditor
 
                 GUI.enabled = developmentBuild;
                 if (shouldDrawDebuggingToggle)
+                {
                     EditorUserBuildSettings.allowDebugging = EditorGUILayout.Toggle(styles.allowDebugging, EditorUserBuildSettings.allowDebugging);
+
+                    // Not all platforms have native dialog implemented in Runtime\Misc\GiveDebuggerChanceToAttachIfRequired.cpp
+                    // Display this option only for developer builds
+                    if (EditorUserBuildSettings.allowDebugging && Unsupported.IsDeveloperBuild())
+                    {
+                        var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
+
+                        bool value = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.GetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger) == "true");
+                        EditorUserBuildSettings.SetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger, value.ToString().ToLower());
+                    }
+                }
+
 
                 if (shouldDrawExplicitNullChecksToggle)
                 {

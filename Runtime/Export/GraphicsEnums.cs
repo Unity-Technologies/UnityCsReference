@@ -95,6 +95,13 @@ namespace UnityEngine
         Mixed = 1
     }
 
+    public enum MixedLightingMode
+    {
+        IndirectOnly = 0,
+        Shadowmask = 2,
+        Subtractive = 1
+    };
+
     [Obsolete("See QualitySettings.names, QualitySettings.SetQualityLevel, and QualitySettings.GetQualityLevel")]
     public enum QualityLevel
     {
@@ -776,7 +783,10 @@ namespace UnityEngine.Rendering
         Normal = 0,
         Vertex = 1,
         VertexLM = 2,
+
+        [System.Obsolete("VertexLMRGBM PassType is obsolete. Please use VertexLM PassType together with DecodeLightmap shader function.")]
         VertexLMRGBM = 3,
+
         ForwardBase = 4,
         ForwardAdd = 5,
         LightPrePassBase = 6,
@@ -1153,6 +1163,10 @@ namespace UnityEngine.Rendering
         UNITY_HARDWARE_TIER2,
         UNITY_HARDWARE_TIER3,
         UNITY_COLORSPACE_GAMMA,
+        UNITY_LIGHT_PROBE_PROXY_VOLUME,
+        UNITY_LIGHTMAP_DLDR_ENCODING,
+        UNITY_LIGHTMAP_RGBM_ENCODING,
+        UNITY_LIGHTMAP_FULL_HDR,
     }
 
     // Match TextureDimension on C++ side

@@ -29,6 +29,8 @@ namespace UnityEditorInternal
                 case "cs": return EditorGUIUtility.FindTexture("cs Script Icon");
                 case "guiskin": return EditorGUIUtility.FindTexture("GUISkin Icon");
                 case "js": return EditorGUIUtility.FindTexture("Js Script Icon");
+                case "dll": return EditorGUIUtility.FindTexture("Assembly Icon");
+                case "asmdef": return EditorGUIUtility.FindTexture("AssemblyDefinitionAsset Icon");
                 case "mat": return EditorGUIUtility.FindTexture("Material Icon");
                 case "physicmaterial": return EditorGUIUtility.FindTexture("PhysicMaterial Icon");
                 case "prefab": return EditorGUIUtility.FindTexture("PrefabNormal Icon");
@@ -395,6 +397,14 @@ namespace UnityEditorInternal
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             return GetCompilationDefines(EditorScriptCompilationOptions.BuildingEmpty, group, target);
+        }
+
+        internal static string GetMonolithicEngineAssemblyPath()
+        {
+            // We still build a monolithic UnityEngine.dll as a compilation target for user projects.
+            // It lives next to the editor dll.
+            var dir = Path.GetDirectoryName(GetEditorAssemblyPath());
+            return Path.Combine(dir, "UnityEngine.dll");
         }
     }
 }

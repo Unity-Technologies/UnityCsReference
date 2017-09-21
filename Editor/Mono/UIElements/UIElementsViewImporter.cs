@@ -13,12 +13,11 @@ using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 using StyleSheet = UnityEngine.StyleSheets.StyleSheet;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    [ScriptedImporter(2, "uxml", 0)]
+    [ScriptedImporter(3, "uxml", 0)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
         private const string k_XmlTemplate = "<" + k_TemplateNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
@@ -64,7 +63,7 @@ namespace UnityEditor.Experimental.UIElements
                     case ImportErrorCode.InvalidXml:
                         return "Xml is not valid, exception during parsing: {0}";
                     case ImportErrorCode.InvalidRootElement:
-                        return "Expected the XML Root element name to be 'Template', found '{0}'";
+                        return "Expected the XML Root element name to be '" + k_TemplateNode + "', found '{0}'";
                     case ImportErrorCode.UsingHasEmptyAlias:
                         return "'" + k_UsingNode + "' declaration requires a non-empty '" + k_UsingAliasAttr + "' attribute";
                     case ImportErrorCode.MissingPathAttributeOnUsing:
@@ -98,7 +97,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 string message = ErrorMessage(code);
                 string lineInfo = xmlLineInfo == null ? "" : string.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
-                return string.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error, string.Format(message, context));
+                return string.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error, string.Format(message, context == null ? "<null>" : context.ToString()));
             }
         }
 
@@ -117,16 +116,10 @@ namespace UnityEditor.Experimental.UIElements
                 m_Path = path;
             }
 
-            internal virtual void FinishImport()
+            private void LogError(VisualTreeAsset obj, Error error)
             {
-                Dictionary<string, VisualTreeAsset> cache = new Dictionary<string, VisualTreeAsset>();
-
-                foreach (var error in m_Errors)
+                try
                 {
-                    VisualTreeAsset obj;
-                    if (!cache.TryGetValue(error.filePath, out obj))
-                        cache.Add(error.filePath, obj = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(error.filePath));
-
                     switch (error.level)
                     {
                         case Error.Level.Info:
@@ -141,6 +134,37 @@ namespace UnityEditor.Experimental.UIElements
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
+                }
+                catch (FormatException)
+                {
+                    switch (error.level)
+                    {
+                        case Error.Level.Info:
+                            Debug.Log(error.ToString());
+                            break;
+                        case Error.Level.Warning:
+                            Debug.LogWarning(error.ToString());
+                            break;
+                        case Error.Level.Fatal:
+                            Debug.LogError(error.ToString());
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+
+            internal virtual void FinishImport()
+            {
+                Dictionary<string, VisualTreeAsset> cache = new Dictionary<string, VisualTreeAsset>();
+
+                foreach (var error in m_Errors)
+                {
+                    VisualTreeAsset obj;
+                    if (!cache.TryGetValue(error.filePath, out obj))
+                        cache.Add(error.filePath, obj = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(error.filePath));
+
+                    LogError(obj, error);
                 }
 
                 m_Errors.Clear();
@@ -159,48 +183,11 @@ namespace UnityEditor.Experimental.UIElements
 
         internal static DefaultLogger logger = new DefaultLogger();
 
-        private static readonly StringComparer k_Comparer = StringComparer.InvariantCulture;
-        private static readonly StringComparer k_AttributeComparer = StringComparer.Ordinal;
-
-        // element type name to asset type mapping
-        private static Dictionary<string, Type> s_EltTypes;
-
-        private static HashSet<string> s_ExcludedFields;
-
-        // all known element types
-        private static Dictionary<string, Type> elementTypes
-        {
-            get
-            {
-                if (s_EltTypes == null)
-                {
-                    s_EltTypes = new Dictionary<string, Type>(k_Comparer);
-
-                    foreach (var tt in typeof(VisualElementAsset).Assembly.GetTypes())
-                    {
-                        if (typeof(VisualElementAsset).IsAssignableFrom(tt) &&
-                            !tt.IsAbstract &&
-                            tt != typeof(TemplateAsset) &&
-                            tt.BaseType != null &&
-                            tt.BaseType.IsGenericType)
-                        {
-                            s_EltTypes.Add(tt.BaseType.GetGenericArguments()[0].FullName, tt);
-                        }
-                    }
-                }
-                return s_EltTypes;
-            }
-        }
-
         public override void OnImportAsset(AssetImportContext args)
         {
             logger.BeginImport(args.assetPath);
             VisualTreeAsset vta;
-            if (ImportXml(args.assetPath, out vta))
-            {
-                foreach (VisualElementAsset vea in vta.visualElementAssets)
-                    args.AddObjectToAsset(string.Format("c_{0}_{1}", vea.name ?? "x", vea.GetType().Name), vea);
-            }
+            ImportXml(args.assetPath, out vta);
 
             args.AddObjectToAsset("tree", vta);
             args.SetMainObject(vta);
@@ -211,10 +198,11 @@ namespace UnityEditor.Experimental.UIElements
             args.AddObjectToAsset("inlineStyle", vta.inlineSheet);
         }
 
-        internal static bool ImportXml(string xmlPath, out VisualTreeAsset vta)
+        internal static void ImportXml(string xmlPath, out VisualTreeAsset vta)
         {
             vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
             vta.visualElementAssets = new List<VisualElementAsset>();
+            vta.templateAssets = new List<TemplateAsset>();
 
             XDocument doc;
 
@@ -225,7 +213,7 @@ namespace UnityEditor.Experimental.UIElements
             catch (Exception e)
             {
                 logger.LogError(ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, Error.Level.Fatal, null);
-                return false;
+                return;
             }
 
             StyleSheetBuilder ssb = new StyleSheetBuilder();
@@ -235,8 +223,6 @@ namespace UnityEditor.Experimental.UIElements
             inlineSheet.name = "inlineStyle";
             ssb.BuildTo(inlineSheet);
             vta.inlineSheet = inlineSheet;
-
-            return true;
         }
 
         private static void LoadXmlRoot(XDocument doc, VisualTreeAsset vta, StyleSheetBuilder ssb)
@@ -333,29 +319,30 @@ namespace UnityEditor.Experimental.UIElements
         private static void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, StyleSheetBuilder ssb)
         {
             VisualElementAsset vea;
-            SerializedObject ser;
-            Dictionary<string, string> serializedProperties;
 
-            if (!ResolveType(elt, out vea, out ser, out serializedProperties, vta))
+            if (!ResolveType(elt, vta, out vea))
             {
                 logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownElement, elt.Name.LocalName, Error.Level.Fatal, elt);
                 return;
             }
 
-
             var parentId = (parent == null ? 0 : parent.id);
+
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
             int id = (parentId << 1) ^ vea.GetHashCode();
             vea.parentId = parentId;
             vea.id = id;
 
-            bool startedRule = ParseAttributes(elt, vea, ser, serializedProperties, ssb, vta, parent);
+            bool startedRule = ParseAttributes(elt, vea, ssb, vta, parent);
 
             // each vea will creates 0 or 1 style rule, with one or more properties
             // they don't have selectors and are directly referenced by index
             // it's then applied during tree cloning
             vea.ruleIndex = startedRule ? ssb.EndRule() : -1;
-            vta.visualElementAssets.Add(vea);
+            if (vea is TemplateAsset)
+                vta.templateAssets.Add((TemplateAsset)vea);
+            else
+                vta.visualElementAssets.Add(vea);
 
             if (elt.HasElements)
             {
@@ -380,44 +367,29 @@ namespace UnityEditor.Experimental.UIElements
             vea.stylesheets.Add(pathAttr.Value);
         }
 
-        private static bool ResolveType(XElement elt, out VisualElementAsset vea, out SerializedObject ser, out Dictionary<string, string> serializedProperties, VisualTreeAsset visualTreeAsset)
+        private static bool ResolveType(XElement elt, VisualTreeAsset visualTreeAsset, out VisualElementAsset vea)
         {
-            Type t;
-
+            string fullName;
             if (visualTreeAsset.AliasExists(elt.Name.LocalName))
             {
-                var tvea = ScriptableObject.CreateInstance<TemplateAsset>();
-                tvea.templateAlias = elt.Name.LocalName;
-                vea = tvea;
-                serializedProperties = new Dictionary<string, string>(k_AttributeComparer);
-                ser = new SerializedObject(vea);
-                return true;
+                vea = new TemplateAsset(elt.Name.LocalName);
             }
-
-            string fullName = String.IsNullOrEmpty(elt.Name.NamespaceName)
-                ? elt.Name.LocalName
-                : elt.Name.NamespaceName + "." + elt.Name.LocalName;
-
-            // HACK: wait for Theo's PR OR go with that
-            if (fullName == typeof(VisualElement).FullName)
-                fullName = typeof(VisualContainer).FullName;
-
-            if (elementTypes.TryGetValue(fullName, out t))
+            else
             {
-                vea = (VisualElementAsset)ScriptableObject.CreateInstance(t);
+                fullName = String.IsNullOrEmpty(elt.Name.NamespaceName)
+                    ? elt.Name.LocalName
+                    : elt.Name.NamespaceName + "." + elt.Name.LocalName;
 
-                ser = new SerializedObject(vea);
-                serializedProperties = GetAssetSerializedFields(ser);
-                return true;
+                // HACK: wait for Theo's PR OR go with that
+                if (fullName == typeof(VisualElement).FullName)
+                    fullName = typeof(VisualContainer).FullName;
+                vea = new VisualElementAsset(fullName);
             }
 
-            vea = null;
-            serializedProperties = null;
-            ser = null;
-            return false;
+            return true;
         }
 
-        private static bool ParseAttributes(XElement elt, VisualElementAsset res, SerializedObject properties, Dictionary<string, string> serializedProperties, StyleSheetBuilder ssb, VisualTreeAsset vta, VisualElementAsset parent)
+        private static bool ParseAttributes(XElement elt, VisualElementAsset res, StyleSheetBuilder ssb, VisualTreeAsset vta, VisualElementAsset parent)
         {
             // underscore means "unnamed element but it would not look pretty in the project window without one"
             res.name = "_" + res.GetType().Name;
@@ -441,12 +413,12 @@ namespace UnityEditor.Experimental.UIElements
                         res.classes = xattr.Value.Split(' ');
                         continue;
                     case "contentContainer":
-                        if (vta.contentContainer != null)
+                        if (vta.contentContainerId != 0)
                         {
                             logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, Error.Level.Fatal, elt);
                             continue;
                         }
-                        vta.contentContainer = res;
+                        vta.contentContainerId = res.id;
                         continue;
                     case k_SlotDefinitionAttr:
                         if (String.IsNullOrEmpty(xattr.Value))
@@ -469,7 +441,7 @@ namespace UnityEditor.Experimental.UIElements
                         templateAsset.AddSlotUsage(xattr.Value, res.id);
                         continue;
                     case "style":
-                        ExCSS.StyleSheet parsed = new ExCSS.Parser().Parse("* { " + xattr.Value + " }");
+                        ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
                         if (parsed.Errors.Count != 0)
                         {
                             logger.LogError(
@@ -499,6 +471,7 @@ namespace UnityEditor.Experimental.UIElements
                             StyleSheetImporter.VisitValue(errors, ssb, prop.Term);
                             ssb.EndProperty();
                         }
+
                         // Don't call ssb.EndRule() here, it's done in LoadXml to get the rule index at the same time !
                         continue;
                     case "pickingMode":
@@ -511,177 +484,9 @@ namespace UnityEditor.Experimental.UIElements
                         continue;
                 }
 
-                // then the matching VisualAsset
-                if (ParseAssetSerializedFieldValue(res, properties, serializedProperties, attrName, xattr))
-                    continue;
-
-                // otherwise the attribute is unknown
-                logger.LogError(ImportErrorType.Semantic,
-                    ImportErrorCode.UnknownAttribute,
-                    attrName,
-                    Error.Level.Warning,
-                    xattr);
+                res.AddProperty(xattr.Name.LocalName, xattr.Value);
             }
             return startedRule;
-        }
-
-        private static bool ParseValue(Type type, string attr, out object value)
-        {
-            bool success = false;
-            value = null;
-
-            if (type == typeof(int))
-            {
-                int f;
-                success = int.TryParse(attr, out f);
-                value = f;
-            }
-            else if (type == typeof(float))
-            {
-                float f;
-                success = float.TryParse(attr, out f);
-                value = f;
-            }
-            else if (type == typeof(string))
-            {
-                success = true;
-                value = attr;
-            }
-            else if (type == typeof(Color))
-            {
-                Color32 c;
-                if (ColorUtility.DoTryParseHtmlColor(attr, out c))
-                {
-                    value = (Color)c;
-                    success = true;
-                }
-            }
-            else if (type == typeof(Enum))
-            {
-                value = attr;
-                success = true;
-            }
-            else if (type.IsEnum)
-            {
-                success = Enum.IsDefined(type, attr);
-                if (success)
-                    value = Enum.Parse(type, attr);
-            }
-            else if (type == typeof(bool))
-            {
-                bool b;
-                success = bool.TryParse(attr, out b);
-                value = b;
-            }
-
-            return success;
-        }
-
-        private static Dictionary<string, string> GetAssetSerializedFields(SerializedObject ser)
-        {
-            Dictionary<string, string> serializedProperties = new Dictionary<string, string>(k_AttributeComparer);
-
-            SerializedProperty it = ser.GetIterator();
-            bool enterchildren = true;
-            while (it.NextVisible(enterchildren))
-            {
-                enterchildren = false;
-                if (ShouldExcludeAssetSerializedField(it.name))
-                    continue;
-                string key = it.displayName.Replace(" ", String.Empty);
-                key = Char.ToLower(key[0]) + key.Substring(1);
-                serializedProperties[key] = it.name;
-            }
-            return serializedProperties;
-        }
-
-        private static bool ShouldExcludeAssetSerializedField(string fieldName)
-        {
-            if (s_ExcludedFields == null)
-            {
-                s_ExcludedFields = new HashSet<string>(k_Comparer)
-                {
-                    "m_Id",
-                    "m_ParentId",
-                    "m_RuleIndex",
-                    "m_Text",
-                    "m_Classes",
-                };
-            }
-            return s_ExcludedFields.Contains(fieldName);
-        }
-
-        private static bool ParseAssetSerializedFieldValue(VisualElementAsset res, SerializedObject properties, Dictionary<string, string> serializedProperties, string attrName, XAttribute xattr)
-        {
-            string serPropName;
-            if (!serializedProperties.TryGetValue(attrName, out serPropName))
-                return false;
-
-            SerializedProperty serProp = properties.FindProperty(serPropName);
-            Type type;
-
-            switch (serProp.propertyType)
-            {
-                case SerializedPropertyType.Integer:
-                    type = typeof(int);
-                    break;
-                case SerializedPropertyType.Boolean:
-                    type = typeof(bool);
-                    break;
-                case SerializedPropertyType.Float:
-                    type = typeof(float);
-                    break;
-                case SerializedPropertyType.String:
-                    type = typeof(string);
-                    break;
-                case SerializedPropertyType.Color:
-                    type = typeof(Color);
-                    break;
-                case SerializedPropertyType.Enum:
-                    type = typeof(Enum);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(string.Format("Type of property {0}.{1} is not supported", res.GetType().Name, serProp.name));
-            }
-
-            string attr = xattr.Value;
-            object value;
-            if (!ParseValue(type, attr, out value))
-                return false;
-
-            serProp.serializedObject.Update();
-            switch (serProp.propertyType)
-            {
-                case SerializedPropertyType.Integer:
-                    serProp.intValue = (int)value;
-                    break;
-                case SerializedPropertyType.Boolean:
-                    serProp.boolValue = (bool)value;
-                    break;
-                case SerializedPropertyType.Float:
-                    serProp.floatValue = (float)value;
-                    break;
-                case SerializedPropertyType.String:
-                    serProp.stringValue = (string)value;
-                    break;
-                case SerializedPropertyType.Color:
-                    serProp.colorValue = (Color)value;
-                    break;
-                case SerializedPropertyType.Enum:
-                    int enumIndex = Array.FindIndex(serProp.enumNames, s => s == (string)value);
-                    if (enumIndex == -1)
-                    {
-                        Debug.LogErrorFormat("Unknown enum value");
-                        return false;
-                    }
-                    serProp.enumValueIndex = enumIndex;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(string.Format("Type of property {0}.{1} is not supported", res.GetType().Name, serProp.name));
-            }
-
-            serProp.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-            return true;
         }
     }
 

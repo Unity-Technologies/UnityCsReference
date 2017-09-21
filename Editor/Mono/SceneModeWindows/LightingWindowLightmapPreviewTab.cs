@@ -228,7 +228,7 @@ namespace UnityEditor
                     GUILayout.BeginVertical();
                     GUILayout.Label("Index: " + i, EditorStyles.miniBoldLabel);
 
-                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
                     {
                         LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
 

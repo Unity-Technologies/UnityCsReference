@@ -35,7 +35,9 @@ namespace UnityEngine.Experimental.UIElements
         // styles may have changed for children of this node
         StylesPath = 1 << 1,
         // pixels in the target have been changed, just repaint, only makes sense on the Panel
-        Repaint = 1 << 0
+        Repaint = 1 << 0,
+        All = Repaint | Transform | Layout | StylesPath |
+            Styles | PersistentData | PersistentDataPath
     }
 
     public abstract class BasePanelDebug
@@ -61,10 +63,7 @@ namespace UnityEngine.Experimental.UIElements
         VisualElement visualTree { get; }
 
         IEventDispatcher dispatcher { get; }
-        IScheduler scheduler { get; }
-        IDataWatchService dataWatch { get; }
         ContextType contextType { get; }
-
         FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
         VisualElement LoadTemplate(string path, Dictionary<string, VisualElement> slots = null);
@@ -90,8 +89,8 @@ namespace UnityEngine.Experimental.UIElements
         //IPanel
         public abstract VisualElement visualTree { get; }
         public abstract IEventDispatcher dispatcher { get; protected set; }
-        public abstract IScheduler scheduler { get; }
-        public abstract IDataWatchService dataWatch { get; protected set; }
+        internal abstract IScheduler scheduler { get; }
+        internal abstract IDataWatchService dataWatch { get; }
 
         public abstract ContextType contextType { get; protected set; }
         public abstract VisualElement Pick(Vector2 point);
@@ -125,7 +124,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public override IEventDispatcher dispatcher { get; protected set; }
 
-        public override IDataWatchService dataWatch { get; protected set; }
+        private IDataWatchService m_DataWatch;
+        internal override IDataWatchService dataWatch { get { return m_DataWatch; } }
 
         TimerEventScheduler m_Scheduler;
 
@@ -134,7 +134,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Scheduler ?? (m_Scheduler = new TimerEventScheduler()); }
         }
 
-        public override IScheduler scheduler
+        internal override IScheduler scheduler
         {
             get { return timerEventScheduler; }
         }
@@ -187,7 +187,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             this.ownerObject = ownerObject;
             this.contextType = contextType;
-            this.dataWatch = dataWatch;
+            m_DataWatch = dataWatch;
             this.dispatcher = dispatcher;
             stylePainter = new StylePainter();
             m_RootContainer = new VisualElement();
@@ -299,9 +299,11 @@ namespace UnityEngine.Experimental.UIElements
 
         void ValidatePersistentDataOnSubTree(VisualElement root, bool enablePersistence)
         {
-            // As soon as we encounter an element with no persistence key, we disable
-            // persistence it and all its children.
-            if (string.IsNullOrEmpty(root.persistenceKey))
+            // We don't want to persist when there is a high chance that there will
+            // be persistenceKey conflicts and data sharing. Generally, if an element
+            // has no persistenceKey, we do not persist it and any of its children.
+            // There are some exceptions, hence the use of IsPersitenceSupportedOnChildren().
+            if (!root.IsPersitenceSupportedOnChildren())
                 enablePersistence = false;
 
             if (root.IsDirty(ChangeType.PersistentData))

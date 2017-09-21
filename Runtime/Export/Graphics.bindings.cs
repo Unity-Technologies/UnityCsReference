@@ -221,3 +221,17 @@ namespace UnityEngine
         static public extern UInt64 GetCpuTimerFrequency();
     }
 }
+
+namespace UnityEngine
+{
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public sealed partial class GeometryUtility
+    {
+        [FreeFunction("GeometryUtilityScripting::ExtractPlanes")]
+        extern private static void Internal_ExtractPlanes(Plane[] planes, Matrix4x4 worldToProjectionMatrix);
+        [FreeFunction("GeometryUtilityScripting::TestPlanesAABB")]
+        extern public static bool TestPlanesAABB(Plane[] planes, Bounds bounds);
+        [FreeFunction("GeometryUtilityScripting::CalculateBounds")]
+        extern private static Bounds Internal_CalculateBounds(Vector3[] positions, Matrix4x4 transform);
+    }
+}

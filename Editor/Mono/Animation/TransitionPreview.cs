@@ -402,6 +402,10 @@ namespace UnityEditor
 
             m_AvatarPreview.Animator.StartPlayback();
 
+            m_AvatarPreview.Animator.playbackTime = 0f;
+            m_AvatarPreview.Animator.Update(0f);
+            m_AvatarPreview.ResetPreviewFocus();
+
             m_IsResampling = false;
         }
 

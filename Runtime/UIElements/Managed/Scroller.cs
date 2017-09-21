@@ -32,18 +32,20 @@ namespace UnityEngine.Experimental.UIElements
         public float value
         {
             get { return slider.value; }
-            set
-            {
-                slider.value = value;
-
-                if (valueChanged != null)
-                    valueChanged(slider.value);
-                this.Dirty(ChangeType.Repaint);
-            }
+            set { slider.value = value; }
         }
 
-        public float lowValue { get { return slider.lowValue; } }
-        public float highValue { get { return slider.highValue; } }
+        public float lowValue
+        {
+            get { return slider.lowValue; }
+            set { slider.lowValue = value; }
+        }
+
+        public float highValue
+        {
+            get { return slider.highValue; }
+            set { slider.highValue = value; }
+        }
 
         public Slider.Direction direction
         {
@@ -87,6 +89,10 @@ namespace UnityEngine.Experimental.UIElements
         void OnSliderValueChange(float newValue)
         {
             value = newValue;
+
+            if (valueChanged != null)
+                valueChanged(slider.value);
+            this.Dirty(ChangeType.Repaint);
         }
 
         public void ScrollPageUp()

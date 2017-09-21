@@ -88,6 +88,8 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
+            ClearBackground();
+
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
             DoWindowDecorationStart();
@@ -230,6 +232,15 @@ namespace UnityEditor
 
         public void InvokeOnGUI(Rect onGUIPosition)
         {
+            // Handle window reloading.
+            if (Unsupported.IsDeveloperBuild() &&
+                actualView != null &&
+                Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.F5)
+            {
+                Reload(actualView);
+                return;
+            }
+
             DoWindowDecorationStart();
 
             GUIStyle overlay = "dockareaoverlay";
@@ -394,6 +405,46 @@ namespace UnityEditor
             Selection.activeObject = (UnityEngine.Object)userData;
         }
 
+        private void Reload(object userData)
+        {
+            EditorWindow window = userData as EditorWindow;
+            if (window == null)
+                return;
+
+            // Get some info on the existing window.
+            Type windowType = window.GetType();
+
+            // Save what we can of the window.
+            string windowJson = EditorJsonUtility.ToJson(window);
+
+            DockArea dockArea = window.m_Parent as DockArea;
+            if (dockArea != null)
+            {
+                int windowIndex = dockArea.m_Panes.IndexOf(window);
+
+                // Destroy window.
+                dockArea.RemoveTab(window, false); // Don't kill dock if empty.
+                UnityEngine.Object.DestroyImmediate(window, true);
+
+                // Create window.
+                window = EditorWindow.CreateInstance(windowType) as EditorWindow;
+                dockArea.AddTab(windowIndex, window);
+            }
+            else
+            {
+                // Close the existing window.
+                window.Close();
+
+                // Recreate window.
+                window = EditorWindow.CreateInstance(windowType) as EditorWindow;
+                if (window != null)
+                    window.Show();
+            }
+
+            // Restore what we can of the window.
+            EditorJsonUtility.FromJsonOverwrite(windowJson, window);
+        }
+
         protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)
         {
             if (menu.GetItemCount() != 0)
@@ -403,6 +454,8 @@ namespace UnityEditor
             {
                 menu.AddItem(EditorGUIUtility.TextContent("Inspect Window"), false, Inspect, window);
                 menu.AddItem(EditorGUIUtility.TextContent("Inspect View"), false, Inspect, window.m_Parent);
+                menu.AddItem(EditorGUIUtility.TextContent("Reload Window _f5"), false, Reload, window);
+
                 menu.AddSeparator("");
             }
         }

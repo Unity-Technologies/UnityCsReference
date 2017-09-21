@@ -147,7 +147,7 @@ namespace UnityEditor
             // the search field gets properly cleared.
 
             if (EditorGUI.s_RecycledEditor != null)
-                EditorGUI.s_RecycledEditor.controlID = 0;
+                EditorGUI.s_RecycledEditor.EndEditing();
         }
 
         internal void SelectPreviousSearchResult()

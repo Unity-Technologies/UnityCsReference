@@ -159,7 +159,8 @@ namespace UnityEditor
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { new GUIContent("Input Manager"), new GUIContent("Input System (Preview)"), new GUIContent("Both") };
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TextContent("Virtual Reality moved to XR Settings");
-
+            public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TextContent("Lightmap Encoding|Affects the encoding scheme and compression format of the lightmaps.");
+            public static readonly GUIContent[] lightmapEncodingNames = { new GUIContent("Normal Quality"), new GUIContent("High Quality")};
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -306,6 +307,8 @@ namespace UnityEditor
         // OpenGL ES 3.1
         SerializedProperty m_RequireES31;
         SerializedProperty m_RequireES31AEP;
+
+        SerializedProperty m_LightmapEncodingQuality;
 
         // reorderable lists of graphics devices, per platform
         static Dictionary<BuildTarget, ReorderableList> s_GraphicsDeviceLists = new Dictionary<BuildTarget, ReorderableList>();
@@ -1581,10 +1584,12 @@ namespace UnityEditor
 
             bool hdrSupported = false;
             bool gfxJobModesSupported = false;
+            bool customLightmapEncodingSupported = (targetGroup == BuildTargetGroup.Standalone);
             if (settingsExtension != null)
             {
                 hdrSupported = settingsExtension.SupportsHighDynamicRangeDisplays();
                 gfxJobModesSupported = settingsExtension.SupportsGfxJobModes();
+                customLightmapEncodingSupported = customLightmapEncodingSupported || settingsExtension.SupportsCustomLightmapEncoding();
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
@@ -1597,11 +1602,12 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.PSM ||
                 targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WSA)
+                targetGroup == BuildTargetGroup.WSA ||
+                targetGroup == BuildTargetGroup.Switch)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_SkinOnGPU,
-                    targetGroup != BuildTargetGroup.PS4 ? Styles.skinOnGPU : Styles.skinOnGPUPS4);
+                    targetGroup != BuildTargetGroup.PS4 && targetGroup != BuildTargetGroup.Switch ? Styles.skinOnGPU : Styles.skinOnGPUPS4);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();
@@ -1639,6 +1645,28 @@ namespace UnityEditor
                         {
                             ApplyChangeGraphicsApiAction(BuildTarget.XboxOne, new GraphicsDeviceType[] { newGfxAPI }, action);
                         }
+                    }
+                }
+            }
+
+            // Show Lightmap Encoding quality option
+            if (customLightmapEncodingSupported)
+            {
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
+                    LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
+                    encodingQuality = BuildEnumPopup(Styles.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, Styles.lightmapEncodingNames);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, encodingQuality);
+
+                        Lightmapping.OnUpdateLightmapEncoding(targetGroup);
+
+                        serializedObject.ApplyModifiedProperties();
+
+                        GUIUtility.ExitGUI();
                     }
                 }
             }
