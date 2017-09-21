@@ -289,6 +289,22 @@ namespace UnityEditor
         bool ModeSurvivesSelectionChange(int toolMode);
     }
 
+    [AttributeUsage(AttributeTargets.Class)]
+    public class CustomEditorForRenderPipelineAttribute : CustomEditor
+    {
+        internal Type renderPipelineType;
+
+        public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline) : base(inspectedType)
+        {
+            renderPipelineType = renderPipeline;
+        }
+
+        public CustomEditorForRenderPipelineAttribute(Type inspectedType, Type renderPipeline, bool editorForChildClasses) : base(inspectedType, editorForChildClasses)
+        {
+            renderPipelineType = renderPipeline;
+        }
+    }
+
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
     {
         static Styles s_Styles;

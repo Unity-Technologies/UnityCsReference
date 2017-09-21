@@ -106,7 +106,7 @@ namespace UnityEditor
             get { return realtimeResolution; }
             set { realtimeResolution = value; }
         }
-        [System.Obsolete("GIBakeBackend has been renamed to Lightmapper. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper", false)]
+        [System.Obsolete("GIBakeBackend has been renamed to Lightmapper. (UnityUpgradable)", true)]
         public enum GIBakeBackend
         {
             Radiosity = 0,
@@ -117,7 +117,7 @@ namespace UnityEditor
         {
             get
             {
-                if (lightmapper == Lightmapper.PathTracer)
+                if (lightmapper == Lightmapper.ProgressiveCPU)
                     return GIBakeBackend.PathTracer;
                 else
                     return GIBakeBackend.Radiosity;
@@ -125,9 +125,9 @@ namespace UnityEditor
             set
             {
                 if (value == GIBakeBackend.PathTracer)
-                    lightmapper = Lightmapper.PathTracer;
+                    lightmapper = Lightmapper.ProgressiveCPU;
                 else
-                    lightmapper = Lightmapper.Radiosity;
+                    lightmapper = Lightmapper.Enlighten;
             }
         }
         [System.Obsolete("PathTracerSampling has been renamed to Sampling. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Sampling", false)]

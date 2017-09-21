@@ -139,7 +139,7 @@ namespace UnityEditor
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
             {
                 EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
                 serializedObject.ApplyModifiedProperties();
@@ -147,7 +147,7 @@ namespace UnityEditor
             }
             else
             {
-                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.PathTracer))
+                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.ProgressiveCPU))
                     EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
             }
             return false;

@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D.Interface;
 using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;
@@ -41,7 +42,6 @@ namespace UnityEditor
             }
         }
 
-        static int s_SceneDragUndoIndex;
         static List<Object> s_SceneDragObjects;
         static DragType s_DragType;
         enum DragType { NotInitialized, SpriteAnimation, CreateMultiple }
@@ -115,11 +115,21 @@ namespace UnityEditor
 
                     if (sprites.Count > 0 && s_SceneDragObjects != null)
                     {
+                        // Store current undoIndex to undo all operations done if any part of sprite creation fails
+                        int undoIndex = Undo.GetCurrentGroup();
+
                         // For external drags, we have delayed all creation to DragPerform because only now we have the imported sprite assets
                         if (s_SceneDragObjects.Count == 0)
                         {
                             CreateSceneDragObjects(sprites);
                             PositionSceneDragObjects(s_SceneDragObjects, sceneView, evt.mousePosition);
+                        }
+
+                        foreach (GameObject dragGO in s_SceneDragObjects)
+                        {
+                            dragGO.hideFlags = HideFlags.None;
+                            Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
+                            EditorUtility.SetDirty(dragGO);
                         }
 
                         bool createGameObject = true;
@@ -133,16 +143,12 @@ namespace UnityEditor
 
                         if (createGameObject)
                         {
-                            foreach (GameObject dragGO in s_SceneDragObjects)
-                            {
-                                dragGO.hideFlags = HideFlags.None;
-                                Undo.RecordObject(dragGO, "Create Sprite");
-                            }
                             Selection.objects = s_SceneDragObjects.ToArray();
-
-                            // Collapse all Create Sprite actions done during this Drag action into one Undo
-                            Undo.SetCurrentGroupName("Create Sprite");
-                            Undo.CollapseUndoOperations(s_SceneDragUndoIndex);
+                        }
+                        else
+                        {
+                            // Revert all Create Sprite actions if animation failed to be created or was cancelled
+                            Undo.RevertAllDownToGroup(undoIndex);
                         }
                         CleanUp(!createGameObject);
                         evt.Use();
@@ -151,11 +157,6 @@ namespace UnityEditor
                 case EventType.DragExited:
                     if (s_SceneDragObjects != null)
                     {
-                        if (s_SceneDragObjects.Count > 0 && s_SceneDragUndoIndex < Undo.GetCurrentGroup())
-                        {
-                            // Revert any Undo actions as part of Cleanup
-                            Undo.RevertAllDownToGroup(s_SceneDragUndoIndex);
-                        }
                         CleanUp(true);
                         evt.Use();
                     }
@@ -213,7 +214,6 @@ namespace UnityEditor
             if (s_SceneDragObjects == null)
                 s_SceneDragObjects = new List<Object>();
 
-            s_SceneDragUndoIndex = Undo.GetCurrentGroup();
             if (s_DragType == DragType.CreateMultiple)
             {
                 foreach (Sprite sprite in sprites)
@@ -223,8 +223,6 @@ namespace UnityEditor
             {
                 s_SceneDragObjects.Add(CreateDragGO(sprites[0], Vector3.zero));
             }
-            // Increment Undo group as future drag update events may force an Undo for current group
-            Undo.IncrementCurrentGroup();
         }
 
         private static void CleanUp(bool deleteTempSceneObject)
@@ -425,11 +423,8 @@ namespace UnityEditor
 
             SpriteRenderer spriteRenderer = go.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = frame;
-
             go.transform.position = position;
             go.hideFlags = HideFlags.HideAndDontSave;
-            Undo.RegisterCreatedObjectUndo(go, "Create Sprite");
-
             return go;
         }
 
@@ -632,13 +627,9 @@ namespace UnityEditor
             return copy;
         }
 
-        public static SpriteImportMode GetSpriteImportMode(IAssetDatabase assetDatabase, ITexture2D texture)
+        public static SpriteImportMode GetSpriteImportMode(ISpriteEditorDataProvider dataProvider)
         {
-            string spriteAssetPath = assetDatabase.GetAssetPath(texture);
-            if (string.IsNullOrEmpty(spriteAssetPath))
-                return SpriteImportMode.None;
-            ITextureImporter ti = assetDatabase.GetAssetImporterFromPath(spriteAssetPath) as ITextureImporter;
-            return ti == null ? SpriteImportMode.None : ti.spriteImportMode;
+            return dataProvider == null ? SpriteImportMode.None : dataProvider.spriteImportMode;
         }
     }
 }

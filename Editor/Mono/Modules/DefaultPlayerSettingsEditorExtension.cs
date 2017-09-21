@@ -125,5 +125,10 @@ namespace UnityEditor.Modules
             }
             else EditorGUILayout.PropertyField(m_MTRendering, m_MTRenderingTooltip);
         }
+
+        public virtual bool SupportsCustomLightmapEncoding()
+        {
+            return false;
+        }
     }
 }

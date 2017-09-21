@@ -11,7 +11,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     abstract class GraphViewEditorWindow : EditorWindow
     {
         public GraphView graphView { get; private set; }
-        public GraphViewPresenter presenter { get; private set; }
+
+        private GraphViewPresenter m_Presenter;
+        public GraphViewPresenter presenter
+        {
+            get { return m_Presenter; }
+            private set
+            {
+                if (dataWatchHandle != null && graphView != null)
+                {
+                    graphView.dataWatch.UnregisterWatch(dataWatchHandle);
+                }
+                m_Presenter = value;
+
+                if (graphView != null)
+                    dataWatchHandle = graphView.dataWatch.RegisterWatch(m_Presenter, OnChanged);
+            }
+        }
 
         public T GetPresenter<T>() where T : GraphViewPresenter
         {
@@ -19,18 +35,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         // we watch the data source for destruction and re-create it
-        IDataWatchHandle handle;
+        IUIElementDataWatchRequest dataWatchHandle;
 
         protected void OnEnable()
         {
             presenter = BuildPresenters();
             graphView = BuildView();
+
             graphView.name = "theView";
             graphView.persistenceKey = "theView";
             graphView.presenter = presenter;
             graphView.StretchToParentSize();
             graphView.RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
-            graphView.RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+
+            if (dataWatchHandle == null)
+            {
+                dataWatchHandle = graphView.dataWatch.RegisterWatch(m_Presenter, OnChanged);
+            }
 
             this.GetRootVisualContainer().Add(graphView);
         }
@@ -51,35 +72,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 presenter = BuildPresenters();
                 graphView.presenter = presenter;
             }
-            handle = graphView.panel.dataWatch.AddWatch(graphView, presenter, OnChanged);
         }
 
-        void OnLeavePanel(DetachFromPanelEvent e)
-        {
-            if (handle != null)
-            {
-                handle.Dispose();
-                handle = null;
-            }
-            else
-            {
-                Debug.LogError("No active handle to remove");
-            }
-        }
-
-        void OnChanged()
+        void OnChanged(Object changedObject)
         {
             // If data was destroyed, remove the watch and try to re-create it
             if (presenter == null && graphView.panel != null)
             {
-                if (handle != null)
-                {
-                    handle.Dispose();
-                }
-
                 presenter = BuildPresenters();
                 graphView.presenter = presenter;
-                handle = graphView.panel.dataWatch.AddWatch(graphView, presenter, OnChanged);
             }
         }
     }

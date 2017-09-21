@@ -57,6 +57,29 @@ namespace UnityEditor.Experimental.UIElements
             return m_Dict[key] as T;
         }
 
+        public void Overwrite(object obj, string key)
+        {
+            if (!ContainsKey(key))
+                return;
+
+            if (m_Dict[key] is string)
+            {
+                EditorJsonUtility.FromJsonOverwrite((string)m_Dict[key], obj);
+                m_Dict[key] = obj;
+            }
+            else if (m_Dict[key] != obj)
+            {
+                // If the dict. value has already been expanded but it's not
+                // the same instance as the obj being passed in, we need to
+                // copy the serialized data from the object in the dict to the
+                // obj passed in and then fix the dict reference to point
+                // to the obj.
+                string json = EditorJsonUtility.ToJson(m_Dict[key]);
+                EditorJsonUtility.FromJsonOverwrite(json, obj);
+                m_Dict[key] = obj;
+            }
+        }
+
         public bool ContainsKey(string key)
         {
             return m_Dict.ContainsKey(key);

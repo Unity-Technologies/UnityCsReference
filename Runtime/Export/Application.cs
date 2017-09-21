@@ -17,14 +17,22 @@ namespace UnityEngine
 
     partial class Application
     {
-        public static event UnityAction onBeforeRender;
+        public static event UnityAction onBeforeRender
+        {
+            add
+            {
+                BeforeRenderHelper.RegisterCallback(value);
+            }
+            remove
+            {
+                BeforeRenderHelper.UnregisterCallback(value);
+            }
+        }
 
         [RequiredByNativeCode]
         internal static void InvokeOnBeforeRender()
         {
-            UnityAction callback = onBeforeRender;
-            if (callback != null)
-                callback();
+            BeforeRenderHelper.Invoke();
         }
 
         [System.Obsolete("Application.RegisterLogCallback is deprecated. Use Application.logMessageReceived instead.")]

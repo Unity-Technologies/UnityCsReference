@@ -127,13 +127,6 @@ public sealed partial class Sprite : Object
     extern private  void INTERNAL_get_rect (out Rect value) ;
 
 
-    public extern  float pixelsPerUnit
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
     public extern  Texture2D texture
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

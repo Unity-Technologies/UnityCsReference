@@ -274,6 +274,15 @@ public sealed partial class EditorBuildSettingsScene : IComparable
 
 public sealed partial class EditorBuildSettings
 {
+    public static event System.Action sceneListChanged;
+    [RequiredByNativeCode]
+    private static void SceneListChanged()
+        {
+            if (sceneListChanged != null)
+                sceneListChanged();
+        }
+    
+    
     public extern static EditorBuildSettingsScene[] scenes
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -960,16 +969,6 @@ public static bool SwitchActiveBuildTarget(BuildTarget target)
 
     [System.Obsolete ("forceOptimizeScriptCompilation is obsolete - will always return false. Control script optimization using the 'IL2CPP optimization level' configuration in Player Settings / Other.")]
     public extern static bool forceOptimizeScriptCompilation
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    internal extern static bool facebookCreatePackageForSubmission
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

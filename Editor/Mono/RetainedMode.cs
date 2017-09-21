@@ -50,7 +50,6 @@ namespace UnityEditor
         static void UpdateSchedulersInternal(HashSet<Object> tmpDirtySet)
         {
             DataWatchService.sharedInstance.PollNativeData();
-            DataWatchService.sharedInstance.FlushDirtySet(tmpDirtySet);
 
             var iterator = UIElementsUtility.GetPanelsIterator();
             while (iterator.MoveNext())
@@ -65,8 +64,6 @@ namespace UnityEditor
 
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
-
-                DataWatchService.sharedInstance.ProcessNotificationQueue(panel, tmpDirtySet);
 
                 // Dispatch might have triggered a repaint request.
                 if (panel.visualTree.IsDirty(ChangeType.Repaint))

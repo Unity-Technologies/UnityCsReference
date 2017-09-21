@@ -16,10 +16,20 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+namespace UnityEditor.XR.Daydream
+{
+public enum SupportedHeadTracking
+{
+    
+    ThreeDoF = 0,
+    
+    SixDoF = 1
+}
+
+}
+
 namespace UnityEditor
 {
-
-
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
     public static partial class VRCardboard    
@@ -59,6 +69,26 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         }
 
         public extern static int depthFormat
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static XR.Daydream.SupportedHeadTracking minimumSupportedHeadTracking
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static XR.Daydream.SupportedHeadTracking maximumSupportedHeadTracking
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

@@ -108,7 +108,7 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate
             };
         }
-        private static Texts s_Texts = new Texts();
+        private static Texts s_Texts;
 
         public CollisionModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "CollisionModule", displayName)
@@ -139,6 +139,8 @@ namespace UnityEditor
             // Already initialized?
             if (m_Type != null)
                 return;
+            if (s_Texts == null)
+                s_Texts = new Texts();
 
             m_Type = GetProperty("type");
 

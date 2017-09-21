@@ -27,6 +27,16 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("timelineInfo", parameters);
         }
 
+        internal static bool SendEventBuildTargetDevice(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildTargetDevice", parameters);
+        }
+
+        internal static bool SendEventSceneViewInfo(object parameters)
+        {
+            return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
+        }
+
         public extern static bool enabled
         {
             get;

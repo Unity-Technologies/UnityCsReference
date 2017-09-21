@@ -90,8 +90,6 @@ namespace UnityEditor
             public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TextContent("Custom Vertex Streams|Choose whether to send custom particle data to the shader.");
 
-            public GUIContent warningNon16BitIndex = EditorGUIUtility.TextContent("Only 16 bit index buffer meshes are supported.");
-
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
             {
@@ -361,15 +359,6 @@ namespace UnityEditor
                     List<SerializedProperty> shownMeshes = new List<SerializedProperty>(m_ShownMeshes);
                     shownMeshes.Add(m_Meshes[shownMeshes.Count]);
                     m_ShownMeshes = shownMeshes.ToArray();
-                }
-            }
-
-            for (var i = 0; i < m_Meshes.Length; ++i)
-            {
-                var mesh = m_Meshes[i].objectReferenceValue as Mesh;
-                if (mesh != null && mesh.indexFormat != UnityEngine.Rendering.IndexFormat.UInt16)
-                {
-                    EditorGUILayout.HelpBox(s_Texts.warningNon16BitIndex.text, MessageType.Warning, true);
                 }
             }
         }

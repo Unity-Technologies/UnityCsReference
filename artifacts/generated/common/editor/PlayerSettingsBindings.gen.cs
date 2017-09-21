@@ -176,6 +176,13 @@ public enum IconKind
     Store = 4
 }
 
+internal enum LightmapEncodingQuality
+    {
+        Normal = 1,
+        High = 2
+    }
+
+
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
     private static SerializedObject _serializedObject;
@@ -864,6 +871,14 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetBatchingForPlatform (BuildTarget platform, int staticBatching, int dynamicBatching) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  LightmapEncodingQuality GetLightmapEncodingQualityForPlatformGroup (BuildTargetGroup platformGroup) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void SetLightmapEncodingQualityForPlatformGroup (BuildTargetGroup platformGroup, LightmapEncodingQuality encodingQuality) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

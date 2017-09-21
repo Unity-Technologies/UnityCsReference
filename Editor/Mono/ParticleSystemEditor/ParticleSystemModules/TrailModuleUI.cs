@@ -26,6 +26,7 @@ namespace UnityEditor
             public GUIContent colorOverTrail = EditorGUIUtility.TextContent("Color over Trail|Select a color for the trail from its start to end vertex.");
             public GUIContent generateLightingData = EditorGUIUtility.TextContent("Generate Lighting Data|Toggle generation of normal and tangent data, for use in lit shaders.");
             public GUIContent ribbonCount = EditorGUIUtility.TextContent("Ribbon Count|Select how many ribbons to render throughout the Particle System.");
+            public GUIContent splitSubEmitterRibbons = EditorGUIUtility.TextContent("Split Sub Emitter Ribbons|When used on a sub emitter, ribbons will connect particles from each parent particle independently.");
 
             public GUIContent[] trailModeOptions =
             {
@@ -58,6 +59,7 @@ namespace UnityEditor
         SerializedMinMaxGradient m_ColorOverTrail;
         SerializedProperty m_GenerateLightingData;
         SerializedProperty m_RibbonCount;
+        SerializedProperty m_SplitSubEmitterRibbons;
 
         public TrailModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "TrailModule", displayName)
@@ -88,6 +90,7 @@ namespace UnityEditor
             m_ColorOverTrail = new SerializedMinMaxGradient(this, "colorOverTrail");
             m_GenerateLightingData = GetProperty("generateLightingData");
             m_RibbonCount = GetProperty("ribbonCount");
+            m_SplitSubEmitterRibbons = GetProperty("splitSubEmitterRibbons");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -106,6 +109,7 @@ namespace UnityEditor
                 else
                 {
                     GUIInt(s_Texts.ribbonCount, m_RibbonCount);
+                    GUIToggle(s_Texts.splitSubEmitterRibbons, m_SplitSubEmitterRibbons);
                 }
             }
 
@@ -143,7 +147,10 @@ namespace UnityEditor
 
         public override void UpdateCullingSupportedString(ref string text)
         {
-            text += "\nTrails module is enabled.";
+            Init();
+
+            if (m_Mode.intValue == (int)ParticleSystemTrailMode.PerParticle)
+                text += "\nTrails module is enabled.";
         }
     }
 } // namespace UnityEditor

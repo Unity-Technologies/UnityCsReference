@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Experimental.Build.Player
@@ -17,42 +17,69 @@ namespace UnityEditor.Experimental.Build.Player
         Assertions = 1 << 1
     }
 
-    [UsedByNativeCode]
     [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     public struct ScriptCompilationSettings
     {
-        public string outputFolder;
-        public BuildTarget target;
-        public BuildTargetGroup targetGroup;
-        public ScriptCompilationOptions options;
-        internal TypeDB resultTypeDB;
+        [NativeName("target")]
+        internal BuildTarget m_Target;
+        public BuildTarget target
+        {
+            get { return m_Target; }
+            set { m_Target = value; }
+        }
+
+        [NativeName("group")]
+        internal BuildTargetGroup m_Group;
+        public BuildTargetGroup group
+        {
+            get { return m_Group; }
+            set { m_Group = value; }
+        }
+
+        [NativeName("options")]
+        internal ScriptCompilationOptions m_Options;
+        public ScriptCompilationOptions options
+        {
+            get { return m_Options; }
+            set { m_Options = value; }
+        }
+
+        [NativeName("resultTypeDB")]
+        internal TypeDB m_ResultTypeDB;
     }
 
-    [UsedByNativeCode]
     [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     public struct ScriptCompilationResult
     {
-        public string[] assemblies;
+        [NativeName("assemblies")]
+        internal string[] m_Assemblies;
+        public ReadOnlyCollection<string> assemblies { get { return Array.AsReadOnly(m_Assemblies); } }
+
         [Ignore]
-        public TypeDB typeDB;
+        internal TypeDB m_TypeDB;
+        public TypeDB typeDB { get { return m_TypeDB; } }
     }
 
     [NativeHeader("Modules/BuildPipeline/Editor/Public/PlayerBuildInterface.h")]
     public class PlayerBuildInterface
     {
         [FreeFunction(Name = "BuildPipeline::CompilePlayerScripts")]
-        extern private static ScriptCompilationResult CompilePlayerScriptsNative(ScriptCompilationSettings input, bool editorScripts);
+        extern private static ScriptCompilationResult CompilePlayerScriptsNative(ScriptCompilationSettings input, string outputFolder, bool editorScripts);
 
-        public static ScriptCompilationResult CompilePlayerScripts(ScriptCompilationSettings input)
+        public static ScriptCompilationResult CompilePlayerScripts(ScriptCompilationSettings input, string outputFolder)
         {
-            return CompilePlayerScriptsInternal(input, false);
+            return CompilePlayerScriptsInternal(input, outputFolder, false);
         }
 
-        internal static ScriptCompilationResult CompilePlayerScriptsInternal(ScriptCompilationSettings input, bool editorScripts)
+        internal static ScriptCompilationResult CompilePlayerScriptsInternal(ScriptCompilationSettings input, string outputFolder, bool editorScripts)
         {
-            input.resultTypeDB = new TypeDB();
-            ScriptCompilationResult result = CompilePlayerScriptsNative(input, editorScripts);
-            result.typeDB = result.assemblies.Length != 0 ? input.resultTypeDB : null;
+            input.m_ResultTypeDB = new TypeDB();
+            ScriptCompilationResult result = CompilePlayerScriptsNative(input, outputFolder, editorScripts);
+            result.m_TypeDB = result.m_Assemblies.Length != 0 ? input.m_ResultTypeDB : null;
             return result;
         }
     }

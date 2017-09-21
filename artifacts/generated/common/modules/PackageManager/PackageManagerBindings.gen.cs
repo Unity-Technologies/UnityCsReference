@@ -22,15 +22,11 @@ namespace UnityEditor.PackageManager
 {
 
 
-public sealed partial class Client
+internal sealed partial class NativeClient
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  StatusCode List (out long operationId) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  StatusCode Resolve (out long operationId) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -78,22 +74,8 @@ public sealed partial class Client
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  OutdatedPackage[] INTERNAL_GetOutdatedOperationData (long operationId, out string[] names) ;
+    extern public static  OutdatedPackage[] GetOutdatedOperationData (long operationId, out string[] names) ;
 
-    public static Dictionary<string, OutdatedPackage> GetOutdatedOperationData(long operationId)
-        {
-            string[] names;
-            OutdatedPackage[] outdated = INTERNAL_GetOutdatedOperationData(operationId, out names);
-
-            Dictionary<string, OutdatedPackage> res = new Dictionary<string, OutdatedPackage>(names.Length);
-            for (int i = 0; i < names.Length; ++i)
-            {
-                res[names[i]] = outdated[i];
-            }
-            return res;
-        }
-    
-    
 }
 
 

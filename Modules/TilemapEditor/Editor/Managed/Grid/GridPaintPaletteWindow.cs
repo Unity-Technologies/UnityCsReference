@@ -374,18 +374,22 @@ namespace UnityEditor
             if (paletteInstance != null && palette != null)
             {
                 GridPaintingState.savingPalette = true;
-                SetHideFlagsRecursively(paletteInstance, HideFlags.HideInHierarchy);
+                SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideInHierarchy);
                 PrefabUtility.ReplacePrefab(paletteInstance, palette, ReplacePrefabOptions.ReplaceNameBased);
-                SetHideFlagsRecursively(paletteInstance, HideFlags.HideAndDontSave);
+                SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideAndDontSave);
                 GridPaintingState.savingPalette = false;
             }
         }
 
-        private void SetHideFlagsRecursively(GameObject root, HideFlags flags)
+        private void SetHideFlagsRecursivelyIgnoringTilemapChildren(GameObject root, HideFlags flags)
         {
             root.hideFlags = flags;
-            for (int i = 0; i < root.transform.childCount; i++)
-                SetHideFlagsRecursively(root.transform.GetChild(i).gameObject, flags);
+            // case 944661: Ignore all child game objects instantiated by a Tilemap component in the palette
+            if (root.GetComponent<Tilemap>() == null)
+            {
+                for (int i = 0; i < root.transform.childCount; i++)
+                    SetHideFlagsRecursivelyIgnoringTilemapChildren(root.transform.GetChild(i).gameObject, flags);
+            }
         }
 
         private void DoContextMenu()
@@ -527,6 +531,9 @@ namespace UnityEditor
 
         private void ToolChanged(Tool from, Tool to)
         {
+            if (to != Tool.None && PaintableGrid.InGridEditMode())
+                EditMode.QuitEditMode();
+
             Repaint();
         }
 
@@ -879,6 +886,12 @@ namespace UnityEditor
         {
             if (GridPaintingState.defaultBrush != null && GridPaintingState.scenePaintTarget != null)
                 SceneViewOverlay.Window(Styles.rendererOverlayTitleLabel, DisplayFocusMode, (int)SceneViewOverlay.Ordering.TilemapRenderer, SceneViewOverlay.WindowDisplayOption.OneWindowPerTitle);
+            else if (TilemapEditorUserSettings.focusMode != TilemapEditorUserSettings.FocusMode.None)
+            {
+                // case 946284: Disable Focus if focus mode is set but there is nothing to focus on
+                DisableFocus();
+                TilemapEditorUserSettings.focusMode = TilemapEditorUserSettings.FocusMode.None;
+            }
         }
 
         private void DisplayFocusMode(Object displayTarget, SceneView sceneView)

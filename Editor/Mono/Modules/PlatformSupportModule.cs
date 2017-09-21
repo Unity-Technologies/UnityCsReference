@@ -206,6 +206,8 @@ namespace UnityEditor.Modules
         bool SupportsMultithreadedRendering();
 
         void MultithreadedRenderingGUI(BuildTargetGroup targetGroup);
+
+        bool SupportsCustomLightmapEncoding();
     }
 
 

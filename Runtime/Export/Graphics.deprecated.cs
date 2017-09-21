@@ -102,6 +102,13 @@ namespace UnityEngine
         public static void SetGlobalTextureMatrixName(string propertyName, string matrixName)   {}
     }
 
+    public enum LightmapsModeLegacy
+    {
+        Single = 0,
+        Dual = 1,
+        Directional = 2,
+    }
+
     partial class LightmapSettings
     {
         [Obsolete("Use lightmapsMode instead.", false)]

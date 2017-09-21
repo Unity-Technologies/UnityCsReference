@@ -15,29 +15,29 @@ namespace UnityEditor
         {
             LoadResources();
 
-            s_ErrorString = errorString;
-            s_HasConnectionError = true;
-            s_HasUpdate = false;
+            EditorUpdateWindow w = ShowWindow();
 
-            ShowWindow();
+            w.s_ErrorString = errorString;
+            w.s_HasConnectionError = true;
+            w.s_HasUpdate = false;
         }
 
         static void ShowEditorUpdateWindow(string latestVersionString, string latestVersionMessage, string updateURL)
         {
             LoadResources();
 
-            s_LatestVersionString = latestVersionString;
-            s_LatestVersionMessage = latestVersionMessage;
-            s_UpdateURL = updateURL;
-            s_HasConnectionError = false;
-            s_HasUpdate = updateURL.Length > 0;
+            EditorUpdateWindow w = ShowWindow();
 
-            ShowWindow();
+            w.s_LatestVersionString = latestVersionString;
+            w.s_LatestVersionMessage = latestVersionMessage;
+            w.s_UpdateURL = updateURL;
+            w.s_HasConnectionError = false;
+            w.s_HasUpdate = updateURL.Length > 0;
         }
 
-        private static void ShowWindow()
+        private static EditorUpdateWindow ShowWindow()
         {
-            EditorWindow.GetWindowWithRect(typeof(EditorUpdateWindow), new Rect(100, 100, 570, 400), true, s_Title.text);
+            return EditorWindow.GetWindowWithRect(typeof(EditorUpdateWindow), new Rect(100, 100, 570, 400), true, s_Title.text) as EditorUpdateWindow;
         }
 
         private static GUIContent s_UnityLogo;
@@ -45,12 +45,24 @@ namespace UnityEditor
         private static GUIContent s_TextHasUpdate, s_TextUpToDate;
         private static GUIContent s_CheckForNewUpdatesText;
 
-        private static string s_ErrorString;
-        private static string s_LatestVersionString;
-        private static string s_LatestVersionMessage;
-        private static string s_UpdateURL;
-        private static bool s_HasUpdate;
-        private static bool s_HasConnectionError;
+        [SerializeField]
+        private string s_ErrorString;
+
+        [SerializeField]
+        private string s_LatestVersionString;
+
+        [SerializeField]
+        private string s_LatestVersionMessage;
+
+        [SerializeField]
+        private string s_UpdateURL;
+
+        [SerializeField]
+        private bool s_HasUpdate;
+
+        [SerializeField]
+        private bool s_HasConnectionError;
+
         private static bool s_ShowAtStartup;
         private Vector2 m_ScrollPos;
 

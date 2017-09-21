@@ -94,6 +94,10 @@ namespace UnityEditorInternal.VR
 
     internal class VRCustomOptionsDaydream : VRCustomOptionsGoogleVR
     {
+        const int k3DoF = 0;
+        const int k3DoF6DoF = 1;
+        const int k6DoF = 2;
+
         const float s_Indent = 10.0f;
 
         static GUIContent s_ForegroundIconLabel = EditorGUIUtility.TextContent("Foreground Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
@@ -101,12 +105,22 @@ namespace UnityEditorInternal.VR
         static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TextContent("Sustained Performance Mode|Sustained Performance Mode is intended to provide a consistent level of performance for a prolonged amount of time");
         static GUIContent s_EnableVideoLayer = EditorGUIUtility.TextContent("Enable Video Surface|Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
         static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TextContent("Use Protected Memory|Enable the use of DRM protection. Only usable if all content is DRM Protected.");
+        static GUIContent s_MinimumTargetHeadTracking  = EditorGUIUtility.TextContent("Supported Head Tracking|Requested head tracking support of target devices to run the applicaiton on.");
+
+        static GUIContent[] s_TargetHeadTrackingOptions =
+        {
+            EditorGUIUtility.TextContent("3 DoF|Support 3 degree of freedom (rotation only) head tracking"),
+            EditorGUIUtility.TextContent("3 DoF & 6 DoF|Support 3 and 6 degree of freedom (rotation and position) head tracking"),
+            EditorGUIUtility.TextContent("6 DoF|Support 6 degree of freedom (rotation and position) head tracking"),
+        };
 
         SerializedProperty m_DaydreamIcon;
         SerializedProperty m_DaydreamIconBackground;
         SerializedProperty m_DaydreamUseSustainedPerformanceMode;
         SerializedProperty m_DaydreamEnableVideoLayer;
         SerializedProperty m_DaydreamUseProtectedMemory;
+        SerializedProperty m_MinimumSupportedHeadTracking;
+        SerializedProperty m_MaximumSupportedHeadTracking;
 
         public override void Initialize(SerializedObject settings)
         {
@@ -121,6 +135,8 @@ namespace UnityEditorInternal.VR
             m_DaydreamUseSustainedPerformanceMode = FindPropertyAssert("useSustainedPerformanceMode");
             m_DaydreamEnableVideoLayer = FindPropertyAssert("enableVideoLayer");
             m_DaydreamUseProtectedMemory = FindPropertyAssert("useProtectedVideoMemory");
+            m_MinimumSupportedHeadTracking = FindPropertyAssert("minimumSupportedHeadTracking");
+            m_MaximumSupportedHeadTracking = FindPropertyAssert("maximumSupportedHeadTracking");
         }
 
         private Rect DrawTextureUI(Rect rect, GUIContent propLabel, SerializedProperty prop)
@@ -138,6 +154,48 @@ namespace UnityEditorInternal.VR
             EditorGUI.EndProperty();
             rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
             return rect;
+        }
+
+        // While the public C# API has a min/max range for target head tracking, there currently are only
+        // two actual values for the range. To simplify the UI we replace setting of the range with a simple
+        // dropdown that only allows you to select currently valid ranges. When there are more values added
+        // to the range then we can switch over to a two dropdown (or whatever) range selector instead of
+        // using this mapping.
+        private int GetHeadTrackingValue()
+        {
+            int retValue = k3DoF;
+            if (m_MinimumSupportedHeadTracking.intValue == k3DoF && m_MaximumSupportedHeadTracking.intValue == k3DoF)
+            {
+                retValue = k3DoF;
+            }
+            else if (m_MinimumSupportedHeadTracking.intValue == k3DoF && m_MaximumSupportedHeadTracking.intValue == k6DoF)
+            {
+                retValue = k3DoF6DoF;
+            }
+            else if (m_MinimumSupportedHeadTracking.intValue == k6DoF && m_MaximumSupportedHeadTracking.intValue == k6DoF)
+            {
+                retValue = k6DoF;
+            }
+            return retValue;
+        }
+
+        private void SetHeadTrackingValue(int headTrackingValue)
+        {
+            switch (headTrackingValue)
+            {
+                case k3DoF:
+                    m_MinimumSupportedHeadTracking.intValue = k3DoF;
+                    m_MaximumSupportedHeadTracking.intValue = k3DoF;
+                    break;
+                case k3DoF6DoF:
+                    m_MinimumSupportedHeadTracking.intValue = k3DoF;
+                    m_MaximumSupportedHeadTracking.intValue = k6DoF;
+                    break;
+                case k6DoF:
+                    m_MinimumSupportedHeadTracking.intValue = k6DoF;
+                    m_MaximumSupportedHeadTracking.intValue = k6DoF;
+                    break;
+            }
         }
 
         public override Rect Draw(Rect rect)
@@ -188,14 +246,27 @@ namespace UnityEditorInternal.VR
                 rect.width += s_Indent;
             }
 
+            rect.y += EditorGUIUtility.standardVerticalSpacing;
+            rect.height = EditorGUIUtility.singleLineHeight;
+
+            EditorGUI.BeginChangeCheck();
+            int intValue = EditorGUI.Popup(rect, s_MinimumTargetHeadTracking, GetHeadTrackingValue(), s_TargetHeadTrackingOptions);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SetHeadTrackingValue(intValue);
+            }
+
+            rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
+
+
             return rect;
         }
 
         public override float GetHeight()
         {
-            float singleLineCount = 2.0f;
+            float singleLineCount = 5.0f;
             float thumbnailCount = 2.0f;
-            float verticalSpacingCount = 3.0f;
+            float verticalSpacingCount = 4.0f;
 
             if (m_DaydreamEnableVideoLayer.boolValue)
             {

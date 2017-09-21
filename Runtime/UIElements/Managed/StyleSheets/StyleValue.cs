@@ -38,7 +38,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         BorderTopWidth,
         BorderRightWidth,
         BorderBottomWidth,
-        BorderRadius,
         BorderTopLeftRadius,
         BorderTopRightRadius,
         BorderBottomRightRadius,
@@ -70,6 +69,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         SliceRight,
         SliceBottom,
         Opacity,
+        // Shorthand value
+        BorderRadius,
+        Margin,
+        Padding,
         // Always leave as last value
         Custom
     }

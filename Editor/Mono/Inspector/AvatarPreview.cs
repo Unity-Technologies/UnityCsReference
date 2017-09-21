@@ -42,7 +42,10 @@ namespace UnityEditor
             set
             {
                 m_2D = value;
-                m_PreviewDir = new Vector2();
+                if (m_2D)
+                {
+                    m_PreviewDir = new Vector2();
+                }
             }
         }
 
@@ -695,7 +698,7 @@ namespace UnityEditor
             }
 
             SetPreviewCharacterEnabled(true, m_ShowReference);
-            previewUtility.Render();
+            previewUtility.Render(m_Option != PreviewPopupOptions.DefaultModel);
             SetPreviewCharacterEnabled(false, false);
 
             RenderTexture.ReleaseTemporary(shadowMap);
@@ -923,11 +926,16 @@ namespace UnityEditor
             evt.Use();
         }
 
+        public void ResetPreviewFocus()
+        {
+            m_PivotPositionOffset = bodyPosition - rootPosition;
+        }
+
         public void DoAvatarPreviewFrame(Event evt, EventType type, Rect previewRect)
         {
             if (type == EventType.KeyDown && evt.keyCode == KeyCode.F)
             {
-                m_PivotPositionOffset = bodyPosition - rootPosition;
+                ResetPreviewFocus();
                 m_ZoomFactor = m_AvatarScale;
                 evt.Use();
             }
@@ -1023,18 +1031,19 @@ namespace UnityEditor
                 EditorGUIUtility.AddCursorRect(previewRect, currentCursor);
         }
 
+        private PreviewPopupOptions m_Option;
         void SetPreviewAvatarOption(object obj)
         {
-            PreviewPopupOptions option = (PreviewPopupOptions)obj;
-            if (option == PreviewPopupOptions.Auto)
+            m_Option = (PreviewPopupOptions)obj;
+            if (m_Option == PreviewPopupOptions.Auto)
             {
                 SetPreview(null);
             }
-            else if (option == PreviewPopupOptions.DefaultModel)
+            else if (m_Option == PreviewPopupOptions.DefaultModel)
             {
                 SetPreview(GetHumanoidFallback());
             }
-            else if (option == PreviewPopupOptions.Other)
+            else if (m_Option == PreviewPopupOptions.Other)
             {
                 ObjectSelector.get.Show(null, typeof(GameObject), null, false);
                 ObjectSelector.get.objectSelectorID = m_ModelSelectorId;

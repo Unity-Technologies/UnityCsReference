@@ -9,12 +9,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     internal
     abstract class DataWatchContainer : VisualElement
     {
-        IDataWatchHandle[] handles;
+        IUIElementDataWatchRequest[] handles;
 
         public bool forceNotififcationOnAdd { get; set; }
 
         protected DataWatchContainer()
         {
+        }
+
+        private void OnDataChanged(UnityEngine.Object obj)
+        {
+            OnDataChanged();
         }
 
         // called when Serialized object has changed
@@ -27,12 +32,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected void AddWatch()
         {
             var toWatch = this.toWatch;
-            handles = new IDataWatchHandle[toWatch.Length];
+            handles = new IUIElementDataWatchRequest[toWatch.Length];
             for (int i = 0; i < toWatch.Length; ++i)
             {
                 if (panel != null && toWatch[i] != null)
                 {
-                    handles[i] = panel.dataWatch.AddWatch(this, toWatch[i], OnDataChanged);
+                    handles[i] = dataWatch.RegisterWatch(toWatch[i], OnDataChanged);
                     if (forceNotififcationOnAdd)
                         OnDataChanged();
                 }
@@ -44,8 +49,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (handles != null)
             {
                 foreach (var handle in handles)
+                {
                     if (handle != null)
                         handle.Dispose();
+                }
                 handles = null;
             }
         }

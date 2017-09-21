@@ -12,9 +12,10 @@ namespace UnityEngine.Experimental.UIElements
         bool disposed { get; }
     }
 
-    public interface IDataWatchService
+    internal interface IDataWatchService
     {
-        IDataWatchHandle AddWatch(VisualElement watcher, Object watched, Action OnDataChanged);
+        IDataWatchHandle AddWatch(Object watched, Action<Object> onDataChanged);
+        void RemoveWatch(IDataWatchHandle handle);
         void ForceDirtyNextPoll(Object obj);
     }
 }

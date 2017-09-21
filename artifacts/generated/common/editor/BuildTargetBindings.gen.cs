@@ -18,6 +18,8 @@ public enum BuildTarget
 {
     
     StandaloneOSX = 2,
+    [System.Obsolete ("Use StandaloneOSX instead (UnityUpgradable) -> StandaloneOSX", true)]
+    StandaloneOSXUniversal = 2,
     [System.Obsolete ("StandaloneOSXIntel has been removed in 2017.3")]
     StandaloneOSXIntel = 4,
     
@@ -79,8 +81,6 @@ public enum BuildTarget
     BB10 = -1,
     [System.Obsolete ("Use WSAPlayer instead (UnityUpgradable) -> WSAPlayer", true)]
     MetroPlayer = -1,
-    [System.Obsolete ("Use StandaloneOSX instead (UnityUpgradable) -> StandaloneOSX", true)]
-    StandaloneOSXUniversal = -1,
     
     NoTarget = -2,
 }

@@ -23,7 +23,7 @@ namespace UnityEngine.Playables
     {
         Animation = 0,
         Audio = 1,
-        Video = 2,
+        Texture = 2,
         None = 3
     }
 

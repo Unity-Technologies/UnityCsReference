@@ -515,7 +515,8 @@ public sealed partial class Camera : Behaviour
         set;
     }
 
-    public extern bool stereoMirrorMode
+    [System.Obsolete("This property is no longer supported. Please use single pass stereo rendering instead.", true)]
+    public extern  bool stereoMirrorMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

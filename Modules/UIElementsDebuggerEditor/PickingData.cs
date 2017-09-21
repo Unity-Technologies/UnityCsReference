@@ -110,14 +110,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             m_Labels = new GUIContent[m_Panels.Count + 1];
             m_Labels[0] = new GUIContent("Select a panel");
             for (int i = 0; i < m_Panels.Count; i++)
-                m_Labels[i + 1] = new GUIContent(GetName(i));
+                m_Labels[i + 1] = new GUIContent(GetName(m_Panels[i]));
 
             screenRect = screen;
         }
 
-        private string GetName(int i)
+        internal static string GetName(UIElementsDebugger.ViewPanel viewPanel)
         {
-            var hostview = m_Panels[i].View as HostView;
+            var hostview = viewPanel.View as HostView;
             if (hostview != null)
             {
                 var win = hostview.actualView;
@@ -130,7 +130,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 if (!String.IsNullOrEmpty(hostview.name))
                     return hostview.name;
             }
-            return m_Panels[i].Panel.visualTree.name;
+            return viewPanel.Panel.visualTree.name;
         }
 
         private int m_Selected;
@@ -147,6 +147,19 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     return null;
                 return m_Panels[m_Selected - 1];
             }
+        }
+
+        public bool TryRestoreSelectedWindow(string lastWindowTitle)
+        {
+            for (int i = 0; i < m_Labels.Length; i++)
+            {
+                if (m_Labels[i].text == lastWindowTitle)
+                {
+                    m_Selected = i;
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

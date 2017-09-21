@@ -33,9 +33,9 @@ internal enum TextureUsageMode
     
     Default = 0,
     
-    LightmapDoubleLDR = 1,
+    BakedLightmapDoubleLDR = 1,
     
-    LightmapRGBM = 2,
+    BakedLightmapRGBM = 2,
     
     NormalmapDXT5nm = 3,
     
@@ -43,6 +43,10 @@ internal enum TextureUsageMode
     RGBMEncoded = 5,
     
     AlwaysPadded = 6,
+    DoubleLDR = 7,
+    
+    BakedLightmapFullHDR = 8,
+    RealtimeLightmapRGBM = 9,
 }
 
 internal sealed partial class TextureUtil

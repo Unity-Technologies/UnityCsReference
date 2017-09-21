@@ -99,6 +99,10 @@ namespace UnityEditor
             {
                 if (keyIndex > 0) AnimationUtility.SetKeyLeftTangentMode(ref key, AnimationUtility.GetKeyRightTangentMode(curve[keyIndex - 1]));
                 if (keyIndex < curve.length - 1) AnimationUtility.SetKeyRightTangentMode(ref key, AnimationUtility.GetKeyLeftTangentMode(curve[keyIndex + 1]));
+
+                // Keys at boundaries.  Make sure left and right tangent modes are the same.
+                if (keyIndex == 0) AnimationUtility.SetKeyLeftTangentMode(ref key, AnimationUtility.GetKeyRightTangentMode(key));
+                if (keyIndex == curve.length - 1) AnimationUtility.SetKeyRightTangentMode(ref key, AnimationUtility.GetKeyLeftTangentMode(key));
             }
             else
             {

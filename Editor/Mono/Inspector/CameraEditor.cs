@@ -414,10 +414,6 @@ namespace UnityEditor
             // Get and reserve rect
             Rect cameraRect = GUILayoutUtility.GetRect(previewSize.x, previewSize.y);
 
-            cameraRect = EditorGUIUtility.PointsToPixels(cameraRect);
-
-            cameraRect.y = ((sceneView.position.height + 1f) * EditorGUIUtility.pixelsPerPoint) - cameraRect.y - cameraRect.height;
-
             if (Event.current.type == EventType.Repaint)
             {
                 // setup camera and render
@@ -438,10 +434,15 @@ namespace UnityEditor
                     }
                 }
 
-                previewCamera.targetTexture = null;
-                previewCamera.pixelRect = cameraRect;
+                previewCamera.targetTexture = RenderTexture.GetTemporary((int)previewSize.x, (int)previewSize.y, 24, previewCamera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32);
                 Handles.EmitGUIGeometryForCamera(c, previewCamera);
                 previewCamera.Render();
+
+                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
+                GUI.DrawTexture(cameraRect, previewCamera.targetTexture, ScaleMode.StretchToFill, false);
+                GL.sRGBWrite = false;
+
+                RenderTexture.ReleaseTemporary(previewCamera.targetTexture);
             }
         }
 

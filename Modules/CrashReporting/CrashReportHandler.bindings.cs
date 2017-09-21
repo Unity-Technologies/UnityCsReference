@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.CrashReportHandler
 {
-    [NativeHeader("Runtime/CrashReporting/CrashReportHandler.h")]
+    [NativeHeader("Modules/CrashReporting/CrashReportHandler.h")]
     public partial class CrashReportHandler
     {
         private CrashReportHandler()

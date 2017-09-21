@@ -31,6 +31,7 @@ namespace UnityEditor
         [SerializeField] public float SelfCollisionStiffness = 0.2f;
         [SerializeField] public float InterCollisionDistance = 0.1f;
         [SerializeField] public float InterCollisionStiffness = 0.2f;
+        [SerializeField] public float ConstraintSize = 0.05f;
     }
 
     [CustomEditor(typeof(Cloth))]
@@ -54,11 +55,6 @@ namespace UnityEditor
         int m_BrushFace = -1;
 
         int m_MouseOver = -1;
-        int m_MeshVerticesPerSelectionVertex = 0;
-        Mesh m_SelectionMesh;
-        Mesh m_SelectedMesh;
-        Mesh m_VertexMesh;
-        Mesh m_VertexMeshSelected;
         Vector3[] m_LastVertices;
         Vector2 m_SelectStartPoint;
         Vector2 m_SelectMousePoint;
@@ -71,10 +67,6 @@ namespace UnityEditor
 
         const float kDisabledValue = float.MaxValue;
 
-        static Color s_SelectionColor;
-        static Material s_SelectionMaterial = null;
-        static Material s_SelectionMaterialBackfaces = null;
-        static Material s_SelectedMaterial = null;
         static Texture2D s_ColorTexture = null;
         static bool s_BrushCreated = false;
 
@@ -105,7 +97,7 @@ namespace UnityEditor
             public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TextContent("Cloth Self-Collision And Inter-Collision");
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TextContent("Select Collision Particles");
-            public static readonly GUIContent selfAndInterCollisionBrushRadiusString = EditorGUIUtility.TextContent("Brush Radius");
+            public static readonly GUIContent brushRadiusString = EditorGUIUtility.TextContent("Brush Radius");
             public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TextContent("Paint or Select Particles");
             public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TextContent("Back Face Manipulation");
             public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TextContent("Manipulate Backfaces");
@@ -197,7 +189,6 @@ namespace UnityEditor
                 if (state.DrawMode != value)
                 {
                     state.DrawMode = value;
-                    SetupSelectionMeshColors();
                     Repaint();
                 }
             }
@@ -415,44 +406,15 @@ namespace UnityEditor
 
             Vector3[] vertices = cloth.vertices;
             int length = vertices.Length;
-            m_ParticleSelection = new bool[vertices.Length];
-            m_ParticleRectSelection = new bool[vertices.Length];
-
-            if (m_SelectionMesh != null)
-            {
-                DestroyImmediate(m_SelectionMesh);
-                DestroyImmediate(m_SelectedMesh);
-            }
-
-            m_SelectionMesh = new Mesh();
-            m_SelectionMesh.indexFormat = IndexFormat.UInt32;
-            m_SelectionMesh.hideFlags |= HideFlags.DontSave;
-
-            m_SelectedMesh = new Mesh();
-            m_SelectedMesh.indexFormat = IndexFormat.UInt32;
-            m_SelectedMesh.hideFlags |= HideFlags.DontSave;
+            m_ParticleSelection = new bool[length];
+            m_ParticleRectSelection = new bool[length];
 
             m_LastVertices = new Vector3[length];
-            m_MeshVerticesPerSelectionVertex = m_VertexMesh.vertices.Length;
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
-
+            for (int i = 0; i < length; i++)
             {
-                int numVertices = length;
-                CombineInstance[] combine = new CombineInstance[numVertices];
-                for (int i = 0; i < numVertices; i++)
-                {
-                    m_LastVertices[i] = t.rotation * vertices[i] + t.position;
-                    combine[i].mesh = m_VertexMesh;
-                    combine[i].transform = Matrix4x4.TRS(m_LastVertices[i], Quaternion.identity, Vector3.one);
-                }
-                m_SelectionMesh.CombineMeshes(combine);
-
-                for (int i = 0; i < numVertices; i++)
-                    combine[i].mesh = m_VertexMeshSelected;
-                m_SelectedMesh.CombineMeshes(combine);
+                m_LastVertices[i] = t.rotation * vertices[i] + t.position;
             }
-
-            SetupSelectionMeshColors();
         }
 
         void InitSelfAndInterCollisionSelection()
@@ -482,8 +444,7 @@ namespace UnityEditor
             m_ClothParticlesInWorldSpace = new Vector3[length];
 
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
-            int numVertices = length;
-            for (int i = 0; i < numVertices; i++)
+            for (int i = 0; i < length; i++)
             {
                 m_ClothParticlesInWorldSpace[i] = t.rotation * cloth.vertices[i] + t.position;
             }
@@ -538,40 +499,12 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            if (s_SelectionMaterial == null)
-            {
-                s_SelectionMaterial = EditorGUIUtility.LoadRequired("SceneView/VertexSelectionMaterial.mat") as Material;
-                s_SelectionMaterialBackfaces = EditorGUIUtility.LoadRequired("SceneView/VertexSelectionBackfacesMaterial.mat") as Material;
-                s_SelectedMaterial = EditorGUIUtility.LoadRequired("SceneView/VertexSelectedMaterial.mat") as Material;
-            }
             if (s_ColorTexture == null)
                 s_ColorTexture = GenerateColorTexture(100);
 
             m_SkinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
 
-            m_VertexMesh = new Mesh();
-            m_VertexMesh.hideFlags |= HideFlags.DontSave;
-            Mesh cubeMesh = (Mesh)Resources.GetBuiltinResource(typeof(Mesh), "Cube.fbx");
-            m_VertexMesh.vertices = new Vector3[cubeMesh.vertices.Length];
-            m_VertexMesh.normals = cubeMesh.normals;
-            var tangents = new Vector4[cubeMesh.vertices.Length];
-            var vertices = cubeMesh.vertices;
-            for (int i = 0; i < cubeMesh.vertices.Length; i++)
-                tangents[i] = vertices[i] * -0.01f;
-            m_VertexMesh.tangents = tangents;
-            m_VertexMesh.triangles = cubeMesh.triangles;
-
-            m_VertexMeshSelected = new Mesh();
-            m_VertexMeshSelected.hideFlags |= HideFlags.DontSave;
-            m_VertexMeshSelected.vertices = m_VertexMesh.vertices;
-            m_VertexMeshSelected.normals = m_VertexMesh.normals;
-            for (int i = 0; i < cubeMesh.vertices.Length; i++)
-                tangents[i] = vertices[i] * -0.02f;
-            m_VertexMeshSelected.tangents = tangents;
-            m_VertexMeshSelected.triangles = m_VertexMesh.triangles;
-
             GenerateSelectionMesh();
-            SetupSelectedMeshColors();
 
             InitBrushCollider();
             InitSelfAndInterCollisionSelection();
@@ -652,98 +585,9 @@ namespace UnityEditor
                 return Color.Lerp(Color.yellow, Color.green, (val - 0.7f) / 0.3f);
         }
 
-        void SetupSelectionMeshColors()
-        {
-            if (!IsMeshValid())
-            {
-                return;
-            }
-
-            ClothSkinningCoefficient[] coefficients = cloth.coefficients;
-            int length = coefficients.Length;
-            Color[] colors = new Color[length * m_MeshVerticesPerSelectionVertex];
-            float min = 0;
-            float max = 0;
-            for (int i = 0; i < coefficients.Length; i++)
-            {
-                float value = GetCoefficient(coefficients[i]);
-                if (value >= kDisabledValue)
-                    continue;
-                if (value < min)
-                    min = value;
-                if (value > max)
-                    max = value;
-            }
-            for (int i = 0; i < length; i++)
-            {
-                float val = GetCoefficient(coefficients[i]);
-                Color color;
-                if (val >= kDisabledValue)
-                    color = Color.black;
-                else
-                {
-                    if (max - min != 0)
-                        val = (val - min) / (max - min);
-                    else
-                        val = 0.0f;
-                    color = GetGradientColor(val);
-                }
-                for (int j = 0; j < m_MeshVerticesPerSelectionVertex; j++)
-                    colors[i * m_MeshVerticesPerSelectionVertex + j] = color;
-            }
-
-            m_MaxVisualizedValue[(int)drawMode] = max;
-            m_MinVisualizedValue[(int)drawMode] = min;
-            m_SelectionMesh.colors = colors;
-        }
-
-        void SetupSelectedMeshColors()
-        {
-            if (!IsMeshValid())
-            {
-                return;
-            }
-
-            int length = cloth.coefficients.Length;
-            Color[] colors = new Color[length * m_MeshVerticesPerSelectionVertex];
-            for (int i = 0; i < length; i++)
-            {
-                bool selected = m_ParticleSelection[i];
-                if (m_RectSelecting)
-                {
-                    switch (m_RectSelectionMode)
-                    {
-                        case RectSelectionMode.Replace:
-                            selected = m_ParticleRectSelection[i];
-                            break;
-                        case RectSelectionMode.Add:
-                            selected |= m_ParticleRectSelection[i];
-                            break;
-                        case RectSelectionMode.Substract:
-                            selected = selected && !m_ParticleRectSelection[i];
-                            break;
-                    }
-                }
-
-                var color = selected ? s_SelectionColor : Color.clear;
-                for (int j = 0; j < m_MeshVerticesPerSelectionVertex; j++)
-                    colors[i * m_MeshVerticesPerSelectionVertex + j] = color;
-            }
-
-            m_SelectedMesh.colors = colors;
-        }
-
         void OnDisable()
         {
             SceneView.onPreSceneGUIDelegate -= OnPreSceneGUICallback;
-
-            if (m_SelectionMesh != null)
-            {
-                DestroyImmediate(m_SelectionMesh);
-                DestroyImmediate(m_SelectedMesh);
-            }
-            DestroyImmediate(m_VertexMesh);
-            DestroyImmediate(m_VertexMeshSelected);
         }
 
         float CoefficientField(float value, float useValue, bool enabled, DrawMode mode)
@@ -911,7 +755,6 @@ namespace UnityEditor
                         coefficients[i].maxDistance = maxDistanceNew;
                 }
                 cloth.coefficients = coefficients;
-                SetupSelectionMeshColors();
                 Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
             }
 
@@ -924,7 +767,6 @@ namespace UnityEditor
                         coefficients[i].collisionSphereDistance = collisionSphereDistanceNew;
                 }
                 cloth.coefficients = coefficients;
-                SetupSelectionMeshColors();
                 Undo.RegisterCompleteObjectUndo(target, "Change Cloth Coefficients");
             }
 
@@ -962,7 +804,6 @@ namespace UnityEditor
                     }
                 }
                 cloth.coefficients = coefficients;
-                SetupSelectionMeshColors();
             }
         }
 
@@ -1030,10 +871,10 @@ namespace UnityEditor
             }
         }
 
-        void EditSelfAndInterCollisionBrushSize()
+        void EditBrushSize()
         {
             EditorGUI.BeginChangeCheck();
-            float fieldValue = EditorGUILayout.FloatField(Styles.selfAndInterCollisionBrushRadiusString, state.BrushRadius);
+            float fieldValue = EditorGUILayout.FloatField(Styles.brushRadiusString, state.BrushRadius);
             bool changed = EditorGUI.EndChangeCheck();
             if (changed)
             {
@@ -1062,6 +903,8 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
+            EditBrushSize();
         }
 
         int GetMouseVertex(Event e)
@@ -1095,51 +938,65 @@ namespace UnityEditor
             return found;
         }
 
-        void DrawVertices()
+        void DrawConstraints()
         {
-            if (m_SelectionMesh == null)
-            {
-                return;
-            }
-
             if (SelectionMeshDirty())
                 GenerateSelectionMesh();
 
-            if (state.ToolMode == ToolMode.Select)
+            Transform t = m_SkinnedMeshRenderer.actualRootBone;
+            int id = GUIUtility.GetControlID(FocusType.Passive);
+            ClothSkinningCoefficient[] coefficients = cloth.coefficients;
+            int length = coefficients.Length;
+            float min = 0;
+            float max = 0;
+            for (int i = 0; i < length; i++)
             {
-                for (int i = 0; i < s_SelectedMaterial.passCount; i++)
-                {
-                    s_SelectedMaterial.SetPass(i);
-                    Graphics.DrawMeshNow(m_SelectedMesh, Matrix4x4.identity);
-                }
+                float value = GetCoefficient(coefficients[i]);
+                if (value >= kDisabledValue)
+                    continue;
+                if (value < min)
+                    min = value;
+                if (value > max)
+                    max = value;
             }
 
-            Material mat = state.ManipulateBackfaces ? s_SelectionMaterialBackfaces : s_SelectionMaterial;
-            for (int i = 0; i < mat.passCount; i++)
-            {
-                mat.SetPass(i);
-                Graphics.DrawMeshNow(m_SelectionMesh, Matrix4x4.identity);
-            }
+            m_MaxVisualizedValue[(int)drawMode] = max;
+            m_MinVisualizedValue[(int)drawMode] = min;
 
-            if (m_MouseOver != -1)
+            Vector3[] normals = cloth.normals;
+            for (int i = 0; i < length; i++)
             {
-                Matrix4x4 m = Matrix4x4.TRS(m_LastVertices[m_MouseOver], Quaternion.identity, Vector3.one * 1.2f);
-                if (state.ToolMode == ToolMode.Select)
+                bool forwardFacing = Vector3.Dot(t.rotation * normals[i], Camera.current.transform.forward) <= 0;
+                if (forwardFacing || state.ManipulateBackfaces)
                 {
-                    mat = s_SelectedMaterial;
-                    mat.color = new Color(s_SelectionColor.r, s_SelectionColor.g, s_SelectionColor.b, 0.5f);
-                }
-                else
-                {
-                    mat.color = m_SelectionMesh.colors[m_MouseOver];
-                }
+                    float val = GetCoefficient(coefficients[i]);
+                    Color color;
+                    if (val >= kDisabledValue)
+                        color = Color.black;
+                    else
+                    {
+                        if (max - min != 0)
+                            val = (val - min) / (max - min);
+                        else
+                            val = 0.0f;
+                        color = GetGradientColor(val);
+                    }
 
-                for (int i = 0; i < mat.passCount; i++)
-                {
-                    mat.SetPass(i);
-                    Graphics.DrawMeshNow(m_VertexMeshSelected, m);
+                    Handles.color = color;
+
+                    Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
+                    if ((m_ParticleSelection[i] == true) && (state.CollToolMode == CollToolMode.Select))
+                    {
+                        Handles.color = s_SelectedParticleColor;
+                    }
+
+                    if ((distanceBetween.magnitude < state.BrushRadius) && forwardFacing && (state.ToolMode == ToolMode.Paint))
+                    {
+                        Handles.color = s_SelectedParticleColor;
+                    }
+
+                    Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], t.rotation, state.ConstraintSize, EventType.Repaint);
                 }
-                mat.color = Color.white;
             }
         }
 
@@ -1256,7 +1113,6 @@ namespace UnityEditor
                             m_ParticleSelection[found] = true;
                         }
                         m_DidSelect = true;
-                        SetupSelectedMeshColors();
                         Repaint();
                     }
                     else
@@ -1276,14 +1132,13 @@ namespace UnityEditor
                                 EditorApplication.modifierKeysChanged += SendCommandsOnModifierKeys;
                                 m_RectSelecting = true;
                                 RectSelectionModeFromEvent();
-                                SetupSelectedMeshColors();
                             }
                         }
                         if (m_RectSelecting)
                         {
                             m_SelectMousePoint = new Vector2(Mathf.Max(e.mousePosition.x, 0), Mathf.Max(e.mousePosition.y, 0));
-                            if (RectSelectionModeFromEvent() || UpdateRectParticleSelection())
-                                SetupSelectedMeshColors();
+                            RectSelectionModeFromEvent();
+                            UpdateRectParticleSelection();
                             e.Use();
                         }
                     }
@@ -1292,8 +1147,8 @@ namespace UnityEditor
                 case EventType.ExecuteCommand:
                     if (m_RectSelecting && e.commandName == "ModifierKeysChanged")
                     {
-                        if (RectSelectionModeFromEvent() || UpdateRectParticleSelection())
-                            SetupSelectedMeshColors();
+                        RectSelectionModeFromEvent();
+                        UpdateRectParticleSelection();
                     }
                     break;
 
@@ -1322,10 +1177,48 @@ namespace UnityEditor
                         // Disable text focus when selection changes, otherwise we cannot update inspector fields
                         // if text is currently selected.
                         GUIUtility.keyboardControl = 0;
-                        SetupSelectedMeshColors();
                         SceneView.RepaintAll();
                     }
                     break;
+            }
+        }
+
+        void GetBrushedConstraints(Event e)
+        {
+            if (!IsMeshValid())
+            {
+                return;
+            }
+
+            Vector3[] vertices = cloth.vertices;
+            Vector3[] normals = cloth.normals;
+            ClothSkinningCoefficient[] coefficients = cloth.coefficients;
+            Quaternion rotation = m_SkinnedMeshRenderer.actualRootBone.rotation;
+            int length = vertices.Length;
+            for (int i = 0; i < length; i++)
+            {
+                Vector3 distanceBetween = m_ClothParticlesInWorldSpace[i] - m_BrushPos;
+                bool forwardFacing = Vector3.Dot(rotation * normals[i], Camera.current.transform.forward) <= 0;
+                if ((distanceBetween.magnitude < state.BrushRadius) && (forwardFacing || state.ManipulateBackfaces))
+                {
+                    bool changed = false;
+                    if (state.PaintMaxDistanceEnabled && coefficients[i].maxDistance != state.PaintMaxDistance)
+                    {
+                        coefficients[i].maxDistance = state.PaintMaxDistance;
+                        changed = true;
+                    }
+                    if (state.PaintCollisionSphereDistanceEnabled && coefficients[i].collisionSphereDistance != state.PaintCollisionSphereDistance)
+                    {
+                        coefficients[i].collisionSphereDistance = state.PaintCollisionSphereDistance;
+                        changed = true;
+                    }
+                    if (changed)
+                    {
+                        Undo.RegisterCompleteObjectUndo(target, "Paint Cloth Constraints");
+                        cloth.coefficients = coefficients;
+                        Repaint();
+                    }
+                }
             }
         }
 
@@ -1401,30 +1294,9 @@ namespace UnityEditor
                     GetBrushedParticles(e);
                 }
 
-                int found = GetMouseVertex(e);
-                if (found != -1)
+                if (editingConstraints)
                 {
-                    if (editingConstraints)
-                    {
-                        bool changed = false;
-                        if (state.PaintMaxDistanceEnabled && coefficients[found].maxDistance != state.PaintMaxDistance)
-                        {
-                            coefficients[found].maxDistance = state.PaintMaxDistance;
-                            changed = true;
-                        }
-                        if (state.PaintCollisionSphereDistanceEnabled && coefficients[found].collisionSphereDistance != state.PaintCollisionSphereDistance)
-                        {
-                            coefficients[found].collisionSphereDistance = state.PaintCollisionSphereDistance;
-                            changed = true;
-                        }
-                        if (changed)
-                        {
-                            Undo.RegisterCompleteObjectUndo(target, "Paint Cloth");
-                            cloth.coefficients = coefficients;
-                            SetupSelectionMeshColors();
-                            Repaint();
-                        }
-                    }
+                    GetBrushedConstraints(e);
                 }
                 e.Use();
             }
@@ -1465,7 +1337,6 @@ namespace UnityEditor
             if (m_ParticleSelection == null)
             {
                 GenerateSelectionMesh();
-                SetupSelectedMeshColors();
             }
             else
             {
@@ -1553,9 +1424,8 @@ namespace UnityEditor
             if (Selection.gameObjects.Length > 1)
                 return;
 
-            s_SelectionColor = GUI.skin.settings.selectionColor;
             if (Event.current.type == EventType.Repaint)
-                DrawVertices();
+                DrawConstraints();
 
             var evt = Event.current;
             if (evt.commandName == "SelectAll")
@@ -1568,7 +1438,6 @@ namespace UnityEditor
                     int numVertices = cloth.vertices.Length;
                     for (int i = 0; i < numVertices; i++)
                         m_ParticleSelection[i] = true;
-                    SetupSelectedMeshColors();
                     SceneView.RepaintAll();
                     state.ToolMode = ToolMode.Select;
                     evt.Use();
@@ -1717,8 +1586,6 @@ namespace UnityEditor
                     // delselect text, so we don't end up having a text field highlighted in the new tab
                     GUIUtility.keyboardControl = 0;
                     SceneView.RepaintAll();
-                    SetupSelectionMeshColors();
-                    SetupSelectedMeshColors();
                 }
             }
             GUILayout.FlexibleSpace();
@@ -1806,7 +1673,7 @@ namespace UnityEditor
                 case CollToolMode.Erase:
                     Tools.current = Tool.None;
                     ResetParticleSelection();
-                    EditSelfAndInterCollisionBrushSize();
+                    EditBrushSize();
                     break;
             }
 

@@ -278,7 +278,7 @@ namespace UnityEditor
             {
                 var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesRootPath());
                 var packagesFolderInstanceID = AssetDatabase.GetInstanceIDFromGUID(packagesGuid);
-                const string packagesDisplayName = "Packages";
+                string packagesDisplayName = AssetDatabase.GetPackagesRootPath();
                 packagesRootItem = new TreeViewItem(packagesFolderInstanceID, depth, m_RootItem, packagesDisplayName);
                 ReadAssetDatabase(HierarchyType.Packages, packagesRootItem, depth + 1);
             }

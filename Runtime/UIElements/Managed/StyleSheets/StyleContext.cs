@@ -145,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                     {
                         RuleRef ruleRef = m_MatchedRules[i];
                         StylePropertyID[] propertyIDs = StyleSheetCache.GetPropertyIDs(ruleRef.sheet, ruleRef.selector.ruleIndex);
-                        resolvedStyles.ApplyRule(ruleRef.sheet, ruleRef.selector.specificity, ruleRef.selector.rule, propertyIDs, Panel.loadResourceFunc);
+                        resolvedStyles.ApplyRule(ruleRef.sheet, ruleRef.selector.specificity, ruleRef.selector.rule, propertyIDs);
                     }
 
                     s_StyleCache[m_MatchingRulesHash] = resolvedStyles;

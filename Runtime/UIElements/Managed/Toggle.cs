@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.Experimental.UIElements
 {
     public class Toggle : VisualElement
     {
-        readonly System.Action clickEvent;
+        Action clickEvent;
 
         public bool on
         {
@@ -33,6 +35,11 @@ namespace UnityEngine.Experimental.UIElements
 
             // Click-once behaviour
             this.AddManipulator(new Clickable(OnClick));
+        }
+
+        public void OnToggle(Action clickEvent)
+        {
+            this.clickEvent = clickEvent;
         }
 
         private void OnClick()

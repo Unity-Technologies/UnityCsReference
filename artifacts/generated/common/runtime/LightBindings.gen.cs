@@ -102,7 +102,7 @@ public sealed partial class Light : Behaviour
     }
 
     private int m_BakedIndex;
-    [System.Obsolete ("bakedIndex has been removed please use isBaked instead.")]
+    [System.Obsolete ("bakedIndex has been removed please use bakingOutput.isBaked instead.")]
     public int bakedIndex { get { return m_BakedIndex; } set { m_BakedIndex = value; } }
     
     

@@ -186,7 +186,7 @@ namespace UnityEditor
             // Baking type
             if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
             {
-                LightModeUtil.Get().DrawElement(m_Lightmapping, s_Styles.LightmappingMode);
+                EditorGUILayout.PropertyField(m_Lightmapping, s_Styles.LightmappingMode);
 
                 // Warning if GI Baking disabled and m_Lightmapping isn't realtime
                 if (bakingWarningValue)
@@ -298,7 +298,7 @@ namespace UnityEditor
             return new Rect(r.xMax - buttonSize.x, r.y + (int)(r.height / 2 - buttonSize.y / 2), buttonSize.x, buttonSize.y);
         }
 
-        public void DefaultOnInspectorGUI()
+        public override void OnInspectorGUI()
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -416,86 +416,6 @@ namespace UnityEditor
             CommandBufferGUI();
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private Tuple<Type, ICustomLightEditor> m_SRPLightEditor = null;
-        public override void OnInspectorGUI()
-        {
-            // if we have an SRP configured we want to
-            // delegate light inspector rendering to that
-            // SRP. We do this here.
-            if (GraphicsSettings.renderPipelineAsset != null)
-            {
-                // if we don't have an editor
-                // or the editor does not mach the current SRP type
-                if (m_SRPLightEditor == null
-                    || m_SRPLightEditor.Item1 != GraphicsSettings.renderPipelineAsset.GetType())
-                {
-                    // create it
-                    m_SRPLightEditor = new Tuple<Type, ICustomLightEditor>(GraphicsSettings.renderPipelineAsset.GetType(), CreateLightEditorForPipe(GraphicsSettings.renderPipelineAsset));
-                }
-
-                // if we have a specific light editor
-                // then use it!
-                if (m_SRPLightEditor != null && m_SRPLightEditor.Item2 != null)
-                {
-                    m_SRPLightEditor.Item2.OnInspectorGUI(this);
-                    return;
-                }
-            }
-
-            // fallback to old editor
-            DefaultOnInspectorGUI();
-        }
-
-        private static Dictionary<Type, Type> BuidLightEditorTypeMap()
-        {
-            // scan the assmblies and build a map of render pipe to light editor
-            var map = new Dictionary<Type, Type>();
-            foreach (var assembly in EditorAssemblies.loadedAssemblies)
-            {
-                Type[] types = AssemblyHelper.GetTypesFromAssembly(assembly);
-                foreach (var type in types)
-                {
-                    object[] attrs = type.GetCustomAttributes(typeof(CustomLightEditorAttribute), false);
-                    foreach (CustomLightEditorAttribute previewAttr in attrs)
-                    {
-                        map[previewAttr.renderPipelineType] = type;
-                    }
-                }
-            }
-            return map;
-        }
-
-        private static Dictionary<Type, Type> s_LightEditorTypeMap;
-        private ICustomLightEditor CreateLightEditorForPipe(IRenderPipelineAsset pipe)
-        {
-            // if we don't have a map, create one
-            if (s_LightEditorTypeMap == null)
-            {
-                s_LightEditorTypeMap = BuidLightEditorTypeMap();
-            }
-
-            // invalid setup
-            if (pipe == null)
-                return null;
-
-
-            // get the editor for the pipe
-            Type lightEditorType;
-            s_LightEditorTypeMap.TryGetValue(pipe.GetType(), out lightEditorType);
-
-            // none found :(
-            if (lightEditorType == null)
-                return null;
-
-            // found, but invalid :(
-            if (!typeof(ICustomLightEditor).IsAssignableFrom(lightEditorType))
-                return null;
-
-            // activate, then cast to the right instance type :)
-            var instance = Activator.CreateInstance(lightEditorType);
-            return instance as ICustomLightEditor;
         }
 
         void ShadowsGUI()
@@ -633,29 +553,6 @@ namespace UnityEditor
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.Apply();
             return texture;
-        }
-    }
-
-    namespace Experimental
-    {
-        public interface ICustomLightEditor
-        {
-            void OnInspectorGUI(LightEditor lightEditor);
-        }
-
-        public class CustomLightEditorAttribute : Attribute
-        {
-            private Type m_RenderPipelineType;
-
-            public CustomLightEditorAttribute(Type renderPipelineType)
-            {
-                m_RenderPipelineType = renderPipelineType;
-            }
-
-            public Type renderPipelineType
-            {
-                get { return m_RenderPipelineType; }
-            }
         }
     }
 }

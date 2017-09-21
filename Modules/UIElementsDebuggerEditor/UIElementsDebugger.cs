@@ -19,7 +19,12 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 {
     class UIElementsDebugger : EditorWindow
     {
-        private int m_CurFoldout;
+        [SerializeField]
+        private string m_LastWindowTitle;
+
+        private bool m_ScheduleRestoreSelection;
+
+        private HashSet<int> m_CurFoldout = new HashSet<int>();
 
         private string m_DumpId = "dump";
         private bool m_UxmlDumpExpanded;
@@ -38,12 +43,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private VisualElement m_SelectedElement;
 
         private bool m_ShowDefaults;
+        private bool m_Sort;
         private SplitterState m_SplitterState;
 
         private Texture2D m_TempTexture;
         private TreeViewState m_VisualTreeTreeViewState;
         private VisualTreeTreeView m_VisualTreeTreeView;
-        private static readonly FieldInfo[] k_FieldInfos = typeof(VisualElementStylesData).GetFields();
+        private static readonly PropertyInfo[] k_FieldInfos = typeof(IStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
 
         [MenuItem("Window/UI Debuggers/UIElements Debugger", false, 2013, true)]
         public static void Open()
@@ -57,7 +64,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 return false;
             if (!Event.current.isMouse)
                 return false;
-            var e = m_CurPanel.Value.Panel.Pick(ev.mousePosition);
+            VisualElement e = m_CurPanel.Value.Panel.Pick(ev.mousePosition);
             if (e != null)
                 ((PanelDebug)m_CurPanel.Value.Panel.panelDebug).highlightedElement = e.controlid;
 
@@ -67,7 +74,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 m_CurPanel.Value.Panel.panelDebug.interceptEvents = null;
                 m_PickingElementInPanel = false;
                 m_VisualTreeTreeView.ExpandAll();
-                var node = m_VisualTreeTreeView.GetRows()
+                VisualTreeItem node = m_VisualTreeTreeView.GetRows()
                     .OfType<VisualTreeItem>()
                     .FirstOrDefault(vti => e != null && vti.elt.controlid == e.controlid);
                 if (node != null)
@@ -78,10 +85,20 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         public void OnGUI()
         {
+            if (m_ScheduleRestoreSelection)
+            {
+                m_ScheduleRestoreSelection = false;
+                if (m_PickingData.TryRestoreSelectedWindow(m_LastWindowTitle))
+                {
+                    EndPicking(m_PickingData.Selected);
+                    m_VisualTreeTreeView.ExpandAll();
+                }
+                else
+                    m_LastWindowTitle = String.Empty;
+            }
+
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.ExpandWidth(true));
             bool refresh = false;
-            if (m_PickingData == null)
-                m_PickingData = new PickingData();
 
             EditorGUI.BeginChangeCheck();
             m_PickingData.DoSelectDropDown();
@@ -103,7 +120,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             if (m_CurPanel.HasValue)
             {
-                var newPickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
+                bool newPickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
                 if (newPickingElementInPanel != m_PickingElementInPanel)
                 {
                     m_PickingElementInPanel = newPickingElementInPanel;
@@ -133,9 +150,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 SplitterGUILayout.EndHorizontalSplit();
 
                 float column1Width = m_SplitterState.realSizes.Length > 0 ? m_SplitterState.realSizes[0] : 150;
-                var column2Width = position.width - column1Width;
-                var column1Rect = new Rect(0, EditorGUI.kWindowToolbarHeight, column1Width, position.height - EditorGUI.kWindowToolbarHeight);
-                var column2Rect = new Rect(column1Width, EditorGUI.kWindowToolbarHeight, column2Width, column1Rect.height);
+                float column2Width = position.width - column1Width;
+                Rect column1Rect = new Rect(0, EditorGUI.kWindowToolbarHeight, column1Width, position.height - EditorGUI.kWindowToolbarHeight);
+                Rect column2Rect = new Rect(column1Width, EditorGUI.kWindowToolbarHeight, column2Width, column1Rect.height);
 
                 m_VisualTreeTreeView.OnGUI(column1Rect);
                 DrawSelection(column2Rect);
@@ -149,12 +166,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private void EndPicking(ViewPanel? viewPanel)
         {
-            var it = UIElementsUtility.GetPanelsIterator();
+            Dictionary<int, Panel>.Enumerator it = UIElementsUtility.GetPanelsIterator();
             while (it.MoveNext())
                 it.Current.Value.panelDebug = null;
             m_CurPanel = viewPanel;
             if (m_CurPanel.HasValue)
             {
+                m_LastWindowTitle = PickingData.GetName(m_CurPanel.Value);
+
                 if (m_CurPanel.Value.Panel.panelDebug == null)
                     m_CurPanel.Value.Panel.panelDebug = new PanelDebug();
                 m_CurPanel.Value.Panel.panelDebug.enabled = true;
@@ -167,7 +186,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private void DrawSelection(Rect rect)
         {
-            var evt = Event.current;
+            Event evt = Event.current;
             if (evt.type == EventType.Layout)
                 CacheData();
 
@@ -180,7 +199,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             m_DetailScroll = EditorGUILayout.BeginScrollView(m_DetailScroll);
 
-            var sizeRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(Styles.SizeRectHeight));
+            Rect sizeRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(Styles.SizeRectHeight));
             sizeRect.y += EditorGUIUtility.singleLineHeight;
             DrawSize(sizeRect, m_SelectedElement);
 
@@ -232,6 +251,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             {
                 m_SelectedElement = null;
                 m_UxmlDumpExpanded = false;
+                m_ClassList = null;
 
                 if (!m_PickingElementInPanel && m_CurPanel.HasValue && m_CurPanel.Value.Panel != null && m_CurPanel.Value.Panel.panelDebug != null)
                     ((PanelDebug)m_CurPanel.Value.Panel.panelDebug).highlightedElement = 0;
@@ -255,6 +275,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             {
                 m_SelectedElement = element;
                 m_SelectedElementUxml = null;
+                m_ClassList = null;
             }
 
             // element picking uses the highlight
@@ -265,6 +286,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private static MatchedRulesExtractor s_MatchedRulesExtractor = new MatchedRulesExtractor();
         private string m_SelectedElementUxml;
+        private ReorderableList m_ClassList;
+        private string m_NewClass;
 
         private void GetElementMatchers()
         {
@@ -286,36 +309,43 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
-            GUILayout.BeginHorizontal();
+            m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
+            m_SelectedElement.text = EditorGUILayout.TextField("Text", m_SelectedElement.text);
+            m_SelectedElement.usePixelCaching = EditorGUILayout.Toggle("Use Pixel Caching", m_SelectedElement.usePixelCaching);
+            m_SelectedElement.visible = EditorGUILayout.Toggle("Visible", m_SelectedElement.visible);
+            EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
+            EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
+
+            if (m_ClassList == null)
+                InitClassList();
+            m_ClassList.DoLayoutList();
+
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
             m_DetailFilter = EditorGUILayout.ToolbarSearchField(m_DetailFilter);
-            m_ShowDefaults = EditorGUILayout.Toggle(Styles.showDefaultsContent, m_ShowDefaults);
+            m_ShowDefaults = GUILayout.Toggle(m_ShowDefaults, Styles.showDefaultsContent, EditorStyles.toolbarButton);
+            m_Sort = GUILayout.Toggle(m_Sort, Styles.sortContent, EditorStyles.toolbarButton);
             GUILayout.EndHorizontal();
 
-            EditorGUILayout.LabelField("Name", m_SelectedElement.name);
-            EditorGUILayout.LabelField("Classes", string.Join(",", m_SelectedElement.GetClasses().ToArray()));
-            EditorGUILayout.LabelField("Use Pixel Caching", m_SelectedElement.usePixelCaching.ToString());
-            EditorGUILayout.LabelField("Visible", m_SelectedElement.visible.ToString());
-
-            var styles = m_SelectedElement.effectiveStyle;
+            VisualElementStylesData styles = m_SelectedElement.effectiveStyle;
             bool anyChanged = false;
 
-            foreach (var field in k_FieldInfos)
+            foreach (PropertyInfo field in m_Sort ? k_SortedFieldInfos : k_FieldInfos)
             {
                 if (!string.IsNullOrEmpty(m_DetailFilter) &&
                     field.Name.IndexOf(m_DetailFilter, StringComparison.InvariantCultureIgnoreCase) == -1)
                     continue;
 
-                if (!field.FieldType.IsGenericType || field.FieldType.GetGenericTypeDefinition() != typeof(StyleValue<>))
+                if (!field.PropertyType.IsGenericType || field.PropertyType.GetGenericTypeDefinition() != typeof(StyleValue<>))
                     continue;
 
-                var val = field.GetValue(styles);
+                object val = field.GetValue(m_SelectedElement, null);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
                 int specificity;
 
                 if (val is StyleValue<float>)
                 {
-                    var style = (StyleValue<float>)val;
+                    StyleValue<float> style = (StyleValue<float>)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
@@ -326,7 +356,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 }
                 else if (val is StyleValue<int>)
                 {
-                    var style = (StyleValue<int>)val;
+                    StyleValue<int> style = (StyleValue<int>)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
@@ -337,7 +367,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 }
                 else if (val is StyleValue<bool>)
                 {
-                    var style = (StyleValue<bool>)val;
+                    StyleValue<bool> style = (StyleValue<bool>)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
@@ -348,7 +378,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 }
                 else if (val is StyleValue<Color>)
                 {
-                    var style = (StyleValue<Color>)val;
+                    StyleValue<Color> style = (StyleValue<Color>)val;
                     specificity = GetSpecificity(style);
                     if (m_ShowDefaults || specificity > 0)
                     {
@@ -357,17 +387,40 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                         val = style;
                     }
                 }
+                else if (val is StyleValue<Font>)
+                {
+                    specificity = HandleReferenceProperty<Font>(field, ref val);
+                }
+                else if (val is StyleValue<Texture2D>)
+                {
+                    specificity = HandleReferenceProperty<Texture2D>(field, ref val);
+                }
                 else
                 {
-                    EditorGUILayout.LabelField(field.Name, val == null ? "null" : val.ToString());
-                    specificity = -1;
+                    Type type = val.GetType();
+                    if (type.GetGenericArguments()[0].IsEnum)
+                    {
+                        specificity = (int)type.GetField("specificity", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(val);
+                        if (m_ShowDefaults || specificity > 0)
+                        {
+                            FieldInfo fieldInfo = type.GetField("value");
+                            Enum enumValue = fieldInfo.GetValue(val) as Enum;
+                            Enum newEnumValue = EditorGUILayout.EnumPopup(field.Name, enumValue);
+                            if (!Equals(enumValue, newEnumValue))
+                                fieldInfo.SetValue(val, newEnumValue);
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(field.Name, val == null ? "null" : val.ToString());
+                        specificity = -1;
+                    }
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    styles = m_SelectedElement.effectiveStyle;
                     anyChanged = true;
-                    field.SetValue(m_SelectedElement.style, val);
+                    field.SetValue(m_SelectedElement, val, null);
                 }
 
                 if (specificity > 0)
@@ -386,26 +439,66 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             }
         }
 
+        private void InitClassList()
+        {
+            Action refresh = () => m_ClassList.list = m_SelectedElement.GetClasses().ToList();
+            m_ClassList = new ReorderableList(m_SelectedElement.GetClasses().ToList(), typeof(string), false, true, true, true);
+            m_ClassList.onRemoveCallback = _ =>
+                {
+                    m_SelectedElement.RemoveFromClassList((string)m_ClassList.list[m_ClassList.index]);
+                    refresh();
+                };
+            m_ClassList.drawHeaderCallback = r =>
+                {
+                    r.width /= 2;
+                    EditorGUI.LabelField(r, "Classes");
+                    r.x += r.width;
+                    m_NewClass = EditorGUI.TextField(r, m_NewClass);
+                };
+            m_ClassList.onCanAddCallback = _ => !String.IsNullOrEmpty(m_NewClass) && !m_SelectedElement.ClassListContains(m_NewClass);
+            m_ClassList.onAddCallback = _ =>
+                {
+                    m_SelectedElement.AddToClassList(m_NewClass);
+                    m_NewClass = "";
+                    refresh();
+                };
+        }
+
+        private int HandleReferenceProperty<T>(PropertyInfo field, ref object val) where T : UnityEngine.Object
+        {
+            StyleValue<T> style = (StyleValue<T>)val;
+            int specificity = GetSpecificity(style);
+            if (m_ShowDefaults || specificity > 0)
+            {
+                style.specificity = Int32.MaxValue;
+                style.value = EditorGUILayout.ObjectField(field.Name, ((StyleValue<T>)val).value, typeof(T), false) as T;
+                val = style;
+            }
+            return specificity;
+        }
+
         private void DrawMatchingRules()
         {
             if (s_MatchedRulesExtractor.selectedElementStylesheets != null && s_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
             {
                 EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
-                foreach (var sheet in s_MatchedRulesExtractor.selectedElementStylesheets)
+                foreach (string sheet in s_MatchedRulesExtractor.selectedElementStylesheets)
                 {
-                    GUILayout.Label(sheet);
+                    if (GUILayout.Button(sheet))
+                        InternalEditorUtility.OpenFileAtLineExternal(sheet, 0);
                 }
             }
 
             if (s_MatchedRulesExtractor.selectedElementRules != null && s_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
                 EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
-                for (var i = 0; i < s_MatchedRulesExtractor.selectedElementRules.Count; i++)
+                int i = 0;
+                foreach (MatchedRulesExtractor.MatchedRule rule in s_MatchedRulesExtractor.selectedElementRules)
                 {
-                    var builder = new StringBuilder();
-                    for (var j = 0; j < s_MatchedRulesExtractor.selectedElementRules[i].complexSelector.selectors.Length; j++)
+                    StringBuilder builder = new StringBuilder();
+                    for (int j = 0; j < rule.ruleMatcher.complexSelector.selectors.Length; j++)
                     {
-                        var sel = s_MatchedRulesExtractor.selectedElementRules[i].complexSelector.selectors[j];
+                        StyleSelector sel = rule.ruleMatcher.complexSelector.selectors[j];
                         switch (sel.previousRelationship)
                         {
                             case StyleSelectorRelationship.Child:
@@ -415,9 +508,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                                 builder.Append(" > ");
                                 break;
                         }
-                        for (var k = 0; k < sel.parts.Length; k++)
+                        for (int k = 0; k < sel.parts.Length; k++)
                         {
-                            var part = sel.parts[k];
+                            StyleSelectorPart part = sel.parts[k];
                             switch (part.type)
                             {
                                 case StyleSelectorType.Class:
@@ -436,40 +529,38 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                         }
                     }
 
-                    var props = s_MatchedRulesExtractor.selectedElementRules[i].complexSelector.rule.properties;
-                    var expanded = m_CurFoldout == i;
+                    StyleProperty[] props = rule.ruleMatcher.complexSelector.rule.properties;
+                    bool expanded = m_CurFoldout.Contains(i);
                     EditorGUILayout.BeginHorizontal();
-                    var foldout = EditorGUILayout.Foldout(m_CurFoldout == i, new GUIContent(builder.ToString()), true);
-                    var path = AssetDatabase.GetAssetPath(s_MatchedRulesExtractor.selectedElementRules[i].sheet) ?? "<unknown>";
-                    var line = s_MatchedRulesExtractor.selectedElementRules[i].complexSelector.rule.line;
-                    if (GUILayout.Button(Path.GetFileName(path) + ":" + line,
-                            EditorStyles.miniBoldLabel, GUILayout.MaxWidth(150)))
-                        InternalEditorUtility.OpenFileAtLineExternal(path, line);
+                    bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
+                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(150)))
+                        InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber);
                     EditorGUILayout.EndHorizontal();
 
                     if (expanded && !foldout)
-                        m_CurFoldout = -1;
+                        m_CurFoldout.Remove(i);
                     else if (!expanded && foldout)
-                        m_CurFoldout = i;
+                        m_CurFoldout.Add(i);
 
                     if (foldout)
                     {
                         EditorGUI.indentLevel++;
-                        for (var j = 0; j < props.Length; j++)
+                        for (int j = 0; j < props.Length; j++)
                         {
-                            var s = s_MatchedRulesExtractor.selectedElementRules[i].sheet.ReadAsString(props[j].values[0]);
+                            string s = rule.ruleMatcher.sheet.ReadAsString(props[j].values[0]);
                             EditorGUILayout.LabelField(new GUIContent(props[j].name), new GUIContent(s));
                         }
 
                         EditorGUI.indentLevel--;
                     }
+                    i++;
                 }
             }
         }
 
         private void DrawSize(Rect rect, VisualElement element)
         {
-            var cursor = new Rect(rect);
+            Rect cursor = new Rect(rect);
             cursor.x += Styles.SizeRectBetweenSize;
             cursor.y += Styles.SizeRectBetweenSize;
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
@@ -501,7 +592,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private static void DrawSizeLabels(Rect cursor, GUIContent label, float top, float right, float bottom, float left)
         {
-            var labelCursor = new Rect(
+            Rect labelCursor = new Rect(
                     cursor.x + (cursor.width - Styles.LabelSizeSize) * 0.5f,
                     cursor.y + 2, Styles.LabelSizeSize,
                     EditorGUIUtility.singleLineHeight);
@@ -524,12 +615,27 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         public void OnEnable()
         {
             m_PickingData = new PickingData();
+
             titleContent = new GUIContent("UIElements Debugger");
             m_VisualTreeTreeViewState = new TreeViewState();
             m_VisualTreeTreeView = new VisualTreeTreeView(m_VisualTreeTreeViewState);
             if (m_SplitterState == null)
                 m_SplitterState = new SplitterState(1, 2);
             m_TempTexture = new Texture2D(2, 2);
+
+            if (!String.IsNullOrEmpty(m_LastWindowTitle))
+            {
+                // if the previous window is selected again and displayed too early, we might miss some elements added
+                // during the window's OnEnable, so delay that
+                m_ScheduleRestoreSelection = true;
+            }
+        }
+
+        public void OnDisable()
+        {
+            Dictionary<int, Panel>.Enumerator it = UIElementsUtility.GetPanelsIterator();
+            while (it.MoveNext())
+                it.Current.Value.panelDebug = null;
         }
 
         private void DrawRect(Rect rect, float borderSize, Color borderColor, Color fillingColor)
@@ -547,7 +653,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             m_TempTexture.SetPixel(1, 1, borderColor);
             m_TempTexture.Apply();
 
-            var cursor = new Rect(rect.x, rect.y, rect.width, borderSize);
+            Rect cursor = new Rect(rect.x, rect.y, rect.width, borderSize);
             GUI.DrawTexture(cursor, m_TempTexture);
             cursor.y = rect.y + rect.height - borderSize;
             GUI.DrawTexture(cursor, m_TempTexture);
@@ -578,6 +684,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             public static readonly GUIContent elementStylesContent = new GUIContent("Element styles");
             public static readonly GUIContent showDefaultsContent = new GUIContent("Show defaults");
+            public static readonly GUIContent sortContent = new GUIContent("Sort");
             public static readonly GUIContent inlineContent = new GUIContent("INLINE");
             public static readonly GUIContent marginContent = new GUIContent("Margin");
             public static readonly GUIContent borderContent = new GUIContent("Border");
@@ -613,12 +720,53 @@ namespace UnityEditor.Experimental.UIElements.Debugger
     {
         internal List<RuleMatcher> ruleMatchers = new List<RuleMatcher>();
 
-        internal List<RuleMatcher> selectedElementRules = new List<RuleMatcher>();
+        internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
 
         private VisualElement m_Target;
         private List<VisualElement> m_Hierarchy = new List<VisualElement>();
         private int m_Index;
+
+        internal struct MatchedRule
+        {
+            public readonly RuleMatcher ruleMatcher;
+            public readonly string displayPath;
+            public readonly int lineNumber;
+            public readonly string fullPath;
+
+            public MatchedRule(RuleMatcher ruleMatcher)
+                : this()
+            {
+                this.ruleMatcher = ruleMatcher;
+                fullPath = AssetDatabase.GetAssetPath(ruleMatcher.sheet);
+                lineNumber = ruleMatcher.complexSelector.rule.line;
+                if (fullPath != null)
+                {
+                    if (fullPath == "Library/unity editor resources")
+                        displayPath = ruleMatcher.sheet.name + ":" + lineNumber;
+                    else
+                        displayPath = Path.GetFileNameWithoutExtension(fullPath) + ":" + lineNumber;
+                }
+            }
+
+            private sealed class LineNumberFullPathEqualityComparer : IEqualityComparer<MatchedRule>
+            {
+                public bool Equals(MatchedRule x, MatchedRule y)
+                {
+                    return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath);
+                }
+
+                public int GetHashCode(MatchedRule obj)
+                {
+                    unchecked
+                    {
+                        return (obj.lineNumber * 397) ^ (obj.fullPath != null ? obj.fullPath.GetHashCode() : 0);
+                    }
+                }
+            }
+
+            public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
+        }
 
         public VisualElement target
         {
@@ -634,9 +782,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 {
                     if (cursor.styleSheets != null)
                     {
-                        foreach (var sheet in cursor.styleSheets)
+                        foreach (StyleSheet sheet in cursor.styleSheets)
                         {
-                            selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet));
+                            selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
                             PushStyleSheet(sheet);
                         }
                     }
@@ -650,7 +798,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private void PushStyleSheet(StyleSheet styleSheetData)
         {
-            var complexSelectors = styleSheetData.complexSelectors;
+            StyleComplexSelector[] complexSelectors = styleSheetData.complexSelectors;
             // To avoid excessive re-allocations, just resize the list right now
             int futureSize = ruleMatchers.Count + complexSelectors.Length;
             ruleMatchers.Capacity = Math.Max(ruleMatchers.Capacity, futureSize);
@@ -677,7 +825,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
         {
             if (element == target)
-                selectedElementRules.Add(matcher);
+                selectedElementRules.Add(new MatchedRule(matcher));
             return false;
         }
 

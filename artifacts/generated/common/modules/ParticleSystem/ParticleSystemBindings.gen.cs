@@ -1075,13 +1075,13 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemShapeType shapeType { get { return (ParticleSystemShapeType)GetShapeType(m_ParticleSystem); } set { SetShapeType(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemShapeType shapeType { get { return GetShapeType(m_ParticleSystem); } set { SetShapeType(m_ParticleSystem, value); } }
                     public float randomDirectionAmount { get { return GetRandomDirectionAmount(m_ParticleSystem); } set { SetRandomDirectionAmount(m_ParticleSystem, value); } }
                     public float sphericalDirectionAmount { get { return GetSphericalDirectionAmount(m_ParticleSystem); } set { SetSphericalDirectionAmount(m_ParticleSystem, value); } }
                     public float randomPositionAmount { get { return GetRandomPositionAmount(m_ParticleSystem); } set { SetRandomPositionAmount(m_ParticleSystem, value); } }
                     public bool alignToDirection { get { return GetAlignToDirection(m_ParticleSystem); } set { SetAlignToDirection(m_ParticleSystem, value); } }
                     public float radius { get { return GetRadius(m_ParticleSystem); } set { SetRadius(m_ParticleSystem, value); } }
-                    public ParticleSystemShapeMultiModeValue radiusMode { get { return (ParticleSystemShapeMultiModeValue)GetRadiusMode(m_ParticleSystem); } set { SetRadiusMode(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemShapeMultiModeValue radiusMode { get { return GetRadiusMode(m_ParticleSystem); } set { SetRadiusMode(m_ParticleSystem, value); } }
                     public float radiusSpread { get { return GetRadiusSpread(m_ParticleSystem); } set { SetRadiusSpread(m_ParticleSystem, value); } }
                     public MinMaxCurve radiusSpeed { set { SetRadiusSpeed(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetRadiusSpeed(m_ParticleSystem, ref r); return r; } }
                     public float radiusSpeedMultiplier { get { return GetRadiusSpeedMultiplier(m_ParticleSystem); } set { SetRadiusSpeedMultiplier(m_ParticleSystem, value); } }
@@ -1091,7 +1091,7 @@ public sealed partial class ParticleSystem : Component
         [System.Obsolete ("Please use scale instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/ShapeModule.scale")]
                     public Vector3 box { get { return GetScale(m_ParticleSystem); } set { SetScale(m_ParticleSystem, value); } }
                     public Vector3 boxThickness { get { return GetBoxThickness(m_ParticleSystem); } set { SetBoxThickness(m_ParticleSystem, value); } }
-                    public ParticleSystemMeshShapeType meshShapeType { get { return (ParticleSystemMeshShapeType)GetMeshShapeType(m_ParticleSystem); } set { SetMeshShapeType(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemMeshShapeType meshShapeType { get { return GetMeshShapeType(m_ParticleSystem); } set { SetMeshShapeType(m_ParticleSystem, value); } }
                     public Mesh mesh { get { return GetMesh(m_ParticleSystem); } set { SetMesh(m_ParticleSystem, value); } }
                     public MeshRenderer meshRenderer { get { return GetMeshRenderer(m_ParticleSystem); } set { SetMeshRenderer(m_ParticleSystem, value); } }
                     public SkinnedMeshRenderer skinnedMeshRenderer { get { return GetSkinnedMeshRenderer(m_ParticleSystem); } set { SetSkinnedMeshRenderer(m_ParticleSystem, value); } }
@@ -1102,7 +1102,7 @@ public sealed partial class ParticleSystem : Component
         [System.Obsolete ("meshScale property is deprecated. Please use scale instead.")]
                     public float meshScale { get { return GetScale(m_ParticleSystem).x; } set { SetScale(m_ParticleSystem, new Vector3(value, value, value)); } }
                     public float arc { get { return GetArc(m_ParticleSystem); } set { SetArc(m_ParticleSystem, value); } }
-                    public ParticleSystemShapeMultiModeValue arcMode { get { return (ParticleSystemShapeMultiModeValue)GetArcMode(m_ParticleSystem); } set { SetArcMode(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemShapeMultiModeValue arcMode { get { return GetArcMode(m_ParticleSystem); } set { SetArcMode(m_ParticleSystem, value); } }
                     public float arcSpread { get { return GetArcSpread(m_ParticleSystem); } set { SetArcSpread(m_ParticleSystem, value); } }
                     public MinMaxCurve arcSpeed { set { SetArcSpeed(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetArcSpeed(m_ParticleSystem, ref r); return r; } }
                     public float arcSpeedMultiplier { get { return GetArcSpeedMultiplier(m_ParticleSystem); } set { SetArcSpeedMultiplier(m_ParticleSystem, value); } }
@@ -1126,11 +1126,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetShapeType (ParticleSystem system, int value) ;
+        extern private static  void SetShapeType (ParticleSystem system, ParticleSystemShapeType value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetShapeType (ParticleSystem system) ;
+        extern private static  ParticleSystemShapeType GetShapeType (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1174,11 +1174,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetRadiusMode (ParticleSystem system, int value) ;
+        extern private static  void SetRadiusMode (ParticleSystem system, ParticleSystemShapeMultiModeValue value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetRadiusMode (ParticleSystem system) ;
+        extern private static  ParticleSystemShapeMultiModeValue GetRadiusMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1246,11 +1246,11 @@ public sealed partial class ParticleSystem : Component
         private extern static void INTERNAL_CALL_GetBoxThickness (ParticleSystem system, out Vector3 value);
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMeshShapeType (ParticleSystem system, int value) ;
+        extern private static  void SetMeshShapeType (ParticleSystem system, ParticleSystemMeshShapeType value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMeshShapeType (ParticleSystem system) ;
+        extern private static  ParticleSystemMeshShapeType GetMeshShapeType (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1318,11 +1318,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetArcMode (ParticleSystem system, int value) ;
+        extern private static  void SetArcMode (ParticleSystem system, ParticleSystemShapeMultiModeValue value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetArcMode (ParticleSystem system) ;
+        extern private static  ParticleSystemShapeMultiModeValue GetArcMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1670,7 +1670,7 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemInheritVelocityMode mode { get { return (ParticleSystemInheritVelocityMode)GetMode(m_ParticleSystem); } set { SetMode(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemInheritVelocityMode mode { get { return GetMode(m_ParticleSystem); } set { SetMode(m_ParticleSystem, value); } }
                     public MinMaxCurve curve { set { SetCurve(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetCurve(m_ParticleSystem, ref r); return r; } }
                     public float curveMultiplier { get { return GetCurveMultiplier(m_ParticleSystem); } set { SetCurveMultiplier(m_ParticleSystem, value); } }
         
@@ -1685,11 +1685,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMode (ParticleSystem system, int value) ;
+        extern private static  void SetMode (ParticleSystem system, ParticleSystemInheritVelocityMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMode (ParticleSystem system) ;
+        extern private static  ParticleSystemInheritVelocityMode GetMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2532,8 +2532,8 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemCollisionType type { set { SetType(m_ParticleSystem, (int)value); } get { return (ParticleSystemCollisionType)GetType(m_ParticleSystem); } }
-                    public ParticleSystemCollisionMode mode { set { SetMode(m_ParticleSystem, (int)value); } get { return (ParticleSystemCollisionMode)GetMode(m_ParticleSystem); } }
+                    public ParticleSystemCollisionType type { set { SetType(m_ParticleSystem, value); } get { return GetType(m_ParticleSystem); } }
+                    public ParticleSystemCollisionMode mode { set { SetMode(m_ParticleSystem, value); } get { return GetMode(m_ParticleSystem); } }
                     public MinMaxCurve dampen { set { SetDampen(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetDampen(m_ParticleSystem, ref r); return r; } }
                     public float dampenMultiplier { get { return GetDampenMultiplier(m_ParticleSystem); } set { SetDampenMultiplier(m_ParticleSystem, value); } }
                     public MinMaxCurve bounce { set { SetBounce(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetBounce(m_ParticleSystem, ref r); return r; } }
@@ -2574,19 +2574,19 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetType (ParticleSystem system, int value) ;
+        extern private static  void SetType (ParticleSystem system, ParticleSystemCollisionType value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetType (ParticleSystem system) ;
+        extern private static  ParticleSystemCollisionType GetType (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMode (ParticleSystem system, int value) ;
+        extern private static  void SetMode (ParticleSystem system, ParticleSystemCollisionMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMode (ParticleSystem system) ;
+        extern private static  ParticleSystemCollisionMode GetMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2770,10 +2770,10 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemOverlapAction inside { set { SetInside(m_ParticleSystem, (int)value); } get { return (ParticleSystemOverlapAction)GetInside(m_ParticleSystem); } }
-                    public ParticleSystemOverlapAction outside { set { SetOutside(m_ParticleSystem, (int)value); } get { return (ParticleSystemOverlapAction)GetOutside(m_ParticleSystem); } }
-                    public ParticleSystemOverlapAction enter { set { SetEnter(m_ParticleSystem, (int)value); } get { return (ParticleSystemOverlapAction)GetEnter(m_ParticleSystem); } }
-                    public ParticleSystemOverlapAction exit { set { SetExit(m_ParticleSystem, (int)value); } get { return (ParticleSystemOverlapAction)GetExit(m_ParticleSystem); } }
+                    public ParticleSystemOverlapAction inside { set { SetInside(m_ParticleSystem, value); } get { return GetInside(m_ParticleSystem); } }
+                    public ParticleSystemOverlapAction outside { set { SetOutside(m_ParticleSystem, value); } get { return GetOutside(m_ParticleSystem); } }
+                    public ParticleSystemOverlapAction enter { set { SetEnter(m_ParticleSystem, value); } get { return GetEnter(m_ParticleSystem); } }
+                    public ParticleSystemOverlapAction exit { set { SetExit(m_ParticleSystem, value); } get { return GetExit(m_ParticleSystem); } }
                     public float radiusScale { get { return GetRadiusScale(m_ParticleSystem); } set { SetRadiusScale(m_ParticleSystem, value); } }
         
         public void SetCollider(int index, Component collider) { SetCollider(m_ParticleSystem, index, collider); }
@@ -2791,35 +2791,35 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetInside (ParticleSystem system, int value) ;
+        extern private static  void SetInside (ParticleSystem system, ParticleSystemOverlapAction value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetInside (ParticleSystem system) ;
+        extern private static  ParticleSystemOverlapAction GetInside (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetOutside (ParticleSystem system, int value) ;
+        extern private static  void SetOutside (ParticleSystem system, ParticleSystemOverlapAction value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetOutside (ParticleSystem system) ;
+        extern private static  ParticleSystemOverlapAction GetOutside (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetEnter (ParticleSystem system, int value) ;
+        extern private static  void SetEnter (ParticleSystem system, ParticleSystemOverlapAction value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetEnter (ParticleSystem system) ;
+        extern private static  ParticleSystemOverlapAction GetEnter (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetExit (ParticleSystem system, int value) ;
+        extern private static  void SetExit (ParticleSystem system, ParticleSystemOverlapAction value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetExit (ParticleSystem system) ;
+        extern private static  ParticleSystemOverlapAction GetExit (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2955,10 +2955,10 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemAnimationMode mode { set { SetMode(m_ParticleSystem, (int)value); } get { return (ParticleSystemAnimationMode)GetMode(m_ParticleSystem); } }
+                    public ParticleSystemAnimationMode mode { set { SetMode(m_ParticleSystem, value); } get { return GetMode(m_ParticleSystem); } }
                     public int numTilesX { set { SetNumTilesX(m_ParticleSystem, value); } get { return GetNumTilesX(m_ParticleSystem); } }
                     public int numTilesY { set { SetNumTilesY(m_ParticleSystem, value); } get { return GetNumTilesY(m_ParticleSystem); } }
-                    public ParticleSystemAnimationType animation { set { SetAnimationType(m_ParticleSystem, (int)value); } get { return (ParticleSystemAnimationType)GetAnimationType(m_ParticleSystem); } }
+                    public ParticleSystemAnimationType animation { set { SetAnimationType(m_ParticleSystem, value); } get { return GetAnimationType(m_ParticleSystem); } }
                     public bool useRandomRow { set { SetUseRandomRow(m_ParticleSystem, value); } get { return GetUseRandomRow(m_ParticleSystem); } }
                     public MinMaxCurve frameOverTime { set { SetFrameOverTime(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetFrameOverTime(m_ParticleSystem, ref r); return r; } }
                     public float frameOverTimeMultiplier { get { return GetFrameOverTimeMultiplier(m_ParticleSystem); } set { SetFrameOverTimeMultiplier(m_ParticleSystem, value); } }
@@ -2987,11 +2987,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMode (ParticleSystem system, int value) ;
+        extern private static  void SetMode (ParticleSystem system, ParticleSystemAnimationMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMode (ParticleSystem system) ;
+        extern private static  ParticleSystemAnimationMode GetMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3011,11 +3011,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetAnimationType (ParticleSystem system, int value) ;
+        extern private static  void SetAnimationType (ParticleSystem system, ParticleSystemAnimationType value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetAnimationType (ParticleSystem system) ;
+        extern private static  ParticleSystemAnimationType GetAnimationType (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3246,12 +3246,12 @@ public sealed partial class ParticleSystem : Component
                     private ParticleSystem m_ParticleSystem;
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
-                    public ParticleSystemTrailMode mode { get { return (ParticleSystemTrailMode)GetMode(m_ParticleSystem); } set { SetMode(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemTrailMode mode { get { return GetMode(m_ParticleSystem); } set { SetMode(m_ParticleSystem, value); } }
                     public float ratio { get { return GetRatio(m_ParticleSystem); } set { SetRatio(m_ParticleSystem, value); } }
                     public MinMaxCurve lifetime { set { SetLifetime(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetLifetime(m_ParticleSystem, ref r); return r; } }
                     public float lifetimeMultiplier { get { return GetLifetimeMultiplier(m_ParticleSystem); } set { SetLifetimeMultiplier(m_ParticleSystem, value); } }
                     public float minVertexDistance { set { SetMinVertexDistance(m_ParticleSystem, value); } get { return GetMinVertexDistance(m_ParticleSystem); } }
-                    public ParticleSystemTrailTextureMode textureMode { get { return (ParticleSystemTrailTextureMode)GetTextureMode(m_ParticleSystem); } set { SetTextureMode(m_ParticleSystem, (int)value); } }
+                    public ParticleSystemTrailTextureMode textureMode { get { return GetTextureMode(m_ParticleSystem); } set { SetTextureMode(m_ParticleSystem, value); } }
                     public bool worldSpace { set { SetWorldSpace(m_ParticleSystem, value); } get { return GetWorldSpace(m_ParticleSystem); } }
                     public bool dieWithParticles { set { SetDieWithParticles(m_ParticleSystem, value); } get { return GetDieWithParticles(m_ParticleSystem); } }
                     public bool sizeAffectsWidth { set { SetSizeAffectsWidth(m_ParticleSystem, value); } get { return GetSizeAffectsWidth(m_ParticleSystem); } }
@@ -3275,11 +3275,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMode (ParticleSystem system, int value) ;
+        extern private static  void SetMode (ParticleSystem system, ParticleSystemTrailMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMode (ParticleSystem system) ;
+        extern private static  ParticleSystemTrailMode GetMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3315,11 +3315,11 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetTextureMode (ParticleSystem system, int value) ;
+        extern private static  void SetTextureMode (ParticleSystem system, ParticleSystemTrailTextureMode value) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetTextureMode (ParticleSystem system) ;
+        extern private static  ParticleSystemTrailTextureMode GetTextureMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3420,8 +3420,8 @@ public sealed partial class ParticleSystem : Component
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
         
-        public void SetMode(ParticleSystemCustomData stream, ParticleSystemCustomDataMode mode) { SetMode(m_ParticleSystem, (int)stream, (int)mode); }
-        public ParticleSystemCustomDataMode GetMode(ParticleSystemCustomData stream) { return (ParticleSystemCustomDataMode)GetMode(m_ParticleSystem, (int)stream); }
+        public void SetMode(ParticleSystemCustomData stream, ParticleSystemCustomDataMode mode) { SetMode(m_ParticleSystem, (int)stream, mode); }
+        public ParticleSystemCustomDataMode GetMode(ParticleSystemCustomData stream) { return GetMode(m_ParticleSystem, (int)stream); }
         public void SetVectorComponentCount(ParticleSystemCustomData stream, int count) { SetVectorComponentCount(m_ParticleSystem, (int)stream, count); }
         public int GetVectorComponentCount(ParticleSystemCustomData stream) { return GetVectorComponentCount(m_ParticleSystem, (int)stream); }
         public void SetVector(ParticleSystemCustomData stream, int component, ParticleSystem.MinMaxCurve curve) { SetVector(m_ParticleSystem, (int)stream, component, ref curve); }
@@ -3440,7 +3440,7 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetMode (ParticleSystem system, int stream, int mode) ;
+        extern private static  void SetMode (ParticleSystem system, int stream, ParticleSystemCustomDataMode mode) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3456,7 +3456,7 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  int GetMode (ParticleSystem system, int stream) ;
+        extern private static  ParticleSystemCustomDataMode GetMode (ParticleSystem system, int stream) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

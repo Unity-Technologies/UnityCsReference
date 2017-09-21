@@ -2,21 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.AnimatedValues;
-using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal abstract class ObjectSelectorReceiver : ScriptableObject
     {
-        public abstract void OnSelectionChanged(Object selection);
-        public abstract void OnSelectionClosed(Object selection);
+        public abstract void OnSelectionChanged(UnityObject selection);
+        public abstract void OnSelectionClosed(UnityObject selection);
     }
 
     internal class ObjectSelector : EditorWindow
@@ -48,7 +51,7 @@ namespace UnityEditor
         internal int    objectSelectorID = 0;
         ObjectSelectorReceiver m_ObjectSelectorReceiver;
         int             m_ModalUndoGroup = -1;
-        Object          m_OriginalSelection;
+        UnityObject     m_OriginalSelection;
         EditorCache     m_EditorCache;
         GUIView         m_DelegateView;
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
@@ -57,7 +60,7 @@ namespace UnityEditor
         ObjectListAreaState m_ListAreaState;
         ObjectListArea  m_ListArea;
         ObjectTreeForSelector m_ObjectTreeWithSearch = new ObjectTreeForSelector();
-        Object m_ObjectBeingEdited;
+        UnityObject m_ObjectBeingEdited;
 
         // Layout
         const float kMinTopSize = 250;
@@ -91,7 +94,7 @@ namespace UnityEditor
             {
                 if (s_SharedObjectSelector == null)
                 {
-                    Object[] objs = Resources.FindObjectsOfTypeAll(typeof(ObjectSelector));
+                    UnityObject[] objs = Resources.FindObjectsOfTypeAll(typeof(ObjectSelector));
                     if (objs != null && objs.Length > 0)
                         s_SharedObjectSelector = (ObjectSelector)objs[0];
                     if (s_SharedObjectSelector == null)
@@ -183,24 +186,6 @@ namespace UnityEditor
             }
         }
 
-        static bool GuessIfUserIsLookingForAnAsset(string requiredClassName, bool checkGameObject)
-        {
-            // FIXME: Need to add AudioMixer here?
-            string[] requiredClassNames =
-            {
-                "AnimationClip", "AnimatorController", "AnimatorOverrideController", "AudioClip", "Avatar", "Flare", "Font",
-                "Material", "ProceduralMaterial", "Mesh", "PhysicMaterial", "GUISkin", "Shader", "TerrainData",
-                "Texture", "Cubemap", "MovieTexture", "RenderTexture", "Texture2D", "ProceduralTexture", "Sprite",
-                "AudioMixerGroup", "AudioMixerSnapshot"
-                , "VideoClip"
-            };
-
-            if (checkGameObject && requiredClassName == "GameObject")
-                return true;
-
-            return requiredClassNames.Contains(requiredClassName);
-        }
-
         internal string searchFilter
         {
             get { return m_SearchFilter; }
@@ -217,7 +202,7 @@ namespace UnityEditor
             set { m_ObjectSelectorReceiver = value; }
         }
 
-        Scene GetSceneFromObject(Object obj)
+        Scene GetSceneFromObject(UnityObject obj)
         {
             var go = obj as GameObject;
             if (go != null)
@@ -253,32 +238,26 @@ namespace UnityEditor
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
         }
 
-        static bool ShouldTreeViewBeUsed(string className)
+        static bool ShouldTreeViewBeUsed(Type type)
         {
-            return className == "AudioMixerGroup";
+            return type == typeof(AudioMixerGroup);
         }
 
-        public void Show(Object obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects)
+        public void Show(UnityObject obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects)
         {
             Show(obj, requiredType, property, allowSceneObjects, null);
         }
 
-        internal void Show(Object obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
+        internal void Show(UnityObject obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
             m_IsShowingAssets = true;
             m_AllowedIDs = allowedInstanceIDs;
 
-            // Determine the class for filtering based on our information
-            string requiredClassName = "";
-            if (requiredType != null)
+            if (property != null)
             {
-                requiredClassName = requiredType.Name;
-            }
-            else if (property != null)
-            {
-                requiredClassName = property.objectReferenceTypeString;
+                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
 
                 obj = property.objectReferenceValue;
                 m_ObjectBeingEdited = property.serializedObject.targetObject;
@@ -298,11 +277,11 @@ namespace UnityEditor
                         obj = ((Component)obj).gameObject;
                     }
                     // Set the right tab visible (so we can see our selection)
-                    m_IsShowingAssets = EditorUtility.IsPersistent(obj) || GuessIfUserIsLookingForAnAsset(requiredClassName, false);
+                    m_IsShowingAssets = EditorUtility.IsPersistent(obj);
                 }
                 else
                 {
-                    m_IsShowingAssets = GuessIfUserIsLookingForAnAsset(requiredClassName, true);
+                    m_IsShowingAssets = (requiredType != typeof(GameObject) && !typeof(Component).IsAssignableFrom(requiredType));
                 }
             }
             else
@@ -312,7 +291,8 @@ namespace UnityEditor
 
             // Set member variables
             m_DelegateView = GUIView.current;
-            m_RequiredType = requiredClassName;
+            // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
+            m_RequiredType = typeof(ScriptableObject).IsAssignableFrom(requiredType) || typeof(MonoBehaviour).IsAssignableFrom(requiredType) ? requiredType.FullName : requiredType.Name;
             m_SearchFilter = "";
             m_OriginalSelection = obj;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
@@ -323,7 +303,7 @@ namespace UnityEditor
             ContainerWindow.SetFreezeDisplay(true);
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = new GUIContent("Select " + requiredClassName);
+            titleContent = new GUIContent("Select " + requiredType.Name);
 
             // Deal with window size
             Rect p = m_Parent.window.position;
@@ -348,7 +328,7 @@ namespace UnityEditor
             if (property != null && property.hasMultipleDifferentValues)
                 initialSelection = 0; // don't select anything on multi selection
 
-            if (ShouldTreeViewBeUsed(requiredClassName))
+            if (ShouldTreeViewBeUsed(requiredType))
             {
                 m_ObjectTreeWithSearch.Init(position, this, CreateAndSetTreeView, TreeViewSelection, ItemWasDoubleClicked, initialSelection, 0);
             }
@@ -408,13 +388,13 @@ namespace UnityEditor
             }
         }
 
-        public static Object GetCurrentObject()
+        public static UnityObject GetCurrentObject()
         {
             return EditorUtility.InstanceIDToObject(ObjectSelector.get.GetSelectedInstanceID());
         }
 
         // This is the public Object that the inspector might revert to
-        public static Object GetInitialObject()
+        public static UnityObject GetInitialObject()
         {
             return ObjectSelector.get.m_OriginalSelection;
         }
@@ -517,7 +497,7 @@ namespace UnityEditor
                 return;
 
             EditorWrapper p = null;
-            Object selectedObject = GetCurrentObject();
+            UnityObject selectedObject = GetCurrentObject();
             if (m_PreviewSize < kPreviewExpandedAreaHeight)
             {
                 // Get info string
@@ -583,7 +563,7 @@ namespace UnityEditor
             }
         }
 
-        void WidePreview(float actualSize, string s, Object o, EditorWrapper p)
+        void WidePreview(float actualSize, string s, UnityObject o, EditorWrapper p)
         {
             float margin = kPreviewMargin;
             Rect previewRect = new Rect(margin, m_TopSize + margin, actualSize - margin * 2, actualSize - margin * 2);
@@ -601,7 +581,7 @@ namespace UnityEditor
                 GUI.Label(labelRect, s, m_Styles.smallStatus);
         }
 
-        void OverlapPreview(float actualSize, string s, Object o, EditorWrapper p)
+        void OverlapPreview(float actualSize, string s, UnityObject o, EditorWrapper p)
         {
             float margin = kPreviewMargin;
             Rect previewRect = new Rect(margin, m_TopSize + margin, position.width - margin * 2, actualSize - margin * 2);
@@ -617,7 +597,7 @@ namespace UnityEditor
                 EditorGUI.DoDropShadowLabel(previewRect, EditorGUIUtility.TempContent(s), m_Styles.largeStatus, .3f);
         }
 
-        void LinePreview(string s, Object o, EditorWrapper p)
+        void LinePreview(string s, UnityObject o, EditorWrapper p)
         {
             if (m_ListArea.m_SelectedObjectIcon != null)
                 GUI.DrawTexture(new Rect(2, (int)(m_TopSize + 2), 16, 16), m_ListArea.m_SelectedObjectIcon, ScaleMode.StretchToFill);

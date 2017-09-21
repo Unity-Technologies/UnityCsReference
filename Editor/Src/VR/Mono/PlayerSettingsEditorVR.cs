@@ -468,7 +468,7 @@ namespace UnityEditorInternal.VR
             {
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
-                    EditorGUILayout.HelpBox("Tango and Vuforia Augmented Reality cannot be used at the same time. Please disable one of the two.", MessageType.Error);
+                    EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
                 }
             }
         }

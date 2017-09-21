@@ -260,6 +260,9 @@ namespace UnityEditor
                 case ".shader":
                     icon = EditorGUIUtility.IconContent("Shader Icon").image as Texture2D;
                     break;
+                case ".asmdef":
+                    icon = EditorGUIUtility.IconContent("AssemblyDefinitionAsset Icon").image as Texture2D;
+                    break;
                 default:
                     icon = EditorGUIUtility.IconContent("TextAsset Icon").image as Texture2D;
                     break;
@@ -384,6 +387,7 @@ namespace UnityEditor
 
             // macro replacement
             string baseFile = Path.GetFileNameWithoutExtension(pathName);
+
             content = content.Replace("#NAME#", baseFile);
             string baseFileNoSpaces = baseFile.Replace(" ", "");
             content = content.Replace("#SCRIPTNAME#", baseFileNoSpaces);

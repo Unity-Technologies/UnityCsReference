@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Messaging;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using Object = UnityEngine.Object;
@@ -50,27 +51,80 @@ namespace UnityEditor
     internal class DataWatchService : IDataWatchService
     {
         public static DataWatchService sharedInstance = new DataWatchService();
+        private TimerEventScheduler m_Scheduler = new TimerEventScheduler();
 
-        private HashSet<Object> m_DirtySet = new HashSet<Object>();
 
         struct Spy
         {
             public readonly int handleID;
-            public readonly VisualElement watcher;
-            public readonly Action onDataChanged;
+            public readonly Action<Object> onDataChanged;
 
-            public Spy(int handleID, VisualElement watcher, Action onDataChanged)
+            public Spy(int handleID, Action<Object> onDataChanged)
             {
                 this.handleID = handleID;
-                this.watcher = watcher;
                 this.onDataChanged = onDataChanged;
             }
         }
 
-        struct Watchers
+        private class Watchers
         {
             public List<Spy> spyList;
             public ChangeTrackerHandle tracker;
+            public IScheduledItem scheduledItem;
+            public Object watchedObject;
+            private DataWatchService service
+            {
+                get
+                {
+                    return DataWatchService.sharedInstance;
+                }
+            }
+
+            public bool isModified { get; set; }
+
+            public Watchers(Object watched)
+            {
+                spyList = new List<Spy>();
+                tracker = ChangeTrackerHandle.AcquireTracker(watched);
+                watchedObject = watched;
+            }
+
+            public void AddSpy(int handle, Action<Object> onDataChanged)
+            {
+                spyList.Add(new Spy(handle, onDataChanged));
+            }
+
+            public bool IsEmpty()
+            {
+                return spyList == null;
+            }
+
+            public void OnTimerPoolForChanges(TimerState ts)
+            {
+                if (PollForChanges())
+                {
+                    isModified = false;
+                    service.NotifyDataChanged(this);
+                }
+            }
+
+            public bool PollForChanges()
+            {
+                if (watchedObject == null) //object could have been deleted
+                {
+                    isModified = true;
+                }
+                else
+                {
+                    //we need to poll the tracker first if it exists, since it needs to update the object checksum
+                    if (tracker.PollForChanges())
+                    {
+                        isModified = true;
+                    }
+                }
+
+                return isModified;
+            }
         }
 
         private Dictionary<int, DataWatchHandle> m_Handles = new Dictionary<int, DataWatchHandle>();
@@ -96,9 +150,10 @@ namespace UnityEditor
                 var cv = m.currentValue;
                 if (cv == null || cv.target == null)
                     continue;
-                if (m_Watched.ContainsKey(cv.target))
+                Watchers w;
+                if (m_Watched.TryGetValue(cv.target, out w))
                 {
-                    m_DirtySet.Add(cv.target);
+                    w.isModified = true;
                 }
             }
             return modifications;
@@ -110,63 +165,45 @@ namespace UnityEditor
             if (m_Watched.TryGetValue(obj, out watch))
             {
                 watch.tracker.ForceDirtyNextPoll();
+                watch.isModified = true;
             }
         }
 
         // go through all trackers and poll their native revisions
         public void PollNativeData()
         {
-            foreach (var w in m_Watched)
+            //using the scheduler allows us to automatically throttle data polling
+            m_Scheduler.UpdateScheduledEvents();
+        }
+
+        static List<Spy> notificationTmpSpies = new List<Spy>();
+
+        private void NotifyDataChanged(Watchers w)
+        {
+            notificationTmpSpies.Clear();
+            notificationTmpSpies.AddRange(w.spyList);
+
+            foreach (Spy spy in notificationTmpSpies)
             {
-                // Unity Object can be destroyed without us knowing
-                // They will compare to null but the C# object is still valid
-                // Other wise we check the object for changes
-                if (w.Key == null || w.Value.tracker.PollForChanges())
-                {
-                    m_DirtySet.Add(w.Key);
-                }
+                spy.onDataChanged(w.watchedObject);
+            }
+
+            if (w.watchedObject == null)
+            {
+                DoRemoveWatcher(w);
             }
         }
 
-        public void FlushDirtySet(HashSet<Object> dirty)
+        private void DoRemoveWatcher(Watchers watchers)
         {
-            dirty.UnionWith(m_DirtySet);
-            m_DirtySet.Clear();
-        }
-
-        public void ProcessNotificationQueue(BaseVisualElementPanel panel, HashSet<Object> dirtySet)
-        {
-            // since callbacks when being invoked we make copies for safe iteration
-            var tmpSpys = new List<Spy>();
-
-            // get the set of Dirties from C++ and clear it.
-            foreach (var o in dirtySet)
-            {
-                Watchers watchers;
-                if (m_Watched.TryGetValue(o, out watchers))
-                {
-                    tmpSpys.Clear();
-                    tmpSpys.AddRange(watchers.spyList);
-
-                    foreach (Spy spy in tmpSpys)
-                    {
-                        if (spy.watcher.panel == panel)
-                        {
-                            // for any watches trigger callbacks
-                            spy.onDataChanged();
-                        }
-                        else if (spy.watcher.panel == null)
-                        {
-                            Debug.Log("Leaking Data Spies from element: " + spy.watcher);
-                        }
-                    }
-                }
-            }
+            m_Watched.Remove(watchers.watchedObject);
+            m_Scheduler.Unschedule(watchers.scheduledItem);
+            watchers.tracker.ReleaseTracker();
         }
 
         static int s_WatchID;
 
-        public IDataWatchHandle AddWatch(VisualElement watcher, Object watched, Action onDataChanged)
+        public IDataWatchHandle AddWatch(Object watched, Action<Object> onDataChanged)
         {
             if (watched == null)
                 throw new ArgumentException("Object watched cannot be null");
@@ -177,14 +214,12 @@ namespace UnityEditor
             Watchers watchers;
             if (!m_Watched.TryGetValue(watched, out watchers))
             {
-                watchers = new Watchers
-                {
-                    spyList = new List<Spy>(),
-                    tracker = ChangeTrackerHandle.AcquireTracker(watched),
-                };
+                watchers = new Watchers(watched);
                 m_Watched[watched] = watchers;
+
+                watchers.scheduledItem = m_Scheduler.ScheduleUntil(watchers.OnTimerPoolForChanges, 0, 0, null); //we poll as often as possible
             }
-            watchers.spyList.Add(new Spy(handle.id, watcher, onDataChanged));
+            watchers.spyList.Add(new Spy(handle.id, onDataChanged));
             return handle;
         }
 
@@ -204,10 +239,9 @@ namespace UnityEditor
                         if (spy.handleID == handleImpl.id)
                         {
                             spyList.RemoveAt(i);
-                            if (watchers.spyList.Count == 0)
+                            if (watchers.IsEmpty())
                             {
-                                watchers.tracker.ReleaseTracker();
-                                m_Watched.Remove(handleImpl.watched);
+                                DoRemoveWatcher(watchers);
                             }
                             return;
                         }

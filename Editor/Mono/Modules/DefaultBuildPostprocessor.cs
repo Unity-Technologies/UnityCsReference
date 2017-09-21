@@ -48,6 +48,19 @@ namespace UnityEditor.Modules
 
         public virtual void UpdateBootConfig(BuildTarget target, BootConfigData config, BuildOptions options)
         {
+            config.Set("wait-for-native-debugger", "0");
+            if (config.Get("player-connection-debug") == "1")
+            {
+                if (EditorUserBuildSettings.GetPlatformSettings(BuildPipeline.GetBuildTargetName(target),
+                        BuildPlayerWindow.kSettingDebuggingWaitForManagedDebugger) == "true")
+                {
+                    config.Set("wait-for-managed-debugger", "1");
+                }
+                else
+                {
+                    config.Set("wait-for-managed-debugger", "0");
+                }
+            }
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

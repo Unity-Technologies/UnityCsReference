@@ -215,7 +215,7 @@ namespace UnityEditor
                 case Mode.ObjectSettings:
                 {
                     //@TODO use gui layout to display ObjectPreview or deduct rect from previous window.
-                    int height = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer ? 185 : 115;
+                    int height = LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU ? 185 : 115;
 
                     Rect fullRect = new Rect(0, height, position.width, position.height - height);
                     if (Selection.activeGameObject)
@@ -291,7 +291,7 @@ namespace UnityEditor
                 else
                 {
                     // Only show Force Stop when using the PathTracer backend
-                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer &&
+                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU &&
                         LightModeUtil.Get().AreBakedLightmapsEnabled() &&
                         GUILayout.Button("Force Stop", GUILayout.Width(kButtonWidth)))
                     {
@@ -406,7 +406,7 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);

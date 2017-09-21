@@ -329,13 +329,13 @@ namespace UnityEngine
         {
             get
             {
-                if (canAccess) return GetTrianglesImpl(-1, true);
-                else           PrintErrorCantAccessIndices();
+                if (canAccess)  return GetTrianglesImpl(-1, true);
+                else            PrintErrorCantAccessIndices();
                 return new int[0];
             }
             set
             {
-                if (canAccess)   SetTrianglesImpl(-1, value, NoAllocHelpers.SafeLength(value));
+                if (canAccess)  SetTrianglesImpl(-1, value, NoAllocHelpers.SafeLength(value), true, 0);
                 else            PrintErrorCantAccessIndices();
             }
         }
@@ -364,8 +364,7 @@ namespace UnityEngine
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
             PrepareUserBuffer(triangles, (int)GetIndexCount(submesh));
-
-            GetTrianglesNonAllocImpl(triangles, submesh, applyBaseVertex);
+            GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex);
         }
 
         public int[] GetIndices(int submesh)
@@ -392,9 +391,7 @@ namespace UnityEngine
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
             PrepareUserBuffer(indices, (int)GetIndexCount(submesh));
-            indices.Clear();
-
-            GetIndicesNonAllocImpl(indices, submesh, applyBaseVertex);
+            GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex);
         }
 
         public UInt32 GetIndexStart(int submesh)
@@ -418,6 +415,60 @@ namespace UnityEngine
             return GetBaseVertexImpl(submesh);
         }
 
+        private void SetTrianglesImpl(int submesh, System.Array triangles, int arraySize, bool calculateBounds, int baseVertex)
+        {
+            SetIndicesImpl(submesh, MeshTopology.Triangles, triangles, arraySize, calculateBounds, baseVertex);
+        }
+
+        // TODO: currently we cannot have proper default args in public api
+        public void SetTriangles(int[] triangles, int submesh)
+        {
+            SetTriangles(triangles, submesh, true, 0);
+        }
+
+        public void SetTriangles(int[] triangles, int submesh, bool calculateBounds)
+        {
+            SetTriangles(triangles, submesh, calculateBounds, 0);
+        }
+
+        public void SetTriangles(int[] triangles, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, triangles, NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(List<int> triangles, int submesh)
+        {
+            SetTriangles(triangles, submesh, true, 0);
+        }
+
+        public void SetTriangles(List<int> triangles, int submesh, bool calculateBounds)
+        {
+            SetTriangles(triangles, submesh, calculateBounds, 0);
+        }
+
+        public void SetTriangles(List<int> triangles, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
+        {
+            if (CheckCanAccessSubmeshTriangles(submesh))
+                SetTrianglesImpl(submesh, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(int[] indices, MeshTopology topology, int submesh)
+        {
+            SetIndices(indices, topology, submesh, true, 0);
+        }
+
+        public void SetIndices(int[] indices, MeshTopology topology, int submesh, bool calculateBounds)
+        {
+            SetIndices(indices, topology, submesh, calculateBounds, 0);
+        }
+
+        public void SetIndices(int[] indices, MeshTopology topology, int submesh, [DefaultValue("true")] bool calculateBounds, [DefaultValue("0")] int baseVertex)
+        {
+            if (CheckCanAccessSubmeshIndices(submesh))
+                SetIndicesImpl(submesh, topology, indices, NoAllocHelpers.SafeLength(indices), calculateBounds, baseVertex);
+        }
+
         //
 
         public void GetBindposes(List<Matrix4x4> bindposes)
@@ -426,8 +477,7 @@ namespace UnityEngine
                 throw new ArgumentNullException("The result bindposes list cannot be null.", "bindposes");
 
             PrepareUserBuffer(bindposes, GetBindposeCount());
-
-            GetBindposesNonAllocImpl(bindposes);
+            GetBindposesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(bindposes));
         }
 
         public void GetBoneWeights(List<BoneWeight> boneWeights)
@@ -435,9 +485,8 @@ namespace UnityEngine
             if (boneWeights == null)
                 throw new ArgumentNullException("The result boneWeights list cannot be null.", "boneWeights");
 
-            PrepareUserBuffer(boneWeights, vertexCount);
-
-            GetBoneWeightsNonAllocImpl(boneWeights);
+            PrepareUserBuffer(boneWeights, GetBoneWeightCount());
+            GetBoneWeightsNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(boneWeights));
         }
 
         //
@@ -482,6 +531,46 @@ namespace UnityEngine
         {
             if (canAccess)
                 UploadMeshDataImpl(markNoLogerReadable);
+        }
+
+        public MeshTopology GetTopology(int submesh)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+            {
+                Debug.LogError(String.Format("Failed getting topology. Submesh index is out of bounds."), this);
+                return MeshTopology.Triangles;
+            }
+            return GetTopologyImpl(submesh);
+        }
+
+        public void CombineMeshes(CombineInstance[] combine, [DefaultValue("true")] bool mergeSubMeshes, [DefaultValue("true")] bool useMatrices, [DefaultValue("false")] bool hasLightmapData)
+        {
+            CombineMeshesImpl(combine, mergeSubMeshes, useMatrices, hasLightmapData);
+        }
+
+        public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes, bool useMatrices)
+        {
+            CombineMeshesImpl(combine, mergeSubMeshes, useMatrices, false);
+        }
+
+        public void CombineMeshes(CombineInstance[] combine, bool mergeSubMeshes)
+        {
+            CombineMeshesImpl(combine, mergeSubMeshes, true, false);
+        }
+
+        public void CombineMeshes(CombineInstance[] combine)
+        {
+            CombineMeshesImpl(combine, true, true, false);
+        }
+    }
+
+
+    public sealed partial class Mesh : Object
+    {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("This method is no longer supported (UnityUpgradable)", true)]
+        public void Optimize()
+        {
         }
     }
 
@@ -539,7 +628,7 @@ namespace UnityEngine
         private Vector4 m_LightmapScaleOffset;
         private Vector4 m_RealtimeLightmapScaleOffset;
 
-        public Mesh mesh { get { return CombineInstanceHelper.GetMesh(m_MeshInstanceID); } set { m_MeshInstanceID = value != null ? value.GetInstanceID() : 0; } }
+        public Mesh mesh { get { return Mesh.FromInstanceID(m_MeshInstanceID); } set { m_MeshInstanceID = value != null ? value.GetInstanceID() : 0; } }
         public int subMeshIndex { get { return m_SubMeshIndex; } set { m_SubMeshIndex = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         public Vector4 lightmapScaleOffset { get { return m_LightmapScaleOffset; } set { m_LightmapScaleOffset = value; } }

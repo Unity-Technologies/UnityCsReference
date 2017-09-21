@@ -290,9 +290,6 @@ namespace UnityEditor
                     m_LightModeUtil.GetModes(out realtimeMode, out mixedMode);
                     int newMixedMode = EditorGUILayout.IntPopup(Styles.MixedLightMode, mixedMode, Styles.MixedModeStrings, Styles.MixedModeValues);
 
-                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
-                        EditorGUILayout.HelpBox(Styles.NoMixedLightsInProgressive.text, MessageType.Warning);
-
                     if (LightModeUtil.Get().AreBakedLightmapsEnabled())
                     {
                         EditorGUILayout.HelpBox(Styles.HelpStringsMixed[mixedMode].text, MessageType.Info);
@@ -360,7 +357,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
                         if (EditorGUI.EndChangeCheck())
                             InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
-                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer)
+                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
                         {
                             EditorGUI.indentLevel++;
 
@@ -433,7 +430,7 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
+                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
                     {
                         DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                     }
@@ -463,7 +460,7 @@ namespace UnityEditor
                             EditorGUI.indentLevel--;
                         }
 
-                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Radiosity)
+                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)
                         {
                             EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
                             if (m_FinalGather.boolValue)
@@ -570,7 +567,6 @@ namespace UnityEditor
             public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TextContent("Lightmapping Settings|Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent NoDirectionalInSM2AndGLES2 = EditorGUIUtility.TextContent("Directional lightmaps cannot be decoded on SM2.0 hardware nor when using GLES2.0. They will fallback to Non-Directional lightmaps.");
             public static readonly GUIContent NoRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
-            public static readonly GUIContent NoMixedLightsInProgressive = EditorGUIUtility.TextContent("Mixed lights are not supported in this preview version of the Progressive Lightmapper.");
             public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TextContent("Concurrent Jobs|The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TextContent("Force White Albedo|Force white albedo during lighting calculations.");
             public static readonly GUIContent ForceUpdates = EditorGUIUtility.TextContent("Force Updates|Force continuous updates of runtime indirect lighting calculations.");

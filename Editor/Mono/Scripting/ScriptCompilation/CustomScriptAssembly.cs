@@ -31,17 +31,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             return assemblyData;
         }
+
+        public static string ToJson(CustomScriptAssemblyData data)
+        {
+            return UnityEngine.JsonUtility.ToJson(data, true);
+        }
     }
 
     struct CustomScriptAssemblyPlatform
     {
-        public string Name { get; set; }
-        public BuildTarget BuildTarget { get; set; }
+        public string Name { get; private set; }
+        public string DisplayName { get; private set; }
+        public BuildTarget BuildTarget { get; private set; }
 
-        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget) : this()
+        public CustomScriptAssemblyPlatform(string name, string displayName, BuildTarget buildTarget) : this()
         {
             Name = name;
+            DisplayName = displayName;
             BuildTarget = buildTarget;
+        }
+
+        public CustomScriptAssemblyPlatform(string name, BuildTarget buildTarget) : this(name, name, buildTarget)
+        {
         }
     }
 
@@ -65,24 +76,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        static CustomScriptAssemblyPlatform[] Platforms { get; set; }
+        public static CustomScriptAssemblyPlatform[] Platforms { get; private set; }
 
         static CustomScriptAssembly()
         {
-            Platforms = new CustomScriptAssemblyPlatform[21];
+            Platforms = new CustomScriptAssemblyPlatform[20];
 
             int i = 0;
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Editor", BuildTarget.NoTarget);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("OSXStandalone", BuildTarget.StandaloneOSX);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone32", BuildTarget.StandaloneWindows);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone64", BuildTarget.StandaloneWindows64);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone32", BuildTarget.StandaloneLinux);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone64", BuildTarget.StandaloneLinux64);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("Editor", "Editor", BuildTarget.NoTarget);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("macOSStandalone", "macOS", BuildTarget.StandaloneOSX);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone32", "Windows 32-bit", BuildTarget.StandaloneWindows);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone64", "Windows 64-bit", BuildTarget.StandaloneWindows64);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone32", "Linux 32-bit", BuildTarget.StandaloneLinux);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone64", "Linux 64-bit", BuildTarget.StandaloneLinux64);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", "Linux Universal", BuildTarget.StandaloneLinuxUniversal);
             Platforms[i++] = new CustomScriptAssemblyPlatform("iOS", BuildTarget.iOS);
             Platforms[i++] = new CustomScriptAssemblyPlatform("Android", BuildTarget.Android);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WSA", BuildTarget.WSAPlayer);
+            Platforms[i++] = new CustomScriptAssemblyPlatform("WSA", "Windows Store App", BuildTarget.WSAPlayer);
             Platforms[i++] = new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4);
@@ -173,11 +184,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (string.Equals(platform.Name, name, System.StringComparison.OrdinalIgnoreCase))
                     return platform;
 
-            var platformNames = Platforms.Select(p => string.Format("'{0}'", p.Name)).ToArray();
+            var platformNames = Platforms.Select(p => string.Format("\"{0}\"", p.Name)).ToArray();
+            System.Array.Sort(platformNames);
 
-            var platformsString = string.Join(",", platformNames);
+            var platformsString = string.Join(",\n", platformNames);
 
-            throw new System.ArgumentException(string.Format("Platform name '{0}' not supported. Supported platform names: {1}", name, platformsString));
+            throw new System.ArgumentException(string.Format("Platform name '{0}' not supported.\nSupported platform names:\n{1}\n", name, platformsString));
         }
 
         public static CustomScriptAssemblyPlatform GetPlatformFromBuildTarget(BuildTarget buildTarget)

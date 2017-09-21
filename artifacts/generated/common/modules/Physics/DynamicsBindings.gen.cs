@@ -1245,6 +1245,13 @@ public static bool BoxCast(Vector3 center, Vector3 halfExtents, Vector3 directio
         set;
     }
 
+    public static void RebuildBroadphaseRegions (Bounds worldBounds, int subdivisions) {
+        INTERNAL_CALL_RebuildBroadphaseRegions ( ref worldBounds, subdivisions );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_RebuildBroadphaseRegions (ref Bounds worldBounds, int subdivisions);
 }
 
 [UsedByNativeCode]

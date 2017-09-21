@@ -367,7 +367,11 @@ namespace UnityEditorInternal
                 if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
                 {
                     var versionText = SystemInfo.operatingSystem.Substring(9);
-                    if (new Version(versionText) >= new Version(10, 9))
+                    var version = new Version(versionText);
+
+                    // our version of .NET Core does not support high sierra.  We need to upgrade to .NET Core 2.0 before we can use il2cppcore
+                    // on high sierra
+                    if (version >= new Version(10, 9) && version < new Version(10, 13))
                         shouldUse = true;
                 }
                 else

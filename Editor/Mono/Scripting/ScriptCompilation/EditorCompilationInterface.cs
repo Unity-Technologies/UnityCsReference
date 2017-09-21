@@ -4,16 +4,58 @@
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
+using UnityEditor.Compilation;
+using UnityEditorInternal;
+using System.Collections.Generic;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class EditorCompilationInterface
     {
-        static readonly EditorCompilation editorCompilation = new EditorCompilation();
+        static EditorCompilation editorCompilation;
 
         public static EditorCompilation Instance
         {
-            get { return editorCompilation; }
+            get
+            {
+                if (editorCompilation == null)
+                {
+                    CompilationPipeline.ClearEditorCompilationErrors(); // Clear all errors on domain reload.
+
+                    editorCompilation = new EditorCompilation();
+                    editorCompilation.setupErrorFlagsChanged += ClearErrors;
+                }
+
+                return editorCompilation;
+            }
+        }
+
+        static void ClearErrors(EditorCompilation.CompilationSetupErrorFlags flags)
+        {
+            if (flags == EditorCompilation.CompilationSetupErrorFlags.none)
+                CompilationPipeline.ClearEditorCompilationErrors();
+        }
+
+        static void LogException(Exception exception)
+        {
+            var assemblyDefinitionException = exception as AssemblyDefinitionException;
+
+            if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
+            {
+                foreach (var filePath in assemblyDefinitionException.filePaths)
+                {
+                    var message = string.Format("{0} ({1})", exception.Message, filePath);
+
+                    var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(filePath);
+                    var instanceID = asset.GetInstanceID();
+
+                    CompilationPipeline.LogEditorCompilationError(message, instanceID);
+                }
+            }
+            else
+            {
+                UnityEngine.Debug.LogException(exception);
+            }
         }
 
         static void EmitExceptionAsError(Action action)
@@ -24,7 +66,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError(e.Message);
+                LogException(e);
             }
         }
 
@@ -36,7 +78,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError(e.Message);
+                LogException(e);
                 return returnValue;
             }
         }
@@ -44,151 +86,157 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void SetAssemblySuffix(string suffix)
         {
-            editorCompilation.SetAssemblySuffix(suffix);
+            Instance.SetAssemblySuffix(suffix);
         }
 
         [RequiredByNativeCode]
         public static void SetAllScripts(string[] allScripts)
         {
-            editorCompilation.SetAllScripts(allScripts);
+            Instance.SetAllScripts(allScripts);
         }
 
         [RequiredByNativeCode]
         public static bool IsExtensionSupportedByCompiler(string extension)
         {
-            return editorCompilation.IsExtensionSupportedByCompiler(extension);
+            return Instance.IsExtensionSupportedByCompiler(extension);
         }
 
         [RequiredByNativeCode]
         public static void DirtyAllScripts()
         {
-            editorCompilation.DirtyAllScripts();
+            Instance.DirtyAllScripts();
         }
 
         [RequiredByNativeCode]
         public static void DirtyScript(string path)
         {
-            editorCompilation.DirtyScript(path);
+            Instance.DirtyScript(path);
         }
 
         [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
-            editorCompilation.RunScriptUpdaterOnAssembly(assemblyFilename);
+            Instance.RunScriptUpdaterOnAssembly(assemblyFilename);
         }
 
         [RequiredByNativeCode]
         public static void SetAllPrecompiledAssemblies(PrecompiledAssembly[] precompiledAssemblies)
         {
-            editorCompilation.SetAllPrecompiledAssemblies(precompiledAssemblies);
+            Instance.SetAllPrecompiledAssemblies(precompiledAssemblies);
         }
 
         [RequiredByNativeCode]
         public static void SetAllUnityAssemblies(PrecompiledAssembly[] unityAssemblies)
         {
-            editorCompilation.SetAllUnityAssemblies(unityAssemblies);
+            Instance.SetAllUnityAssemblies(unityAssemblies);
         }
 
         [RequiredByNativeCode]
         public static void SetCompileScriptsOutputDirectory(string directory)
         {
-            editorCompilation.SetCompileScriptsOutputDirectory(directory);
+            Instance.SetCompileScriptsOutputDirectory(directory);
         }
 
         [RequiredByNativeCode]
         public static string GetCompileScriptsOutputDirectory()
         {
-            return EmitExceptionAsError(() => editorCompilation.GetCompileScriptsOutputDirectory(), string.Empty);
+            return EmitExceptionAsError(() => Instance.GetCompileScriptsOutputDirectory(), string.Empty);
         }
 
         [RequiredByNativeCode]
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
-            EmitExceptionAsError(() => editorCompilation.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
+            EmitExceptionAsError(() => Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
         }
 
         [RequiredByNativeCode]
         public static void SetAllPackageAssemblies(EditorCompilation.PackageAssembly[] packageAssemblies)
         {
-            EmitExceptionAsError(() => editorCompilation.SetAllPackageAssemblies(packageAssemblies));
+            EmitExceptionAsError(() => Instance.SetAllPackageAssemblies(packageAssemblies));
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
         {
-            return EmitExceptionAsError(() => editorCompilation.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
+            return EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
+        }
+
+        [RequiredByNativeCode]
+        public static bool HaveSetupErrors()
+        {
+            return Instance.HaveSetupErrors();
         }
 
         [RequiredByNativeCode]
         public static void DeleteUnusedAssemblies()
         {
-            EmitExceptionAsError(() => editorCompilation.DeleteUnusedAssemblies());
+            EmitExceptionAsError(() => Instance.DeleteUnusedAssemblies());
         }
 
         [RequiredByNativeCode]
         public static bool CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return EmitExceptionAsError(() => editorCompilation.CompileScripts(definesOptions, platformGroup, platform), false);
+            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform), false);
         }
 
         [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
-            return editorCompilation.DoesProjectFolderHaveAnyDirtyScripts();
+            return Instance.DoesProjectFolderHaveAnyDirtyScripts();
         }
 
         [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyScripts()
         {
-            return editorCompilation.DoesProjectFolderHaveAnyScripts();
+            return Instance.DoesProjectFolderHaveAnyScripts();
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.AssemblyCompilerMessages[] GetCompileMessages()
         {
-            return editorCompilation.GetCompileMessages();
+            return Instance.GetCompileMessages();
         }
 
         [RequiredByNativeCode]
         public static bool IsCompilationPending()
         {
-            return editorCompilation.IsCompilationPending();
+            return Instance.IsCompilationPending();
         }
 
         [RequiredByNativeCode]
         public static bool IsCompiling()
         {
-            return editorCompilation.IsCompiling();
+            return Instance.IsCompiling();
         }
 
         [RequiredByNativeCode]
         public static void StopAllCompilation()
         {
-            editorCompilation.StopAllCompilation();
+            Instance.StopAllCompilation();
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return EmitExceptionAsError(() => editorCompilation.TickCompilationPipeline(options, platformGroup, platform), EditorCompilation.CompileStatus.Idle);
+            return EmitExceptionAsError(() => Instance.TickCompilationPipeline(options, platformGroup, platform), EditorCompilation.CompileStatus.Idle);
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssemblies()
         {
-            return editorCompilation.GetTargetAssemblies();
+            return Instance.GetTargetAssemblies();
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo GetTargetAssembly(string scriptPath)
         {
-            return editorCompilation.GetTargetAssembly(scriptPath);
+            return Instance.GetTargetAssembly(scriptPath);
         }
 
         [RequiredByNativeCode]
         public static MonoIsland[] GetAllMonoIslands()
         {
-            return editorCompilation.GetAllMonoIslands();
+            return Instance.GetAllMonoIslands();
         }
     }
 }

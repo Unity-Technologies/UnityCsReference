@@ -97,7 +97,11 @@ namespace UnityEngine
         extern public int   numCapVertices      { get; set; }
         extern public float minVertexDistance   { get; set; }
 
+        extern public Color startColor          { get; set; }
+        extern public Color endColor            { get; set; }
+
         [NativeProperty("PositionsCount")] extern public int positionCount { get; }
+        extern public Vector3 GetPosition(int index);
 
         extern public bool generateLightingData { get; set; }
 
@@ -118,7 +122,12 @@ namespace UnityEngine
         extern public bool  useWorldSpace       { get; set; }
         extern public bool  loop                { get; set; }
 
+        extern public Color startColor          { get; set; }
+        extern public Color endColor            { get; set; }
+
         [NativeProperty("PositionsCount")] extern public int positionCount { get; set; }
+        extern public void SetPosition(int index, Vector3 position);
+        extern public Vector3 GetPosition(int index);
 
         extern public bool generateLightingData { get; set; }
 

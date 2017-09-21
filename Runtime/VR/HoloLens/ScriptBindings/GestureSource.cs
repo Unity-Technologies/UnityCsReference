@@ -96,6 +96,7 @@ namespace UnityEngine.XR.WSA.Input
         HasPointerPosition = 1 << 2,
         HasPointerRotation = 1 << 3,
         HasVelocity = 1 << 4,
+        HasAngularVelocity = 1 << 5,
     }
 
     internal enum InteractionSourceStateFlags
@@ -132,6 +133,13 @@ namespace UnityEngine.XR.WSA.Input
     {
         Grip,
         Pointer
+    }
+
+    public enum InteractionSourcePositionAccuracy
+    {
+        None,
+        Approximate,
+        High
     }
 
     [RequiredByNativeCode]
@@ -200,13 +208,29 @@ namespace UnityEngine.XR.WSA.Input
             return (m_Flags & InteractionSourcePoseFlags.HasVelocity) != 0;
         }
 
+        public bool TryGetAngularVelocity(out Vector3 angularVelocity)
+        {
+            angularVelocity = m_AngularVelocity;
+            return (m_Flags & InteractionSourcePoseFlags.HasAngularVelocity) != 0;
+        }
+
+        public InteractionSourcePositionAccuracy positionAccuracy
+        {
+            get
+            {
+                return m_PositionAccuracy;
+            }
+        }
+
         internal Quaternion m_GripRotation;
         internal Quaternion m_PointerRotation;
 
         internal Vector3 m_GripPosition;
         internal Vector3 m_PointerPosition;
         internal Vector3 m_Velocity;
+        internal Vector3 m_AngularVelocity;
 
+        internal InteractionSourcePositionAccuracy m_PositionAccuracy;
         internal InteractionSourcePoseFlags m_Flags;
     }
 

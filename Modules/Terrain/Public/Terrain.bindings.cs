@@ -36,7 +36,7 @@ namespace UnityEngine
         details = 4,
 
         [Obsolete("TerrainRenderFlags.all is obsolete, use TerrainRenderFlags.All instead. (UnityUpgradable) -> All")]
-        all = Heightmap | Trees | Details,
+        all = All,
 
         Heightmap = 1,
         Trees = 2,

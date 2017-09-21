@@ -36,6 +36,7 @@ namespace UnityEditor
 
         private GUIContent m_AnimatorContent;
         private GUIContent m_AudioContent;
+        private GUIContent m_VideoContent;
         private GUIContent m_ScriptContent;
         private Texture    m_DefaultScriptContentTexture;
 
@@ -60,6 +61,7 @@ namespace UnityEditor
 
             m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
             m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioSource)));
+            m_VideoContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(RenderTexture)));
             m_ScriptContent = new GUIContent(EditorGUIUtility.LoadIcon("ScriptableObject Icon"));
             m_DefaultScriptContentTexture = m_ScriptContent.image;
         }
@@ -149,6 +151,12 @@ namespace UnityEditor
                 m_AnimatorContent.text = binding.streamName;
                 m_AnimatorContent.tooltip = source is GameObject ? Styles.NoBindingsContent.text : string.Empty;
                 PropertyFieldAsObject(bindingProperty, m_AnimatorContent, typeof(Animator), true, true);
+            }
+            if (binding.streamType == DataStreamType.Texture)
+            {
+                m_VideoContent.text = binding.streamName;
+                m_VideoContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
+                PropertyFieldAsObject(bindingProperty, m_VideoContent, typeof(RenderTexture), false);
             }
             else if (binding.streamType == DataStreamType.None)
             {

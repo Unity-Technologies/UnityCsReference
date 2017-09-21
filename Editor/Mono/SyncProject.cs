@@ -115,7 +115,7 @@ namespace UnityEditor
 
             public override string EngineAssemblyPath
             {
-                get { return UnityEditorInternal.InternalEditorUtility.GetEngineAssemblyPath(); }
+                get { return UnityEditorInternal.InternalEditorUtility.GetMonolithicEngineAssemblyPath(); }
             }
 
             public override string[] Defines

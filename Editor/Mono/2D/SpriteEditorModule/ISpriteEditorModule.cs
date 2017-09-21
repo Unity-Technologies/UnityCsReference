@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.U2D;
 using UnityEngine;
 using UnityEditor.U2D.Interface;
 using UnityEngine.U2D.Interface;
@@ -38,6 +39,7 @@ namespace UnityEditor
         Rect windowDimension { get; }
         ITexture2D selectedTexture { get; }
         ITexture2D previewTexture { get; }
+        ISpriteEditorDataProvider spriteEditorDataProvider { get; }
 
         void HandleSpriteSelection();
         void RequestRepaint();

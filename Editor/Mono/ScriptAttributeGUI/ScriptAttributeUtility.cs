@@ -147,7 +147,7 @@ namespace UnityEditor
             return null;
         }
 
-        private static FieldInfo GetFieldInfoFromProperty(SerializedProperty property, out Type type)
+        internal static FieldInfo GetFieldInfoFromProperty(SerializedProperty property, out Type type)
         {
             var classType = GetScriptTypeFromProperty(property);
             if (classType == null)

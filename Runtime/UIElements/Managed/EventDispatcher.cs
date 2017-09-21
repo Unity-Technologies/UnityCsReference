@@ -227,7 +227,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (captureVE != null && captureVE.panel == null)
             {
-                Debug.Log(String.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e.type));
+                Debug.Log(String.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e != null ? e.type.ToString() : "null"));
                 RemoveCapture();
                 captureVE = null;
             }
@@ -369,14 +369,7 @@ namespace UnityEngine.Experimental.UIElements
                         PropagateEvent(evt);
                     }
                 }
-                else if (evt is IFocusEvent ||
-                         evt.GetEventTypeId() == PostLayoutEvent.TypeId())
-                {
-                    Debug.Assert(evt.target != null);
-                    invokedHandleEvent = true;
-                    PropagateEvent(evt);
-                }
-                else if (evt is IPanelEvent)
+                else if (evt is IPropagatableEvent)
                 {
                     // Need to send to all parents of the event's target as well.
                     Debug.Assert(evt.target != null);

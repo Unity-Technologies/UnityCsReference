@@ -230,7 +230,7 @@ namespace UnityEditor
 
                     bool pathTracerIsActive = (
                             LightModeUtil.Get().AreBakedLightmapsEnabled() &&
-                            LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.PathTracer);
+                            LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU);
 
                     if (isPrefabAsset || pathTracerIsActive)
                         EditorGUILayout.PropertyField(m_StitchLightmapSeams, s_Styles.StitchLightmapSeams);

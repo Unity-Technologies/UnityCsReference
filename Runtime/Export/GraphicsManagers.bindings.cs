@@ -29,6 +29,10 @@ namespace UnityEngine
         extern public static float ambientIntensity    { get; set; }
         [NativeProperty("AmbientSkyColor")] extern public static Color ambientLight { get; set; }
 
+        extern public static Color subtractiveShadowColor { get; set; }
+
+        [NativeProperty("SkyboxMaterial")] extern static public Material skybox { get; set; }
+        extern public static Light sun { get; set; }
 
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
