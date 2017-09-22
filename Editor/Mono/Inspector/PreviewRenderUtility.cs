@@ -61,6 +61,11 @@ namespace UnityEditor
             m_GameObjects.Add(go);
         }
 
+        public void AddManagedGO(GameObject go)
+        {
+            SceneManager.MoveGameObjectToScene(go, m_Scene);
+        }
+
         public void Dispose()
         {
             EditorSceneManager.ClosePreviewScene(m_Scene);
@@ -341,6 +346,11 @@ namespace UnityEditor
             }
 
             return m_InvisibleMaterial;
+        }
+
+        internal void AddManagedGO(GameObject go)
+        {
+            m_PreviewScene.AddManagedGO(go);
         }
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material mat, int subMeshIndex)

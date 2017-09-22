@@ -576,9 +576,14 @@ namespace UnityEditor
             if (textureImporter != null && textureImporter.textureType == TextureImporterType.Sprite && textureImporter.spriteImportMode == SpriteImportMode.Polygon)
             {
                 // If the texture importer is a Sprite of primitive, use the sprite inspector for generating preview/icon.
-                Sprite sprite = subAssets[0] as Sprite;
-                if (sprite)
-                    return SpriteInspector.BuildPreviewTexture(width, height, sprite, null, true);
+                if (subAssets.Length > 0)
+                {
+                    Sprite sprite = subAssets[0] as Sprite;
+                    if (sprite)
+                        return SpriteInspector.BuildPreviewTexture(width, height, sprite, null, true);
+                }
+                else
+                    return null;
             }
 
             PreviewHelpers.AdjustWidthAndHeightForStaticPreview(texture.width, texture.height, ref width, ref height);
