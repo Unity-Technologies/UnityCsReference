@@ -116,14 +116,12 @@ namespace UnityEngine
             else
                 SelectAll();
             m_HasFocus = true;
-            Input.imeCompositionMode = IMECompositionMode.On;
         }
 
         public void OnLostFocus()
         {
             m_HasFocus = false;
             scrollOffset = Vector2.zero;
-            Input.imeCompositionMode = IMECompositionMode.Auto;
         }
 
         void GrabGraphicalCursorPos()

@@ -326,6 +326,8 @@ namespace UnityEditor
             internal static bool s_ActuallyEditing = false; // internal so we can save this state.
             internal static bool s_AllowContextCutOrPaste = true; // e.g. selectable labels only allow for copying
 
+            IMECompositionMode m_IMECompositionModeBackup;
+
             // *undocumented*
             internal bool IsEditingControl(int id)
             {
@@ -354,6 +356,9 @@ namespace UnityEditor
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
                 UnityEditor.Undo.IncrementCurrentGroup();
+
+                m_IMECompositionModeBackup = Input.imeCompositionMode;
+                Input.imeCompositionMode = IMECompositionMode.On;
             }
 
             // *undocumented*
@@ -368,6 +373,8 @@ namespace UnityEditor
                 s_ActuallyEditing = false;
                 s_AllowContextCutOrPaste = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
+
+                Input.imeCompositionMode = m_IMECompositionModeBackup;
             }
         }
 
@@ -664,7 +671,7 @@ namespace UnityEditor
             // Inform editor that someone removed focus from us.
             if (editor.controlID == id && GUIUtility.keyboardControl != id)
             {
-                editor.controlID = 0;
+                editor.EndEditing();
             }
 
             bool mayHaveChanged = false;
