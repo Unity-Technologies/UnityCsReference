@@ -3,13 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
-using UnityEngine;
 using System.Collections.Generic;
-using UnityEditorInternal;
-using UnityEditor.VersionControl;
+using System.Linq;
 using UnityEditor.SceneManagement;
-using Object = UnityEngine.Object;
+using UnityEditor.VersionControl;
+using UnityEditorInternal;
+using UnityEngine;
+
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -71,8 +72,39 @@ namespace UnityEditor
         const float kIconSize = 24;
         Vector2 previewDir;
 
-        PreviewRenderUtility m_PreviewUtility;
-        List<GameObject> m_PreviewInstances;
+        class PreviewData : IDisposable
+        {
+            bool m_Disposed;
+            GameObject m_GameObject;
+
+            public readonly PreviewRenderUtility renderUtility;
+            public GameObject gameObject { get { return m_GameObject; } }
+
+            public PreviewData(UnityObject targetObject)
+            {
+                renderUtility = new PreviewRenderUtility();
+                renderUtility.camera.fieldOfView = 30.0f;
+                UpdateGameObject(targetObject);
+            }
+
+            public void UpdateGameObject(UnityObject targetObject)
+            {
+                UnityObject.DestroyImmediate(gameObject);
+                m_GameObject = EditorUtility.InstantiateForAnimatorPreview(targetObject);
+                renderUtility.AddManagedGO(gameObject);
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                renderUtility.Cleanup();
+                UnityObject.DestroyImmediate(gameObject);
+                m_Disposed = true;
+            }
+        }
+
+        Dictionary<int, PreviewData> m_PreviewInstances = new Dictionary<int, PreviewData>();
 
         bool m_HasInstance = false;
         bool m_AllOfSamePrefabType = true;
@@ -281,7 +313,7 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button("Revert", "MiniButtonMid"))
                         {
-                            List<Object> hierarchy = new List<Object>();
+                            List<UnityObject> hierarchy = new List<UnityObject>();
                             GetObjectListFromHierarchy(hierarchy, go);
 
                             Undo.RegisterFullObjectHierarchyUndo(go, "Revert to prefab");
@@ -290,7 +322,7 @@ namespace UnityEditor
                             PrefabUtility.RevertPrefabInstance(go);
                             CalculatePrefabStatus();
 
-                            List<Object> newHierarchy = new List<Object>();
+                            List<UnityObject> newHierarchy = new List<UnityObject>();
                             GetObjectListFromHierarchy(newHierarchy, go);
                             RegisterNewComponents(newHierarchy, hierarchy);
                         }
@@ -316,7 +348,7 @@ namespace UnityEditor
 
                             if (GUILayout.Button("Apply", "MiniButtonRight"))
                             {
-                                Object prefabParent = PrefabUtility.GetPrefabParent(rootUploadGameObject);
+                                UnityObject prefabParent = PrefabUtility.GetPrefabParent(rootUploadGameObject);
                                 string prefabAssetPath = AssetDatabase.GetAssetPath(prefabParent);
 
                                 bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
@@ -364,7 +396,7 @@ namespace UnityEditor
         public void RevertAndCheckForNewComponents(GameObject gameObject)
         {
             // Take a snapshot of the GO hierarchy before the revert
-            var hierarchy = new List<Object>();
+            var hierarchy = new List<UnityObject>();
             GetObjectListFromHierarchy(hierarchy, gameObject);
 
             Undo.RegisterFullObjectHierarchyUndo(gameObject, "Revert Prefab Instance");
@@ -372,14 +404,14 @@ namespace UnityEditor
             CalculatePrefabStatus();
 
             // Take a snapshot of the GO hierarchy after the revert
-            var newHierarchy = new List<Object>();
+            var newHierarchy = new List<UnityObject>();
             GetObjectListFromHierarchy(newHierarchy, gameObject);
 
             // Add RegisterCreatedObjectUndo for any new components added during the revert so that they are removed if undo is triggered
             RegisterNewComponents(newHierarchy, hierarchy);
         }
 
-        private void GetObjectListFromHierarchy(List<Object> hierarchy, GameObject gameObject)
+        private void GetObjectListFromHierarchy(List<UnityObject> hierarchy, GameObject gameObject)
         {
             Transform transform = null;
             List<Component> components = new List<Component>();
@@ -406,7 +438,7 @@ namespace UnityEditor
             }
         }
 
-        private void RegisterNewComponents(List<Object> newHierarchy, List<Object> hierarchy)
+        private void RegisterNewComponents(List<UnityObject> newHierarchy, List<UnityObject> hierarchy)
         {
             var danglingComponents = new List<Component>();
 
@@ -509,7 +541,7 @@ namespace UnityEditor
             {
                 m_Tag.stringValue = tag;
                 Undo.RecordObjects(targets, "Change Tag of " + targetTitle);
-                foreach (Object obj in targets)
+                foreach (UnityObject obj in targets)
                     (obj as GameObject).tag = tag;
             }
             EditorGUI.EndProperty();
@@ -560,14 +592,14 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        Object[] GetObjects(bool includeChildren)
+        UnityObject[] GetObjects(bool includeChildren)
         {
             return SceneModeUtility.GetObjects(targets, includeChildren);
         }
 
         void SetLayer(int layer, bool includeChildren)
         {
-            Object[] objects = GetObjects(includeChildren);
+            UnityObject[] objects = GetObjects(includeChildren);
             Undo.RecordObjects(objects, "Change Layer of " + targetTitle);
             foreach (GameObject go in objects)
                 go.layer = layer;
@@ -575,40 +607,34 @@ namespace UnityEditor
 
         public override void ReloadPreviewInstances()
         {
-            CreatePreviewInstances();
-        }
-
-        void CreatePreviewInstances()
-        {
-            if (m_PreviewInstances == null)
-                m_PreviewInstances = new List<GameObject>(targets.Length);
-
-            for (int i = 0; i < targets.Length; ++i)
+            foreach (var pair in m_PreviewInstances)
             {
-                GameObject instance = EditorUtility.InstantiateForAnimatorPreview(targets[i]);
-                m_PreviewInstances.Add(instance);
-                m_PreviewUtility.AddSingleGO(instance);
+                var index = pair.Key;
+                if (index > targets.Length)
+                    continue;
+
+                var previewData = pair.Value;
+                previewData.UpdateGameObject(targets[index]);
             }
         }
 
-        void InitPreview()
+        PreviewData GetPreviewData()
         {
-            if (m_PreviewUtility == null)
+            PreviewData previewData;
+            if (!m_PreviewInstances.TryGetValue(referenceTargetIndex, out previewData))
             {
-                m_PreviewUtility = new PreviewRenderUtility();
-                m_PreviewUtility.camera.fieldOfView = 30.0f;
-                CreatePreviewInstances();
+                previewData = new PreviewData(target);
+                m_PreviewInstances.Add(referenceTargetIndex, previewData);
             }
+
+            return previewData;
         }
 
         public void OnDestroy()
         {
-            if (m_PreviewUtility != null)
-            {
-                m_PreviewUtility.Cleanup();
-                m_PreviewUtility = null;
-                m_PreviewInstances.Clear();
-            }
+            foreach (var previewData in m_PreviewInstances.Values)
+                previewData.Dispose();
+            m_PreviewInstances.Clear();
         }
 
         public static bool HasRenderableParts(GameObject go)
@@ -791,52 +817,50 @@ namespace UnityEditor
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
                 return;
             GUI.enabled = true;
-            InitPreview();
         }
 
         private void DoRenderPreview()
         {
-            GameObject go = m_PreviewInstances[referenceTargetIndex];
+            var previewData = GetPreviewData();
 
-            Bounds bounds = new Bounds(go.transform.position, Vector3.zero);
-            GetRenderableBoundsRecurse(ref bounds, go);
+            Bounds bounds = new Bounds(previewData.gameObject.transform.position, Vector3.zero);
+            GetRenderableBoundsRecurse(ref bounds, previewData.gameObject);
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
             Quaternion rot = Quaternion.Euler(-previewDir.y, -previewDir.x, 0);
             Vector3 pos = bounds.center - rot * (Vector3.forward * distance);
 
-            m_PreviewUtility.camera.transform.position = pos;
-            m_PreviewUtility.camera.transform.rotation = rot;
-            m_PreviewUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
-            m_PreviewUtility.camera.farClipPlane = distance + halfSize * 1.1f;
+            previewData.renderUtility.camera.transform.position = pos;
+            previewData.renderUtility.camera.transform.rotation = rot;
+            previewData.renderUtility.camera.nearClipPlane = distance - halfSize * 1.1f;
+            previewData.renderUtility.camera.farClipPlane = distance + halfSize * 1.1f;
 
-            m_PreviewUtility.lights[0].intensity = .7f;
-            m_PreviewUtility.lights[0].transform.rotation = rot * Quaternion.Euler(40f, 40f, 0);
-            m_PreviewUtility.lights[1].intensity = .7f;
-            m_PreviewUtility.lights[1].transform.rotation = rot * Quaternion.Euler(340, 218, 177);
+            previewData.renderUtility.lights[0].intensity = .7f;
+            previewData.renderUtility.lights[0].transform.rotation = rot * Quaternion.Euler(40f, 40f, 0);
+            previewData.renderUtility.lights[1].intensity = .7f;
+            previewData.renderUtility.lights[1].transform.rotation = rot * Quaternion.Euler(340, 218, 177);
 
-            m_PreviewUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
+            previewData.renderUtility.ambientColor = new Color(.1f, .1f, .1f, 0);
 
-            var prefabType = PrefabUtility.GetPrefabType(go);
+            var prefabType = PrefabUtility.GetPrefabType(previewData.gameObject);
             var allowSRP = !(prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.ModelPrefab);
-            m_PreviewUtility.Render(allowSRP);
+            previewData.renderUtility.Render(allowSRP);
         }
 
-        public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
+        public override Texture2D RenderStaticPreview(string assetPath, UnityObject[] subAssets, int width, int height)
         {
             if (!HasStaticPreview() || !ShaderUtil.hardwareSupportsRectRenderTexture)
             {
                 return null;
             }
 
-            InitPreview();
-
-            m_PreviewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
+            var previewUtility = GetPreviewData().renderUtility;
+            previewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
 
             DoRenderPreview();
 
-            return m_PreviewUtility.EndStaticPreview();
+            return previewUtility.EndStaticPreview();
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
@@ -847,18 +871,18 @@ namespace UnityEditor
                     EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Preview requires\nrender texture support");
                 return;
             }
-            InitPreview();
 
             previewDir = PreviewGUI.Drag2D(previewDir, r);
 
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            m_PreviewUtility.BeginPreview(r, background);
+            var previewUtility = GetPreviewData().renderUtility;
+            previewUtility.BeginPreview(r, background);
 
             DoRenderPreview();
 
-            m_PreviewUtility.EndAndDrawPreview(r);
+            previewUtility.EndAndDrawPreview(r);
         }
 
         // Handle dragging in scene view
@@ -928,7 +952,7 @@ namespace UnityEditor
                 case EventType.DragExited:
                     if (dragObject)
                     {
-                        Object.DestroyImmediate(dragObject, false);
+                        UnityObject.DestroyImmediate(dragObject, false);
                         HandleUtility.ignoreRaySnapObjects = null;
                         dragObject = null;
                         evt.Use();

@@ -396,5 +396,13 @@ namespace UnityEditorInternal
             var target = EditorUserBuildSettings.activeBuildTarget;
             return GetCompilationDefines(EditorScriptCompilationOptions.BuildingEmpty, group, target);
         }
+
+        internal static string GetMonolithicEngineAssemblyPath()
+        {
+            // We still build a monolithic UnityEngine.dll as a compilation target for user projects.
+            // It lives next to the editor dll.
+            var dir = Path.GetDirectoryName(GetEditorAssemblyPath());
+            return Path.Combine(dir, "UnityEngine.dll");
+        }
     }
 }
