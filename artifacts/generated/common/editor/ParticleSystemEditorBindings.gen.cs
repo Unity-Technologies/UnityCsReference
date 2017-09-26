@@ -80,7 +80,7 @@ internal sealed partial class ParticleSystemEditorUtils
         set;
     }
 
-    internal extern static bool editorPreviewAll
+    internal extern static UInt32 editorPreviewLayers
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

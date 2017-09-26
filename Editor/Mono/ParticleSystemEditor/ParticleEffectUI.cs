@@ -59,7 +59,7 @@ namespace UnityEditor
             public GUIContent addParticleSystem = EditorGUIUtility.TextContent("|Create Particle System");
             public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes");
             public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform)");
-            public GUIContent previewAll = EditorGUIUtility.TextContent("Simulate All|Choose whether to preview all Particle Systems in Edit Mode, or just the selected ones.");
+            public GUIContent previewLayers = EditorGUIUtility.TextContent("Simulate Layers|Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }
@@ -525,11 +525,17 @@ namespace UnityEditor
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 
-            ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, s_Texts.previewAll, EditorStyles.toggle);
+            EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.editorPreviewLayers, s_Texts.previewLayers, SetPreviewLayersDelegate);
             ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, s_Texts.resimulation, EditorStyles.toggle);
             ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
 
             EditorGUIUtility.labelWidth = 0.0f;
+        }
+
+        internal static void SetPreviewLayersDelegate(object userData, string[] options, int selected)
+        {
+            var data = (System.Tuple<SerializedProperty, System.UInt32>)userData;
+            ParticleSystemEditorUtils.editorPreviewLayers = SerializedProperty.ToggleLayerMask(data.Item2, selected);
         }
 
         private void HandleKeyboardShortcuts()

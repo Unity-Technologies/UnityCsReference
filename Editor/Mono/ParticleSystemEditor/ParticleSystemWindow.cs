@@ -236,9 +236,6 @@ namespace UnityEditor
                 if (newState != isShowOnlySelected && m_ParticleEffectUI != null)
                     m_ParticleEffectUI.SetShowOnlySelectedMode(newState);
 
-                // Preview all toggle
-                ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, ParticleEffectUI.texts.previewAll, "ToolbarButton");
-
                 // Resimulation toggle
                 ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, ParticleEffectUI.texts.resimulation, "ToolbarButton");
 
