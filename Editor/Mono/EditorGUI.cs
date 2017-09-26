@@ -5302,6 +5302,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
         {
+            LayerMaskField(position, property.layerMaskBits, property, label, style, SetLayerMaskValueDelegate);
+        }
+
+        internal static void LayerMaskField(Rect position, UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback)
+        {
+            LayerMaskField(position, layers, null, label, EditorStyles.layerMaskField, callback);
+        }
+
+        internal static void LayerMaskField(Rect position, UInt32 layers, SerializedProperty property, GUIContent label, GUIStyle style, EditorUtility.SelectMenuItemFunction callback)
+        {
             int id = GUIUtility.GetControlID(s_LayerMaskField, FocusType.Keyboard, position);
             if (label != null)
             {
@@ -5318,13 +5328,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
                 else
                 {
-                    style.Draw(position, EditorGUIUtility.TempContent(property.layerMaskStringValue), id, false);
+                    style.Draw(position, EditorGUIUtility.TempContent(SerializedProperty.GetLayerMaskStringValue(layers)), id, false);
                 }
             }
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(id))
             {
-                SerializedProperty propertyWithPath = property.serializedObject.FindProperty(property.propertyPath);
-                EditorUtility.DisplayCustomMenu(position, property.GetLayerMaskNames(), property.hasMultipleDifferentValues ? new int[0] : property.GetLayerMaskSelectedIndex(), SetLayerMaskValueDelegate, propertyWithPath);
+                SerializedProperty propertyWithPath = (property != null) ? property.serializedObject.FindProperty(property.propertyPath) : null;
+                var userData = new Tuple<SerializedProperty, UInt32>(propertyWithPath, layers);
+                EditorUtility.DisplayCustomMenu(position, SerializedProperty.GetLayerMaskNames(layers), (property != null && property.hasMultipleDifferentValues) ? new int[0] : SerializedProperty.GetLayerMaskSelectedIndex(layers), callback, userData);
                 Event.current.Use();
                 EditorGUIUtility.keyboardControl = id;
             }
@@ -5332,9 +5343,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static void SetLayerMaskValueDelegate(object userData, string[] options, int selected)
         {
-            SerializedProperty property = (SerializedProperty)userData;
-            property.ToggleLayerMaskAtIndex(selected);
-            property.serializedObject.ApplyModifiedProperties();
+            var data = (Tuple<SerializedProperty, UInt32>)userData;
+            if (data.Item1 != null)
+            {
+                data.Item1.ToggleLayerMaskAtIndex(selected);
+                data.Item1.serializedObject.ApplyModifiedProperties();
+                data.Item2 = data.Item1.layerMaskBits;
+            }
         }
 
         // Helper function for helping with debugging the editor
@@ -7561,6 +7576,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, style);
             return EditorGUI.Foldout(r, foldout, content, toggleOnLabelClick, style);
+        }
+
+        internal static void LayerMaskField(UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+            EditorGUI.LayerMaskField(r, layers, label, callback);
         }
 
         internal static void LayerMaskField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)
