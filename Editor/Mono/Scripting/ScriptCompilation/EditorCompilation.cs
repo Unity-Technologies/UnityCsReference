@@ -147,6 +147,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.precompiledAssemblies = precompiledAssemblies;
         }
 
+        public PrecompiledAssembly[] GetAllPrecompiledAssemblies()
+        {
+            return this.precompiledAssemblies;
+        }
+
         public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
         {
             if (customTargetAssemblies == null)

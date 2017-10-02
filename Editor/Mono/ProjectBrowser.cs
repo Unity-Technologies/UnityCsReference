@@ -2287,12 +2287,15 @@ namespace UnityEditor
                 string path = m_SearchFilter.folders[0];
 
                 string[] folderNames = path.Split('/');
-                string folderPath = "";
-                if (folderNames.Length > 0 && folderNames[0] == AssetDatabase.GetPackagesMountPoint())
+                var packagesRoot = AssetDatabase.GetPackagesRootPath();
+                if (path.StartsWith(packagesRoot))
                 {
                     // Translate the packages root mount point
-                    folderNames[0] = "Packages";
+                    folderNames = System.Text.RegularExpressions.Regex.Replace(path, "^" + packagesRoot, AssetDatabase.GetPackagesMountPoint()).Split('/');
                 }
+
+                string folderPath = "";
+
                 foreach (string folderName in folderNames)
                 {
                     if (!string.IsNullOrEmpty(folderPath))

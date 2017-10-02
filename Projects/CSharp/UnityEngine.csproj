@@ -342,6 +342,9 @@
 <Compile Include="..\..\Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs" >
 <Link>Runtime\Export\Networking\PlayerConnection\PlayerEditorConnectionEvents.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Scripting\ScriptingRuntime.bindings.cs" >
+<Link>Runtime\Export\Scripting\ScriptingRuntime.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Scripting\PreserveAttribute.cs" >
 <Link>Runtime\Export\Scripting\PreserveAttribute.cs</Link>
 </Compile>

@@ -33,6 +33,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEngine.Timeline")]
 [assembly: InternalsVisibleTo("UnityEngine.GoogleAudioSpatializer")]
+[assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
