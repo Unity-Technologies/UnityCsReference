@@ -6,18 +6,18 @@ using System.Collections.Generic;
 
 namespace UnityEngine.XR.Tango
 {
-    public static partial class TangoDevice
+    internal static partial class TangoDevice
     {
         static private XR.ARBackgroundRenderer m_BackgroundRenderer = null;
         static private string m_AreaDescriptionUUID = "";
 
-        static public string areaDescriptionUUID
+        static internal string areaDescriptionUUID
         {
             get { return m_AreaDescriptionUUID; }
             set { m_AreaDescriptionUUID = value; }
         }
 
-        static public XR.ARBackgroundRenderer backgroundRenderer
+        static internal XR.ARBackgroundRenderer backgroundRenderer
         {
             get
             {
@@ -49,7 +49,7 @@ namespace UnityEngine.XR.Tango
             SetRenderMode(m_BackgroundRenderer.mode);
         }
 
-        static public bool Connect(TangoConfig config)
+        static internal bool Connect(TangoConfig config)
         {
             string[] boolKeys, intKeys, longKeys, doubleKeys, stringKeys;
             bool[] boolValues;

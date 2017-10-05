@@ -47,6 +47,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.PerformanceTests.RuntimeTestRunner.Tests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.AllIn1Runner")]
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]
+[assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
 
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
 

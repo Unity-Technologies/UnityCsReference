@@ -28,6 +28,7 @@ namespace UnityEditor
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         bool m_ShowOnlySelectedMode;
         TimeHelper m_TimeHelper = new TimeHelper();
+        public static ParticleSystem m_MainPlaybackSystem;
         public static bool m_ShowBounds = false;
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
@@ -145,6 +146,7 @@ namespace UnityEditor
                         continue;
 
                     shurikens = GetParticleSystems(root);
+                    mainSystem = root;
 
                     // Check if we need to re-initialize?
                     if (m_SelectedParticleSystems != null && m_SelectedParticleSystems.Count > 0)
@@ -163,8 +165,6 @@ namespace UnityEditor
                             }
                         }
                     }
-
-                    mainSystem = root;
                 }
                 else
                 {
@@ -238,8 +238,6 @@ namespace UnityEditor
                 if (GetAllModulesVisible())
                     SetAllModulesVisible(true);
 
-                ParticleSystemEditorUtils.PerformCompleteResimulation();
-
                 m_EmitterAreaWidth = EditorPrefs.GetFloat("ParticleSystemEmitterAreaWidth", k_MinEmitterAreaSize.x);
                 m_CurveEditorAreaHeight = EditorPrefs.GetFloat("ParticleSystemCurveEditorAreaHeight", k_MinCurveAreaSize.y);
 
@@ -259,10 +257,16 @@ namespace UnityEditor
                             ParticleSystemEditorUtils.editorPlaybackTime = lastPlayBackTime;
                     }
 
-                    // Always play when initializing a particle system
-                    Play();
+                    // Play when selecting a new particle effect
+                    if (m_MainPlaybackSystem != mainSystem)
+                    {
+                        ParticleSystemEditorUtils.PerformCompleteResimulation();
+                        Play();
+                    }
                 }
             }
+
+            m_MainPlaybackSystem = mainSystem;
 
             return initializeRequired;
         }
