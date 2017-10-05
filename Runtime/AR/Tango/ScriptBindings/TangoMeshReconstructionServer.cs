@@ -11,14 +11,14 @@ using UnityEngine;
 namespace UnityEngine.XR.Tango
 {
     // This is mirrored in native code. See TangoTypes.h
-    public enum SegmentChange
+    internal enum SegmentChange
     {
         Added = 0,
         Updated = 1
     }
 
     // Must match to Tango::MeshReconstruction::UpdateMethod in TangoTypes.h
-    public enum UpdateMethod
+    internal enum UpdateMethod
     {
         Traversal = 0,
         Projective
@@ -27,7 +27,7 @@ namespace UnityEngine.XR.Tango
     // Must match Tango::MeshReconstruction::Config in TangoTypes.h
     [NativeHeader("ARScriptingClasses.h")]
     [UsedByNativeCode]
-    public struct MeshReconstructionConfig
+    internal struct MeshReconstructionConfig
     {
         public double resolution;
         public double minDepth;
@@ -59,7 +59,7 @@ namespace UnityEngine.XR.Tango
     // Must match Tango::MeshReconstruction::GridIndex in TangoTypes.h
     //
     [UsedByNativeCode]
-    public struct GridIndex
+    internal struct GridIndex
     {
         public int i;
         public int j;
@@ -67,7 +67,7 @@ namespace UnityEngine.XR.Tango
     }
 
     // A container for generation requests
-    public struct SegmentGenerationRequest
+    internal struct SegmentGenerationRequest
     {
         public GridIndex gridIndex;
         public MeshFilter destinationMeshFilter;
@@ -79,7 +79,7 @@ namespace UnityEngine.XR.Tango
     };
 
     // The resulting data from a generation request
-    public struct SegmentGenerationResult
+    internal struct SegmentGenerationResult
     {
         public GridIndex gridIndex;
         public MeshFilter meshFilter;
@@ -89,13 +89,13 @@ namespace UnityEngine.XR.Tango
         public double elapsedTimeSeconds;
     }
 
-    sealed public partial class MeshReconstructionServer
+    internal partial class MeshReconstructionServer
     {
-        public delegate void SegmentChangedDelegate(GridIndex gridIndex, SegmentChange changeType, double updateTime);
-        public delegate void SegmentReadyDelegate(SegmentGenerationResult generatedSegmentData);
+        internal delegate void SegmentChangedDelegate(GridIndex gridIndex, SegmentChange changeType, double updateTime);
+        internal delegate void SegmentReadyDelegate(SegmentGenerationResult generatedSegmentData);
 
         // This must match Tango::MeshReconstruction::CreationStatus in TangoTypes.h
-        public enum Status
+        internal enum Status
         {
             UnsupportedPlatform,
             Ok,
@@ -105,11 +105,11 @@ namespace UnityEngine.XR.Tango
         }
 
         private Status m_Status = Status.UnsupportedPlatform;
-        public Status status
+        internal Status status
         { get { return m_Status; } }
 
 
-        public MeshReconstructionServer(MeshReconstructionConfig config)
+        internal MeshReconstructionServer(MeshReconstructionConfig config)
         {
             int status = 0;
             m_ServerPtr = Internal_Create(this, config, out status);
@@ -126,17 +126,17 @@ namespace UnityEngine.XR.Tango
             }
         }
 
-        public void ClearMeshes()
+        internal void ClearMeshes()
         {
             Internal_ClearMeshes(m_ServerPtr);
         }
 
-        public IntPtr GetNativeReconstructionContext()
+        internal IntPtr GetNativeReconstructionContext()
         {
             return Internal_GetNativeReconstructionContextPtr(m_ServerPtr);
         }
 
-        public void GetChangedSegments(SegmentChangedDelegate onSegmentChanged)
+        internal void GetChangedSegments(SegmentChangedDelegate onSegmentChanged)
         {
             if (onSegmentChanged == null)
             {
@@ -146,7 +146,7 @@ namespace UnityEngine.XR.Tango
             Internal_GetChangedSegments(m_ServerPtr, onSegmentChanged);
         }
 
-        public void GenerateSegmentAsync(SegmentGenerationRequest request, SegmentReadyDelegate onSegmentReady)
+        internal void GenerateSegmentAsync(SegmentGenerationRequest request, SegmentReadyDelegate onSegmentReady)
         {
             if (onSegmentReady == null)
             {
@@ -164,7 +164,7 @@ namespace UnityEngine.XR.Tango
                 request.providePhysics);
         }
 
-        public int generationRequests
+        internal int generationRequests
         {
             get
             {
@@ -172,7 +172,7 @@ namespace UnityEngine.XR.Tango
             }
         }
 
-        public bool enabled
+        internal bool enabled
         {
             get
             {

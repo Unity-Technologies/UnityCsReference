@@ -167,6 +167,8 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
+            // Disable clipping on the root element to fix case 931831
+            visualTree.clipChildren = false;
             EditorApplication.modifierKeysChanged += Repaint;
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;

@@ -2650,8 +2650,8 @@ namespace UnityEditor
 
             var enumData = GetNonObsoleteEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.names), style);
-            return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
+            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.displayNames), style);
+            return (i < 0 || i >= enumData.values.Length) ? selected : enumData.values[i];
         }
 
         /// *listonly*
@@ -3049,7 +3049,7 @@ namespace UnityEditor
         {
             public Enum[] values;
             public int[] flagValues;
-            public string[] names;
+            public string[] displayNames;
             public bool flags;
             public Type underlyingType;
             public bool unsigned;
@@ -3070,13 +3070,13 @@ namespace UnityEditor
                     || enumData.underlyingType == typeof(ushort)
                     || enumData.underlyingType == typeof(uint)
                     || enumData.underlyingType == typeof(ulong);
-                enumData.names = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
-                enumData.values = enumData.names.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
+                enumData.displayNames = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
+                enumData.values = enumData.displayNames.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
                 enumData.flagValues = enumData.unsigned ?
                     enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
                     enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
-                for (int i = 0, length = enumData.names.Length; i < length; ++i)
-                    enumData.names[i] = ObjectNames.NicifyVariableName(enumData.names[i]);
+                for (int i = 0, length = enumData.displayNames.Length; i < length; ++i)
+                    enumData.displayNames[i] = ObjectNames.NicifyVariableName(enumData.displayNames[i]);
                 // convert "everything" values to ~0 for unsigned 8- and 16-bit types
                 if (enumData.underlyingType == typeof(ushort))
                 {
@@ -3173,7 +3173,7 @@ namespace UnityEditor
             var flagsInt = EnumFlagsToInt(enumData, enumValue);
 
             EditorGUI.BeginChangeCheck();
-            flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.names, enumData.flagValues, style, out changedFlags, out changedToValue);
+            flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
             if (!EditorGUI.EndChangeCheck())
                 return enumValue;
 

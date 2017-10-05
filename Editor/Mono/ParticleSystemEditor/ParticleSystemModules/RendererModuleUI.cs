@@ -175,13 +175,13 @@ namespace UnityEditor
             m_SortingLayerID = GetProperty0("m_SortingLayerID");
 
             m_RenderMode = GetProperty0("m_RenderMode");
-            m_MinParticleSize = GetProperty0("m_MinParticleSize");      //< How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.
-            m_MaxParticleSize = GetProperty0("m_MaxParticleSize");      //< How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.
-            m_CameraVelocityScale = GetProperty0("m_CameraVelocityScale"); //< How much the camera motion is factored in when determining particle stretching.
-            m_VelocityScale = GetProperty0("m_VelocityScale");          //< When Strech Particles is enabled, defines the length of the particle compared to its velocity.
-            m_LengthScale = GetProperty0("m_LengthScale");              //< When Strech Particles is enabled, defines the length of the particle compared to its width.
-            m_SortingFudge = GetProperty0("m_SortingFudge");            //<
-            m_SortMode = GetProperty0("m_SortMode");                    //<
+            m_MinParticleSize = GetProperty0("m_MinParticleSize");
+            m_MaxParticleSize = GetProperty0("m_MaxParticleSize");
+            m_CameraVelocityScale = GetProperty0("m_CameraVelocityScale");
+            m_VelocityScale = GetProperty0("m_VelocityScale");
+            m_LengthScale = GetProperty0("m_LengthScale");
+            m_SortingFudge = GetProperty0("m_SortingFudge");
+            m_SortMode = GetProperty0("m_SortMode");
             m_NormalDirection = GetProperty0("m_NormalDirection");
 
             m_Probes = new RendererEditorBase.Probes();

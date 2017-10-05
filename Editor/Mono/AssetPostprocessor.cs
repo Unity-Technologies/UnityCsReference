@@ -271,6 +271,16 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void PostprocessMaterial(Material material)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { material };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessMaterial", args);
+            }
+        }
+
+        [RequiredByNativeCode]
         static void PostprocessGameObjectWithUserProperties(GameObject go, string[] prop_names, object[] prop_values)
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)

@@ -4,11 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
@@ -248,7 +247,9 @@ namespace UnityEditor
             Show(obj, requiredType, property, allowSceneObjects, null);
         }
 
-        internal void Show(UnityObject obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
+        private readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
+
+        internal void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
@@ -258,6 +259,10 @@ namespace UnityEditor
             if (property != null)
             {
                 ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
+                // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
+                // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
+                if (requiredType == null)
+                    m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
 
                 obj = property.objectReferenceValue;
                 m_ObjectBeingEdited = property.serializedObject.targetObject;
@@ -292,7 +297,8 @@ namespace UnityEditor
             // Set member variables
             m_DelegateView = GUIView.current;
             // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
-            m_RequiredType = typeof(ScriptableObject).IsAssignableFrom(requiredType) || typeof(MonoBehaviour).IsAssignableFrom(requiredType) ? requiredType.FullName : requiredType.Name;
+            if (requiredType != null)
+                m_RequiredType = typeof(ScriptableObject).IsAssignableFrom(requiredType) || typeof(MonoBehaviour).IsAssignableFrom(requiredType) ? requiredType.FullName : requiredType.Name;
             m_SearchFilter = "";
             m_OriginalSelection = obj;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
@@ -303,7 +309,7 @@ namespace UnityEditor
             ContainerWindow.SetFreezeDisplay(true);
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = new GUIContent("Select " + requiredType.Name);
+            titleContent = new GUIContent("Select " + (requiredType == null ? m_RequiredType : requiredType.Name));
 
             // Deal with window size
             Rect p = m_Parent.window.position;

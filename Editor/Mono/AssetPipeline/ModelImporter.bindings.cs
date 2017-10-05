@@ -748,7 +748,7 @@ namespace UnityEditor
         {
             get
             {
-                return sourceAvatarInternal;
+                return GetSourceAvatar();
             }
             set
             {
@@ -768,18 +768,13 @@ namespace UnityEditor
                     }
                 }
 
-                sourceAvatarInternal = avatar;
+                SetSourceAvatarInternal(this, avatar);
             }
         }
-        internal Avatar sourceAvatarInternal
-        {
-            get { return GetSourceAvatarInternal(this); }
-            set { SetSourceAvatarInternal(this, value); }
-        }
-        [FreeFunction("ModelImporterBindings::GetSourceAvatarInternal")]
-        private extern static Avatar GetSourceAvatarInternal(ModelImporter self);
+
+        private extern Avatar GetSourceAvatar();
         [FreeFunction("ModelImporterBindings::SetSourceAvatarInternal")]
-        private extern static void SetSourceAvatarInternal([Writable] ModelImporter self, Avatar value);
+        private extern static void SetSourceAvatarInternal(ModelImporter self, Avatar value);
 
         [System.Obsolete("splitAnimations has been deprecated please use clipAnimations instead.", true)]
         public bool splitAnimations
@@ -841,5 +836,7 @@ namespace UnityEditor
 
             return ExtractTexturesInternal(folderPath);
         }
+
+        public extern bool SearchAndRemapMaterials(ModelImporterMaterialName nameOption, ModelImporterMaterialSearch searchOption);
     }
 }

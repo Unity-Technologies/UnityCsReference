@@ -645,9 +645,11 @@ namespace UnityEditor
                 if (editorsWithPreviews.Length > 1)
                 {
                     Vector2 foldoutSize = styles.preDropDown.CalcSize(title);
-                    Rect foldoutRect = new Rect(dragRect.x, dragRect.y, foldoutSize.x, foldoutSize.y);
-                    dragRect.xMin += foldoutSize.x;
-                    dragIconRect.xMin += foldoutSize.x;
+                    float maxFoldoutWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
+                    float foldoutWidth = Mathf.Min(maxFoldoutWidth, foldoutSize.x);
+                    Rect foldoutRect = new Rect(dragRect.x, dragRect.y, foldoutWidth, foldoutSize.y);
+                    dragRect.xMin += foldoutWidth;
+                    dragIconRect.xMin += foldoutWidth;
 
                     GUIContent[] panelOptions = new GUIContent[editorsWithPreviews.Length];
                     int selectedPreview = -1;

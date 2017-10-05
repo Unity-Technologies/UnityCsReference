@@ -30,9 +30,9 @@ namespace UnityEditor
 
         public void SetTickModulosForFrameRate(float frameRate)
         {
-            if (frameRate != Mathf.Round(frameRate))
+            // Make frames multiples of 5 and 10, if frameRate is too high (avoid overflow) or not an even number
+            if (frameRate > int.MaxValue / 2.0f || frameRate != Mathf.Round(frameRate))
             {
-                // If framerate if not even number, just make frames multiples of 5 and 10
                 SetTickModulos(new float[] {
                     1f / frameRate, 5f / frameRate, 10f / frameRate, 50f / frameRate,
                     100f / frameRate, 500f / frameRate, 1000f / frameRate, 5000f / frameRate,

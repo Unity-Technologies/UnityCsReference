@@ -495,6 +495,7 @@ namespace UnityEditor
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             GridPaintingState.brushChanged += OnBrushChanged;
+            PrefabUtility.prefabInstanceUpdated += PrefabInstanceUpdated;
 
             AssetPreview.SetPreviewTextureCacheSize(256, GetInstanceID());
             wantsMouseMove = true;
@@ -514,6 +515,15 @@ namespace UnityEditor
             }
 
             Tools.onToolChanged += ToolChanged;
+        }
+
+        private void PrefabInstanceUpdated(GameObject instance)
+        {
+            // case 947462: Reset the palette instance after its prefab has been updated as it could have been changed
+            if (m_PaletteInstance != null && instance == m_PaletteInstance)
+            {
+                ResetPreviewInstance();
+            }
         }
 
         private void OnBrushChanged(GridBrushBase brush)
@@ -551,6 +561,7 @@ namespace UnityEditor
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
             GridPaintingState.brushChanged -= OnBrushChanged;
+            PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
         }
 
         private void OnScenePaintTargetChanged(GameObject scenePaintTarget)
