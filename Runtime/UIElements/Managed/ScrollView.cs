@@ -81,7 +81,7 @@ namespace UnityEngine.Experimental.UIElements
             this.verticalScrollerValues = verticalScrollerValues;
 
             contentViewport = new VisualElement() { name = "ContentViewport" };
-            contentViewport.clipChildren = true;
+            contentViewport.clippingOptions = ClippingOptions.ClipContents;
             shadow.Add(contentViewport);
 
             // Basic content container; its constraints should be defined in the USS file

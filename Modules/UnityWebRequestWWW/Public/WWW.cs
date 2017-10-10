@@ -226,7 +226,7 @@ namespace UnityEngine
             get
             {
                 if (!isDone || _uwr.isNetworkError)
-                    return null;
+                    return new Dictionary<string, string>();
                 if (_responseHeaders == null)
                 {
                     _responseHeaders = _uwr.GetResponseHeaders();

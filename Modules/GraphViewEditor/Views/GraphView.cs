@@ -88,11 +88,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected GraphView()
         {
             selection = new List<ISelectable>();
-            clipChildren = true;
+            clippingOptions = ClippingOptions.ClipContents;
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
-                clipChildren = false,
+                clippingOptions = ClippingOptions.NoClipping,
                 pickingMode = PickingMode.Ignore
             };
 
@@ -109,7 +109,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void AddLayer(int index)
         {
-            m_ContainerLayers.Add(index, new Layer { clipChildren = false, pickingMode = PickingMode.Ignore });
+            m_ContainerLayers.Add(index, new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore });
 
             foreach (var layer in m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value))
             {

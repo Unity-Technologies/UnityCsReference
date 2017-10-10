@@ -210,6 +210,13 @@ namespace UnityEditor
         Everywhere = 2,
     }
 
+    [NativeType(Header = "Editor/Src/AssetPipeline/ModelImporting/ModelImporter.h")]
+    public enum ModelImporterMaterialLocation
+    {
+        External = 0,
+        InPrefab = 1
+    };
+
     public enum ModelImporterTangentSpaceMode
     {
         [System.Obsolete("Use ModelImporterNormals.Import instead")]
@@ -382,6 +389,8 @@ namespace UnityEditor
             get;
             set;
         }
+
+        public extern ModelImporterMaterialLocation materialLocation { get; set; }
 
         internal extern SourceAssetIdentifier[] sourceMaterials
         {

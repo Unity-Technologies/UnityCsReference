@@ -184,7 +184,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Node()
         {
-            usePixelCaching = true;
+            clippingOptions = ClippingOptions.ClipAndCacheContents;
 
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
             mainContainer = tpl.CloneTree(null);

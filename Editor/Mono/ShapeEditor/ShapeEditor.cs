@@ -329,9 +329,6 @@ namespace UnityEditor
 
         private float GetMouseClosestEdgeDistance()
         {
-            if (guiUtility.hotControl == k_CreatorID || guiUtility.hotControl == k_EdgeID)
-                return float.MinValue;
-
             var mousePosition = ScreenToLocal(eventSystem.current.mousePosition);
             var total = this.GetPointsCount();
             if (m_MouseClosestEdge == -1 && total > 0)
@@ -350,6 +347,9 @@ namespace UnityEditor
                     }
                 }
             }
+
+            if (guiUtility.hotControl == k_CreatorID || guiUtility.hotControl == k_EdgeID)
+                return float.MinValue;
             return m_MouseClosestEdgeDist;
         }
 
@@ -587,26 +587,33 @@ namespace UnityEditor
                     currentEvent.Use();
                     break;
                 case EventType.MouseDrag:
-                    RecordUndo();
-                    Vector3 mousePos = ScreenToLocal(currentEvent.mousePosition);
-                    Vector3 delta = mousePos - m_EdgeDragStartMousePosition;
+                    // This can happen when MouseDown event happen when dragging a point instead of line
+                    if (GUIUtility.hotControl == k_EdgeID)
+                    {
+                        RecordUndo();
+                        Vector3 mousePos = ScreenToLocal(currentEvent.mousePosition);
+                        Vector3 delta = mousePos - m_EdgeDragStartMousePosition;
 
-                    Vector3 position = GetPointPosition(m_ActiveEdge);
-                    Vector3 newPosition = m_EdgeDragStartP0 + delta;
+                        Vector3 position = GetPointPosition(m_ActiveEdge);
+                        Vector3 newPosition = m_EdgeDragStartP0 + delta;
 
-                    newPosition = Snap(newPosition);
+                        newPosition = Snap(newPosition);
 
-                    Vector3 snappedDelta = newPosition - position;
-                    var i0 = m_ActiveEdge;
-                    var i1 = NextIndex(m_ActiveEdge, GetPointsCount());
-                    SetPointPosition(m_ActiveEdge, GetPointPosition(i0) + snappedDelta);
-                    SetPointPosition(i1, GetPointPosition(i1) + snappedDelta);
-                    currentEvent.Use();
+                        Vector3 snappedDelta = newPosition - position;
+                        var i0 = m_ActiveEdge;
+                        var i1 = NextIndex(m_ActiveEdge, GetPointsCount());
+                        SetPointPosition(m_ActiveEdge, GetPointPosition(i0) + snappedDelta);
+                        SetPointPosition(i1, GetPointPosition(i1) + snappedDelta);
+                        currentEvent.Use();
+                    }
                     break;
                 case EventType.MouseUp:
-                    m_ActiveEdge = -1;
-                    GUIUtility.hotControl = 0;
-                    currentEvent.Use();
+                    if (GUIUtility.hotControl == k_EdgeID)
+                    {
+                        m_ActiveEdge = -1;
+                        GUIUtility.hotControl = 0;
+                        currentEvent.Use();
+                    }
                     break;
             }
         }
@@ -911,7 +918,7 @@ namespace UnityEditor
 
         private bool EdgeDragModifiersActive()
         {
-            return currentEvent.modifiers == EventModifiers.Control || currentEvent.modifiers == EventModifiers.Command;
+            return currentEvent.modifiers == EventModifiers.Control;
         }
 
         private static Vector3 DoSlider(int id, Vector3 position, Vector3 slide1, Vector3 slide2, float s, Handles.CapFunction cap)

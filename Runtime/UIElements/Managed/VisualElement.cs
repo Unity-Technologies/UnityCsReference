@@ -80,10 +80,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return panel == null ? null : panel.focusController; }
         }
 
-        public bool usePixelCaching { get; set; }
-
-        internal bool forceVisible { get; set; }
-
         private RenderData m_RenderData;
         internal RenderData renderData
         {
@@ -405,7 +401,7 @@ namespace UnityEngine.Experimental.UIElements
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = ChangeType.All;
-            clipChildren = true;
+            clippingOptions = ClippingOptions.ClipContents;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -552,8 +548,14 @@ namespace UnityEngine.Experimental.UIElements
             if ((type & changesNeeded) == type)
                 return;
 
-            if ((type & ChangeType.Layout) > 0 && cssNode != null && cssNode.IsMeasureDefined)
-                cssNode.MarkDirty();
+            if ((type & ChangeType.Layout) > 0)
+            {
+                if (cssNode != null && cssNode.IsMeasureDefined)
+                {
+                    cssNode.MarkDirty();
+                }
+                type |= ChangeType.Repaint;
+            }
 
             PropagateToChildren(type);
 
@@ -566,6 +568,11 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public bool IsDirty(ChangeType type)
+        {
+            return (changesNeeded & type) == type;
+        }
+
+        public bool AnyDirty(ChangeType type)
         {
             return (changesNeeded & type) > 0;
         }
@@ -601,6 +608,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         private bool m_Enabled;
+
 
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
