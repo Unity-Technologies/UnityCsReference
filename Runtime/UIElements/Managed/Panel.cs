@@ -210,7 +210,7 @@ namespace UnityEngine.Experimental.UIElements
             bool containsPoint = root.ContainsPoint(localPoint);
 
             // we only skip children in the case we visually clip them
-            if (!containsPoint && root.clipChildren)
+            if (!containsPoint && root.clippingOptions != VisualElement.ClippingOptions.NoClipping)
             {
                 return null;
             }
@@ -284,7 +284,7 @@ namespace UnityEngine.Experimental.UIElements
         void ValidatePersistentData()
         {
             int validatePersistentDataCount = 0;
-            while (visualTree.IsDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
+            while (visualTree.AnyDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
             {
                 ValidatePersistentDataOnSubTree(visualTree, true);
                 validatePersistentDataCount++;
@@ -332,7 +332,7 @@ namespace UnityEngine.Experimental.UIElements
                 m_StyleContext.currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
             }
 
-            if (m_RootContainer.IsDirty(ChangeType.Styles | ChangeType.StylesPath))
+            if (m_RootContainer.AnyDirty(ChangeType.Styles | ChangeType.StylesPath))
             {
                 m_StyleContext.ApplyStyles();
             }
@@ -406,47 +406,42 @@ namespace UnityEngine.Experimental.UIElements
                 Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
+        private bool ShouldUsePixelCache(VisualElement root)
+        {
+            return allowPixelCaching && root.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents &&
+                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
+                root.worldBound.size.magnitude > Mathf.Epsilon;
+        }
+
         public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
         {
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return;
 
-            if (root.shadow.childCount > 0) // container node
+            // update clip
+            if (root.clippingOptions != VisualElement.ClippingOptions.NoClipping)
             {
-                // update clip
-                if (root.clipChildren)
-                {
-                    var worldBound = ComputeAAAlignedBound(root.layout, offset * root.worldTransform);
-                    // are we and our children clipped?
-                    if (!worldBound.Overlaps(currentGlobalClip))
-                    {
-                        return;
-                    }
-
-                    float x1 = Mathf.Max(worldBound.x, currentGlobalClip.x);
-                    float x2 = Mathf.Min(worldBound.x + worldBound.width, currentGlobalClip.x + currentGlobalClip.width);
-                    float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
-                    float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
-
-                    // new global clip
-                    currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
-                }
-                else
-                {
-                    //since our children are not clipped, there is no early out.
-                }
-            }
-            else if (!root.forceVisible)
-            {
-                var offsetBounds = ComputeAAAlignedBound(root.worldBound, offset);
-                if (!offsetBounds.Overlaps(currentGlobalClip))
+                var worldBound = ComputeAAAlignedBound(root.layout, offset * root.worldTransform);
+                // are we and our children clipped?
+                if (!worldBound.Overlaps(currentGlobalClip))
                 {
                     return;
                 }
+
+                float x1 = Mathf.Max(worldBound.x, currentGlobalClip.x);
+                float x2 = Mathf.Min(worldBound.x + worldBound.width, currentGlobalClip.x + currentGlobalClip.width);
+                float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
+                float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
+
+                // new global clip
+                currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
             }
-            if (
-                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
-                root.usePixelCaching && allowPixelCaching && root.worldBound.size.magnitude > Mathf.Epsilon)
+            else
+            {
+                //since our children are not clipped, there is no early out.
+            }
+
+            if (ShouldUsePixelCache(root))
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
@@ -561,7 +556,8 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter.repaintEvent = e;
 
             // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.layout);
+            Rect clipRect = visualTree.clippingOptions == VisualElement.ClippingOptions.NoClipping ? GUIClip.topmostRect : visualTree.layout;
+            PaintSubTree(e, visualTree, Matrix4x4.identity, clipRect);
 
             if (panelDebug != null)
             {

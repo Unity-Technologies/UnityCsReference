@@ -848,7 +848,10 @@ namespace UnityEditor
         protected override void MoveEnd(BoundsInt position)
         {
             if (grid)
+            {
                 gridBrush.MoveEnd(grid, brushTarget, position);
+                OnPaletteChanged();
+            }
         }
 
         public override void Repaint()

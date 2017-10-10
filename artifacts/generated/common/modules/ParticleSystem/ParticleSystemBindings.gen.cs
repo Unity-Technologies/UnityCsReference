@@ -3499,6 +3499,12 @@ public sealed partial class ParticleSystem : Component
         public Vector3 velocity { get { return m_Velocity; } set { m_Velocity = value; } }
         
         
+        public Vector3 animatedVelocity { get { return m_AnimatedVelocity; } }
+        
+        
+        public Vector3 totalVelocity { get { return m_Velocity + m_AnimatedVelocity; } }
+        
+        
         [System.Obsolete ("Please use Particle.remainingLifetime instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/Particle.remainingLifetime")]
         public float lifetime { get { return m_Lifetime; } set { m_Lifetime = value; } }
         public float remainingLifetime { get { return m_Lifetime; } set { m_Lifetime = value; } }

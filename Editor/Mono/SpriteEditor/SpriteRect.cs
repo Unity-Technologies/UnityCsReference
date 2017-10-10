@@ -104,24 +104,6 @@ namespace UnityEditor
             set { m_TessellationDetail = value; }
         }
 
-        static public List<SpriteOutline> AcquireOutline(SerializedProperty outlineSP)
-        {
-            var outline = new List<SpriteOutline>();
-            for (int j = 0; j < outlineSP.arraySize; ++j)
-            {
-                SpriteOutline o = new SpriteOutline();
-                SerializedProperty outlinePathSO = outlineSP.GetArrayElementAtIndex(j);
-                for (int k = 0; k < outlinePathSO.arraySize; ++k)
-                {
-                    Vector2 vector2 = outlinePathSO.GetArrayElementAtIndex(k).vector2Value;
-                    o.Add(vector2);
-                }
-                outline.Add(o);
-            }
-
-            return outline;
-        }
-
         static public List<SpriteOutline> AcquireOutline(List<Vector2[]> outlineSP)
         {
             var outline = new List<SpriteOutline>();
@@ -138,23 +120,6 @@ namespace UnityEditor
             return outline;
         }
 
-        static public void ApplyOutlineChanges(SerializedProperty outlineSP, List<SpriteOutline> outline)
-        {
-            outlineSP.ClearArray();
-            for (int j = 0; j < outline.Count; ++j)
-            {
-                outlineSP.InsertArrayElementAtIndex(j);
-                SpriteOutline o = outline[j];
-                SerializedProperty outlinePathSO = outlineSP.GetArrayElementAtIndex(j);
-                outlinePathSO.ClearArray();
-                for (int k = 0; k < o.Count; ++k)
-                {
-                    outlinePathSO.InsertArrayElementAtIndex(k);
-                    outlinePathSO.GetArrayElementAtIndex(k).vector2Value = o[k];
-                }
-            }
-        }
-
         static public List<Vector2[]> ApplyOutlineChanges(List<SpriteOutline> outline)
         {
             var result = new List<Vector2[]>();
@@ -167,42 +132,6 @@ namespace UnityEditor
             }
 
             return result;
-        }
-
-        public void ApplyToSerializedProperty(SerializedProperty sp)
-        {
-            sp.FindPropertyRelative("m_Rect").rectValue = rect;
-            sp.FindPropertyRelative("m_Border").vector4Value = border;
-            sp.FindPropertyRelative("m_Name").stringValue = name;
-            sp.FindPropertyRelative("m_Alignment").intValue = (int)alignment;
-            sp.FindPropertyRelative("m_Pivot").vector2Value = pivot;
-            sp.FindPropertyRelative("m_TessellationDetail").floatValue = tessellationDetail;
-
-            SerializedProperty outlineSP = sp.FindPropertyRelative("m_Outline");
-            outlineSP.ClearArray();
-            if (outline != null)
-                ApplyOutlineChanges(outlineSP, outline);
-
-            SerializedProperty physicsShapeSP = sp.FindPropertyRelative("m_PhysicsShape");
-            physicsShapeSP.ClearArray();
-            if (physicsShape != null)
-                ApplyOutlineChanges(physicsShapeSP, physicsShape);
-        }
-
-        public void LoadFromSerializedProperty(SerializedProperty sp)
-        {
-            rect = sp.FindPropertyRelative("m_Rect").rectValue;
-            border = sp.FindPropertyRelative("m_Border").vector4Value;
-            name = sp.FindPropertyRelative("m_Name").stringValue;
-            alignment = (SpriteAlignment)sp.FindPropertyRelative("m_Alignment").intValue;
-            pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.FindPropertyRelative("m_Pivot").vector2Value);
-            tessellationDetail = sp.FindPropertyRelative("m_TessellationDetail").floatValue;
-
-            SerializedProperty outlineSP = sp.FindPropertyRelative("m_Outline");
-            outline = AcquireOutline(outlineSP);
-
-            outlineSP = sp.FindPropertyRelative("m_PhysicsShape");
-            physicsShape = AcquireOutline(outlineSP);
         }
 
         public void LoadFromSpriteData(SpriteDataBase sp)

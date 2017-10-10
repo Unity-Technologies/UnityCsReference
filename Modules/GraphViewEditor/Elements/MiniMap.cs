@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public MiniMap()
         {
-            clipChildren = false;
+            clippingOptions = ClippingOptions.NoClipping;
 
             m_Label = new Label("Floating Minimap");
 

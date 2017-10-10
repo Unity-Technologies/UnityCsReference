@@ -938,7 +938,6 @@ namespace UnityEditor
 
         public void DrawMajorTicks(Rect position, float frameRate)
         {
-            Color backupCol = Handles.color;
             GUI.BeginGroup(position);
             if (Event.current.type != EventType.Repaint)
             {
@@ -947,12 +946,19 @@ namespace UnityEditor
             }
             InitStyles();
 
+            HandleUtility.ApplyWireMaterial();
+
             SetTickMarkerRanges();
             hTicks.SetTickStrengths(kTickRulerDistMin, kTickRulerDistFull, true);
 
             Color tickColor = styles.timelineTick.normal.textColor;
             tickColor.a = 0.1f;
-            Handles.color = tickColor;
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                GL.Begin(GL.QUADS);
+            else
+                GL.Begin(GL.LINES);
+
             // Draw tick markers of various sizes
             Rect theShowArea = shownArea;
             for (int l = 0; l < hTicks.tickLevels; l++)
@@ -967,12 +973,13 @@ namespace UnityEditor
                         int frame = Mathf.RoundToInt(ticks[i] * frameRate);
                         float x = FrameToPixel(frame, frameRate, position, theShowArea);
                         // Draw line
-                        Handles.DrawLine(new Vector3(x, 0, 0), new Vector3(x, position.height, 0));
+                        DrawVerticalLineFast(x, 0.0f, position.height, tickColor);
                     }
                 }
             }
+
+            GL.End();
             GUI.EndGroup();
-            Handles.color = backupCol;
         }
 
         public void TimeRuler(Rect position, float frameRate)

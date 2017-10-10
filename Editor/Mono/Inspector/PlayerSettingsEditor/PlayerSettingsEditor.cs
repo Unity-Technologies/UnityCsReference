@@ -2164,12 +2164,50 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
         {
-            BuildFileBoxButton(prop, uiString, directory, ext, null);
+            return BuildPathBoxButton(prop, uiString, directory, null);
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
+        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory, Action onSelect)
+        {
+            float h = EditorGUI.kSingleLineHeight;
+            float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+            float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+            Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
+
+            float labelWidth = EditorGUIUtility.labelWidth;
+            Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
+            Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
+
+            string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
+            EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+
+            bool changed = false;
+            if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
+            {
+                string prevVal = prop.stringValue;
+                string path = EditorUtility.OpenFolderPanel(EditorGUIUtility.TextContent(uiString).text, directory, "");
+
+                string relPath = FileUtil.GetProjectRelativePath(path);
+                prop.stringValue = (relPath != string.Empty) ? relPath : path;
+                changed = (prop.stringValue != prevVal);
+
+                if (onSelect != null)
+                    onSelect();
+
+                prop.serializedObject.ApplyModifiedProperties();
+            }
+
+            return changed;
+        }
+
+        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        {
+            return BuildFileBoxButton(prop, uiString, directory, ext, null);
+        }
+
+        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
             string ext, Action onSelect)
         {
             float h = EditorGUI.kSingleLineHeight;
@@ -2184,26 +2222,29 @@ namespace UnityEditor
             string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
             EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
 
+            bool changed = false;
             if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
             {
+                string prevVal = prop.stringValue;
                 string path = EditorUtility.OpenFilePanel(EditorGUIUtility.TextContent(uiString).text, directory, ext);
 
                 string relPath = FileUtil.GetProjectRelativePath(path);
                 prop.stringValue = (relPath != string.Empty) ? relPath : path;
+                changed = (prop.stringValue != prevVal);
 
                 if (onSelect != null)
                     onSelect();
 
                 prop.serializedObject.ApplyModifiedProperties();
-                GUIUtility.ExitGUI();
             }
+
+            return changed;
         }
 
         public void PublishSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 5)
         {
             if (targetGroup != BuildTargetGroup.WSA &&
                 targetGroup != BuildTargetGroup.PSP2 &&
-                targetGroup != BuildTargetGroup.PSM &&
                 !(settingsExtension != null && settingsExtension.HasPublishSection()))
                 return;
 

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.XR.Daydream;
 using UnityEngine;
 using System.Linq;
 
@@ -94,24 +95,27 @@ namespace UnityEditorInternal.VR
 
     internal class VRCustomOptionsDaydream : VRCustomOptionsGoogleVR
     {
-        const int k3DoF = 0;
-        const int k3DoF6DoF = 1;
-        const int k6DoF = 2;
+        const int kDisabled = 0;
+        const int kSupported = 1;
+        const int kRequired = 2;
+
+        const int kThreeDoFHeadTracking = (int)SupportedHeadTracking.ThreeDoF;
+        const int kSixDoFHeadTracking = (int)SupportedHeadTracking.SixDoF;
 
         const float s_Indent = 10.0f;
 
         static GUIContent s_ForegroundIconLabel = EditorGUIUtility.TextContent("Foreground Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
         static GUIContent s_BackgroundIconLabel = EditorGUIUtility.TextContent("Background Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
-        static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TextContent("Sustained Performance Mode|Sustained Performance Mode is intended to provide a consistent level of performance for a prolonged amount of time");
-        static GUIContent s_EnableVideoLayer = EditorGUIUtility.TextContent("Enable Video Surface|Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
-        static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TextContent("Use Protected Memory|Enable the use of DRM protection. Only usable if all content is DRM Protected.");
-        static GUIContent s_MinimumTargetHeadTracking  = EditorGUIUtility.TextContent("Supported Head Tracking|Requested head tracking support of target devices to run the applicaiton on.");
+        static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TextContent("Sustained Performance|Sustained Performance mode is intended to provide a consistent level of performance for a prolonged amount of time");
+        static GUIContent s_EnableVideoLayer = EditorGUIUtility.TextContent("Video Surface|Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
+        static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TextContent("Protected Memory|Enable the use of DRM protection. Only usable if all content is DRM Protected.");
+        static GUIContent s_MinimumTargetHeadTracking  = EditorGUIUtility.TextContent("Positional Head Tracking|Requested head tracking support of target devices to run the application on.");
 
         static GUIContent[] s_TargetHeadTrackingOptions =
         {
-            EditorGUIUtility.TextContent("3 DoF|Support 3 degree of freedom (rotation only) head tracking"),
-            EditorGUIUtility.TextContent("3 DoF & 6 DoF|Support 3 and 6 degree of freedom (rotation and position) head tracking"),
-            EditorGUIUtility.TextContent("6 DoF|Support 6 degree of freedom (rotation and position) head tracking"),
+            EditorGUIUtility.TextContent("Disabled|Will run on any device and provides no head tracking."),
+            EditorGUIUtility.TextContent("Supported|Will run on any device and will provide head tracking on devices that support head tracking."),
+            EditorGUIUtility.TextContent("Required|Will only run on devices with full 6 DoF head tracking support."),
         };
 
         SerializedProperty m_DaydreamIcon;
@@ -163,18 +167,18 @@ namespace UnityEditorInternal.VR
         // using this mapping.
         private int GetHeadTrackingValue()
         {
-            int retValue = k3DoF;
-            if (m_MinimumSupportedHeadTracking.intValue == k3DoF && m_MaximumSupportedHeadTracking.intValue == k3DoF)
+            int retValue = kDisabled;
+            if (m_MinimumSupportedHeadTracking.intValue == kThreeDoFHeadTracking && m_MaximumSupportedHeadTracking.intValue == kThreeDoFHeadTracking)
             {
-                retValue = k3DoF;
+                retValue = kDisabled;
             }
-            else if (m_MinimumSupportedHeadTracking.intValue == k3DoF && m_MaximumSupportedHeadTracking.intValue == k6DoF)
+            else if (m_MinimumSupportedHeadTracking.intValue == kThreeDoFHeadTracking && m_MaximumSupportedHeadTracking.intValue == kSixDoFHeadTracking)
             {
-                retValue = k3DoF6DoF;
+                retValue = kSupported;
             }
-            else if (m_MinimumSupportedHeadTracking.intValue == k6DoF && m_MaximumSupportedHeadTracking.intValue == k6DoF)
+            else if (m_MinimumSupportedHeadTracking.intValue == kSixDoFHeadTracking && m_MaximumSupportedHeadTracking.intValue == kSixDoFHeadTracking)
             {
-                retValue = k6DoF;
+                retValue = kRequired;
             }
             return retValue;
         }
@@ -183,17 +187,17 @@ namespace UnityEditorInternal.VR
         {
             switch (headTrackingValue)
             {
-                case k3DoF:
-                    m_MinimumSupportedHeadTracking.intValue = k3DoF;
-                    m_MaximumSupportedHeadTracking.intValue = k3DoF;
+                case kDisabled:
+                    m_MinimumSupportedHeadTracking.intValue = kThreeDoFHeadTracking;
+                    m_MaximumSupportedHeadTracking.intValue = kThreeDoFHeadTracking;
                     break;
-                case k3DoF6DoF:
-                    m_MinimumSupportedHeadTracking.intValue = k3DoF;
-                    m_MaximumSupportedHeadTracking.intValue = k6DoF;
+                case kSupported:
+                    m_MinimumSupportedHeadTracking.intValue = kThreeDoFHeadTracking;
+                    m_MaximumSupportedHeadTracking.intValue = kSixDoFHeadTracking;
                     break;
-                case k6DoF:
-                    m_MinimumSupportedHeadTracking.intValue = k6DoF;
-                    m_MaximumSupportedHeadTracking.intValue = k6DoF;
+                case kRequired:
+                    m_MinimumSupportedHeadTracking.intValue = kSixDoFHeadTracking;
+                    m_MaximumSupportedHeadTracking.intValue = kSixDoFHeadTracking;
                     break;
             }
         }

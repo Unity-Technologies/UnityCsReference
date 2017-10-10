@@ -245,7 +245,7 @@ namespace UnityEditor
             switch (targetGroup)
             {
                 case BuildTargetGroup.Standalone:
-                    return EditorUserBuildSettings.selectedStandaloneTarget;
+                    return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
                 case BuildTargetGroup.Facebook:
                     return EditorUserBuildSettings.selectedFacebookTarget;
                 default:

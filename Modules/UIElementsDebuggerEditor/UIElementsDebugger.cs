@@ -311,7 +311,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
             m_SelectedElement.text = EditorGUILayout.TextField("Text", m_SelectedElement.text);
-            m_SelectedElement.usePixelCaching = EditorGUILayout.Toggle("Use Pixel Caching", m_SelectedElement.usePixelCaching);
+            m_SelectedElement.clippingOptions = (VisualElement.ClippingOptions)EditorGUILayout.EnumPopup("Clipping Option", m_SelectedElement.clippingOptions);
             m_SelectedElement.visible = EditorGUILayout.Toggle("Visible", m_SelectedElement.visible);
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());

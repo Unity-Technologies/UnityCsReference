@@ -66,7 +66,16 @@ namespace UnityEditor
 
         public Vector3 bodyPosition
         {
-            get { return Animator && Animator.isHuman ? Animator.GetBodyPositionInternal() : GameObjectInspector.GetRenderableCenterRecurse(m_PreviewInstance, 1, 8); }
+            get
+            {
+                if (Animator && Animator.isHuman)
+                    return Animator.GetBodyPositionInternal();
+
+                if (m_PreviewInstance != null)
+                    return GameObjectInspector.GetRenderableCenterRecurse(m_PreviewInstance, 1, 8);
+
+                return Vector3.zero;
+            }
         }
 
         public Vector3 rootPosition
@@ -355,7 +364,7 @@ namespace UnityEditor
 
             SetPreviewCharacterEnabled(false, false);
 
-            m_PivotPositionOffset = bodyPosition - rootPosition;
+            m_PivotPositionOffset = Vector3.zero;
         }
 
         private PreviewRenderUtility previewUtility

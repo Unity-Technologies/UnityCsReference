@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Experimental.UIElements;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -17,6 +18,8 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
+            // Disable clipping on the root element to fix case 931831
+            visualTree.clippingOptions = VisualElement.ClippingOptions.NoClipping;
             s_AppStatusBar = this;
             s_StatusWheel = new GUIContent[12];
             for (int i = 0; i < 12; i++)

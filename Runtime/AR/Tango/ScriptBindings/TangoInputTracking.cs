@@ -7,8 +7,8 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.XR.Tango
 {
-    [RequiredByNativeCode]
-    public static partial class TangoInputTracking
+    [UsedByNativeCode]
+    internal static partial class TangoInputTracking
     {
         // Must match enum in Runtime/AR/Tango/TangoTypes.h
         private enum TrackingStateEventType
@@ -17,10 +17,10 @@ namespace UnityEngine.XR.Tango
             TrackingLost
         }
 
-        public static event Action<CoordinateFrame> trackingAcquired = null;
-        public static event Action<CoordinateFrame> trackingLost = null;
+        internal static event Action<CoordinateFrame> trackingAcquired = null;
+        internal static event Action<CoordinateFrame> trackingLost = null;
 
-        [RequiredByNativeCode]
+        [UsedByNativeCode]
         private static void InvokeTangoTrackingEvent(TrackingStateEventType eventType, CoordinateFrame frame)
         {
             Action<CoordinateFrame> callback = null;

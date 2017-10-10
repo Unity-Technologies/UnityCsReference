@@ -49,7 +49,7 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
         m_StandaloneSubtargetStrings = standaloneSubtargetStringsList.ToArray();
     }
 
-    private static BuildTarget GetBestStandaloneTarget(BuildTarget selectedTarget)
+    internal static BuildTarget GetBestStandaloneTarget(BuildTarget selectedTarget)
     {
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(selectedTarget)))
             return selectedTarget;

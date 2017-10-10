@@ -71,7 +71,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Edge()
         {
-            clipChildren = false;
+            clippingOptions = ClippingOptions.NoClipping;
 
             ClearClassList();
             AddToClassList("edge");

@@ -20,9 +20,25 @@ namespace UnityEngine.Experimental.UIElements
             get; private set;
         }
 
-        public bool clipChildren
+        public enum ClippingOptions
         {
-            get; set;
+            ClipContents, // default value, content of this element and its children will be clipped
+            NoClipping, // no clipping
+            ClipAndCacheContents // Renders contents to an cache texture
+        }
+
+        private ClippingOptions m_ClippingOptions;
+        public ClippingOptions clippingOptions
+        {
+            get { return m_ClippingOptions; }
+            set
+            {
+                if (m_ClippingOptions != value)
+                {
+                    m_ClippingOptions = value;
+                    Dirty(ChangeType.Repaint);
+                }
+            }
         }
 
         // parent in visual tree

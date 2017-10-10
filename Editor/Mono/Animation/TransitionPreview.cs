@@ -596,6 +596,7 @@ namespace UnityEditor
                 m_AvatarPreview = new AvatarPreview(scenePreviewObject, motion);
                 m_AvatarPreview.OnAvatarChangeFunc = OnPreviewAvatarChanged;
                 m_AvatarPreview.ShowIKOnFeetButton = false;
+                m_AvatarPreview.ResetPreviewFocus();
             }
 
             if (m_Timeline == null)

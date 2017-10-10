@@ -340,6 +340,7 @@ namespace UnityEditor
                 m_AvatarPreview.OnAvatarChangeFunc = SetPreviewAvatar;
                 m_AvatarPreview.fps = Mathf.RoundToInt((target as AnimationClip).frameRate);
                 m_AvatarPreview.ShowIKOnFeetButton = (target as Motion).isHumanMotion;
+                m_AvatarPreview.ResetPreviewFocus();
             }
 
             // force an update on timeControl if AvatarPreviewer is closed when creating/editing animation curves
