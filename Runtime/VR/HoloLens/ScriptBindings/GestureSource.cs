@@ -379,8 +379,7 @@ namespace UnityEngine.XR.WSA.Input
         {
             if (sourceStates == null)
                 throw new ArgumentNullException("sourceStates");
-
-            if (sourceStates.Length > 0)
+            if (IsXrEnabled() && sourceStates.Length > 0)
                 return GetCurrentReading_Internal(sourceStates);
             else
                 return 0;
@@ -389,7 +388,7 @@ namespace UnityEngine.XR.WSA.Input
         public static InteractionSourceState[] GetCurrentReading()
         {
             InteractionSourceState[] sourceStates = new InteractionSourceState[numSourceStates];
-            if (sourceStates.Length > 0)
+            if (IsXrEnabled() && sourceStates.Length > 0)
                 GetCurrentReading_Internal(sourceStates);
             return sourceStates;
         }
@@ -406,9 +405,16 @@ namespace UnityEngine.XR.WSA.Input
 
         private delegate void InternalSourceEventHandler(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType);
         private static InternalSourceEventHandler m_OnSourceEventHandler;
+        static private bool IsXrEnabled()
+        {
+            return UnityEngine.XR.XRSettings.enabled;
+        }
 
         static InteractionManager()
         {
+            if (!IsXrEnabled())
+                return;
+
             m_OnSourceEventHandler = OnSourceEvent;
             Initialize(Marshal.GetFunctionPointerForDelegate(m_OnSourceEventHandler));
         }

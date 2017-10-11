@@ -126,9 +126,11 @@ namespace UnityEditorInternal.VR
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
+            if (!IsWindowsMixedRealityCurrentTarget())
+                return;
+
             bool wasPlaying = m_InPlayMode;
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
-
             if (m_InPlayMode && !wasPlaying)
             {
                 HolographicEmulation.SetEmulationMode(m_Mode);

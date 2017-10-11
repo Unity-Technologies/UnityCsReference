@@ -4647,6 +4647,11 @@ namespace UnityEditor
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
             }
 
+            // Temporarily set GUI.enabled = true to enable the Settings button. see Case 947218.
+            var oldGUIEnabledState = GUI.enabled;
+
+            GUI.enabled = true;
+
             switch (evt.type)
             {
                 case EventType.MouseDown:
@@ -4663,6 +4668,8 @@ namespace UnityEditor
                     iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
                     break;
             }
+
+            GUI.enabled = oldGUIEnabledState;
         }
 
         internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue)

@@ -308,72 +308,52 @@ namespace UnityEditor
                         }
                     }
 
-                    // Reconnect prefab
-                    if (prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance)
-                    {
-                        if (GUILayout.Button("Revert", "MiniButtonMid"))
-                        {
-                            List<UnityObject> hierarchy = new List<UnityObject>();
-                            GetObjectListFromHierarchy(hierarchy, go);
-
-                            Undo.RegisterFullObjectHierarchyUndo(go, "Revert to prefab");
-                            PrefabUtility.ReconnectToLastPrefab(go);
-                            Undo.RegisterCreatedObjectUndo(PrefabUtility.GetPrefabObject(go), "Revert to prefab");
-                            PrefabUtility.RevertPrefabInstance(go);
-                            CalculatePrefabStatus();
-
-                            List<UnityObject> newHierarchy = new List<UnityObject>();
-                            GetObjectListFromHierarchy(newHierarchy, go);
-                            RegisterNewComponents(newHierarchy, hierarchy);
-                        }
-                    }
-
                     using (new EditorGUI.DisabledScope(AnimationMode.InAnimationMode()))
                     {
-                        // Revert this gameobject and components to prefab
-                        if (prefabType == PrefabType.ModelPrefabInstance || prefabType == PrefabType.PrefabInstance)
+                        if (prefabType != PrefabType.MissingPrefabInstance)
                         {
+                            // Revert this gameobject and components to prefab
                             if (GUILayout.Button("Revert", "MiniButtonMid"))
                             {
-                                RevertAndCheckForNewComponents(go);
-                            }
-                        }
+                                PrefabUtility.RevertPrefabInstanceWithUndo(go);
 
-                        // Apply to prefab
-                        if (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance)
-                        {
-                            GameObject rootUploadGameObject = PrefabUtility.FindValidUploadPrefabInstanceRoot(go);
-
-                            GUI.enabled = rootUploadGameObject != null && !AnimationMode.InAnimationMode();
-
-                            if (GUILayout.Button("Apply", "MiniButtonRight"))
-                            {
-                                UnityObject prefabParent = PrefabUtility.GetPrefabParent(rootUploadGameObject);
-                                string prefabAssetPath = AssetDatabase.GetAssetPath(prefabParent);
-
-                                bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
-                                        new string[] {prefabAssetPath},
-                                        "The version control requires you to check out the prefab before applying changes.");
-
-                                if (editablePrefab)
+                                // case931300 - The selected gameobject might get destroyed by RevertPrefabInstance
+                                if (go != null)
                                 {
-                                    PrefabUtility.ReplacePrefab(rootUploadGameObject, prefabParent, ReplacePrefabOptions.ConnectToPrefab);
                                     CalculatePrefabStatus();
+                                }
 
-                                    // Preferably we would do
-                                    // Undo.RegisterFullObjectHierarchyUndo (prefabParent, "Apply instance to prefab");
-                                    // Undo.RegisterFullObjectHierarchyUndo (rootUploadGameObject, "Apply instance to prefab");
-                                    // before calling ReplacePrefab in order make the action undoable, but unfortunately this cannot be done
-                                    // untill we also make the prefab changes undoable. The problem with the prefab is that Apply might add
-                                    // new objects which RegisterFullObjectHierarchyUndo can't handle.
-                                    // So for now we simply mark the scene dirty (case 757027)
-                                    // We cannot mark scenes as dirty during playmode (case 839124)
-                                    if (!Application.isPlaying)
-                                        EditorSceneManager.MarkSceneDirty(rootUploadGameObject.scene);
+                                // This is necessary because Revert can potentially destroy game objects and components
+                                // In that case the Editor classes would be destroyed but still be invoked. (case 837113)
+                                GUIUtility.ExitGUI();
+                            }
 
-                                    // This is necessary because ReplacePrefab can potentially destroy game objects and components
-                                    // In that case the Editor classes would be destroyed but still be invoked. (case 468434)
-                                    GUIUtility.ExitGUI();
+                            // Apply to prefab
+                            if (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance)
+                            {
+                                GameObject rootUploadGameObject = PrefabUtility.FindValidUploadPrefabInstanceRoot(go);
+
+                                GUI.enabled = rootUploadGameObject != null && !AnimationMode.InAnimationMode();
+
+                                if (GUILayout.Button("Apply", "MiniButtonRight"))
+                                {
+                                    UnityObject prefabParent = PrefabUtility.GetPrefabParent(rootUploadGameObject);
+                                    string prefabAssetPath = AssetDatabase.GetAssetPath(prefabParent);
+
+                                    bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
+                                            new string[] { prefabAssetPath },
+                                            "The version control requires you to check out the prefab before applying changes.");
+
+                                    if (editablePrefab)
+                                    {
+                                        PrefabUtility.ReplacePrefabWithUndo(rootUploadGameObject);
+
+                                        CalculatePrefabStatus();
+
+                                        // This is necessary because ReplacePrefab can potentially destroy game objects and components
+                                        // In that case the Editor classes would be destroyed but still be invoked. (case 468434)
+                                        GUIUtility.ExitGUI();
+                                    }
                                 }
                             }
                         }
@@ -390,112 +370,6 @@ namespace UnityEditor
                     }
                 }
                 EditorGUILayout.EndHorizontal();
-            }
-        }
-
-        public void RevertAndCheckForNewComponents(GameObject gameObject)
-        {
-            // Take a snapshot of the GO hierarchy before the revert
-            var hierarchy = new List<UnityObject>();
-            GetObjectListFromHierarchy(hierarchy, gameObject);
-
-            Undo.RegisterFullObjectHierarchyUndo(gameObject, "Revert Prefab Instance");
-            PrefabUtility.RevertPrefabInstance(gameObject);
-            CalculatePrefabStatus();
-
-            // Take a snapshot of the GO hierarchy after the revert
-            var newHierarchy = new List<UnityObject>();
-            GetObjectListFromHierarchy(newHierarchy, gameObject);
-
-            // Add RegisterCreatedObjectUndo for any new components added during the revert so that they are removed if undo is triggered
-            RegisterNewComponents(newHierarchy, hierarchy);
-        }
-
-        private void GetObjectListFromHierarchy(List<UnityObject> hierarchy, GameObject gameObject)
-        {
-            Transform transform = null;
-            List<Component> components = new List<Component>();
-            gameObject.GetComponents(components);
-            foreach (var component in components)
-            {
-                if (component is Transform)
-                {
-                    transform = component as Transform;
-                }
-                else
-                {
-                    hierarchy.Add(component);
-                }
-            }
-
-            if (transform != null)
-            {
-                int childCount = transform.childCount;
-                for (var i = 0; i < childCount; i++)
-                {
-                    GetObjectListFromHierarchy(hierarchy, transform.GetChild(i).gameObject);
-                }
-            }
-        }
-
-        private void RegisterNewComponents(List<UnityObject> newHierarchy, List<UnityObject> hierarchy)
-        {
-            var danglingComponents = new List<Component>();
-
-            foreach (var i in newHierarchy)
-            {
-                var found = false;
-                foreach (var j in hierarchy)
-                {
-                    if (j.GetInstanceID() == i.GetInstanceID())
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    danglingComponents.Add(i as Component);
-                }
-            }
-
-            // We need to ensure that dangling components are registered in an acceptable order regarding dependencies. For example, if we're adding RigidBody and ConfigurableJoint, the RigidBody will need to be added first (as the ConfigurableJoint depends upon it existing)
-            var addedTypes = new HashSet<Type>()
-            {
-                typeof(Transform)
-            };
-            var emptyPass = false;
-            while (danglingComponents.Count > 0 && !emptyPass)
-            {
-                emptyPass = true;
-                for (var i = 0; i < danglingComponents.Count; i++)
-                {
-                    var component = danglingComponents[i];
-                    var reqs = component.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
-                    var requiredComponentsExist = true;
-                    foreach (RequireComponent req in reqs)
-                    {
-                        if ((req.m_Type0 != null && !addedTypes.Contains(req.m_Type0)) || (req.m_Type1 != null && !addedTypes.Contains(req.m_Type1)) || (req.m_Type2 != null && !addedTypes.Contains(req.m_Type2)))
-                        {
-                            requiredComponentsExist = false;
-                            break;
-                        }
-                    }
-                    if (requiredComponentsExist)
-                    {
-                        Undo.RegisterCreatedObjectUndo(component, "Dangling component");
-                        addedTypes.Add(component.GetType());
-                        danglingComponents.RemoveAt(i);
-                        i--;
-                        emptyPass = false;
-                    }
-                }
-            }
-
-            Debug.Assert(danglingComponents.Count == 0, "Dangling components have unfulfilled dependencies");
-            foreach (var component in danglingComponents)
-            {
-                Undo.RegisterCreatedObjectUndo(component, "Dangling component");
             }
         }
 
