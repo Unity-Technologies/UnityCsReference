@@ -61,10 +61,11 @@ namespace UnityEngine.Events
                     curCall.Invoke();
                 else
                 {
+                    var cachedCurCall = calls[i];
                     if (m_InvokeArray == null)
                         m_InvokeArray = new object[0];
 
-                    Invoke(m_InvokeArray);
+                    cachedCurCall.Invoke(m_InvokeArray);
                 }
             }
         }

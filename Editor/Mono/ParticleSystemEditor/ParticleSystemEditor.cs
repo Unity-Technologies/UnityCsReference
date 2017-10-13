@@ -115,6 +115,9 @@ namespace UnityEditor
 
                     GUIContent text = null;
                     ParticleSystemWindow window = ParticleSystemWindow.GetInstance();
+                    if (window)
+                        window.customEditor = this; // window can be created by LoadWindowLayout, when Editor starts up, so always make sure the custom editor member is set up (case 930005)
+
                     if (window && window.IsVisible() && alreadySelected)
                     {
                         if (window.GetNumTabs() > 1)
