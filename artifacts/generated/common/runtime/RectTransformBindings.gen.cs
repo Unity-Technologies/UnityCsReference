@@ -53,7 +53,6 @@ public enum DrivenTransformProperties
 public partial struct DrivenRectTransformTracker
 {
     
-            private Object m_Driver;
             private List<RectTransform> m_Tracked;
     
     
@@ -66,21 +65,24 @@ public partial struct DrivenRectTransformTracker
             if (m_Tracked == null)
                 m_Tracked = new List<RectTransform>();
 
-            Debug.AssertFormat(m_Driver == driver || m_Driver == null, "DrivenRectTransformTracker only supports a single driver.");
+            rectTransform.drivenByObject = driver;
+            rectTransform.drivenProperties = rectTransform.drivenProperties | drivenProperties;
 
-            rectTransform.AddDrivenProperties(driver, drivenProperties);
-            m_Driver = driver;
+            if (!Application.isPlaying && CanRecordModifications())
+                RuntimeUndo.RecordObject(rectTransform, "Driving RectTransform");
+
             m_Tracked.Add(rectTransform);
         }
     
     
-    [uei.ExcludeFromDocs]
-public void Clear () {
-    bool revertValues = true;
-    Clear ( revertValues );
-}
-
-public void Clear( [uei.DefaultValue("true")] bool revertValues )
+    [Obsolete("revertValues parameter is ignored. Please use Clear() instead.")]
+    public void Clear(bool revertValues)
+        {
+            Clear();
+        }
+    
+    
+    public void Clear()
         {
             if (m_Tracked != null)
             {
@@ -88,14 +90,15 @@ public void Clear( [uei.DefaultValue("true")] bool revertValues )
                 {
                     if (m_Tracked[i] != null)
                     {
-                        m_Tracked[i].ClearDrivenProperties(m_Driver, revertValues);
+                        if (!Application.isPlaying && CanRecordModifications())
+                            RuntimeUndo.RecordObject(m_Tracked[i], "Driving RectTransform");
+
+                        m_Tracked[i].drivenByObject = null;
                     }
                 }
-                m_Driver = null;
                 m_Tracked.Clear();
             }
         }
-
     
     
 }
@@ -198,22 +201,24 @@ public sealed partial class RectTransform : Transform
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void INTERNAL_set_pivot (ref Vector2 value) ;
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void AddDrivenProperties (Object driver, DrivenTransformProperties drivenProperties) ;
+    internal extern  Object drivenByObject
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void ClearDrivenProperties (Object driver, bool revertValues) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool IsDriven ( [uei.DefaultValue("DrivenTransformProperties.All")] DrivenTransformProperties properties ) ;
-
-    [uei.ExcludeFromDocs]
-    internal bool IsDriven () {
-        DrivenTransformProperties properties = DrivenTransformProperties.All;
-        return IsDriven ( properties );
+    internal extern  DrivenTransformProperties drivenProperties
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
     }
 
     public delegate void ReapplyDrivenProperties(RectTransform driven);

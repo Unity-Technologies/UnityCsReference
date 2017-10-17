@@ -111,7 +111,7 @@ namespace UnityEditor
                         newSizeDelta.x = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.x, minDifference.x);
                         newSizeDelta.y = MathUtils.RoundBasedOnMinimumDifference(newSizeDelta.y, minDifference.y);
                         rectTransform.sizeDelta = newSizeDelta;
-                        if (rectTransform.IsDriven())
+                        if (rectTransform.drivenByObject != null)
                             RectTransform.SendReapplyDrivenProperties(rectTransform);
                         return;
                     }
@@ -185,7 +185,7 @@ namespace UnityEditor
 
                     rectTransform.anchoredPosition = newAnchoredPosition;
 
-                    if (rectTransform.IsDriven())
+                    if (rectTransform.drivenByObject != null)
                         RectTransform.SendReapplyDrivenProperties(rectTransform);
                 }
             }

@@ -123,6 +123,7 @@ namespace UnityEditor
 
         private static int s_ColorPickID;
 
+        private static int s_CurveID;
         internal static Color kCurveColor = Color.green;
         internal static Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
         internal static EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
@@ -4396,7 +4397,7 @@ namespace UnityEditor
         {
             if (property != null)
             {
-                CurveEditorWindow.property = property;
+                CurveEditorWindow.curve = property.hasMultipleDifferentValues ? new AnimationCurve() : property.animationCurveValue;
             }
             else
             {
@@ -4413,12 +4414,24 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (MatchesCurvePopup(value, property))
+            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
             {
-                if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                if (s_CurveID != id)
                 {
-                    SetCurveEditorWindowCurve(value, property, color);
-                    CurveEditorWindow.instance.Repaint();
+                    s_CurveID = id;
+                    if (CurveEditorWindow.visible)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        ShowCurvePopup(GUIView.current, ranges);
+                    }
+                }
+                else
+                {
+                    if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        CurveEditorWindow.instance.Repaint();
+                    }
                 }
             }
 
@@ -4427,6 +4440,8 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition))
                     {
+                        s_CurveID = id;
+                        GUIUtility.keyboardControl = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4448,8 +4463,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-
-                    if (MatchesCurvePopup(value, property))
+                    if (s_CurveID == id)
                     {
                         switch (evt.commandName)
                         {
@@ -4472,6 +4486,7 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(id))
                     {
+                        s_CurveID = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4494,20 +4509,6 @@ namespace UnityEditor
                 settings.vRangeMax = ranges.yMax;
             }
             CurveEditorWindow.instance.Show(GUIView.current, settings);
-        }
-
-        private static bool MatchesCurvePopup(AnimationCurve curve, SerializedProperty property)
-        {
-            if (curve != null)
-                return curve == CurveEditorWindow.curve;
-
-            if (CurveEditorWindow.property == null)
-                return false;
-
-            if (CurveEditorWindow.property.serializedObject == null)
-                return false;
-
-            return SerializedProperty.EqualContents(property, CurveEditorWindow.property);
         }
 
         private static bool ValidTargetForIconSelection(Object[] targets)

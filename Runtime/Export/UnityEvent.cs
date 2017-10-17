@@ -173,7 +173,7 @@ namespace UnityEngine.Events
             // Case 827748: You can't compare Delegate.GetMethodInfo() == method, because sometimes it will not work, that's why we're using Equals instead, because it will compare that actual method inside.
             //              Comment from Microsoft:
             //              Desktop behavior regarding identity has never really been guaranteed. The desktop aggressively caches and reuses MethodInfo objects so identity checks often work by accident.
-            //              .Net Native doesn�t guarantee identity and caches a lot less
+            //              .Net Native doesn’t guarantee identity and caches a lot less
             return Delegate.Target == targetObj && Delegate.GetMethodInfo().Equals(method);
         }
     }

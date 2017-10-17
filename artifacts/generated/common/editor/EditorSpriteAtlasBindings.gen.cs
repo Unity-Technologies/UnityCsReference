@@ -38,22 +38,22 @@ internal sealed partial class SpriteAtlasTextureSettings
     internal uint m_CompressionQuality;
     internal uint m_MaxTextureSize;
     internal TextureImporterCompression m_TextureCompression;
-    internal ColorSpace m_ColorSpace;
     internal FilterMode m_FilterMode;
     internal int m_GenerateMipMaps;
     internal int m_Readable;
     internal int m_CrunchedCompression;
+    internal int m_sRGB;
     
     
     public uint anisoLevel { get {return m_AnisoLevel; } set {m_AnisoLevel = value; } }
     public uint compressionQuality { get {return m_CompressionQuality; } set {m_CompressionQuality = value; } }
     public uint maxTextureSize { get {return m_MaxTextureSize; } set {m_MaxTextureSize = value; } }
     public TextureImporterCompression textureCompression { get {return m_TextureCompression; } set {m_TextureCompression = value; } }
-    public ColorSpace colorSpace { get {return m_ColorSpace; } set {m_ColorSpace = value; } }
     public FilterMode filterMode { get {return m_FilterMode; } set {m_FilterMode = value; } }
     public bool generateMipMaps { get {return m_GenerateMipMaps != 0; } set {m_GenerateMipMaps = value ? 1 : 0; } }
     public bool readable { get {return m_Readable != 0; } set {m_Readable = value ? 1 : 0; } }
     public bool crunchedCompression { get {return m_CrunchedCompression != 0; } set {m_CrunchedCompression = value ? 1 : 0; } }
+    public bool sRGB { get {return m_sRGB != 0; } set {m_sRGB = value ? 1 : 0; } }
 }
 
 [StructLayout(LayoutKind.Sequential)]

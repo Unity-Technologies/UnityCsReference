@@ -47,6 +47,9 @@ namespace UnityEngine.iOS
         iPad5Gen        = 34,
         iPadPro2Gen     = 35,
         iPadPro10Inch2Gen = 36,
+        iPhone8         = 37,
+        iPhone8Plus     = 38,
+        iPhoneX         = 39,
 
         iPhoneUnknown       = 10001,
         iPadUnknown         = 10002,
