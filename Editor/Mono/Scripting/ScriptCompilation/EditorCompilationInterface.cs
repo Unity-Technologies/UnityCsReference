@@ -20,10 +20,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 if (editorCompilation == null)
                 {
-                    CompilationPipeline.ClearEditorCompilationErrors(); // Clear all errors on domain reload.
-
                     editorCompilation = new EditorCompilation();
                     editorCompilation.setupErrorFlagsChanged += ClearErrors;
+
+                    // Clear the errors after creating editorCompilation,
+                    // as it is accessed in the CompilationPipeline cctor.
+                    CompilationPipeline.ClearEditorCompilationErrors(); // Clear all errors on domain reload.
                 }
 
                 return editorCompilation;

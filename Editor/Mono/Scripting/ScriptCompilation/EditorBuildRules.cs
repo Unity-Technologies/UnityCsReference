@@ -134,7 +134,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var customAssembly in customScriptAssemblies)
             {
-                if (predefinedTargetAssemblies.Any(p => AssetPath.GetFileNameWithoutExtension(p.Filename) == customAssembly.Name))
+                if (predefinedTargetAssemblies.Any(p => AssetPath.GetAssemblyNameWithoutExtension(p.Filename) == customAssembly.Name))
                 {
                     throw new Exception(string.Format("Assembly cannot be have reserved name '{0}'. Defined in '{1}'", customAssembly.Name, customAssembly.FilePath));
                 }
@@ -370,9 +370,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 if (!string.IsNullOrEmpty(settings.FilenameSuffix))
                 {
-                    var basename = AssetPath.GetFileNameWithoutExtension(targetAssembly.Filename);
-                    var extension = AssetPath.GetExtension(targetAssembly.Filename);
-                    scriptAssembly.Filename = string.Concat(basename, settings.FilenameSuffix, extension);
+                    var basename = AssetPath.GetAssemblyNameWithoutExtension(targetAssembly.Filename);
+                    scriptAssembly.Filename = string.Concat(basename, settings.FilenameSuffix, ".dll");
                 }
                 else
                     scriptAssembly.Filename = targetAssembly.Filename;
