@@ -528,6 +528,8 @@ namespace UnityEngine
         public float GetFloat(int nameID)       { return GetFloatImpl(nameID); }
         public Vector4 GetVector(string name)   { return GetVector(Shader.PropertyToID(name)); }
         public Vector4 GetVector(int nameID)    { return GetVectorImpl(nameID); }
+        public Color GetColor(string name)   { return GetColor(Shader.PropertyToID(name)); }
+        public Color GetColor(int nameID)    { return GetColorImpl(nameID); }
         public Matrix4x4 GetMatrix(string name) { return GetMatrix(Shader.PropertyToID(name)); }
         public Matrix4x4 GetMatrix(int nameID)  { return GetMatrixImpl(nameID); }
 

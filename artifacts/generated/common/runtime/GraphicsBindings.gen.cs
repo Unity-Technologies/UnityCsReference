@@ -379,6 +379,15 @@ public sealed partial class MaterialPropertyBlock
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetVectorImpl (MaterialPropertyBlock self, int nameID, out Vector4 value);
+    private Color GetColorImpl (int nameID) {
+        Color result;
+        INTERNAL_CALL_GetColorImpl ( this, nameID, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetColorImpl (MaterialPropertyBlock self, int nameID, out Color value);
     private Matrix4x4 GetMatrixImpl (int nameID) {
         Matrix4x4 result;
         INTERNAL_CALL_GetMatrixImpl ( this, nameID, out result );

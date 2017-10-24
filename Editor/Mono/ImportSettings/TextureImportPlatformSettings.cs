@@ -193,6 +193,9 @@ namespace UnityEditor
                 case BuildTarget.WiiU:
                     testValues = kTextureFormatsValueWiiU;
                     break;
+                case BuildTarget.Switch:
+                    testValues = kTextureFormatsValueSwitch;
+                    break;
                 // on gles mobile targets we use rgb normal maps, so we can use whatever format we want
                 case BuildTarget.iOS:
                 case BuildTarget.tvOS:
@@ -332,6 +335,35 @@ namespace UnityEditor
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA32,
             (int)TextureImporterFormat.RGBA16, // R4G4B4A4
+        };
+
+        public static readonly int[] kTextureFormatsValueSwitch =
+        {
+            (int)TextureImporterFormat.DXT1,
+            (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT1Crunched,
+            (int)TextureImporterFormat.DXT5Crunched,
+            (int)TextureImporterFormat.RGB16,
+            (int)TextureImporterFormat.RGB24,
+            (int)TextureImporterFormat.Alpha8,
+            (int)TextureImporterFormat.ARGB16,
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
+            (int)TextureImporterFormat.BC4,
+            (int)TextureImporterFormat.BC5,
+
+            (int)TextureImporterFormat.ASTC_RGB_4x4,
+            (int)TextureImporterFormat.ASTC_RGB_5x5,
+            (int)TextureImporterFormat.ASTC_RGB_6x6,
+            (int)TextureImporterFormat.ASTC_RGB_8x8,
+            (int)TextureImporterFormat.ASTC_RGB_10x10,
+            (int)TextureImporterFormat.ASTC_RGB_12x12,
+            (int)TextureImporterFormat.ASTC_RGBA_4x4,
+            (int)TextureImporterFormat.ASTC_RGBA_5x5,
+            (int)TextureImporterFormat.ASTC_RGBA_6x6,
+            (int)TextureImporterFormat.ASTC_RGBA_8x8,
+            (int)TextureImporterFormat.ASTC_RGBA_10x10,
+            (int)TextureImporterFormat.ASTC_RGBA_12x12,
         };
 
         public static readonly int[] kTextureFormatsValueApplePVR =

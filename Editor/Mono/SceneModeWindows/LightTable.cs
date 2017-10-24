@@ -29,7 +29,11 @@ namespace UnityEditor
             public static readonly GUIContent GlobalIllumination = EditorGUIUtility.TextContent("Global Illumination");
             public static readonly GUIContent SelectObjects = EditorGUIUtility.TextContent("");
             public static readonly GUIContent SelectObjectsButton = EditorGUIUtility.TextContentWithIcon("|Find References in Scene", "UnityEditor.FindDependencies");
+
+            public static readonly GUIContent[] LightmapBakeTypeTitles = { new GUIContent("Realtime"), new GUIContent("Mixed"), new GUIContent("Baked") };
+            public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
         }
+
         private const float kMaxfp16 = 65536f; // Clamp to a value that fits into fp16.
         static ColorPickerHDRConfig s_ColorPickerHDRConfig = new ColorPickerHDRConfig(0f, kMaxfp16, 1 / kMaxfp16, 3f);
 
@@ -113,7 +117,20 @@ namespace UnityEditor
                     propertyName            = "m_Lightmapping",
                     dependencyIndices       = new int[] { 2 },
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
-                    drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
+                    drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                        {
+                            bool areaLight = dep.Length > 1 && dep[0].enumValueIndex == (int)LightType.Area;
+
+                            using (new EditorGUI.DisabledScope(areaLight))
+                            {
+                                EditorGUI.BeginChangeCheck();
+                                int newval = EditorGUI.IntPopup(r, prop.intValue, Styles.LightmapBakeTypeTitles, Styles.LightmapBakeTypeValues);
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    prop.intValue = newval;
+                                }
+                            }
+                        }
                 },
                 new SerializedPropertyTreeView.Column // 4: Color
                 {
