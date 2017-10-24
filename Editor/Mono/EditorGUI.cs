@@ -392,6 +392,7 @@ namespace UnityEditor
             internal string controlThatHadFocusValue = "";
             private GUIView viewThatHadFocus;
             private bool m_CommitCommandSentOnLostFocus;
+            private const string CommitCommand = "DelayedControlShouldCommit";
 
             private bool m_IgnoreBeginGUI = false;
 
@@ -436,7 +437,7 @@ namespace UnityEditor
                     if (GUIView.current == viewThatHadFocus)
                         viewThatHadFocus.SetKeyboardControl(GUIUtility.keyboardControl);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
                     m_IgnoreBeginGUI = false;
                     //              Debug.Log ("Afterwards: " + GUIUtility.keyboardControl);
                     messageControl = 0;
@@ -458,26 +459,27 @@ namespace UnityEditor
                     var temp = GUIUtility.keyboardControl;
                     viewThatHadFocus.SetKeyboardControl(0);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
                     m_IgnoreBeginGUI = false;
                     viewThatHadFocus.SetKeyboardControl(temp);
+                    messageControl = 0;
                 }
 
                 base.EndEditing();
-                messageControl = 0;
             }
 
             //*undocumented*
             public string OnGUI(int id, string value, out bool changed)
             {
                 Event evt = Event.current;
-                if (evt.type == EventType.ExecuteCommand && evt.commandName == "DelayedControlShouldCommit" && id == messageControl)
+                if (evt.type == EventType.ExecuteCommand && evt.commandName == CommitCommand && id == messageControl)
                 {
                     m_CommitCommandSentOnLostFocus = false;
-                    changed = value != controlThatHadFocusValue;
                     // Only set changed to true if the value has actually changed. Otherwise EditorGUI.EndChangeCheck will report false positives,
                     // which could for example cause unwanted undo's to be registered (in the case of e.g. editing terrain resolution, this can cause several seconds of delay)
+                    changed = value != controlThatHadFocusValue;
                     evt.Use();
+                    messageControl = 0;
                     return controlThatHadFocusValue;
                 }
                 changed = false;
@@ -680,17 +682,14 @@ namespace UnityEditor
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
                 }
-                else
+                else if (s_DragCandidateState == 0)
                 {
                     // This one is worse: we are the new keyboardControl, but didn't know about it.
                     // this means a Tab operation or setting focus from code.
-                    if (EditorGUIUtility.editingTextField)
-                    {
-                        editor.BeginEditing(id, text, position, style, multiline, passwordField);
-                        // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
-                        if (GUI.skin.settings.cursorColor.a > 0)
-                            editor.SelectAll();
-                    }
+                    editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                    // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
+                    if (GUI.skin.settings.cursorColor.a > 0)
+                        editor.SelectAll();
                 }
             }
 

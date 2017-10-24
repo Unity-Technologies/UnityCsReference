@@ -109,6 +109,9 @@ namespace UnityEditor
             public readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TextContent("Realtime indirect bounce shadowing is not supported for Spot and Point lights.");
             public readonly GUIContent CookieWarning = EditorGUIUtility.TextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
             public readonly GUIContent DisabledLightWarning = EditorGUIUtility.TextContent("Lighting has been disabled in at least one Scene view. Any changes applied to lights in the Scene will not be updated in these views until Lighting has been enabled again.");
+
+            public readonly GUIContent[] LightmapBakeTypeTitles = { new GUIContent("Realtime"), new GUIContent("Mixed"), new GUIContent("Baked") };
+            public readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
         }
 
         static Styles s_Styles;
@@ -186,7 +189,7 @@ namespace UnityEditor
             // Baking type
             if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
             {
-                EditorGUILayout.PropertyField(m_Lightmapping, s_Styles.LightmappingMode);
+                EditorGUILayout.IntPopup(m_Lightmapping, s_Styles.LightmapBakeTypeTitles, s_Styles.LightmapBakeTypeValues, s_Styles.LightmappingMode);
 
                 // Warning if GI Baking disabled and m_Lightmapping isn't realtime
                 if (bakingWarningValue)

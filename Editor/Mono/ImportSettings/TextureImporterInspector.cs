@@ -359,6 +359,7 @@ namespace UnityEditor
 #pragma warning disable 649
         internal static string[] s_TextureFormatStringsAll;
         internal static string[] s_TextureFormatStringsWiiU;
+        internal static string[] s_TextureFormatStringsSwitch;
         internal static string[] s_TextureFormatStringsWebGL;
         internal static string[] s_TextureFormatStringsApplePVR;
         internal static string[] s_TextureFormatStringsAndroid;
@@ -1469,6 +1470,8 @@ namespace UnityEditor
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsWiiU == null)
                 s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsSwitch == null)
+                s_TextureFormatStringsSwitch = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSwitch);
             if (s_TextureFormatStringsDefault == null)
                 s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
             if (s_NormalFormatStringsDefault == null)

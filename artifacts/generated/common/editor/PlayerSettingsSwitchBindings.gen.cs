@@ -47,6 +47,9 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             CanadianFrench,
             Portuguese,
             Russian,
+            SimplifiedChinese,
+            TraditionalChinese,
+            Korean,
         }
 
         public enum StartupUserAccount        
@@ -72,7 +75,6 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         public enum LogoType        
         {
             LicensedByNintendo = 0,
-            DistributedByNintendo = 1,
             Nintendo = 2
         }
 
@@ -495,6 +497,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             get;
         }
 
+        [Obsolete("isAllowsScreenshot has been deprecated. Use isScreenshotEnabled instead (UnityUpgradable) -> isScreenshotEnabled", true)]
         public extern static bool isAllowsScreenshot
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -505,7 +508,48 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
+        public extern static bool isScreenshotEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static bool isVideoCapturingEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static bool isRuntimeAddOnContentInstallEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        [Obsolete("isDataLossConfirmation has been deprecated. Use isDataLossConfirmationEnabled instead (UnityUpgradable) -> isDataLossConfirmationEnabled", true)]
         public extern static bool isDataLossConfirmation
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static bool isDataLossConfirmationEnabled
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
