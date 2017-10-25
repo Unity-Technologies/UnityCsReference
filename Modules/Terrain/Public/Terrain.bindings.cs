@@ -208,5 +208,6 @@ namespace UnityEngine
     // link.xml will actually whitelist it from being stripped, which requires the class name to exist in managed land (case 773309)
     internal sealed partial class SpeedTreeWindAsset : Object
     {
+        private SpeedTreeWindAsset() {}
     }
 }

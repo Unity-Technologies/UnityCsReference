@@ -68,5 +68,4 @@ public sealed partial class Cursor
 
 }
 
-
 }

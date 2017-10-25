@@ -191,6 +191,11 @@ namespace UnityEditor
             if (extraProperty1 == null && extraProperty2 == null)
                 return r;
 
+            // Temporarily reset the indent level as it was already used earlier to compute the positions of the layout items. See issue 946082.
+            int oldIndentLevel = EditorGUI.indentLevel;
+
+            EditorGUI.indentLevel = 0;
+
             // One extra property
             if (extraProperty1 == null || extraProperty2 == null)
             {
@@ -217,6 +222,8 @@ namespace UnityEditor
                     ExtraPropertyAfterTexture(GetFlexibleRectBetweenLabelAndField(r), extraProperty1);
                 }
             }
+            // Restore the indent level
+            EditorGUI.indentLevel = oldIndentLevel;
             return r;
         }
 

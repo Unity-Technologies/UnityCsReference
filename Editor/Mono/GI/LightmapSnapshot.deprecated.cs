@@ -7,6 +7,7 @@ namespace UnityEditor
 {
     //Originally class was defined in Lightmapping.bindings
     [System.Obsolete("LightmapSnapshot has been deprecated. Use LightingDataAsset instead (UnityUpgradable) -> LightingDataAsset", true)]
+    [UnityEngine.NativeClass(null)]
     public class LightmapSnapshot : UnityEngine.Object // No **partial** needed since it is a **type** rename
     {
         //Original class had no public members

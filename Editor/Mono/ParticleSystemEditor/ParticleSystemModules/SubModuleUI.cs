@@ -21,6 +21,8 @@ namespace UnityEditor
             Birth = 0,
             Collision,
             Death,
+            Trigger,
+            Manual,
             TypesMax,
         };
 
@@ -33,7 +35,9 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TextContent("Birth"),
                 EditorGUIUtility.TextContent("Collision"),
-                EditorGUIUtility.TextContent("Death")
+                EditorGUIUtility.TextContent("Death"),
+                EditorGUIUtility.TextContent("Trigger"),
+                EditorGUIUtility.TextContent("Manual")
             };
 
             // Keep in sync with SubModule::InheritedProperties
@@ -90,7 +94,7 @@ namespace UnityEditor
 
                         if (ValidateSubemitter(newSubEmitter))
                         {
-                            string errorMsg = ParticleSystemEditorUtils.CheckCircularReferences(newSubEmitter);
+                            string errorMsg = ParticleSystemEffectUtils.CheckCircularReferences(newSubEmitter);
                             if (errorMsg.Length == 0)
                             {
                                 // Ok there is no circular references, now check if its a child
@@ -161,7 +165,8 @@ namespace UnityEditor
         private bool CheckIfChild(Object subEmitter)
         {
             ParticleSystem root = ParticleSystemEditorUtils.GetRoot(m_ParticleSystemUI.m_ParticleSystems[0]);
-            if (IsChild(subEmitter as ParticleSystem, root))
+            ParticleSystem ps = subEmitter as ParticleSystem;
+            if (IsChild(ps, root))
             {
                 return true;
             }
@@ -185,14 +190,18 @@ namespace UnityEditor
                 }
                 else
                 {
-                    ParticleSystem ps = subEmitter as ParticleSystem;
-                    if (ps)
+                    if (ps != null)
                     {
                         Undo.SetTransformParent(ps.gameObject.transform.transform, m_ParticleSystemUI.m_ParticleSystems[0].transform, "Reparent sub emitter");
                     }
                 }
 
                 return true;
+            }
+            else if (ps != null)
+            {
+                // Clear sub-emitters that have been deselected, to avoid having their particles left paused in the Scene View (case 946999)
+                ps.Clear(true);
             }
 
             return false;
@@ -247,6 +256,11 @@ namespace UnityEditor
 
                     // We need to let the ObjectSelector finish its SendEvent and therefore delay showing dialog
                     m_CheckObjectIndex = i;
+
+                    // Clear sub-emitters that have been deselected, to avoid having their particles left paused in the Scene View (case 946999)
+                    ParticleSystem ps = props[i] as ParticleSystem;
+                    if (ps)
+                        ps.Clear(true);
                 }
             }
         }

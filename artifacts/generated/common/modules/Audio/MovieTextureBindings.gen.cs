@@ -21,6 +21,9 @@ namespace UnityEngine
 
 public sealed partial class MovieTexture : Texture
 {
+    private MovieTexture() {}
+    
+    
     public void Play () {
         INTERNAL_CALL_Play ( this );
     }
@@ -81,5 +84,6 @@ public sealed partial class MovieTexture : Texture
     }
 
 }
+
 
 }

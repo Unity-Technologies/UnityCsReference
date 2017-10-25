@@ -6,6 +6,28 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
+using uei = UnityEngine.Internal;
+
+namespace UnityEngine
+{
+    internal sealed partial class NoAllocHelpers
+    {
+        public static T[] ExtractArrayFromListT<T>(List<T> list) { return (T[])ExtractArrayFromList(list); }
+
+        public static void EnsureListElemCount<T>(List<T> list, int count)
+        {
+            list.Clear();
+
+            // make sure capacity is enough (that's where alloc WILL happen if needed)
+            if (list.Capacity < count)
+                list.Capacity = count;
+
+            ResizeList(list, count);
+        }
+    }
+}
+
 
 namespace UnityEngine
 {
@@ -337,6 +359,7 @@ namespace UnityEngine
         public bool useLightProbes;
     }
 
+    [VisibleToOtherModules("UnityEngine.IMGUIModule")]
     internal struct Internal_DrawTextureArguments
     {
         public Rect screenRect, sourceRect;
@@ -437,7 +460,7 @@ namespace UnityEngine
             if (matrices.Count > kMaxDrawMeshInstanceCount)
                 throw new ArgumentOutOfRangeException("matrices", String.Format("Matrix list count must be in the range of 0 to {0}.", kMaxDrawMeshInstanceCount));
 
-            DrawMeshInstancedImpl(mesh, submeshIndex, material, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera);
+            DrawMeshInstancedImpl(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromListT(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera);
         }
 
         // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
@@ -462,6 +485,53 @@ namespace UnityEngine
 
 
 //
+// Graphics.Blit*
+//
+
+
+namespace UnityEngine
+{
+    public partial class Graphics
+    {
+        public static void Blit(Texture source, RenderTexture dest)
+        {
+            Blit2(source, dest);
+        }
+
+        public static void Blit(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset)
+        {
+            Blit4(source, dest, scale, offset);
+        }
+
+        public static void Blit(Texture source, RenderTexture dest, Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            Internal_BlitMaterial(source, dest, mat, pass, true);
+        }
+
+        public static void Blit(Texture source, RenderTexture dest, Material mat)
+        {
+            Blit(source, dest, mat, -1);
+        }
+
+        public static void Blit(Texture source, Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            Internal_BlitMaterial(source, null, mat, pass, false);
+        }
+
+        public static void Blit(Texture source, Material mat)
+        {
+            Blit(source, mat, -1);
+        }
+
+        public static void BlitMultiTap(Texture source, RenderTexture dest, Material mat, params Vector2[] offsets)
+        {
+            Internal_BlitMultiTap(source, dest, mat, offsets);
+        }
+    }
+}
+
+
+//
 // MaterialPropertyBlock
 //
 
@@ -470,108 +540,110 @@ namespace UnityEngine
 {
     public sealed partial class MaterialPropertyBlock
     {
-        public void SetFloat(string name, float value)          { SetFloat(Shader.PropertyToID(name), value); }
-        public void SetFloat(int nameID, float value)           { SetFloatImpl(nameID, value); }
-        public void SetVector(string name, Vector4 value)       { SetVector(Shader.PropertyToID(name), value); }
-        public void SetVector(int nameID, Vector4 value)        { SetVectorImpl(nameID, value); }
-        public void SetColor(string name, Color value)          { SetColor(Shader.PropertyToID(name), value); }
-        public void SetColor(int nameID, Color value)           { SetColorImpl(nameID, value); }
-        public void SetMatrix(string name, Matrix4x4 value)     { SetMatrix(Shader.PropertyToID(name), value); }
-        public void SetMatrix(int nameID, Matrix4x4 value)      { SetMatrixImpl(nameID, value); }
-        public void SetBuffer(string name, ComputeBuffer value) { SetBuffer(Shader.PropertyToID(name), value); }
-        public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
+        internal void SetValue<T>(int name, T value)    { SetValueImpl(name, value, typeof(T)); }
+        internal void SetValue<T>(string name, T value) { SetValueImpl(Shader.PropertyToID(name), value, typeof(T)); }
 
-        public void SetTexture(string name, Texture value)      { SetTexture(Shader.PropertyToID(name), value); }
-        public void SetTexture(int nameID, Texture value)
-        {
-            if (value == null) throw new ArgumentNullException("value");
-            SetTextureImpl(nameID, value);
-        }
+        internal T    GetValue<T>(int name)     { return (T)GetValueImpl(name, typeof(T)); }
+        internal T    GetValue<T>(string name)  { return (T)GetValueImpl(Shader.PropertyToID(name), typeof(T)); }
 
-        public void SetFloatArray(string name, List<float> values) { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)  { SetFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetFloatArray(string name, float[] values)     { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, float[] values)      { SetFloatArray(nameID, values, values.Length); }
-        private void SetFloatArray(int nameID, float[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetFloatArrayImpl(nameID, values, count);
-        }
+        internal void SetValueArray<T>(int name, List<T> values)    { SetValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count, typeof(T)); }
+        internal void SetValueArray<T>(string name, List<T> values) { SetValueArray<T>(Shader.PropertyToID(name), values); }
+        internal void SetValueArray<T>(int name, T[] values)        { SetValueArrayImpl(name, values, values.Length, typeof(T)); }
+        internal void SetValueArray<T>(string name, T[] values)     { SetValueArray<T>(Shader.PropertyToID(name), values); }
 
-        public void SetVectorArray(string name, List<Vector4> values) { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)  { SetVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetVectorArray(string name, Vector4[] values)     { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, Vector4[] values)      { SetVectorArray(nameID, values, values.Length); }
-        private void SetVectorArray(int nameID, Vector4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetVectorArrayImpl(nameID, values, count);
-        }
+        internal int  GetValueArrayCount<T>(int name)   { return GetValueArrayCountImpl(name, typeof(T)); }
 
-        public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
-        private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetMatrixArrayImpl(nameID, values, count);
-        }
+        // currently we do not support returning null from native if return type is array
+        internal T[] GetValueArray<T>(int name)     { return GetValueArrayCount<T>(name) != 0 ? (T[])GetValueArrayImpl(name, typeof(T)) : null; }
+        internal T[] GetValueArray<T>(string name)  { return GetValueArray<T>(Shader.PropertyToID(name)); }
 
-        public float GetFloat(string name)      { return GetFloat(Shader.PropertyToID(name)); }
-        public float GetFloat(int nameID)       { return GetFloatImpl(nameID); }
-        public Vector4 GetVector(string name)   { return GetVector(Shader.PropertyToID(name)); }
-        public Vector4 GetVector(int nameID)    { return GetVectorImpl(nameID); }
-        public Matrix4x4 GetMatrix(string name) { return GetMatrix(Shader.PropertyToID(name)); }
-        public Matrix4x4 GetMatrix(int nameID)  { return GetMatrixImpl(nameID); }
-
-        // List<T> version
-        public void GetFloatArray(string name, List<float> values)  { GetFloatArray(Shader.PropertyToID(name), values); }
-        public void GetFloatArray(int nameID, List<float> values)
+        internal void ExtractValueArray<T>(int name, List<T> values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
-            GetFloatArrayImplList(nameID, values);
+            values.Clear();
+
+            int count = GetValueArrayCount<T>(name);
+            if (count > 0)
+            {
+                NoAllocHelpers.EnsureListElemCount(values, count);
+                ExtractValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromList(values), typeof(T));
+            }
         }
 
-        // T[] version
-        public float[] GetFloatArray(string name)   { return GetFloatArray(Shader.PropertyToID(name)); }
-        public float[] GetFloatArray(int nameID)    { return GetFloatArrayImpl(nameID); }
+        internal void ExtractValueArray<T>(string name, List<T> values) { ExtractValueArray<T>(Shader.PropertyToID(name), values); }
+    }
 
-        // List<T> version
-        public void GetVectorArray(string name, List<Vector4> values)   { GetVectorArray(Shader.PropertyToID(name), values); }
-        public void GetVectorArray(int nameID, List<Vector4> values)
+    public sealed partial class MaterialPropertyBlock
+    {
+        internal IntPtr m_Ptr;
+
+        public MaterialPropertyBlock()    { m_Ptr = CreateImpl(); }
+        ~MaterialPropertyBlock()          { Dispose(); }
+
+        // should we make it IDisposable?
+        private void Dispose()
         {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetVectorArrayImplList(nameID, values);
+            if (m_Ptr != IntPtr.Zero)
+            {
+                DestroyImpl(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+            GC.SuppressFinalize(this);
         }
 
-        // T[] version
-        public Vector4[] GetVectorArray(string name) { return GetVectorArray(Shader.PropertyToID(name)); }
-        public Vector4[] GetVectorArray(int nameID) { return GetVectorArrayImpl(nameID); }
+        public void SetFloat(string name, float value)          { SetValue(name, value); }
+        public void SetFloat(int name, float value)             { SetValue(name, value); }
+        public void SetVector(string name, Vector4 value)       { SetValue(name, value); }
+        public void SetVector(int name, Vector4 value)          { SetValue(name, value); }
+        public void SetColor(string name, Color value)          { SetValue(name, value); }
+        public void SetColor(int name, Color value)             { SetValue(name, value); }
+        public void SetMatrix(string name, Matrix4x4 value)     { SetValue(name, value); }
+        public void SetMatrix(int name, Matrix4x4 value)        { SetValue(name, value); }
+        public void SetBuffer(string name, ComputeBuffer value) { SetValue(name, value); }
+        public void SetBuffer(int name, ComputeBuffer value)    { SetValue(name, value); }
+        public void SetTexture(string name, Texture value)      { SetValue(name, value); }
+        public void SetTexture(int name, Texture value)         { SetValue(name, value); }
 
-        // List<T> version
-        public void GetMatrixArray(string name, List<Matrix4x4> values) { GetMatrixArray(Shader.PropertyToID(name), values); }
-        public void GetMatrixArray(int nameID, List<Matrix4x4> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetMatrixArrayImplList(nameID, values);
-        }
+        public void SetFloatArray(string name, List<float> values)  { SetValueArray(name, values); }
+        public void SetFloatArray(int name,    List<float> values)  { SetValueArray(name, values); }
+        public void SetFloatArray(string name, float[] values)      { SetValueArray(name, values); }
+        public void SetFloatArray(int name,    float[] values)      { SetValueArray(name, values); }
 
-        // T[] version
-        public Matrix4x4[] GetMatrixArray(string name) { return GetMatrixArray(Shader.PropertyToID(name)); }
-        public Matrix4x4[] GetMatrixArray(int nameID) { return GetMatrixArrayImpl(nameID); }
+        public void SetVectorArray(string name, List<Vector4> values)   { SetValueArray(name, values); }
+        public void SetVectorArray(int name,    List<Vector4> values)   { SetValueArray(name, values); }
+        public void SetVectorArray(string name, Vector4[] values)       { SetValueArray(name, values); }
+        public void SetVectorArray(int name,    Vector4[] values)       { SetValueArray(name, values); }
 
-        public Texture GetTexture(string name)  { return GetTexture(Shader.PropertyToID(name)); }
-        public Texture GetTexture(int nameID)   { return GetTextureImpl(nameID); }
+        public void SetMatrixArray(string name, List<Matrix4x4> values) { SetValueArray(name, values); }
+        public void SetMatrixArray(int name,    List<Matrix4x4> values) { SetValueArray(name, values); }
+        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetValueArray(name, values); }
+        public void SetMatrixArray(int name,    Matrix4x4[] values)     { SetValueArray(name, values); }
+
+        public float     GetFloat(string name)      { return GetValue<float>(name); }
+        public float     GetFloat(int name)         { return GetValue<float>(name); }
+        public Vector4   GetVector(string name)     { return GetValue<Vector4>(name); }
+        public Vector4   GetVector(int name)        { return GetValue<Vector4>(name); }
+        public Color     GetColor(string name)      { return GetValue<Color>(name); }
+        public Color     GetColor(int name)         { return GetValue<Color>(name); }
+        public Matrix4x4 GetMatrix(string name)     { return GetValue<Matrix4x4>(name); }
+        public Matrix4x4 GetMatrix(int name)        { return GetValue<Matrix4x4>(name); }
+        public Texture   GetTexture(string name)    { return GetValue<Texture>(name); }
+        public Texture   GetTexture(int name)       { return GetValue<Texture>(name); }
+
+        public float[]      GetFloatArray(string name)  { return GetValueArray<float>(name); }
+        public float[]      GetFloatArray(int name)     { return GetValueArray<float>(name); }
+        public Vector4[]    GetVectorArray(string name) { return GetValueArray<Vector4>(name); }
+        public Vector4[]    GetVectorArray(int name)    { return GetValueArray<Vector4>(name); }
+        public Matrix4x4[]  GetMatrixArray(string name) { return GetValueArray<Matrix4x4>(name); }
+        public Matrix4x4[]  GetMatrixArray(int name)    { return GetValueArray<Matrix4x4>(name); }
+
+        public void GetFloatArray(string name, List<float> values)      { ExtractValueArray<float>(name, values); }
+        public void GetFloatArray(int name, List<float> values)         { ExtractValueArray<float>(name, values); }
+        public void GetVectorArray(string name, List<Vector4> values)   { ExtractValueArray<Vector4>(name, values); }
+        public void GetVectorArray(int name, List<Vector4> values)      { ExtractValueArray<Vector4>(name, values); }
+        public void GetMatrixArray(string name, List<Matrix4x4> values) { ExtractValueArray<Matrix4x4>(name, values); }
+        public void GetMatrixArray(int name, List<Matrix4x4> values)    { ExtractValueArray<Matrix4x4>(name, values); }
     }
 }
 
@@ -583,109 +655,103 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    // internal generic methods to have one entry point for using native-scripting glue
     public sealed partial class Shader
     {
-        public static void SetGlobalFloat(string name, float value)     { SetGlobalFloat(Shader.PropertyToID(name), value); }
-        public static void SetGlobalFloat(int nameID, float value)      { SetGlobalFloatImpl(nameID, value); }
-        public static void SetGlobalInt(string name, int value)         { SetGlobalInt(Shader.PropertyToID(name), value); }
-        public static void SetGlobalInt(int nameID, int value)          { SetGlobalIntImpl(nameID, value); }
-        public static void SetGlobalVector(string name, Vector4 value)  { SetGlobalVector(Shader.PropertyToID(name), value); }
-        public static void SetGlobalVector(int nameID, Vector4 value)   { SetGlobalVectorImpl(nameID, value); }
-        public static void SetGlobalColor(string name, Color value)     { SetGlobalColor(Shader.PropertyToID(name), value); }
-        public static void SetGlobalColor(int nameID, Color value)      { SetGlobalColorImpl(nameID, value); }
-        public static void SetGlobalMatrix(string name, Matrix4x4 value) { SetGlobalMatrix(Shader.PropertyToID(name), value); }
-        public static void SetGlobalMatrix(int nameID, Matrix4x4 value) { SetGlobalMatrixImpl(nameID, value); }
-        public static void SetGlobalTexture(string name, Texture value) { SetGlobalTexture(Shader.PropertyToID(name), value); }
-        public static void SetGlobalTexture(int nameID, Texture value)  { SetGlobalTextureImpl(nameID, value); }
-        public static void SetGlobalBuffer(string name, ComputeBuffer buffer) { SetGlobalBuffer(Shader.PropertyToID(name), buffer); }
+        internal static void SetGlobalValue<T>(int name, T value)       { SetGlobalValueImpl(name, value, typeof(T)); }
+        internal static void SetGlobalValue<T>(string name, T value)    { SetGlobalValueImpl(Shader.PropertyToID(name), value, typeof(T)); }
 
-        public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalFloatArray(int nameID, float[] values)      { SetGlobalFloatArray(nameID, values, values.Length); }
-        private static void SetGlobalFloatArray(int nameID, float[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetGlobalFloatArrayImpl(nameID, values, count);
-        }
+        internal static T    GetGlobalValue<T>(int name)    { return (T)GetGlobalValueImpl(name, typeof(T)); }
+        internal static T    GetGlobalValue<T>(string name) { return (T)GetGlobalValueImpl(Shader.PropertyToID(name), typeof(T)); }
 
-        public static void SetGlobalVectorArray(string name, List<Vector4> values) { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)  { SetGlobalVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public static void SetGlobalVectorArray(string name, Vector4[] values)     { SetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalVectorArray(int nameID, Vector4[] values)      { SetGlobalVectorArray(nameID, values, values.Length); }
-        private static void SetGlobalVectorArray(int nameID, Vector4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetGlobalVectorArrayImpl(nameID, values, count);
-        }
+        internal static void SetGlobalValueArray<T>(int name, List<T> values)    { SetGlobalValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count, typeof(T)); }
+        internal static void SetGlobalValueArray<T>(string name, List<T> values) { SetGlobalValueArray<T>(Shader.PropertyToID(name), values); }
+        internal static void SetGlobalValueArray<T>(int name, T[] values)        { SetGlobalValueArrayImpl(name, values, values.Length, typeof(T)); }
+        internal static void SetGlobalValueArray<T>(string name, T[] values)     { SetGlobalValueArray<T>(Shader.PropertyToID(name), values); }
 
-        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { SetGlobalMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)     { SetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)      { SetGlobalMatrixArray(nameID, values, values.Length); }
-        private static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetGlobalMatrixArrayImpl(nameID, values, count);
-        }
+        internal static int  GetGlobalValueArrayCount<T>(int name) { return GetGlobalValueArrayCountImpl(name, typeof(T)); }
 
-        public static float GetGlobalFloat(string name) { return GetGlobalFloat(Shader.PropertyToID(name)); }
-        public static float GetGlobalFloat(int nameID) { return GetGlobalFloatImpl(nameID); }
-        public static int GetGlobalInt(string name) { return GetGlobalInt(Shader.PropertyToID(name)); }
-        public static int GetGlobalInt(int nameID) { return GetGlobalIntImpl(nameID); }
-        public static Vector4 GetGlobalVector(string name) { return GetGlobalVector(Shader.PropertyToID(name)); }
-        public static Vector4 GetGlobalVector(int nameID) { return GetGlobalVectorImpl(nameID); }
-        public static Color GetGlobalColor(string name) { return GetGlobalColor(Shader.PropertyToID(name)); }
-        public static Color GetGlobalColor(int nameID) { return GetGlobalColorImpl(nameID); }
-        public static Matrix4x4 GetGlobalMatrix(string name) { return GetGlobalMatrix(Shader.PropertyToID(name)); }
-        public static Matrix4x4 GetGlobalMatrix(int nameID) { return GetGlobalMatrixImpl(nameID); }
-        public static Texture GetGlobalTexture(string name) { return GetGlobalTexture(Shader.PropertyToID(name)); }
-        public static Texture GetGlobalTexture(int nameID) { return GetGlobalTextureImpl(nameID); }
+        // currently we do not support returning null from native if return type is array
+        internal static T[] GetGlobalValueArray<T>(int name)    { return GetGlobalValueArrayCount<T>(name) != 0 ? (T[])GetGlobalValueArrayImpl(name, typeof(T)) : null; }
+        internal static T[] GetGlobalValueArray<T>(string name) { return GetGlobalValueArray<T>(Shader.PropertyToID(name)); }
 
-        // List<T> version
-        public static void GetGlobalFloatArray(string name, List<float> values) { GetGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalFloatArray(int nameID, List<float> values)
+        internal static void ExtractGlobalValueArray<T>(int name, List<T> values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
-            GetGlobalFloatArrayImplList(nameID, values);
+            values.Clear();
+
+            int count = GetGlobalValueArrayCount<T>(name);
+            if (count > 0)
+            {
+                NoAllocHelpers.EnsureListElemCount(values, count);
+                ExtractGlobalValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromList(values), typeof(T));
+            }
         }
 
-        // T[] version
-        public static float[] GetGlobalFloatArray(string name) { return GetGlobalFloatArray(Shader.PropertyToID(name)); }
-        public static float[] GetGlobalFloatArray(int nameID) { return GetGlobalFloatArrayImpl(nameID); }
+        internal static void ExtractGlobalValueArray<T>(string name, List<T> values) { ExtractGlobalValueArray<T>(Shader.PropertyToID(name), values); }
+    }
 
-        // List<T> version
-        public static void GetGlobalVectorArray(string name, List<Vector4> values) { GetGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalVectorArray(int nameID, List<Vector4> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetGlobalVectorArrayImplList(nameID, values);
-        }
+    public sealed partial class Shader
+    {
+        public static void SetGlobalFloat(string name, float value)             { SetGlobalValue(name, value); }
+        public static void SetGlobalFloat(int name, float value)                { SetGlobalValue(name, value); }
+        public static void SetGlobalInt(string name, int value)                 { SetGlobalValue(name, value); }
+        public static void SetGlobalInt(int name, int value)                    { SetGlobalValue(name, value); }
+        public static void SetGlobalVector(string name, Vector4 value)          { SetGlobalValue(name, value); }
+        public static void SetGlobalVector(int name, Vector4 value)             { SetGlobalValue(name, value); }
+        public static void SetGlobalColor(string name, Color value)             { SetGlobalValue(name, value); }
+        public static void SetGlobalColor(int name, Color value)                { SetGlobalValue(name, value); }
+        public static void SetGlobalMatrix(string name, Matrix4x4 value)        { SetGlobalValue(name, value); }
+        public static void SetGlobalMatrix(int name, Matrix4x4 value)           { SetGlobalValue(name, value); }
+        public static void SetGlobalTexture(string name, Texture value)         { SetGlobalValue(name, value); }
+        public static void SetGlobalTexture(int name, Texture value)            { SetGlobalValue(name, value); }
+        public static void SetGlobalBuffer(string name, ComputeBuffer value)    { SetGlobalValue(name, value); }
+        public static void SetGlobalBuffer(int name, ComputeBuffer value)       { SetGlobalValue(name, value); }
 
-        // T[] version
-        public static Vector4[] GetGlobalVectorArray(string name) { return GetGlobalVectorArray(Shader.PropertyToID(name)); }
-        public static Vector4[] GetGlobalVectorArray(int nameID) { return GetGlobalVectorArrayImpl(nameID); }
+        public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalValueArray(name, values); }
+        public static void SetGlobalFloatArray(int name, List<float> values)    { SetGlobalValueArray(name, values); }
+        public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalValueArray(name, values); }
+        public static void SetGlobalFloatArray(int name, float[] values)        { SetGlobalValueArray(name, values); }
 
-        // List<T> version
-        public static void GetGlobalMatrixArray(string name, List<Matrix4x4> values) { GetGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalMatrixArray(int nameID, List<Matrix4x4> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetGlobalMatrixArrayImplList(nameID, values);
-        }
+        public static void SetGlobalVectorArray(string name, List<Vector4> values)  { SetGlobalValueArray(name, values); }
+        public static void SetGlobalVectorArray(int name, List<Vector4> values)     { SetGlobalValueArray(name, values); }
+        public static void SetGlobalVectorArray(string name, Vector4[] values)      { SetGlobalValueArray(name, values); }
+        public static void SetGlobalVectorArray(int name, Vector4[] values)         { SetGlobalValueArray(name, values); }
 
-        // T[] version
-        public static Matrix4x4[] GetGlobalMatrixArray(string name) { return GetGlobalMatrixArray(Shader.PropertyToID(name)); }
-        public static Matrix4x4[] GetGlobalMatrixArray(int nameID) { return GetGlobalMatrixArrayImpl(nameID); }
+        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalValueArray(name, values); }
+        public static void SetGlobalMatrixArray(int name, List<Matrix4x4> values)   { SetGlobalValueArray(name, values); }
+        public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)    { SetGlobalValueArray(name, values); }
+        public static void SetGlobalMatrixArray(int name, Matrix4x4[] values)       { SetGlobalValueArray(name, values); }
+
+        public static float       GetGlobalFloat(string name)       { return GetGlobalValue<float>(name); }
+        public static float       GetGlobalFloat(int name)          { return GetGlobalValue<float>(name); }
+        public static int         GetGlobalInt(string name)         { return GetGlobalValue<int>(name); }
+        public static int         GetGlobalInt(int name)            { return GetGlobalValue<int>(name); }
+        public static Vector4     GetGlobalVector(string name)      { return GetGlobalValue<Vector4>(name); }
+        public static Vector4     GetGlobalVector(int name)         { return GetGlobalValue<Vector4>(name); }
+        public static Color       GetGlobalColor(string name)       { return GetGlobalValue<Color>(name); }
+        public static Color       GetGlobalColor(int name)          { return GetGlobalValue<Color>(name); }
+        public static Matrix4x4   GetGlobalMatrix(string name)      { return GetGlobalValue<Matrix4x4>(name); }
+        public static Matrix4x4   GetGlobalMatrix(int name)         { return GetGlobalValue<Matrix4x4>(name); }
+        public static Texture     GetGlobalTexture(string name)     { return GetGlobalValue<Texture>(name); }
+        public static Texture     GetGlobalTexture(int name)        { return GetGlobalValue<Texture>(name); }
+
+        public static float[]     GetGlobalFloatArray(string name)  { return GetGlobalValueArray<float>(name); }
+        public static float[]     GetGlobalFloatArray(int name)     { return GetGlobalValueArray<float>(name); }
+        public static Vector4[]   GetGlobalVectorArray(string name) { return GetGlobalValueArray<Vector4>(name); }
+        public static Vector4[]   GetGlobalVectorArray(int name)    { return GetGlobalValueArray<Vector4>(name); }
+        public static Matrix4x4[] GetGlobalMatrixArray(string name) { return GetGlobalValueArray<Matrix4x4>(name); }
+        public static Matrix4x4[] GetGlobalMatrixArray(int name)    { return GetGlobalValueArray<Matrix4x4>(name); }
+
+        public static void GetGlobalFloatArray(string name, List<float> values)      { ExtractGlobalValueArray<float>(name, values); }
+        public static void GetGlobalFloatArray(int name, List<float> values)         { ExtractGlobalValueArray<float>(name, values); }
+        public static void GetGlobalVectorArray(string name, List<Vector4> values)   { ExtractGlobalValueArray<Vector4>(name, values); }
+        public static void GetGlobalVectorArray(int name, List<Vector4> values)      { ExtractGlobalValueArray<Vector4>(name, values); }
+        public static void GetGlobalMatrixArray(string name, List<Matrix4x4> values) { ExtractGlobalValueArray<Matrix4x4>(name, values); }
+        public static void GetGlobalMatrixArray(int name, List<Matrix4x4> values)    { ExtractGlobalValueArray<Matrix4x4>(name, values); }
+
+        private Shader() {}
     }
 }
 
@@ -697,149 +763,148 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    // internal generic methods to have one entry point for using native-scripting glue
     public partial class Material
     {
-        public void SetFloat(string name, float value)      { SetFloat(Shader.PropertyToID(name), value); }
-        public void SetFloat(int nameID, float value)       { SetFloatImpl(nameID, value); }
-        public void SetInt(string name, int value)          { SetInt(Shader.PropertyToID(name), value); }
-        public void SetInt(int nameID, int value)           { SetIntImpl(nameID, value); }
-        public void SetColor(string name, Color value)      { SetColor(Shader.PropertyToID(name), value); }
-        public void SetColor(int nameID, Color value)       { SetColorImpl(nameID, value); }
-        public void SetVector(string name, Vector4 value)   { SetVector(Shader.PropertyToID(name), value); }
-        public void SetVector(int nameID, Vector4 value)    { SetVectorImpl(nameID, value); }
-        public void SetMatrix(string name, Matrix4x4 value) { SetMatrix(Shader.PropertyToID(name), value); }
-        public void SetMatrix(int nameID, Matrix4x4 value)  { SetMatrixImpl(nameID, value); }
-        public void SetTexture(string name, Texture value)  { SetTexture(Shader.PropertyToID(name), value); }
-        public void SetTexture(int nameID, Texture value)   { SetTextureImpl(nameID, value); }
-        public void SetBuffer(string name, ComputeBuffer value) { SetBuffer(Shader.PropertyToID(name), value); }
-        public void SetBuffer(int nameID, ComputeBuffer value) { SetBufferImpl(nameID, value); }
-        public void SetTextureOffset(string name, Vector2 value) { SetTextureOffset(Shader.PropertyToID(name), value); }
-        public void SetTextureOffset(int nameID, Vector2 value) { SetTextureOffsetImpl(nameID, value); }
-        public void SetTextureScale(string name, Vector2 value) { SetTextureScale(Shader.PropertyToID(name), value); }
-        public void SetTextureScale(int nameID, Vector2 value) { SetTextureScaleImpl(nameID, value); }
+        internal void SetValue<T>(int name, T value)       { SetValueImpl(name, value, typeof(T)); }
+        internal void SetValue<T>(string name, T value)    { SetValueImpl(Shader.PropertyToID(name), value, typeof(T)); }
 
+        internal T    GetValue<T>(int name)     { return (T)GetValueImpl(name, typeof(T)); }
+        internal T    GetValue<T>(string name)  { return (T)GetValueImpl(Shader.PropertyToID(name), typeof(T)); }
 
-        public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, List<float> values)   { SetFloatArray(nameID, (float[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values); }
-        public void SetFloatArray(int nameID, float[] values)       { SetFloatArray(nameID, values, values.Length); }
-        private void SetFloatArray(int nameID, float[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetFloatArrayImpl(nameID, values, count);
-        }
+        internal void SetValueArray<T>(int name, List<T> values)    { SetValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count, typeof(T)); }
+        internal void SetValueArray<T>(string name, List<T> values) { SetValueArray<T>(Shader.PropertyToID(name), values); }
+        internal void SetValueArray<T>(int name, T[] values)        { SetValueArrayImpl(name, values, values.Length, typeof(T)); }
+        internal void SetValueArray<T>(string name, T[] values)     { SetValueArray<T>(Shader.PropertyToID(name), values); }
 
-        public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), values); }
-        public void SetColorArray(int nameID, List<Color> values)   { SetColorArray(nameID, (Color[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetColorArray(string name, Color[] values)      { SetColorArray(Shader.PropertyToID(name), values); }
-        public void SetColorArray(int nameID, Color[] values)       { SetColorArray(nameID, values, values.Length); }
-        private void SetColorArray(int nameID, Color[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetColorArrayImpl(nameID, values, count);
-        }
+        internal int  GetValueArrayCount<T>(int name)   { return GetValueArrayCountImpl(name, typeof(T)); }
 
-        public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, List<Vector4> values)    { SetVectorArray(nameID, (Vector4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values); }
-        public void SetVectorArray(int nameID, Vector4[] values)        { SetVectorArray(nameID, values, values.Length); }
-        private void SetVectorArray(int nameID, Vector4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetVectorArrayImpl(nameID, values, count);
-        }
+        // currently we do not support returning null from native if return type is array
+        internal T[] GetValueArray<T>(int name)     { return GetValueArrayCount<T>(name) != 0 ? (T[])GetValueArrayImpl(name, typeof(T)) : null; }
+        internal T[] GetValueArray<T>(string name)  { return GetValueArray<T>(Shader.PropertyToID(name)); }
 
-        public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, List<Matrix4x4> values)  { SetMatrixArray(nameID, (Matrix4x4[])NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
-        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values); }
-        public void SetMatrixArray(int nameID, Matrix4x4[] values)      { SetMatrixArray(nameID, values, values.Length); }
-        private void SetMatrixArray(int nameID, Matrix4x4[] values, int count)
-        {
-            if (values == null) throw new ArgumentNullException("values");
-            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
-            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
-            SetMatrixArrayImpl(nameID, values, count);
-        }
-
-        public float        GetFloat(string name)   { return GetFloat(Shader.PropertyToID(name)); }
-        public float        GetFloat(int nameID)    { return GetFloatImpl(nameID); }
-        public int          GetInt(string name)     { return GetInt(Shader.PropertyToID(name)); }
-        public int          GetInt(int nameID)      { return GetIntImpl(nameID); }
-        public Color        GetColor(string name)   { return GetColor(Shader.PropertyToID(name)); }
-        public Color        GetColor(int nameID)    { return GetColorImpl(nameID); }
-        public Vector4      GetVector(string name)  { return GetVector(Shader.PropertyToID(name)); }
-        public Vector4      GetVector(int nameID)   { return GetVectorImpl(nameID); }
-        public Matrix4x4    GetMatrix(string name)  { return GetMatrix(Shader.PropertyToID(name)); }
-        public Matrix4x4    GetMatrix(int nameID)   { return GetMatrixImpl(nameID); }
-
-        // List<T> version
-        public void GetFloatArray(string name, List<float> values) { GetFloatArray(Shader.PropertyToID(name), values); }
-        public void GetFloatArray(int nameID, List<float> values)
+        internal void ExtractValueArray<T>(int name, List<T> values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
-            GetFloatArrayImplList(nameID, values);
+            values.Clear();
+
+            int count = GetValueArrayCount<T>(name);
+            if (count > 0)
+            {
+                NoAllocHelpers.EnsureListElemCount(values, count);
+                ExtractValueArrayImpl(name, NoAllocHelpers.ExtractArrayFromList(values), typeof(T));
+            }
         }
 
-        // T[] version
-        public float[] GetFloatArray(string name) { return GetFloatArray(Shader.PropertyToID(name)); }
-        public float[] GetFloatArray(int nameID) { return GetFloatArrayImpl(nameID); }
+        internal void ExtractValueArray<T>(string name, List<T> values) { ExtractValueArray<T>(Shader.PropertyToID(name), values); }
+    }
 
-        // List<T> version
-        public void GetVectorArray(string name, List<Vector4> values) { GetVectorArray(Shader.PropertyToID(name), values); }
-        public void GetVectorArray(int nameID, List<Vector4> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetVectorArrayImplList(nameID, values);
-        }
+    public partial class Material
+    {
+        public void SetFloat(string name, float value)          { SetValue(name, value); }
+        public void SetFloat(int name, float value)             { SetValue(name, value); }
+        public void SetInt(string name, int value)              { SetValue(name, value); }
+        public void SetInt(int name, int value)                 { SetValue(name, value); }
+        public void SetColor(string name, Color value)          { SetValue(name, value); }
+        public void SetColor(int name, Color value)             { SetValue(name, value); }
+        public void SetVector(string name, Vector4 value)       { SetValue(name, value); }
+        public void SetVector(int name, Vector4 value)          { SetValue(name, value); }
+        public void SetMatrix(string name, Matrix4x4 value)     { SetValue(name, value); }
+        public void SetMatrix(int name, Matrix4x4 value)        { SetValue(name, value); }
+        public void SetTexture(string name, Texture value)      { SetValue(name, value); }
+        public void SetTexture(int name, Texture value)         { SetValue(name, value); }
+        public void SetBuffer(string name, ComputeBuffer value) { SetValue(name, value); }
+        public void SetBuffer(int name, ComputeBuffer value)    { SetValue(name, value); }
 
-        // T[] version
-        public Color[] GetColorArray(string name) { return GetColorArray(Shader.PropertyToID(name)); }
-        public Color[] GetColorArray(int nameID) { return GetColorArrayImpl(nameID); }
+        public void SetFloatArray(string name, List<float> values)  { SetValueArray(name, values); }
+        public void SetFloatArray(int name,    List<float> values)  { SetValueArray(name, values); }
+        public void SetFloatArray(string name, float[] values)      { SetValueArray(name, values); }
+        public void SetFloatArray(int name,    float[] values)      { SetValueArray(name, values); }
 
-        // List<T> version
-        public void GetColorArray(string name, List<Color> values) { GetColorArray(Shader.PropertyToID(name), values); }
-        public void GetColorArray(int nameID, List<Color> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetColorArrayImplList(nameID, values);
-        }
+        public void SetColorArray(string name, List<Color> values)  { SetValueArray(name, values); }
+        public void SetColorArray(int name,    List<Color> values)  { SetValueArray(name, values); }
+        public void SetColorArray(string name, Color[] values)      { SetValueArray(name, values); }
+        public void SetColorArray(int name,    Color[] values)      { SetValueArray(name, values); }
 
-        // T[] version
-        public Vector4[] GetVectorArray(string name) { return GetVectorArray(Shader.PropertyToID(name)); }
-        public Vector4[] GetVectorArray(int nameID) { return GetVectorArrayImpl(nameID); }
+        public void SetVectorArray(string name, List<Vector4> values)   { SetValueArray(name, values); }
+        public void SetVectorArray(int name,    List<Vector4> values)   { SetValueArray(name, values); }
+        public void SetVectorArray(string name, Vector4[] values)       { SetValueArray(name, values); }
+        public void SetVectorArray(int name,    Vector4[] values)       { SetValueArray(name, values); }
 
-        // List<T> version
-        public void GetMatrixArray(string name, List<Matrix4x4> values) { GetMatrixArray(Shader.PropertyToID(name), values); }
-        public void GetMatrixArray(int nameID, List<Matrix4x4> values)
-        {
-            if (values == null)
-                throw new ArgumentNullException("values");
-            GetMatrixArrayImplList(nameID, values);
-        }
+        public void SetMatrixArray(string name, List<Matrix4x4> values) { SetValueArray(name, values); }
+        public void SetMatrixArray(int name,    List<Matrix4x4> values) { SetValueArray(name, values); }
+        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetValueArray(name, values); }
+        public void SetMatrixArray(int name,    Matrix4x4[] values)     { SetValueArray(name, values); }
 
-        // T[] version
-        public Matrix4x4[] GetMatrixArray(string name) { return GetMatrixArray(Shader.PropertyToID(name)); }
-        public Matrix4x4[] GetMatrixArray(int nameID) { return GetMatrixArrayImpl(nameID); }
+        public float     GetFloat(string name)  { return GetValue<float>(name); }
+        public float     GetFloat(int name)     { return GetValue<float>(name); }
+        public int       GetInt(string name)    { return GetValue<int>(name); }
+        public int       GetInt(int name)       { return GetValue<int>(name); }
+        public Color     GetColor(string name)  { return GetValue<Color>(name); }
+        public Color     GetColor(int name)     { return GetValue<Color>(name); }
+        public Vector4   GetVector(string name) { return GetValue<Vector4>(name); }
+        public Vector4   GetVector(int name)    { return GetValue<Vector4>(name); }
+        public Matrix4x4 GetMatrix(string name) { return GetValue<Matrix4x4>(name); }
+        public Matrix4x4 GetMatrix(int name)    { return GetValue<Matrix4x4>(name); }
+        public Texture   GetTexture(string name) { return GetValue<Texture>(name); }
+        public Texture   GetTexture(int name)   { return GetValue<Texture>(name); }
 
-        public Texture      GetTexture(string name) { return GetTexture(Shader.PropertyToID(name)); }
-        public Texture      GetTexture(int nameID)  { return GetTextureImpl(nameID); }
+        public float[]      GetFloatArray(string name)  { return GetValueArray<float>(name); }
+        public float[]      GetFloatArray(int name)     { return GetValueArray<float>(name); }
+        public Color[]      GetColorArray(string name)  { return GetValueArray<Color>(name); }
+        public Color[]      GetColorArray(int name)     { return GetValueArray<Color>(name); }
+        public Vector4[]    GetVectorArray(string name) { return GetValueArray<Vector4>(name); }
+        public Vector4[]    GetVectorArray(int name)    { return GetValueArray<Vector4>(name); }
+        public Matrix4x4[]  GetMatrixArray(string name) { return GetValueArray<Matrix4x4>(name); }
+        public Matrix4x4[]  GetMatrixArray(int name)    { return GetValueArray<Matrix4x4>(name); }
+
+        public void GetFloatArray(string name, List<float> values)      { ExtractValueArray<float>(name, values); }
+        public void GetFloatArray(int name, List<float> values)         { ExtractValueArray<float>(name, values); }
+        public void GetColorArray(string name, List<Color> values)      { ExtractValueArray<Color>(name, values); }
+        public void GetColorArray(int name, List<Color> values)         { ExtractValueArray<Color>(name, values); }
+        public void GetVectorArray(string name, List<Vector4> values)   { ExtractValueArray<Vector4>(name, values); }
+        public void GetVectorArray(int name, List<Vector4> values)      { ExtractValueArray<Vector4>(name, values); }
+        public void GetMatrixArray(string name, List<Matrix4x4> values) { ExtractValueArray<Matrix4x4>(name, values); }
+        public void GetMatrixArray(int name, List<Matrix4x4> values)    { ExtractValueArray<Matrix4x4>(name, values); }
+
+        public void SetTextureOffset(string name, Vector2 value) { SetTextureOffsetImpl(Shader.PropertyToID(name), value); }
+        public void SetTextureOffset(int name, Vector2 value)    { SetTextureOffsetImpl(name, value); }
+        public void SetTextureScale(string name, Vector2 value)  { SetTextureScaleImpl(Shader.PropertyToID(name), value); }
+        public void SetTextureScale(int name, Vector2 value)     { SetTextureScaleImpl(name, value); }
 
         public Vector2 GetTextureOffset(string name) { return GetTextureOffset(Shader.PropertyToID(name)); }
-        public Vector2 GetTextureOffset(int nameID) { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.z, st.w); }
-        public Vector2 GetTextureScale(string name) { return GetTextureScale(Shader.PropertyToID(name)); }
-        public Vector2 GetTextureScale(int nameID) { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.x, st.y); }
+        public Vector2 GetTextureOffset(int name)    { Vector4 st = GetTextureScaleAndOffsetImpl(name); return new Vector2(st.z, st.w); }
+        public Vector2 GetTextureScale(string name)  { return GetTextureScale(Shader.PropertyToID(name)); }
+        public Vector2 GetTextureScale(int name)     { Vector4 st = GetTextureScaleAndOffsetImpl(name); return new Vector2(st.x, st.y); }
     }
 }
 
+
+//
+// QualitySettings
+//
+
+
+namespace UnityEngine
+{
+    public sealed partial class QualitySettings
+    {
+        public static void IncreaseLevel([uei.DefaultValue("false")] bool applyExpensiveChanges)
+        {
+            SetQualityLevel(GetQualityLevel() + 1, applyExpensiveChanges);
+        }
+
+        public static void DecreaseLevel([uei.DefaultValue("false")] bool applyExpensiveChanges)
+        {
+            SetQualityLevel(GetQualityLevel() - 1, applyExpensiveChanges);
+        }
+
+        public static void SetQualityLevel(int index) { SetQualityLevel(index, true); }
+        public static void IncreaseLevel() { IncreaseLevel(false); }
+        public static void DecreaseLevel() { DecreaseLevel(false); }
+    }
+}
 
 //
 // Attributes

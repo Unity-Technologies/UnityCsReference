@@ -24,6 +24,7 @@ namespace UnityEngine.Playables
             get { return new PlayableOutputHandle() { m_Version = Int32.MaxValue }; }
         }
 
+        [VisibleToOtherModules]
         internal bool IsPlayableOutputOfType<T>()
         {
             return GetPlayableOutputType() == typeof(T);
@@ -55,6 +56,7 @@ namespace UnityEngine.Playables
         }
 
         // Bindings methods.
+        [VisibleToOtherModules]
         extern internal bool IsValid();
         extern internal Type GetPlayableOutputType();
         extern internal Object GetReferenceObject();

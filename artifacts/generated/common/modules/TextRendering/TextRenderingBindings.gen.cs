@@ -63,6 +63,7 @@ public enum VerticalWrapMode
     Overflow = 1
 }
 
+[NativeClass("TextRenderingPrivate::GUIText")]
 [System.Obsolete ("This component is part of the legacy UI system and will be removed in a future release.")]
 public sealed partial class GUIText : GUIElement
 {
@@ -494,6 +495,7 @@ public partial struct CharacterInfo
         #pragma warning restore 0618
 }
 
+[NativeClass("TextRendering::Font")]
 public sealed partial class Font : Object
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

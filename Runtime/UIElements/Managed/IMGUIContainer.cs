@@ -208,20 +208,12 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                         // We should switch the focus to the next VisualElement.
-                        KeyDownEvent e = null;
-                        if (result == -1)
+                        Focusable currentFocusedElement;
+                        using (KeyDownEvent e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, result == -1 ? EventModifiers.None : EventModifiers.Shift))
                         {
-                            e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.None);
+                            currentFocusedElement = focusController.focusedElement;
+                            focusController.SwitchFocusOnEvent(e);
                         }
-                        else if (result == -2)
-                        {
-                            e = KeyDownEvent.GetPooled('\t', KeyCode.Tab, EventModifiers.Shift);
-                        }
-
-                        var currentFocusedElement = focusController.focusedElement;
-                        focusController.SwitchFocusOnEvent(e);
-
-                        KeyDownEvent.ReleasePooled(e);
 
                         if (currentFocusedElement == this)
                         {
@@ -253,7 +245,7 @@ namespace UnityEngine.Experimental.UIElements
                         // A positive result indicates that the focused control has changed.
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                     }
-                    else if (result == 0 && originalEventType == EventType.MouseDown)
+                    else if (result == 0)
                     {
                         // This means the event is not a tab but a MouseDown.
                         // Synchronize our focus info with IMGUI.
@@ -340,7 +332,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return true;
             }
-            else if (e.type == EventType.MouseUp && this.HasCapture())
+            else if (e.type == EventType.MouseUp && this.HasMouseCapture())
             {
                 // This can happen if a MouseDown was caught by a different IM element but we ended up here on the
                 // MouseUp event because no other element consumed it, including the one that had capture.

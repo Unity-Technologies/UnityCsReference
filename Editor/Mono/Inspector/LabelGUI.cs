@@ -29,13 +29,13 @@ namespace UnityEditor
         public void OnEnable()
         {
             s_AssetLabelsForObjectChangedDelegates += AssetLabelsChangedForObject;
-            EditorApplication.projectWindowChanged += InvalidateLabels;
+            EditorApplication.projectChanged += InvalidateLabels;
         }
 
         public void OnDisable()
         {
             s_AssetLabelsForObjectChangedDelegates -= AssetLabelsChangedForObject;
-            EditorApplication.projectWindowChanged -= InvalidateLabels;
+            EditorApplication.projectChanged -= InvalidateLabels;
             SaveLabels();
         }
 

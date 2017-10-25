@@ -44,7 +44,7 @@ namespace UnityEditor.Audio
         {
             MixerEffectDefinitions.Refresh();
 
-            EditorApplication.projectWindowChanged += OnProjectChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
         }
 
         static void OnProjectChanged()

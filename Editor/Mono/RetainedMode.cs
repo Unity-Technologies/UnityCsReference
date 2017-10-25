@@ -15,6 +15,14 @@ namespace UnityEditor
 {
     class RetainedMode : AssetPostprocessor
     {
+        private const string k_UielementsUxmllivereloadPrefsKey = "UIElements_UXMLLiveReload";
+
+        internal static bool UxmlLiveReloadIsEnabled
+        {
+            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, true); }
+            set { EditorPrefs.SetBool(k_UielementsUxmllivereloadPrefsKey, value); }
+        }
+
         static HashSet<Object> s_TmpDirtySet = new HashSet<Object>();
 
         static RetainedMode()
@@ -83,17 +91,36 @@ namespace UnityEditor
             {
                 if (assetPath.EndsWith("uss"))
                 {
-                    anyUssImported = true;
-                    FlagStyleSheetChange();
+                    if (!anyUssImported)
+                    {
+                        anyUssImported = true;
+                        FlagStyleSheetChange();
+                    }
                 }
                 else if (assetPath.EndsWith("uxml"))
                 {
-                    anyUxmlImported = true;
-                    UIElementsViewImporter.logger.FinishImport();
+                    if (!anyUxmlImported)
+                    {
+                        anyUxmlImported = true;
+                        UIElementsViewImporter.logger.FinishImport();
 
-                    // the inline stylesheet cache might get out of date.
-                    // Usually called by the USS importer, which might not get called here
-                    StyleSheetCache.ClearCaches();
+                        // the inline stylesheet cache might get out of date.
+                        // Usually called by the USS importer, which might not get called here
+                        StyleSheetCache.ClearCaches();
+
+                        if (UxmlLiveReloadIsEnabled)
+                        {
+                            var it = UIElementsUtility.GetPanelsIterator();
+                            while (it.MoveNext())
+                            {
+                                var view = it.Current.Value.ownerObject as HostView;
+                                if (view != null && view.actualView != null)
+                                {
+                                    view.Reload(view.actualView);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // no need to continue, as we found both extensions we were looking for

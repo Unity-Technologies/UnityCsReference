@@ -43,6 +43,7 @@ namespace UnityEngine.Playables
             return (T)playable;
         }
 
+        [VisibleToOtherModules]
         internal bool IsPlayableOfType<T>()
         {
             return GetPlayableType() == typeof(T);
@@ -128,33 +129,61 @@ namespace UnityEngine.Playables
         }
 
         // Bindings methods.
+        [VisibleToOtherModules]
         extern internal bool IsValid();
+        [VisibleToOtherModules]
         extern internal Type GetPlayableType();
+        [VisibleToOtherModules]
         extern internal void SetScriptInstance(object scriptInstance);
+        [VisibleToOtherModules]
         extern internal bool CanChangeInputs();
+        [VisibleToOtherModules]
         extern internal bool CanSetWeights();
+        [VisibleToOtherModules]
         extern internal bool CanDestroy();
+        [VisibleToOtherModules]
         extern internal PlayState GetPlayState();
+        [VisibleToOtherModules]
         extern internal void Play();
+        [VisibleToOtherModules]
         extern internal void Pause();
+        [VisibleToOtherModules]
         extern internal double GetSpeed();
+        [VisibleToOtherModules]
         extern internal void SetSpeed(double value);
+        [VisibleToOtherModules]
         extern internal double GetTime();
+        [VisibleToOtherModules]
         extern internal void SetTime(double value);
+        [VisibleToOtherModules]
         extern internal bool IsDone();
+        [VisibleToOtherModules]
         extern internal void SetDone(bool value);
+        [VisibleToOtherModules]
         extern internal double GetDuration();
+        [VisibleToOtherModules]
         extern internal void SetDuration(double value);
+        [VisibleToOtherModules]
         extern internal bool GetPropagateSetTime();
+        [VisibleToOtherModules]
         extern internal void SetPropagateSetTime(bool value);
+        [VisibleToOtherModules]
         extern internal PlayableGraph GetGraph();
+        [VisibleToOtherModules]
         extern internal int GetInputCount();
+        [VisibleToOtherModules]
         extern internal void SetInputCount(int value);
+        [VisibleToOtherModules]
         extern internal int GetOutputCount();
+        [VisibleToOtherModules]
         extern internal void SetOutputCount(int value);
+        [VisibleToOtherModules]
         extern internal void SetInputWeight(PlayableHandle input, float weight);
+        [VisibleToOtherModules]
         extern internal void SetDelay(double delay);
+        [VisibleToOtherModules]
         extern internal double GetDelay();
+        [VisibleToOtherModules]
         extern internal bool IsDelayed();
 
         extern private object GetScriptInstance();

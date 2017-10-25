@@ -120,7 +120,7 @@ public sealed partial class PrefabUtility
     private extern static Object INTERNAL_CALL_InternalInstantiatePrefab (Object target, ref Scene destinationScene);
     public static Object CreateEmptyPrefab(string path)
         {
-            if (!Utils.Paths.IsValidAssetPathWithErrorLogging(path, ".prefab"))
+            if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(path, ".prefab"))
                 return null;
 
             return Internal_CreateEmptyPrefab(path);
@@ -139,7 +139,7 @@ public static GameObject CreatePrefab (string path, GameObject go) {
 
 public static GameObject CreatePrefab(string path, GameObject go, [uei.DefaultValue("ReplacePrefabOptions.Default")]  ReplacePrefabOptions options )
         {
-            if (!Utils.Paths.IsValidAssetPathWithErrorLogging(path, ".prefab"))
+            if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(path, ".prefab"))
                 return null;
 
             return Internal_CreatePrefab(path, go, options);

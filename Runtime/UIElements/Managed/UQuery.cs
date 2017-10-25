@@ -48,6 +48,8 @@ namespace UnityEngine.Experimental.UIElements
 
         private abstract class UQueryMatcher : HierarchyTraversal
         {
+            internal List<RuleMatcher> m_Matchers;
+
             public override bool ShouldSkipElement(VisualElement element)
             {
                 return false;
@@ -64,9 +66,15 @@ namespace UnityEngine.Experimental.UIElements
                 return base.MatchSelectorPart(element, selector, part);
             }
 
-            public virtual void Run(VisualElement root, List<RuleMatcher> ruleMatchers)
+            public override void Traverse(VisualElement element)
             {
-                Traverse(root, 0, ruleMatchers);
+                TraverseRecursive(element, 0, new List<RuleMatcher>(m_Matchers));
+            }
+
+            public virtual void Run(VisualElement root, List<RuleMatcher> matchers)
+            {
+                m_Matchers = matchers;
+                Traverse(root);
             }
         }
 
@@ -74,10 +82,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             public VisualElement match { get; protected set; }
 
-            public override void Run(VisualElement root, List<RuleMatcher> ruleMatchers)
+            public override void Run(VisualElement root, List<RuleMatcher> matchers)
             {
                 match = null;
-                base.Run(root, ruleMatchers);
+                base.Run(root, matchers);
             }
         }
 
@@ -115,10 +123,10 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            public override void Run(VisualElement root, List<RuleMatcher> ruleMatchers)
+            public override void Run(VisualElement root, List<RuleMatcher> matchers)
             {
                 matchCount = -1;
-                base.Run(root, ruleMatchers);
+                base.Run(root, matchers);
             }
 
             public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
@@ -351,7 +359,7 @@ namespace UnityEngine.Experimental.UIElements
                     m_Matchers = m_Matchers,
                     m_Parts = m_Parts,
                     m_StyleSelectors = m_StyleSelectors,
-                    m_Relationship = relationship,
+                    m_Relationship = relationship == StyleSelectorRelationship.None ? m_Relationship : relationship,
                     pseudoStatesMask = pseudoStatesMask,
                     negatedPseudoStatesMask = negatedPseudoStatesMask
                 };
@@ -374,7 +382,7 @@ namespace UnityEngine.Experimental.UIElements
                     var selector = new StyleComplexSelector();
                     selector.selectors = styleSelectors.ToArray();
                     styleSelectors.Clear();
-                    m_Matchers.Add(new RuleMatcher { complexSelector = selector, simpleSelectorIndex = 0, depth = Int32.MaxValue });
+                    m_Matchers.Add(new RuleMatcher { complexSelector = selector });
                 }
             }
 

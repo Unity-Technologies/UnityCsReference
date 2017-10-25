@@ -243,10 +243,10 @@ namespace UnityEditor
                             {
                                 DoRemoveWatcher(watchers);
                             }
-                            return;
                         }
                     }
                 }
+                return;
             }
             throw new ArgumentException("Data watch was not registered");
         }

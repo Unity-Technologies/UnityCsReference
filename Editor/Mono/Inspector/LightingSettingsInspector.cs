@@ -375,8 +375,7 @@ namespace UnityEditor
         void ShowClampedSizeInLightmapGUI(float lightmapScale, float cachedSurfaceArea)
         {
             float sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * LightmapEditorSettings.bakeResolution * lightmapScale;
-            float maxAtlasSize = Math.Min(LightmapEditorSettings.maxAtlasWidth, LightmapEditorSettings.maxAtlasHeight);
-            m_ShowClampedSize.target = sizeInLightmap > maxAtlasSize;
+            m_ShowClampedSize.target = sizeInLightmap > LightmapEditorSettings.maxAtlasSize;
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowClampedSize.faded))
                 EditorGUILayout.HelpBox(s_Styles.ClampedSize.text, MessageType.Info);

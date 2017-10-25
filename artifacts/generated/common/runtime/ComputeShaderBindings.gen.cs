@@ -20,6 +20,9 @@ namespace UnityEngine
 
 public sealed partial class ComputeShader : Object
 {
+    private ComputeShader() {}
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public int FindKernel (string name) ;
@@ -198,6 +201,7 @@ public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer, [uei.Def
 
 }
 
+[UsedByNativeCode]
 public sealed partial class ComputeBuffer : IDisposable
 {
     #pragma warning disable 414
@@ -272,6 +276,12 @@ public sealed partial class ComputeBuffer : IDisposable
     public void Release()
         {
             Dispose();
+        }
+    
+    
+    public bool IsValid()
+        {
+            return m_Ptr != IntPtr.Zero;
         }
     
     

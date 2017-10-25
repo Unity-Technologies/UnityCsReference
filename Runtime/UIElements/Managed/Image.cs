@@ -48,7 +48,7 @@ namespace UnityEngine.Experimental.UIElements
 
             var painterParams = new TextureStylePainterParameters
             {
-                layout = contentRect,
+                rect = contentRect,
                 texture = image,
                 color = GUI.color,
                 scaleMode = scaleMode

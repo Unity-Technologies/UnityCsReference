@@ -35,8 +35,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (clicked != null && IsRepeatable())
             {
-                var localMousePosition = target.ChangeCoordinatesTo(target.shadow.parent, lastMousePosition);
-                if (target.ContainsPoint(localMousePosition))
+                if (target.ContainsPoint(lastMousePosition))
                 {
                     clicked();
                     target.pseudoStates |= PseudoStates.Active;
@@ -71,14 +70,13 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (CanStartManipulation(evt))
             {
-                target.TakeCapture();
+                target.TakeMouseCapture();
                 lastMousePosition = evt.localMousePosition;
 
                 if (IsRepeatable())
                 {
                     // Repeatable button clicks are performed on the MouseDown and at timer events
-                    var localMousePosition = target.ChangeCoordinatesTo(target.shadow.parent, evt.localMousePosition);
-                    if (clicked != null && target.ContainsPoint(localMousePosition))
+                    if (clicked != null && target.ContainsPoint(evt.localMousePosition))
                     {
                         clicked();
                     }
@@ -101,7 +99,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void OnMouseMove(MouseMoveEvent evt)
         {
-            if (target.HasCapture())
+            if (target.HasMouseCapture())
             {
                 lastMousePosition = evt.localMousePosition;
                 evt.StopPropagation();
@@ -112,7 +110,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (CanStopManipulation(evt))
             {
-                target.ReleaseCapture();
+                target.ReleaseMouseCapture();
 
                 if (IsRepeatable())
                 {
@@ -125,7 +123,7 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     // Non repeatable button clicks are performed on the MouseUp
-                    if (clicked != null && target.ContainsPoint(target.ChangeCoordinatesTo(target.shadow.parent, evt.localMousePosition)))
+                    if (clicked != null && target.ContainsPoint(evt.localMousePosition))
                     {
                         clicked();
                     }

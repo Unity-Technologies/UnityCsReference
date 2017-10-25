@@ -11,6 +11,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -38,6 +39,7 @@ public sealed partial class Event
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void InitPtr (IntPtr ptr) ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

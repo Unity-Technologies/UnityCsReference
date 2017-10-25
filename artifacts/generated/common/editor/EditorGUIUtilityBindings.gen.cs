@@ -696,14 +696,13 @@ public static GUIContent IconContent(string name, [uei.DefaultValue("null")]  st
         {
             foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
             {
-                bool ping = true;
-                shw.FrameObject(targetInstanceID, ping);
+                shw.ReloadData();
+                shw.FrameObject(targetInstanceID, true);
             }
 
             foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
             {
-                bool ping = true;
-                pb.FrameObject(targetInstanceID, ping);
+                pb.FrameObject(targetInstanceID, true);
             }
 
         }
@@ -1264,6 +1263,17 @@ public static void LookLikeInspector()
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_Internal_AddCursorRect (ref Rect r, MouseCursor m, int controlID);
+    internal static void SetCurrentViewCursor (Texture2D texture, Vector2 hotspot, MouseCursor type) {
+        INTERNAL_CALL_SetCurrentViewCursor ( texture, ref hotspot, type );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_SetCurrentViewCursor (Texture2D texture, ref Vector2 hotspot, MouseCursor type);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void ClearCurrentViewCursor () ;
+
     internal static Rect HandleHorizontalSplitter(Rect dragRect, float width, float minLeftSide, float minRightSide)
         {
             if (Event.current.type == EventType.Repaint)
@@ -1446,6 +1456,8 @@ internal sealed partial class GUILayoutFadeGroup : GUILayoutGroup
 
 internal sealed partial class OptimizedGUIBlock
 {
+    
+            #pragma warning disable 649 
     [System.NonSerialized]
             private IntPtr m_Ptr;
     

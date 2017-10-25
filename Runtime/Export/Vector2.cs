@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -176,7 +177,22 @@ namespace UnityEngine
         // Returns a vector that is made from the largest components of two vectors.
         public static Vector2 Max(Vector2 lhs, Vector2 rhs) { return new Vector2(Mathf.Max(lhs.x, rhs.x), Mathf.Max(lhs.y, rhs.y)); }
 
-        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime, float maxSpeed /*= Mathf.Infinity*/, float deltaTime /*= Time.deltaTime*/)
+        [uei.ExcludeFromDocs]
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime, float maxSpeed)
+        {
+            float deltaTime = Time.deltaTime;
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
+        }
+
+        [uei.ExcludeFromDocs]
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime)
+        {
+            float deltaTime = Time.deltaTime;
+            float maxSpeed = Mathf.Infinity;
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
+        }
+
+        public static Vector2 SmoothDamp(Vector2 current, Vector2 target, ref Vector2 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")] float maxSpeed, [uei.DefaultValue("Time.deltaTime")] float deltaTime)
         {
             // Based on Game Programming Gems 4 Chapter 1.10
             smoothTime = Mathf.Max(0.0001F, smoothTime);

@@ -43,7 +43,7 @@ namespace UnityEditor
 
             SceneView.onSceneGUIDelegate += OnSceneGuiDelegate;
             Selection.selectionChanged += UpdateCache;
-            EditorApplication.hierarchyWindowChanged += UpdateCache;
+            EditorApplication.hierarchyChanged += UpdateCache;
             EditMode.editModeStarted += OnEditModeStart;
             EditMode.editModeEnded += OnEditModeEnd;
             GridPaintingState.brushChanged += OnBrushChanged;
@@ -83,7 +83,7 @@ namespace UnityEditor
             FlushCachedGridProxy();
             SceneView.onSceneGUIDelegate -= OnSceneGuiDelegate;
             Selection.selectionChanged -= UpdateCache;
-            EditorApplication.hierarchyWindowChanged -= UpdateCache;
+            EditorApplication.hierarchyChanged -= UpdateCache;
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
             GridPaintingState.brushChanged -= OnBrushChanged;

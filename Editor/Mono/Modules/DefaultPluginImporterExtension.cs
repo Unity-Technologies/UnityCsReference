@@ -149,13 +149,11 @@ namespace UnityEditor.Modules
 
         protected Dictionary<string, List<PluginImporter>> GetCompatiblePlugins(string buildTargetName)
         {
-            PluginImporter[] plugins = PluginImporter.GetAllImporters().Where(imp => (imp.GetCompatibleWithPlatform(buildTargetName) || imp.GetCompatibleWithAnyPlatform()) && !string.IsNullOrEmpty(imp.assetPath)).ToArray();
+            IEnumerable<PluginImporter> plugins = PluginImporter.GetAllImporters().Where(imp => PluginImporter.IsCompatible(imp, buildTargetName));
             Dictionary<string, List<PluginImporter>> matchingPlugins = new Dictionary<string, List<PluginImporter>>();
 
             foreach (var plugin in plugins)
             {
-                if (string.IsNullOrEmpty(plugin.assetPath))
-                    continue;
                 string finalPluginPath = CalculateFinalPluginPath(buildTargetName, plugin);
                 if (string.IsNullOrEmpty(finalPluginPath))
                     continue;

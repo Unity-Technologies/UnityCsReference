@@ -12,17 +12,40 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     class Edge : GraphElement
     {
         private const float k_EndPointRadius = 4.0f;
-        private const float k_InterceptWidth = 3.0f;
+        private const float k_InterceptWidth = 6.0f;
         private const string k_EdgeWidthProperty = "edge-width";
         private const string k_SelectedEdgeColorProperty = "selected-edge-color";
+        private const string k_GhostEdgeColorProperty = "ghost-edge-color";
         private const string k_EdgeColorProperty = "edge-color";
 
         private GraphView m_GraphView;
 
-        private NodeAnchorPresenter m_OutputPresenter;
-        private NodeAnchorPresenter m_InputPresenter;
-        private NodeAnchor m_LeftAnchor;
-        private NodeAnchor m_RightAnchor;
+        private NodeAnchor m_OutputAnchor;
+        private NodeAnchor m_InputAnchor;
+
+        private Vector2 m_CandidatePosition;
+
+        public bool isGhostEdge { get; set; }
+
+        public NodeAnchor output
+        {
+            get { return m_OutputAnchor; }
+            set
+            {
+                m_OutputAnchor = value;
+                OnAnchorChanged(false);
+            }
+        }
+
+        public NodeAnchor input
+        {
+            get { return m_InputAnchor; }
+            set
+            {
+                m_InputAnchor = value;
+                OnAnchorChanged(true);
+            }
+        }
 
         EdgeControl m_EdgeControl;
         public EdgeControl edgeControl
@@ -34,6 +57,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_EdgeControl = CreateEdgeControl();
                 }
                 return m_EdgeControl;
+            }
+        }
+
+        public Vector2 candidatePosition
+        {
+            get { return m_CandidatePosition; }
+            set
+            {
+                m_CandidatePosition = value;
+                UpdateEdgeControl();
             }
         }
 
@@ -64,19 +97,30 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected Vector3[] PointsAndTangents
+        StyleValue<Color> m_GhostColor;
+        public Color ghostColor
+        {
+            get
+            {
+                return m_GhostColor.GetSpecifiedValueOrDefault(new Color(85 / 255f, 85 / 255f, 85 / 255f));
+            }
+        }
+
+        protected Vector2[] PointsAndTangents
         {
             get { return edgeControl.controlPoints; }
         }
 
         public Edge()
         {
-            clipChildren = false;
+            clippingOptions = ClippingOptions.NoClipping;
 
             ClearClassList();
             AddToClassList("edge");
 
             Add(edgeControl);
+
+            capabilities |= Capabilities.Selectable | Capabilities.Deletable;
         }
 
         public override bool Overlaps(Rect rectangle)
@@ -84,7 +128,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!UpdateEdgeControl())
                 return false;
 
-            return edgeControl.Overlaps(rectangle);
+            return edgeControl.Overlaps(this.ChangeCoordinatesTo(edgeControl, rectangle));
         }
 
         public override bool ContainsPoint(Vector2 localPoint)
@@ -92,26 +136,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!UpdateEdgeControl())
                 return false;
 
-            return edgeControl.ContainsPoint(localPoint);
+            return edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
         }
 
-        protected bool UpdateEdgeControl()
+        public virtual void OnAnchorChanged(bool isInput)
+        {
+        }
+
+        public bool UpdateEdgeControl()
         {
             // bounding box check succeeded, do more fine grained check by measuring distance to bezier points
-            var edgePresenter = GetPresenter<EdgePresenter>();
 
-            NodeAnchorPresenter outputPresenter = edgePresenter.output;
-            NodeAnchorPresenter inputPresenter = edgePresenter.input;
+            if (m_OutputAnchor == null && m_InputAnchor == null)
+                return false;
 
-            if (outputPresenter == null && inputPresenter == null)
+            if (m_GraphView == null)
+                m_GraphView = GetFirstOfType<GraphView>();
+
+            if (m_GraphView == null)
                 return false;
 
             Vector2 from = Vector2.zero;
             Vector2 to = Vector2.zero;
-            GetFromToPoints(edgePresenter, outputPresenter, inputPresenter, ref from, ref to);
+            GetFromToPoints(ref from, ref to);
+
             edgeControl.from = from;
             edgeControl.to = to;
-            edgeControl.orientation = outputPresenter != null ? outputPresenter.orientation : inputPresenter.orientation;
+
+            edgeControl.UpdateLayout();
 
             return true;
         }
@@ -122,60 +174,73 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             DrawEdge();
         }
 
-        protected void GetFromToPoints(EdgePresenter edgePresenter, NodeAnchorPresenter outputPresenter, NodeAnchorPresenter inputPresenter, ref Vector2 from, ref Vector2 to)
+        protected void GetFromToPoints(ref Vector2 from, ref Vector2 to)
         {
-            if (outputPresenter == null && inputPresenter == null)
+            if (m_OutputAnchor == null && m_InputAnchor == null)
+            {
                 return;
+            }
 
             if (m_GraphView == null)
                 m_GraphView = GetFirstOfType<GraphView>();
 
-            if (outputPresenter != null)
+            if (m_OutputAnchor != null)
             {
-                if (m_OutputPresenter != outputPresenter)
-                {
-                    m_LeftAnchor = m_GraphView.Query<NodeAnchor>().Where(e => e.direction == Direction.Output && e.GetPresenter<NodeAnchorPresenter>() == outputPresenter).First();
-                    m_OutputPresenter = outputPresenter;
-                }
-
-                if (m_LeftAnchor != null)
-                {
-                    from = m_LeftAnchor.GetGlobalCenter();
-                    from = worldTransform.inverse.MultiplyPoint3x4(from);
-                }
+                from = m_OutputAnchor.GetGlobalCenter();
+                from = this.WorldToLocal(from);
             }
             else
             {
-                from = worldTransform.inverse.MultiplyPoint3x4(new Vector3(edgePresenter.candidatePosition.x, edgePresenter.candidatePosition.y));
+                from = this.WorldToLocal(new Vector2(m_CandidatePosition.x, m_CandidatePosition.y));
             }
 
-            if (inputPresenter != null)
+            if (m_InputAnchor != null)
             {
-                if (m_InputPresenter != inputPresenter)
-                {
-                    m_RightAnchor = m_GraphView.Query<NodeAnchor>().Where(e => e.direction == Direction.Input && e.GetPresenter<NodeAnchorPresenter>() == inputPresenter).First();
-                    m_InputPresenter = inputPresenter;
-                }
-
-                if (m_RightAnchor != null)
-                {
-                    to = m_RightAnchor.GetGlobalCenter();
-                    to = worldTransform.inverse.MultiplyPoint3x4(to);
-                }
+                to = m_InputAnchor.GetGlobalCenter();
+                to = this.WorldToLocal(to);
             }
             else
             {
-                to = worldTransform.inverse.MultiplyPoint3x4(new Vector3(edgePresenter.candidatePosition.x, edgePresenter.candidatePosition.y));
+                to = this.WorldToLocal(new Vector2(m_CandidatePosition.x, m_CandidatePosition.y));
             }
         }
 
-        public override void OnStyleResolved(ICustomStyle styles)
+        protected override void OnStyleResolved(ICustomStyle styles)
         {
             base.OnStyleResolved(styles);
 
             styles.ApplyCustomProperty(k_EdgeWidthProperty, ref m_EdgeWidth);
             styles.ApplyCustomProperty(k_SelectedEdgeColorProperty, ref m_SelectedColor);
+            styles.ApplyCustomProperty(k_GhostEdgeColorProperty, ref m_GhostColor);
             styles.ApplyCustomProperty(k_EdgeColorProperty, ref m_DefaultColor);
+        }
+
+        public override void OnDataChanged()
+        {
+            base.OnDataChanged();
+
+            EdgePresenter edgePresenter = GetPresenter<EdgePresenter>();
+            if (edgePresenter != null)
+            {
+                if (output == null || output.presenter != edgePresenter.output)
+                {
+                    GraphView view = GetFirstAncestorOfType<GraphView>();
+                    if (view != null)
+                    {
+                        output = view.Query().OfType<NodeAnchor>().Where(t => t.presenter == edgePresenter.output);
+                    }
+                }
+                if (input == null || input.presenter != edgePresenter.input)
+                {
+                    GraphView view = GetFirstAncestorOfType<GraphView>();
+                    if (view != null)
+                    {
+                        input = view.Query().OfType<NodeAnchor>().Where(t => t.presenter == edgePresenter.input);
+                    }
+                }
+                if (edgePresenter.output != null || edgePresenter.input != null)
+                    edgeControl.orientation = edgePresenter.output != null ? edgePresenter.output.orientation : edgePresenter.input.orientation;
+            }
         }
 
         protected virtual void DrawEdge()
@@ -183,12 +248,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!UpdateEdgeControl())
                 return;
 
-            var edgePresenter = GetPresenter<EdgePresenter>();
-
-            Color edgeColor = edgePresenter.selected ? selectedColor : defaultColor;
+            Color edgeColor = isGhostEdge ? ghostColor : (selected ? selectedColor : defaultColor);
             edgeControl.edgeColor = edgeColor;
             edgeControl.startCapColor = edgeColor;
-            edgeControl.endCapColor = edgePresenter.input == null ? edgeControl.startCapColor : edgeColor;
+            edgeControl.edgeWidth = edgeWidth;
+
+            var edgePresenter = GetPresenter<EdgePresenter>();
+            if (edgePresenter == null)
+                edgeControl.endCapColor = m_InputAnchor == null ? edgeControl.startCapColor : edgeColor;
+            else
+                edgeControl.endCapColor = edgePresenter.input == null ? edgeControl.startCapColor : edgeColor;
         }
 
         protected virtual EdgeControl CreateEdgeControl()

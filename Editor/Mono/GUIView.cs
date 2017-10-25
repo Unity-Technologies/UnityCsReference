@@ -11,9 +11,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using IntPtr = System.IntPtr;
 using System;
+using UnityEditor.StyleSheets;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.StyleSheets;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor
 {
@@ -25,17 +26,27 @@ namespace UnityEditor
     {
         internal static event Action<GUIView> positionChanged = null;
 
+        Panel m_Panel = null;
+        EditorCursorManager m_CursorManager = new EditorCursorManager();
+
+        static GUIView()
+        {
+            Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
+            StyleSheetApplicator.createDefaultCursorStyleFunc = UIElementsEditorUtility.CreateDefaultCursorStyle;
+            Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
+        }
 
         protected Panel panel
         {
             get
             {
-                if (Panel.loadResourceFunc == null)
-                    Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
-
-                Panel p = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
-                AddDefaultEditorStyleSheets(p.visualTree);
-                return p;
+                if (m_Panel == null)
+                {
+                    m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
+                    m_Panel.cursorManager = m_CursorManager;
+                    AddDefaultEditorStyleSheets(m_Panel.visualTree);
+                }
+                return m_Panel;
             }
         }
 
@@ -179,8 +190,8 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
-            if (imguiContainer.HasCapture())
-                imguiContainer.RemoveCapture();
+            if (imguiContainer.HasMouseCapture())
+                MouseCaptureController.ReleaseMouseCapture();
             visualTree.Remove(imguiContainer);
         }
 

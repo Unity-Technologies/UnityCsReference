@@ -13,5 +13,8 @@ namespace UnityEditorInternal
 
     public sealed partial class AssemblyDefinitionAsset : TextAsset
     {
+        private AssemblyDefinitionAsset() {}
+
+        private AssemblyDefinitionAsset(string text) {}
     }
 }

@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager
         private string m_Type;
         private UpmPackageInfo[] m_PackageList;
         private float m_Progress;
+        private Error m_Error;
 
         private OperationStatus() {}
 
@@ -24,6 +25,7 @@ namespace UnityEditor.PackageManager
         public string type { get { return m_Type;  } }
         public UpmPackageInfo[] packageList { get { return m_PackageList; } }
         public float progress { get { return m_Progress; } }
+        public Error error { get { return m_Error; } }
     }
 }
 

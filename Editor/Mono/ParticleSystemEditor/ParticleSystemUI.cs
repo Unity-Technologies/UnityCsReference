@@ -412,7 +412,7 @@ namespace UnityEditor
                 foreach (ParticleSystem ps in m_ParticleSystems)
                 {
                     ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
-                    if (!ParticleEffectUI.IsStopped(root) && ParticleSystemEditorUtils.editorResimulation)
+                    if (!ParticleEffectUI.IsStopped(root) && ParticleSystemEditorUtils.resimulation)
                         ParticleSystemEditorUtils.PerformCompleteResimulation();
                 }
 

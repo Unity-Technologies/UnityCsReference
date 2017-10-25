@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.StyleSheets
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct StyleSelectorPart
     {
         [SerializeField]
@@ -33,6 +35,7 @@ namespace UnityEngine.StyleSheets
             {
                 return m_Type;
             }
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal set
             {
                 m_Type = value;
@@ -40,6 +43,7 @@ namespace UnityEngine.StyleSheets
         }
 
         // Used at runtime as a cache
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal object tempData;
 
         public override string ToString()

@@ -12,6 +12,7 @@ namespace UnityEngine
 {
     [NativeHeader("Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
     [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
+    [VisibleToOtherModules]
     internal static class UnsafeUtility
     {
         // Copies sizeof(T) bytes from ptr to output

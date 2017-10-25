@@ -9,6 +9,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEditor.Animations
 {
+    [NativeClass(null)]
     public sealed partial class AnimatorController : RuntimeAnimatorController
     {
         internal System.Action OnAnimatorControllerDirty;
@@ -31,6 +32,7 @@ namespace UnityEditor.Animations
             return "Blend";
         }
 
+        [RequiredByNativeCode]
         internal static void OnInvalidateAnimatorController(AnimatorController controller)
         {
             if (controller.OnAnimatorControllerDirty != null)

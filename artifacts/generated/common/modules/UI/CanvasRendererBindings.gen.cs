@@ -14,6 +14,7 @@ namespace UnityEngine
 {
 
 
+[NativeClass("UI::CanvasRenderer")]
 public sealed partial class CanvasRenderer : Component
 {
     public void SetColor (Color color) {

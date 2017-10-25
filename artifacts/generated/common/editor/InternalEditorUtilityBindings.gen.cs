@@ -947,6 +947,11 @@ internal static bool RunningUnderWindows8( [uei.DefaultValue("true")] bool orHig
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  string[] GetEditorModuleDllNames () ;
 
+    [ThreadAndSerializationSafe ()]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool CurrentThreadIsMainThread () ;
+
 }
 
 }

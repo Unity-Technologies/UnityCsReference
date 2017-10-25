@@ -20,6 +20,7 @@ namespace UnityEditor
 {
 
 
+[NativeClass(null)]
 public sealed partial class MonoScript : TextAsset
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -46,6 +47,9 @@ public sealed partial class MonoScript : TextAsset
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public MonoScript () ;
 
+    private MonoScript(string text) : this() {}
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void Init (string scriptContents, string className, string nameSpace, string assemblyName, bool isEditorScript) ;

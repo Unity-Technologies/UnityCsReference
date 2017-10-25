@@ -33,7 +33,7 @@ internal sealed partial class ModuleMetadata
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  bool GetModuleStrippable (string moduleName) ;
+    extern public static  bool IsStrippableModule (string moduleName) ;
 
     public static UnityType[] GetModuleTypes(string moduleName)
         {

@@ -8,7 +8,12 @@ using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements.StyleSheets
 {
-    internal abstract class HierarchyTraversal
+    internal interface IHierarchyTraversal
+    {
+        void Traverse(VisualElement element);
+    }
+
+    internal abstract class HierarchyTraversal : IHierarchyTraversal
     {
         public abstract bool ShouldSkipElement(VisualElement element);
         public abstract bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element);
@@ -26,7 +31,19 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         {
         }
 
-        internal void Traverse(VisualElement element, int depth, List<RuleMatcher> ruleMatchers)
+        List<RuleMatcher> m_ruleMatchers = new List<RuleMatcher>();
+
+        public virtual void OnProcessMatchResult(VisualElement element, ref RuleMatcher matcher, ref MatchResultInfo matchInfo)
+        {
+        }
+
+        public virtual void Traverse(VisualElement element)
+        {
+            TraverseRecursive(element, 0, m_ruleMatchers);
+            m_ruleMatchers.Clear();
+        }
+
+        public virtual void TraverseRecursive(VisualElement element, int depth, List<RuleMatcher> ruleMatchers)
         {
             // if subtree is up to date skip
             if (ShouldSkipElement(element))
@@ -43,38 +60,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {
                 RuleMatcher matcher = ruleMatchers[j];
 
-                if (matcher.depth < depth || // ignore matchers that don't apply to this depth
-                    !Match(element, ref matcher))
-                {
-                    continue;
-                }
-                // from now, the element is a match, at least a partial one
-
-                StyleSelector[] selectors = matcher.complexSelector.selectors;
-                int nextIndex = matcher.simpleSelectorIndex + 1;
-                int selectorsCount = selectors.Length;
-                // if this sub selector in the complex selector is not the last
-                // we create a new matcher for the next element
-                // will stay in the list of matchers for as long as we visit descendents
-                if (nextIndex < selectorsCount)
-                {
-                    RuleMatcher copy = new RuleMatcher()
-                    {
-                        complexSelector = matcher.complexSelector,
-                        depth = selectors[nextIndex].previousRelationship == StyleSelectorRelationship.Child ? depth + 1 : Int32.MaxValue,
-                        simpleSelectorIndex = nextIndex,
-                        sheet = matcher.sheet
-                    };
-
-                    ruleMatchers.Add(copy);
-                }
-                // Otherwise we add the rule as matching this element
-                else
-                {
-                    //TODO: abort if return false
-                    if (OnRuleMatchedElement(matcher, element))
-                        return;
-                }
+                if (MatchRightToLeft(element, ref matcher))
+                    return;
             }
 
             ProcessMatchedRules(element);
@@ -88,12 +75,77 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             }
         }
 
+        private bool MatchRightToLeft(VisualElement element, ref RuleMatcher matcher)
+        {
+            // see https://speakerdeck.com/constellation/css-jit-just-in-time-compiled-css-selectors-in-webkit for
+            // a detailed explaination of the algorithm
+
+            var current = element;
+            int nextIndex = matcher.complexSelector.selectors.Length - 1;
+            VisualElement saved = null;
+            int savedIdx = -1;
+
+            // go backward
+            while (nextIndex >= 0)
+            {
+                if (current == null)
+                    break;
+
+                MatchResultInfo matchInfo = Match(current, ref matcher, nextIndex);
+                OnProcessMatchResult(current, ref matcher, ref matchInfo);
+
+                if (!matchInfo.success)
+                {
+                    // if we have a descendent relationship, keep trying on the parent
+                    // ie. "div span", div failed on this element, try on the parent
+                    // happens earlier than the backtracking saving below
+                    if (nextIndex < matcher.complexSelector.selectors.Length - 1 &&
+                        matcher.complexSelector.selectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
+                    {
+                        current = current.parent;
+                        continue;
+                    }
+
+                    // otherwise, if there's a previous relationship, it's a 'child' one. backtrack from the saved point and try again
+                    // ie.  for "#x > .a .b", #x failed, backtrack to .a on the saved element
+                    if (saved != null)
+                    {
+                        current = saved;
+                        nextIndex = savedIdx;
+                        continue;
+                    }
+
+                    break;
+                }
+
+                // backtracking save
+                // for "a > b c": we're considering the b matcher. c's previous relationship is Descendent
+                // save the current element parent to try to match b again
+                if (nextIndex < matcher.complexSelector.selectors.Length - 1
+                    && matcher.complexSelector.selectors[nextIndex + 1].previousRelationship == StyleSelectorRelationship.Descendent)
+                {
+                    saved = current.parent;
+                    savedIdx = nextIndex;
+                }
+
+                // from now, the element is a match
+                if (--nextIndex < 0)
+                {
+                    //TODO: abort if return false
+                    if (OnRuleMatchedElement(matcher, element))
+                        return true;
+                }
+                current = current.parent;
+            }
+            return false;
+        }
+
         protected virtual void Recurse(VisualElement element, int depth, List<RuleMatcher> ruleMatchers)
         {
             for (int i = 0; i < element.shadow.childCount; i++)
             {
                 var child = element.shadow[i];
-                Traverse(child, depth + 1, ruleMatchers);
+                TraverseRecursive(child, depth + 1, ruleMatchers);
             }
         }
 
@@ -127,16 +179,65 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             return match;
         }
 
-        public virtual bool Match(VisualElement element, ref RuleMatcher matcher)
+        public struct MatchResultInfo
         {
+            public bool success;
+            public PseudoStates triggerPseudoMask;
+            public PseudoStates dependencyPseudoMask;
+        }
+
+        public virtual MatchResultInfo Match(VisualElement element, ref RuleMatcher matcher, int selectorIndex)
+        {
+            if (element == null)
+                return default(MatchResultInfo);
             bool match = true;
-            StyleSelector selector = matcher.complexSelector.selectors[matcher.simpleSelectorIndex];
+            StyleSelector selector = matcher.complexSelector.selectors[selectorIndex];
             int count = selector.parts.Length;
-            for (int i = 0; i < count && match; i++)
+
+            int triggerPseudoStateMask = 0;
+            int dependencyPseudoMask = 0;
+            bool failedOnlyOnPseudoStates = true;
+
+            for (int i = 0; i < count; i++)
             {
-                match = MatchSelectorPart(element, selector, selector.parts[i]);
+                bool isPartMatch = MatchSelectorPart(element, selector, selector.parts[i]);
+
+                if (!isPartMatch)
+                {
+                    if (selector.parts[i].type == StyleSelectorType.PseudoClass)
+                    {
+                        // if the element had those flags defined, it would match this selector
+                        triggerPseudoStateMask |= selector.pseudoStateMask;
+                        // if the element didnt' have those flags, it would match this selector
+                        dependencyPseudoMask |= selector.negatedPseudoStateMask;
+                    }
+                    else
+                    {
+                        failedOnlyOnPseudoStates = false;
+                    }
+                }
+                else
+                {
+                    if (selector.parts[i].type == StyleSelectorType.PseudoClass)
+                    {
+                        // the element matches this selector because it has those flags
+                        dependencyPseudoMask |= selector.pseudoStateMask;
+                        // the element matches this selector because it does not have those flags
+                        triggerPseudoStateMask |= selector.negatedPseudoStateMask;
+                    }
+                }
+
+                match &= isPartMatch;
             }
-            return match;
+
+            var result = new MatchResultInfo() { success = match };
+            if (match || failedOnlyOnPseudoStates)
+            {
+                result.triggerPseudoMask = (PseudoStates)triggerPseudoStateMask;
+                result.dependencyPseudoMask = (PseudoStates)dependencyPseudoMask;
+            }
+
+            return result;
         }
     }
 }

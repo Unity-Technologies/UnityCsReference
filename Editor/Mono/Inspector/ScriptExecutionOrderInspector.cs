@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(UnityEditor.MonoManager))]
+    [CustomEditor(typeof(MonoManager))]
     internal class ScriptExecutionOrderInspector : Editor
     {
         /*

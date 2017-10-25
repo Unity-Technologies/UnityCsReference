@@ -426,7 +426,7 @@ namespace UnityEditor
         public string moduleName; //TODO: we only get "Mono JIT Code" or "wrapper something", can we get the actual assembly name?
     }
 
-    internal partial class GUIViewDebuggerHelper
+    internal static partial class GUIViewDebuggerHelper
     {
         internal static Action onViewInstructionsChanged;
 

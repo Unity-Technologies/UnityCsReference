@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
@@ -11,12 +9,6 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEditor.Experimental.UIElements
 {
-    class TooltipEvent : EventBase<TooltipEvent>, IPropagatableEvent
-    {
-        public string tooltip { get; set; }
-        public Rect rect { get; set; }
-    }
-
     internal static class TooltipExtension
     {
         [RequiredByNativeCode]
@@ -32,18 +24,20 @@ namespace UnityEditor.Experimental.UIElements
                 VisualElement target = panel.Pick(new Vector2(mouseX, mouseY) - view.screenPosition.position);
                 if (target != null)
                 {
-                    var tooltipEvent = TooltipEvent.GetPooled();
-                    tooltipEvent.target = target;
-                    tooltipEvent.tooltip = null;
-                    tooltipEvent.rect = Rect.zero;
-                    view.visualTree.panel.dispatcher.DispatchEvent(tooltipEvent, panel);
-
-                    if (!string.IsNullOrEmpty(tooltipEvent.tooltip))
+                    using (var tooltipEvent = TooltipEvent.GetPooled())
                     {
-                        Rect rect = tooltipEvent.rect;
-                        rect.position += view.screenPosition.position; //SetMouseTooltip expects Screen relative coordinates.
+                        tooltipEvent.target = target;
+                        tooltipEvent.tooltip = null;
+                        tooltipEvent.rect = Rect.zero;
+                        view.visualTree.panel.dispatcher.DispatchEvent(tooltipEvent, panel);
 
-                        GUIStyle.SetMouseTooltip(tooltipEvent.tooltip, rect);
+                        if (!string.IsNullOrEmpty(tooltipEvent.tooltip))
+                        {
+                            Rect rect = tooltipEvent.rect;
+                            rect.position += view.screenPosition.position; //SetMouseTooltip expects Screen relative coordinates.
+
+                            GUIStyle.SetMouseTooltip(tooltipEvent.tooltip, rect);
+                        }
                     }
                 }
             }

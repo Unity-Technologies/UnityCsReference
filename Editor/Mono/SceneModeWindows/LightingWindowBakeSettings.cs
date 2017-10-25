@@ -110,7 +110,7 @@ namespace UnityEditor
             m_FinalGather = so.FindProperty("m_LightmapEditorSettings.m_FinalGather");
             m_FinalGatherRayCount = so.FindProperty("m_LightmapEditorSettings.m_FinalGatherRayCount");
             m_FinalGatherFiltering = so.FindProperty("m_LightmapEditorSettings.m_FinalGatherFiltering");
-            m_LightmapSize = so.FindProperty("m_LightmapEditorSettings.m_TextureWidth");
+            m_LightmapSize = so.FindProperty("m_LightmapEditorSettings.m_AtlasSize");
             m_BakeBackend = so.FindProperty("m_LightmapEditorSettings.m_BakeBackend");
             //m_PVRSampling = so.FindProperty("m_LightmapEditorSettings.m_PVRSampling"); // TODO(PVR): make non-fixed sampling modes work.
             m_PVRSampleCount = so.FindProperty("m_LightmapEditorSettings.m_PVRSampleCount");
@@ -357,7 +357,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
                         if (EditorGUI.EndChangeCheck())
                             InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
-                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+                        if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
                         {
                             EditorGUI.indentLevel++;
 
@@ -430,7 +430,7 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
+                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
                     {
                         DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                     }

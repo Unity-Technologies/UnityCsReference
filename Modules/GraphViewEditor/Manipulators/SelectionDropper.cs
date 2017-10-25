@@ -86,12 +86,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
+            if (MouseCaptureController.IsMouseCaptureTaken())
+                return;
+
             m_Active = false;
             m_Dragging = false;
             m_AddedByMouseDown = false;
 
             if (target == null)
                 return;
+
             selectionContainer = target.GetFirstAncestorOfType<ISelection>();
 
             if (selectionContainer == null)
@@ -111,20 +121,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_AddedByMouseDown = true;
             }
 
-
             if (e.button == (int)activateButton)
             {
                 // avoid starting a manipulation on a non movable object
 
-                var presenter = selectedElement.presenter;
-                if (presenter != null && ((presenter.capabilities & Capabilities.Droppable) != Capabilities.Droppable))
+                if (!selectedElement.IsDroppable())
                     return;
 
                 // Reset drag and drop
                 m_DragAndDropDelay.Init(e.localMousePosition);
 
                 m_Active = true;
-                target.TakeCapture();
+                target.TakeMouseCapture();
                 e.StopPropagation();
             }
         }
@@ -138,14 +146,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (selection.Count > 0)
                 {
-                    bool canStartDrag = false;
                     var ce = selection[0] as GraphElement;
-                    if (ce != null)
-                    {
-                        var presenter = ce.presenter;
-                        if (presenter != null)
-                            canStartDrag = (presenter.capabilities & Capabilities.Droppable) == Capabilities.Droppable;
-                    }
+                    bool canStartDrag = ce != null && ce.IsDroppable();
 
                     if (canStartDrag && m_DragAndDropDelay.CanStartDrag(e.localMousePosition))
                     {
@@ -180,7 +182,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     selectionContainer.RemoveFromSelection(selectedElement);
                 }
 
-                target.ReleaseCapture();
+                target.ReleaseMouseCapture();
                 e.StopPropagation();
             }
 
@@ -203,7 +205,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 case EventType.DragUpdated:
                 {
-                    if (target.HasCapture() && evt.button == (int)activateButton && selection.Count > 0)
+                    if (target.HasMouseCapture() && evt.button == (int)activateButton && selection.Count > 0)
                     {
                         selectedElement = null;
 
@@ -216,10 +218,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                             IDropTarget dropTarget = pickElem != null ? pickElem.GetFirstAncestorOfType<IDropTarget>() : null;
                             if (prevDropTarget != dropTarget && prevDropTarget != null)
                             {
-                                IMGUIEvent eexit = IMGUIEvent.GetPooled(e.imguiEvent);
-                                eexit.imguiEvent.type = EventType.DragExited;
-                                OnDrop(eexit, selection, prevDropTarget);
-                                IMGUIEvent.ReleasePooled(eexit);
+                                using (IMGUIEvent eexit = IMGUIEvent.GetPooled(e.imguiEvent))
+                                {
+                                    eexit.imguiEvent.type = EventType.DragExited;
+                                    OnDrop(eexit, selection, prevDropTarget);
+                                }
                             }
                             OnDrop(e, selection, dropTarget);
                             prevDropTarget = dropTarget;
@@ -243,7 +246,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     prevDropTarget = null;
                     m_Active = false;
-                    target.ReleaseCapture();
+                    target.ReleaseMouseCapture();
                     break;
                 }
 
@@ -267,7 +270,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     prevDropTarget = null;
                     m_Active = false;
-                    target.ReleaseCapture();
+                    target.ReleaseMouseCapture();
                     break;
                 }
             }

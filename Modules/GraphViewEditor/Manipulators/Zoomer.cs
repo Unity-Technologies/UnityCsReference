@@ -74,6 +74,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (graphView == null)
                 return;
 
+            if (MouseCaptureController.IsMouseCaptureTaken())
+                return;
+
             Vector3 position = graphView.viewTransform.position;
             Vector3 scale = graphView.viewTransform.scale;
 

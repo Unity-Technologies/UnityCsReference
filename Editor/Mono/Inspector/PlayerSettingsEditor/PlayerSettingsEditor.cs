@@ -100,7 +100,11 @@ namespace UnityEditor
             public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TextContent("Status Bar Style");
             public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TextContent("Mac App Store Validation");
             public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TextContent("Category|'LSApplicationCategoryType'");
-            public static readonly GUIContent D3D11FullscreenMode = EditorGUIUtility.TextContent("D3D11 Fullscreen Mode");
+            public static readonly GUIContent fullscreenMode = EditorGUIUtility.TextContent("Fullscreen Mode | Not all platforms support all modes");
+            public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TextContent("Exclusive Fullscreen");
+            public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TextContent("Fullscreen Window");
+            public static readonly GUIContent maximizedWindow = EditorGUIUtility.TextContent("Maximized Window");
+            public static readonly GUIContent windowed = EditorGUIUtility.TextContent("Windowed");
             public static readonly GUIContent visibleInBackground = EditorGUIUtility.TextContent("Visible In Background");
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TextContent("Allow Fullscreen Switch");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TextContent("Use 32-bit Display Buffer*|If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
@@ -191,7 +195,6 @@ namespace UnityEditor
 
         private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
         private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { new GUIContent("Native"), new GUIContent("Legacy") };
-        private static GUIContent[] m_XBoxOneGfxJobModeNames = new GUIContent[] { new GUIContent("Native - DX12"), new GUIContent("Legacy - DX11") };
 
         // Section and tab selection state
 
@@ -275,10 +278,10 @@ namespace UnityEditor
         SerializedProperty m_ActiveColorSpace;
         SerializedProperty m_StripUnusedMeshComponents;
         SerializedProperty m_VertexChannelCompressionMask;
-        SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_MetalEditorSupport;
         SerializedProperty m_MetalAPIValidation;
         SerializedProperty m_MetalFramebufferOnly;
+        SerializedProperty m_MetalForceHardShadows;
 
         SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsFullScreen;
@@ -290,8 +293,7 @@ namespace UnityEditor
         SerializedProperty m_PreloadedAssets;
         SerializedProperty m_BakeCollisionMeshes;
         SerializedProperty m_ResizableWindow;
-        SerializedProperty m_MacFullscreenMode;
-        SerializedProperty m_D3D11FullscreenMode;
+        SerializedProperty m_FullscreenMode;
         SerializedProperty m_VisibleInBackground;
         SerializedProperty m_AllowFullscreenSwitch;
         SerializedProperty m_ForceSingleInstance;
@@ -381,10 +383,10 @@ namespace UnityEditor
             m_ActiveColorSpace              = FindPropertyAssert("m_ActiveColorSpace");
             m_StripUnusedMeshComponents     = FindPropertyAssert("StripUnusedMeshComponents");
             m_VertexChannelCompressionMask  = FindPropertyAssert("VertexChannelCompressionMask");
-            m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_MetalEditorSupport            = FindPropertyAssert("metalEditorSupport");
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
+            m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
 
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
             if (m_ApplicationBundleVersion == null)
@@ -445,10 +447,9 @@ namespace UnityEditor
             m_ResizableWindow               = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation      = FindPropertyAssert("useMacAppStoreValidation");
             m_MacAppStoreCategory           = FindPropertyAssert("macAppStoreCategory");
-            m_D3D11FullscreenMode           = FindPropertyAssert("d3d11FullscreenMode");
+            m_FullscreenMode                = FindPropertyAssert("fullscreenMode");
             m_VisibleInBackground           = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch         = FindPropertyAssert("allowFullscreenSwitch");
-            m_MacFullscreenMode             = FindPropertyAssert("macFullscreenMode");
             m_SkinOnGPU                     = FindPropertyAssert("gpuSkinning");
             m_GraphicsJobs                  = FindPropertyAssert("graphicsJobs");
             m_ForceSingleInstance           = FindPropertyAssert("forceSingleInstance");
@@ -892,16 +893,21 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
-                        EditorGUILayout.PropertyField(m_MacFullscreenMode);
-                        EditorGUILayout.PropertyField(m_D3D11FullscreenMode, Styles.D3D11FullscreenMode);
-                        EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
-                        EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
 
-                        EditorGUILayout.PropertyField(m_ForceSingleInstance);
-                        EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
-
-                        EditorGUILayout.Space();
+                        var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
+                        var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
+                        BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
                     }
+
+                    EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
+
+                    EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
+
+                    EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                    EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
+
+                    EditorGUILayout.Space();
+
 
                     // mobiles color/depth bits setup
                     if (IsMobileTarget(targetGroup))
@@ -1035,7 +1041,7 @@ namespace UnityEditor
 
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)
         {
-            if (action.changeList)   PlayerSettings.SetGraphicsAPIs(target, apis);
+            if (action.changeList)  PlayerSettings.SetGraphicsAPIs(target, apis);
             else                    s_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
 
             if (action.reloadGfx)
@@ -1060,6 +1066,9 @@ namespace UnityEditor
 
             if (name == "Vulkan" && target != BuildTarget.Android)
                 name = "Vulkan (Experimental)";
+
+            if (name == "XboxOneD3D12")
+                name = "XboxOneD3D12 (Experimental)";
 
             // For WebGL, display the actual WebGL version names instead of corresponding GLES APIs for clarification.
             if (target == BuildTarget.WebGL)
@@ -1103,10 +1112,6 @@ namespace UnityEditor
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
             if (availableDevices == null || availableDevices.Length < 2)
-                return;
-
-            // we do not want XboxOne users to select D3D12 via dropdown list. we only want to switch to D3D12 if native jobs are selected and otherwise default to D3D11.
-            if (targetGroup == BuildTargetGroup.XboxOne)
                 return;
 
             // toggle for automatic API selection
@@ -1441,10 +1446,9 @@ namespace UnityEditor
                         var hasMinMetal = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
 
                         Version requiredVersion = new Version(8, 0);
-                        Version minimumVersion = new Version(6, 0);
-                        Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
+                        bool hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
 
-                        if (!hasMinMetal || requestedVersion < requiredVersion)
+                        if (!hasMinMetal || !hasMinOSVersion)
                             EditorGUILayout.HelpBox(Styles.colorSpaceIOSWarning.text, MessageType.Warning);
                     }
 
@@ -1484,10 +1488,7 @@ namespace UnityEditor
             // Output color spaces
             ColorGamutGUI(targetGroup);
 
-            // Mobile Metal
-            if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
-                m_MetalForceHardShadows.boolValue = EditorGUILayout.Toggle(Styles.metalForceHardShadows, m_MetalForceHardShadows.boolValue);
-
+            // Metal
             if (Application.platform == RuntimePlatform.OSXEditor && (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS))
             {
                 bool curMetalSupport = m_MetalEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal;
@@ -1510,6 +1511,9 @@ namespace UnityEditor
                         {
                             m_MetalEditorSupport.boolValue = newMetalSupport;
                             serializedObject.ApplyModifiedProperties();
+                            // HACK: we pretended to change first api in list to trigger possible gfx device recreation
+                            // HACK: but we dont really change api list (as we will simply set bool checked from native code)
+                            action = new ChangeGraphicsApiAction(false, action.reloadGfx);
                         }
                         ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSX, api, action);
                     }
@@ -1521,9 +1525,14 @@ namespace UnityEditor
                 }
 
                 if (m_MetalEditorSupport.boolValue)
-                    m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(Styles.metalAPIValidation, m_MetalAPIValidation.boolValue);
+                {
+                    using (new EditorGUI.IndentLevelScope())
+                        m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(Styles.metalAPIValidation, m_MetalAPIValidation.boolValue);
+                }
 
                 EditorGUILayout.PropertyField(m_MetalFramebufferOnly, Styles.metalFramebufferOnly);
+                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
+                    EditorGUILayout.PropertyField(m_MetalForceHardShadows, Styles.metalForceHardShadows);
             }
 
             // Multithreaded rendering
@@ -1619,31 +1628,34 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(Styles.skinOnGPUAndroidWarning.text, MessageType.Warning);
             }
 
-            EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
-
-            if (gfxJobModesSupported)
+            if (targetGroup == BuildTargetGroup.XboxOne)
             {
-                using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
+                // on XBoxOne, we only have kGfxJobModeNative active for Dx12 API and kGfxJobModeLegacy for the DX11 API
+                // no need for a drop down popup for XBoxOne
+                // also if XboxOneD3D12 is selected as GraphicsAPI, then we want to check the graphics jobs checkbox and disable it.
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+
+                PlayerSettings.graphicsJobMode = gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12 ? GraphicsJobMode.Native : GraphicsJobMode.Legacy;
+                if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
+                    PlayerSettings.graphicsJobs = true;
+                using (new EditorGUI.DisabledScope(gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12))
                 {
-                    GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
-                    GraphicsJobMode newGfxJobMode = BuildEnumPopup(Styles.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, targetGroup == BuildTargetGroup.XboxOne ? m_XBoxOneGfxJobModeNames : m_GfxJobModeNames);
-                    if (newGfxJobMode != currGfxJobMode)
-                    {
-                        PlayerSettings.graphicsJobMode = newGfxJobMode;
-                    }
+                    EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
                 }
-                if (targetGroup == BuildTargetGroup.XboxOne)
+            }
+            else
+            {
+                EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
+                if (gfxJobModesSupported)
                 {
-                    // for xboxone gfx job mode is the renderer api selector, use D3D12 only if the jobs are enabled and native selected...
-                    bool isXBoxOneD3D12Required = m_GraphicsJobs.boolValue && (PlayerSettings.graphicsJobMode == GraphicsJobMode.Native);
-                    GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.XboxOne);
-                    GraphicsDeviceType newGfxAPI = isXBoxOneD3D12Required ? GraphicsDeviceType.XboxOneD3D12 : GraphicsDeviceType.XboxOne;
-                    if (newGfxAPI != gfxAPIs[0])
+                    using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
                     {
-                        ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.XboxOne, true);
-                        if (action.changeList)
+                        GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
+
+                        GraphicsJobMode newGfxJobMode = BuildEnumPopup(Styles.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
+                        if (newGfxJobMode != currGfxJobMode)
                         {
-                            ApplyChangeGraphicsApiAction(BuildTarget.XboxOne, new GraphicsDeviceType[] { newGfxAPI }, action);
+                            PlayerSettings.graphicsJobMode = newGfxJobMode;
                         }
                     }
                 }
@@ -2164,12 +2176,50 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
         {
-            BuildFileBoxButton(prop, uiString, directory, ext, null);
+            return BuildPathBoxButton(prop, uiString, directory, null);
         }
 
-        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
+        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory, Action onSelect)
+        {
+            float h = EditorGUI.kSingleLineHeight;
+            float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+            float kLabelFloatMaxW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
+            Rect r = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, h, h, EditorStyles.layerMaskField, null);
+
+            float labelWidth = EditorGUIUtility.labelWidth;
+            Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
+            Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
+
+            string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
+            EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+
+            bool changed = false;
+            if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
+            {
+                string prevVal = prop.stringValue;
+                string path = EditorUtility.OpenFolderPanel(EditorGUIUtility.TextContent(uiString).text, directory, "");
+
+                string relPath = FileUtil.GetProjectRelativePath(path);
+                prop.stringValue = (relPath != string.Empty) ? relPath : path;
+                changed = (prop.stringValue != prevVal);
+
+                if (onSelect != null)
+                    onSelect();
+
+                prop.serializedObject.ApplyModifiedProperties();
+            }
+
+            return changed;
+        }
+
+        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        {
+            return BuildFileBoxButton(prop, uiString, directory, ext, null);
+        }
+
+        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
             string ext, Action onSelect)
         {
             float h = EditorGUI.kSingleLineHeight;
@@ -2184,26 +2234,29 @@ namespace UnityEditor
             string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
             EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
 
+            bool changed = false;
             if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
             {
+                string prevVal = prop.stringValue;
                 string path = EditorUtility.OpenFilePanel(EditorGUIUtility.TextContent(uiString).text, directory, ext);
 
                 string relPath = FileUtil.GetProjectRelativePath(path);
                 prop.stringValue = (relPath != string.Empty) ? relPath : path;
+                changed = (prop.stringValue != prevVal);
 
                 if (onSelect != null)
                     onSelect();
 
                 prop.serializedObject.ApplyModifiedProperties();
-                GUIUtility.ExitGUI();
             }
+
+            return changed;
         }
 
         public void PublishSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 5)
         {
             if (targetGroup != BuildTargetGroup.WSA &&
                 targetGroup != BuildTargetGroup.PSP2 &&
-                targetGroup != BuildTargetGroup.PSM &&
                 !(settingsExtension != null && settingsExtension.HasPublishSection()))
                 return;
 

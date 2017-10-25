@@ -183,8 +183,12 @@ internal enum LightmapEncodingQuality
     }
 
 
+[NativeClass(null)]
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
+    private PlayerSettings() {}
+    
+    
     private static SerializedObject _serializedObject;
     
     
@@ -590,6 +594,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
+    [System.Obsolete ("macFullscreenMode is deprecated, use fullscreenMode instead")]
     public extern static MacFullscreenMode macFullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -600,7 +605,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
-    [System.Obsolete ("D3D9 support has been removed; d3d9FullscreenMode does nothing now")]
+    [System.Obsolete ("d3d9FullscreenMode is deprecated, use fullscreenMode instead")]
     public extern static D3D9FullscreenMode d3d9FullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -611,6 +616,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
+    [System.Obsolete ("d3d11FullscreenMode is deprecated, use fullscreenMode instead")]
     public extern static D3D11FullscreenMode d3d11FullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -620,6 +626,21 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
     }
+
+    public static FullScreenMode fullScreenMode
+        {
+            get { return (FullScreenMode)GetFullscreenMode(); }
+            set { SetFullscreenMode((int)value); }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  int GetFullscreenMode () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void SetFullscreenMode (int fullscreenMode) ;
 
     public extern static bool virtualRealitySupported
     {
@@ -1383,6 +1404,16 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     }
 
     public extern static bool use32BitDisplayBuffer
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static bool preserveFramebufferAlpha
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

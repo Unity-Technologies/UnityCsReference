@@ -54,18 +54,17 @@ namespace UnityEngine.Experimental.UIElements
                 if (topmostContainer.GUIDepth != GUIUtility.Internal_GetGUIDepth())
                     return;
 
-                if (eventDispatcher.capture != null && eventDispatcher.capture != topmostContainer)
+                if (MouseCaptureController.IsMouseCaptureTaken() && !topmostContainer.HasMouseCapture())
                 {
-                    Debug.Log(string.Format("Should not grab hot control with an active capture (current={0} new={1}",
-                            eventDispatcher.capture, topmostContainer));
+                    Debug.Log("Should not grab hot control with an active capture");
                 }
-                eventDispatcher.TakeCapture(topmostContainer);
+                topmostContainer.TakeMouseCapture();
             }
         }
 
         private static void ReleaseCapture()
         {
-            eventDispatcher.RemoveCapture();
+            MouseCaptureController.ReleaseMouseCapture();
         }
 
         private static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
@@ -149,7 +148,7 @@ namespace UnityEngine.Experimental.UIElements
                 currentTransform = container.elementPanel.stylePainter.currentTransform;
             }
 
-            GUIClip.SetTransform(currentTransform * Matrix4x4.Translate(container.layout.position), clippingRect);
+            GUIClip.SetTransform(currentTransform, clippingRect);
         }
 
         // End the 2D GUI.
@@ -199,28 +198,13 @@ namespace UnityEngine.Experimental.UIElements
                     return KeyDownEvent.GetPooled(systemEvent);
                 case EventType.KeyUp:
                     return KeyUpEvent.GetPooled(systemEvent);
+                case EventType.MouseEnterWindow:
+                    return MouseEnterWindowEvent.GetPooled(systemEvent);
+                case EventType.MouseLeaveWindow:
+                    return MouseLeaveWindowEvent.GetPooled(systemEvent);
                 default:
                     return IMGUIEvent.GetPooled(systemEvent);
             }
-        }
-
-        internal static void ReleaseEvent(EventBase evt)
-        {
-            long id = evt.GetEventTypeId();
-            if (id == MouseMoveEvent.TypeId())
-                MouseMoveEvent.ReleasePooled((MouseMoveEvent)evt);
-            else if (id == MouseDownEvent.TypeId())
-                MouseDownEvent.ReleasePooled((MouseDownEvent)evt);
-            else if (id == MouseUpEvent.TypeId())
-                MouseUpEvent.ReleasePooled((MouseUpEvent)evt);
-            else if (id == WheelEvent.TypeId())
-                WheelEvent.ReleasePooled((WheelEvent)evt);
-            else if (id == KeyDownEvent.TypeId())
-                KeyDownEvent.ReleasePooled((KeyDownEvent)evt);
-            else if (id == KeyUpEvent.TypeId())
-                KeyUpEvent.ReleasePooled((KeyUpEvent)evt);
-            else if (id == IMGUIEvent.TypeId())
-                IMGUIEvent.ReleasePooled((IMGUIEvent)evt);
         }
 
         static bool DoDispatch(BaseVisualElementPanel panel)
@@ -240,19 +224,19 @@ namespace UnityEngine.Experimental.UIElements
             {
                 panel.ValidateLayout();
 
-                EventBase evt = CreateEvent(s_EventInstance);
-
-                // DispatchEvent changes mousePosition.
-                Vector2 savedMousePosition = s_EventInstance.mousePosition;
-                s_EventDispatcher.DispatchEvent(evt, panel);
-                s_EventInstance.mousePosition = savedMousePosition;
-
-                if (evt.isPropagationStopped)
+                using (EventBase evt = CreateEvent(s_EventInstance))
                 {
-                    panel.visualTree.Dirty(ChangeType.Repaint);
+                    // DispatchEvent changes mousePosition.
+                    Vector2 savedMousePosition = s_EventInstance.mousePosition;
+                    s_EventDispatcher.DispatchEvent(evt, panel);
+                    s_EventInstance.mousePosition = savedMousePosition;
+
+                    if (evt.isPropagationStopped)
+                    {
+                        panel.visualTree.Dirty(ChangeType.Repaint);
+                    }
+                    usesEvent = evt.isPropagationStopped;
                 }
-                usesEvent = evt.isPropagationStopped;
-                ReleaseEvent(evt);
             }
 
             return usesEvent;

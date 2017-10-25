@@ -155,8 +155,20 @@ namespace UnityEditor
                 const string moduleName = "VR";
                 const string requiredMessage = "Required because VR is enabled in PlayerSettings";
                 nativeModules.Add(moduleName);
-                strippingInfo.RegisterDependency(moduleName, StrippingInfo.RequiredByScripts);
+                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
                 strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
+            }
+
+            foreach (string module in ModuleMetadata.GetModuleNames())
+            {
+                if (!ModuleMetadata.IsStrippableModule(module))
+                {
+                    string requiredMessage = module + " is always required";
+                    nativeModules.Add(module);
+                    strippingInfo.AddModule(StrippingInfo.ModuleName(module));
+                    strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), requiredMessage);
+                    strippingInfo.SetIcon(requiredMessage, "class/DefaultAsset");
+                }
             }
         }
 
@@ -320,7 +332,7 @@ namespace UnityEditor
         {
             HashSet<string> nativeModules = new HashSet<string>();
             foreach (string module in ModuleMetadata.GetModuleNames())
-                if (ModuleMetadata.GetModuleStrippable(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
+                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
                     nativeModules.Add(module);
             return nativeModules;
         }
@@ -331,7 +343,7 @@ namespace UnityEditor
             HashSet<string> nativeModules = new HashSet<string>();
             foreach (string module in ModuleMetadata.GetModuleNames())
             {
-                if (ModuleMetadata.GetModuleStrippable(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
+                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
                 {
                     var moduleClasses = new HashSet<UnityType>(ModuleMetadata.GetModuleTypes(module));
                     if (nativeClasses.Overlaps(moduleClasses)) // Include module if at least one of its classes is present
@@ -371,7 +383,7 @@ namespace UnityEditor
 
             foreach (string module in moduleNames)
             {
-                if (!ModuleMetadata.GetModuleStrippable(module)) // Only handle strippable modules
+                if (!ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules
                     continue;
 
                 var moduleClasses = ModuleMetadata.GetModuleTypes(module);
@@ -581,7 +593,7 @@ namespace UnityEditor
         {
             using (TextWriter w = new StreamWriter(file))
             {
-                w.WriteLine("template <typename T> void RegisterClass();");
+                w.WriteLine("template <typename T> void RegisterClass(const char*);");
                 w.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
 
                 w.WriteLine();
@@ -602,7 +614,7 @@ namespace UnityEditor
                             w.Write("class {0}; ", type.name);
 
                         if (nativeClasses.Contains(type))
-                            w.WriteLine("template <> void RegisterClass<{0}>();", type.qualifiedName);
+                            w.WriteLine("template <> void RegisterClass<{0}>(const char*);", type.qualifiedName);
                         else
                             w.WriteLine();
                     }
@@ -631,7 +643,7 @@ namespace UnityEditor
                         if (classesToSkip.Contains(klass))
                             w.WriteLine("\t//Skipping {0}", klass.qualifiedName);
                         else
-                            w.WriteLine("\tRegisterClass<{0}>();", klass.qualifiedName);
+                            w.WriteLine("\tRegisterClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);
                         ++index;
                     }
                     w.WriteLine();

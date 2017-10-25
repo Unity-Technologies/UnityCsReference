@@ -8,10 +8,14 @@ namespace UnityEngine.Experimental.UIElements
     {
         public MouseButton button;
         public EventModifiers modifiers;
+        public int clickCount;
 
         public bool Matches(IMouseEvent e)
         {
-            return button == (MouseButton)e.button && HasModifiers(e);
+            // Default clickCount field value is 0 since we're in a struct -- this case is covered if the user
+            // did not explicitly set clickCount
+            var minClickCount = (clickCount == 0 || (e.clickCount >= clickCount));
+            return button == (MouseButton)e.button && HasModifiers(e) && minClickCount;
         }
 
         private bool HasModifiers(IMouseEvent e)
@@ -34,13 +38,8 @@ namespace UnityEngine.Experimental.UIElements
                 return false;
             }
 
-            if (((modifiers & EventModifiers.Command) != 0 && !e.commandKey) ||
-                ((modifiers & EventModifiers.Command) == 0 && e.commandKey))
-            {
-                return false;
-            }
-
-            return true;
+            return ((modifiers & EventModifiers.Command) == 0 || e.commandKey) &&
+                ((modifiers & EventModifiers.Command) != 0 || !e.commandKey);
         }
     }
 }

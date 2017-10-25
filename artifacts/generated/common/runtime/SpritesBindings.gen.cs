@@ -107,6 +107,9 @@ public sealed partial class Sprite : Object
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static Sprite INTERNAL_CALL_Create (Texture2D texture, ref Rect rect, ref Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, ref Vector4 border);
+    private Sprite() {}
+    
+    
     public  Bounds bounds
     {
         get { Bounds tmp; INTERNAL_get_bounds(out tmp); return tmp;  }

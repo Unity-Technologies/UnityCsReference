@@ -348,6 +348,8 @@ namespace UnityEditor
         private int m_AnimTarget = 1;
         private long m_LastTime = 0;
         private bool m_ScrollToSelected = false;
+
+        [NonSerialized]
         private string m_DelayedSearch = null;
         private string m_Search = "";
 

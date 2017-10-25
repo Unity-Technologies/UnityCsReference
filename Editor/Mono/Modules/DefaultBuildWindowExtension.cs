@@ -7,6 +7,7 @@ namespace UnityEditor.Modules
     internal class DefaultBuildWindowExtension : IBuildWindowExtension
     {
         public virtual void ShowPlatformBuildOptions() {}
+        public virtual void ShowPlatformBuildWarnings() {}
         public virtual void ShowInternalPlatformBuildOptions() {}
         public virtual bool EnabledBuildButton() { return true; }
         public virtual bool EnabledBuildAndRunButton() { return true; }

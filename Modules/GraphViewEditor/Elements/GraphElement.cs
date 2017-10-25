@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -12,17 +13,75 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         GraphElementPresenter m_Presenter;
 
+        // TODO: Remove when removing presenters.
+        public bool dependsOnPresenter { get; private set; }
+
         public Color elementTypeColor { get; set; }
 
         public virtual int layer { get { return 0; } }
 
+        private Capabilities m_Capabilities;
+
+        public Capabilities capabilities
+        {
+            get { return m_Capabilities; }
+            set
+            {
+                if (m_Capabilities == value)
+                    return;
+
+                m_Capabilities = value;
+
+                if (IsSelectable() && m_ClickSelector == null)
+                {
+                    m_ClickSelector = new ClickSelector();
+                    this.AddManipulator(m_ClickSelector);
+                }
+                else if (!IsSelectable() && m_ClickSelector != null)
+                {
+                    this.RemoveManipulator(m_ClickSelector);
+                    m_ClickSelector = null;
+                }
+            }
+        }
+
+        private bool m_Selected;
+        public bool selected
+        {
+            get { return m_Selected; }
+            set
+            {
+                // Set new value (toggle old value)
+                if ((capabilities & Capabilities.Selectable) != Capabilities.Selectable)
+                    return;
+
+                if (m_Selected == value)
+                    return;
+
+                m_Selected = value;
+
+                if (m_Selected)
+                {
+                    AddToClassList("selected");
+                }
+                else
+                {
+                    RemoveFromClassList("selected");
+                }
+            }
+        }
+
         protected GraphElement()
         {
+            dependsOnPresenter = false;
             ClearClassList();
             AddToClassList("graphElement");
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
+
+            persistenceKey = Guid.NewGuid().ToString();
         }
 
+        // TODO: Remove when removing presenters.
         public T GetPresenter<T>() where T : GraphElementPresenter
         {
             return presenter as T;
@@ -30,6 +89,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         ClickSelector m_ClickSelector;
 
+        // TODO: Remove when removing presenters.
         public GraphElementPresenter presenter
         {
             get { return m_Presenter; }
@@ -37,19 +97,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_Presenter == value)
                     return;
+
                 RemoveWatch();
-                if (m_ClickSelector != null)
-                {
-                    this.RemoveManipulator(m_ClickSelector);
-                    m_ClickSelector = null;
-                }
+
                 m_Presenter = value;
 
-                if (IsSelectable())
-                {
-                    m_ClickSelector = new ClickSelector();
-                    this.AddManipulator(m_ClickSelector);
-                }
+                dependsOnPresenter = m_Presenter != null;
+
                 OnDataChanged();
                 AddWatch();
             }
@@ -57,7 +111,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected override UnityEngine.Object[] toWatch
         {
-            get { return presenter.GetObjectsToWatch(); }
+            get { return presenter == null ? null : presenter.GetObjectsToWatch(); }
         }
 
         public override void OnDataChanged()
@@ -81,21 +135,36 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
             }
 
-            if (presenter.selected)
-            {
-                AddToClassList("selected");
-            }
-            else
-            {
-                RemoveFromClassList("selected");
-            }
+            capabilities = m_Presenter.capabilities;
+
+            selected = presenter.selected;
 
             SetPosition(presenter.position);
         }
 
         public virtual bool IsSelectable()
         {
-            return (presenter.capabilities & Capabilities.Selectable) == Capabilities.Selectable;
+            return (capabilities & Capabilities.Selectable) == Capabilities.Selectable;
+        }
+
+        public virtual bool IsMovable()
+        {
+            return (capabilities & Capabilities.Movable) == Capabilities.Movable;
+        }
+
+        public virtual bool IsResizable()
+        {
+            return (capabilities & Capabilities.Resizable) == Capabilities.Resizable;
+        }
+
+        public virtual bool IsDroppable()
+        {
+            return (capabilities & Capabilities.Droppable) == Capabilities.Droppable;
+        }
+
+        public virtual bool IsFloating()
+        {
+            return (capabilities & Capabilities.Floating) == Capabilities.Floating;
         }
 
         public virtual Vector3 GetGlobalCenter()
@@ -103,6 +172,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var center = layout.center;
             var globalCenter = new Vector3(center.x + parent.layout.x, center.y + parent.layout.y);
             return parent.worldTransform.MultiplyPoint3x4(globalCenter);
+        }
+
+        // TODO: Temporary transition function.
+        public virtual void UpdatePresenterPosition()
+        {
+            if (presenter == null)
+                return;
+
+            RemoveWatch();
+            presenter.position = layout;
+            presenter.CommitChanges();
+            AddWatch();
         }
 
         public virtual void SetPosition(Rect newPos)
@@ -115,36 +196,49 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
         }
 
-        public virtual void Select(GraphView selectionContainer, bool additive)
+        public virtual void OnUnselected()
         {
-            if (selectionContainer != null)
+        }
+
+        public virtual void Select(VisualElement selectionContainer, bool additive)
+        {
+            var gView = selectionContainer as GraphView;
+            if (gView != null &&
+                (parent == gView.contentViewContainer ||
+                 (parent != null && parent.parent == gView.contentViewContainer)))
             {
-                if (!selectionContainer.selection.Contains(this))
+                if (!gView.selection.Contains(this))
                 {
                     if (!additive)
-                        selectionContainer.ClearSelection();
+                        gView.ClearSelection();
 
-                    selectionContainer.AddToSelection(this);
+                    gView.AddToSelection(this);
                 }
             }
         }
 
-        public virtual void Unselect(GraphView selectionContainer)
+        public virtual void Unselect(VisualElement  selectionContainer)
         {
-            if (selectionContainer != null && parent == selectionContainer.contentViewContainer)
+            var gView = selectionContainer as GraphView;
+            if (gView != null &&
+                (parent == gView.contentViewContainer ||
+                 (parent != null && parent.parent == gView.contentViewContainer)))
             {
-                if (selectionContainer.selection.Contains(this))
+                if (gView.selection.Contains(this))
                 {
-                    selectionContainer.RemoveFromSelection(this);
+                    gView.RemoveFromSelection(this);
                 }
             }
         }
 
-        public virtual bool IsSelected(GraphView selectionContainer)
+        public virtual bool IsSelected(VisualElement selectionContainer)
         {
-            if (selectionContainer != null && parent == selectionContainer.contentViewContainer)
+            var gView = selectionContainer as GraphView;
+            if (gView != null &&
+                (parent == gView.contentViewContainer ||
+                 (parent != null && parent.parent == gView.contentViewContainer)))
             {
-                if (selectionContainer.selection.Contains(this))
+                if (gView.selection.Contains(this))
                 {
                     return true;
                 }

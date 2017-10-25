@@ -89,6 +89,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<int> sliceRight;
         internal StyleValue<int> sliceBottom;
         internal StyleValue<float> opacity;
+        internal StyleValue<CursorStyle> cursor;
 
         public VisualElementStylesData(bool isShared)
         {
@@ -155,6 +156,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             sliceRight.Apply(other.sliceRight, mode);
             sliceBottom.Apply(other.sliceBottom, mode);
             opacity.Apply(other.opacity, mode);
+            cursor.Apply(other.cursor, mode);
         }
 
         public void WriteToGUIStyle(GUIStyle style)
@@ -417,6 +419,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
                     case StylePropertyID.BorderBottomLeftRadius:
                         registry.Apply(handles, specificity, ref borderBottomLeftRadius, StyleSheetApplicator.ApplyFloat);
+                        break;
+
+                    case StylePropertyID.Cursor:
+                        registry.Apply(handles, specificity, ref cursor, StyleSheetApplicator.ApplyCursor);
                         break;
 
                     case StylePropertyID.SliceLeft:

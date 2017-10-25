@@ -512,6 +512,7 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetPlaybackEngineDirectory (BuildTarget target, BuildOptions options, string playbackEngineDirectory) ;
 
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  string GetBuildToolsDirectory (BuildTarget target) ;

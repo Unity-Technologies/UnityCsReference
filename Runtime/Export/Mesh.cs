@@ -119,20 +119,9 @@ namespace UnityEngine
             if (!HasChannel(channel))
                 return;
 
-            PrepareUserBuffer(buffer, capacity);
+            NoAllocHelpers.EnsureListElemCount(buffer, capacity);
 
             GetArrayFromChannelImpl(channel, channelType, dim, NoAllocHelpers.ExtractArrayFromList(buffer));
-        }
-
-        private void PrepareUserBuffer<T>(List<T> buffer, int capacity)
-        {
-            buffer.Clear();
-
-            // make sure capacity is enough (that's where alloc WILL happen if needed)
-            if (buffer.Capacity < capacity)
-                buffer.Capacity = capacity;
-
-            NoAllocHelpers.ResizeList(buffer, capacity);
         }
 
         public Vector3[] vertices
@@ -363,8 +352,8 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
-            PrepareUserBuffer(triangles, (int)GetIndexCount(submesh));
-            GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex);
+            NoAllocHelpers.EnsureListElemCount(triangles, (int)GetIndexCount(submesh));
+            GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(triangles), submesh, applyBaseVertex);
         }
 
         public int[] GetIndices(int submesh)
@@ -390,8 +379,8 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
-            PrepareUserBuffer(indices, (int)GetIndexCount(submesh));
-            GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex);
+            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
+            GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(indices), submesh, applyBaseVertex);
         }
 
         public UInt32 GetIndexStart(int submesh)
@@ -476,8 +465,8 @@ namespace UnityEngine
             if (bindposes == null)
                 throw new ArgumentNullException("The result bindposes list cannot be null.", "bindposes");
 
-            PrepareUserBuffer(bindposes, GetBindposeCount());
-            GetBindposesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(bindposes));
+            NoAllocHelpers.EnsureListElemCount(bindposes, GetBindposeCount());
+            GetBindposesNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(bindposes));
         }
 
         public void GetBoneWeights(List<BoneWeight> boneWeights)
@@ -485,8 +474,8 @@ namespace UnityEngine
             if (boneWeights == null)
                 throw new ArgumentNullException("The result boneWeights list cannot be null.", "boneWeights");
 
-            PrepareUserBuffer(boneWeights, GetBoneWeightCount());
-            GetBoneWeightsNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(boneWeights));
+            NoAllocHelpers.EnsureListElemCount(boneWeights, GetBoneWeightCount());
+            GetBoneWeightsNonAllocImpl(NoAllocHelpers.ExtractArrayFromListT(boneWeights));
         }
 
         //
@@ -527,10 +516,10 @@ namespace UnityEngine
                 MarkDynamicImpl();
         }
 
-        public void UploadMeshData(bool markNoLogerReadable)
+        public void UploadMeshData(bool markNoLongerReadable)
         {
             if (canAccess)
-                UploadMeshDataImpl(markNoLogerReadable);
+                UploadMeshDataImpl(markNoLongerReadable);
         }
 
         public MeshTopology GetTopology(int submesh)

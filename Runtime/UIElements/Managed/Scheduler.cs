@@ -71,7 +71,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void ResetStartTime()
         {
-            this.startMs = (long)(Time.realtimeSinceStartup * 1000.0f); // current time
+            this.startMs = Panel.TimeSinceStartupMs();
         }
 
         public void SetDuration(long durationMs)
@@ -88,7 +88,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (endTimeMs > 0)
             {
-                if (Time.realtimeSinceStartup * 1000.0f > endTimeMs)
+                if (Panel.TimeSinceStartupMs() > endTimeMs)
                 {
                     return true;
                 }
@@ -248,7 +248,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 // TODO: On a GAME Panel game time should be per frame and not change during a frame.
                 // TODO: On an Editor Panel time should be real time
-                long currentTime = (long)(Time.realtimeSinceStartup * 1000.0f);
+                long currentTime = Panel.TimeSinceStartupMs();
 
                 int itemsCount = m_ScheduledItems.Count;
 
@@ -262,7 +262,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    currentTime = (long)(Time.realtimeSinceStartup * 1000.0f);
+                    currentTime = Panel.TimeSinceStartupMs();
 
                     if (currentTime >= maxTime)
                     {

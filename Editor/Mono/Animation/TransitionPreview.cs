@@ -112,7 +112,7 @@ namespace UnityEditor
                     m_DstState = dstState;
                     m_TransitionDuration = transition.duration;
                     m_TransitionOffset = transition.offset;
-                    m_ExitTime = 0.5f;
+                    m_ExitTime = transition.exitTime;
                 }
                 else
                 {
@@ -596,6 +596,7 @@ namespace UnityEditor
                 m_AvatarPreview = new AvatarPreview(scenePreviewObject, motion);
                 m_AvatarPreview.OnAvatarChangeFunc = OnPreviewAvatarChanged;
                 m_AvatarPreview.ShowIKOnFeetButton = false;
+                m_AvatarPreview.ResetPreviewFocus();
             }
 
             if (m_Timeline == null)

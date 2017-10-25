@@ -179,6 +179,34 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
+    public class MouseEnterWindowEvent : MouseEventBase<MouseEnterWindowEvent>
+    {
+        protected override void Init()
+        {
+            base.Init();
+            flags = EventFlags.Cancellable;
+        }
+
+        public MouseEnterWindowEvent()
+        {
+            Init();
+        }
+    }
+
+    public class MouseLeaveWindowEvent : MouseEventBase<MouseLeaveWindowEvent>
+    {
+        protected override void Init()
+        {
+            base.Init();
+            flags = EventFlags.Cancellable;
+        }
+
+        public MouseLeaveWindowEvent()
+        {
+            Init();
+        }
+    }
+
     public class MouseOverEvent : MouseEventBase<MouseOverEvent>
     {
     }

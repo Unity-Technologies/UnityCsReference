@@ -109,8 +109,10 @@ public sealed partial class SubstanceImporter : AssetImporter
 
 }
 
+[NativeClass(null)]
 public sealed partial class SubstanceArchive : Object
 {
+    private SubstanceArchive() {}
 }
 
 

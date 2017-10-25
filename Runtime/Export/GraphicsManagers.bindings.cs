@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using uei = UnityEngine.Internal;
 
 using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
@@ -15,6 +16,8 @@ namespace UnityEngine
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
     public sealed partial class RenderSettings : Object
     {
+        private RenderSettings() {}
+
         [NativeProperty("UseFog")]         extern public static bool  fog              { get; set; }
         [NativeProperty("LinearFogStart")] extern public static float fogStartDistance { get; set; }
         [NativeProperty("LinearFogEnd")]   extern public static float fogEndDistance   { get; set; }
@@ -33,7 +36,9 @@ namespace UnityEngine
 
         [NativeProperty("SkyboxMaterial")] extern static public Material skybox { get; set; }
         extern public static Light sun { get; set; }
+        extern public static Rendering.SphericalHarmonicsL2 ambientProbe { get; set; }
 
+        extern public static Cubemap        customReflection            { get; set; }
         extern public static float          reflectionIntensity         { get; set; }
         extern public static int            reflectionBounces           { get; set; }
         extern public static ReflectionMode defaultReflectionMode       { get; set; }
@@ -44,10 +49,25 @@ namespace UnityEngine
         extern public static float flareFadeSpeed { get; set; }
     }
 
+    [NativeHeader("Runtime/Camera/RenderSettings.h")]
+    public sealed partial class RenderSettings : Object
+    {
+        [FreeFunction("GetRenderSettings")] extern internal static Object GetRenderSettings();
+    }
+
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public sealed partial class RenderSettings : Object
+    {
+        [StaticAccessor("RenderSettingsScripting", StaticAccessorType.DoubleColon)] extern internal static void Reset();
+    }
+
+
     [NativeHeader("Runtime/Graphics/QualitySettings.h")]
     [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
     public sealed partial class QualitySettings : Object
     {
+        private QualitySettings() {}
+
         extern public static int pixelLightCount { get; set; }
 
         [NativeProperty("ShadowQuality")] extern public static ShadowQuality shadows { get; set; }
@@ -58,8 +78,10 @@ namespace UnityEngine
         extern public static ShadowmaskMode   shadowmaskMode        { get; set; }
         extern public static float            shadowNearPlaneOffset { get; set; }
         extern public static float            shadowCascade2Split   { get; set; }
+        extern public static Vector3          shadowCascade4Split   { get; set; }
 
         [NativeProperty("LODBias")] extern public static float lodBias { get; set; }
+        [NativeProperty("AnisotropicTextures")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
 
         extern public static int   masterTextureLimit    { get; set; }
         extern public static int   maximumLODLevel       { get; set; }
@@ -74,6 +96,20 @@ namespace UnityEngine
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }
         extern public static float resolutionScalingFixedDPIFactor  { get; set; }
+
+        extern public static BlendWeights blendWeights   { get; set; }
+
+
+        [NativeName("GetCurrentIndex")] extern public static int  GetQualityLevel();
+        [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);
+
+        [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
+    }
+
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public sealed partial class QualitySettings : Object
+    {
+        [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
     }
 
     // both desiredColorSpace/activeColorSpace should be deprecated

@@ -914,6 +914,16 @@ public void SetRandomWriteTarget(int index, ComputeBuffer buffer, [uei.DefaultVa
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SetGlobalFloat (int nameID, float value) ;
 
+    public void SetGlobalInt(string name, int value)
+        {
+            SetGlobalInt(Shader.PropertyToID(name), value);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void SetGlobalInt (int nameID, int value) ;
+
     public void SetGlobalVector(string name, Vector4 value)
         {
             SetGlobalVector(Shader.PropertyToID(name), value);

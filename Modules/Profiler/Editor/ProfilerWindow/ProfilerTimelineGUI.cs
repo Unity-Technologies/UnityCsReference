@@ -23,6 +23,11 @@ namespace UnityEditorInternal
         const float kLineHeight = 16.0f;
         const float kGroupHeight = kLineHeight + 4.0f;
 
+        static readonly float[] k_TickModulos = { 0.001f, 0.005f, 0.01f, 0.05f, 0.1f, 0.5f, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 30000, 60000 };
+        const string k_TickFormatMilliseconds = "{0}ms";
+        const string k_TickFormatSeconds = "{0}s";
+        const int k_TickLabelSeparation = 60;
+
         private float animationTime = 1.0f;
         private double lastScrollUpdate = 0.0f;
 
@@ -33,7 +38,9 @@ namespace UnityEditorInternal
             public float weight;
             public int threadIndex;
             public string name;
+            public bool alive;
         }
+
 
         internal class GroupInfo
         {
@@ -42,7 +49,8 @@ namespace UnityEditorInternal
             public float height;
             public List<ThreadInfo> threads;
         }
-        List<GroupInfo> groups;
+
+        private List<GroupInfo> groups = null;
 
         internal class Styles
         {
@@ -54,6 +62,15 @@ namespace UnityEditorInternal
             public GUIStyle rightPane = "ProfilerRightPane";
             public GUIStyle foldout = "ProfilerTimelineFoldout";
             public GUIStyle profilerGraphBackground = new GUIStyle("ProfilerScrollviewBackground");
+            public GUIStyle timelineTick = "AnimationTimelineTick";
+            public GUIStyle rectangleToolSelection = "RectangleToolSelection";
+            public Color frameDelimiterColor = Color.white.RGBMultiplied(0.4f);
+            Color m_RangeSelectionColorLight = new Color32(255, 255, 255, 90);
+            Color m_RangeSelectionColorDark = new Color32(200, 200, 200, 40);
+            public Color rangeSelectionColor => EditorGUIUtility.isProSkin ? m_RangeSelectionColorDark : m_RangeSelectionColorLight;
+            Color m_OutOfRangeColorLight = new Color32(160, 160, 160, 127);
+            Color m_OutOfRangeColorDark = new Color32(40, 40, 40, 127);
+            public Color outOfRangeColor => EditorGUIUtility.isProSkin ? m_OutOfRangeColorDark : m_OutOfRangeColorLight;
 
             internal Styles()
             {
@@ -122,6 +139,7 @@ namespace UnityEditorInternal
 
         [NonSerialized]
         private ZoomableArea m_TimeArea;
+        private TickHandler m_HTicks;
         private IProfilerWindowController m_Window;
         private SelectedEntryInfo m_SelectedEntry = new SelectedEntryInfo();
         private float m_SelectedThreadY = 0.0f;
@@ -129,29 +147,42 @@ namespace UnityEditorInternal
         private string m_LocalizedString_Total;
         private string m_LocalizedString_Instances;
 
+        struct RangeSelectionInfo
+        {
+            public static readonly int controlIDHint = "RangeSelection".GetHashCode();
+            public bool active;
+            public bool mouseDown;
+            public float mouseDownTime;
+            public float startTime;
+            public float endTime;
+            public float duration => endTime - startTime;
+        }
+
+        RangeSelectionInfo m_RangeSelection = new RangeSelectionInfo();
+
         public ProfilerTimelineGUI(IProfilerWindowController window)
         {
             m_Window = window;
-
             // Configure default groups
             groups = new List<GroupInfo>(new GroupInfo[]
             {
-                new GroupInfo() { name = "", height = kGroupHeight, expanded = true, threads = new List<ThreadInfo>() },
-                new GroupInfo() { name = "Unity Job System", height = kGroupHeight, expanded = true, threads = new List<ThreadInfo>() },
-                new GroupInfo() { name = "Loading", height = kGroupHeight, expanded = false, threads = new List<ThreadInfo>() },
+                new GroupInfo() { name = "", height = 0, expanded = true, threads = new List<ThreadInfo>() },
+                new GroupInfo() { name = "Unity Job System", height = kGroupHeight, expanded = SessionState.GetBool("Unity Job System", false), threads = new List<ThreadInfo>() },
+                new GroupInfo() { name = "Loading", height = kGroupHeight, expanded = SessionState.GetBool("Loading", false), threads = new List<ThreadInfo>() },
             });
 
             m_LocalizedString_Total = LocalizationDatabase.GetLocalizedString("Total");
             m_LocalizedString_Instances = LocalizationDatabase.GetLocalizedString("Instances");
+
+            m_HTicks = new TickHandler();
+            m_HTicks.SetTickModulos(k_TickModulos);
         }
 
-        private void CalculateBars(Rect r, int frameIndex, float time)
+        private void CalculateBars(ref ProfilerFrameDataIterator iter, Rect r, int frameIndex, float time)
         {
-            var iter = new ProfilerFrameDataIterator();
             float visibleThreadCount = 0;
             iter.SetRoot(frameIndex, 0);
             int threadCount = iter.GetThreadCount(frameIndex);
-
             for (int i = 0; i < threadCount; ++i)
             {
                 iter.SetRoot(frameIndex, i);
@@ -167,6 +198,7 @@ namespace UnityEditorInternal
                     groups.Add(group);
                 }
                 var threads = group.threads;
+
                 ThreadInfo thread = threads.Find(t => t.threadIndex == i);
                 if (thread == null)
                 {
@@ -177,13 +209,20 @@ namespace UnityEditorInternal
                     thread.threadIndex = i;
                     group.threads.Add(thread);
                 }
+                thread.alive = true;
+
                 if (thread.weight != thread.desiredWeight)
                     thread.weight = thread.desiredWeight * time + (1 - thread.desiredWeight) * (1 - time);
+
                 visibleThreadCount += thread.weight;
             }
 
-            int groupCount = groups.Count((group) => group.threads.Count > 1);
-            var groupheight = kGroupHeight * groupCount;
+            var groupheight = 0.0f;
+            foreach (var group in groups)
+            {
+                if (group.threads.Count > 1)
+                    groupheight += !group.expanded ? group.height : Math.Max(group.height, group.threads.Count * 2.0f);
+            }
             var remaining = r.height - groupheight;
             var heightPerThread = remaining / (visibleThreadCount + 1); // main thread gets 2 times the space
 
@@ -197,7 +236,10 @@ namespace UnityEditorInternal
 
             groups[0].expanded = true;
             groups[0].height = 0;
-            groups[0].threads[0].height = 2 * heightPerThread;
+            if (groups[0].threads.Count > 0)
+            {
+                groups[0].threads[0].height = 2 * heightPerThread;
+            }
         }
 
         private void UpdateAnimatedFoldout()
@@ -240,6 +282,23 @@ namespace UnityEditorInternal
 
         private void DrawBars(Rect r, int frameIndex)
         {
+            bool hasThreadinfoToDraw = false;
+            foreach (var group in groups)
+            {
+                foreach (var thread in group.threads)
+                {
+                    if (thread != null)
+                    {
+                        hasThreadinfoToDraw = true;
+                        break;
+                    }
+                }
+                if (hasThreadinfoToDraw)
+                    break;
+            }
+            if (!hasThreadinfoToDraw)
+                return; // nothing to draw
+
             float y = r.y;
             foreach (var groupInfo in groups)
             {
@@ -249,8 +308,10 @@ namespace UnityEditorInternal
                     var height = groupInfo.height;
                     var expandedState = groupInfo.expanded;
                     groupInfo.expanded = DrawBar(r, y, height, groupInfo.name, true, expandedState, false);
+
                     if (groupInfo.expanded != expandedState)
                     {
+                        SessionState.SetBool(groupInfo.name, groupInfo.expanded);
                         animationTime = 0.0f;
                         lastScrollUpdate = EditorApplication.timeSinceStartup;
                         EditorApplication.update += UpdateAnimatedFoldout;
@@ -269,58 +330,6 @@ namespace UnityEditorInternal
                         DrawBar(r, y, height, threadInfo.name, false, true, !mainGroup);
                     y += height;
                 }
-            }
-        }
-
-        private void DrawGrid(Rect r, int threadCount, float frameTime)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            float x;
-            float kDT = 16.66667f;
-            if (frameTime > 1000.0f)
-                kDT = 100.0f;
-
-            HandleUtility.ApplyWireMaterial();
-
-            GL.Begin(GL.LINES);
-            GL.Color(new Color(1, 1, 1, 0.2f));
-            // vertical 16.6ms apart
-            float t = kDT;
-            for (; t <= frameTime; t += kDT)
-            {
-                x = m_TimeArea.TimeToPixel(t, r);
-                GL.Vertex3(x, r.y, 0.0f);
-                GL.Vertex3(x, r.y + r.height, 0.0f);
-            }
-            // vertical: frame boundaries
-            GL.Color(new Color(1, 1, 1, 0.8f));
-            x = m_TimeArea.TimeToPixel(0.0f, r);
-            GL.Vertex3(x, r.y, 0.0f);
-            GL.Vertex3(x, r.y + r.height, 0.0f);
-            x = m_TimeArea.TimeToPixel(frameTime, r);
-            GL.Vertex3(x, r.y, 0.0f);
-            GL.Vertex3(x, r.y + r.height, 0.0f);
-
-            GL.End();
-
-            // time labels
-            GUI.color = new Color(1, 1, 1, 0.4f);
-            t = 0.0f;
-            for (; t <= frameTime; t += kDT)
-            {
-                x = m_TimeArea.TimeToPixel(t, r);
-                // Don't show FPS for every ms marker along the x axis.
-                Chart.DoLabel(x + 2, r.yMax - 12, string.Format("{0:f1}ms", t), 0);
-            }
-
-            GUI.color = new Color(1, 1, 1, 1.0f);
-            t = frameTime;
-            {
-                x = m_TimeArea.TimeToPixel(t, r);
-                // Show FPS for last ms marker that shows the actual ms for this frame.
-                Chart.DoLabel(x + 2, r.yMax - 12, string.Format("{0:f1}ms ({1:f0}FPS)", t, 1000.0f / t), 0);
             }
         }
 
@@ -474,17 +483,29 @@ namespace UnityEditorInternal
             m_Window.ClearSelectedPropertyPath();
 
             m_SelectedEntry.Reset();
+            m_RangeSelection.active = false;
         }
 
         private void PerformFrameSelected(float frameMS)
         {
-            float t = m_SelectedEntry.time;
-            float dt = m_SelectedEntry.duration;
-            if (m_SelectedEntry.instanceId < 0 || dt <= 0.0f)
+            float t;
+            float dt;
+            if (m_RangeSelection.active)
             {
-                t = 0.0f;
-                dt = frameMS;
+                t = m_RangeSelection.startTime;
+                dt = m_RangeSelection.duration;
             }
+            else
+            {
+                t = m_SelectedEntry.time;
+                dt = m_SelectedEntry.duration;
+                if (m_SelectedEntry.instanceId < 0 || dt <= 0.0f)
+                {
+                    t = 0.0f;
+                    dt = frameMS;
+                }
+            }
+
             m_TimeArea.SetShownHRangeInsideMargins(t - dt * 0.2f, t + dt * 1.2f);
         }
 
@@ -513,7 +534,6 @@ namespace UnityEditorInternal
             iter.SetRoot(frameIndex, 0);
             if (!ghost)
             {
-                DrawGrid(fullRect, threadCount, iter.frameTimeMS);
                 HandleFrameSelected(iter.frameTimeMS);
             }
 
@@ -543,7 +563,7 @@ namespace UnityEditorInternal
                     y += r.height;
                 }
                 if (!expanded)
-                    y = yStart + groupInfo.height;
+                    y = yStart + Math.Max(groupInfo.height, groupThreadCount * 2);
             }
         }
 
@@ -623,6 +643,186 @@ namespace UnityEditorInternal
             }
         }
 
+        public void MarkDeadOrClearThread()
+        {
+            foreach (var group in groups)
+            {
+                for (int i = group.threads.Count - 1; i >= 0; i--)
+                {
+                    if (group.threads[i].alive)
+                        group.threads[i].alive = false;
+                    else
+                        group.threads.RemoveAt(i);
+                }
+            }
+        }
+
+        void PrepareTicks()
+        {
+            m_HTicks.SetRanges(m_TimeArea.shownArea.xMin, m_TimeArea.shownArea.xMax, m_TimeArea.drawRect.xMin, m_TimeArea.drawRect.xMax);
+            m_HTicks.SetTickStrengths(TimeArea.kTickRulerDistMin, TimeArea.kTickRulerDistFull, true);
+        }
+
+        void DrawGrid(Rect rect, float frameTime)
+        {
+            if (m_TimeArea == null || Event.current.type != EventType.Repaint)
+                return;
+
+            GUI.BeginClip(rect);
+            rect.x = rect.y = 0;
+
+            Color tickColor = styles.timelineTick.normal.textColor;
+            tickColor.a = 0.1f;
+
+            HandleUtility.ApplyWireMaterial();
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+                GL.Begin(GL.QUADS);
+            else
+                GL.Begin(GL.LINES);
+
+            PrepareTicks();
+
+            // Draw tick markers of various sizes
+            for (int l = 0; l < m_HTicks.tickLevels; l++)
+            {
+                var strength = m_HTicks.GetStrengthOfLevel(l) * .9f;
+                if (strength > TimeArea.kTickRulerFatThreshold)
+                {
+                    var ticks = m_HTicks.GetTicksAtLevel(l, true);
+                    for (int i = 0; i < ticks.Length; i++)
+                    {
+                        // Draw line
+                        var time = ticks[i];
+                        var x = m_TimeArea.TimeToPixel(time, rect);
+                        TimeArea.DrawVerticalLineFast(x, 0, rect.height, tickColor);
+                    }
+                }
+            }
+
+            GL.End();
+
+            GUI.EndClip();
+        }
+
+        public void DoTimeRulerGUI(Rect rect, float frameTime)
+        {
+            if (m_TimeArea == null || Event.current.type != EventType.Repaint)
+                return;
+
+            GUI.BeginClip(rect);
+            rect.x = rect.y = 0;
+
+            GUI.Box(rect, GUIContent.none, EditorStyles.toolbarButton);
+
+            var baseColor = styles.timelineTick.normal.textColor;
+            baseColor.a *= 0.75f;
+
+            PrepareTicks();
+
+            // Tick lines
+            if (Event.current.type == EventType.Repaint)
+            {
+                HandleUtility.ApplyWireMaterial();
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    GL.Begin(GL.QUADS);
+                else
+                    GL.Begin(GL.LINES);
+
+                for (int l = 0; l < m_HTicks.tickLevels; l++)
+                {
+                    var strength = m_HTicks.GetStrengthOfLevel(l) * .8f;
+                    var ticks = m_HTicks.GetTicksAtLevel(l, true);
+                    for (int i = 0; i < ticks.Length; i++)
+                    {
+                        // Draw line
+                        var time = ticks[i];
+                        var x = m_TimeArea.TimeToPixel(time, rect);
+                        var height = rect.height * Mathf.Min(1, strength) * TimeArea.kTickRulerHeightMax;
+                        var color = new Color(1, 1, 1, strength / TimeArea.kTickRulerFatThreshold) * baseColor;
+                        TimeArea.DrawVerticalLineFast(x, rect.height - height + 0.5f, rect.height - 0.5f, color);
+                    }
+                }
+
+                GL.End();
+            }
+
+            // Tick labels
+            var labelWidth = k_TickLabelSeparation;
+            int labelLevel = m_HTicks.GetLevelWithMinSeparation(labelWidth);
+            float[] labelTicks = m_HTicks.GetTicksAtLevel(labelLevel, false);
+            for (int i = 0; i < labelTicks.Length; i++)
+            {
+                var time = labelTicks[i];
+                float labelpos = Mathf.Floor(m_TimeArea.TimeToPixel(time, rect));
+                string label = FormatTickLabel(time, labelLevel);
+                GUI.Label(new Rect(labelpos + 3, -3, labelWidth, 20), label, styles.timelineTick);
+            }
+
+            // Outside current frame coloring
+            DrawOutOfRangeOverlay(rect, frameTime);
+
+            // Range selection coloring
+            DrawRangeSelectionOverlay(rect);
+
+            GUI.EndClip();
+        }
+
+        string FormatTickLabel(float time, int level)
+        {
+            string format = k_TickFormatMilliseconds;
+            var period = m_HTicks.GetPeriodOfLevel(level);
+            var log10 = Mathf.FloorToInt(Mathf.Log10(period));
+            if (log10 >= 3)
+            {
+                time /= 1000;
+                format = k_TickFormatSeconds;
+            }
+            return string.Format(format, time.ToString("N" + Mathf.Max(0, -log10)));
+        }
+
+        void DrawOutOfRangeOverlay(Rect rect, float frameTime)
+        {
+            var color = styles.outOfRangeColor;
+            var lineColor = styles.frameDelimiterColor;
+
+            var frameStartPixel = m_TimeArea.TimeToPixel(0f, rect);
+            var frameEndPixel = m_TimeArea.TimeToPixel(frameTime, rect);
+
+            // Rect shaded shape drawn before selected frame
+            if (frameStartPixel > rect.xMin)
+            {
+                var startRect = Rect.MinMaxRect(rect.xMin, rect.yMin, Mathf.Min(frameStartPixel, rect.xMax), rect.yMax);
+                EditorGUI.DrawRect(startRect, color);
+                TimeArea.DrawVerticalLine(startRect.xMax, startRect.yMin, startRect.yMax, lineColor);
+            }
+
+            // Rect shaded shape drawn after selected frame
+            if (frameEndPixel < rect.xMax)
+            {
+                var endRect = Rect.MinMaxRect(Mathf.Max(frameEndPixel, rect.xMin), rect.yMin, rect.xMax, rect.yMax);
+                EditorGUI.DrawRect(endRect, color);
+                TimeArea.DrawVerticalLine(endRect.xMin, endRect.yMin, endRect.yMax, lineColor);
+            }
+        }
+
+        void DrawRangeSelectionOverlay(Rect rect)
+        {
+            if (!m_RangeSelection.active)
+                return;
+
+            var startPixel = m_TimeArea.TimeToPixel(m_RangeSelection.startTime, rect);
+            var endPixel = m_TimeArea.TimeToPixel(m_RangeSelection.endTime, rect);
+            if (startPixel > rect.xMax || endPixel < rect.xMin)
+                return;
+
+            var selectionRect = Rect.MinMaxRect(Mathf.Max(rect.xMin, startPixel), rect.yMin, Mathf.Min(rect.xMax, endPixel), rect.yMax);
+            EditorGUI.DrawRect(selectionRect, styles.rangeSelectionColor);
+
+            // Duration label
+            var labelText = string.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3"));
+            Chart.DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
+        }
+
         public void DoGUI(int frameIndex, float width, float ypos, float height)
         {
             Rect fullRect = new Rect(0, ypos - 1, width, height + 1);
@@ -666,20 +866,27 @@ namespace UnityEditorInternal
                 NativeProfilerTimeline.Initialize(ref args);
             }
 
-            var iterCurrent = new ProfilerFrameDataIterator();
-            iterCurrent.SetRoot(frameIndex, 0);
+            var iter = new ProfilerFrameDataIterator();
+            int threadCount = iter.GetThreadCount(frameIndex);
+            iter.SetRoot(frameIndex, 0);
             m_TimeArea.hBaseRangeMin = 0;
-            m_TimeArea.hBaseRangeMax = iterCurrent.frameTimeMS;
+            m_TimeArea.hBaseRangeMax = iter.frameTimeMS;
             if (initializing)
-                PerformFrameSelected(iterCurrent.frameTimeMS);
+                PerformFrameSelected(iter.frameTimeMS);
 
             m_TimeArea.rect = new Rect(fullRect.x + sideWidth, fullRect.y, fullRect.width - sideWidth, fullRect.height);
             m_TimeArea.BeginViewGUI();
             m_TimeArea.EndViewGUI();
 
             fullRect = m_TimeArea.drawRect;
-            CalculateBars(fullRect, frameIndex, animationTime);
+
+            DrawGrid(fullRect, iter.frameTimeMS);
+
+            MarkDeadOrClearThread();
+            CalculateBars(ref iter, fullRect, frameIndex, animationTime);
             DrawBars(fullRect, frameIndex);
+
+            DoRangeSelection(m_TimeArea.drawRect);
 
             GUI.BeginClip(m_TimeArea.drawRect);
             fullRect.x = 0;
@@ -687,21 +894,46 @@ namespace UnityEditorInternal
 
             bool oldEnabled = GUI.enabled;
             GUI.enabled = false;
-
-            var iter = new ProfilerFrameDataIterator();
-            int threadCount = iter.GetThreadCount(frameIndex);
-
-            int prevFrame = ProfilerDriver.GetPreviousFrameIndex(frameIndex);
-            if (prevFrame != -1)
+            // Walk backwards to find how many previous frames we need to show.
+            int maxContextFramesToShow = m_Window.IsRecording() ? 1 : 3;
+            int numContextFramesToShow = maxContextFramesToShow;
+            int currentFrame = frameIndex;
+            float currentTime = 0;
+            do
             {
+                int prevFrame = ProfilerDriver.GetPreviousFrameIndex(currentFrame);
+                if (prevFrame == -1)
+                    break;
                 iter.SetRoot(prevFrame, 0);
-                DoProfilerFrame(prevFrame, fullRect, true, threadCount, -iter.frameTimeMS);
+                currentTime -= iter.frameTimeMS;
+                currentFrame = prevFrame;
+                --numContextFramesToShow;
             }
-            int nextFrame = ProfilerDriver.GetNextFrameIndex(frameIndex);
-            if (nextFrame != -1)
+            while (currentTime > m_TimeArea.shownArea.x && numContextFramesToShow > 0);
+
+            // Draw previous frames
+            while (currentFrame != frameIndex)
             {
-                iter.SetRoot(frameIndex, 0);
-                DoProfilerFrame(nextFrame, fullRect, true, threadCount, iter.frameTimeMS);
+                iter.SetRoot(currentFrame, 0);
+                DoProfilerFrame(currentFrame, fullRect, true, threadCount, currentTime);
+                currentTime += iter.frameTimeMS;
+                currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
+            }
+
+            // Draw next frames
+            numContextFramesToShow = maxContextFramesToShow;
+            currentFrame = frameIndex;
+            currentTime = 0;
+            while (currentTime < m_TimeArea.shownArea.x + m_TimeArea.shownArea.width && numContextFramesToShow >= 0)
+            {
+                if (frameIndex != currentFrame)
+                    DoProfilerFrame(currentFrame, fullRect, true, threadCount, currentTime);
+                iter.SetRoot(currentFrame, 0);
+                currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
+                if (currentFrame == -1)
+                    break;
+                currentTime += iter.frameTimeMS;
+                --numContextFramesToShow;
             }
 
             GUI.enabled = oldEnabled;
@@ -714,6 +946,78 @@ namespace UnityEditorInternal
 
             // Draw tooltips on top of clip to be able to extend outside of timeline area
             DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
+        }
+
+        void DoRangeSelection(Rect rect)
+        {
+            var controlID = EditorGUIUtility.GetControlID(RangeSelectionInfo.controlIDHint, FocusType.Passive);
+            var evt = Event.current;
+
+            switch (evt.type)
+            {
+                case EventType.MouseDown:
+                    if (EditorGUIUtility.hotControl == 0 && evt.button == 0 && rect.Contains(evt.mousePosition))
+                    {
+                        var delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), controlID);
+                        delay.mouseDownPosition = evt.mousePosition;
+                        m_RangeSelection.mouseDown = true;
+                        m_RangeSelection.active = false;
+                    }
+                    break;
+
+                case EventType.MouseDrag:
+                    if (EditorGUIUtility.hotControl == 0 && m_RangeSelection.mouseDown)
+                    {
+                        var delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), controlID);
+                        if (delay.CanStartDrag())
+                        {
+                            EditorGUIUtility.hotControl = controlID;
+                            m_RangeSelection.mouseDownTime = m_TimeArea.PixelToTime(delay.mouseDownPosition.x, rect);
+                            m_RangeSelection.startTime = m_RangeSelection.endTime = m_RangeSelection.mouseDownTime;
+                            ClearSelection();
+                            m_RangeSelection.active = true;
+                            evt.Use();
+                        }
+                    }
+                    else if (EditorGUIUtility.hotControl == controlID)
+                    {
+                        var cursorTime = m_TimeArea.PixelToTime(evt.mousePosition.x, rect);
+                        if (cursorTime < m_RangeSelection.mouseDownTime)
+                        {
+                            m_RangeSelection.startTime = cursorTime;
+                            m_RangeSelection.endTime = m_RangeSelection.mouseDownTime;
+                        }
+                        else
+                        {
+                            m_RangeSelection.startTime = m_RangeSelection.mouseDownTime;
+                            m_RangeSelection.endTime = cursorTime;
+                        }
+                        evt.Use();
+                    }
+                    break;
+
+                case EventType.MouseUp:
+                    if (EditorGUIUtility.hotControl == controlID && evt.button == 0)
+                    {
+                        EditorGUIUtility.hotControl = 0;
+                        m_RangeSelection.mouseDown = false;
+                        evt.Use();
+                    }
+                    break;
+
+                case EventType.Repaint:
+                    if (m_RangeSelection.active)
+                    {
+                        var startPixel = m_TimeArea.TimeToPixel(m_RangeSelection.startTime, rect);
+                        var endPixel = m_TimeArea.TimeToPixel(m_RangeSelection.endTime, rect);
+                        if (startPixel > rect.xMax || endPixel < rect.xMin)
+                            break;
+
+                        var selectionRect = Rect.MinMaxRect(Mathf.Max(rect.xMin, startPixel), rect.yMin, Mathf.Min(rect.xMax, endPixel), rect.yMax);
+                        styles.rectangleToolSelection.Draw(selectionRect, false, false, false, false);
+                    }
+                    break;
+            }
         }
     }
 }

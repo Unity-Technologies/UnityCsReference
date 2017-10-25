@@ -85,31 +85,10 @@ public sealed partial class HandleUtility
         }
     
     
-    static public float acceleration { get { return (Event.current.shift ? 4 : 1) * (Event.current.alt ? .25f : 1); } }
+    static public float acceleration { get { return NumericFieldDraggerUtility.Acceleration(Event.current.shift, Event.current.alt); } }
     
     
-    static public float niceMouseDelta
-        {
-            get
-            {
-                Vector2 d = Event.current.delta;
-                d.y = -d.y;
-
-                if (Mathf.Abs(Mathf.Abs(d.x) - Mathf.Abs(d.y)) / Mathf.Max(Mathf.Abs(d.x), Mathf.Abs(d.y)) > .1f)
-                {
-                    if (Mathf.Abs(d.x) > Mathf.Abs(d.y))
-                        s_UseYSign = false;
-                    else
-                        s_UseYSign = true;
-                }
-
-                if (s_UseYSign)
-                    return Mathf.Sign(d.y) * d.magnitude * acceleration;
-                else
-                    return Mathf.Sign(d.x) * d.magnitude * acceleration;
-            }
-        }
-            static bool s_UseYSign = false;
+    static public float niceMouseDelta { get { return NumericFieldDraggerUtility.NiceDelta(Event.current.delta, acceleration); } }
     
     
     static public float niceMouseDeltaZoom

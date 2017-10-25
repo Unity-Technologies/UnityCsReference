@@ -58,6 +58,11 @@ namespace UnityEditor
             get;
         }
 
+        public extern  bool importSettingsMissing
+        {
+            get;
+        }
+
         public extern  ulong assetTimeStamp
         {
             get;
@@ -123,6 +128,6 @@ namespace UnityEditor
         }
 
         [FreeFunction("AssetImporterBindings::RegisterImporter")]
-        extern internal static  void RegisterImporter(Type importer, int importerVersion, int queuePos, string fileExt);
+        extern internal static  void RegisterImporter(Type importer, int importerVersion, int queuePos, string fileExt, bool supportsImportDependencyHinting);
     }
 }

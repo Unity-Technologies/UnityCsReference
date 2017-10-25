@@ -38,7 +38,7 @@ namespace UnityEngine
             m_Height = source.m_Height;
         }
 
-        static public Rect zero { get { return new Rect(0.0f, 0.0f, 0.0f, 0.0f); } }
+        static public Rect zero => new Rect(0.0f, 0.0f, 0.0f, 0.0f);
 
         static public Rect MinMaxRect(float xmin, float ymin, float xmax, float ymax)
         {

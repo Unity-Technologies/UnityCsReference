@@ -17,7 +17,7 @@ namespace UnityEngine.Connect
 {
 
 
-internal partial class UnityConnectSettings
+internal partial class UnityConnectSettings : Object
 {
     public extern static bool enabled
     {

@@ -59,6 +59,7 @@ namespace UnityEditor
             }
         }
 
+        [HideInInspector]
         [SerializeField]
         private SerializableJsonDictionary m_PersistentViewDataDictionary;
 

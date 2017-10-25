@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -11,10 +12,20 @@ using LT = UnityEngineInternal.LightmapType;
 
 namespace UnityEngine
 {
+    [RequireComponent(typeof(Transform))]
+    public partial class Renderer : Component
+    {
+        // called when the object became visible by any camera.
+        // void OnBecameVisible();
+
+        // called when the object is no longer visible by any camera.
+        // void OnBecameInvisible();
+    }
+
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     public partial class Renderer : Component
     {
-        extern public Bounds bounds {[NativeMethod(Name = "RendererScripting::GetBounds", IsFreeFunction = true, HasExplicitThis = true)] get; }
+        extern public Bounds bounds {[FreeFunction(Name = "RendererScripting::GetBounds", HasExplicitThis = true)] get; }
 
         [FreeFunction(Name = "RendererScripting::SetStaticLightmapST", HasExplicitThis = true)] extern private void SetStaticLightmapST(Vector4 st);
 
@@ -24,14 +35,19 @@ namespace UnityEngine
 
         [FreeFunction(Name = "RendererScripting::GetMaterialArray", HasExplicitThis = true)] extern private Material[] GetMaterialArray();
         [FreeFunction(Name = "RendererScripting::GetSharedMaterialArray", HasExplicitThis = true)] extern private Material[] GetSharedMaterialArray();
-        [FreeFunction(Name = "RendererScripting::SetMaterialArray", HasExplicitThis = true)] extern private void SetMaterialArrayImpl(Material[] m);
+        [FreeFunction(Name = "RendererScripting::SetMaterialArray", HasExplicitThis = true)] extern private void SetMaterialArray([NotNull] Material[] m);
+
+        [FreeFunction(Name = "RendererScripting::SetPropertyBlock", HasExplicitThis = true)] extern public void SetPropertyBlock(MaterialPropertyBlock properties);
+        [FreeFunction(Name = "RendererScripting::GetPropertyBlock", HasExplicitThis = true)] extern public void GetPropertyBlock([NotNull] MaterialPropertyBlock dest);
+
+        [FreeFunction(Name = "RendererScripting::GetClosestReflectionProbes", HasExplicitThis = true)] extern private void GetClosestReflectionProbesInternal(object result);
     }
 
     [NativeHeader("Runtime/Graphics/Renderer.h")]
     public partial class Renderer : Component
     {
         extern public bool enabled   { get; set; }
-        extern public bool isVisible {[NativeMethod(Name = "IsVisibleInScene")] get; }
+        extern public bool isVisible {[NativeName("IsVisibleInScene")] get; }
 
         extern public ShadowCastingMode shadowCastingMode { get; set; }
         extern public bool              receiveShadows { get; set; }
@@ -52,7 +68,7 @@ namespace UnityEngine
         [NativeProperty("StaticBatchRoot")] extern internal Transform staticBatchRootTransform { get; set; }
         extern internal int staticBatchIndex { get; }
         extern internal void SetStaticBatchInfo(int firstSubMesh, int subMeshCount);
-        extern public bool isPartOfStaticBatch {[NativeMethod(Name = "IsPartOfStaticBatch")] get; }
+        extern public bool isPartOfStaticBatch {[NativeName("IsPartOfStaticBatch")] get; }
 
         extern public Matrix4x4 worldToLocalMatrix { get; }
         extern public Matrix4x4 localToWorldMatrix { get; }
@@ -61,10 +77,10 @@ namespace UnityEngine
         extern public GameObject lightProbeProxyVolumeOverride { get; set; }
         extern public Transform  probeAnchor { get; set; }
 
-        [NativeMethod(Name = "GetLightmapIndexInt")] extern private int  GetLightmapIndex(LT lt);
-        [NativeMethod(Name = "SetLightmapIndexInt")] extern private void SetLightmapIndex(int index, LT lt);
-        [NativeMethod(Name = "GetLightmapST")] extern private Vector4 GetLightmapST(LT lt);
-        [NativeMethod(Name = "SetLightmapST")] extern private void    SetLightmapST(Vector4 st, LT lt);
+        [NativeName("GetLightmapIndexInt")] extern private int  GetLightmapIndex(LT lt);
+        [NativeName("SetLightmapIndexInt")] extern private void SetLightmapIndex(int index, LT lt);
+        [NativeName("GetLightmapST")] extern private Vector4 GetLightmapST(LT lt);
+        [NativeName("SetLightmapST")] extern private void    SetLightmapST(Vector4 st, LT lt);
 
         public int lightmapIndex         { get { return GetLightmapIndex(LT.StaticLightmap); }  set { SetLightmapIndex(value, LT.StaticLightmap); } }
         public int realtimeLightmapIndex { get { return GetLightmapIndex(LT.DynamicLightmap); } set { SetLightmapIndex(value, LT.DynamicLightmap); } }
@@ -72,17 +88,44 @@ namespace UnityEngine
         public Vector4 lightmapScaleOffset         { get { return GetLightmapST(LT.StaticLightmap); }  set { SetStaticLightmapST(value); } }
         public Vector4 realtimeLightmapScaleOffset { get { return GetLightmapST(LT.DynamicLightmap); } set { SetLightmapST(value, LT.DynamicLightmap); } }
 
-        public Material material       { get { return GetMaterial(); }       set { SetMaterial(value); } }
-        public Material sharedMaterial { get { return GetSharedMaterial(); } set { SetMaterial(value); } }
+        // this is needed to extract check for persistent from cpp to cs
+        extern internal bool IsPersistent();
 
-        private void SetMaterialArray(Material[] m)
+        public Material[] materials
         {
-            if (m == null) throw new NullReferenceException("material array is null");
-            SetMaterialArrayImpl(m);
+            get
+            {
+                if (IsPersistent())
+                {
+                    Debug.LogError("Not allowed to access Renderer.materials on prefab object. Use Renderer.sharedMaterials instead", this);
+                    return null;
+                }
+                return GetMaterialArray();
+            }
+            set { SetMaterialArray(value); }
         }
 
-        public Material[] materials       { get { return GetMaterialArray(); }       set { SetMaterialArray(value); } }
+        public Material material
+        {
+            get
+            {
+                if (IsPersistent())
+                {
+                    Debug.LogError("Not allowed to access Renderer.material on prefab object. Use Renderer.sharedMaterial instead", this);
+                    return null;
+                }
+                return GetMaterial();
+            }
+            set { SetMaterial(value); }
+        }
+
+        public Material sharedMaterial { get { return GetSharedMaterial(); } set { SetMaterial(value); } }
         public Material[] sharedMaterials { get { return GetSharedMaterialArray(); } set { SetMaterialArray(value); } }
+
+        public void GetClosestReflectionProbes(List<ReflectionProbeBlendInfo> result)
+        {
+            GetClosestReflectionProbesInternal(result);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/TrailRenderer.h")]
@@ -109,6 +152,24 @@ namespace UnityEngine
         extern public LineAlignment   alignment   { get; set; }
 
         extern public void Clear();
+
+        public AnimationCurve widthCurve    { get { return GetWidthCurveCopy(); }    set { SetWidthCurve(value); } }
+        public Gradient       colorGradient { get { return GetColorGradientCopy(); } set { SetColorGradient(value); } }
+
+        // these are direct glue to TrailRenderer methods to simplify properties code (and have null checks generated)
+
+        extern private AnimationCurve GetWidthCurveCopy();
+        extern private void SetWidthCurve([NotNull] AnimationCurve curve);
+
+        extern private Gradient GetColorGradientCopy();
+        extern private void SetColorGradient([NotNull] Gradient curve);
+    }
+
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public sealed partial class TrailRenderer : Renderer
+    {
+        [FreeFunction(Name = "TrailRendererScripting::GetPositions", HasExplicitThis = true)]
+        extern public int GetPositions([NotNull] Vector3[] positions);
     }
 
     [NativeHeader("Runtime/Graphics/LineRenderer.h")]
@@ -135,6 +196,27 @@ namespace UnityEngine
         extern public LineAlignment   alignment   { get; set; }
 
         extern public void Simplify(float tolerance);
+
+        public AnimationCurve widthCurve    { get { return GetWidthCurveCopy(); }    set { SetWidthCurve(value); } }
+        public Gradient       colorGradient { get { return GetColorGradientCopy(); } set { SetColorGradient(value); } }
+
+        // these are direct glue to TrailRenderer methods to simplify properties code (and have null checks generated)
+
+        extern private AnimationCurve GetWidthCurveCopy();
+        extern private void SetWidthCurve([NotNull] AnimationCurve curve);
+
+        extern private Gradient GetColorGradientCopy();
+        extern private void SetColorGradient([NotNull] Gradient curve);
+    }
+
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public sealed partial class LineRenderer : Renderer
+    {
+        [FreeFunction(Name = "LineRendererScripting::GetPositions", HasExplicitThis = true)]
+        extern public int GetPositions([NotNull] Vector3[] positions);
+
+        [FreeFunction(Name = "LineRendererScripting::SetPositions", HasExplicitThis = true)]
+        extern public void SetPositions([NotNull] Vector3[] positions);
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/SkinnedMeshRenderer.h")]
@@ -145,6 +227,7 @@ namespace UnityEngine
 
         extern public Transform rootBone { get; set; }
         extern internal Transform actualRootBone { get; }
+        extern public Transform[] bones { get; set; }
 
         [NativeProperty("Mesh")] extern public Mesh sharedMesh { get; set; }
         [NativeProperty("SkinnedMeshMotionVectors")]  extern public bool skinnedMotionVectors { get; set; }

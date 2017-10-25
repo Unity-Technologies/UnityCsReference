@@ -81,6 +81,9 @@ public partial struct ExternalVersionControl
 
 public sealed partial class EditorSettings : Object
 {
+    private EditorSettings() {}
+    
+    
     public extern static string unityRemoteDevice
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

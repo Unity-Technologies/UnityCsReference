@@ -23,6 +23,7 @@ namespace UnityEditor
     {
         public string name { get; private set;  }
         public string nativeNamespace { get; private set; }
+        public string module { get; private set; }
         public int persistentTypeID { get; private set; }
         public UnityType baseClass { get; private set; }
 
@@ -106,6 +107,7 @@ namespace UnityEditor
                     descendantCount = types[i].descendantCount,
                     name = types[i].className,
                     nativeNamespace = types[i].classNamespace,
+                    module = types[i].module,
                     persistentTypeID = types[i].persistentTypeID,
                     baseClass = baseClass,
                     flags = (UnityTypeFlags)types[i].flags

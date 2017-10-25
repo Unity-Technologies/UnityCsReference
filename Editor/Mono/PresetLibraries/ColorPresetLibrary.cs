@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    [AssetFileNameExtension("colors")]
     class ColorPresetLibrary : PresetLibrary
     {
         [SerializeField]

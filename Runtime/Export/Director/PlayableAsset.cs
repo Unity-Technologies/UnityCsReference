@@ -31,6 +31,7 @@ namespace UnityEngine.Playables
 
     [System.Serializable]
     [RequiredByNativeCode]
+    [AssetFileNameExtension("playable")]
     public abstract class PlayableAsset : ScriptableObject, IPlayableAsset
     {
         public abstract Playable CreatePlayable(PlayableGraph graph, GameObject owner);

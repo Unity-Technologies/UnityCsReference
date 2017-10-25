@@ -6,6 +6,21 @@ using System;
 
 namespace UnityEngine.Bindings
 {
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
+    [VisibleToOtherModules]
+    class VisibleToOtherModulesAttribute : Attribute
+    {
+        // This attributes controls visibility of internal types and members to other modules.
+        // See https://confluence.hq.unity3d.com/display/DEV/Modular+UnityEngine+managed+assemblies+setup for details.
+        public VisibleToOtherModulesAttribute()
+        {
+        }
+
+        public VisibleToOtherModulesAttribute(params string[] modules)
+        {
+        }
+    }
+
     interface IBindingsAttribute
     {
     }
@@ -51,6 +66,7 @@ namespace UnityEngine.Bindings
 
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]
+    [VisibleToOtherModules]
     class NativeConditionalAttribute : Attribute, IBindingsAttribute
     {
         public string Condition { get; set; }
@@ -79,6 +95,7 @@ namespace UnityEngine.Bindings
 
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.ReturnValue | AttributeTargets.Parameter, AllowMultiple = true)]
+    [VisibleToOtherModules]
     class NativeHeaderAttribute : Attribute, IBindingsHeaderProviderAttribute
     {
         public string Header { get; set; }
@@ -97,6 +114,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+    [VisibleToOtherModules]
     class NativeNameAttribute : Attribute, IBindingsNameProviderAttribute
     {
         public string Name { get; set; }
@@ -115,6 +133,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Method)]
+    [VisibleToOtherModules]
     sealed class NativeWritableSelfAttribute : Attribute, IBindingsWritableSelfProviderAttribute
     {
         public bool WritableSelf { get; set; }
@@ -131,6 +150,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    [VisibleToOtherModules]
     class NativeMethodAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute, IBindingsIsFreeFunctionProviderAttribute, IBindingsThrowsProviderAttribute
     {
         public string Name { get; set; }
@@ -168,6 +188,7 @@ namespace UnityEngine.Bindings
         }
     }
 
+    [VisibleToOtherModules]
     enum TargetType
     {
         Function,
@@ -175,6 +196,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Property)]
+    [VisibleToOtherModules]
     class NativePropertyAttribute : NativeMethodAttribute
     {
         public TargetType TargetType { get; set; }
@@ -203,6 +225,7 @@ namespace UnityEngine.Bindings
         }
     }
 
+    [VisibleToOtherModules]
     enum CodegenOptions
     {
         Auto,
@@ -211,17 +234,13 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Class)]
+    [VisibleToOtherModules]
     class NativeAsStructAttribute : Attribute, IBindingsAttribute
     {
-        public string StructName { get; set; }
-
-        public NativeAsStructAttribute(string structName)
-        {
-            StructName = structName;
-        }
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum)]
+    [VisibleToOtherModules]
     class NativeTypeAttribute : Attribute, IBindingsHeaderProviderAttribute, IBindingsGenerateMarshallingTypeAttribute
     {
         public string Header { get; set; }
@@ -261,6 +280,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Parameter)]
+    [VisibleToOtherModules]
     class NotNullAttribute : Attribute, IBindingsAttribute
     {
         public NotNullAttribute()
@@ -269,6 +289,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Parameter)]
+    [VisibleToOtherModules]
     class UnmarshalledAttribute : Attribute, IBindingsAttribute
     {
         public UnmarshalledAttribute()
@@ -277,6 +298,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Method)]
+    [VisibleToOtherModules]
     class FreeFunctionAttribute : NativeMethodAttribute
     {
         public FreeFunctionAttribute()
@@ -294,6 +316,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Method)]
+    [VisibleToOtherModules]
     class ThreadSafeAttribute : NativeMethodAttribute
     {
         public ThreadSafeAttribute()
@@ -302,6 +325,7 @@ namespace UnityEngine.Bindings
         }
     }
 
+    [VisibleToOtherModules]
     enum StaticAccessorType
     {
         Dot,
@@ -310,6 +334,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]
+    [VisibleToOtherModules]
     class StaticAccessorAttribute : Attribute, IBindingsAttribute
     {
         public string Name { get; set; }
@@ -319,6 +344,7 @@ namespace UnityEngine.Bindings
         {
         }
 
+        [VisibleToOtherModules]
         internal StaticAccessorAttribute(string name)
         {
             Name = name;
@@ -337,6 +363,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    [VisibleToOtherModules]
     class NativeThrowsAttribute : Attribute, IBindingsThrowsProviderAttribute
     {
         public bool ThrowsException { get; set; }
@@ -353,6 +380,7 @@ namespace UnityEngine.Bindings
     }
 
     [AttributeUsage(AttributeTargets.Field)]
+    [VisibleToOtherModules]
     class IgnoreAttribute : Attribute, IBindingsAttribute
     {
     }

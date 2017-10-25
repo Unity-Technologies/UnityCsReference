@@ -96,8 +96,14 @@ namespace UnityEditor
         public static CallbackFunction delayCall;
 
         // Each time an object is (or a group of objects are) created, renamed, parented, unparented or destroyed this callback is raised.
+        public static event Action hierarchyChanged;
+
+        [Obsolete("Use EditorApplication.hierarchyChanged")]
         public static CallbackFunction hierarchyWindowChanged;
 
+        public static event Action projectChanged;
+
+        [Obsolete("Use EditorApplication.projectChanged")]
         public static CallbackFunction projectWindowChanged;
 
         public static CallbackFunction searchChanged;
@@ -151,16 +157,26 @@ namespace UnityEditor
                 view.Repaint();
         }
 
-        static void Internal_CallHierarchyWindowHasChanged()
+        static void Internal_CallHierarchyHasChanged()
         {
+            #pragma warning disable 618
             if (hierarchyWindowChanged != null)
                 hierarchyWindowChanged();
+            #pragma warning restore 618
+
+            if (hierarchyChanged != null)
+                hierarchyChanged();
         }
 
-        static void Internal_CallProjectWindowHasChanged()
+        static void Internal_CallProjectHasChanged()
         {
+            #pragma warning disable 618
             if (projectWindowChanged != null)
                 projectWindowChanged();
+            #pragma warning restore 618
+
+            if (projectChanged != null)
+                projectChanged();
         }
 
         internal static void Internal_CallSearchHasChanged()

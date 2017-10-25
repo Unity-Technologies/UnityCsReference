@@ -59,6 +59,38 @@ namespace UnityEngine.Experimental.UIElements
             this.Dirty(ChangeType.Repaint);
         }
 
+        public void ScrollTo(VisualElement child)
+        {
+            // Child not in content view, no need to continue.
+            if (!contentContainer.Contains(child))
+                throw new ArgumentException("Cannot scroll to null child");
+
+            float scrollableHeight = contentContainer.layout.height - contentViewport.layout.height;
+
+            float yTransform = contentContainer.transform.position.y * -1;
+            float viewMin = contentViewport.layout.yMin + yTransform;
+            float viewMax = contentViewport.layout.yMax + yTransform;
+
+            float childBoundaryMin = child.layout.yMin;
+            float childBoundaryMax = child.layout.yMax;
+            if (childBoundaryMin >= viewMin && childBoundaryMax <= viewMax)
+                return;
+
+            var scrollUpward = false;
+            float deltaDistance = childBoundaryMax - viewMax;
+            if (deltaDistance < -1)
+            {
+                // Direction = upward
+                deltaDistance = viewMin - childBoundaryMin;
+                scrollUpward = true;
+            }
+
+            float deltaOffset = deltaDistance * verticalScroller.highValue / scrollableHeight;
+            scrollOffset.Set(scrollOffset.x, scrollOffset.y + (scrollUpward ? -deltaOffset : deltaOffset));
+            verticalScroller.value = scrollOffset.y;
+            UpdateContentViewTransform();
+        }
+
         public VisualElement contentViewport { get; private set; }    // Represents the visible part of contentContainer
 
         [Obsolete("Please use contentContainer instead", false)]
@@ -81,7 +113,7 @@ namespace UnityEngine.Experimental.UIElements
             this.verticalScrollerValues = verticalScrollerValues;
 
             contentViewport = new VisualElement() { name = "ContentViewport" };
-            contentViewport.clipChildren = true;
+            contentViewport.clippingOptions = ClippingOptions.ClipContents;
             shadow.Add(contentViewport);
 
             // Basic content container; its constraints should be defined in the USS file

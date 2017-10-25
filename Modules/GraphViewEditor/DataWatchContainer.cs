@@ -32,6 +32,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected void AddWatch()
         {
             var toWatch = this.toWatch;
+            if (toWatch == null)
+                return;
+
             handles = new IUIElementDataWatchRequest[toWatch.Length];
             for (int i = 0; i < toWatch.Length; ++i)
             {

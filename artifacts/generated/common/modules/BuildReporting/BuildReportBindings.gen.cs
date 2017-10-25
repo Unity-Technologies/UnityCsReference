@@ -24,8 +24,12 @@ internal enum BuildResult
     Canceled     = (1 << 3)
 }
 
+[NativeClass("BuildReporting::BuildReport")]
 internal sealed partial class BuildReport : Object
 {
+    private BuildReport() {}
+    
+    
     public extern uint crc
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

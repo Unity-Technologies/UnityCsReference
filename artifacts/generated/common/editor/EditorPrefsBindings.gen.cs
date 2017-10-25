@@ -19,10 +19,22 @@ namespace UnityEditor
 
 public sealed partial class EditorPrefs
 {
+    internal delegate void ValueWasUpdated(string key);
+    internal static event ValueWasUpdated onValueWasUpdated = null;
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetInt (string key, int value) ;
+    extern private static  void SetIntInternal (string key, int value) ;
 
+    public static void SetInt(string key, int value)
+        {
+            SetIntInternal(key, value);
+            if (onValueWasUpdated != null)
+                onValueWasUpdated(key);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  int GetInt (string key, [uei.DefaultValue("0")]  int defaultValue ) ;
@@ -35,8 +47,16 @@ public sealed partial class EditorPrefs
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetFloat (string key, float value) ;
+    extern private static  void SetFloatInternal (string key, float value) ;
 
+    public static void SetFloat(string key, float value)
+        {
+            SetFloatInternal(key, value);
+            if (onValueWasUpdated != null)
+                onValueWasUpdated(key);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  float GetFloat (string key, [uei.DefaultValue("0.0F")]  float defaultValue ) ;
@@ -49,8 +69,16 @@ public sealed partial class EditorPrefs
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetString (string key, string value) ;
+    extern private static  void SetStringInternal (string key, string value) ;
 
+    public static void SetString(string key, string value)
+        {
+            SetStringInternal(key, value);
+            if (onValueWasUpdated != null)
+                onValueWasUpdated(key);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string GetString (string key, [uei.DefaultValue("\"\"")]  string defaultValue ) ;
@@ -63,8 +91,16 @@ public sealed partial class EditorPrefs
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetBool (string key, bool value) ;
+    extern private static  void SetBoolInternal (string key, bool value) ;
 
+    public static void SetBool(string key, bool value)
+        {
+            SetBoolInternal(key, value);
+            if (onValueWasUpdated != null)
+                onValueWasUpdated(key);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  bool GetBool (string key, [uei.DefaultValue("false")]  bool defaultValue ) ;

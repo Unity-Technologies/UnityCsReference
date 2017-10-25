@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     [NativeHeader("Runtime/BaseClasses/GameObject.h")]
     [NativeType(Header = "Modules/TilemapEditor/Editor/TilemapEditorUserSettings.h")]
-    internal sealed partial class TilemapEditorUserSettings
+    internal sealed partial class TilemapEditorUserSettings : Object
     {
         public enum FocusMode
         {

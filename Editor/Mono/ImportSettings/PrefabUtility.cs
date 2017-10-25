@@ -89,28 +89,20 @@ namespace UnityEditor
         {
             Transform transform = null;
             List<Component> components = new List<Component>();
-            hierarchy.Add(gameObject);
             gameObject.GetComponents(components);
             foreach (var component in components)
             {
                 if (component is Transform)
-                {
                     transform = component as Transform;
-                }
-                else
-                {
-                    hierarchy.Add(component);
-                }
-            }
 
-            if (transform != null)
-            {
-                int childCount = transform.childCount;
-                for (var i = 0; i < childCount; i++)
-                {
-                    GetObjectListFromHierarchy(hierarchy, transform.GetChild(i).gameObject);
-                }
+                hierarchy.Add(component);
             }
+            if (transform == null)
+                return;
+
+            int childCount = transform.childCount;
+            for (var i = 0; i < childCount; i++)
+                GetObjectListFromHierarchy(hierarchy, transform.GetChild(i).gameObject);
         }
 
         private static void RegisterNewObjects(List<Object> newHierarchy, List<Object> hierarchy, string actionName)
@@ -156,9 +148,11 @@ namespace UnityEditor
                             break;
                         }
                     }
-
                     if (requiredComponentsExist)
                     {
+                        if (danglingObject is Transform)
+                            danglingObject = ((Transform)danglingObject).gameObject;
+
                         Undo.RegisterCreatedObjectUndo(danglingObject, actionName);
                         addedTypes.Add(danglingObject.GetType());
                         danglingObjects.RemoveAt(i);
@@ -200,9 +194,9 @@ namespace UnityEditor
             }
 
             RevertPrefabInstance(root);
-
             List<Object> newHierarchy = new List<Object>();
             GetObjectListFromHierarchy(newHierarchy, FindPrefabRoot(root));
+
             RegisterNewObjects(newHierarchy, hierarchy, actionName);
         }
 

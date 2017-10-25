@@ -308,7 +308,7 @@ namespace UnityEditor
             base.OnEnable();
             titleContent = GetLocalizedTitleContent();
             s_SceneHierarchyWindow.Add(this);
-            EditorApplication.projectWindowChanged += ReloadData; // Required to know if a prefab gets deleted. Better way of doing this?
+            EditorApplication.projectChanged += ReloadData; // Required to know if a prefab gets deleted. Better way of doing this?
             EditorApplication.editorApplicationQuit += OnQuit;
             EditorApplication.searchChanged += SearchChanged;
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
@@ -319,7 +319,7 @@ namespace UnityEditor
 
         public override void OnDisable()
         {
-            EditorApplication.projectWindowChanged -= ReloadData;
+            EditorApplication.projectChanged -= ReloadData;
             EditorApplication.editorApplicationQuit -= OnQuit;
             EditorApplication.searchChanged -= SearchChanged;
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;

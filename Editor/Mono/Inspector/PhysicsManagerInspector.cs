@@ -118,7 +118,10 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, "m_ClothInterCollisionDistance", "m_ClothInterCollisionStiffness", "m_ClothInterCollisionSettingsToggle");
+            serializedObject.ApplyModifiedProperties();
+
             LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref show, ref scrollPos, GetValue, SetValue);
 
             EditorGUI.BeginChangeCheck();
@@ -126,6 +129,7 @@ namespace UnityEditor
             bool settingsChanged = EditorGUI.EndChangeCheck();
             if (settingsChanged)
             {
+                Undo.RecordObject(this, "Change inter collision settings");
                 Physics.interCollisionSettingsToggle = collisionSettings;
             }
 
@@ -137,6 +141,7 @@ namespace UnityEditor
                 bool distanceChanged = EditorGUI.EndChangeCheck();
                 if (distanceChanged)
                 {
+                    Undo.RecordObject(this, "Change inter collision distance");
                     if (distance < 0.0f)
                         distance = 0.0f;
                     Physics.interCollisionDistance = distance;
@@ -147,6 +152,7 @@ namespace UnityEditor
                 bool stiffnessChanged = EditorGUI.EndChangeCheck();
                 if (stiffnessChanged)
                 {
+                    Undo.RecordObject(this, "Change inter collision stiffness");
                     if (stiffness < 0.0f)
                         stiffness = 0.0f;
                     Physics.interCollisionStiffness = stiffness;

@@ -36,6 +36,11 @@ namespace UnityEditor.U2D.Common
                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueWiiU;
                     formatStrings = TextureImporterInspector.s_TextureFormatStringsWiiU;
                 }
+                else if (buildTarget == BuildTarget.Switch)
+                {
+                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueSwitch;
+                    formatStrings = TextureImporterInspector.s_TextureFormatStringsSwitch;
+                }
                 else
                 {
                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueDefault;

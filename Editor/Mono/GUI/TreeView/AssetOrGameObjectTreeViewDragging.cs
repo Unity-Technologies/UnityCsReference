@@ -59,6 +59,11 @@ namespace UnityEditor
         {
             DragAndDrop.PrepareStartDrag();
 
+            if (Event.current.control || Event.current.command)
+            {
+                draggedItemIDs.Add(draggedItem.id);
+            }
+
             // Ensure correct order for hierarchy items (to preserve visible order when dropping at new location)
             draggedItemIDs = m_TreeView.SortIDsInVisiblityOrder(draggedItemIDs);
 

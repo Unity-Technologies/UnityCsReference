@@ -15,9 +15,24 @@ using System.Text.RegularExpressions;
 using Mono.Cecil;
 using UnityEditor.Modules;
 using UnityEditor.DeploymentTargets;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
+    class MissingBuildPropertiesException : Exception {}
+
+    internal abstract class BuildProperties : ScriptableObject
+    {
+        public static BuildProperties GetFromBuildReport(BuildReporting.BuildReport report)
+        {
+            var allData = (BuildProperties[])report.GetAppendices(typeof(BuildProperties));
+            if (allData.Length > 0)
+                return allData[0];
+
+            throw new MissingBuildPropertiesException();
+        }
+    }
+
     internal class PostprocessBuildPlayer
     {
         internal const string StreamingAssets = "Assets/StreamingAssets";
@@ -149,15 +164,15 @@ namespace UnityEditor
             // For now, try the new interface and fall back on the old one
             try
             {
-                if (buildReport == null)
+                // Early out so as not to show/update progressbars unnecessarily
+                if (buildReport == null || !DeploymentTargetManager.IsExtensionSupported(targetGroup, buildReport.buildTarget))
                     throw new System.NotSupportedException();
 
                 ProgressHandler progressHandler = new ProgressHandler("Deploying Player", delegate(string title, string message, float globalProgress)
                     {
                         if (EditorUtility.DisplayCancelableProgressBar(title, message, globalProgress))
                             throw new OperationAbortedException();
-                    },
-                        0.1f); // BuildPlayer.cpp starts off at 0.1f for some reason
+                    }, 0.1f); // BuildPlayer.cpp starts off at 0.1f for some reason
 
                 var taskManager = new ProgressTaskManager(progressHandler);
 
@@ -235,6 +250,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         static public void UpdateBootConfig(BuildTargetGroup targetGroup, BuildTarget target, BootConfigData config, BuildOptions options)
         {
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
@@ -273,7 +289,10 @@ namespace UnityEditor
                 args.usedClassRegistry = usedClassRegistry;
                 args.report = report;
 
-                postprocessor.PostProcess(args);
+                BuildProperties props;
+                postprocessor.PostProcess(args, out props);
+                report.AddAppendix(props);
+
                 return;
             }
 

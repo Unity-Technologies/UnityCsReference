@@ -256,6 +256,20 @@ public sealed partial class SystemInfo
         get;
     }
 
+    public extern static bool supportsHardwareQuadTopology
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern static bool supports32bitsIndexBuffer
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
     public extern static bool supportsSparseTextures
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -271,6 +285,13 @@ public sealed partial class SystemInfo
     }
 
     public extern static int supportsMultisampledTextures
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern static int supportsTextureWrapMirrorOnce
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -409,6 +430,13 @@ public sealed partial class SystemInfo
         get;
     }
 
+    public extern static bool supportsAsyncGPUReadback
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -483,6 +511,7 @@ public sealed partial class Coroutine : YieldInstruction
 
 [StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
+[NativeClass(null)]
 public partial class ScriptableObject : Object
 {
     public ScriptableObject()
@@ -526,8 +555,10 @@ public partial class ScriptableObject : Object
 
 [StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
+[NativeClass(null)]
     class FailedToLoadScriptObject : Object
     {
+        private FailedToLoadScriptObject() {}
     }
 
 

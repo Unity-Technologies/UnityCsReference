@@ -11,6 +11,7 @@ using System;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.CSSLayout
@@ -20,7 +21,7 @@ namespace UnityEngine.CSSLayout
     {
         private const string DllName = "CSSLayout";
 
-        static Dictionary<IntPtr, WeakReference> s_MeasureFunctions = new Dictionary<IntPtr, WeakReference>();
+        static LockDictionary<IntPtr, WeakReference> s_MeasureFunctions = new LockDictionary<IntPtr, WeakReference>();
 
 // BEGIN_UNITY
 // TODO we don't support the logging feature yet
@@ -110,7 +111,7 @@ namespace UnityEngine.CSSLayout
         {
             if (measureFunc != null)
             {
-                s_MeasureFunctions[node] = new WeakReference(measureFunc);
+                s_MeasureFunctions.Set(node, new WeakReference(measureFunc));
                 CSSLayoutCallbacks.RegisterWrapper(node);
             }
             else if (s_MeasureFunctions.ContainsKey(node))

@@ -17,5 +17,6 @@ namespace UnityEngine.Experimental.Rendering
         ProvideLightIndices = (1 << 4),
         PerObjectMotionVectors = (1 << 5),
         PerObjectLightIndices8 = (1 << 6),
+        ProvideReflectionProbeIndices = (1 << 7),
     }
 }

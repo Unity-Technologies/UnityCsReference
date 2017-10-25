@@ -582,35 +582,55 @@ internal sealed partial class TerrainInspectorUtil
 
 }
 
+[NativeClass(null)]
 internal sealed partial class PhysicsManager : ProjectSettingsBase
 {
+    private PhysicsManager() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class AudioManager : ProjectSettingsBase
 {
+    private AudioManager() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class Physics2DSettings : ProjectSettingsBase
 {
+    private Physics2DSettings() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class MonoManager : ProjectSettingsBase
 {
+    private MonoManager() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class TagManager : ProjectSettingsBase
 {
+    private TagManager() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class InputManager : ProjectSettingsBase
 {
+    private InputManager() {}
 }
 
+[NativeClass(null)]
 internal sealed partial class TimeManager : ProjectSettingsBase
+{
+    private TimeManager() {}
+}
+
+[NativeClass(null)]
+internal sealed partial class UnityConnectSettings : ProjectSettingsBase
 {
 }
 
 [System.Obsolete("DDSImporter is obsolete. Use IHVImageFormatImporter instead (UnityUpgradable) -> IHVImageFormatImporter", true)]
+[NativeClass(null)]
 public class DDSImporter : AssetImporter
     {
         public bool isReadable { get {return false; } set {} }
@@ -1100,7 +1120,8 @@ internal sealed partial class GradientPreviewCache
 
 }
 
-internal partial class ProjectSettingsBase : Object
+[NativeClass(null)]
+internal abstract partial class ProjectSettingsBase : Object
 {
 }
 

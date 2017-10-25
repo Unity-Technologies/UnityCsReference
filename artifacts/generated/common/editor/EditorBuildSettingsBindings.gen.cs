@@ -272,8 +272,11 @@ public sealed partial class EditorBuildSettingsScene : IComparable
     
 }
 
-public sealed partial class EditorBuildSettings
+public sealed partial class EditorBuildSettings : Object
 {
+    private EditorBuildSettings() {}
+    
+    
     public static event System.Action sceneListChanged;
     [RequiredByNativeCode]
     private static void SceneListChanged()
@@ -295,8 +298,11 @@ public sealed partial class EditorBuildSettings
 
 }
 
-public sealed partial class EditorUserBuildSettings
+public sealed partial class EditorUserBuildSettings : Object
 {
+    private EditorUserBuildSettings() {}
+    
+    
     internal static AppleBuildAndRunType appleBuildAndRunType = AppleBuildAndRunType.Xcode;
     
     
@@ -623,7 +629,7 @@ public sealed partial class EditorUserBuildSettings
         set;
     }
 
-    public extern static string androidDeviceSocketAddress
+    internal extern static string androidDeviceSocketAddress
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

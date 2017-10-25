@@ -4,95 +4,29 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TextEditor : UnityEngine.TextEditor, IManipulator
+    internal class TextEditorEventHandler
     {
-        public int maxLength { get; set; }
-        public char maskChar { get; set; }
-        public bool doubleClickSelectsWord { get; set; }
-        public bool tripleClickSelectsLine { get; set; }
+        protected TextEditorEngine editorEngine { get; }
 
-        protected TextField textField { get; set; }
+        protected TextInputFieldBase textInputField { get; }
 
-        internal override Rect localPosition { get { return new Rect(0, 0, position.width, position.height); } }
-
-        protected virtual void RegisterCallbacksOnTarget()
+        protected TextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
         {
-            target.RegisterCallback<FocusEvent>(OnFocus);
-            target.RegisterCallback<BlurEvent>(OnBlur);
+            this.editorEngine = editorEngine;
+            this.textInputField = textInputField;
+            this.textInputField.SyncTextEngine();
         }
 
-        protected virtual void UnregisterCallbacksFromTarget()
+        public virtual void ExecuteDefaultAction(EventBase evt)
         {
-            target.UnregisterCallback<FocusEvent>(OnFocus);
-            target.UnregisterCallback<BlurEvent>(OnBlur);
-        }
-
-        void OnFocus(FocusEvent evt)
-        {
-            OnFocus();
-        }
-
-        void OnBlur(BlurEvent evt)
-        {
-            OnLostFocus();
-        }
-
-        VisualElement m_Target;
-
-        public VisualElement target
-        {
-            get
+            if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
-                return m_Target;
+                editorEngine.OnFocus();
             }
-
-            set
+            else if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
-                if (target != null)
-                {
-                    UnregisterCallbacksFromTarget();
-                }
-                m_Target = value;
-                if (target != null)
-                {
-                    RegisterCallbacksOnTarget();
-                }
+                editorEngine.OnLostFocus();
             }
-        }
-
-        protected TextEditor(TextField textField)
-        {
-            this.textField = textField;
-            SyncTextEditor();
-        }
-
-        protected void SyncTextEditor()
-        {
-            // Pre-cull input string to maxLength.
-            string textFieldText = textField.text;
-            if (maxLength >= 0 && textFieldText != null && textFieldText.Length > maxLength)
-                textFieldText = textFieldText.Substring(0, maxLength);
-            text = textFieldText;
-
-            SaveBackup();
-
-            position = textField.layout;
-            maxLength = textField.maxLength;
-            multiline = textField.multiline;
-            isPasswordField = textField.isPasswordField;
-            maskChar = textField.maskChar;
-            doubleClickSelectsWord = textField.doubleClickSelectsWord;
-            tripleClickSelectsLine = textField.tripleClickSelectsLine;
-
-            DetectFocusChange();
-        }
-
-        internal override void OnDetectFocusChange()
-        {
-            if (m_HasFocus && !textField.hasFocus)
-                OnFocus();
-            if (!m_HasFocus && textField.hasFocus)
-                OnLostFocus();
         }
     }
 }

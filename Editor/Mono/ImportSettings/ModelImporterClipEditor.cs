@@ -56,6 +56,7 @@ namespace UnityEditor
         SerializedProperty m_AnimationWrapMode;
         SerializedProperty m_LegacyGenerateAnimations;
         SerializedProperty m_ImportAnimatedCustomProperties;
+        SerializedProperty m_ImportConstraints;
 
         SerializedProperty m_MotionNodeName;
         public int motionNodeIndex { get; set; }
@@ -143,6 +144,7 @@ namespace UnityEditor
             public GUIContent Mask = EditorGUIUtility.TextContent("Mask|Configure the mask for this clip to remove unnecessary curves.");
 
             public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TextContent("Animated Custom Properties|Controls if animated custom properties are imported.");
+            public GUIContent ImportConstraints = EditorGUIUtility.TextContent("Import Constraints|Controls if the constraints are imported.");
 
             public Styles()
             {
@@ -172,6 +174,7 @@ namespace UnityEditor
             m_AnimationScaleError = serializedObject.FindProperty("m_AnimationScaleError");
             m_AnimationWrapMode = serializedObject.FindProperty("m_AnimationWrapMode");
             m_ImportAnimatedCustomProperties = serializedObject.FindProperty("m_ImportAnimatedCustomProperties");
+            m_ImportConstraints = serializedObject.FindProperty("m_ImportConstraints");
 
             m_RigImportErrors = serializedObject.FindProperty("m_RigImportErrors");
             m_RigImportWarnings = serializedObject.FindProperty("m_RigImportWarnings");
@@ -393,6 +396,7 @@ namespace UnityEditor
             if (styles == null)
                 styles = new Styles();
 
+            EditorGUILayout.PropertyField(m_ImportConstraints, styles.ImportConstraints);
             EditorGUILayout.PropertyField(m_ImportAnimation, styles.ImportAnimations);
 
             if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)

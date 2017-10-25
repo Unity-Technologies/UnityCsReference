@@ -116,6 +116,7 @@ namespace UnityEditorInternal
         public int vertexCount;
         public int indexCount;
         public int instanceCount;
+        public int drawCallCount;
         public string shaderName;
         public string passName;
         public string passLightMode;
@@ -250,6 +251,8 @@ namespace UnityEditor
         // Only need to rebuild them when event data actually changes.
         private struct EventDataStrings
         {
+            public string drawCallCount;
+
             public string shader;
             public string pass;
 
@@ -481,6 +484,9 @@ namespace UnityEditor
         // Only call this when m_CurEventData changes.
         void BuildCurEventDataStrings()
         {
+            // we will show that only if drawcall count is bigger than one so update unconditionally
+            m_CurEventDataStrings.drawCallCount = string.Format("{0}", m_CurEventData.drawCallCount);
+
             // shader name & subshader index
             m_CurEventDataStrings.shader = string.Format("{0}, SubShader #{1}", m_CurEventData.shaderName, m_CurEventData.subShaderIndex.ToString());
 
@@ -820,6 +826,9 @@ namespace UnityEditor
 
         private void DrawEventDrawCallInfo()
         {
+            if (m_CurEventData.drawCallCount > 1)
+                EditorGUILayout.LabelField("Draw Calls", m_CurEventDataStrings.drawCallCount);
+
             // shader, pass & keyword information
             EditorGUILayout.LabelField("Shader", m_CurEventDataStrings.shader);
 

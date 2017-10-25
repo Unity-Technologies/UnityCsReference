@@ -1997,6 +1997,7 @@ public partial class Joint : Component
     private extern static void INTERNAL_CALL_GetActorLocalPose (Joint self, int actorIndex, out Matrix4x4 value);
 }
 
+[NativeClass("Unity::HingeJoint")]
 public sealed partial class HingeJoint : Joint
 {
     public JointMotor motor
@@ -2087,6 +2088,7 @@ public sealed partial class HingeJoint : Joint
 
 }
 
+[NativeClass("Unity::SpringJoint")]
 public sealed partial class SpringJoint : Joint
 {
     public extern float spring
@@ -2141,10 +2143,12 @@ public sealed partial class SpringJoint : Joint
 
 }
 
+[NativeClass("Unity::FixedJoint")]
 public sealed partial class FixedJoint : Joint
 {
 }
 
+[NativeClass("Unity::CharacterJoint")]
 public sealed partial class CharacterJoint : Joint
 {
     public Vector3 swingAxis
@@ -2301,6 +2305,7 @@ public enum RotationDriveMode
     Slerp = 1
 }
 
+[NativeClass("Unity::ConfigurableJoint")]
 public sealed partial class ConfigurableJoint : Joint
 {
     public Vector3 secondaryAxis

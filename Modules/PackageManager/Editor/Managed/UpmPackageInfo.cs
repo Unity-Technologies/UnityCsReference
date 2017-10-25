@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -36,6 +38,10 @@ namespace UnityEditor.PackageManager
         private string m_Category;
         [SerializeField]
         private string m_Description;
+        [SerializeField]
+        private PackageStatus m_Status;
+        [SerializeField]
+        private Error[] m_Errors;
 
         private UpmPackageInfo() {}
 
@@ -45,7 +51,9 @@ namespace UnityEditor.PackageManager
             string category = "",
             string description = "",
             string resolvedPath = "",
-            string tag = "")
+            string tag = "",
+            PackageStatus status = PackageStatus.Unavailable,
+            IEnumerable<Error> errors = null)
         {
             // Set the default values
             m_OriginType = OriginType.Unknown;
@@ -57,6 +65,8 @@ namespace UnityEditor.PackageManager
             m_Category = category;
             m_Description = description;
             m_ResolvedPath = resolvedPath;
+            m_Status = status;
+            m_Errors = (errors ?? new Error[] {}).ToArray();
 
             // Populate name and version
             var nameAndVersion = packageId.Split('@');
@@ -75,6 +85,8 @@ namespace UnityEditor.PackageManager
         public string displayName { get { return m_DisplayName;  } }
         public string category { get { return m_Category;  } }
         public string description { get { return m_Description;  } }
+        public PackageStatus status { get { return m_Status;  } }
+        public Error[] errors { get { return m_Errors;  } }
     }
 }
 

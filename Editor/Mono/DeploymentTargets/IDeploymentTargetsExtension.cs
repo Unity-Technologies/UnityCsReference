@@ -85,7 +85,7 @@ namespace UnityEditor.DeploymentTargets
 
         // Checks a build against target information
         // Check passes if the build is compatible with the target
-        BuildCheckResult CheckBuild(BuildReporting.BuildReport buildReport);
+        BuildCheckResult CheckBuild(BuildProperties buildProperties);
     }
 
     internal class OperationAbortedException : Exception {}
@@ -93,7 +93,7 @@ namespace UnityEditor.DeploymentTargets
     internal class OperationFailedException : Exception
     {
         public readonly string title;
-        public OperationFailedException(string title, string message) : base(message)
+        public OperationFailedException(string title, string message, Exception inner = null) : base(message, inner)
         {
             this.title = title;
         }
@@ -101,30 +101,33 @@ namespace UnityEditor.DeploymentTargets
 
     internal class UnknownDeploymentTargetException : OperationFailedException
     {
-        public UnknownDeploymentTargetException(string message = "Unknown deployment target.") : base("Cannot find deployment target", message) {}
+        public UnknownDeploymentTargetException(string message = "Unknown deployment target.", Exception inner = null) : base("Cannot find deployment target", message, inner) {}
     }
 
     internal class NoResponseFromDeploymentTargetException : OperationFailedException
     {
-        public NoResponseFromDeploymentTargetException(string message = "No response from deployment target.") : base("No response from deployment target", message) {}
+        public NoResponseFromDeploymentTargetException(string message = "No response from deployment target.", Exception inner = null) : base("No response from deployment target", message, inner) {}
     }
 
     internal class CorruptBuildException : OperationFailedException
     {
-        public CorruptBuildException(string message = "Corrupt build.") : base("Corrupt build", message) {}
+        public CorruptBuildException(string message = "Corrupt build.", Exception inner = null) : base("Corrupt build", message, inner) {}
     }
 
     internal interface IDeploymentTargetsExtension
     {
         // Returns a list of all known targets and their status
+        //  Can be called from a background thread
         List<DeploymentTargetIdAndStatus> GetKnownTargets(ProgressHandler progressHandler = null);
 
         // Returns info for a target
         // Throws UnknownDeploymentTargetException for unknown targets
+        //  Can be called from a background thread
         IDeploymentTargetInfo GetTargetInfo(DeploymentTargetId targetId, ProgressHandler progressHandler = null);
 
         // Launches a build on a target
         // Throws UnknownDeploymentTargetException for unknown targets
-        void LaunchBuildOnTarget(BuildReporting.BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
+        //  Can be called from a background thread
+        void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
     }
 }

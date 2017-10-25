@@ -45,6 +45,18 @@ internal partial struct LightmapConvergence
     public float      progress;
 }
 
+[UsedByNativeCode]
+[System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
+internal partial struct LightmapMemory
+{
+    public float      lightmapDataSize;
+    public float      lightmapTexturesSize;
+    public float      albedoDataSize;
+    public float      albedoTextureSize;
+    public float      emissiveDataSize;
+    public float      emissiveTextureSize;
+}
+
 public sealed partial class Lightmapping
 {
     internal enum ConcurrentJobsType    
@@ -179,6 +191,13 @@ public sealed partial class Lightmapping
         set;
     }
 
+    internal extern static bool isProgressiveLightmapperDone
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
     internal extern static ulong occupiedTexelCount
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -199,6 +218,42 @@ public sealed partial class Lightmapping
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetLightmapConvergence (int lightmapIndex, out LightmapConvergence value);
+    internal static LightmapMemory GetLightmapMemory (int lightmapIndex) {
+        LightmapMemory result;
+        INTERNAL_CALL_GetLightmapMemory ( lightmapIndex, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetLightmapMemory (int lightmapIndex, out LightmapMemory value);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  bool GetGBufferHash (int lightmapIndex, out Hash128 gbufferHash) ;
+
+    internal static bool GetGBufferMemory (ref Hash128 gbufferHash, out float gbufferDataSize) {
+        return INTERNAL_CALL_GetGBufferMemory ( ref gbufferHash, out gbufferDataSize );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_GetGBufferMemory (ref Hash128 gbufferHash, out float gbufferDataSize);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void GetTransmissionTexturesMemLabels (out string[] labels, out float[] sizes) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void ResetExplicitlyShownMemLabels () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  void GetNotShownMemLabels (out string[] labels, out float[] sizes) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  float ComputeTotalMemoryUsage () ;
+
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  float GetLightmapBakeTimeRaw () ;
@@ -351,6 +406,7 @@ public sealed partial class Lightmapping
 
 public sealed partial class LightingDataAsset : Object
 {
+    private LightingDataAsset() {}
     internal extern  bool isValid
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -545,17 +601,7 @@ public sealed partial class LightmapEditorSettings
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void AnalyzeLighting (out LightingStats enabled, out LightingStats active, out LightingStats inactive) ;
 
-    public extern static int maxAtlasWidth
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern static int maxAtlasHeight
+    public extern static int maxAtlasSize
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

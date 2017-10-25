@@ -14,7 +14,7 @@ namespace UnityEngine
 {
 
 
-public partial class Motion : Object
+public abstract partial class Motion : Object
 {
     public extern  float averageDuration
     {

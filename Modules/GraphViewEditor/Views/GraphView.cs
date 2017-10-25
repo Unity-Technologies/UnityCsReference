@@ -11,18 +11,40 @@ using UnityEngine.Experimental.UIElements;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal
+    struct GraphViewChange
+    {
+        // Operations Pending
+        public List<GraphElement> elementsToRemove;
+        public List<Edge> edgesToCreate;
+
+        // Operations Completed
+        public List<GraphElement> movedElements;
+    }
+
+    internal
     abstract class GraphView : DataWatchContainer, ISelection
     {
         // Layer class. Used for queries below.
         class Layer : VisualElement {}
 
+        // TODO: Remove when removing presenters.
         private GraphViewPresenter m_Presenter;
 
+        // TODO: Remove when removing presenters.
         public T GetPresenter<T>() where T : GraphViewPresenter
         {
             return presenter as T;
         }
 
+        // Delegates and Callbacks
+
+        public delegate GraphViewChange GraphViewChanged(GraphViewChange graphViewChange);
+        public GraphViewChanged graphViewChanged { get; set; }
+
+        private GraphViewChange m_GraphViewChange;
+        private List<GraphElement> m_ElementsToRemove;
+
+        // TODO: Remove when removing presenters.
         public GraphViewPresenter presenter
         {
             get { return m_Presenter; }
@@ -46,6 +68,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        // TODO: Remove when removing presenters.
         protected GraphViewTypeFactory typeFactory { get; set; }
 
         public VisualElement contentViewContainer { get; private set; }
@@ -83,33 +106,40 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Origin = 2
         }
 
+        readonly int k_FrameBorder = 30;
+
         readonly Dictionary<int, Layer> m_ContainerLayers = new Dictionary<int, Layer>();
 
         protected GraphView()
         {
             selection = new List<ISelectable>();
-            clipChildren = true;
+            clippingOptions = ClippingOptions.ClipContents;
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
-                clipChildren = false,
+                clippingOptions = ClippingOptions.NoClipping,
                 pickingMode = PickingMode.Ignore
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
             Add(contentViewContainer);
 
+            // TODO: Remove when removing presenters.
             typeFactory = new GraphViewTypeFactory();
             typeFactory[typeof(EdgePresenter)] = typeof(Edge);
 
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
             nodes = this.Query<Layer>().Children<Node>().Build();
+            anchors = contentViewContainer.Query().Children<Layer>().Descendents<NodeAnchor>().Build();
+
+            m_ElementsToRemove = new List<GraphElement>();
+            m_GraphViewChange.elementsToRemove = m_ElementsToRemove;
         }
 
         void AddLayer(int index)
         {
-            m_ContainerLayers.Add(index, new Layer { clipChildren = false, pickingMode = PickingMode.Ignore });
+            m_ContainerLayers.Add(index, new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore });
 
             foreach (var layer in m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value))
             {
@@ -126,6 +156,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
         public UQuery.QueryState<Node> nodes { get; private set; }
+        public UQuery.QueryState<NodeAnchor> anchors;
 
         [Serializable]
         class PersistedViewTransform
@@ -167,6 +198,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_Presenter != null)
                     m_Zoomer.keepPixelCacheOnZoom = m_Presenter.elements.Count() > m_ZoomerMaxElementCountWithPixelCacheRegen;
             }
+        }
+
+        public GraphElement GetElementByGuid(string guid)
+        {
+            return graphElements.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+        }
+
+        public Node GetNodeByGuid(string guid)
+        {
+            return nodes.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+        }
+
+        public NodeAnchor GetAnchorByGuid(string guid)
+        {
+            return anchors.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+        }
+
+        public Edge GetEdgeByGuid(string guid)
+        {
+            return graphElements.ToList().OfType<Edge>().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
         public void SetupZoom(Vector3 minScaleSetup, Vector3 maxScaleSetup)
@@ -222,7 +273,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ValidateTransform();
         }
 
-        void ValidateTransform()
+        protected void ValidateTransform()
         {
             if (contentViewContainer == null)
                 return;
@@ -234,6 +285,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             viewTransform.scale = transformScale;
         }
 
+        // TODO: Remove when removing presenters.
         public override void OnDataChanged()
         {
             if (m_Presenter == null)
@@ -244,13 +296,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ValidateTransform();
             UpdatePersistedViewTransform();
 
+            UpdateContentZoomer();
+
             // process removals
             List<GraphElement> current = graphElements.ToList();
 
             foreach (var c in current)
             {
                 // been removed?
-                if (!m_Presenter.elements.Contains(c.presenter))
+                // edges can now exist in a valid state but without a presenter
+                if (c.dependsOnPresenter && !m_Presenter.elements.Contains(c.presenter))
                 {
                     c.parent.Remove(c);
                     selection.Remove(c);
@@ -310,9 +365,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Zoomer.keepPixelCacheOnZoom = elementCount > m_ZoomerMaxElementCountWithPixelCacheRegen;
         }
 
+        // TODO: Remove when removing presenters.
         protected override UnityEngine.Object[] toWatch
         {
-            get { return new UnityEngine.Object[] { presenter }; }
+            get { return presenter == null ? null : new UnityEngine.Object[] { presenter }; }
         }
 
         // ISelection implementation
@@ -325,8 +381,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (graphElement == null)
                 return;
             graphElement.OnSelected();
+            graphElement.selected = true;
+
+            // TODO: Remove when removing presenters.
             if (graphElement.presenter != null)
                 graphElement.presenter.selected = true;
+
             selection.Add(selectable);
             contentViewContainer.Dirty(ChangeType.Repaint);
         }
@@ -336,9 +396,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var graphElement = selectable as GraphElement;
             if (graphElement == null)
                 return;
+            graphElement.selected = false;
+
+            // TODO: Remove when removing presenters.
             if (graphElement.presenter != null)
                 graphElement.presenter.selected = false;
+
             selection.Remove(selectable);
+            graphElement.OnUnselected();
             contentViewContainer.Dirty(ChangeType.Repaint);
         }
 
@@ -346,15 +411,71 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             foreach (var graphElement in selection.OfType<GraphElement>())
             {
+                graphElement.selected = false;
+
+                // TODO: Remove when removing presenters.
                 if (graphElement.presenter != null)
                     graphElement.presenter.selected = false;
+
+                graphElement.OnUnselected();
             }
 
             selection.Clear();
             contentViewContainer.Dirty(ChangeType.Repaint);
         }
 
-        private void InstantiateElement(GraphElementPresenter elementPresenter)
+        public virtual List<NodeAnchor> GetCompatibleAnchors(NodeAnchor startAnchor, NodeAdapter nodeAdapter)
+        {
+            return anchors.ToList().Where(nap => nap.IsConnectable() &&
+                nap.orientation == startAnchor.orientation &&
+                nap.direction != startAnchor.direction &&
+                nodeAdapter.GetAdapter(nap.source, startAnchor.source) != null)
+                .ToList();
+        }
+
+        public void AddElement(GraphElement graphElement)
+        {
+            if (graphElement.IsResizable())
+            {
+                graphElement.Add(new Resizer());
+                graphElement.style.borderBottom = 6;
+            }
+
+            bool attachToContainer = !graphElement.IsFloating();
+            if (attachToContainer)
+            {
+                int newLayer = graphElement.layer;
+                if (!m_ContainerLayers.ContainsKey(newLayer))
+                {
+                    AddLayer(newLayer);
+                }
+                GetLayer(newLayer).Add(graphElement);
+            }
+            else
+            {
+                Add(graphElement);
+            }
+            if (graphElement.presenter != null)
+                graphElement.OnDataChanged();
+        }
+
+        public void RemoveElement(GraphElement graphElement)
+        {
+            bool attachToContainer = !graphElement.IsFloating();
+            if (attachToContainer)
+            {
+                int layer = graphElement.layer;
+                if (m_ContainerLayers.ContainsKey(layer))
+                    GetLayer(layer).Remove(graphElement);
+            }
+            else
+            {
+                Remove(graphElement);
+            }
+        }
+
+        // TODO: Remove when removing presenters.
+        protected void InstantiateElement(GraphElementPresenter elementPresenter)
         {
             // call factory
             GraphElement newElem = typeFactory.Create(elementPresenter);
@@ -367,29 +488,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             newElem.SetPosition(elementPresenter.position);
             newElem.presenter = elementPresenter;
 
-            if ((elementPresenter.capabilities & Capabilities.Resizable) != 0)
-            {
-                newElem.Add(new Resizer());
-                newElem.style.borderBottom = 6;
-            }
-
-            bool attachToContainer = (elementPresenter.capabilities & Capabilities.Floating) == 0;
-            if (attachToContainer)
-            {
-                int newLayer = newElem.layer;
-                if (!m_ContainerLayers.ContainsKey(newLayer))
-                {
-                    AddLayer(newLayer);
-                }
-                GetLayer(newLayer).Add(newElem);
-            }
-            else
-            {
-                Add(newElem);
-            }
+            AddElement(newElem);
         }
 
-        public EventPropagation DeleteSelection()
+        // TODO: Remove when removing presenters.
+        private EventPropagation DeleteSelectedPresenters()
         {
             // and DeleteSelection would call that method.
             if (presenter == null)
@@ -437,6 +540,65 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             return (elementsToRemove.Count > 0) ? EventPropagation.Stop : EventPropagation.Continue;
+        }
+
+        public EventPropagation DeleteSelection()
+        {
+            // TODO: Remove when removing presenters.
+            if (presenter != null)
+                return DeleteSelectedPresenters();
+
+            var elementsToRemoveSet = new HashSet<GraphElement>();
+            foreach (var selectedElement in selection.Cast<GraphElement>().Where(e => e != null))
+            {
+                if ((selectedElement.capabilities & Capabilities.Deletable) == 0)
+                    continue;
+
+                elementsToRemoveSet.Add(selectedElement);
+
+                var connectorColl = selectedElement as Node;
+                if (connectorColl == null)
+                    continue;
+
+                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                    .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
+                    .Cast<GraphElement>());
+                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                    .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
+                    .Cast<GraphElement>());
+            }
+
+            m_ElementsToRemove.Clear();
+            foreach (GraphElement element in elementsToRemoveSet)
+                m_ElementsToRemove.Add(element);
+
+            List<GraphElement> elementsToRemoveList = m_ElementsToRemove;
+            if (graphViewChanged != null)
+            {
+                elementsToRemoveList = graphViewChanged(m_GraphViewChange).elementsToRemove;
+            }
+
+            // Notify the ends of connections that the connection is going way.
+            foreach (var connection in elementsToRemoveList.OfType<Edge>())
+            {
+                if (connection.output != null)
+                    connection.output.Disconnect(connection);
+
+                if (connection.input != null)
+                    connection.input.Disconnect(connection);
+
+                connection.output = null;
+                connection.input = null;
+            }
+
+            foreach (var elementToRemove in elementsToRemoveList)
+            {
+                RemoveElement(elementToRemove);
+            }
+
+            selection.Clear();
+
+            return (elementsToRemoveList.Count > 0) ? EventPropagation.Stop : EventPropagation.Continue;
         }
 
         public EventPropagation FrameAll()
@@ -509,45 +671,29 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         EventPropagation Frame(FrameType frameType)
         {
-            // Reset container translation, scale and position
-            contentViewContainer.transform.position = Vector3.zero;
-            contentViewContainer.transform.scale = Vector3.one;
-            // TODO remove once we clarify Touch()
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            var rectToFit = contentViewContainer.layout;
+            var frameTranslation = Vector3.zero;
+            var frameScaling = Vector3.one;
 
-            if (frameType == FrameType.Origin)
-            {
-                return EventPropagation.Stop;
-            }
-
-            Rect rectToFit = contentViewContainer.layout;
             if (frameType == FrameType.Selection)
             {
                 // Now calculate rectangle to fit all selected elements
                 if (selection.Count == 0)
-                {
                     return EventPropagation.Continue;
-                }
 
                 var graphElement = selection[0] as GraphElement;
                 if (graphElement != null)
-                {
                     rectToFit = graphElement.localBound;
-                }
 
                 rectToFit = selection.OfType<GraphElement>()
                     .Aggregate(rectToFit, (current, e) => RectUtils.Encompass(current, e.localBound));
+                CalculateFrameTransform(rectToFit, layout, k_FrameBorder, out frameTranslation, out frameScaling);
             }
-            else /*if (frameType == FrameType.All)*/
+            else if (frameType == FrameType.All)
             {
-                rectToFit = CalculateRectToFitAll();
-            }
-
-            Vector3 frameTranslation;
-            Vector3 frameScaling;
-            int frameBorder = 30;
-
-            CalculateFrameTransform(rectToFit, layout, frameBorder, out frameTranslation, out frameScaling);
+                rectToFit = CalculateRectToFitAll(contentViewContainer);
+                CalculateFrameTransform(rectToFit, layout, k_FrameBorder, out frameTranslation, out frameScaling);
+            } // else keep going if (frameType == FrameType.Origin)
 
             if (m_FrameAnimate)
             {
@@ -572,19 +718,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return EventPropagation.Stop;
         }
 
-        public Rect CalculateRectToFitAll()
+        public virtual Rect CalculateRectToFitAll(VisualElement container)
         {
-            Rect rectToFit = contentViewContainer.layout;
-            bool reachedFirstChild = false;
+            var rectToFit = container.layout;
+            var reachedFirstChild = false;
 
             graphElements.ForEach(ge =>
                 {
-                    var elementPresenter = (ge != null)
-                        ? ge.GetPresenter<GraphElementPresenter>()
-                        : null;
-                    if (elementPresenter == null ||
-                        (elementPresenter.capabilities & Capabilities.Floating) != 0 ||
-                        (elementPresenter is EdgePresenter))
+                    if ((ge.capabilities & Capabilities.Floating) != 0 ||
+                        (ge is Edge))
                     {
                         return;
                     }

@@ -14,6 +14,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -37,6 +38,7 @@ public partial class GUIUtility
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static int INTERNAL_CALL_Internal_GetNextControlID2 (int hint, FocusType focusType, ref Rect rect);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int GetPermanentControlID () ;
@@ -49,14 +51,17 @@ public partial class GUIUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void Internal_SetHotControl (int value) ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void UpdateUndoName () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool GetChanged () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetChanged (bool changed) ;
@@ -69,6 +74,7 @@ public partial class GUIUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void Internal_SetKeyboardControl (int value) ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetDidGUIWindowsEatLastEvent (bool value) ;
@@ -95,10 +101,12 @@ public partial class GUIUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void Internal_ExitGUI () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int Internal_GetGUIDepth () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal extern static bool mouseUsed
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -116,6 +124,7 @@ public partial class GUIUtility
         get;
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal extern static bool textFieldInput
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -126,18 +135,22 @@ public partial class GUIUtility
         set;
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int CheckForTabEvent (Event evt) ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetKeyboardControlToFirstControlId () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetKeyboardControlToLastControlId () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool HasFocusableControls () ;
@@ -146,6 +159,7 @@ public partial class GUIUtility
 
 internal sealed partial class GUIClip
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static void Internal_Push (Rect screenRect, Vector2 scrollOffset, Vector2 renderOffset, bool resetOffset) {
         INTERNAL_CALL_Internal_Push ( ref screenRect, ref scrollOffset, ref renderOffset, resetOffset );
     }
@@ -153,14 +167,17 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_Internal_Push (ref Rect screenRect, ref Vector2 scrollOffset, ref Vector2 renderOffset, bool resetOffset);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void Internal_Pop () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int Internal_GetCount () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static Rect GetTopRect () {
         Rect result;
         INTERNAL_CALL_GetTopRect ( out result );
@@ -243,10 +260,12 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_ClipToWindow_Rect (ref Rect absoluteRect);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void Reapply () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static Matrix4x4 GetMatrix () {
         Matrix4x4 result;
         INTERNAL_CALL_GetMatrix ( out result );
@@ -256,6 +275,7 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetMatrix (out Matrix4x4 value);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static void SetMatrix (Matrix4x4 m) {
         INTERNAL_CALL_SetMatrix ( ref m );
     }
@@ -263,6 +283,7 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetMatrix (ref Matrix4x4 m);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static Matrix4x4 GetTransform () {
         Matrix4x4 result;
         INTERNAL_CALL_GetTransform ( out result );
@@ -272,6 +293,7 @@ internal sealed partial class GUIClip
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_GetTransform (out Matrix4x4 value);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static void SetTransform (Matrix4x4 objectTransform, Rect clipRect) {
         INTERNAL_CALL_SetTransform ( ref objectTransform, ref clipRect );
     }

@@ -55,7 +55,6 @@ namespace UnityEditorInternal.VR
         private SerializedProperty m_StereoRenderingPath;
 
         private SerializedProperty m_AndroidEnableTango;
-        private SerializedProperty m_AndroidTangoUsesCamera;
 
         private bool m_InstallsRequired = false;
         private bool m_VuforiaInstalled = false;
@@ -68,7 +67,6 @@ namespace UnityEditorInternal.VR
             m_StereoRenderingPath = m_Settings.serializedObject.FindProperty("m_StereoRenderingPath");
 
             m_AndroidEnableTango = m_Settings.FindPropertyAssert("AndroidEnableTango");
-            m_AndroidTangoUsesCamera = m_Settings.FindPropertyAssert("AndroidTangoUsesCamera");
         }
 
         private void RefreshVRDeviceList(BuildTargetGroup targetGroup)
@@ -466,6 +464,12 @@ namespace UnityEditorInternal.VR
         {
             if (targetGroup == BuildTargetGroup.Android)
             {
+                List<string> enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup).ToList();
+                if (enabledDevices.Contains("Oculus") && enabledDevices.Contains("daydream"))
+                {
+                    EditorGUILayout.HelpBox("It is recommended to use unique product IDs and build separate APKs when targeting both Oculus and Daydream SDKs to avoid initialization conflicts on some devices.", MessageType.Warning);
+                }
+
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
@@ -492,16 +496,15 @@ namespace UnityEditorInternal.VR
                 return;
 
             // Google Tango settings
-            EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("Tango Supported"));
+            EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("ARCore Supported"));
 
             if (PlayerSettings.Android.androidTangoEnabled)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_AndroidTangoUsesCamera, EditorGUIUtility.TextContent("Tango Uses Camera"));
 
-                if ((int)PlayerSettings.Android.minSdkVersion < 23)
+                if ((int)PlayerSettings.Android.minSdkVersion < 24)
                 {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 6.0");
+                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 7.0");
                     EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
                 }
                 EditorGUI.indentLevel--;

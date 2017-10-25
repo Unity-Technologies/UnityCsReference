@@ -702,7 +702,9 @@ namespace UnityEditor
             }
             // Lose mouse lock when pressing escape
             else if (type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-                Unsupported.SetAllowCursorLock(false);
+            {
+                AllowCursorLockAndHide(false);
+            }
 
             // We hide sliders when playing, and also when we are zoomed out beyond canvas edges
             var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;

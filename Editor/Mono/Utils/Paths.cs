@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor.Utils
 {
@@ -64,10 +65,18 @@ namespace UnityEditor.Utils
 
         public static string CreateTempDirectory()
         {
-            string projectPath = Path.GetTempFileName();
-            File.Delete(projectPath);
-            Directory.CreateDirectory(projectPath);
-            return projectPath;
+            for (int i = 0; i < 32; ++i)
+            {
+                string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+                if (File.Exists(tempDirectory) || Directory.Exists(tempDirectory))
+                    continue;
+
+                Directory.CreateDirectory(tempDirectory);
+
+                return tempDirectory;
+            }
+            throw new IOException("CreateTempDirectory failed");
         }
 
         public static string NormalizePath(this string path)
@@ -99,6 +108,21 @@ namespace UnityEditor.Utils
             }
 
             return string.Compare(Path.GetFullPath(pathA), Path.GetFullPath(pathB), ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0;
+        }
+
+        public static bool CheckValidAssetPathAndThatDirectoryExists(string assetFilePath, string requiredExtensionWithDot)
+        {
+            if (!IsValidAssetPathWithErrorLogging(assetFilePath, requiredExtensionWithDot))
+                return false;
+
+            string dir = Path.GetDirectoryName(assetFilePath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                UnityEngine.Debug.LogError("Parent directory must exist before creating asset at: " + assetFilePath);
+                return false;
+            }
+
+            return true;
         }
 
         public static bool IsValidAssetPathWithErrorLogging(string assetPath, string requiredExtensionWithDot)
@@ -142,7 +166,14 @@ namespace UnityEditor.Utils
                     return false;
                 }
 
-                string fileName = Path.GetFileName(assetPath); // Will throw exception if the filePath is not valid
+                string fileName = Path.GetFileName(assetPath); // Will throw an ArgumentException if the path contains one or more of the invalid characters defined in GetInvalidPathChars
+
+                if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                {
+                    if (errorMsg != null)
+                        SetFullErrorMessage("Filename contains invalid characters", assetPath, ref errorMsg);
+                    return false;
+                }
 
                 if (fileName.StartsWith("."))
                 {

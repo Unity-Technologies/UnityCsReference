@@ -5,9 +5,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Audio;
+using UnityEngine.Playables;
 
-namespace UnityEngine.Playables
+namespace UnityEngine.Audio
 {
 
     [NativeHeader("Modules/Audio/Public/ScriptBindings/AudioPlayableGraphExtensions.bindings.h")]

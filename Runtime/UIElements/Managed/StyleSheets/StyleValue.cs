@@ -55,6 +55,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         FontSize,
         FontStyle,
         BackgroundSize,
+        Cursor,
         // All bool values
         WordWrap,
         // All string values

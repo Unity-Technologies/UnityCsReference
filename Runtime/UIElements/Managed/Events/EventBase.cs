@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class EventBase
+    public abstract class EventBase : IDisposable
     {
         private static long s_LastTypeId = 0;
 
@@ -21,12 +21,13 @@ namespace UnityEngine.Experimental.UIElements
             Bubbles = 1,
             Capturable = 2,
             Cancellable = 4,
+            Pooled = 256
         }
 
         // Read-only state
         public long timestamp { get; private set; }
 
-        protected EventFlags flags;
+        protected EventFlags flags { get; set; }
 
         public bool bubbles
         {
@@ -117,6 +118,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             Init();
         }
+
+        public abstract void Dispose();
     }
 
     public abstract class EventBase<T> : EventBase where T : EventBase<T>, new()
@@ -133,12 +136,24 @@ namespace UnityEngine.Experimental.UIElements
         {
             T t = s_Pool.Get();
             t.Init();
+            t.flags |= EventFlags.Pooled;
             return t;
         }
 
-        public static void ReleasePooled(T evt)
+        // If you want to release, call Dispose instead.
+        protected static void ReleasePooled(T evt)
         {
-            s_Pool.Release(evt);
+            if ((evt.flags & EventFlags.Pooled) == EventFlags.Pooled)
+            {
+                s_Pool.Release(evt);
+                // To avoid double release from pool
+                evt.flags &= ~EventFlags.Pooled;
+            }
+        }
+
+        public override void Dispose()
+        {
+            ReleasePooled((T)this);
         }
 
         public override long GetEventTypeId()

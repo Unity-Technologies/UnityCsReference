@@ -3,11 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using UnityEngine;
 
 namespace UnityEditor
 {
@@ -72,7 +69,7 @@ namespace UnityEditor
                     List<T> values = new List<T>();
                     bool parsed = true;
 
-                    while (stack.LongCount() > 0 && !IsCommand(stack.Peek()) && values.Count < oper.inputs)
+                    while (stack.Count > 0 && !IsCommand(stack.Peek()) && values.Count < oper.inputs)
                     {
                         T newValue;
                         parsed &= TryParse<T>(stack.Pop(), out newValue);
@@ -92,7 +89,7 @@ namespace UnityEditor
                 }
             }
 
-            if (stack.LongCount() == 1)
+            if (stack.Count == 1)
             {
                 T resultT;
                 if (TryParse<T>(stack.Pop(), out resultT))
@@ -106,7 +103,7 @@ namespace UnityEditor
         private static string[] InfixToRPN(string[] tokens)
         {
             Stack<char> operatorStack = new Stack<char>();
-            Stack<string> outputStack = new Stack<string>();
+            Queue<string> outputQueue = new Queue<string>();
 
             foreach (string token in tokens)
             {
@@ -120,10 +117,10 @@ namespace UnityEditor
                     }
                     else if (command == ')') // Bracket close
                     {
-                        while (operatorStack.LongCount() > 0 && operatorStack.Peek() != '(')
-                            outputStack.Push(operatorStack.Pop().ToString());
+                        while (operatorStack.Count > 0 && operatorStack.Peek() != '(')
+                            outputQueue.Enqueue(operatorStack.Pop().ToString());
 
-                        if (operatorStack.LongCount() > 0)
+                        if (operatorStack.Count > 0)
                             operatorStack.Pop();
                     }
                     else // All the other operators
@@ -131,20 +128,20 @@ namespace UnityEditor
                         Operator o = CharToOperator(command);
 
                         while (NeedToPop(operatorStack, o))
-                            outputStack.Push(operatorStack.Pop().ToString());
+                            outputQueue.Enqueue(operatorStack.Pop().ToString());
 
                         operatorStack.Push(command);
                     }
                 }
                 else // Not a command, just a regular number
                 {
-                    outputStack.Push(token);
+                    outputQueue.Enqueue(token);
                 }
             }
-            while (operatorStack.LongCount() > 0)
-                outputStack.Push(operatorStack.Pop().ToString());
+            while (operatorStack.Count > 0)
+                outputQueue.Enqueue(operatorStack.Pop().ToString());
 
-            return outputStack.Reverse().ToArray();
+            return outputQueue.ToArray();
         }
 
         // While there is an operator (topOfStack) at the top of the operators stack and
@@ -152,7 +149,7 @@ namespace UnityEditor
         // (newOperator) is right-associative and its precedence is less than (topOfStack)
         private static bool NeedToPop(Stack<char> operatorStack, Operator newOperator)
         {
-            if (operatorStack.LongCount() > 0)
+            if (operatorStack.Count > 0)
             {
                 Operator topOfStack = CharToOperator(operatorStack.Peek());
 
@@ -307,7 +304,7 @@ namespace UnityEditor
                         case '%':
                             return (T)(object)((float)(object)values[0] % (float)(object)values[1]);
                         case '^':
-                            return (T)(object)Mathf.Pow((float)(object)values[0], (float)(object)values[1]);
+                            return (T)(object)UnityEngine.Mathf.Pow((float)(object)values[0], (float)(object)values[1]);
                     }
                 }
             }

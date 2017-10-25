@@ -133,7 +133,7 @@ namespace UnityEditor.Modules
     {
         void LaunchPlayer(BuildLaunchPlayerArgs args);
 
-        void PostProcess(BuildPostProcessArgs args);
+        void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties);
 
         bool SupportsInstallInBuildFolder();
 
@@ -231,6 +231,8 @@ namespace UnityEditor.Modules
     internal interface IBuildWindowExtension
     {
         void ShowPlatformBuildOptions();
+
+        void ShowPlatformBuildWarnings();
 
         // Use this for "developer" Unity builds
         void ShowInternalPlatformBuildOptions();

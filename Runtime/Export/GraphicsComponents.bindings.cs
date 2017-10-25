@@ -2,10 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -25,6 +22,12 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/Flare.h")]
     public sealed partial class Flare : Object
     {
+        public Flare()
+        {
+            Internal_Create(this);
+        }
+
+        extern static void Internal_Create([Writable] Flare self);
     }
 
     [NativeHeader("Runtime/Camera/Flare.h")]
@@ -95,11 +98,7 @@ namespace UnityEngine
     public sealed partial class MeshFilter : Component
     {
         extern public Mesh sharedMesh { get; set; }
-        extern public Mesh mesh
-        {
-            [NativeMethod(Name = "GetInstantiatedMeshFromScript")] get;
-            [NativeMethod(Name = "SetInstantiatedMesh")] set;
-        }
+        extern public Mesh mesh {[NativeName("GetInstantiatedMeshFromScript")] get; [NativeName("SetInstantiatedMesh")] set; }
     }
 
     [RequireComponent(typeof(Transform))]

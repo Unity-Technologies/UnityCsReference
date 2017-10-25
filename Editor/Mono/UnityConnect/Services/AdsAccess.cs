@@ -45,14 +45,14 @@ namespace UnityEditor.Web
         {
             if (AdvertisementSettings.enabled != enabled)
             {
-                AdvertisementSettings.enabled = enabled;
+                AdvertisementSettings.SetEnabledServiceWindow(enabled);
                 EditorAnalytics.SendEventServiceInfo(new AdsServiceState() { ads = enabled });
             }
         }
 
         override public void OnProjectUnbound()
         {
-            AdvertisementSettings.enabled = false;
+            AdvertisementSettings.SetEnabledServiceWindow(false);
             AdvertisementSettings.SetGameId(RuntimePlatform.IPhonePlayer, "");
             AdvertisementSettings.SetGameId(RuntimePlatform.Android, "");
             AdvertisementSettings.testMode = false;

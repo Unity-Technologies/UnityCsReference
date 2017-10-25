@@ -177,5 +177,21 @@ namespace UnityEditor
                 LightmapEditorSettings.filterTypeAO = FilterType.Gaussian;
             }
         }
+
+        [System.Obsolete("LightmapEditorSettings.maxAtlasWidth is now called maxAtlasSize (UnityUpgradable) -> maxAtlasSize", false)]
+        public static int maxAtlasWidth
+        {
+            get { return maxAtlasSize; }
+            set { maxAtlasSize = value; }
+        }
+
+        private static int m_MaxAtlasHeight = 1024;
+
+        [System.Obsolete("LightmapEditorSettings.maxAtlasHeight has been deprecated. Only square atlases are supported, please use the maxAtlasSize instead. ")]
+        public static int maxAtlasHeight
+        {
+            get { return m_MaxAtlasHeight; }
+            set { m_MaxAtlasHeight = value; }
+        }
     }
 }

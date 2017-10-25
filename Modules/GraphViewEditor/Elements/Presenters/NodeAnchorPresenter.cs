@@ -101,13 +101,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
+        protected virtual void SetCapabilities()
+        {
+            capabilities = 0;
+        }
+
         protected new void OnEnable()
         {
             base.OnEnable();
             m_AnchorType = typeof(object);
             m_Connections = new List<EdgePresenter>();
 
-            capabilities = 0;
+            SetCapabilities();
         }
     }
 }

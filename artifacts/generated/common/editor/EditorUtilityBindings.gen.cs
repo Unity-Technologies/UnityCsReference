@@ -752,6 +752,7 @@ static public bool ResetToPrefabState(Object source)
 
 public sealed partial class SceneAsset : Object
 {
+    private SceneAsset() {}
 }
 
 

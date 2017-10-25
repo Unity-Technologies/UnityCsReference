@@ -9,6 +9,7 @@ using UnityEngine;
 namespace UnityEditorInternal
 {
     [System.Obsolete("Transition is obsolete. Use UnityEditor.Animations.AnimatorTransition instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorTransition", true)]
+    [NativeClass(null)]
     public partial class Transition : Object
     {
         /*
@@ -38,6 +39,7 @@ namespace UnityEditorInternal
     }
 
     [System.Obsolete("StateMachine is obsolete. Use UnityEditor.Animations.AnimatorStateMachine instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorStateMachine", true)]
+    [NativeClass(null)]
     public partial class StateMachine : Object
     {
         /*
@@ -64,6 +66,7 @@ namespace UnityEditorInternal
     }
 
     [System.Obsolete("State is obsolete. Use UnityEditor.Animations.AnimatorState instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorState", true)]
+    [NativeClass(null)]
     public partial class State : Object
     {
         /*
@@ -89,11 +92,13 @@ namespace UnityEditorInternal
 
     // removed this until scripting team can find proper solution to having API moved from one namespace to another
     [System.Obsolete("AnimatorController is obsolete. Use UnityEditor.Animations.AnimatorController instead (UnityUpgradable) -> UnityEditor.Animations.AnimatorController", true)]
+    [NativeClass(null)]
     public class AnimatorController : RuntimeAnimatorController
     {
     }
 
     [System.Obsolete("BlendTree is obsolete. Use UnityEditor.Animations.BlendTree instead (UnityUpgradable) -> UnityEditor.Animations.BlendTree", true)]
+    [NativeClass(null)]
     public partial class BlendTree : Motion
     {
     }

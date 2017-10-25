@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -16,14 +17,221 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected VisualElement m_ConnectorBox;
         protected VisualElement m_ConnectorText;
 
+        public string anchorName
+        {
+            get { return m_ConnectorText.text; }
+            set { m_ConnectorText.text = value; }
+        }
+
         public Direction direction { get; private set; }
+        public Orientation orientation { get; private set; }
+
+        private Type m_AnchorType;
+        public Type anchorType
+        {
+            get { return m_AnchorType; }
+            private set
+            {
+                m_AnchorType = value;
+                Type genericClass = typeof(PortSource<>);
+                Type constructedClass = genericClass.MakeGenericType(m_AnchorType);
+                source = Activator.CreateInstance(constructedClass);
+
+                if (string.IsNullOrEmpty(m_ConnectorText.text))
+                    m_ConnectorText.text = m_AnchorType.Name;
+            }
+        }
+
+        public object source { get; set; }
+
+        private bool m_Highlight;
+        public bool highlight
+        {
+            get
+            {
+                // TODO: Remove when removing presenters.
+                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+                if (anchorPresenter == null)
+                    return m_Highlight;
+
+                return anchorPresenter.highlight;
+            }
+            set
+            {
+                // TODO: Remove when removing presenters.
+                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+                if (anchorPresenter != null)
+                    anchorPresenter.highlight = value;
+
+                if (m_Highlight == value)
+                    return;
+
+                m_Highlight = value;
+
+                if (m_Highlight)
+                {
+                    m_ConnectorBox.AddToClassList("anchorHighlight");
+                }
+                else
+                {
+                    m_ConnectorBox.RemoveFromClassList("anchorHighlight");
+                }
+            }
+        }
+
+        private HashSet<Edge> m_Connections;
+        public virtual IEnumerable<Edge> connections
+        {
+            get
+            {
+                return m_Connections;
+            }
+        }
+
+        public virtual bool connected
+        {
+            get
+            {
+                // TODO: Remove when removing presenters.
+                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+                if (anchorPresenter != null)
+                    return anchorPresenter.connected;
+
+                return m_Connections.Count > 0;
+            }
+        }
+
+        public virtual bool collapsed
+        {
+            get
+            {
+                // TODO: Remove when removing presenters.
+                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+                if (anchorPresenter != null)
+                    return anchorPresenter.collapsed;
+
+                return false;
+            }
+        }
+
+        public virtual void Connect(Edge edge)
+        {
+            if (edge == null)
+            {
+                throw new ArgumentException("The value passed to NodeAnchor.Connect is null");
+            }
+
+            // TODO: Remove when removing presenters.
+            var presenter = GetPresenter<NodeAnchorPresenter>();
+            if (presenter != null)
+            {
+                var edgePresenter = edge.GetPresenter<EdgePresenter>();
+                presenter.Connect(edgePresenter);
+                return;
+            }
+
+            if (!m_Connections.Contains(edge))
+            {
+                m_Connections.Add(edge);
+            }
+        }
+
+        public virtual void Disconnect(Edge edge)
+        {
+            if (edge == null)
+            {
+                throw new ArgumentException("The value passed to NodeAnchorPresenter.Disconnect is null");
+            }
+
+            // TODO: Remove when removing presenters.
+            var presenter = GetPresenter<NodeAnchorPresenter>();
+            if (presenter != null)
+            {
+                var edgePresenter = edge.GetPresenter<EdgePresenter>();
+                presenter.Disconnect(edgePresenter);
+                return;
+            }
+
+            m_Connections.Remove(edge);
+        }
+
+        private class DefaultEdgeConnectorListener : IEdgeConnectorListener
+        {
+            private GraphViewChange m_GraphViewChange;
+            private List<Edge> m_EdgesToCreate;
+
+            public DefaultEdgeConnectorListener()
+            {
+                m_EdgesToCreate = new List<Edge>();
+                m_GraphViewChange.edgesToCreate = m_EdgesToCreate;
+            }
+
+            public void OnDropOutsideAnchor(Edge edge, Vector2 position) {}
+            public void OnDrop(GraphView graphView, Edge edge)
+            {
+                m_EdgesToCreate.Clear();
+                m_EdgesToCreate.Add(edge);
+
+                var edgesToCreate = m_EdgesToCreate;
+                if (graphView.graphViewChanged != null)
+                {
+                    edgesToCreate = graphView.graphViewChanged(m_GraphViewChange).edgesToCreate;
+                }
+
+                foreach (Edge e in edgesToCreate)
+                {
+                    graphView.AddElement(e);
+                    edge.input.Connect(e);
+                    edge.output.Connect(e);
+                }
+            }
+        }
+
+        // TODO: Remove when removing presenters.
+        protected class DefaultEdgePresenterConnectorListener<TEdgePresenter> : IEdgeConnectorListener where TEdgePresenter : EdgePresenter
+        {
+            public void OnDropOutsideAnchor(Edge edge, Vector2 position) {}
+            public void OnDrop(GraphView graphView, Edge edge)
+            {
+                if (graphView == null || edge == null)
+                    return;
+
+                if (graphView.presenter == null)
+                    return;
+
+                TEdgePresenter edgePresenter = ScriptableObject.CreateInstance<TEdgePresenter>();
+
+                edgePresenter.output = edge.output.GetPresenter<NodeAnchorPresenter>();
+                edgePresenter.input = edge.input.GetPresenter<NodeAnchorPresenter>();
+
+                edgePresenter.output.Connect(edgePresenter);
+                edgePresenter.input.Connect(edgePresenter);
+
+                graphView.presenter.AddElement(edgePresenter);
+            }
+        }
 
         // TODO This is a workaround to avoid having a generic type for the anchor as generic types mess with USS.
-        public static NodeAnchor Create<TEdgePresenter>(NodeAnchorPresenter presenter) where TEdgePresenter : EdgePresenter
+        public static NodeAnchor Create<TEdge>(Orientation orientation, Direction direction, Type type) where TEdge : Edge, new()
         {
-            var anchor = new NodeAnchor
+            var connectorListener = new DefaultEdgeConnectorListener();
+            var anchor = new NodeAnchor(orientation, direction, type)
             {
-                m_EdgeConnector = new EdgeConnector<TEdgePresenter>(null),
+                m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
+            };
+            anchor.AddManipulator(anchor.m_EdgeConnector);
+            return anchor;
+        }
+
+        // TODO: Remove when removing presenters.
+        public static NodeAnchor Create<TEdgePresenter, TEdge>(NodeAnchorPresenter presenter)
+            where TEdgePresenter : EdgePresenter
+            where TEdge : Edge, new()
+        {
+            var connectorListener = new DefaultEdgePresenterConnectorListener<TEdgePresenter>();
+            var anchor = new NodeAnchor(Orientation.Horizontal, Direction.Input, typeof(object))
+            {
+                m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
                 presenter = presenter
             };
             anchor.AddManipulator(anchor.m_EdgeConnector);
@@ -49,7 +257,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return new VisualElement();
         }
 
-        protected NodeAnchor()
+        protected NodeAnchor(Orientation anchorOrientation, Direction anchorDirection, Type type)
         {
             // currently we don't want to be styled as .graphElement since we're contained in a Node
             ClearClassList();
@@ -61,6 +269,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_ConnectorText = this.Q(name: "type");
             m_ConnectorText.AddToClassList("type");
+
+            m_Connections = new HashSet<Edge>();
+
+            orientation = anchorOrientation;
+            direction = anchorDirection;
+            anchorType = type;
         }
 
         private void UpdateConnector()
@@ -70,7 +284,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             var anchorPresenter = GetPresenter<NodeAnchorPresenter>();
 
-            if (m_EdgeConnector.target == null || !m_EdgeConnector.target.HasCapture())  // if the edge connector has capture, it means that an edge is being created. so don't remove the manipulator at the moment.
+            if (m_EdgeConnector.target == null || !m_EdgeConnector.target.HasMouseCapture())  // if the edge connector has capture, it means that an edge is being created. so don't remove the manipulator at the moment.
             {
                 if (!anchorPresenter.connected || anchorPresenter.direction != Direction.Input)
                 {
@@ -86,6 +300,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Node node
         {
             get { return this.GetFirstAncestorOfType<Node>(); }
+        }
+
+        public bool IsConnectable()
+        {
+            // TODO: Remove when removing presenters.
+            NodeAnchorPresenter anchorPresenter = presenter as NodeAnchorPresenter;
+            if (anchorPresenter != null)
+                return anchorPresenter.IsConnectable();
+
+            return true;
         }
 
         public override void OnDataChanged()
@@ -120,22 +344,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             anchorPresenter.capabilities &= ~Capabilities.Selectable;
 
-            // Cache direction for easier access from the outside.
+            // Cache some stuff for easier access from the outside.
             direction = anchorPresenter.direction;
+            orientation = anchorPresenter.orientation;
+            anchorType = anchorPresenter.anchorType;
+            source = anchorPresenter.source;
         }
 
         public override Vector3 GetGlobalCenter()
         {
-            var center = m_ConnectorBox.layout.center;
-            center = m_ConnectorBox.transform.matrix.MultiplyPoint3x4(center);
-            return this.LocalToWorld(center);
+            return m_ConnectorBox.LocalToWorld(m_ConnectorBox.rect.center);
         }
 
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            // Here local point comes without position offset...
-            localPoint -= layout.position;
-            return m_ConnectorBox.ContainsPoint(m_ConnectorBox.transform.matrix.MultiplyPoint3x4(localPoint));
+            return m_ConnectorBox.ContainsPoint(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));
         }
     }
 }

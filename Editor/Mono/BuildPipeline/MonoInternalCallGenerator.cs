@@ -268,7 +268,7 @@ namespace UnityEditor
         public static void GenerateRegisterClassesForStripping(HashSet<UnityType> nativeClassesAndBaseClasses, TextWriter output)
         {
             // Forward declare template function
-            output.WriteLine("template <typename T> void RegisterClass();");
+            output.WriteLine("template <typename T> void RegisterClass(const char*);");
             output.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
             output.WriteLine();
 
@@ -303,7 +303,7 @@ namespace UnityEditor
                     continue;
 
                 output.WriteLine("\t// {0}. {1}", count++, type.qualifiedName);
-                output.WriteLine("\tRegisterClass<{0}>();\n", type.qualifiedName);
+                output.WriteLine("\tRegisterClass<{0}>(\"{1}\");\n", type.qualifiedName, type.module);
             }
 
             output.WriteLine();

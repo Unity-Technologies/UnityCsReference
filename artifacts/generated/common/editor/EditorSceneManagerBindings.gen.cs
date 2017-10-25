@@ -76,7 +76,7 @@ public sealed partial class EditorSceneManager : SceneManager
     private extern static void INTERNAL_CALL_NewPreviewScene (out Scene value);
     static internal bool CreateSceneAsset(string scenePath, bool createDefaultGameObjects)
         {
-            if (!Utils.Paths.IsValidAssetPathWithErrorLogging(scenePath, ".unity"))
+            if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(scenePath, ".unity"))
                 return false;
 
             return Internal_CreateSceneAsset(scenePath, createDefaultGameObjects);
@@ -167,7 +167,7 @@ public static bool SaveScene (Scene scene) {
 public static bool SaveScene(Scene scene, [uei.DefaultValue("\"\"")]  string dstScenePath , [uei.DefaultValue("false")]  bool saveAsCopy )
         {
             if (!string.IsNullOrEmpty(dstScenePath))
-                if (!Utils.Paths.IsValidAssetPathWithErrorLogging(dstScenePath, ".unity"))
+                if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(dstScenePath, ".unity"))
                     return false;
 
             return Internal_SaveScene(scene, dstScenePath, saveAsCopy);

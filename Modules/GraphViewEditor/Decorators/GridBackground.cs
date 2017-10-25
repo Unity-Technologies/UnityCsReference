@@ -87,7 +87,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return _in;
         }
 
-        public override void OnStyleResolved(ICustomStyle elementStyle)
+        protected override void OnStyleResolved(ICustomStyle elementStyle)
         {
             base.OnStyleResolved(elementStyle);
             elementStyle.ApplyCustomProperty(k_SpacingProperty, ref m_Spacing);

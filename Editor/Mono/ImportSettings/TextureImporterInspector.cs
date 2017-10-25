@@ -55,6 +55,7 @@ namespace UnityEditor
             Cookie = 1 << 7,
             CubeMapConvolution = 1 << 8,
             CubeMapping = 1 << 9,
+            SingleChannelComponent = 1 << 11,
         }
 
         private struct TextureInspectorTypeGUIProperties
@@ -147,6 +148,8 @@ namespace UnityEditor
                             break;
                         case BuildTarget.iOS:
                             requirePVRTC = true;
+                            requireETC = true;
+                            requireETC2 = true;
                             break;
                         case BuildTarget.tvOS:
                             requirePVRTC = true;
@@ -257,6 +260,7 @@ namespace UnityEditor
                         case BuildTarget.tvOS:
                             requirePVRTC = true;
                             requireETC = true;
+                            requireETC2 = true;
                             break;
                         case BuildTarget.Tizen:
                             requireETC = true;
@@ -359,6 +363,7 @@ namespace UnityEditor
 #pragma warning disable 649
         internal static string[] s_TextureFormatStringsAll;
         internal static string[] s_TextureFormatStringsWiiU;
+        internal static string[] s_TextureFormatStringsSwitch;
         internal static string[] s_TextureFormatStringsWebGL;
         internal static string[] s_TextureFormatStringsApplePVR;
         internal static string[] s_TextureFormatStringsAndroid;
@@ -494,6 +499,18 @@ namespace UnityEditor
                 (int)TextureImporterAlphaSource.None,
                 (int)TextureImporterAlphaSource.FromInput,
                 (int)TextureImporterAlphaSource.FromGrayScale,
+            };
+
+            public readonly GUIContent singleChannelComponent = EditorGUIUtility.TextContent("Channel|As which color/alpha component the single channel texture is treated.");
+            public readonly GUIContent[] singleChannelComponentOptions =
+            {
+                EditorGUIUtility.TextContent("Alpha|Use the alpha channel (compression not supported)."),
+                EditorGUIUtility.TextContent("Red|Use the red color component."),
+            };
+            public readonly int[] singleChannelComponentValues =
+            {
+                (int)TextureImporterSingleChannelComponent.Alpha,
+                (int)TextureImporterSingleChannelComponent.Red,
             };
 
             public readonly GUIContent generateMipMaps = EditorGUIUtility.TextContent("Generate Mip Maps");
@@ -639,6 +656,8 @@ namespace UnityEditor
         SerializedProperty m_TextureShape;
 
         SerializedProperty m_SpriteMode;
+
+        SerializedProperty m_SingleChannelComponent;
         internal SpriteImportMode spriteImportMode
         {
             get
@@ -693,6 +712,8 @@ namespace UnityEditor
 
             m_TextureType = serializedObject.FindProperty("m_TextureType");
             m_TextureShape = serializedObject.FindProperty("m_TextureShape");
+
+            m_SingleChannelComponent = serializedObject.FindProperty("m_SingleChannelComponent");
         }
 
         void InitializeGUI()
@@ -713,7 +734,7 @@ namespace UnityEditor
             m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
                     TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
-            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
+            m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
                     , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
@@ -821,6 +842,8 @@ namespace UnityEditor
 
             m_TextureType.intValue = (int)settings.textureType;
             m_TextureShape.intValue = (int)settings.textureShape;
+
+            m_SingleChannelComponent.intValue = (int)settings.singleChannelComponent;
         }
 
         internal TextureImporterSettings GetSerializedPropertySettings()
@@ -926,6 +949,9 @@ namespace UnityEditor
             if (!m_TextureShape.hasMultipleDifferentValues)
                 settings.textureShape = (TextureImporterShape)m_TextureShape.intValue;
 
+            if (!m_SingleChannelComponent.hasMultipleDifferentValues)
+                settings.singleChannelComponent = (TextureImporterSingleChannelComponent)m_SingleChannelComponent.intValue;
+
             return settings;
         }
 
@@ -1014,26 +1040,45 @@ namespace UnityEditor
 
         void AlphaHandlingGUI(TextureInspectorGUIElement guiElements)
         {
-            int countWithAlpha = 0;
-            int countHDR = 0;
-
-            bool success = CountImportersWithAlpha(targets, out countWithAlpha);
-            success = success && CountImportersWithHDR(targets, out countHDR);
-
-            EditorGUI.showMixedValue = m_AlphaSource.hasMultipleDifferentValues;
-            EditorGUI.BeginChangeCheck();
-            int newAlphaUsage = EditorGUILayout.IntPopup(s_Styles.alphaSource, m_AlphaSource.intValue, s_Styles.alphaSourceOptions, s_Styles.alphaSourceValues);
-
-            EditorGUI.showMixedValue = false;
-            if (EditorGUI.EndChangeCheck())
+            bool showAlphaSource = true;
+            if (ShouldDisplayGUIElement(guiElements, TextureInspectorGUIElement.SingleChannelComponent))
             {
-                m_AlphaSource.intValue = newAlphaUsage;
+                EditorGUI.showMixedValue = m_SingleChannelComponent.hasMultipleDifferentValues;
+                EditorGUI.BeginChangeCheck();
+                int newSingleChannelComponent = EditorGUILayout.IntPopup(s_Styles.singleChannelComponent, m_SingleChannelComponent.intValue, s_Styles.singleChannelComponentOptions, s_Styles.singleChannelComponentValues);
+
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_SingleChannelComponent.intValue = newSingleChannelComponent;
+                }
+
+                showAlphaSource = (m_SingleChannelComponent.intValue == (int)TextureImporterSingleChannelComponent.Alpha);
             }
 
-            bool showAlphaIsTransparency = success && (TextureImporterAlphaSource)m_AlphaSource.intValue != TextureImporterAlphaSource.None && countHDR == 0; // AlphaIsTransparency is not properly implemented for HDR texture yet.
-            using (new EditorGUI.DisabledScope(!showAlphaIsTransparency))
+            if (showAlphaSource)
             {
-                ToggleFromInt(m_AlphaIsTransparency, s_Styles.alphaIsTransparency);
+                int countWithAlpha = 0;
+                int countHDR = 0;
+
+                bool success = CountImportersWithAlpha(targets, out countWithAlpha);
+                success = success && CountImportersWithHDR(targets, out countHDR);
+
+                EditorGUI.showMixedValue = m_AlphaSource.hasMultipleDifferentValues;
+                EditorGUI.BeginChangeCheck();
+                int newAlphaUsage = EditorGUILayout.IntPopup(s_Styles.alphaSource, m_AlphaSource.intValue, s_Styles.alphaSourceOptions, s_Styles.alphaSourceValues);
+
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_AlphaSource.intValue = newAlphaUsage;
+                }
+
+                bool showAlphaIsTransparency = success && (TextureImporterAlphaSource)m_AlphaSource.intValue != TextureImporterAlphaSource.None && countHDR == 0; // AlphaIsTransparency is not properly implemented for HDR texture yet.
+                using (new EditorGUI.DisabledScope(!showAlphaIsTransparency))
+                {
+                    ToggleFromInt(m_AlphaIsTransparency, s_Styles.alphaIsTransparency);
+                }
             }
         }
 
@@ -1469,6 +1514,8 @@ namespace UnityEditor
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsWiiU == null)
                 s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsSwitch == null)
+                s_TextureFormatStringsSwitch = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSwitch);
             if (s_TextureFormatStringsDefault == null)
                 s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
             if (s_NormalFormatStringsDefault == null)

@@ -245,7 +245,7 @@ namespace UnityEditor
             switch (targetGroup)
             {
                 case BuildTargetGroup.Standalone:
-                    return EditorUserBuildSettings.selectedStandaloneTarget;
+                    return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
                 case BuildTargetGroup.Facebook:
                     return EditorUserBuildSettings.selectedFacebookTarget;
                 default:
@@ -464,9 +464,7 @@ namespace UnityEditor
                     hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
 
                     Version requiredVersion = new Version(8, 0);
-                    Version minimumVersion = new Version(6, 0);
-                    Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
-                    hasMinOSVersion = requestedVersion >= requiredVersion;
+                    hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
                 }
                 else if (platform.targetGroup == BuildTargetGroup.tvOS)
                 {
@@ -833,6 +831,9 @@ namespace UnityEditor
             if ((buildWindowExtension != null) && Unsupported.IsDeveloperBuild())
                 buildWindowExtension.ShowInternalPlatformBuildOptions();
 
+
+            if (buildWindowExtension != null)
+                buildWindowExtension.ShowPlatformBuildWarnings();
 
             // Disable the 'Build' and 'Build And Run' buttons when the project setup doesn't satisfy the platform requirements
             if (!IsColorSpaceValid(platform) && enableBuildButton && enableBuildAndRunButton)

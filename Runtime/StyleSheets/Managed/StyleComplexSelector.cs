@@ -3,10 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
+using System.Linq;
 
 namespace UnityEngine.StyleSheets
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class StyleComplexSelector
     {
         [SerializeField]
@@ -46,6 +49,7 @@ namespace UnityEngine.StyleSheets
             {
                 return m_Selectors;
             }
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal set
             {
                 m_Selectors = value;
@@ -53,6 +57,12 @@ namespace UnityEngine.StyleSheets
         }
 
         [SerializeField]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int ruleIndex;
+
+        public override string ToString()
+        {
+            return string.Format("[{0}]", string.Join(", ", m_Selectors.Select(x => x.ToString()).ToArray()));
+        }
     }
 }

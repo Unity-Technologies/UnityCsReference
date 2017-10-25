@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal class KeyboardTextEditor : TextEditor
+    internal class KeyboardTextEditorEventHandler : TextEditorEventHandler
     {
         internal bool m_Changed;
 
@@ -19,66 +19,70 @@ namespace UnityEngine.Experimental.UIElements
 
         string m_PreDrawCursorText;
 
-        public KeyboardTextEditor(TextField textField)
-            : base(textField)
+        public KeyboardTextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
+            : base(editorEngine, textInputField)
         {
         }
 
-        protected override void RegisterCallbacksOnTarget()
+        public override void ExecuteDefaultAction(EventBase evt)
         {
-            base.RegisterCallbacksOnTarget();
+            base.ExecuteDefaultAction(evt);
 
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
-            target.RegisterCallback<IMGUIEvent>(OnIMGUIEvent);
-        }
-
-        protected override void UnregisterCallbacksFromTarget()
-        {
-            base.UnregisterCallbacksFromTarget();
-
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
-            target.UnregisterCallback<IMGUIEvent>(OnIMGUIEvent);
+            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
+            {
+                OnMouseDown(evt as MouseDownEvent);
+            }
+            else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+            {
+                OnMouseUp(evt as MouseUpEvent);
+            }
+            else if (evt.GetEventTypeId() == MouseMoveEvent.TypeId())
+            {
+                OnMouseMove(evt as MouseMoveEvent);
+            }
+            else if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            {
+                OnKeyDown(evt as KeyDownEvent);
+            }
+            else if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
+            {
+                OnIMGUIEvent(evt as IMGUIEvent);
+            }
         }
 
         void OnMouseDown(MouseDownEvent evt)
         {
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
             m_Changed = false;
 
-            target.TakeCapture();
+            textInputField.TakeMouseCapture();
 
-            if (!m_HasFocus)
+            if (!editorEngine.m_HasFocus)
             {
-                m_HasFocus = true;
+                editorEngine.m_HasFocus = true;
 
-                MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
                 evt.StopPropagation();
             }
             else
             {
-                if (evt.clickCount == 2 && doubleClickSelectsWord)
+                if (evt.clickCount == 2 && textInputField.doubleClickSelectsWord)
                 {
-                    SelectCurrentWord();
-                    DblClickSnap(DblClickSnapping.WORDS);
-                    MouseDragSelectsWholeWords(true);
+                    editorEngine.SelectCurrentWord();
+                    editorEngine.DblClickSnap(TextEditor.DblClickSnapping.WORDS);
+                    editorEngine.MouseDragSelectsWholeWords(true);
                     m_DragToPosition = false;
                 }
-                else if (evt.clickCount == 3 && tripleClickSelectsLine)
+                else if (evt.clickCount == 3 && textInputField.tripleClickSelectsLine)
                 {
-                    SelectCurrentParagraph();
-                    MouseDragSelectsWholeWords(true);
-                    DblClickSnap(DblClickSnapping.PARAGRAPHS);
+                    editorEngine.SelectCurrentParagraph();
+                    editorEngine.MouseDragSelectsWholeWords(true);
+                    editorEngine.DblClickSnap(TextEditor.DblClickSnapping.PARAGRAPHS);
                     m_DragToPosition = false;
                 }
                 else
                 {
-                    MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                    editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
                     m_SelectAllOnMouseUp = false;
                 }
 
@@ -87,42 +91,39 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_Changed)
             {
-                // Pre-cull string to maxLength.
-                if (maxLength >= 0 && text != null && text.Length > maxLength)
-                    text = text.Substring(0, maxLength);
-                textField.text = text;
-                textField.TextFieldChanged();
+                editorEngine.text = textInputField.CullString(editorEngine.text);
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated
-            UpdateScrollOffset();
+            editorEngine.UpdateScrollOffset();
         }
 
         void OnMouseUp(MouseUpEvent evt)
         {
-            if (!target.HasCapture())
+            if (!textInputField.HasMouseCapture())
                 return;
 
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
             m_Changed = false;
 
             if (m_Dragged && m_DragToPosition)
             {
-                MoveSelectionToAltCursor();
+                editorEngine.MoveSelectionToAltCursor();
             }
             else if (m_PostPoneMove)
             {
-                MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
             }
             else if (m_SelectAllOnMouseUp)
             {
                 m_SelectAllOnMouseUp = false;
             }
 
-            MouseDragSelectsWholeWords(false);
+            editorEngine.MouseDragSelectsWholeWords(false);
 
-            target.ReleaseCapture();
+            textInputField.ReleaseMouseCapture();
 
             m_DragToPosition = true;
             m_Dragged = false;
@@ -132,45 +133,42 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_Changed)
             {
-                // Pre-cull string to maxLength.
-                if (maxLength >= 0 && text != null && text.Length > maxLength)
-                    text = text.Substring(0, maxLength);
-                textField.text = text;
-                textField.TextFieldChanged();
+                editorEngine.text = textInputField.CullString(editorEngine.text);
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated
-            UpdateScrollOffset();
+            editorEngine.UpdateScrollOffset();
         }
 
         void OnMouseMove(MouseMoveEvent evt)
         {
-            if (!target.HasCapture())
+            if (!textInputField.HasMouseCapture())
                 return;
 
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
             m_Changed = false;
 
             // FIXME: presing shift while dragging will change start of selection (alt cursor).
             // Also, adding to selection (with shift click) after a drag-select does not work: it clears the previous selection.
-            if (!evt.shiftKey && hasSelection && m_DragToPosition)
+            if (!evt.shiftKey && editorEngine.hasSelection && m_DragToPosition)
             {
-                MoveAltCursorToPosition(evt.localMousePosition);
+                editorEngine.MoveAltCursorToPosition(evt.localMousePosition);
             }
             else
             {
                 if (evt.shiftKey)
                 {
-                    MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                    editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
                 }
                 else
                 {
-                    SelectToPosition(evt.localMousePosition);
+                    editorEngine.SelectToPosition(evt.localMousePosition);
                 }
 
                 m_DragToPosition = false;
-                m_SelectAllOnMouseUp = !hasSelection;
+                m_SelectAllOnMouseUp = !editorEngine.hasSelection;
             }
             m_Dragged = true;
 
@@ -178,30 +176,28 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_Changed)
             {
-                // Pre-cull string to maxLength.
-                if (maxLength >= 0 && text != null && text.Length > maxLength)
-                    text = text.Substring(0, maxLength);
-                textField.text = text;
-                textField.TextFieldChanged();
+                editorEngine.text = textInputField.CullString(editorEngine.text);
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated
-            UpdateScrollOffset();
+            editorEngine.UpdateScrollOffset();
         }
 
         void OnKeyDown(KeyDownEvent evt)
         {
-            if (!textField.hasFocus)
+            if (!textInputField.hasFocus)
                 return;
 
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
             m_Changed = false;
 
-            if (HandleKeyEvent(evt.imguiEvent))
+            // Check for action keys.
+            if (editorEngine.HandleKeyEvent(evt.imguiEvent))
             {
                 m_Changed = true;
-                textField.text = text;
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
             else
@@ -212,17 +208,22 @@ namespace UnityEngine.Experimental.UIElements
 
                 char c = evt.character;
 
-                if (c == '\n' && !multiline && !evt.altKey)
+                if (c == '\n' && !editorEngine.multiline && !evt.altKey)
                 {
-                    textField.TextFieldChangeValidated();
+                    return;
+                }
+
+                if (!textInputField.AcceptCharacter(c))
+                {
                     return;
                 }
 
                 // Simplest test: only allow the character if the display font supports it.
-                Font font = textField.editor.style.font;
+                Font font = editorEngine.style.font;
                 if ((font != null && font.HasCharacter(c)) || c == '\n')
                 {
-                    Insert(c);
+                    // Input event
+                    editorEngine.Insert(c);
                     m_Changed = true;
                 }
                 // On windows, key presses also send events with keycode but no character. Eat them up here.
@@ -231,7 +232,7 @@ namespace UnityEngine.Experimental.UIElements
                     // if we have a composition string, make sure we clear the previous selection.
                     if (!string.IsNullOrEmpty(Input.compositionString))
                     {
-                        ReplaceSelection("");
+                        editorEngine.ReplaceSelection("");
                         m_Changed = true;
                     }
                     evt.StopPropagation();
@@ -240,24 +241,21 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_Changed)
             {
-                // Pre-cull string to maxLength.
-                if (maxLength >= 0 && text != null && text.Length > maxLength)
-                    text = text.Substring(0, maxLength);
-                textField.text = text;
-                textField.TextFieldChanged();
+                editorEngine.text = textInputField.CullString(editorEngine.text);
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated
-            UpdateScrollOffset();
+            editorEngine.UpdateScrollOffset();
         }
 
         void OnIMGUIEvent(IMGUIEvent evt)
         {
-            if (!textField.hasFocus)
+            if (!textInputField.hasFocus)
                 return;
 
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
             m_Changed = false;
 
             switch (evt.imguiEvent.type)
@@ -267,11 +265,11 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         case "Cut":
                         case "Copy":
-                            if (!hasSelection)
+                            if (!editorEngine.hasSelection)
                                 return;
                             break;
                         case "Paste":
-                            if (!CanPaste())
+                            if (!editorEngine.CanPaste())
                                 return;
                             break;
                         case "SelectAll":
@@ -286,9 +284,9 @@ namespace UnityEngine.Experimental.UIElements
 
                 case EventType.ExecuteCommand:
                     bool mayHaveChanged = false;
-                    string oldText = text;
+                    string oldText = editorEngine.text;
 
-                    if (!textField.hasFocus)
+                    if (!textInputField.hasFocus)
                         return;
 
                     switch (evt.imguiEvent.commandName)
@@ -297,35 +295,35 @@ namespace UnityEngine.Experimental.UIElements
                             evt.StopPropagation();
                             return;
                         case "Cut":
-                            Cut();
+                            editorEngine.Cut();
                             mayHaveChanged = true;
                             break;
                         case "Copy":
-                            Copy();
+                            editorEngine.Copy();
                             evt.StopPropagation();
                             return;
                         case "Paste":
-                            Paste();
+                            editorEngine.Paste();
                             mayHaveChanged = true;
                             break;
                         case "SelectAll":
-                            SelectAll();
+                            editorEngine.SelectAll();
                             evt.StopPropagation();
                             return;
                         case "Delete":
                             // This "Delete" command stems from a Shift-Delete in the text
                             // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
                             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-                                Delete();
+                                editorEngine.Delete();
                             else
-                                Cut();
+                                editorEngine.Cut();
                             mayHaveChanged = true;
                             break;
                     }
 
                     if (mayHaveChanged)
                     {
-                        if (oldText != text)
+                        if (oldText != editorEngine.text)
                             m_Changed = true;
 
                         evt.StopPropagation();
@@ -335,48 +333,42 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_Changed)
             {
-                // Pre-cull string to maxLength.
-                if (maxLength >= 0 && text != null && text.Length > maxLength)
-                    text = text.Substring(0, maxLength);
-                textField.text = text;
-                textField.TextFieldChanged();
+                editorEngine.text = textInputField.CullString(editorEngine.text);
+                textInputField.UpdateText(editorEngine.text);
                 evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated
-            UpdateScrollOffset();
+            editorEngine.UpdateScrollOffset();
         }
 
         public void PreDrawCursor(string newText)
         {
-            SyncTextEditor();
+            textInputField.SyncTextEngine();
 
-            m_PreDrawCursorText = text;
+            m_PreDrawCursorText = editorEngine.text;
 
-            int cursorPos = cursorIndex;
+            int cursorPos = editorEngine.cursorIndex;
 
             if (!string.IsNullOrEmpty(Input.compositionString))
             {
-                text = newText.Substring(0, cursorIndex) + Input.compositionString + newText.Substring(selectIndex);
+                editorEngine.text = newText.Substring(0, editorEngine.cursorIndex) + Input.compositionString + newText.Substring(editorEngine.selectIndex);
                 cursorPos += Input.compositionString.Length;
             }
             else
             {
-                text = newText;
+                editorEngine.text = newText;
             }
 
-            if (maxLength >= 0 && text != null && text.Length > maxLength)
-            {
-                text = text.Substring(0, maxLength);
-                cursorPos = Math.Min(cursorPos, maxLength - 1);
-            }
+            editorEngine.text = textInputField.CullString(editorEngine.text);
+            cursorPos = Math.Min(cursorPos, editorEngine.text.Length);
 
-            graphicalCursorPos = style.GetCursorPixelPosition(localPosition, new GUIContent(text), cursorPos);
+            editorEngine.graphicalCursorPos = editorEngine.style.GetCursorPixelPosition(editorEngine.localPosition, new GUIContent(editorEngine.text), cursorPos);
         }
 
         public void PostDrawCursor()
         {
-            text = m_PreDrawCursorText;
+            editorEngine.text = m_PreDrawCursorText;
         }
     }
 }

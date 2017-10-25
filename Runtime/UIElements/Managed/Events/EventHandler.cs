@@ -9,36 +9,11 @@ namespace UnityEngine.Experimental.UIElements
 {
     public interface IEventHandler
     {
-        void OnLostCapture();
-
         void HandleEvent(EventBase evt);
 
         bool HasCaptureHandlers();
 
         bool HasBubbleHandlers();
-    }
-
-    public static class EventHandlerExtensions
-    {
-        public static void TakeCapture(this IEventHandler handler)
-        {
-            UIElementsUtility.eventDispatcher.TakeCapture(handler);
-        }
-
-        public static bool HasCapture(this IEventHandler handler)
-        {
-            return UIElementsUtility.eventDispatcher.capture == handler;
-        }
-
-        public static void ReleaseCapture(this IEventHandler handler)
-        {
-            UIElementsUtility.eventDispatcher.ReleaseCapture(handler);
-        }
-
-        public static void RemoveCapture(this IEventHandler handler)
-        {
-            UIElementsUtility.eventDispatcher.RemoveCapture();
-        }
     }
 
     public abstract class CallbackEventHandler : IEventHandler
@@ -107,9 +82,5 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         protected internal virtual void ExecuteDefaultAction(EventBase evt) {}
-
-        public virtual void OnLostCapture()
-        {
-        }
     }
 }

@@ -58,6 +58,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
             if (e.target != target)
                 return;
 
@@ -78,7 +84,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Rectangle.end = m_Rectangle.start;
 
                 m_Active = true;
-                target.TakeCapture(); // We want to receive events even when mouse is not over ourself.
+                target.TakeMouseCapture(); // We want to receive events even when mouse is not over ourself.
                 e.StopPropagation();
             }
         }
@@ -113,9 +119,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             List<ISelectable> newSelection = new List<ISelectable>();
             graphView.graphElements.ForEach(child =>
                 {
-                    Matrix4x4 selectableTransform = child.transform.matrix.inverse;
-                    var localSelRect = new Rect(selectableTransform.MultiplyPoint3x4(selectionRect.position),
-                            selectableTransform.MultiplyPoint3x4(selectionRect.size));
+                    var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
                     if (child.IsSelectable() && child.Overlaps(localSelRect))
                     {
                         newSelection.Add(child);
@@ -134,7 +138,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             m_Active = false;
-            target.ReleaseCapture();
+            target.ReleaseMouseCapture();
             e.StopPropagation();
         }
 

@@ -105,7 +105,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"slice-top", StylePropertyID.SliceTop},
             {"slice-right", StylePropertyID.SliceRight},
             {"slice-bottom", StylePropertyID.SliceBottom},
-            {"opacity", StylePropertyID.Opacity}
+            {"opacity", StylePropertyID.Opacity},
+            {"cursor", StylePropertyID.Cursor}
         };
 
         internal static void ClearCaches()

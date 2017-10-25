@@ -108,9 +108,6 @@ namespace UnityEditorInternal
         {
             StopPreview();
             StopPlayback();
-
-            if (AnimationMode.InAnimationMode(GetAnimationModeDriver()))
-                AnimationMode.StopAnimationMode(GetAnimationModeDriver());
         }
 
         public override void OnSelectionChanged()

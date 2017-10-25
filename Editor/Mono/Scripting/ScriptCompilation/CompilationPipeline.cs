@@ -66,14 +66,28 @@ namespace UnityEditor.Compilation
         {
             EditorCompilationInterface.Instance.assemblyCompilationStarted += (assemblyPath) =>
                 {
-                    if (assemblyCompilationStarted != null)
-                        assemblyCompilationStarted(assemblyPath);
+                    try
+                    {
+                        if (assemblyCompilationStarted != null)
+                            assemblyCompilationStarted(assemblyPath);
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogException(e);
+                    }
                 };
 
             EditorCompilationInterface.Instance.assemblyCompilationFinished += (assemblyPath, messages) =>
                 {
-                    if (assemblyCompilationFinished != null)
-                        assemblyCompilationFinished(assemblyPath, messages);
+                    try
+                    {
+                        if (assemblyCompilationFinished != null)
+                            assemblyCompilationFinished(assemblyPath, messages);
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogException(e);
+                    }
                 };
         }
 
@@ -122,7 +136,7 @@ namespace UnityEditor.Compilation
             {
                 var scriptAssembly = scriptAssemblies[i];
 
-                var name = AssetPath.GetFileNameWithoutExtension(scriptAssembly.Filename);
+                var name = AssetPath.GetAssemblyNameWithoutExtension(scriptAssembly.Filename);
                 var outputPath = scriptAssembly.FullPath;
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;

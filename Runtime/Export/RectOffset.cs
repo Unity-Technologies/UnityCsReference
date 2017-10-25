@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -14,6 +15,7 @@ namespace UnityEngine
     {
         // Pointer to the RectOffset INSIDE a GUIStyle.
         [NonSerialized]
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal IntPtr m_Ptr;
 
         // Pointer to the source GUIStyle so it doesn't get garbage collected.
@@ -26,6 +28,7 @@ namespace UnityEngine
             Init();
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal RectOffset(object sourceStyle, IntPtr source)
         {
             m_SourceStyle = sourceStyle;

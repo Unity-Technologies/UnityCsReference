@@ -215,7 +215,8 @@ namespace UnityEditorInternal
 
             DoLegendGUI(sideRect, type, cdata, evtType, active);
 
-            if (evt.type == EventType.Repaint)
+            // Drawing the chart is expensive, so only draw it when it is visible
+            if (evt.type == EventType.Repaint && GUIClip.visibleRect.Overlaps(chartRect))
             {
                 Styles.rightPane.Draw(r, false, false, active, false);
 

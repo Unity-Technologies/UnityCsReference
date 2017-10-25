@@ -985,7 +985,7 @@ public static void DrawCamera(Rect position, Camera camera, [uei.DefaultValue("D
 
     
     
-    internal enum FilterMode
+    internal enum CameraFilterMode
         {
             Off = 0,
             ShowFiltered = 1,
@@ -995,11 +995,11 @@ public static void DrawCamera(Rect position, Camera camera, [uei.DefaultValue("D
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void SetCameraFilterMode (Camera camera, FilterMode mode) ;
+    extern internal static  void SetCameraFilterMode (Camera camera, CameraFilterMode mode) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  FilterMode GetCameraFilterMode (Camera camera) ;
+    extern internal static  CameraFilterMode GetCameraFilterMode (Camera camera) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

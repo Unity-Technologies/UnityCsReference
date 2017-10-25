@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -481,6 +480,10 @@ namespace UnityEditor
         internal static Object[] GetDragAndDropObjects(int draggedInstanceID, List<int> selectedInstanceIDs)
         {
             List<Object> outList = new List<Object>(selectedInstanceIDs.Count);
+            if ((Event.current.control || Event.current.command) && !selectedInstanceIDs.Contains(draggedInstanceID))
+            {
+                selectedInstanceIDs.Add(draggedInstanceID);
+            }
             if (selectedInstanceIDs.Contains(draggedInstanceID))
             {
                 for (int i = 0; i < selectedInstanceIDs.Count; ++i)
@@ -517,6 +520,11 @@ namespace UnityEditor
             {
                 if (paths.Contains(dragPath))
                 {
+                    return paths.ToArray();
+                }
+                else if (Event.current.control || Event.current.command)
+                {
+                    paths.Add(dragPath);
                     return paths.ToArray();
                 }
                 else
@@ -631,30 +639,7 @@ namespace UnityEditor
 
         internal static void DuplicateSelectedAssets()
         {
-            // Note that this method was refactored, but contains identical behaviour to the last version:
-            // If any animation clips exist in the selection, duplicate only the animation clips in a special way,
-            // otherwise duplicate the rest (everything) as assets.
-            // The refactor initially changed the behaviour to duplicate all animation clips in a special way,
-            // as well as duplicate all the other assets in the selection, but was changed as to not alter behaviour.
-            // The code is kept this way so it's easy to reenable the "new" functionality.
-
-            AssetDatabase.Refresh();
-
-            IEnumerable<Object> results = null;
-
-            var animObjects = Selection.objects.Where(o => o is AnimationClip && AssetDatabase.Contains(o)).ToList();
-
-            if (animObjects.Count > 0)
-            {
-                results = DuplicateAnimationClips(animObjects.Cast<AnimationClip>()).Cast<Object>();
-            }
-            else
-            {
-                var otherObjects = Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Except(animObjects);
-                results = DuplicateAssets(otherObjects.Select(o => o.GetInstanceID()));
-            }
-
-            Selection.objects = results.ToArray();
+            Selection.objects = DuplicateAssets(Selection.objects).ToArray();
         }
 
         // Deletes the assets of the instance IDs, with an optional user confirmation dialog.
@@ -712,46 +697,33 @@ namespace UnityEditor
             return success;
         }
 
-        internal static IEnumerable<AnimationClip> DuplicateAnimationClips(IEnumerable<AnimationClip> clips)
+        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<Object> assets)
         {
-            // If we are duplicating an animation clip which comes from a imported model. Instead of duplicating the fbx file, we duplicate the animation clip.
-            // Thus the user can edit and add for example animation events.
             AssetDatabase.Refresh();
 
-            List<string> copiedPaths = new List<string>();
+            var copiedPaths = new List<string>();
 
-            foreach (var sourceClip in clips)
+            foreach (var asset in assets)
             {
-                if (sourceClip != null)
-                {
-                    string path = AssetDatabase.GetAssetPath(sourceClip);
-                    path = Path.Combine(Path.GetDirectoryName(path), sourceClip.name) + ".anim";
-                    string newPath = AssetDatabase.GenerateUniqueAssetPath(path);
+                var assetPath = AssetDatabase.GetAssetPath(asset);
 
-                    AnimationClip newClip = new AnimationClip();
-                    EditorUtility.CopySerialized(sourceClip, newClip);
-                    AssetDatabase.CreateAsset(newClip, newPath);
+                // if duplicating a sub-asset, then create a copy next to the main asset file
+                if (AssetDatabase.IsSubAsset(asset))
+                {
+                    var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
+                    var newPath = AssetDatabase.GenerateUniqueAssetPath(
+                            Path.Combine(Path.GetDirectoryName(assetPath), string.Format("{0}.{1}", asset.name, extension))
+                            );
+                    AssetDatabase.CreateAsset(Object.Instantiate(asset), newPath);
                     copiedPaths.Add(newPath);
                 }
-            }
-
-            AssetDatabase.Refresh();
-
-            return copiedPaths.Select(s => AssetDatabase.LoadMainAssetAtPath(s) as AnimationClip);
-        }
-
-        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<string> assets)
-        {
-            AssetDatabase.Refresh();
-
-            List<string> copiedPaths = new List<string>();
-
-            foreach (var assetPath in assets)
-            {
-                string newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-
-                if (newPath.Length != 0 && AssetDatabase.CopyAsset(assetPath, newPath))
-                    copiedPaths.Add(newPath);
+                // otherwise duplicate the main asset file
+                else if (EditorUtility.IsPersistent(asset))
+                {
+                    var newPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
+                    if (newPath.Length > 0 && AssetDatabase.CopyAsset(assetPath, newPath))
+                        copiedPaths.Add(newPath);
+                }
             }
 
             AssetDatabase.Refresh();
@@ -761,7 +733,7 @@ namespace UnityEditor
 
         internal static IEnumerable<Object> DuplicateAssets(IEnumerable<int> instanceIDs)
         {
-            return DuplicateAssets(GetMainPathsOfAssets(instanceIDs));
+            return DuplicateAssets(instanceIDs.Select(id => EditorUtility.InstanceIDToObject(id)));
         }
 
         internal static IEnumerable<string> GetMainPathsOfAssets(IEnumerable<int> instanceIDs)

@@ -275,7 +275,7 @@ namespace UnityEditor
             {
                 if ((state.SetSelfAndInterCollision) || ((state.CollToolMode == CollToolMode.Paint) || (state.CollToolMode == CollToolMode.Erase)))
                 {
-                    if (cloth.selfCollisionDistance > 0.0f)
+                    if (cloth.selfCollisionDistance >= 0.0f)
                     {
                         state.SelfCollisionDistance = cloth.selfCollisionDistance;
                         m_SelfCollisionDistance.floatValue = cloth.selfCollisionDistance;
@@ -286,7 +286,7 @@ namespace UnityEditor
                         m_SelfCollisionDistance.floatValue = state.SelfCollisionDistance;
                     }
 
-                    if (cloth.selfCollisionStiffness > 0.0f)
+                    if (cloth.selfCollisionStiffness >= 0.0f)
                     {
                         state.SelfCollisionStiffness = cloth.selfCollisionStiffness;
                         m_SelfCollisionStiffness.floatValue = cloth.selfCollisionStiffness;
@@ -306,7 +306,7 @@ namespace UnityEditor
                     GUILayout.Space(10);
                 }
 
-                if (Physics.interCollisionDistance > 0.0f)
+                if (Physics.interCollisionDistance >= 0.0f)
                 {
                     state.InterCollisionDistance = Physics.interCollisionDistance;
                 }
@@ -315,7 +315,7 @@ namespace UnityEditor
                     Physics.interCollisionDistance = state.InterCollisionDistance;
                 }
 
-                if (Physics.interCollisionStiffness > 0.0f)
+                if (Physics.interCollisionStiffness >= 0.0f)
                 {
                     state.InterCollisionStiffness = Physics.interCollisionStiffness;
                 }
@@ -489,7 +489,10 @@ namespace UnityEditor
 
                     if ((distanceBetween.magnitude < state.BrushRadius) && forwardFacing && ((state.CollToolMode == CollToolMode.Paint) || (state.CollToolMode == CollToolMode.Erase)))
                     {
-                        Handles.color = s_SelectedParticleColor;
+                        if (m_BrushFace > -1) // check mouse pointer is over a valid mesh face
+                        {
+                            Handles.color = s_SelectedParticleColor;
+                        }
                     }
 
                     Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], t.rotation, size, EventType.Repaint);
@@ -992,7 +995,10 @@ namespace UnityEditor
 
                     if ((distanceBetween.magnitude < state.BrushRadius) && forwardFacing && (state.ToolMode == ToolMode.Paint))
                     {
-                        Handles.color = s_SelectedParticleColor;
+                        if (m_BrushFace > -1) // check mouse pointer is over a valid mesh face
+                        {
+                            Handles.color = s_SelectedParticleColor;
+                        }
                     }
 
                     Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], t.rotation, state.ConstraintSize, EventType.Repaint);
@@ -1264,7 +1270,6 @@ namespace UnityEditor
 
                     Handles.color = s_SelectedParticleColor;
                     Handles.SphereHandleCap(id, m_ClothParticlesInWorldSpace[i], rotation, size, EventType.Repaint);
-
                     Repaint();
                 }
             }

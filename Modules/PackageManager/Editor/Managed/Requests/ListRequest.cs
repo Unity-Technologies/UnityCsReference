@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.Requests
         protected override PackageCollection GetResult()
         {
             var operationStatus = NativeClient.GetListOperationData(Id);
-            return new PackageCollection(operationStatus.packageList);
+            return new PackageCollection(operationStatus.packageList, operationStatus.error);
         }
     }
 }

@@ -26,6 +26,7 @@ internal enum CommandContext
     Global = 1,
 }
 
+[UsedByNativeCode]
 internal sealed partial class CustomCommand
 {
             #pragma warning disable 169

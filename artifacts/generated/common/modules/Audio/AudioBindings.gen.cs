@@ -242,6 +242,9 @@ public enum AudioClipLoadType
 
 public sealed partial class AudioClip : Object
 {
+    private AudioClip() {}
+    
+    
     public extern float length
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -425,12 +428,12 @@ public enum AudioVelocityUpdateMode
     Dynamic = 2,
 }
 
-public sealed partial class AudioBehaviour : Behaviour
+public partial class AudioBehaviour : Behaviour
 {
 }
 
 [RequireComponent(typeof(Transform))]
-public sealed partial class AudioListener : Behaviour
+public sealed partial class AudioListener : AudioBehaviour
 {
     
             internal AudioListenerExtension spatializerExtension = null;
@@ -606,7 +609,7 @@ public enum AudioSourceCurveType
 }
 
 [RequireComponent(typeof(Transform))]
-public sealed partial class AudioSource : Behaviour
+public sealed partial class AudioSource : AudioBehaviour
 {
     
             internal AudioSourceExtension spatializerExtension = null;
@@ -1844,5 +1847,6 @@ public sealed partial class Microphone
     extern public static  void GetDeviceCaps (string deviceName, out int minFreq, out int maxFreq) ;
 
 }
+
 
 }

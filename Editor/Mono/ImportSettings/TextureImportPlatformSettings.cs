@@ -193,6 +193,9 @@ namespace UnityEditor
                 case BuildTarget.WiiU:
                     testValues = kTextureFormatsValueWiiU;
                     break;
+                case BuildTarget.Switch:
+                    testValues = kTextureFormatsValueSwitch;
+                    break;
                 // on gles mobile targets we use rgb normal maps, so we can use whatever format we want
                 case BuildTarget.iOS:
                 case BuildTarget.tvOS:
@@ -334,6 +337,35 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBA16, // R4G4B4A4
         };
 
+        public static readonly int[] kTextureFormatsValueSwitch =
+        {
+            (int)TextureImporterFormat.DXT1,
+            (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.DXT1Crunched,
+            (int)TextureImporterFormat.DXT5Crunched,
+            (int)TextureImporterFormat.RGB16,
+            (int)TextureImporterFormat.RGB24,
+            (int)TextureImporterFormat.Alpha8,
+            (int)TextureImporterFormat.ARGB16,
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
+            (int)TextureImporterFormat.BC4,
+            (int)TextureImporterFormat.BC5,
+
+            (int)TextureImporterFormat.ASTC_RGB_4x4,
+            (int)TextureImporterFormat.ASTC_RGB_5x5,
+            (int)TextureImporterFormat.ASTC_RGB_6x6,
+            (int)TextureImporterFormat.ASTC_RGB_8x8,
+            (int)TextureImporterFormat.ASTC_RGB_10x10,
+            (int)TextureImporterFormat.ASTC_RGB_12x12,
+            (int)TextureImporterFormat.ASTC_RGBA_4x4,
+            (int)TextureImporterFormat.ASTC_RGBA_5x5,
+            (int)TextureImporterFormat.ASTC_RGBA_6x6,
+            (int)TextureImporterFormat.ASTC_RGBA_8x8,
+            (int)TextureImporterFormat.ASTC_RGBA_10x10,
+            (int)TextureImporterFormat.ASTC_RGBA_12x12,
+        };
+
         public static readonly int[] kTextureFormatsValueApplePVR =
         {
             (int)TextureImporterFormat.PVRTC_RGB2,
@@ -356,8 +388,13 @@ namespace UnityEditor
 
             (int)TextureImporterFormat.ETC_RGB4,
             (int)TextureImporterFormat.ETC_RGB4Crunched,
+            (int)TextureImporterFormat.ETC2_RGB4,
+            (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
             (int)TextureImporterFormat.ETC2_RGBA8,
             (int)TextureImporterFormat.ETC2_RGBA8Crunched,
+
+            (int)TextureImporterFormat.EAC_R,
+            (int)TextureImporterFormat.EAC_RG,
 
             (int)TextureImporterFormat.RGB16,
             (int)TextureImporterFormat.RGB24,
@@ -379,6 +416,9 @@ namespace UnityEditor
             (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
             (int)TextureImporterFormat.ETC2_RGBA8,
             (int)TextureImporterFormat.ETC2_RGBA8Crunched,
+
+            (int)TextureImporterFormat.EAC_R,
+            (int)TextureImporterFormat.EAC_RG,
 
             (int)TextureImporterFormat.PVRTC_RGB2,
             (int)TextureImporterFormat.PVRTC_RGBA2,
@@ -461,7 +501,9 @@ namespace UnityEditor
         public static readonly int[] kTextureFormatsValueSingleChannel =
         {
             (int)TextureImporterFormat.Alpha8,
+            (int)TextureImporterFormat.R8,
             (int)TextureImporterFormat.BC4,
+            (int)TextureImporterFormat.EAC_R,
         };
 
         public static readonly int[] kAndroidETC2FallbackOverrideValues =

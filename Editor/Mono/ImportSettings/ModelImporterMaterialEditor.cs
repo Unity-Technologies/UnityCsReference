@@ -15,6 +15,7 @@ namespace UnityEditor
     internal class ModelImporterMaterialEditor : BaseAssetImporterTabUI
     {
         bool m_ShowAllMaterialNameOptions = true;
+        bool m_ShowMaterialRemapOptions = false;
 
         // Material
         SerializedProperty m_ImportMaterials;
@@ -31,74 +32,74 @@ namespace UnityEditor
 
         private bool m_HasEmbeddedMaterials = false;
 
-        class Styles
+        static class Styles
         {
-            public GUIContent ImportMaterials = EditorGUIUtility.TextContent("Import Materials");
+            public static GUIContent ImportMaterials = EditorGUIUtility.TextContent("Import Materials");
 
-            public GUIContent MaterialLocation = EditorGUIUtility.TextContent("Material Location");
-            public GUIContent[] MaterialLocationOpt =
+            public static GUIContent MaterialLocation = EditorGUIUtility.TextContent("Location");
+            public static GUIContent[] MaterialLocationOpt =
             {
                 EditorGUIUtility.TextContent("Use External Materials (Legacy)|Use external materials if found in the project."),
                 EditorGUIUtility.TextContent("Use Embedded Materials|Embed the material inside the imported asset.")
             };
 
-            public GUIContent MaterialName = EditorGUIUtility.TextContent("Material Naming");
-            public GUIContent[] MaterialNameOptMain =
+            public static GUIContent MaterialName = EditorGUIUtility.TextContent("Naming");
+            public static GUIContent[] MaterialNameOptMain =
             {
                 EditorGUIUtility.TextContent("By Base Texture Name"),
                 EditorGUIUtility.TextContent("From Model's Material"),
                 EditorGUIUtility.TextContent("Model Name + Model's Material"),
             };
-            public GUIContent[] MaterialNameOptAll =
+            public static GUIContent[] MaterialNameOptAll =
             {
                 EditorGUIUtility.TextContent("By Base Texture Name"),
                 EditorGUIUtility.TextContent("From Model's Material"),
                 EditorGUIUtility.TextContent("Model Name + Model's Material"),
                 EditorGUIUtility.TextContent("Texture Name or Model Name + Model's Material (Obsolete)"),
             };
-            public GUIContent MaterialSearch = EditorGUIUtility.TextContent("Material Search");
-            public GUIContent[] MaterialSearchOpt =
+            public static GUIContent MaterialSearch = EditorGUIUtility.TextContent("Search");
+            public static GUIContent[] MaterialSearchOpt =
             {
                 EditorGUIUtility.TextContent("Local Materials Folder"),
                 EditorGUIUtility.TextContent("Recursive-Up"),
                 EditorGUIUtility.TextContent("Project-Wide")
             };
 
-            public GUIContent AutoMapExternalMaterials = EditorGUIUtility.TextContent("Map External Materials|Map the external materials found in the project automatically every time the asset is reimported.");
+            public static GUIContent NoMaterialHelp = EditorGUIUtility.TextContent("Do not generate materials. Use Unity's default material instead.");
 
-            public GUIContent NoMaterialHelp = EditorGUIUtility.TextContent("Do not generate materials. Use Unity's default material instead.");
-
-            public GUIContent ExternalMaterialHelpStart = EditorGUIUtility.TextContent("For each imported material, Unity first looks for an existing material named %MAT%.");
-            public GUIContent[] ExternalMaterialNameHelp =
+            public static GUIContent ExternalMaterialHelpStart = EditorGUIUtility.TextContent("For each imported material, Unity first looks for an existing material named %MAT%.");
+            public static GUIContent[] ExternalMaterialNameHelp =
             {
                 EditorGUIUtility.TextContent("[BaseTextureName]"),
                 EditorGUIUtility.TextContent("[MaterialName]"),
                 EditorGUIUtility.TextContent("[ModelFileName]-[MaterialName]"),
                 EditorGUIUtility.TextContent("[BaseTextureName] or [ModelFileName]-[MaterialName] if no base texture can be found"),
             };
-            public GUIContent[] ExternalMaterialSearchHelp =
+            public static GUIContent[] ExternalMaterialSearchHelp =
             {
                 EditorGUIUtility.TextContent("Unity will look for it in the local Materials folder."),
                 EditorGUIUtility.TextContent("Unity will do a recursive-up search for it in all Materials folders up to the Assets folder."),
                 EditorGUIUtility.TextContent("Unity will search for it anywhere inside the Assets folder.")
             };
-            public GUIContent ExternalMaterialHelpEnd = EditorGUIUtility.TextContent("If it doesn't exist, a new one is created in the local Materials folder.");
+            public static GUIContent ExternalMaterialHelpEnd = EditorGUIUtility.TextContent("If it doesn't exist, a new one is created in the local Materials folder.");
 
-            public GUIContent InternalMaterialHelp = EditorGUIUtility.TextContent("Materials are embedded inside the imported asset.");
+            public static GUIContent InternalMaterialHelp = EditorGUIUtility.TextContent("Materials are embedded inside the imported asset.");
 
-            public GUIContent MaterialAssignmentsHelp = EditorGUIUtility.TextContent("Material assignments can be remapped below.");
+            public static GUIContent MaterialAssignmentsHelp = EditorGUIUtility.TextContent("Material assignments can be remapped below.");
 
-            public GUIContent ExternalMaterialMappings = EditorGUIUtility.TextContent("Remapped Materials|External materials to use for each embedded material.");
+            public static GUIContent ExternalMaterialMappings = EditorGUIUtility.TextContent("Remapped Materials|External materials to use for each embedded material.");
 
-            public GUIContent NoMaterialMappingsHelp = EditorGUIUtility.TextContent("Re-import the asset to see the list of used materials.");
+            public static GUIContent NoMaterialMappingsHelp = EditorGUIUtility.TextContent("Re-import the asset to see the list of used materials.");
 
-            public GUIContent Textures = EditorGUIUtility.TextContent("Textures");
-            public GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract Textures...|Click on this button to extract the embedded textures.");
+            public static GUIContent Textures = EditorGUIUtility.TextContent("Textures");
+            public static GUIContent ExtractEmbeddedTextures = EditorGUIUtility.TextContent("Extract Textures...|Click on this button to extract the embedded textures.");
 
-            public GUIContent Materials = EditorGUIUtility.TextContent("Materials");
-            public GUIContent ExtractEmbeddedMaterials = EditorGUIUtility.TextContent("Extract Materials...|Click on this button to extract the embedded materials.");
+            public static GUIContent Materials = EditorGUIUtility.TextContent("Materials");
+            public static GUIContent ExtractEmbeddedMaterials = EditorGUIUtility.TextContent("Extract Materials...|Click on this button to extract the embedded materials.");
+
+            public static GUIContent RemapOptions = EditorGUIUtility.TextContent("On Demand Remap");
+            public static GUIContent RemapMaterialsInProject = EditorGUIUtility.TextContent("Search and Remap|Click on this button to search and remap the materials from the project.");
         }
-        static Styles styles;
 
         public ModelImporterMaterialEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
@@ -172,23 +173,20 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (styles == null)
-                styles = new Styles();
-
-            MaterialsGUI();
+            DoMaterialsGUI();
         }
 
-        private void TexturesGUI()
+        private void ExtractTexturesGUI()
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.PrefixLabel(styles.Textures);
+                EditorGUILayout.PrefixLabel(Styles.Textures);
 
                 using (
                     new EditorGUI.DisabledScope(!m_HasEmbeddedTextures.boolValue &&
                         !m_HasEmbeddedTextures.hasMultipleDifferentValues))
                 {
-                    if (GUILayout.Button(styles.ExtractEmbeddedTextures))
+                    if (GUILayout.Button(Styles.ExtractEmbeddedTextures))
                     {
                         // when extracting textures, we must handle the case when multiple selected assets could generate textures with the same name at the user supplied path
                         // we proceed as follows:
@@ -269,91 +267,150 @@ namespace UnityEditor
             }
         }
 
-        void MaterialsGUI()
+        private bool ExtractMaterialsGUI()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel(Styles.Materials);
+                using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
+                {
+                    if (GUILayout.Button(Styles.ExtractEmbeddedMaterials))
+                    {
+                        // use the first target for selecting the destination folder, but apply that path for all targets
+                        string destinationPath = (target as ModelImporter).assetPath;
+                        destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
+                                FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                        if (string.IsNullOrEmpty(destinationPath))
+                        {
+                            // cancel the extraction if the user did not select a folder
+                            return false;
+                        }
+                        destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
+
+                        try
+                        {
+                            // batch the extraction of the textures
+                            AssetDatabase.StartAssetEditing();
+
+                            PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
+                        }
+                        finally
+                        {
+                            AssetDatabase.StopAssetEditing();
+                        }
+
+                        // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool MaterialRemapOptons()
+        {
+            m_ShowMaterialRemapOptions = EditorGUILayout.Foldout(m_ShowMaterialRemapOptions, Styles.RemapOptions);
+            if (m_ShowMaterialRemapOptions)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.Popup(m_MaterialName,
+                    m_ShowAllMaterialNameOptions ? Styles.MaterialNameOptAll : Styles.MaterialNameOptMain,
+                    Styles.MaterialName);
+                EditorGUILayout.Popup(m_MaterialSearch, Styles.MaterialSearchOpt, Styles.MaterialSearch);
+
+                string searchHelp = Styles.ExternalMaterialHelpStart.text.Replace("%MAT%", Styles.ExternalMaterialNameHelp[m_MaterialName.intValue].text) + "\n" +
+                    Styles.ExternalMaterialSearchHelp[m_MaterialSearch.intValue].text;
+
+                EditorGUILayout.HelpBox(searchHelp, MessageType.Info);
+
+                EditorGUI.indentLevel--;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(Styles.RemapMaterialsInProject))
+                    {
+                        try
+                        {
+                            AssetDatabase.StartAssetEditing();
+
+                            foreach (var t in targets)
+                            {
+                                var importer = t as ModelImporter;
+                                // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
+                                importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
+
+                                AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
+                                AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+                            }
+                        }
+                        finally
+                        {
+                            AssetDatabase.StopAssetEditing();
+                        }
+
+                        return true;
+                    }
+                }
+                EditorGUILayout.Space();
+            }
+
+            return false;
+        }
+
+        void DoMaterialsGUI()
         {
             serializedObject.UpdateIfRequiredOrScript();
 
-            EditorGUILayout.PropertyField(m_ImportMaterials, styles.ImportMaterials);
+            EditorGUILayout.PropertyField(m_ImportMaterials, Styles.ImportMaterials);
 
             string materialHelp = string.Empty;
             if (!m_ImportMaterials.hasMultipleDifferentValues)
             {
                 if (m_ImportMaterials.boolValue)
                 {
-                    EditorGUILayout.Popup(m_MaterialLocation, styles.MaterialLocationOpt, styles.MaterialLocation);
+                    EditorGUILayout.Popup(m_MaterialLocation, Styles.MaterialLocationOpt, Styles.MaterialLocation);
                     if (!m_MaterialLocation.hasMultipleDifferentValues)
                     {
                         if (m_MaterialLocation.intValue == 0)
                         {
                             // (legacy) we're generating materials in the Materials folder
                             EditorGUILayout.Popup(m_MaterialName,
-                                m_ShowAllMaterialNameOptions ? styles.MaterialNameOptAll : styles.MaterialNameOptMain,
-                                styles.MaterialName);
-                            EditorGUILayout.Popup(m_MaterialSearch, styles.MaterialSearchOpt, styles.MaterialSearch);
+                                m_ShowAllMaterialNameOptions ? Styles.MaterialNameOptAll : Styles.MaterialNameOptMain,
+                                Styles.MaterialName);
+                            EditorGUILayout.Popup(m_MaterialSearch, Styles.MaterialSearchOpt, Styles.MaterialSearch);
 
                             materialHelp =
-                                styles.ExternalMaterialHelpStart.text.Replace("%MAT%",
-                                    styles.ExternalMaterialNameHelp[m_MaterialName.intValue].text) + "\n" +
-                                styles.ExternalMaterialSearchHelp[m_MaterialSearch.intValue].text + "\n" +
-                                styles.ExternalMaterialHelpEnd.text;
+                                Styles.ExternalMaterialHelpStart.text.Replace("%MAT%",
+                                    Styles.ExternalMaterialNameHelp[m_MaterialName.intValue].text) + "\n" +
+                                Styles.ExternalMaterialSearchHelp[m_MaterialSearch.intValue].text + "\n" +
+                                Styles.ExternalMaterialHelpEnd.text;
                         }
-                        else if (m_Materials.arraySize > 0)
+                        else if (m_Materials.arraySize > 0 && HasEmbeddedMaterials())
                         {
                             // we're generating materials inside the prefab
-                            materialHelp = styles.InternalMaterialHelp.text;
+                            materialHelp = Styles.InternalMaterialHelp.text;
                         }
                     }
 
                     if (targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0)
                     {
-                        materialHelp += " " + styles.MaterialAssignmentsHelp.text;
+                        materialHelp += " " + Styles.MaterialAssignmentsHelp.text;
                     }
 
                     // display the extract buttons
                     if (m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
                     {
-                        TexturesGUI();
-                        using (new EditorGUILayout.HorizontalScope())
-                        {
-                            EditorGUILayout.PrefixLabel(styles.Materials);
-                            using (new EditorGUI.DisabledScope(!HasEmbeddedMaterials()))
-                            {
-                                if (GUILayout.Button(styles.ExtractEmbeddedMaterials))
-                                {
-                                    // use the first target for selecting the destination folder, but apply that path for all targets
-                                    string destinationPath = (target as ModelImporter).assetPath;
-                                    destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
-                                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
-                                    if (string.IsNullOrEmpty(destinationPath))
-                                    {
-                                        // cancel the extraction if the user did not select a folder
-                                        return;
-                                    }
-                                    destinationPath = FileUtil.GetProjectRelativePath(destinationPath);
-
-                                    try
-                                    {
-                                        // batch the extraction of the textures
-                                        AssetDatabase.StartAssetEditing();
-
-                                        PrefabUtility.ExtractMaterialsFromAsset(targets, destinationPath);
-                                    }
-                                    finally
-                                    {
-                                        AssetDatabase.StopAssetEditing();
-                                    }
-
-                                    // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
-                                    return;
-                                }
-                            }
-                        }
+                        ExtractTexturesGUI();
+                        if (ExtractMaterialsGUI())
+                            return;
                     }
                 }
                 else
                 {
                     // we're not importing materials
-                    materialHelp = styles.NoMaterialHelp.text;
+                    materialHelp = Styles.NoMaterialHelp.text;
                 }
             }
 
@@ -366,13 +423,16 @@ namespace UnityEditor
                 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(styles.NoMaterialMappingsHelp.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.NoMaterialMappingsHelp.text, MessageType.Warning);
             }
 
             // hidden for multi-selection
             if (m_ImportMaterials.boolValue && targets.Length == 1 && m_Materials.arraySize > 0 && m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
             {
-                GUILayout.Label(styles.ExternalMaterialMappings, EditorStyles.boldLabel);
+                GUILayout.Label(Styles.ExternalMaterialMappings, EditorStyles.boldLabel);
+
+                if (MaterialRemapOptons())
+                    return;
 
                 // The list of material names is immutable, whereas the map of external objects can change based on user actions.
                 // For each material name, map the external object associated with it.

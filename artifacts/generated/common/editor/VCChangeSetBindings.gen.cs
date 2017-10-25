@@ -20,6 +20,7 @@ namespace UnityEditor.VersionControl
 {
 
 
+[UsedByNativeCode]
 public sealed partial class ChangeSet
 {
     

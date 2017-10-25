@@ -58,8 +58,8 @@ namespace UnityEditor
             ParticleEffectUI.m_VerticalLayout = EditorPrefs.GetBool("ShurikenVerticalLayout", false);
 
             // Get notified when hierarchy- or project window has changes so we can detect if particle systems have been dragged in or out.
-            EditorApplication.hierarchyWindowChanged += OnHierarchyOrProjectWindowWasChanged;
-            EditorApplication.projectWindowChanged += OnHierarchyOrProjectWindowWasChanged;
+            EditorApplication.hierarchyChanged += OnHierarchyOrProjectWindowWasChanged;
+            EditorApplication.projectChanged += OnHierarchyOrProjectWindowWasChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -71,8 +71,8 @@ namespace UnityEditor
         void OnDisable()
         {
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
-            EditorApplication.projectWindowChanged -= OnHierarchyOrProjectWindowWasChanged;
-            EditorApplication.hierarchyWindowChanged -= OnHierarchyOrProjectWindowWasChanged;
+            EditorApplication.projectChanged -= OnHierarchyOrProjectWindowWasChanged;
+            EditorApplication.hierarchyChanged -= OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
@@ -236,11 +236,8 @@ namespace UnityEditor
                 if (newState != isShowOnlySelected && m_ParticleEffectUI != null)
                     m_ParticleEffectUI.SetShowOnlySelectedMode(newState);
 
-                // Preview all toggle
-                ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, ParticleEffectUI.texts.previewAll, "ToolbarButton");
-
                 // Resimulation toggle
-                ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, ParticleEffectUI.texts.resimulation, "ToolbarButton");
+                ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, ParticleEffectUI.texts.resimulation, "ToolbarButton");
 
                 // Bounds toggle
                 ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, "ToolbarButton");

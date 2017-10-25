@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -16,19 +17,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         GraphElement selectedElement { get; set; }
         GraphElement clickedElement { get; set; }
 
+        private GraphViewChange m_GraphViewChange;
+        private List<GraphElement> m_MovedElements;
+
         public SelectionDragger()
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             panSpeed = new Vector2(1, 1);
             clampToParentEdges = false;
+
+            m_MovedElements = new List<GraphElement>();
+            m_GraphViewChange.movedElements = m_MovedElements;
         }
 
         protected override void RegisterCallbacksOnTarget()
         {
-            var graphView = target as GraphView;
-            if (graphView == null)
+            var selectionContainer = target as ISelection;
+            if (selectionContainer == null)
             {
-                throw new InvalidOperationException("Manipulator can only be added to a GraphView");
+                throw new InvalidOperationException("Manipulator can only be added to a control that supports selection");
             }
 
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
@@ -43,10 +50,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }
 
-        bool m_AddedOnMouseDown;
-
         protected new void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
             var graphView = target as GraphView;
             if (graphView == null)
                 return;
@@ -64,48 +75,36 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     return;
             }
 
-            if (!graphView.selection.Contains(clickedElement))
-            {
-                if (!e.ctrlKey)
-                    graphView.ClearSelection();
-                graphView.AddToSelection(clickedElement);
-                m_AddedOnMouseDown = true;
-            }
-
             if (CanStartManipulation(e))
             {
                 selectedElement = clickedElement;
 
-                GraphElementPresenter elementPresenter = selectedElement.presenter;
-                if (elementPresenter != null && ((selectedElement.presenter.capabilities & Capabilities.Movable) != Capabilities.Movable))
+                if (!selectedElement.IsMovable())
                     return;
 
                 m_Active = true;
-                target.TakeCapture(); // We want to receive events even when mouse is not over ourself.
+                target.TakeMouseCapture(); // We want to receive events even when mouse is not over ourself.
             }
         }
-
-        bool m_Dragged;
 
         protected new void OnMouseMove(MouseMoveEvent e)
         {
             if (!m_Active)
                 return;
 
-            var graphView = target as GraphView;
-            if (graphView == null)
+            var selectionContainer = target as ISelection;
+            if (selectionContainer == null)
                 return;
 
-            foreach (ISelectable s in graphView.selection)
+            foreach (ISelectable s in selectionContainer.selection)
             {
                 GraphElement ce = s as GraphElement;
-                if (ce == null || ce.presenter == null)
+                if (ce == null)
                     continue;
 
-                if ((ce.presenter.capabilities & Capabilities.Movable) != Capabilities.Movable)
+                if (!ce.IsMovable())
                     continue;
 
-                m_Dragged = true;
                 Matrix4x4 g = ce.worldTransform;
                 var scale = new Vector3(g.m00, g.m11, g.m22);
 
@@ -121,55 +120,39 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected new void OnMouseUp(MouseUpEvent e)
         {
-            var graphView = target as GraphView;
-            if (graphView == null)
+            var selectionContainer = target as ISelection;
+            if (selectionContainer == null)
                 return;
-
-            if (clickedElement != null && !m_Dragged)
-            {
-                // Since we didn't drag after all, update selection with current element only
-
-                if (graphView.selection.Contains(clickedElement))
-                {
-                    if (e.ctrlKey)
-                    {
-                        if (!m_AddedOnMouseDown)
-                        {
-                            graphView.RemoveFromSelection(clickedElement);
-                        }
-                    }
-                    else
-                    {
-                        graphView.ClearSelection();
-                        graphView.AddToSelection(clickedElement);
-                    }
-                }
-            }
 
             if (m_Active && CanStopManipulation(e))
             {
                 if (selectedElement == null)
                 {
-                    foreach (ISelectable s in graphView.selection)
+                    m_MovedElements.Clear();
+                    foreach (ISelectable s in selectionContainer.selection)
                     {
                         var ce = s as GraphElement;
-                        if (ce == null || ce.presenter == null)
+                        if (ce == null)
                             continue;
 
-                        GraphElementPresenter elementPresenter = ce.presenter;
-                        if ((ce.presenter.capabilities & Capabilities.Movable) != Capabilities.Movable)
+                        if (!ce.IsMovable())
                             continue;
 
-                        elementPresenter.position = ce.layout;
-                        elementPresenter.CommitChanges();
+                        ce.UpdatePresenterPosition();
+
+                        m_MovedElements.Add(ce);
+                    }
+
+                    var graphView = target as GraphView;
+                    if (graphView != null && graphView.graphViewChanged != null)
+                    {
+                        graphView.graphViewChanged(m_GraphViewChange);
                     }
                 }
 
-                target.ReleaseCapture();
+                target.ReleaseMouseCapture();
                 e.StopPropagation();
             }
-            m_AddedOnMouseDown = false;
-            m_Dragged = false;
             m_Active = false;
         }
     }

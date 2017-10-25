@@ -4,7 +4,7 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal class TouchScreenTextEditor : TextEditor
+    internal class TouchScreenTextEditorEventHandler : TextEditorEventHandler
     {
         private string m_SecureText;
         public string secureText
@@ -20,36 +20,34 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public TouchScreenTextEditor(TextField textField)
-            : base(textField)
+        public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
+            : base(editorEngine, textInputField)
         {
             secureText = string.Empty;
         }
 
-        protected override void RegisterCallbacksOnTarget()
+        public override void ExecuteDefaultAction(EventBase evt)
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
-        }
+            base.ExecuteDefaultAction(evt);
 
-        protected override void UnregisterCallbacksFromTarget()
-        {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseUpDownEvent);
-        }
+            long mouseEventType = MouseDownEvent.TypeId();
 
-        void OnMouseUpDownEvent(MouseDownEvent evt)
-        {
-            SyncTextEditor();
-            textField.TakeCapture();
+            if (evt.GetEventTypeId() == mouseEventType)
+            {
+                textInputField.SyncTextEngine();
+                textInputField.UpdateText(editorEngine.text);
+                textInputField.TakeMouseCapture();
 
-            keyboardOnScreen = TouchScreenKeyboard.Open(!string.IsNullOrEmpty(secureText) ? secureText : textField.text,
-                    TouchScreenKeyboardType.Default,
-                    true, // autocorrection
-                    multiline,
-                    !string.IsNullOrEmpty(secureText));
+                editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(!string.IsNullOrEmpty(secureText) ? secureText : textInputField.text,
+                        TouchScreenKeyboardType.Default,
+                        true, // autocorrection
+                        editorEngine.multiline,
+                        !string.IsNullOrEmpty(secureText));
 
-            // Scroll offset might need to be updated
-            UpdateScrollOffset();
-            evt.StopPropagation();
+                // Scroll offset might need to be updated
+                editorEngine.UpdateScrollOffset();
+                evt.StopPropagation();
+            }
         }
     }
 }

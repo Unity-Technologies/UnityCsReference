@@ -45,7 +45,7 @@ namespace UnityEditor.Web
         {
             if (AnalyticsSettings.enabled != enabled)
             {
-                AnalyticsSettings.enabled = enabled;
+                AnalyticsSettings.SetEnabledServiceWindow(enabled);
                 EditorAnalytics.SendEventServiceInfo(new AnalyticsServiceState() { analytics = enabled });
             }
         }

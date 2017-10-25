@@ -113,6 +113,7 @@ namespace UnityEngine
         public int order { get; private set; }
     }
 
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
     public sealed class NativeClassAttribute : Attribute
     {

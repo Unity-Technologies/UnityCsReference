@@ -41,7 +41,7 @@ namespace UnityEngine.XR.WSA.Input
         [Obsolete("HoldStartedEvent is deprecated, and will be removed in a future release. Use OnHoldStartedEvent instead.", false)]
         public event HoldStartedEventDelegate HoldStartedEvent;
 
-        [Obsolete("TappedEvent is deprecated, and will be removed in a future release. Use OnTappedEvent instead.", false)]
+        [Obsolete("TappedEvent is deprecated, and will be removed in a future release. Use Tapped instead.", false)]
         public event TappedEventDelegate TappedEvent;
 
         [Obsolete("ManipulationCanceledEvent is deprecated, and will be removed in a future release. Use OnManipulationCanceledEvent instead.", false)]

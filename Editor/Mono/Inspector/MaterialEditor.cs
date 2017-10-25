@@ -878,6 +878,11 @@ namespace UnityEditor
             float controlStartX = position.x + labelWidth;
             float labelStartX = position.x + EditorGUI.indent;
 
+            // Temporarily reset the indent level as it was already used above to compute the positions of the label and control. See issue 946082.
+            int oldIndentLevel = EditorGUI.indentLevel;
+
+            EditorGUI.indentLevel = 0;
+
             if (partOfTexturePropertyControl)
             {
                 labelWidth = 65;
@@ -897,6 +902,9 @@ namespace UnityEditor
             valueRect.y += kLineHeight;
             EditorGUI.PrefixLabel(labelRect, s_OffsetText);
             offset = EditorGUI.Vector2Field(valueRect, GUIContent.none, offset);
+
+            // Restore the indent level
+            EditorGUI.indentLevel = oldIndentLevel;
 
             return new Vector4(tiling.x, tiling.y, offset.x, offset.y);
         }

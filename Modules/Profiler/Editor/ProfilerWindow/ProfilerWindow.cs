@@ -35,6 +35,7 @@ namespace UnityEditor
             public static readonly GUIContent nextFrame = EditorGUIUtility.IconContent("Profiler.NextFrame", "|Go one frame forwards");
             public static readonly GUIContent currentFrame = EditorGUIUtility.TextContent("Current|Go to current frame");
             public static readonly GUIContent frame = EditorGUIUtility.TextContent("Frame: ");
+            public static readonly GUIContent clearOnPlay = EditorGUIUtility.TextContent("Clear on Play");
             public static readonly GUIContent clearData = EditorGUIUtility.TextContent("Clear");
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TextContent("Save|Save current profiling information to a binary file");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TextContent("Load|Load binary profiling information from a file. Shift click to append to the existing data");
@@ -240,6 +241,8 @@ namespace UnityEditor
 
         bool wantsMemoryRefresh { get { return m_MemoryListView.RequiresRefresh; } }
 
+        [SerializeField]
+        private bool m_ClearOnPlay;
         private enum HierarchyViewDetailPaneType
         {
             None,
@@ -402,11 +405,17 @@ namespace UnityEditor
             return !string.IsNullOrEmpty(m_SearchString) && m_SearchString.Length > 0;
         }
 
+        public bool IsRecording()
+        {
+            return m_Recording && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
+        }
+
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
+            m_AttachProfilerUI.OnProfilerTargetChanged = ClearFramesCallback;
             m_ProfilerWindows.Add(this);
-
+            EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
             Initialize();
         }
@@ -513,6 +522,7 @@ namespace UnityEditor
         {
             m_ProfilerWindows.Remove(this);
             m_UISystemProfiler.CurrentAreaChanged(ProfilerArea.AreaCount);
+            EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged -= Initialize;
         }
 
@@ -528,6 +538,20 @@ namespace UnityEditor
             ProfilerDriver.enabled = m_Recording;
 
             m_SelectedMemRecordMode = ProfilerDriver.memoryRecordMode;
+        }
+
+        void OnPlaymodeStateChanged(PlayModeStateChange stateChange)
+        {
+            if (stateChange == PlayModeStateChange.EnteredPlayMode)
+            {
+                ClearFramesCallback();
+            }
+        }
+
+        void ClearFramesCallback()
+        {
+            if (m_ClearOnPlay)
+                Clear();
         }
 
         void OnDestroy()
@@ -677,41 +701,19 @@ namespace UnityEditor
 
         void DrawCPUTimelineViewToolbar(ProfilerProperty property)
         {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUILayout.BeginHorizontal();
 
+            var sidebarWidth = Chart.kSideWidth - 1;
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.Width(sidebarWidth));
             DrawCPUorGPUCommonToolbar(property, true);
-            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
 
-            // Memory record
-            Styles.memRecord.text = "Allocation Callstacks";
-            if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
-                Styles.memRecord.text += " [" + s_CheckMark + "]";
-
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.memRecord, EditorStyles.toolbarDropDown, GUILayout.Width(170));
-            if (EditorGUI.DropdownButton(popupRect, Styles.memRecord, FocusType.Passive, EditorStyles.toolbarDropDown))
-            {
-                string[] names = new string[]
-                {
-                    "None",
-                    "Managed Allocations"
-                };
-                if (Unsupported.IsDeveloperBuild())
-                {
-                    names = new string[]
-                    {
-                        "None",
-                        "Managed Allocations",
-                        "All Allocations (fast)",
-                        "All Allocations (full)"
-                    };
-                }
-
-                var enabled = new bool[names.Length];
-                for (int c = 0; c < names.Length; ++c)
-                    enabled[c] = true;
-                var selected = new int[] { (int)m_SelectedMemRecordMode };
-                EditorUtility.DisplayCustomMenu(popupRect, names, enabled, selected, MemRecordModeClick, null);
-            }
+            var height = EditorStyles.toolbar.CalcHeight(GUIContent.none, 0f);
+            var timeRulerRect = EditorGUILayout.GetControlRect(false, height, GUIStyle.none, GUILayout.ExpandWidth(true));
+            var iter = new ProfilerFrameDataIterator();
+            iter.SetRoot(GetActiveVisibleFrameIndex(), 0);
+            var frameTime = iter.frameTimeMS;
+            m_CPUTimelineGUI.DoTimeRulerGUI(timeRulerRect, frameTime);
 
             EditorGUILayout.EndHorizontal();
 
@@ -729,22 +731,10 @@ namespace UnityEditor
                 m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, k_GPUProfilerViewTypeNames, k_GPUProfilerViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
             }
 
-            GUILayout.FlexibleSpace();
-
-            GUILayout.Label(string.Format("CPU:{0}ms   GPU:{1}ms", property.frameTime, property.frameGpuTime), EditorStyles.miniLabel);
-
-            if (hasTimeline)
+            if (!hasTimeline || m_ViewType != ProfilerViewType.Timeline)
             {
-                GUI.enabled = true;
-
-                if (ProfilerInstrumentationPopup.InstrumentationEnabled)
-                {
-                    if (GUILayout.Button(Styles.profilerInstrumentation, EditorStyles.toolbarDropDown))
-                    {
-                        Rect rect = GUILayoutUtility.topLevel.GetLast();
-                        ProfilerInstrumentationPopup.Show(rect);
-                    }
-                }
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(string.Format("CPU:{0}ms   GPU:{1}ms", property.frameTime, property.frameGpuTime), EditorStyles.miniLabel);
             }
         }
 
@@ -1519,7 +1509,12 @@ namespace UnityEditor
             // Engine attach
             m_AttachProfilerUI.OnGUILayout(this);
 
+            // Allocation callstacks
+            AllocationCallstacksToolbarItem();
+
             GUILayout.FlexibleSpace();
+
+            SetClearOnPlay(GUILayout.Toggle(GetClearOnPlay(), Styles.clearOnPlay, EditorStyles.toolbarButton));
 
             // Clear
             if (GUILayout.Button(Styles.clearData, EditorStyles.toolbarButton))
@@ -1543,6 +1538,40 @@ namespace UnityEditor
             FrameNavigationControls();
 
             GUILayout.EndHorizontal();
+        }
+
+        void AllocationCallstacksToolbarItem()
+        {
+            // Memory record
+            Styles.memRecord.text = "Allocation Callstacks";
+            if (m_SelectedMemRecordMode != ProfilerMemoryRecordMode.None)
+                Styles.memRecord.text += " [" + s_CheckMark + "]";
+
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.memRecord, EditorStyles.toolbarDropDown, GUILayout.Width(130));
+            if (EditorGUI.DropdownButton(popupRect, Styles.memRecord, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                string[] names = new string[]
+                {
+                    "None",
+                    "Managed Allocations"
+                };
+                if (Unsupported.IsDeveloperBuild())
+                {
+                    names = new string[]
+                    {
+                        "None",
+                        "Managed Allocations",
+                        "All Allocations (fast)",
+                        "All Allocations (full)"
+                    };
+                }
+
+                var enabled = new bool[names.Length];
+                for (int c = 0; c < names.Length; ++c)
+                    enabled[c] = true;
+                var selected = new int[] { (int)m_SelectedMemRecordMode };
+                EditorUtility.DisplayCustomMenu(popupRect, names, enabled, selected, MemRecordModeClick, null);
+            }
         }
 
         void Clear()
@@ -1720,6 +1749,16 @@ namespace UnityEditor
             GUILayout.EndVertical();
 
             SplitterGUILayout.EndVerticalSplit();
+        }
+
+        public void SetClearOnPlay(bool enabled)
+        {
+            m_ClearOnPlay = enabled;
+        }
+
+        public bool GetClearOnPlay()
+        {
+            return m_ClearOnPlay;
         }
     }
 }

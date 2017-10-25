@@ -23,7 +23,7 @@ namespace UnityEngine
 
         public Vector3 center { get { return new Vector3(x + m_Size.x / 2f, y + m_Size.y / 2f, z + m_Size.z / 2f); } }
         public Vector3Int min { get { return new Vector3Int(xMin, yMin, zMin); } set { xMin = value.x; yMin = value.y; zMin = value.z; } }
-        public Vector3Int max { get { return new Vector3Int(xMax, yMax, zMax); } set { xMax = value.x; yMax = value.y; zMin = value.z; } }
+        public Vector3Int max { get { return new Vector3Int(xMax, yMax, zMax); } set { xMax = value.x; yMax = value.y; zMax = value.z; } }
 
         public int xMin { get { return Math.Min(m_Position.x, m_Position.x + m_Size.x); } set { int oldxmax = xMax; m_Position.x = value; m_Size.x = oldxmax - m_Position.x; } }
         public int yMin { get { return Math.Min(m_Position.y, m_Position.y + m_Size.y); } set { int oldymax = yMax; m_Position.y = value; m_Size.y = oldymax - m_Position.y; } }
@@ -50,7 +50,7 @@ namespace UnityEngine
         public void SetMinMax(Vector3Int minPosition, Vector3Int maxPosition)
         {
             min = minPosition;
-            max = maxPosition - minPosition;
+            max = maxPosition;
         }
 
         public void ClampToBounds(BoundsInt bounds)

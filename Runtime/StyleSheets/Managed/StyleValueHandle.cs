@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.StyleSheets
 {
     [Serializable]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct StyleValueHandle
     {
         [SerializeField]
@@ -26,6 +28,7 @@ namespace UnityEngine.StyleSheets
 
         // Which index to read from in the value array for the corresponding type
         [SerializeField]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int valueIndex;
 
         internal StyleValueHandle(int valueIndex, StyleValueType valueType)

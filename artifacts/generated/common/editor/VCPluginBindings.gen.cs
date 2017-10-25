@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.VersionControl
 {
+[UsedByNativeCode]
 public sealed partial class ConfigField
 {
     
@@ -71,6 +72,7 @@ public sealed partial class ConfigField
 
 }
 
+[UsedByNativeCode]
 public sealed partial class Plugin
 {
     

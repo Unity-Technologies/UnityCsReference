@@ -8,6 +8,7 @@ using System.Collections.Generic;
 namespace UnityEngine.Experimental.UIElements
 {
     // value that determines if a event handler stops propagation of events or allows it to continue.
+    // TODO: [Obsolete("Call EventBase.StopPropagation() instead of using EventPropagation.Stop.")]
     public enum  EventPropagation
     {
         // continue event propagation after this handler
@@ -53,57 +54,14 @@ namespace UnityEngine.Experimental.UIElements
 
     public interface IEventDispatcher
     {
-        IEventHandler capture { get; }
-
-        // used when the capture is done receiving events
-        void ReleaseCapture(IEventHandler handler);
-
-        // removed a capture without it being done (will invoke OnLostCapture())
-        void RemoveCapture();
-
-        // use to set a capture. if any capture is set, it will be removed
-        void TakeCapture(IEventHandler handler);
-
         void DispatchEvent(EventBase evt, IPanel panel);
     }
 
     internal class EventDispatcher : IEventDispatcher
     {
-        // 0. global capture
-        public IEventHandler capture { get; set; }
-
-        public void ReleaseCapture(IEventHandler handler)
-        {
-            Debug.Assert(handler == capture, "Element releasing capture does not have capture");
-            capture = null;
-        }
-
-        public void RemoveCapture()
-        {
-            if (capture != null)
-            {
-                capture.OnLostCapture();
-            }
-            capture = null;
-        }
-
-        public void TakeCapture(IEventHandler handler)
-        {
-            if (capture == handler)
-                return;
-            if (GUIUtility.hotControl != 0)
-            {
-                Debug.Log("Should not be capturing when there is a hotcontrol");
-                return;
-            }
-            // TODO: assign a reserved control id to hotControl so that repaint events in OnGUI() have their hotcontrol check behave normally
-            RemoveCapture();
-            capture = handler;
-        }
-
         VisualElement m_TopElementUnderMouse;
 
-        void DispatchMouseEnterMouseLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
+        void DispatchMouseEnterMouseLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, Event triggerEvent)
         {
             if (previousTopElementUnderMouse == currentTopElementUnderMouse)
             {
@@ -137,10 +95,11 @@ namespace UnityEngine.Experimental.UIElements
 
             while (prevDepth > currDepth)
             {
-                var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent);
-                leaveEvent.target = p;
-                DispatchEvent(leaveEvent, p.panel);
-                MouseLeaveEvent.ReleasePooled(leaveEvent);
+                using (var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent))
+                {
+                    leaveEvent.target = p;
+                    DispatchEvent(leaveEvent, p.panel);
+                }
 
                 prevDepth--;
                 p = p.shadow.parent;
@@ -161,10 +120,11 @@ namespace UnityEngine.Experimental.UIElements
             // Now p and c are at the same depth. Go up the tree until p == c.
             while (p != c)
             {
-                var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent);
-                leaveEvent.target = p;
-                DispatchEvent(leaveEvent, p.panel);
-                MouseLeaveEvent.ReleasePooled(leaveEvent);
+                using (var leaveEvent = MouseLeaveEvent.GetPooled(triggerEvent))
+                {
+                    leaveEvent.target = p;
+                    DispatchEvent(leaveEvent, p.panel);
+                }
 
                 enteringElements.Add(c);
 
@@ -174,14 +134,15 @@ namespace UnityEngine.Experimental.UIElements
 
             for (var i = enteringElements.Count - 1; i >= 0; i--)
             {
-                var enterEvent = MouseEnterEvent.GetPooled(triggerEvent);
-                enterEvent.target = enteringElements[i];
-                DispatchEvent(enterEvent, enteringElements[i].panel);
-                MouseEnterEvent.ReleasePooled(enterEvent);
+                using (var enterEvent = MouseEnterEvent.GetPooled(triggerEvent))
+                {
+                    enterEvent.target = enteringElements[i];
+                    DispatchEvent(enterEvent, enteringElements[i].panel);
+                }
             }
         }
 
-        void DispatchMouseOverMouseOut(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
+        void DispatchMouseOverMouseOut(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, Event triggerEvent)
         {
             if (previousTopElementUnderMouse == currentTopElementUnderMouse)
             {
@@ -191,19 +152,21 @@ namespace UnityEngine.Experimental.UIElements
             // Send MouseOut event for element no longer under the mouse.
             if (previousTopElementUnderMouse != null)
             {
-                var outEvent = MouseOutEvent.GetPooled(triggerEvent);
-                outEvent.target = previousTopElementUnderMouse;
-                DispatchEvent(outEvent, previousTopElementUnderMouse.panel);
-                MouseOutEvent.ReleasePooled(outEvent);
+                using (var outEvent = MouseOutEvent.GetPooled(triggerEvent))
+                {
+                    outEvent.target = previousTopElementUnderMouse;
+                    DispatchEvent(outEvent, previousTopElementUnderMouse.panel);
+                }
             }
 
             // Send MouseOver event for element now under the mouse
             if (currentTopElementUnderMouse != null)
             {
-                var overEvent = MouseOverEvent.GetPooled(triggerEvent);
-                overEvent.target = currentTopElementUnderMouse;
-                DispatchEvent(overEvent, currentTopElementUnderMouse.panel);
-                MouseOverEvent.ReleasePooled(overEvent);
+                using (var overEvent = MouseOverEvent.GetPooled(triggerEvent))
+                {
+                    overEvent.target = currentTopElementUnderMouse;
+                    DispatchEvent(overEvent, currentTopElementUnderMouse.panel);
+                }
             }
         }
 
@@ -215,9 +178,6 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            bool invokedHandleEvent = false;
-            VisualElement captureVE = capture as VisualElement;
-
             if (panel != null && panel.panelDebug != null && panel.panelDebug.enabled && panel.panelDebug.interceptEvents != null)
                 if (panel.panelDebug.interceptEvents(e))
                 {
@@ -225,17 +185,21 @@ namespace UnityEngine.Experimental.UIElements
                     return;
                 }
 
-            if (captureVE != null && captureVE.panel == null)
-            {
-                Debug.Log(String.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", capture, e != null ? e.type.ToString() : "null"));
-                RemoveCapture();
-                captureVE = null;
-            }
+            bool invokedHandleEvent = false;
+            VisualElement captureVE = null;
 
             // Send all IMGUI events (for backward compatibility) and MouseEvents (because thats what we want to do in the new system)
             // to the capture, if there is one.
-            if ((evt is IMouseEvent || e != null) && capture != null)
+            if ((evt is IMouseEvent || e != null) && MouseCaptureController.mouseCapture != null)
             {
+                captureVE = MouseCaptureController.mouseCapture as VisualElement;
+                if (captureVE != null && captureVE.panel == null)
+                {
+                    Debug.Log(String.Format("Capture has no panel, forcing removal (capture={0} eventType={1})", MouseCaptureController.mouseCapture, e != null ? e.type.ToString() : "null"));
+                    MouseCaptureController.ReleaseMouseCapture();
+                    captureVE = null;
+                }
+
                 if (panel != null)
                 {
                     if (captureVE != null && captureVE.panel.contextType != panel.contextType)
@@ -246,10 +210,10 @@ namespace UnityEngine.Experimental.UIElements
 
                 invokedHandleEvent = true;
                 evt.dispatch = true;
-                evt.target = capture;
-                evt.currentTarget = capture;
+                evt.target = MouseCaptureController.mouseCapture;
+                evt.currentTarget = MouseCaptureController.mouseCapture;
                 evt.propagationPhase = PropagationPhase.AtTarget;
-                capture.HandleEvent(evt);
+                MouseCaptureController.mouseCapture.HandleEvent(evt);
                 evt.propagationPhase = PropagationPhase.None;
                 evt.currentTarget = null;
                 evt.dispatch = false;
@@ -257,7 +221,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (!evt.isPropagationStopped)
             {
-                if (evt is IKeyboardEvent)
+                if (evt is IKeyboardEvent && panel != null)
                 {
                     if (panel.focusController.focusedElement != null)
                     {
@@ -290,7 +254,6 @@ namespace UnityEngine.Experimental.UIElements
                 else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId() ||
                          evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
                 {
-                    // Need to send to all parents of the event's target as well.
                     Debug.Assert(evt.target != null);
                     invokedHandleEvent = true;
                     PropagateEvent(evt);
@@ -298,8 +261,6 @@ namespace UnityEngine.Experimental.UIElements
                 else if (evt is IMouseEvent || (
                              e != null && (
                                  e.type == EventType.ContextClick ||
-                                 e.type == EventType.MouseEnterWindow ||
-                                 e.type == EventType.MouseLeaveWindow ||
                                  e.type == EventType.DragUpdated ||
                                  e.type == EventType.DragPerform ||
                                  e.type == EventType.DragExited
@@ -313,16 +274,16 @@ namespace UnityEngine.Experimental.UIElements
                     // this is a problem in itself but it could leave some elements as "hover"
                     VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
 
-                    if (e != null && e.type == EventType.MouseLeaveWindow)
+                    if (evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId())
                     {
                         m_TopElementUnderMouse = null;
-                        DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
-                        DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
+                        DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
+                        DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
                     }
                     // update element under mouse and fire necessary events
                     else if (evt is IMouseEvent || e != null)
                     {
-                        if (evt.target == null)
+                        if (evt.target == null && panel != null)
                         {
                             if (evt is IMouseEvent)
                             {
@@ -342,14 +303,14 @@ namespace UnityEngine.Experimental.UIElements
                             PropagateEvent(evt);
                         }
 
-                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId())
+                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() || e.type == EventType.DragUpdated || evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId())
                         {
-                            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
-                            DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, evt as IMouseEvent);
+                            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
+                            DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
                         }
                     }
                 }
-                else if (e != null && (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand))
+                else if (panel != null && e != null && (e.type == EventType.ExecuteCommand || e.type == EventType.ValidateCommand))
                 {
                     IMGUIContainer imguiContainer = panel.focusController.focusedElement as IMGUIContainer;
 
@@ -368,17 +329,25 @@ namespace UnityEngine.Experimental.UIElements
                         evt.target = panel.focusController.focusedElement;
                         PropagateEvent(evt);
                     }
+                    else if (panel != null)
+                    {
+                        invokedHandleEvent = true;
+                        PropagateToIMGUIContainer(panel.visualTree, evt, captureVE);
+                    }
                 }
-                else if (evt is IPropagatableEvent)
+                else if (evt is IPropagatableEvent ||
+                         evt is IFocusEvent ||
+                         evt is IChangeEvent ||
+                         evt.GetEventTypeId() == PostLayoutEvent.TypeId() ||
+                         evt.GetEventTypeId() == InputEvent.TypeId())
                 {
-                    // Need to send to all parents of the event's target as well.
                     Debug.Assert(evt.target != null);
                     invokedHandleEvent = true;
                     PropagateEvent(evt);
                 }
             }
 
-            if (!evt.isPropagationStopped && e != null)
+            if (!evt.isPropagationStopped && e != null && panel != null)
             {
                 if (!invokedHandleEvent || e != null && (
                         e.type == EventType.MouseEnterWindow ||
@@ -390,7 +359,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            if (evt.target == null)
+            if (evt.target == null && panel != null)
             {
                 evt.target = panel.visualTree;
             }

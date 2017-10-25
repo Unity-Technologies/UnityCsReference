@@ -2015,6 +2015,7 @@ namespace UnityEditor
             {
                 m_AvatarPreview = new AvatarPreview(animator, m_BlendTree);
                 m_AvatarPreview.OnAvatarChangeFunc = OnPreviewAvatarChanged;
+                m_AvatarPreview.ResetPreviewFocus();
                 m_PrevIKOnFeet = m_AvatarPreview.IKOnFeet;
             }
 

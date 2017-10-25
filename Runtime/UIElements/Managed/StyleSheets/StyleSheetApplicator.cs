@@ -10,6 +10,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 {
     internal static class StyleSheetApplicator
     {
+        // Strategy to create default cursor must be provided in the context of Editor or Runtime
+        internal delegate CursorStyle CreateDefaultCursorStyleFunction(StyleSheet sheet, StyleValueHandle handle);
+        internal static CreateDefaultCursorStyleFunction createDefaultCursorStyleFunc = null;
+
         static void Apply<T>(T val, int specificity, ref StyleValue<T> property)
         {
             property.Apply(new StyleValue<T>(val, specificity), StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity);
@@ -48,6 +52,36 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         {
             var value = sheet.ReadColor(handles[0]);
             Apply(value, specificity, ref property);
+        }
+
+        public static void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleValue<CursorStyle> property)
+        {
+            var handle = handles[0];
+            bool isCustom = handle.valueType == StyleValueType.ResourcePath;
+            if (isCustom)
+            {
+                string texturePath = sheet.ReadResourcePath(handles[0]);
+
+                Texture2D tex = Panel.loadResourceFunc(texturePath, typeof(Texture2D)) as Texture2D;
+                if (tex != null)
+                {
+                    Vector2 hotspot = Vector2.zero;
+                    sheet.TryReadFloat(handles, 1, out hotspot.x);
+                    sheet.TryReadFloat(handles, 2, out hotspot.y);
+
+                    CursorStyle cursor = new CursorStyle() { texture = tex, hotspot = hotspot};
+                    Apply(cursor, specificity, ref property);
+                }
+            }
+            else
+            {
+                // Default cursor
+                if (createDefaultCursorStyleFunc != null)
+                {
+                    CursorStyle cursor = createDefaultCursorStyleFunc(sheet, handle);
+                    Apply(cursor, specificity, ref property);
+                }
+            }
         }
 
         public static void ApplyResource<T>(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleValue<T> property) where T : Object

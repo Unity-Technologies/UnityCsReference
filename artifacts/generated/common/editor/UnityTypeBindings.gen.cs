@@ -26,6 +26,7 @@ internal sealed partial class UnityType
         public uint baseClassIndex;
         public string className;
         public string classNamespace;
+        public string module;
         public int persistentTypeID;
         public uint flags;
     }

@@ -126,6 +126,23 @@ namespace UnityEditor
                     {
                         m_State.platformCompatibility[i] = ToggleWithMixedValue(platforms[i].DisplayName, m_State.platformCompatibility[i]);
                     }
+
+                    EditorGUILayout.Space();
+
+                    GUILayout.BeginHorizontal();
+
+                    if (GUILayout.Button("Select all"))
+                    {
+                        SetPlatformCompatibility(m_State, MixedBool.False);
+                    }
+
+                    if (GUILayout.Button("Deselect all"))
+                    {
+                        SetPlatformCompatibility(m_State, MixedBool.True);
+                    }
+
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
                 }
 
                 EditorGUILayout.EndVertical();
@@ -211,6 +228,14 @@ namespace UnityEditor
 
             for (int i = 0; i < platforms.Length; ++i)
                 state.platformCompatibility[i] = InverseCompability(state.platformCompatibility[i]);
+        }
+
+        static void SetPlatformCompatibility(AssemblyDefintionState state, MixedBool compatibility)
+        {
+            var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+
+            for (int i = 0; i < platforms.Length; ++i)
+                state.platformCompatibility[i] = compatibility;
         }
 
         static MixedBool InverseCompability(MixedBool compatibility)

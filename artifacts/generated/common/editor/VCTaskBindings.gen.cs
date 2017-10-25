@@ -36,6 +36,7 @@ public enum SubmitResult
     UnaddedFiles = 8,
 }
 
+[UsedByNativeCode]
 public sealed partial class Task
 {
             #pragma warning disable 169

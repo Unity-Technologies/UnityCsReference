@@ -21,7 +21,7 @@ namespace UnityEditor
         [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
         extern private bool GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(string buildTargetGroup, string buildTarget);
 
-        private static bool IsCompatible(PluginImporter imp, string buildTarget)
+        internal static bool IsCompatible(PluginImporter imp, string buildTarget)
         {
             if (string.IsNullOrEmpty(imp.assetPath))
                 return false;

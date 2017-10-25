@@ -14,8 +14,7 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal class MicrosoftCSharpCompiler : ScriptCompilerBase
     {
-        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater)
-            : base(island)
+        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
 
@@ -48,14 +47,10 @@ namespace UnityEditor.Scripting.Compilers
 
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
                 {
-                    // Assemblies compiled against .NET 4.6 in Visual Studio might reference these 5 assemblies.
-                    // In mono class libraries, they have no type definitions, and just forward all types to mscorlib
+                    // Assemblies compiled against .NET 4.6 in Visual Studio might reference facade DLLs. Therefore we
+                    // need to reference them too, as otherwise compiler will complain about them being missing.
                     var facadesDirectory = Path.Combine(monoAssemblyDirectory, "Facades");
-                    classLibraries.Add(Path.Combine(facadesDirectory, "System.ObjectModel.dll"));
-                    classLibraries.Add(Path.Combine(facadesDirectory, "System.Runtime.dll"));
-                    classLibraries.Add(Path.Combine(facadesDirectory, "System.Runtime.InteropServices.WindowsRuntime.dll"));
-                    classLibraries.Add(Path.Combine(monoAssemblyDirectory, "System.Numerics.dll"));
-                    classLibraries.Add(Path.Combine(monoAssemblyDirectory, "System.Numerics.Vectors.dll"));
+                    classLibraries.AddRange(Directory.GetFiles(facadesDirectory, "*.dll"));
                 }
 
                 return classLibraries.ToArray();
@@ -118,6 +113,9 @@ namespace UnityEditor.Scripting.Compilers
             AddCustomResponseFileIfPresent(arguments, "csc.rsp");
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+
+            RunAPIUpdaterIfRequired(responseFile);
+
             var psi = new ProcessStartInfo() { Arguments = "\"" + csc + "\" " + argsPrefix + "@" + responseFile, FileName = coreRun, CreateNoWindow = true };
             var program = new Program(psi);
             program.Start();

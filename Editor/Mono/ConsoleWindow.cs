@@ -17,10 +17,13 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Console", useTypeNameAsIconName = true)]
     internal class ConsoleWindow : EditorWindow, IHasCustomMenu
     {
+        internal delegate void EntryDoubleClickedDelegate(LogEntry entry);
+
         //TODO: move this out of here
         internal class Constants
         {
             private static bool ms_Loaded;
+            private static int ms_logStyleLineCount;
             public static GUIStyle Box;
             public static GUIStyle Button;
             public static GUIStyle MiniButton;
@@ -54,7 +57,20 @@ namespace UnityEditor
             public static readonly string StopForAssertLabel = L10n.Tr("Stop for Assert");
             public static readonly string StopForErrorLabel = L10n.Tr("Stop for Error");
 
-            public static int LogStyleLineCount { get; set; }
+            public static int LogStyleLineCount
+            {
+                get { return ms_logStyleLineCount; }
+                set
+                {
+                    ms_logStyleLineCount = value;
+
+                    // If Constants hasn't been initialized yet we just skip this for now
+                    // and let Init() call this for us in a bit.
+                    if (!ms_Loaded)
+                        return;
+                    UpdateLogStyleFixedHeights();
+                }
+            }
 
             public static void Init()
             {
@@ -92,11 +108,9 @@ namespace UnityEditor
                 // If the console window isn't open OnEnable() won't trigger so it will end up with 0 lines,
                 // so we always make sure we read it up when we initialize here.
                 LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
-
-                UpdateLogStyleFixedHeights();
             }
 
-            public static void UpdateLogStyleFixedHeights()
+            private static void UpdateLogStyleFixedHeights()
             {
                 // Whenever we change the line height count or the styles are set we need to update the fixed height
                 // of the following GuiStyles so the entries do not get cropped incorrectly.
@@ -212,7 +226,7 @@ namespace UnityEditor
 
         ConsoleAttachProfilerUI m_AttachProfilerUI = new ConsoleAttachProfilerUI();
 
-        enum Mode
+        internal enum Mode
         {
             Error = 1 << 0,
             Assert = 1 << 1,
@@ -234,7 +248,8 @@ namespace UnityEditor
             DontExtractStacktrace = 1 << 18,
             ShouldClearOnPlay = 1 << 19,
             GraphCompileError = 1 << 20,
-            ScriptingAssertion = 1 << 21
+            ScriptingAssertion = 1 << 21,
+            VisualScriptingError = 1 << 22
         };
 
         enum ConsoleFlags
@@ -248,7 +263,8 @@ namespace UnityEditor
             Autoscroll = 1 << 6,
             LogLevelLog = 1 << 7,
             LogLevelWarning = 1 << 8,
-            LogLevelError = 1 << 9
+            LogLevelError = 1 << 9,
+            ShowTimestamp = 1 << 10,
         };
 
         static ConsoleWindow ms_ConsoleWindow = null;
@@ -755,21 +771,28 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
             menu.AddItem(new GUIContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
+            menu.AddItem(new GUIContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
+
             for (int i = 1; i <= 10; ++i)
             {
-                menu.AddItem(new GUIContent(string.Format("Log Entry/{0} Lines", i)), i == Constants.LogStyleLineCount, SetLogLineCount, i);
+                var lineString = i == 1 ? "Line" : "Lines";
+                menu.AddItem(new GUIContent(string.Format("Log Entry/{0} {1}", i, lineString)), i == Constants.LogStyleLineCount, SetLogLineCount, i);
             }
 
             AddStackTraceLoggingMenu(menu);
         }
 
+        private void SetTimestamp()
+        {
+            SetFlag(ConsoleFlags.ShowTimestamp, !HasFlag(ConsoleFlags.ShowTimestamp));
+        }
+
         private void SetLogLineCount(object obj)
         {
             int count = (int)obj;
-            Constants.LogStyleLineCount = count;
             EditorPrefs.SetInt("ConsoleWindowLogLineCount", count);
+            Constants.LogStyleLineCount = count;
 
-            Constants.UpdateLogStyleFixedHeights();
             UpdateListView();
         }
 
@@ -804,6 +827,14 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("Stack Trace Logging/All/" + stackTraceLogType), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
                     ToggleLogStackTracesForAll, stackTraceLogType);
             }
+        }
+
+        private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+
+        private static void SendEntryDoubleClicked(LogEntry entry)
+        {
+            if (ConsoleWindow.entryWithManagedCallbackDoubleClicked != null)
+                ConsoleWindow.entryWithManagedCallbackDoubleClicked(entry);
         }
     }
 }

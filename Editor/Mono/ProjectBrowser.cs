@@ -183,7 +183,7 @@ namespace UnityEditor
         {
             titleContent = GetLocalizedTitleContent();
             s_ProjectBrowsers.Add(this);
-            EditorApplication.projectWindowChanged += OnProjectChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.assetLabelsChanged += OnAssetLabelsChanged;
@@ -206,7 +206,7 @@ namespace UnityEditor
         {
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.projectWindowChanged -= OnProjectChanged;
+            EditorApplication.projectChanged -= OnProjectChanged;
             EditorApplication.assetLabelsChanged -= OnAssetLabelsChanged;
             EditorApplication.assetBundleNameChanged -= OnAssetBundleNameChanged;
             AssemblyReloadEvents.afterAssemblyReload -= OnAfterAssemblyReload;
@@ -1079,7 +1079,7 @@ namespace UnityEditor
             {
                 // If searching we are not showing the asset tree but we set selection anyways to ensure its
                 // setup when clearing search
-                bool revealSelectionAndFrameLast = !m_IsLocked && ShouldFrameAsset(instanceID);
+                bool revealSelectionAndFrameLast = !m_IsLocked && ShouldFrameAsset(instanceID) && Selection.instanceIDs.Length <= 1;
                 m_AssetTree.SetSelection(Selection.instanceIDs, revealSelectionAndFrameLast);
             }
             else if (m_ViewMode == ViewMode.TwoColumns)
@@ -1962,7 +1962,7 @@ namespace UnityEditor
         {
             bool showPackagesInAssetsFolder = EditorPrefs.GetBool("ShowPackagesFolder", false);
             EditorPrefs.SetBool("ShowPackagesFolder", !showPackagesInAssetsFolder);
-            EditorApplication.projectWindowChanged();
+            OnProjectChanged();
         }
 
 

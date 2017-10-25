@@ -131,6 +131,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             m_Overlay = GUILayout.Toggle(m_Overlay, Styles.overlayContent, EditorStyles.toolbarButton);
 
+            bool uxmlLiveReloadIsEnabled = RetainedMode.UxmlLiveReloadIsEnabled;
+            bool newUxmlLiveReloadIsEnabled = GUILayout.Toggle(uxmlLiveReloadIsEnabled, Styles.liveReloadContent, EditorStyles.toolbarButton);
+            if (newUxmlLiveReloadIsEnabled != uxmlLiveReloadIsEnabled)
+                RetainedMode.UxmlLiveReloadIsEnabled = newUxmlLiveReloadIsEnabled;
+
             EditorGUILayout.EndHorizontal();
 
             if (refresh)
@@ -295,8 +300,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 return;
             s_MatchedRulesExtractor.selectedElementRules.Clear();
             s_MatchedRulesExtractor.selectedElementStylesheets.Clear();
-            s_MatchedRulesExtractor.target = m_SelectedElement;
-            s_MatchedRulesExtractor.Traverse(m_SelectedElement.elementPanel.visualTree, 0, s_MatchedRulesExtractor.ruleMatchers);
+            s_MatchedRulesExtractor.SetupTarget(m_SelectedElement);
+            s_MatchedRulesExtractor.TraverseRecursive(m_SelectedElement.elementPanel.visualTree, 0, s_MatchedRulesExtractor.ruleMatchers);
             s_MatchedRulesExtractor.ruleMatchers.Clear();
         }
 
@@ -311,7 +316,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
             m_SelectedElement.text = EditorGUILayout.TextField("Text", m_SelectedElement.text);
-            m_SelectedElement.usePixelCaching = EditorGUILayout.Toggle("Use Pixel Caching", m_SelectedElement.usePixelCaching);
+            m_SelectedElement.clippingOptions = (VisualElement.ClippingOptions)EditorGUILayout.EnumPopup("Clipping Option", m_SelectedElement.clippingOptions);
             m_SelectedElement.visible = EditorGUILayout.Toggle("Visible", m_SelectedElement.visible);
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
@@ -502,10 +507,10 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                         switch (sel.previousRelationship)
                         {
                             case StyleSelectorRelationship.Child:
-                                builder.Append(" ");
+                                builder.Append(" > ");
                                 break;
                             case StyleSelectorRelationship.Descendent:
-                                builder.Append(" > ");
+                                builder.Append(" ");
                                 break;
                         }
                         for (int k = 0; k < sel.parts.Length; k++)
@@ -693,6 +698,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             public static readonly GUIContent pickPanelContent = new GUIContent("Pick Panel");
             public static readonly GUIContent pickElementInPanelContent = new GUIContent("Pick Element in panel");
             public static readonly GUIContent overlayContent = new GUIContent("Overlay");
+            public static readonly GUIContent liveReloadContent = new GUIContent("UXML Live Reload");
             public static readonly GUIContent uxmlContent = new GUIContent("UXML Dump");
             public static readonly GUIContent stylesheetsContent = new GUIContent("Stylesheets");
             public static readonly GUIContent selectorsContent = new GUIContent("Matching Selectors");
@@ -768,37 +774,35 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
         }
 
-        public VisualElement target
+        private void Setup(VisualElement cursor)
         {
-            get { return m_Target; }
-            set
+            m_Hierarchy.Add(cursor);
+
+            if (cursor.shadow.parent != null)
+                Setup(cursor.shadow.parent);
+
+            if (cursor.styleSheets != null)
             {
-                m_Target = value;
-                m_Hierarchy.Clear();
-                m_Hierarchy.Add(value);
-                VisualElement cursor = value;
-
-                while (cursor != null)
+                foreach (StyleSheet sheet in cursor.styleSheets)
                 {
-                    if (cursor.styleSheets != null)
-                    {
-                        foreach (StyleSheet sheet in cursor.styleSheets)
-                        {
-                            selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
-                            PushStyleSheet(sheet);
-                        }
-                    }
-
-                    m_Hierarchy.Add(cursor);
-                    cursor = cursor.shadow.parent;
+                    selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
+                    PushStyleSheet(sheet);
                 }
-                m_Index = m_Hierarchy.Count - 1;
             }
+        }
+
+        public void SetupTarget(VisualElement target)
+        {
+            m_Target = target;
+            m_Hierarchy.Clear();
+            Setup(target);
+            m_Index = m_Hierarchy.Count - 1;
         }
 
         private void PushStyleSheet(StyleSheet styleSheetData)
         {
             StyleComplexSelector[] complexSelectors = styleSheetData.complexSelectors;
+
             // To avoid excessive re-allocations, just resize the list right now
             int futureSize = ruleMatchers.Count + complexSelectors.Length;
             ruleMatchers.Capacity = Math.Max(ruleMatchers.Capacity, futureSize);
@@ -806,13 +810,12 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             for (int i = 0; i < complexSelectors.Length; i++)
             {
                 StyleComplexSelector complexSelector = complexSelectors[i];
+
                 // For every complex selector, push a matcher for first sub selector
                 ruleMatchers.Add(new RuleMatcher()
                 {
                     sheet = styleSheetData,
                     complexSelector = complexSelector,
-                    simpleSelectorIndex = 0,
-                    depth = Int32.MaxValue
                 });
             }
         }
@@ -824,7 +827,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
         {
-            if (element == target)
+            if (element == m_Target)
                 selectedElementRules.Add(new MatchedRule(matcher));
             return false;
         }
@@ -833,7 +836,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             m_Index--;
             if (m_Index >= 0)
-                Traverse(m_Hierarchy[m_Index], depth + 1, allRuleMatchers);
+                TraverseRecursive(m_Hierarchy[m_Index], depth + 1, allRuleMatchers);
         }
     }
 }

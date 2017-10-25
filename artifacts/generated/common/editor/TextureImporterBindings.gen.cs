@@ -244,6 +244,8 @@ public enum TextureImporterFormat
     
     Alpha8 = 1,
     
+    R8 = 63,
+    
     ARGB16 = 2,
     
     RGBA32 = 4,
@@ -379,6 +381,14 @@ public enum TextureImporterAlphaSource
     FromInput = 1,
     
     FromGrayScale = 2,
+}
+
+public enum TextureImporterSingleChannelComponent
+{
+    
+    Alpha = 0,
+    
+    Red = 1,
 }
 
 public enum TextureImporterType
@@ -1176,6 +1186,10 @@ public sealed partial class TextureImporterSettings
     
     
     [SerializeField]
+            int m_SingleChannelComponent;
+    
+    
+    [SerializeField]
             int     m_FilterMode;
     [SerializeField]
             int     m_Aniso;
@@ -1302,6 +1316,11 @@ public sealed partial class TextureImporterSettings
         {
             get {return (TextureImporterAlphaSource)m_AlphaSource; }
             set { m_AlphaSource = (int)value; }
+        }
+            public TextureImporterSingleChannelComponent singleChannelComponent
+        {
+            get {return (TextureImporterSingleChannelComponent)m_SingleChannelComponent; }
+            set { m_SingleChannelComponent = (int)value; }
         }
             public bool readable
         {

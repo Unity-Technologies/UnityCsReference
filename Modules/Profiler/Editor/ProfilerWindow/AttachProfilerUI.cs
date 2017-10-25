@@ -32,11 +32,24 @@ namespace UnityEditor
         // keep this constant in sync with PLAYER_DIRECT_URL_CONNECT_GUID in GeneralConnection.h
         const int PLAYER_DIRECT_URL_CONNECT_GUID = 0xFEEE;
 
+        public delegate void ProfilerTargetSelectionChangedDelegate();
+        public ProfilerTargetSelectionChangedDelegate OnProfilerTargetChanged
+        {
+            private get;
+            set;
+        }
+
         protected void SelectProfilerClick(object userData, string[] options, int selected)
         {
             var profilers = (List<ProfilerChoise>)userData;
             if (selected < profilers.Count())
+            {
                 profilers[selected].ConnectTo();
+                if (OnProfilerTargetChanged != null)
+                {
+                    OnProfilerTargetChanged.Invoke();
+                }
+            }
         }
 
         public bool IsEditor()
@@ -88,7 +101,9 @@ namespace UnityEditor
                 Name = lastIP,
                 Enabled = true,
                 IsSelected = () => { return ProfilerDriver.connectedProfiler == PLAYER_DIRECT_IP_CONNECT_GUID; },
-                ConnectTo = () => { DirectIPConnect(lastIP); }
+                ConnectTo = () => {
+                        DirectIPConnect(lastIP);
+                    }
             });
         }
 

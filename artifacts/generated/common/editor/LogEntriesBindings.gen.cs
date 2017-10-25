@@ -11,6 +11,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -25,6 +26,7 @@ internal sealed partial class LogEntry
             public int mode;
             public int instanceID;
             public int identifier;
+    [Ignore]
             public int isWorldPlaying;
 }
 

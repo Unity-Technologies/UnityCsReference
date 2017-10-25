@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
@@ -18,7 +19,7 @@ namespace UnityEngine
             Internal_Create(this);
         }
 
-        [FreeFunction("MeshScripting::MeshFromInstaceId")] extern internal static Mesh FromInstanceID(int id);
+        [FreeFunction("MeshScripting::MeshFromInstanceId")] extern internal static Mesh FromInstanceID(int id);
 
 
         // triangles/indices
@@ -34,20 +35,20 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetBaseVertex", HasExplicitThis = true)]
         extern private UInt32 GetBaseVertexImpl(int submesh);
 
-        [FreeFunction(Name = "AllocExtractMeshTrianglesFromScript", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetTriangles", HasExplicitThis = true)]
         extern private int[] GetTrianglesImpl(int submesh, bool applyBaseVertex);
 
-        [FreeFunction(Name = "AllocExtractMeshIndicesFromScript", HasExplicitThis = true)]
+        [FreeFunction(Name = "MeshScripting::GetIndices", HasExplicitThis = true)]
         extern private int[] GetIndicesImpl(int submesh, bool applyBaseVertex);
 
         [FreeFunction(Name = "SetMeshIndicesFromScript", HasExplicitThis = true)]
         extern private void SetIndicesImpl(int submesh, MeshTopology topology, System.Array indices, int arraySize, bool calculateBounds, int baseVertex);
 
-        [FreeFunction(Name = "ExtractMeshTrianglesToArrayFromScript", HasExplicitThis = true)]
-        extern private void GetTrianglesNonAllocImpl(System.Array values, int submesh, bool applyBaseVertex);
+        [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray", HasExplicitThis = true)]
+        extern private void GetTrianglesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
 
-        [FreeFunction(Name = "ExtractMeshIndicesToArrayFromScript", HasExplicitThis = true)]
-        extern private void GetIndicesNonAllocImpl(System.Array values, int submesh, bool applyBaseVertex);
+        [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray", HasExplicitThis = true)]
+        extern private void GetIndicesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
 
         // component (channels) setters/getters helpers
 
@@ -107,26 +108,17 @@ namespace UnityEngine
 
         // skinning
 
-        [FreeFunction(Name = "MeshScripting::GetBoneWeightCount", HasExplicitThis = true)]
         extern private int GetBoneWeightCount();
-        extern public BoneWeight[] boneWeights
-        {
-            [FreeFunction(Name = "MeshScripting::AllocExtractBoneWeights", HasExplicitThis = true)] get;
-            [FreeFunction(Name = "MeshScripting::SetBoneWeights", HasExplicitThis = true)] set;
-        }
+        [NativeName("BoneWeightsFromScript")] extern public BoneWeight[] boneWeights { get; set; }
 
         extern private int GetBindposeCount();
-        extern public Matrix4x4[] bindposes
-        {
-            [FreeFunction(Name = "MeshScripting::AllocExtractBindPoses", HasExplicitThis = true)] get;
-            [FreeFunction(Name = "MeshScripting::SetBindPoses", HasExplicitThis = true)] set;
-        }
+        [NativeName("BindPosesFromScript")] extern public Matrix4x4[] bindposes { get; set; }
 
         [FreeFunction(Name = "MeshScripting::ExtractBoneWeightsIntoArray", HasExplicitThis = true)]
-        extern private void GetBoneWeightsNonAllocImpl(System.Array values);
+        extern private void GetBoneWeightsNonAllocImpl([Out] BoneWeight[] values);
 
         [FreeFunction(Name = "MeshScripting::ExtractBindPosesIntoArray", HasExplicitThis = true)]
-        extern private void GetBindposesNonAllocImpl(System.Array values);
+        extern private void GetBindposesNonAllocImpl([Out] Matrix4x4[] values);
 
         // random things
 
@@ -147,7 +139,7 @@ namespace UnityEngine
         [NativeMethod("RecalculateNormals")]    extern private void RecalculateNormalsImpl();
         [NativeMethod("RecalculateTangents")]   extern private void RecalculateTangentsImpl();
         [NativeMethod("MarkDynamic")]           extern private void MarkDynamicImpl();
-        [NativeMethod("UploadMeshData")]        extern private void UploadMeshDataImpl(bool markNoLogerReadable);
+        [NativeMethod("UploadMeshData")]        extern private void UploadMeshDataImpl(bool markNoLongerReadable);
 
         [FreeFunction(Name = "MeshScripting::GetPrimitiveType", HasExplicitThis = true)]
         extern private MeshTopology GetTopologyImpl(int submesh);

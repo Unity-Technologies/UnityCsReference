@@ -22,22 +22,37 @@ namespace UnityEditor.DeploymentTargets
             return extension;
         }
 
+        public static bool IsExtensionSupported(BuildTargetGroup targetGroup, BuildTarget buildTarget)
+        {
+            return ModuleManager.GetDeploymentTargetsExtension(targetGroup, buildTarget) != null;
+        }
+
         public static IDeploymentTargetInfo GetTargetInfo(BuildTargetGroup targetGroup, BuildTarget buildTarget, DeploymentTargetId targetId)
         {
             IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
             return extension.GetTargetInfo(targetId);
         }
 
-        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildReporting.BuildReport buildReport)
+        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildProperties buildProperties)
         {
             return info.GetSupportFlags().HasFlags(DeploymentTargetSupportFlags.Launch) &&
-                info.CheckBuild(buildReport).Passed();
+                info.CheckBuild(buildProperties).Passed();
+        }
+
+        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildReporting.BuildReport buildReport)
+        {
+            return SupportsLaunchBuild(info, BuildProperties.GetFromBuildReport(buildReport));
+        }
+
+        public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildTarget buildTarget, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
+        {
+            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
+            extension.LaunchBuildOnTarget(buildProperties, targetId, progressHandler);
         }
 
         public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildReport.buildTarget);
-            extension.LaunchBuildOnTarget(buildReport, targetId, progressHandler);
+            LaunchBuildOnTarget(targetGroup, buildReport.buildTarget, BuildProperties.GetFromBuildReport(buildReport), targetId, progressHandler);
         }
 
         public static List<DeploymentTargetIdAndStatus> GetKnownTargets(BuildTargetGroup targetGroup, BuildTarget buildTarget)
@@ -47,20 +62,25 @@ namespace UnityEditor.DeploymentTargets
         }
 
         // Launch a build on any target on a platform
-        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport)
+        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildTarget buildTarget, BuildProperties buildProperties)
         {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildReport.buildTarget);
+            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
             List<DeploymentTargetId> validTargetIds = new List<DeploymentTargetId>();
             List<DeploymentTargetIdAndStatus> knownTargets = extension.GetKnownTargets();
             foreach (var target in knownTargets)
             {
                 if (target.status == DeploymentTargetStatus.Ready)
                 {
-                    if (SupportsLaunchBuild(extension.GetTargetInfo(target.id), buildReport))
+                    if (SupportsLaunchBuild(extension.GetTargetInfo(target.id), buildProperties))
                         validTargetIds.Add(target.id);
                 }
             }
             return validTargetIds;
+        }
+
+        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport)
+        {
+            return FindValidTargetsForLaunchBuild(targetGroup, buildReport.buildTarget, BuildProperties.GetFromBuildReport(buildReport));
         }
     }
 }

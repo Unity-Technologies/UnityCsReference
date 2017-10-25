@@ -452,7 +452,9 @@ namespace UnityEditor
         public SceneView()
         {
             m_HierarchyType = HierarchyType.GameObjects;
-            // Note: we always render into a custom RT, so no need for depth buffer or AA on the window itself
+
+            // Note: Rendering for Scene view picking depends on the depth buffer of the window
+            depthBufferBits = 32;
         }
 
         internal void Awake()
@@ -1100,7 +1102,7 @@ namespace UnityEditor
                     // First pass: Draw objects which do not meet the search filter with grayscale image effect.
                     Handles.EnableCameraFx(m_Camera, true);
 
-                    Handles.SetCameraFilterMode(m_Camera, Handles.FilterMode.ShowRest);
+                    Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowRest);
 
                     float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
                     Handles.DrawCamera(cameraRect, m_Camera, m_RenderMode);
@@ -1108,7 +1110,7 @@ namespace UnityEditor
 
                     // Second pass: Draw aura for objects which do meet search filter, but are occluded.
                     Handles.EnableCameraFx(m_Camera, false);
-                    Handles.SetCameraFilterMode(m_Camera, Handles.FilterMode.ShowFiltered);
+                    Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
                     if (!s_AuraShader)
                         s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
                     m_Camera.SetReplacementShader(s_AuraShader, "");
@@ -1675,9 +1677,9 @@ namespace UnityEditor
             m_Camera.renderingPath = oldRenderingPath;
 
             if (UseSceneFiltering())
-                Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.ShowFiltered);
+                Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.ShowFiltered);
             else
-                Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.Off);
+                Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
 
             // Draw default scene manipulation tools (Move/Rotate/...)
             {
@@ -1708,8 +1710,8 @@ namespace UnityEditor
                 }
             }
 
-            Handles.SetCameraFilterMode(Camera.current, Handles.FilterMode.Off);
-            Handles.SetCameraFilterMode(m_Camera, Handles.FilterMode.Off);
+            Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
+            Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.Off);
 
             // Handle Dragging of stuff over scene view
             HandleDragging();
@@ -1976,7 +1978,7 @@ namespace UnityEditor
             }
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
-            ParticleSystemEditorUtils.editorRenderInSceneView = m_SceneViewState.showParticleSystems;
+            ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.showParticleSystems;
 
             ResetIfNaN();
 

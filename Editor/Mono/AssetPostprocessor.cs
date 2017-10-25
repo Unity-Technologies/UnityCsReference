@@ -190,6 +190,15 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        static void PreprocessAsset()
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPreprocessAsset", null);
+            }
+        }
+
+        [RequiredByNativeCode]
         static void PreprocessMesh(string pathName)
         {
             foreach (AssetPostprocessor inst in m_ImportProcessors)
@@ -267,6 +276,16 @@ namespace UnityEditor
             {
                 object[] args = { gameObject };
                 AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessSpeedTree", args);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessMaterial(Material material)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { material };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessMaterial", args);
             }
         }
 

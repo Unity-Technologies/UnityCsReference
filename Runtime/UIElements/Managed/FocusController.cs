@@ -37,7 +37,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void Blur()
+        public virtual void Blur()
         {
             if (focusController != null && focusController.focusedElement == this)
             {
@@ -124,30 +124,34 @@ namespace UnityEngine.Experimental.UIElements
 
         static void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
         {
-            FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction);
-            UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
-            FocusOutEvent.ReleasePooled(e);
+            using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction))
+            {
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            }
         }
 
         static void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
         {
-            BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction);
-            UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
-            BlurEvent.ReleasePooled(e);
+            using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction))
+            {
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            }
         }
 
         static void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction);
-            UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
-            FocusInEvent.ReleasePooled(e);
+            using (FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction))
+            {
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            }
         }
 
         static void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction);
-            UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
-            FocusEvent.ReleasePooled(e);
+            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction))
+            {
+                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+            }
         }
 
         internal void SwitchFocus(Focusable newFocusedElement)

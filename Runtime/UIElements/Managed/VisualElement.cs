@@ -80,10 +80,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return panel == null ? null : panel.focusController; }
         }
 
-        public bool usePixelCaching { get; set; }
-
-        internal bool forceVisible { get; set; }
-
         private RenderData m_RenderData;
         internal RenderData renderData
         {
@@ -196,6 +192,7 @@ namespace UnityEngine.Experimental.UIElements
                 styleAccess.height = value.height;
 
                 Dirty(ChangeType.Layout);
+                Dirty(ChangeType.Transform);
             }
         }
 
@@ -221,7 +218,7 @@ namespace UnityEngine.Experimental.UIElements
                         style.borderRightWidth,
                         style.borderBottomWidth);
 
-                return layout - spacing;
+                return rect - spacing;
             }
         }
 
@@ -231,8 +228,8 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var g = worldTransform;
-                var min = g.MultiplyPoint3x4(layout.min);
-                var max = g.MultiplyPoint3x4(layout.max);
+                var min = g.MultiplyPoint3x4(rect.min);
+                var max = g.MultiplyPoint3x4(rect.max);
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
@@ -248,27 +245,39 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal Rect rect
+        {
+            get
+            {
+                return new Rect(0.0f, 0.0f, layout.width, layout.height);
+            }
+        }
+
         public Matrix4x4 worldTransform
         {
             get
             {
                 if (IsDirty(ChangeType.Transform))
                 {
+                    var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
+                    if (shadow.parent != null)
                     {
-                        if (shadow.parent != null)
-                        {
-                            renderData.worldTransForm = shadow.parent.worldTransform * Matrix4x4.Translate(new Vector3(shadow.parent.layout.x, shadow.parent.layout.y, 0)) * transform.matrix;
-                        }
-                        else
-                        {
-                            renderData.worldTransForm = transform.matrix;
-                        }
-                        ClearDirty(ChangeType.Transform);
+                        renderData.worldTransForm = shadow.parent.worldTransform * offset * transform.matrix;
                     }
+                    else
+                    {
+                        renderData.worldTransForm = offset * transform.matrix;
+                    }
+                    ClearDirty(ChangeType.Transform);
                 }
                 return renderData.worldTransForm;
             }
         }
+
+        // which pseudo states would change the current VE styles if added
+        internal PseudoStates triggerPseudoMask;
+        // which pseudo states would change the current VE styles if removed
+        internal PseudoStates dependencyPseudoMask;
 
         private PseudoStates m_PseudoStates;
         internal PseudoStates pseudoStates
@@ -279,7 +288,12 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_PseudoStates != value)
                 {
                     m_PseudoStates = value;
-                    Dirty(ChangeType.Styles);
+
+                    if ((triggerPseudoMask & m_PseudoStates) != 0
+                        || (dependencyPseudoMask & ~m_PseudoStates) != 0)
+                    {
+                        Dirty(ChangeType.Styles);
+                    }
                 }
             }
         }
@@ -327,7 +341,7 @@ namespace UnityEngine.Experimental.UIElements
         // user-defined style object, if not set, is the same reference as m_SharedStyles
         internal VisualElementStylesData m_Style = VisualElementStylesData.none;
 
-        public virtual void OnStyleResolved(ICustomStyle style)
+        protected virtual void OnStyleResolved(ICustomStyle style)
         {
             // push all non inlined layout things up
             FinalizeLayout();
@@ -405,14 +419,18 @@ namespace UnityEngine.Experimental.UIElements
             cssNode = new CSSNode();
             cssNode.SetMeasureFunction(Measure);
             changesNeeded = ChangeType.All;
-            clipChildren = true;
+            clippingOptions = ClippingOptions.ClipContents;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            if (evt.GetEventTypeId() == MouseOverEvent.TypeId() || evt.GetEventTypeId() == MouseOutEvent.TypeId())
+            {
+                UpdateCursorStyle(evt.GetEventTypeId());
+            }
+            else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
             {
                 pseudoStates |= PseudoStates.Hover;
             }
@@ -449,20 +467,22 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panel != null)
             {
-                var e = DetachFromPanelEvent.GetPooled();
-                e.target = this;
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
-                DetachFromPanelEvent.ReleasePooled(e);
+                using (var e = DetachFromPanelEvent.GetPooled())
+                {
+                    e.target = this;
+                    UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                }
             }
 
             elementPanel = p;
 
             if (panel != null)
             {
-                var e = AttachToPanelEvent.GetPooled();
-                e.target = this;
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
-                AttachToPanelEvent.ReleasePooled(e);
+                using (var e = AttachToPanelEvent.GetPooled())
+                {
+                    e.target = this;
+                    UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                }
             }
 
             Dirty(ChangeType.Styles);
@@ -552,8 +572,14 @@ namespace UnityEngine.Experimental.UIElements
             if ((type & changesNeeded) == type)
                 return;
 
-            if ((type & ChangeType.Layout) > 0 && cssNode != null && cssNode.IsMeasureDefined)
-                cssNode.MarkDirty();
+            if ((type & ChangeType.Layout) > 0)
+            {
+                if (cssNode != null && cssNode.IsMeasureDefined)
+                {
+                    cssNode.MarkDirty();
+                }
+                type |= ChangeType.Repaint;
+            }
 
             PropagateToChildren(type);
 
@@ -566,6 +592,11 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public bool IsDirty(ChangeType type)
+        {
+            return (changesNeeded & type) == type;
+        }
+
+        public bool AnyDirty(ChangeType type)
         {
             return (changesNeeded & type) > 0;
         }
@@ -602,6 +633,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private bool m_Enabled;
 
+
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
         {
@@ -629,8 +661,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Enabled; }
         }
 
-        //TODO: Remove virtual once VisualContainer is merged with VisualElement
-        public virtual void SetEnabled(bool value)
+        public void SetEnabled(bool value)
         {
             if (m_Enabled != value)
             {
@@ -811,12 +842,12 @@ namespace UnityEngine.Experimental.UIElements
         // override to customize intersection between point and shape
         public virtual bool ContainsPoint(Vector2 localPoint)
         {
-            return layout.Contains(localPoint);
+            return rect.Contains(localPoint);
         }
 
         public virtual bool Overlaps(Rect rectangle)
         {
-            return layout.Overlaps(rectangle, true);
+            return rect.Overlaps(rectangle, true);
         }
 
         public enum MeasureMode
@@ -948,6 +979,7 @@ namespace UnityEngine.Experimental.UIElements
             cssNode.Wrap = (CSSWrap)style.flexWrap.value;
 
             Dirty(ChangeType.Layout);
+            Dirty(ChangeType.Transform);
         }
 
         internal event OnStylesResolved onStylesResolved;
@@ -1019,7 +1051,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override string ToString()
         {
-            return name + " " + layout + " world rect: " + worldBound;
+            return GetType().Name + " " + name + " " + layout + " world rect: " + worldBound;
         }
 
         // WARNING returning the HashSet means it could be modified, be careful
@@ -1074,6 +1106,21 @@ namespace UnityEngine.Experimental.UIElements
 
             return null;
         }
+
+        private void UpdateCursorStyle(long eventType)
+        {
+            if (elementPanel != null)
+            {
+                if (eventType == MouseOverEvent.TypeId())
+                {
+                    elementPanel.cursorManager.SetCursor(style.cursor.value);
+                }
+                else
+                {
+                    elementPanel.cursorManager.ResetCursor();
+                }
+            }
+        }
     }
 
     public static class VisualElementExtensions
@@ -1081,15 +1128,13 @@ namespace UnityEngine.Experimental.UIElements
         // transforms a point assumed in Panel space to the referential inside of the element bound (local)
         public static Vector2 WorldToLocal(this VisualElement ele, Vector2 p)
         {
-            var toLocal = ele.worldTransform.inverse.MultiplyPoint3x4(new Vector3(p.x, p.y, 0));
-            return new Vector2(toLocal.x - ele.layout.position.x, toLocal.y - ele.layout.position.y);
+            return ele.worldTransform.inverse.MultiplyPoint3x4((Vector3)p);
         }
 
         // transforms a point to Panel space referential
         public static Vector2 LocalToWorld(this VisualElement ele, Vector2 p)
         {
-            var toWorld = ele.worldTransform.MultiplyPoint3x4((Vector3)(p + ele.layout.position));
-            return new Vector2(toWorld.x, toWorld.y);
+            return (Vector2)ele.worldTransform.MultiplyPoint3x4((Vector3)p);
         }
 
         // transforms a rect assumed in Panel space to the referential inside of the element bound (local)
@@ -1097,7 +1142,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             var inv = ele.worldTransform.inverse;
             Vector2 position = inv.MultiplyPoint3x4((Vector2)r.position);
-            r.position = position - ele.layout.position;
+            r.position = position;
             r.size = inv.MultiplyVector(r.size);
             return r;
         }
@@ -1106,7 +1151,7 @@ namespace UnityEngine.Experimental.UIElements
         public static Rect LocalToWorld(this VisualElement ele, Rect r)
         {
             var toWorldMatrix = ele.worldTransform;
-            r.position = toWorldMatrix.MultiplyPoint3x4(ele.layout.position + r.position);
+            r.position = toWorldMatrix.MultiplyPoint3x4(r.position);
             r.size = toWorldMatrix.MultiplyVector(r.size);
             return r;
         }
@@ -1151,7 +1196,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new TextureStylePainterParameters
             {
-                layout = ve.layout,
+                rect = ve.rect,
                 color = Color.white,
                 texture = style.backgroundImage,
                 scaleMode = style.backgroundSize,
@@ -1176,7 +1221,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new RectStylePainterParameters
             {
-                layout = ve.layout,
+                rect = ve.rect,
                 color = style.backgroundColor,
                 borderLeftWidth = style.borderLeftWidth,
                 borderTopWidth = style.borderTopWidth,
@@ -1195,7 +1240,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new TextStylePainterParameters
             {
-                layout = ve.contentRect,
+                rect = ve.contentRect,
                 text = ve.text,
                 font = style.font,
                 fontSize = style.fontSize,
@@ -1214,7 +1259,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             IStyle style = ve.style;
             var painterParams = new CursorPositionStylePainterParameters() {
-                layout = ve.contentRect,
+                rect = ve.contentRect,
                 text = ve.text,
                 font = style.font,
                 fontSize = style.fontSize,

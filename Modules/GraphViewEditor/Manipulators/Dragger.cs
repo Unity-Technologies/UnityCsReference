@@ -16,9 +16,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Vector2 panSpeed { get; set; }
 
-        // hold the presenter... maybe.
-        public GraphElementPresenter presenter { get; set; }
-
         public bool clampToParentEdges { get; set; }
 
         public Dragger()
@@ -69,28 +66,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void OnMouseDown(MouseDownEvent e)
         {
-            GraphElement ce = e.target as GraphElement;
-            if (ce != null)
+            if (m_Active)
             {
-                GraphElementPresenter cePresenter = ce.presenter;
-                if (cePresenter != null && ((cePresenter.capabilities & Capabilities.Movable) != Capabilities.Movable))
-                {
-                    return;
-                }
+                e.StopImmediatePropagation();
+                return;
+            }
+
+            GraphElement ce = e.target as GraphElement;
+            if (ce != null && !ce.IsMovable())
+            {
+                return;
             }
 
             if (CanStartManipulation(e))
             {
-                var graphElement = target as GraphElement;
-                if (graphElement != null)
-                {
-                    presenter = graphElement.presenter;
-                }
-
                 m_Start = e.localMousePosition;
 
                 m_Active = true;
-                target.TakeCapture();
+                target.TakeMouseCapture();
                 e.StopPropagation();
             }
         }
@@ -98,13 +91,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected void OnMouseMove(MouseMoveEvent e)
         {
             GraphElement ce = e.target as GraphElement;
-            if (ce != null)
+            if (ce != null && !ce.IsMovable())
             {
-                GraphElementPresenter cePresenter = ce.presenter;
-                if (cePresenter != null && ((cePresenter.capabilities & Capabilities.Movable) != Capabilities.Movable))
-                {
-                    return;
-                }
+                return;
             }
 
             if (m_Active)
@@ -122,25 +111,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected void OnMouseUp(MouseUpEvent e)
         {
             GraphElement ce = e.target as GraphElement;
-            if (ce != null)
+            if (ce != null && !ce.IsMovable())
             {
-                GraphElementPresenter cePresenter = ce.presenter;
-                if (cePresenter != null && ((cePresenter.capabilities & Capabilities.Movable) != Capabilities.Movable))
-                {
-                    return;
-                }
+                return;
             }
 
             if (m_Active)
             {
                 if (CanStopManipulation(e))
                 {
-                    presenter.position = target.layout;
-                    presenter.CommitChanges();
-                    presenter = null;
+                    var graphElement = target as GraphElement;
+                    if (graphElement != null)
+                    {
+                        graphElement.UpdatePresenterPosition();
+                    }
 
                     m_Active = false;
-                    target.ReleaseCapture();
+                    target.ReleaseMouseCapture();
                     e.StopPropagation();
                 }
             }

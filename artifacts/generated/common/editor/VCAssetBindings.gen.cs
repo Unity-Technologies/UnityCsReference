@@ -20,11 +20,12 @@ namespace UnityEditor.VersionControl
 {
 
 
+[UsedByNativeCode]
 public sealed partial class Asset
 {
     
             #pragma warning disable 169
-            GUID m_guid;
+            IntPtr m_Ptr;
     [Flags]
     public enum States    
     {

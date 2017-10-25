@@ -22,6 +22,7 @@ namespace UnityEngine
     }
 
 
+[NativeClass("UI::CanvasGroup")]
 public sealed partial class CanvasGroup : Component, ICanvasRaycastFilter
 {
     public extern float alpha

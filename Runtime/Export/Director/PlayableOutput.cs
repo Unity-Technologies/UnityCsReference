@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 using System.Collections.Generic;
 
 namespace UnityEngine.Playables
@@ -17,6 +18,7 @@ namespace UnityEngine.Playables
         static readonly PlayableOutput m_NullPlayableOutput = new PlayableOutput(PlayableOutputHandle.Null);
         public static PlayableOutput Null { get { return m_NullPlayableOutput; } }
 
+        [VisibleToOtherModules]
         internal PlayableOutput(PlayableOutputHandle handle)
         {
             m_Handle = handle;

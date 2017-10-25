@@ -22,6 +22,9 @@ namespace UnityEngine
 
 public partial class RuntimeAnimatorController : Object
 {
+    protected RuntimeAnimatorController() {}
+    
+    
     public extern  AnimationClip[] animationClips
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

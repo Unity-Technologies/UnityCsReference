@@ -58,15 +58,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
+            if (MouseCaptureController.IsMouseCaptureTaken())
+                return;
+
             var ce = parent as GraphElement;
             if (ce == null)
                 return;
 
-            GraphElementPresenter presenter = ce.presenter;
-            if (presenter == null)
-                return;
-
-            if ((presenter.capabilities & Capabilities.Resizable) != Capabilities.Resizable)
+            if (!ce.IsResizable())
                 return;
 
             if (e.button == (int)activateButton)
@@ -80,7 +85,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
 
                 m_Active = true;
-                this.TakeCapture();
+                this.TakeMouseCapture();
                 e.StopPropagation();
             }
         }
@@ -91,11 +96,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (ce == null)
                 return;
 
-            GraphElementPresenter presenter = ce.presenter;
-            if (presenter == null)
-                return;
-
-            if ((presenter.capabilities & Capabilities.Resizable) != Capabilities.Resizable)
+            if (!ce.IsResizable())
                 return;
 
             if (!m_Active)
@@ -104,7 +105,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (e.button == (int)activateButton && m_Active)
             {
                 m_Active = false;
-                this.ReleaseCapture();
+                this.ReleaseMouseCapture();
                 e.StopPropagation();
             }
         }
@@ -115,11 +116,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (ce == null)
                 return;
 
-            GraphElementPresenter presenter = ce.presenter;
-            if (presenter == null)
-                return;
-
-            if ((presenter.capabilities & Capabilities.Resizable) != Capabilities.Resizable)
+            if (!ce.IsResizable())
                 return;
 
             if (m_Active && parent.style.positionType == PositionType.Manual)
@@ -132,7 +129,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (newSize.y < m_MinimumSize.y)
                     newSize.y = m_MinimumSize.y;
 
-                presenter.position = new Rect(presenter.position.x, presenter.position.y, newSize.x, newSize.y);
+                ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
+                ce.UpdatePresenterPosition();
 
                 m_LabelText.text = String.Format("{0:0}", parent.layout.width) + "x" + String.Format("{0:0}", parent.layout.height);
 

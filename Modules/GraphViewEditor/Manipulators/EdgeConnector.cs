@@ -12,7 +12,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     internal
     interface IEdgeConnectorListener
     {
-        void OnDropOutsideAnchor(EdgePresenter edge, Vector2 position);
+        void OnDropOutsideAnchor(Edge edge, Vector2 position);
+        void OnDrop(GraphView graphView, Edge edge);
     }
 
     internal
@@ -20,18 +21,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {}
 
     internal
-    class EdgeConnector<TEdgePresenter> : EdgeConnector where TEdgePresenter : EdgePresenter
+    class EdgeConnector<TEdge> : EdgeConnector where TEdge : Edge, new()
     {
-        private List<NodeAnchorPresenter> m_CompatibleAnchors;
-        private TEdgePresenter m_EdgePresenterCandidate;
+        protected List<NodeAnchor> m_CompatibleAnchors;
+        protected TEdge m_EdgeCandidate;
+        private TEdge m_GhostEdge;
 
-        private GraphViewPresenter m_GraphViewPresenter;
-        private GraphView m_GraphView;
-        private bool m_Active;
+        protected GraphView m_GraphView;
+        protected bool m_Active;
 
-        private static NodeAdapter s_nodeAdapter = new NodeAdapter();
+        protected static NodeAdapter s_nodeAdapter = new NodeAdapter();
 
-        private readonly IEdgeConnectorListener m_Listener;
+        protected readonly IEdgeConnectorListener m_Listener;
 
         public EdgeConnector(IEdgeConnectorListener listener)
         {
@@ -54,8 +55,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
         }
 
-        protected void OnMouseDown(MouseDownEvent e)
+        protected virtual void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
             if (!CanStartManipulation(e))
             {
                 return;
@@ -67,115 +74,167 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            NodeAnchorPresenter startAnchor = graphElement.GetPresenter<NodeAnchorPresenter>();
             m_GraphView = graphElement.GetFirstAncestorOfType<GraphView>();
-
-            if (startAnchor == null || m_GraphView == null)
-            {
-                return;
-            }
-
-            m_GraphViewPresenter = m_GraphView.presenter;
-            if (m_GraphViewPresenter == null)
+            if (m_GraphView == null)
             {
                 return;
             }
 
             m_Active = true;
-            target.TakeCapture();
+            target.TakeMouseCapture();
 
-            m_CompatibleAnchors = m_GraphViewPresenter.GetCompatibleAnchors(startAnchor, s_nodeAdapter);
+            m_CompatibleAnchors = m_GraphView.GetCompatibleAnchors(graphElement, s_nodeAdapter);
 
-            foreach (var compatibleAnchor in m_CompatibleAnchors)
+            foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
             {
                 compatibleAnchor.highlight = true;
             }
 
-            m_EdgePresenterCandidate = ScriptableObject.CreateInstance<TEdgePresenter>();
+            m_EdgeCandidate = new TEdge();
 
-            m_EdgePresenterCandidate.position = new Rect(0, 0, 1, 1);
-
-            bool startFromOutput = (startAnchor.direction == Direction.Output);
+            bool startFromOutput = (graphElement.direction == Direction.Output);
             if (startFromOutput)
             {
-                m_EdgePresenterCandidate.output = graphElement.GetPresenter<NodeAnchorPresenter>();
-                m_EdgePresenterCandidate.input = null;
+                m_EdgeCandidate.output = graphElement;
+                m_EdgeCandidate.input = null;
             }
             else
             {
-                m_EdgePresenterCandidate.output = null;
-                m_EdgePresenterCandidate.input = graphElement.GetPresenter<NodeAnchorPresenter>();
+                m_EdgeCandidate.output = null;
+                m_EdgeCandidate.input = graphElement;
             }
-            m_EdgePresenterCandidate.candidate = true;
-            m_EdgePresenterCandidate.candidatePosition = e.mousePosition;
+            m_EdgeCandidate.candidatePosition = e.mousePosition;
 
-            m_GraphViewPresenter.AddTempElement(m_EdgePresenterCandidate);
+            m_GraphView.AddElement(m_EdgeCandidate);
 
+            m_EdgeCandidate.UpdateEdgeControl();
+
+            // Call anchor changed after the edge has been fully setup ( added to graph ... )
             e.StopPropagation();
         }
 
-        protected void OnMouseMove(MouseMoveEvent e)
+        protected virtual void OnMouseMove(MouseMoveEvent e)
         {
             if (m_Active)
             {
-                m_EdgePresenterCandidate.candidatePosition = e.mousePosition;
+                m_EdgeCandidate.candidatePosition = e.mousePosition;
+
+                // Draw ghost edge if possible anchor exists.
+                NodeAnchor endAnchor = GetEndAnchor(e.mousePosition);
+                if (endAnchor != null)
+                {
+                    if (m_GhostEdge == null)
+                    {
+                        m_GhostEdge = new TEdge();
+                        m_GhostEdge.isGhostEdge = true;
+                        m_GraphView.AddElement(m_GhostEdge);
+                    }
+
+                    if (m_EdgeCandidate.output == null)
+                    {
+                        m_GhostEdge.input = m_EdgeCandidate.input;
+                        m_GhostEdge.output = endAnchor;
+                    }
+                    else
+                    {
+                        m_GhostEdge.input = endAnchor;
+                        m_GhostEdge.output = m_EdgeCandidate.output;
+                    }
+                }
+                else if (m_GhostEdge != null)
+                {
+                    m_GraphView.RemoveElement(m_GhostEdge);
+                    m_GhostEdge = null;
+                }
+
                 e.StopPropagation();
             }
         }
 
-        protected void OnMouseUp(MouseUpEvent e)
+        protected virtual void OnMouseUp(MouseUpEvent e)
         {
             if (m_Active)
             {
-                if (CanStopManipulation(e))
+                if (CanStopManipulation(e) && m_GraphView != null)
                 {
-                    NodeAnchorPresenter endAnchor = null;
+                    m_Active = false;
 
-                    if (m_GraphView != null)
+                    // Remove highlights.
+                    foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
                     {
-                        foreach (var compatibleAnchor in m_CompatibleAnchors)
-                        {
-                            compatibleAnchor.highlight = false;
-                            NodeAnchor anchorElement = m_GraphView.Query<NodeAnchor>().Where(el => el.GetPresenter<NodeAnchorPresenter>() == compatibleAnchor).First();
-                            if (anchorElement != null && anchorElement.worldBound.Contains(e.mousePosition))
-                                endAnchor = compatibleAnchor;
-                        }
+                        compatibleAnchor.highlight = false;
                     }
+
+                    // Clean up ghost edges.
+                    if (m_GhostEdge != null)
+                    {
+                        m_GraphView.RemoveElement(m_GhostEdge);
+                        m_GhostEdge = null;
+                    }
+
+                    NodeAnchor endAnchor = GetEndAnchor(e.mousePosition);
+
                     if (endAnchor == null && m_Listener != null)
                     {
-                        m_Listener.OnDropOutsideAnchor(m_EdgePresenterCandidate, e.mousePosition);
+                        m_Listener.OnDropOutsideAnchor(m_EdgeCandidate, e.mousePosition);
                     }
 
-                    m_GraphViewPresenter.RemoveTempElement(m_EdgePresenterCandidate);
-                    if (m_EdgePresenterCandidate != null && m_GraphViewPresenter != null)
+                    m_GraphView.RemoveElement(m_EdgeCandidate);
+
+                    if (endAnchor != null)
                     {
-                        if (endAnchor != null)
-                        {
-                            if (m_EdgePresenterCandidate.output == null)
-                            {
-                                m_EdgePresenterCandidate.output = endAnchor;
-                            }
-                            else
-                            {
-                                m_EdgePresenterCandidate.input = endAnchor;
-                            }
-                            m_EdgePresenterCandidate.output.Connect(m_EdgePresenterCandidate);
-                            m_EdgePresenterCandidate.input.Connect(m_EdgePresenterCandidate);
+                        if (m_EdgeCandidate.output == null)
+                            m_EdgeCandidate.output = endAnchor;
+                        else
+                            m_EdgeCandidate.input = endAnchor;
 
-                            m_GraphViewPresenter.AddElement(m_EdgePresenterCandidate);
-                        }
-
-                        m_EdgePresenterCandidate.candidate = false;
+                        m_Listener.OnDrop(m_GraphView, m_EdgeCandidate);
                     }
 
-                    m_EdgePresenterCandidate = null;
-                    m_GraphViewPresenter = null;
+                    m_EdgeCandidate = null;
+                    m_CompatibleAnchors = null;
 
-                    m_Active = false;
+                    target.ReleaseMouseCapture();
                     e.StopPropagation();
                 }
             }
-            target.ReleaseCapture();
+        }
+
+        private NodeAnchor GetEndAnchor(Vector2 mousePosition)
+        {
+            if (m_GraphView == null)
+                return null;
+
+            NodeAnchor endAnchor = null;
+
+            foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
+            {
+                Rect bounds = compatibleAnchor.worldBound;
+                float hitboxExtraPadding = bounds.height;
+
+                // Add extra padding for mouse check to the left of input anchor or right of output anchor.
+                if (compatibleAnchor.direction == Direction.Input)
+                {
+                    // Move bounds to the left by hitboxExtraPadding and increase width
+                    // by hitboxExtraPadding.
+                    bounds.x -= hitboxExtraPadding;
+                    bounds.width += hitboxExtraPadding;
+                }
+                else if (compatibleAnchor.direction == Direction.Output)
+                {
+                    // Just add hitboxExtraPadding to the width.
+                    bounds.width += hitboxExtraPadding;
+                }
+
+                // Check if mouse is over anchor.
+                if (bounds.Contains(mousePosition))
+                {
+                    endAnchor = compatibleAnchor;
+                    break;
+                }
+            }
+
+            return endAnchor;
         }
     }
 }

@@ -28,6 +28,7 @@ namespace UnityEditor
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
         bool m_ShowOnlySelectedMode;
         TimeHelper m_TimeHelper = new TimeHelper();
+        public static ParticleSystem m_MainPlaybackSystem;
         public static bool m_ShowBounds = false;
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
@@ -59,7 +60,7 @@ namespace UnityEditor
             public GUIContent addParticleSystem = EditorGUIUtility.TextContent("|Create Particle System");
             public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes");
             public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform)");
-            public GUIContent previewAll = EditorGUIUtility.TextContent("Simulate All|Choose whether to preview all Particle Systems in Edit Mode, or just the selected ones.");
+            public GUIContent previewLayers = EditorGUIUtility.TextContent("Simulate Layers|Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }
@@ -145,6 +146,7 @@ namespace UnityEditor
                         continue;
 
                     shurikens = GetParticleSystems(root);
+                    mainSystem = root;
 
                     // Check if we need to re-initialize?
                     if (m_SelectedParticleSystems != null && m_SelectedParticleSystems.Count > 0)
@@ -163,8 +165,6 @@ namespace UnityEditor
                             }
                         }
                     }
-
-                    mainSystem = root;
                 }
                 else
                 {
@@ -238,8 +238,6 @@ namespace UnityEditor
                 if (GetAllModulesVisible())
                     SetAllModulesVisible(true);
 
-                ParticleSystemEditorUtils.PerformCompleteResimulation();
-
                 m_EmitterAreaWidth = EditorPrefs.GetFloat("ParticleSystemEmitterAreaWidth", k_MinEmitterAreaSize.x);
                 m_CurveEditorAreaHeight = EditorPrefs.GetFloat("ParticleSystemCurveEditorAreaHeight", k_MinCurveAreaSize.y);
 
@@ -256,13 +254,19 @@ namespace UnityEditor
                     {
                         float lastPlayBackTime = simulationState.z;
                         if (lastPlayBackTime > 0f)
-                            ParticleSystemEditorUtils.editorPlaybackTime = lastPlayBackTime;
+                        {
+                            ParticleSystemEditorUtils.playbackTime = lastPlayBackTime;
+                            ParticleSystemEditorUtils.PerformCompleteResimulation();
+                        }
                     }
 
-                    // Always play when initializing a particle system
-                    Play();
+                    // Play when selecting a new particle effect
+                    if (m_MainPlaybackSystem != mainSystem)
+                        Play();
                 }
             }
+
+            m_MainPlaybackSystem = mainSystem;
 
             return initializeRequired;
         }
@@ -303,7 +307,7 @@ namespace UnityEditor
                     else
                         playState = PlayState.Stopped;
                     int rootInstanceId = root.GetInstanceID();
-                    SessionState.SetVector3(k_SimulationStateId + rootInstanceId, new Vector3(rootInstanceId, (int)playState, ParticleSystemEditorUtils.editorPlaybackTime));
+                    SessionState.SetVector3(k_SimulationStateId + rootInstanceId, new Vector3(rootInstanceId, (int)playState, ParticleSystemEditorUtils.playbackTime));
                 }
 
                 // Stop the ParticleSystem here (prevents it being frozen on screen)
@@ -447,27 +451,27 @@ namespace UnityEditor
             if (!isPlayMode)
             {
                 EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-                ParticleSystemEditorUtils.editorSimulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.editorSimulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
+                ParticleSystemEditorUtils.simulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.simulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
                 EditorGUI.kFloatFieldFormatString = oldFormat;
 
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-                float editorPlaybackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.editorPlaybackTime);
+                float playbackTime = EditorGUILayout.FloatField(s_Texts.previewTime, ParticleSystemEditorUtils.playbackTime);
                 EditorGUI.kFloatFieldFormatString = oldFormat;
                 if (EditorGUI.EndChangeCheck())
                 {
                     if (oldEventType == EventType.MouseDrag)
                     {
-                        ParticleSystemEditorUtils.editorIsScrubbing = true;
-                        float previewSpeed = ParticleSystemEditorUtils.editorSimulationSpeed;
-                        float oldEditorPlaybackTime = ParticleSystemEditorUtils.editorPlaybackTime;
-                        float timeDiff = editorPlaybackTime - oldEditorPlaybackTime;
-                        editorPlaybackTime = oldEditorPlaybackTime + timeDiff * (0.05F * previewSpeed);
+                        ParticleSystemEditorUtils.playbackIsScrubbing = true;
+                        float previewSpeed = ParticleSystemEditorUtils.simulationSpeed;
+                        float oldplaybackTime = ParticleSystemEditorUtils.playbackTime;
+                        float timeDiff = playbackTime - oldplaybackTime;
+                        playbackTime = oldplaybackTime + timeDiff * (0.05F * previewSpeed);
                     }
 
-                    editorPlaybackTime = Mathf.Max(editorPlaybackTime, 0.0F);
-                    ParticleSystemEditorUtils.editorPlaybackTime = editorPlaybackTime;
+                    playbackTime = Mathf.Max(playbackTime, 0.0F);
+                    ParticleSystemEditorUtils.playbackTime = playbackTime;
 
                     foreach (ParticleSystem ps in m_SelectedParticleSystems)
                     {
@@ -486,14 +490,14 @@ namespace UnityEditor
                 if (oldEventType == EventType.MouseDown && GUIUtility.hotControl != oldHotControl)
                 {
                     m_IsDraggingTimeHotControlID = GUIUtility.hotControl;
-                    ParticleSystemEditorUtils.editorIsScrubbing = true;
+                    ParticleSystemEditorUtils.playbackIsScrubbing = true;
                 }
 
                 // Detect stop dragging
                 if (m_IsDraggingTimeHotControlID != -1 && GUIUtility.hotControl != m_IsDraggingTimeHotControlID)
                 {
                     m_IsDraggingTimeHotControlID = -1;
-                    ParticleSystemEditorUtils.editorIsScrubbing = false;
+                    ParticleSystemEditorUtils.playbackIsScrubbing = false;
                 }
             }
 
@@ -525,11 +529,17 @@ namespace UnityEditor
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 
-            ParticleSystemEditorUtils.editorPreviewAll = GUILayout.Toggle(ParticleSystemEditorUtils.editorPreviewAll, s_Texts.previewAll, EditorStyles.toggle);
-            ParticleSystemEditorUtils.editorResimulation = GUILayout.Toggle(ParticleSystemEditorUtils.editorResimulation, s_Texts.resimulation, EditorStyles.toggle);
+            EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers, SetPreviewLayersDelegate);
+            ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);
             ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
 
             EditorGUIUtility.labelWidth = 0.0f;
+        }
+
+        internal static void SetPreviewLayersDelegate(object userData, string[] options, int selected)
+        {
+            var data = (System.Tuple<SerializedProperty, System.UInt32>)userData;
+            ParticleSystemEditorUtils.previewLayers = SerializedProperty.ToggleLayerMask(data.Item2, selected);
         }
 
         private void HandleKeyboardShortcuts()
@@ -550,7 +560,7 @@ namespace UnityEditor
                     else
                     {
                         // In Edit mode we have full play/pause functionality
-                        if (!ParticleSystemEditorUtils.editorIsPlaying)
+                        if (!ParticleSystemEditorUtils.playbackIsPlaying)
                             Play();
                         else
                             Pause();
@@ -573,10 +583,10 @@ namespace UnityEditor
 
                 if (changeTime != 0)
                 {
-                    ParticleSystemEditorUtils.editorIsScrubbing = true;
-                    float previewSpeed = ParticleSystemEditorUtils.editorSimulationSpeed;
+                    ParticleSystemEditorUtils.playbackIsScrubbing = true;
+                    float previewSpeed = ParticleSystemEditorUtils.simulationSpeed;
                     float timeDiff = (evt.shift ? 3f : 1f) * m_TimeHelper.deltaTime * (changeTime > 0 ? 3f : -3f);
-                    ParticleSystemEditorUtils.editorPlaybackTime = Mathf.Max(0f, ParticleSystemEditorUtils.editorPlaybackTime + timeDiff * (previewSpeed));
+                    ParticleSystemEditorUtils.playbackTime = Mathf.Max(0f, ParticleSystemEditorUtils.playbackTime + timeDiff * (previewSpeed));
 
                     foreach (ParticleSystem ps in m_SelectedParticleSystems)
                     {
@@ -595,12 +605,12 @@ namespace UnityEditor
 
             if (evt.type == EventType.KeyUp)
                 if (evt.keyCode == ((Event)kReverse).keyCode || evt.keyCode == ((Event)kForward).keyCode)
-                    ParticleSystemEditorUtils.editorIsScrubbing = false;
+                    ParticleSystemEditorUtils.playbackIsScrubbing = false;
         }
 
         internal static bool IsStopped(ParticleSystem root)
         {
-            return (!ParticleSystemEditorUtils.editorIsPlaying && !ParticleSystemEditorUtils.editorIsPaused) && !ParticleSystemEditorUtils.editorIsScrubbing;
+            return (!ParticleSystemEditorUtils.playbackIsPlaying && !ParticleSystemEditorUtils.playbackIsPaused) && !ParticleSystemEditorUtils.playbackIsScrubbing;
         }
 
         internal bool IsPaused()
@@ -610,7 +620,7 @@ namespace UnityEditor
 
         internal bool IsPlaying()
         {
-            return ParticleSystemEditorUtils.editorIsPlaying;
+            return ParticleSystemEditorUtils.playbackIsPlaying;
         }
 
         internal void Play()
@@ -629,7 +639,7 @@ namespace UnityEditor
 
             if (anyPlayed)
             {
-                ParticleSystemEditorUtils.editorIsScrubbing = false;
+                ParticleSystemEditorUtils.playbackIsScrubbing = false;
                 m_Owner.Repaint();
             }
         }
@@ -650,16 +660,16 @@ namespace UnityEditor
 
             if (anyPaused)
             {
-                ParticleSystemEditorUtils.editorIsScrubbing = true;
+                ParticleSystemEditorUtils.playbackIsScrubbing = true;
                 m_Owner.Repaint();
             }
         }
 
         internal void Stop()
         {
-            ParticleSystemEditorUtils.editorIsScrubbing = false;
-            ParticleSystemEditorUtils.editorPlaybackTime = 0.0F;
-            ParticleSystemEditorUtils.StopEffect();
+            ParticleSystemEditorUtils.playbackIsScrubbing = false;
+            ParticleSystemEditorUtils.playbackTime = 0.0F;
+            ParticleSystemEffectUtils.StopEffect();
             m_Owner.Repaint();
         }
 
@@ -677,7 +687,7 @@ namespace UnityEditor
                 // Edit Mode: Play/Stop buttons
                 GUILayout.BeginHorizontal(GUILayout.Width(210.0f));
                 {
-                    bool isPlaying = ParticleSystemEditorUtils.editorIsPlaying && !ParticleSystemEditorUtils.editorIsPaused;
+                    bool isPlaying = ParticleSystemEditorUtils.playbackIsPlaying && !ParticleSystemEditorUtils.playbackIsPaused;
                     if (GUILayout.Button(isPlaying ? s_Texts.pause : s_Texts.play, "ButtonLeft"))
                     {
                         if (isPlaying)

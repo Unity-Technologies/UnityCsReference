@@ -16,11 +16,25 @@ namespace UnityEditor.PackageManager
         [SerializeField]
         private UpmPackageInfo[] m_PackageList;
 
+        [SerializeField]
+        private Error m_Error;
+
+        /// <summary>
+        /// This allows <see cref="error" /> to return null
+        /// after de-serialization
+        /// </summary>
+        [SerializeField]
+        private bool m_HasError;
+
         private PackageCollection() {}
 
-        internal PackageCollection(IEnumerable<UpmPackageInfo> packages)
+        internal PackageCollection(
+            IEnumerable<UpmPackageInfo> packages,
+            Error error)
         {
             m_PackageList = (packages ?? new UpmPackageInfo[] {}).ToArray();
+            m_Error = error;
+            m_HasError = (m_Error != null);
         }
 
         IEnumerator<UpmPackageInfo> IEnumerable<UpmPackageInfo>.GetEnumerator()
@@ -32,6 +46,8 @@ namespace UnityEditor.PackageManager
         {
             return m_PackageList.GetEnumerator();
         }
+
+        public Error error { get { return m_HasError ? m_Error : null; } }
     }
 }
 

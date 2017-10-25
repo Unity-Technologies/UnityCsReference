@@ -24,6 +24,9 @@ namespace UnityEngine.Rendering
 
 public sealed partial class GraphicsSettings : Object
 {
+    private GraphicsSettings() {}
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetShaderMode (UnityEngine.Rendering.BuiltinShaderType type, UnityEngine.Rendering.BuiltinShaderMode mode) ;

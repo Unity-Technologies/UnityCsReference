@@ -51,8 +51,8 @@ namespace UnityEditor
         public void OnEnable()
         {
             // Get notified when hierarchy- or project window has changes so we can detect if particle systems have been dragged in or out.
-            EditorApplication.hierarchyWindowChanged += HierarchyOrProjectWindowWasChanged;
-            EditorApplication.projectWindowChanged += HierarchyOrProjectWindowWasChanged;
+            EditorApplication.hierarchyChanged += HierarchyOrProjectWindowWasChanged;
+            EditorApplication.projectChanged += HierarchyOrProjectWindowWasChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             Undo.undoRedoPerformed += UndoRedoPerformed;
         }
@@ -60,8 +60,8 @@ namespace UnityEditor
         public void OnDisable()
         {
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
-            EditorApplication.projectWindowChanged -= HierarchyOrProjectWindowWasChanged;
-            EditorApplication.hierarchyWindowChanged -= HierarchyOrProjectWindowWasChanged;
+            EditorApplication.projectChanged -= HierarchyOrProjectWindowWasChanged;
+            EditorApplication.hierarchyChanged -= HierarchyOrProjectWindowWasChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
 
             if (m_ParticleEffectUI != null)
@@ -115,6 +115,9 @@ namespace UnityEditor
 
                     GUIContent text = null;
                     ParticleSystemWindow window = ParticleSystemWindow.GetInstance();
+                    if (window)
+                        window.customEditor = this; // window can be created by LoadWindowLayout, when Editor starts up, so always make sure the custom editor member is set up (case 930005)
+
                     if (window && window.IsVisible() && alreadySelected)
                     {
                         if (window.GetNumTabs() > 1)

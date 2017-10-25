@@ -60,6 +60,16 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
+        static bool ApplyAndCompare(ref StyleValue<CursorStyle> current, StyleValue<CursorStyle> other)
+        {
+            CursorStyle oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
         static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : Object
         {
             T oldValue = current.value;
@@ -793,9 +803,19 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        StyleValue<CursorStyle> IStyle.cursor
+        {
+            get { return effectiveStyle.cursor; }
+            set
+            {
+                ApplyAndCompare(ref inlineStyle.cursor, value);
+            }
+        }
+
         private List<StyleSheet> m_StyleSheets;
 
-        internal IEnumerable<StyleSheet> styleSheets
+
+        internal IList<StyleSheet> styleSheets
         {
             get
             {

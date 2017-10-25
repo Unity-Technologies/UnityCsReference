@@ -17,6 +17,7 @@ using UnityEngineInternal;
 namespace UnityEngine
 {
 [RequiredByNativeCode]
+[NativeClass("Unity::Component")]
 public partial class Component : Object
 {
     public extern  Transform transform

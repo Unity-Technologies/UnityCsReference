@@ -366,6 +366,9 @@ public sealed partial class ProceduralMaterial : Material
 
 public sealed partial class ProceduralTexture : Texture
 {
+    private ProceduralTexture() {}
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public ProceduralOutputType GetProceduralOutputType () ;

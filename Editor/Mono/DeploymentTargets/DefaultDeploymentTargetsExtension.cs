@@ -15,7 +15,7 @@ namespace UnityEditor.DeploymentTargets
             return DeploymentTargetSupportFlags.None;
         }
 
-        public virtual BuildCheckResult CheckBuild(BuildReporting.BuildReport buildReport)
+        public virtual BuildCheckResult CheckBuild(BuildProperties buildProperties)
         {
             return new BuildCheckResult();
         }
@@ -34,7 +34,7 @@ namespace UnityEditor.DeploymentTargets
             return new DefaultDeploymentTargetInfo();
         }
 
-        public virtual void LaunchBuildOnTarget(BuildReporting.BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
+        public virtual void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
             throw new NotSupportedException();
         }

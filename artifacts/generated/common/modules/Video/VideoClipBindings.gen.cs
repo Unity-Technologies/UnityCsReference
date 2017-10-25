@@ -15,6 +15,9 @@ namespace UnityEngine.Video
 
 public sealed partial class VideoClip : Object
 {
+    private VideoClip() {}
+    
+    
     public extern  string originalPath
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

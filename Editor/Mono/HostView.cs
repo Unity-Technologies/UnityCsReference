@@ -405,7 +405,7 @@ namespace UnityEditor
             Selection.activeObject = (UnityEngine.Object)userData;
         }
 
-        private void Reload(object userData)
+        internal void Reload(object userData)
         {
             EditorWindow window = userData as EditorWindow;
             if (window == null)

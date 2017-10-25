@@ -20,27 +20,27 @@ namespace UnityEditor.Experimental.UIElements
 
         ContextualMenu.ActionStatus CutCopyActionStatus()
         {
-            return (editor.hasSelection && !isPasswordField) ? ContextualMenu.ActionStatus.Enabled : ContextualMenu.ActionStatus.Disabled;
+            return (editorEngine.hasSelection && !isPasswordField) ? ContextualMenu.ActionStatus.Enabled : ContextualMenu.ActionStatus.Disabled;
         }
 
         ContextualMenu.ActionStatus PasteActionStatus()
         {
-            return (editor.CanPaste() ? ContextualMenu.ActionStatus.Enabled : ContextualMenu.ActionStatus.Off);
+            return (editorEngine.CanPaste() ? ContextualMenu.ActionStatus.Enabled : ContextualMenu.ActionStatus.Off);
         }
 
         void Cut()
         {
-            editor.Cut();
+            editorEngine.Cut();
         }
 
         void Copy()
         {
-            editor.Copy();
+            editorEngine.Copy();
         }
 
         void Paste()
         {
-            editor.Paste();
+            editorEngine.Paste();
         }
     }
 }

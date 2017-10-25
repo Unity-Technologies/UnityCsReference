@@ -33,7 +33,7 @@ namespace UnityEditor
     /// <summary>
     /// Holds information about the current set of editor assemblies.
     /// </summary>
-    static class EditorAssemblies
+    static partial class EditorAssemblies
     {
         /// <summary>
         /// The currently loaded editor assemblies

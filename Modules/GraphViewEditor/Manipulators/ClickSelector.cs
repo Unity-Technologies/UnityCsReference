@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
@@ -13,6 +14,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift});
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -44,7 +47,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     }
 
                     var gv = c as GraphView;
-                    if (!ge.IsSelected(gv))
+                    if (ge.IsSelected(gv) && e.ctrlKey)
+                    {
+                        ge.Unselect(gv);
+                    }
+                    else
                     {
                         ge.Select(gv, e.shiftKey || e.ctrlKey);
                     }

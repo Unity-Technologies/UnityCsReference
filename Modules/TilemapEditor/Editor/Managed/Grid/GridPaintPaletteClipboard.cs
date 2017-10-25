@@ -848,7 +848,10 @@ namespace UnityEditor
         protected override void MoveEnd(BoundsInt position)
         {
             if (grid)
+            {
                 gridBrush.MoveEnd(grid, brushTarget, position);
+                OnPaletteChanged();
+            }
         }
 
         public override void Repaint()
@@ -979,9 +982,9 @@ namespace UnityEditor
             BoundsInt brushBounds = new BoundsInt(new Vector3Int(rect.x, rect.y, 0), new Vector3Int(rect.width, rect.height, 1));
 
             if (GridPaintingState.activeBrushEditor != null)
-                GridPaintingState.activeBrushEditor.OnPaintSceneGUI(gridLayout, brushTarget, brushBounds, EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || paintingOrErasing);
+                GridPaintingState.activeBrushEditor.OnPaintSceneGUI(gridLayout, brushTarget, brushBounds, EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
             else // Fallback when user hasn't defined custom editor
-                GridBrushEditorBase.OnPaintSceneGUIInternal(gridLayout, Selection.activeGameObject, brushBounds, EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || paintingOrErasing);
+                GridBrushEditorBase.OnPaintSceneGUIInternal(gridLayout, Selection.activeGameObject, brushBounds, EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
         }
 
         protected override void RegisterUndo()

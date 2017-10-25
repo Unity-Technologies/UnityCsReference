@@ -4,7 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.StyleSheets;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -86,6 +89,8 @@ namespace UnityEngine.Experimental.UIElements
         public abstract void ValidateLayout();
 
         internal virtual IStylePainter stylePainter { get; set; }
+        internal virtual ICursorManager cursorManager { get; set; }
+
         //IPanel
         public abstract VisualElement visualTree { get; }
         public abstract IEventDispatcher dispatcher { get; protected set; }
@@ -104,6 +109,9 @@ namespace UnityEngine.Experimental.UIElements
 
     // Strategy to load assets must be provided in the context of Editor or Runtime
     internal delegate Object LoadResourceFunction(string pathName, System.Type type);
+
+    // Strategy to fetch real time since startup in the context of Editor or Runtime
+    internal delegate long TimeMsFunction();
 
     // Getting the view data dictionary relies on the Editor window.
     internal delegate ISerializableJsonDictionary GetViewDataDictionary();
@@ -160,6 +168,21 @@ namespace UnityEngine.Experimental.UIElements
 
         internal static LoadResourceFunction loadResourceFunc = null;
 
+        private static TimeMsFunction s_TimeSinceStartup;
+        internal static TimeMsFunction TimeSinceStartup
+        {
+            get { return s_TimeSinceStartup; }
+            set
+            {
+                if (value == null)
+                {
+                    value = DefaultTimeSinceStartupMs;
+                }
+
+                s_TimeSinceStartup = value;
+            }
+        }
+
         private bool m_KeepPixelCacheOnWorldBoundChange;
         public override bool keepPixelCacheOnWorldBoundChange
         {
@@ -190,6 +213,7 @@ namespace UnityEngine.Experimental.UIElements
             m_DataWatch = dataWatch;
             this.dispatcher = dispatcher;
             stylePainter = new StylePainter();
+            cursorManager = new CursorManager();
             m_RootContainer = new VisualElement();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             m_RootContainer.persistenceKey = "PanelContainer"; // Required!
@@ -200,17 +224,27 @@ namespace UnityEngine.Experimental.UIElements
             allowPixelCaching = true;
         }
 
+        public static long TimeSinceStartupMs()
+        {
+            return (s_TimeSinceStartup == null) ? DefaultTimeSinceStartupMs() : s_TimeSinceStartup();
+        }
+
+        internal static long DefaultTimeSinceStartupMs()
+        {
+            return (long)(Time.realtimeSinceStartup * 1000.0f);
+        }
+
         VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
             // do not pick invisible
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
                 return null;
 
-            Vector3 localPoint = root.transform.matrix.inverse.MultiplyPoint3x4(point);
+            Vector3 localPoint = root.WorldToLocal(point);
             bool containsPoint = root.ContainsPoint(localPoint);
 
             // we only skip children in the case we visually clip them
-            if (!containsPoint && root.clipChildren)
+            if (!containsPoint && root.clippingOptions != VisualElement.ClippingOptions.NoClipping)
             {
                 return null;
             }
@@ -220,15 +254,12 @@ namespace UnityEngine.Experimental.UIElements
                 picked.Add(root);
             }
 
-            // reset ref to upper left
-            localPoint = localPoint - new Vector3(root.layout.position.x, root.layout.position.y, 0);
-
             VisualElement returnedChild = null;
             // Depth first in reverse order, do children
             for (int i = root.shadow.childCount - 1; i >= 0; i--)
             {
                 var child = root.shadow[i];
-                var result = PickAll(child, localPoint, picked);
+                var result = PickAll(child, point, picked);
                 if (returnedChild == null && result != null)
                     returnedChild = result;
             }
@@ -284,7 +315,7 @@ namespace UnityEngine.Experimental.UIElements
         void ValidatePersistentData()
         {
             int validatePersistentDataCount = 0;
-            while (visualTree.IsDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
+            while (visualTree.AnyDirty(ChangeType.PersistentData | ChangeType.PersistentDataPath))
             {
                 ValidatePersistentDataOnSubTree(visualTree, true);
                 validatePersistentDataCount++;
@@ -325,6 +356,7 @@ namespace UnityEngine.Experimental.UIElements
 
         void ValidateStyling()
         {
+            Profiler.BeginSample("Panel.ValidateStyling");
             // if the surface DPI changes we need to invalidate styles
             if (!Mathf.Approximately(m_StyleContext.currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
             {
@@ -332,16 +364,18 @@ namespace UnityEngine.Experimental.UIElements
                 m_StyleContext.currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
             }
 
-            if (m_RootContainer.IsDirty(ChangeType.Styles | ChangeType.StylesPath))
+            if (m_RootContainer.AnyDirty(ChangeType.Styles | ChangeType.StylesPath))
             {
                 m_StyleContext.ApplyStyles();
             }
+            Profiler.EndSample();
         }
 
         const int kMaxValidateLayoutCount = 5;
 
         public override void ValidateLayout()
         {
+            Profiler.BeginSample("Panel.ValidateLayout");
             ValidateStyling();
 
             // update flex once
@@ -357,6 +391,7 @@ namespace UnityEngine.Experimental.UIElements
                     break;
                 }
             }
+            Profiler.EndSample();
         }
 
         bool ValidateSubTree(VisualElement root)
@@ -378,11 +413,11 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            var evt = PostLayoutEvent.GetPooled(hasNewLayout);
-            evt.target = root;
-
-            UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
-            PostLayoutEvent.ReleasePooled(evt);
+            using (var evt = PostLayoutEvent.GetPooled(hasNewLayout))
+            {
+                evt.target = root;
+                UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+            }
 
             // reset both flags at the end
             root.ClearDirty(ChangeType.Layout);
@@ -406,47 +441,44 @@ namespace UnityEngine.Experimental.UIElements
                 Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
-        public void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
+        private bool ShouldUsePixelCache(VisualElement root)
         {
-            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
+            return
+                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
+                allowPixelCaching && root.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents &&
+                root.worldBound.size.magnitude > Mathf.Epsilon;
+        }
+
+        private void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
+        {
+            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible ||
+                root.style.opacity.GetSpecifiedValueOrDefault(1.0f) < Mathf.Epsilon)
                 return;
 
-            if (root.shadow.childCount > 0) // container node
+            // update clip
+            if (root.clippingOptions != VisualElement.ClippingOptions.NoClipping)
             {
-                // update clip
-                if (root.clipChildren)
-                {
-                    var worldBound = ComputeAAAlignedBound(root.layout, offset * root.worldTransform);
-                    // are we and our children clipped?
-                    if (!worldBound.Overlaps(currentGlobalClip))
-                    {
-                        return;
-                    }
-
-                    float x1 = Mathf.Max(worldBound.x, currentGlobalClip.x);
-                    float x2 = Mathf.Min(worldBound.x + worldBound.width, currentGlobalClip.x + currentGlobalClip.width);
-                    float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
-                    float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
-
-                    // new global clip
-                    currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
-                }
-                else
-                {
-                    //since our children are not clipped, there is no early out.
-                }
-            }
-            else if (!root.forceVisible)
-            {
-                var offsetBounds = ComputeAAAlignedBound(root.worldBound, offset);
-                if (!offsetBounds.Overlaps(currentGlobalClip))
+                var worldBound = ComputeAAAlignedBound(root.rect, offset * root.worldTransform);
+                // are we and our children clipped?
+                if (!worldBound.Overlaps(currentGlobalClip))
                 {
                     return;
                 }
+
+                float x1 = Mathf.Max(worldBound.x, currentGlobalClip.x);
+                float x2 = Mathf.Min(worldBound.x + worldBound.width, currentGlobalClip.x + currentGlobalClip.width);
+                float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
+                float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
+
+                // new global clip
+                currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
             }
-            if (
-                (root.panel.panelDebug == null || !root.panel.panelDebug.RecordRepaint(root)) &&
-                root.usePixelCaching && allowPixelCaching && root.worldBound.size.magnitude > Mathf.Epsilon)
+            else
+            {
+                //since our children are not clipped, there is no early out.
+            }
+
+            if (ShouldUsePixelCache(root))
             {
                 // now actually paint the texture to previous group
                 IStylePainter painter = stylePainter;
@@ -459,8 +491,10 @@ namespace UnityEngine.Experimental.UIElements
                 int textureHeight = (int)(worldBound.height * GUIUtility.pixelsPerPoint);
 
                 var cache = root.renderData.pixelCache;
-                if (cache != null && !keepPixelCacheOnWorldBoundChange &&
-                    (cache.width != textureWidth || cache.height != textureHeight))
+
+                if (cache != null &&
+                    (cache.width != textureWidth || cache.height != textureHeight) &&
+                    (!keepPixelCacheOnWorldBoundChange || root.IsDirty(ChangeType.Repaint)))
                 {
                     Object.DestroyImmediate(cache);
                     cache = root.renderData.pixelCache = null;
@@ -514,11 +548,12 @@ namespace UnityEngine.Experimental.UIElements
 
                 var painterParams = new TextureStylePainterParameters
                 {
-                    layout = root.layout,
+                    rect = root.rect,
                     texture = root.renderData.pixelCache,
                     color = Color.white,
                     scaleMode = ScaleMode.ScaleAndCrop
                 };
+
                 painter.DrawTexture(painterParams);
             }
             else
@@ -556,12 +591,18 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void Repaint(Event e)
         {
+            Profiler.BeginSample("Panel Repaint");
             ValidatePersistentData();
             ValidateLayout();
             stylePainter.repaintEvent = e;
 
             // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.layout);
+            Rect clipRect = visualTree.clippingOptions != VisualElement.ClippingOptions.NoClipping ? visualTree.layout : GUIClip.topmostRect;
+
+            Profiler.BeginSample("Panel Root PaintSubTree");
+            PaintSubTree(e, visualTree, Matrix4x4.identity, clipRect);
+            Profiler.EndSample();
+            Profiler.EndSample();
 
             if (panelDebug != null)
             {

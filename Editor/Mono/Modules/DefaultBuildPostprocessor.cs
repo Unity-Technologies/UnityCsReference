@@ -8,6 +8,10 @@ using UnityEngine;
 
 namespace UnityEditor.Modules
 {
+    internal class DefaultBuildProperties : BuildProperties
+    {
+    }
+
     internal abstract class DefaultBuildPostprocessor
         : IBuildPostprocessor
     {
@@ -16,8 +20,18 @@ namespace UnityEditor.Modules
             throw new NotSupportedException();
         }
 
+        // Supports legacy interface before BuildProperties was introduced
         public virtual void PostProcess(BuildPostProcessArgs args)
         {
+        }
+
+        public virtual void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties)
+        {
+            PostProcess(args);
+
+            // NOTE: For some reason, calling PostProcess seems like it can trigger this object to be GC'd
+            //  so create is just before returning
+            outProperties = ScriptableObject.CreateInstance<DefaultBuildProperties>();
         }
 
         public virtual bool SupportsInstallInBuildFolder()

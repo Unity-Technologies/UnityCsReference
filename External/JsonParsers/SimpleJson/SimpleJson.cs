@@ -50,6 +50,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using SimpleJson.Reflection;
+using UnityEngine.Bindings;
 
 // ReSharper disable LoopCanBeConvertedToQuery
 // ReSharper disable RedundantExplicitArrayCreation
@@ -351,6 +352,7 @@ namespace SimpleJson
 /// All numbers are parsed to doubles.
 /// </summary>
 [GeneratedCode ("simple-json", "1.0.0")]
+[VisibleToOtherModules]
 internal
 static class SimpleJson
 {

@@ -54,7 +54,7 @@ public partial struct AnimatorCondition
     
 }
 
-public partial class AnimatorTransitionBase : Object
+public abstract partial class AnimatorTransitionBase : Object
 {
     public string                        GetDisplayName(Object source)                                   { return (source is AnimatorState) ? GetDisplayNameStateSource(source as AnimatorState) : GetDisplayNameStateMachineSource(source as AnimatorStateMachine); }
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

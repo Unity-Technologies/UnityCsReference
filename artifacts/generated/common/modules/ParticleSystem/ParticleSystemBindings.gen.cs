@@ -12,427 +12,6 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-
-
-public enum ParticleSystemRenderMode
-{
-    
-    Billboard = 0,
-    
-    Stretch = 1,
-    
-    HorizontalBillboard = 2,
-    
-    VerticalBillboard = 3,
-    
-    Mesh = 4,
-    
-    None = 5
-}
-
-public enum ParticleSystemSortMode
-{
-    
-    None = 0,
-    
-    Distance = 1,
-    
-    OldestInFront = 2,
-    
-    YoungestInFront = 3,
-}
-
-public enum ParticleSystemCollisionQuality
-{
-    
-    High = 0,
-    
-    Medium = 1,
-    
-    Low = 2
-}
-
-public enum ParticleSystemRenderSpace
-{
-    
-    View = 0,
-    
-    World = 1,
-    
-    Local = 2,
-    
-    Facing = 3,
-    
-    Velocity = 4
-}
-
-[System.Obsolete ("ParticleSystemEmissionType no longer does anything. Time and Distance based emission are now both always active.")]
-public enum ParticleSystemEmissionType
-{
-    
-    Time = 0,
-    
-    Distance = 1
-}
-
-public enum ParticleSystemCurveMode
-{
-    
-    Constant = 0,
-    
-    Curve = 1,
-    
-    TwoCurves = 2,
-    
-    TwoConstants = 3
-}
-
-public enum ParticleSystemGradientMode
-{
-    
-    Color = 0,
-    
-    Gradient = 1,
-    
-    TwoColors = 2,
-    
-    TwoGradients = 3,
-    
-    RandomColor = 4
-}
-
-public enum ParticleSystemShapeType
-{
-    
-    Sphere = 0,
-    
-    [System.Obsolete ("SphereShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
-    SphereShell = 1,
-    
-    Hemisphere = 2,
-    
-    [System.Obsolete ("HemisphereShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
-    HemisphereShell = 3,
-    
-    Cone = 4,
-    
-    Box = 5,
-    
-    Mesh = 6,
-    
-    [System.Obsolete ("ConeShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
-    ConeShell = 7,
-    
-    ConeVolume = 8,
-    
-    [System.Obsolete ("ConeVolumeShell is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
-    ConeVolumeShell = 9,
-    
-    Circle = 10,
-    
-    [System.Obsolete ("CircleEdge is deprecated and does nothing. Please use ShapeModule.radiusThickness instead, to control edge emission.")]
-    CircleEdge = 11,
-    
-    SingleSidedEdge = 12,
-    
-    MeshRenderer = 13,
-    
-    SkinnedMeshRenderer = 14,
-    
-    BoxShell = 15,
-    
-    BoxEdge = 16,
-    
-    Donut = 17
-}
-
-public enum ParticleSystemMeshShapeType
-{
-    
-    Vertex = 0,
-    
-    Edge = 1,
-    
-    Triangle = 2
-}
-
-public enum ParticleSystemAnimationMode
-{
-    
-    Grid = 0,
-    
-    Sprites = 1
-}
-
-public enum ParticleSystemAnimationType
-{
-    
-    WholeSheet = 0,
-    
-    SingleRow = 1
-}
-
-public enum ParticleSystemCollisionType
-{
-    
-    Planes = 0,
-    
-    World = 1
-}
-
-public enum ParticleSystemCollisionMode
-{
-    
-    Collision3D = 0,
-    
-    Collision2D = 1
-}
-
-public enum ParticleSystemOverlapAction
-{
-    
-    Ignore = 0,
-    
-    Kill = 1,
-    
-    Callback = 2
-}
-
-public enum ParticleSystemSimulationSpace
-{
-    
-    Local = 0,
-    
-    World = 1,
-    
-    Custom = 2
-}
-
-public enum ParticleSystemStopBehavior
-{
-    
-    StopEmittingAndClear = 0,
-    
-    StopEmitting = 1
-}
-
-public enum ParticleSystemScalingMode
-{
-    
-    Hierarchy = 0,
-    
-    Local = 1,
-    
-    Shape = 2
-}
-
-public enum ParticleSystemStopAction
-{
-    
-    None = 0,
-    
-    Disable = 1,
-    
-    Destroy = 2
-}
-
-public enum ParticleSystemEmitterVelocityMode
-{
-    
-    Transform = 0,
-    
-    Rigidbody = 1
-}
-
-public enum ParticleSystemInheritVelocityMode
-{
-    
-    Initial = 0,
-    
-    Current = 1
-}
-
-public enum ParticleSystemTriggerEventType
-{
-    
-    Inside = 0,
-    
-    Outside = 1,
-    
-    Enter = 2,
-    
-    Exit = 3
-}
-
-[Flags]
-[System.Obsolete ("ParticleSystemVertexStreams is deprecated. Please use ParticleSystemVertexStream instead.")]
-public enum ParticleSystemVertexStreams
-{
-    
-    Position = 1 << 0,
-    
-    Normal = 1 << 1,
-    
-    Tangent = 1 << 2,
-    
-    Color = 1 << 3,
-    
-    UV = 1 << 4,
-    
-    UV2BlendAndFrame = 1 << 5,
-    
-    CenterAndVertexID = 1 << 6,
-    
-    Size = 1 << 7,
-    
-    Rotation = 1 << 8,
-    
-    Velocity = 1 << 9,
-    
-    Lifetime = 1 << 10,
-    
-    Custom1 = 1 << 11,
-    
-    Custom2 = 1 << 12,
-    
-    Random = 1 << 13,
-    
-    None = 0,
-    All = 0x7fffffff
-}
-
-[UsedByNativeCode]
-public enum ParticleSystemVertexStream
-{
-    Position,
-    Normal,
-    Tangent,
-    Color,
-    UV,
-    UV2,
-    UV3,
-    UV4,
-    AnimBlend,
-    AnimFrame,
-    Center,
-    VertexID,
-    SizeX,
-    SizeXY,
-    SizeXYZ,
-    Rotation,
-    Rotation3D,
-    RotationSpeed,
-    RotationSpeed3D,
-    Velocity,
-    Speed,
-    AgePercent,
-    InvStartLifetime,
-    StableRandomX,
-    StableRandomXY,
-    StableRandomXYZ,
-    StableRandomXYZW,
-    VaryingRandomX,
-    VaryingRandomXY,
-    VaryingRandomXYZ,
-    VaryingRandomXYZW,
-    Custom1X,
-    Custom1XY,
-    Custom1XYZ,
-    Custom1XYZW,
-    Custom2X,
-    Custom2XY,
-    Custom2XYZ,
-    Custom2XYZW,
-    NoiseSumX,
-    NoiseSumXY,
-    NoiseSumXYZ,
-    NoiseImpulseX,
-    NoiseImpulseXY,
-    NoiseImpulseXYZ
-}
-
-public enum ParticleSystemCustomData
-{
-    Custom1,
-    Custom2
-}
-
-public enum ParticleSystemCustomDataMode
-{
-    Disabled,
-    Vector,
-    Color
-}
-
-public enum ParticleSystemNoiseQuality
-{
-    
-    Low = 0,
-    
-    Medium = 1,
-    
-    High = 2
-}
-
-public enum ParticleSystemSubEmitterType
-{
-    
-    Birth = 0,
-    
-    Collision = 1,
-    
-    Death = 2
-}
-
-[Flags]
-public enum ParticleSystemSubEmitterProperties
-{
-    
-    InheritNothing = 0,
-    
-    InheritEverything = InheritColor | InheritSize | InheritRotation | InheritLifetime,
-    
-    InheritColor = 1 << 0,
-    
-    InheritSize = 1 << 1,
-    
-    InheritRotation = 1 << 2,
-    
-    InheritLifetime = 1 << 3,
-}
-
-public enum ParticleSystemTrailMode
-{
-    
-    PerParticle = 0,
-    
-    Ribbon = 1
-}
-
-public enum ParticleSystemTrailTextureMode
-{
-    
-    Stretch = 0,
-    
-    Tile = 1,
-    
-    DistributePerSegment = 2,
-    
-    RepeatPerSegment = 3
-}
-
-public enum ParticleSystemShapeMultiModeValue
-{
-    
-    Random = 0,
-    
-    Loop = 1,
-    
-    PingPong = 2,
-    
-    BurstSpread = 3
-}
-
 [RequireComponent(typeof(Transform))]
 public sealed partial class ParticleSystem : Component
 {
@@ -491,9 +70,6 @@ public sealed partial class ParticleSystem : Component
         
                     public ParticleSystemCurveMode mode { get { return m_Mode; } set { m_Mode = value; } }
         
-        
-        [System.Obsolete ("Please use MinMaxCurve.curveMultiplier instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/MinMaxCurve.curveMultiplier")]
-                    public float curveScalar { get { return m_CurveMultiplier; } set { m_CurveMultiplier = value; } }
                     public float curveMultiplier { get { return m_CurveMultiplier; } set { m_CurveMultiplier = value; } }
         
                     public AnimationCurve curveMax { get { return m_CurveMax; } set { m_CurveMax = value; } }
@@ -3499,6 +3075,12 @@ public sealed partial class ParticleSystem : Component
         public Vector3 velocity { get { return m_Velocity; } set { m_Velocity = value; } }
         
         
+        public Vector3 animatedVelocity { get { return m_AnimatedVelocity; } }
+        
+        
+        public Vector3 totalVelocity { get { return m_Velocity + m_AnimatedVelocity; } }
+        
+        
         [System.Obsolete ("Please use Particle.remainingLifetime instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/Particle.remainingLifetime")]
         public float lifetime { get { return m_Lifetime; } set { m_Lifetime = value; } }
         public float remainingLifetime { get { return m_Lifetime; } set { m_Lifetime = value; } }
@@ -4028,30 +3610,6 @@ public sealed partial class ParticleSystem : Component
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_Emit (ParticleSystem self, int count);
-    [System.Obsolete ("Emit with specific parameters is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties")]
-public void Emit(Vector3 position, Vector3 velocity, float size, float lifetime, Color32 color)
-        {
-            ParticleSystem.Particle particle = new ParticleSystem.Particle();
-            particle.position = position;
-            particle.velocity = velocity;
-            particle.lifetime = lifetime;
-            particle.startLifetime = lifetime;
-            particle.startSize = size;
-            particle.rotation3D = Vector3.zero;
-            particle.angularVelocity3D = Vector3.zero;
-            particle.startColor = color;
-            particle.randomSeed = 5;
-            Internal_EmitOld(ref particle);
-        }
-    
-    
-    [System.Obsolete ("Emit with a single particle structure is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties")]
-public void Emit(ParticleSystem.Particle particle)
-        {
-            Internal_EmitOld(ref particle);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_EmitOld (ref ParticleSystem.Particle particle) ;
@@ -4066,6 +3624,28 @@ public void Emit(ParticleSystem.Particle particle)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_Emit (ref ParticleSystem.EmitParams emitParams, int count) ;
 
+    public void TriggerSubEmitter(int subEmitterIndex)
+        {
+            Internal_TriggerSubEmitter(subEmitterIndex, null);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void TriggerSubEmitter (int subEmitterIndex, ref ParticleSystem.Particle particle) ;
+
+    public void TriggerSubEmitter(int subEmitterIndex, List<ParticleSystem.Particle> particles)
+        {
+            Internal_TriggerSubEmitter(subEmitterIndex, particles);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal void Internal_TriggerSubEmitter (int subEmitterIndex, object particles) ;
+
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetupDefaultType (int type) ;
@@ -4461,16 +4041,6 @@ public static partial class ParticlePhysicsExtensions
             if (collisionEvents == null) throw new ArgumentNullException("collisionEvents");
 
             return ParticleSystemExtensionsImpl.GetCollisionEvents(ps, go, collisionEvents);
-        }
-    
-    
-    [Obsolete("GetCollisionEvents function using ParticleCollisionEvent[] is deprecated. Use List<ParticleCollisionEvent> instead.", false)]
-    public static int GetCollisionEvents(this ParticleSystem ps, GameObject go, ParticleCollisionEvent[] collisionEvents)
-        {
-            if (go == null) throw new ArgumentNullException("go");
-            if (collisionEvents == null) throw new ArgumentNullException("collisionEvents");
-
-            return ParticleSystemExtensionsImpl.GetCollisionEventsDeprecated(ps, go, collisionEvents);
         }
     
     public static int GetSafeTriggerParticlesSize(this ParticleSystem ps, ParticleSystemTriggerEventType type)

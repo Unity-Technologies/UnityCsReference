@@ -38,13 +38,19 @@ public partial class TextAsset : Object
     
     public TextAsset()
         {
-            Internal_CreateTextAsset(this);
+            Internal_CreateInstance(this, null);
+        }
+    
+    
+    public TextAsset(string text)
+        {
+            Internal_CreateInstance(this, text);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void Internal_CreateTextAsset ([Writable] TextAsset mono) ;
+    extern private static  void Internal_CreateInstance ([Writable] TextAsset self, string text) ;
 
 }
 

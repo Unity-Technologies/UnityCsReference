@@ -3,10 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Scripting
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Interface | AttributeTargets.Enum, Inherited = false)]
+    [VisibleToOtherModules]
     internal class UsedByNativeCodeAttribute : Attribute
     {
         public UsedByNativeCodeAttribute()
@@ -22,6 +25,7 @@ namespace UnityEngine.Scripting
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Interface | AttributeTargets.Enum, Inherited = false)]
+    [VisibleToOtherModules]
     internal class RequiredByNativeCodeAttribute : Attribute
     {
         public RequiredByNativeCodeAttribute()
@@ -49,6 +53,7 @@ namespace UnityEngine.Scripting
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
+    [VisibleToOtherModules]
     internal class GenerateManagedProxyAttribute : Attribute
     {
     }
@@ -56,6 +61,7 @@ namespace UnityEngine.Scripting
     // NOTE(rb): This is a temporary attribute that UnityBindingsParser will
     // generate for all custom methods and properties in the transition process
     // to new bindings generator. It will be removed when migration is complete.
+    [VisibleToOtherModules]
     internal class GeneratedByOldBindingsGeneratorAttribute : System.Attribute
     {
     }
@@ -63,6 +69,23 @@ namespace UnityEngine.Scripting
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules]
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    internal sealed class AssetFileNameExtensionAttribute : Attribute
+    {
+        // the extension that should be given to assets of the decorated type when created from contexts that have limited information about the type
+        public string preferredExtension { get; }
+        // other extensions that assets of the decorated type might be given in special contexts
+        public IEnumerable<string> otherExtensions { get; }
+
+        public AssetFileNameExtensionAttribute(string preferredExtension, params string[] otherExtensions)
+        {
+            this.preferredExtension = preferredExtension;
+            this.otherExtensions = otherExtensions;
+        }
+    }
+
+    [VisibleToOtherModules]
     internal class ThreadAndSerializationSafeAttribute : System.Attribute
     {
         public ThreadAndSerializationSafeAttribute()
@@ -72,6 +95,7 @@ namespace UnityEngine
 
 
     [System.AttributeUsage(System.AttributeTargets.Struct)]
+    [VisibleToOtherModules]
     internal class IL2CPPStructAlignmentAttribute : System.Attribute
     {
         public int Align;
@@ -82,11 +106,13 @@ namespace UnityEngine
     }
 
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    [VisibleToOtherModules]
     internal class WritableAttribute : Attribute
     {
     }
 
     [AttributeUsage(AttributeTargets.Class)]
+    [VisibleToOtherModules]
     internal class RejectDragAndDropMaterial : Attribute
     {
     }

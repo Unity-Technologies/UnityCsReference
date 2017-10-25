@@ -563,6 +563,9 @@ namespace UnityEditor
 
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
             {
+                if (!ps.collision.enabled)
+                    continue;
+
                 ParticleSystem.Particle[] particles = new ParticleSystem.Particle[ps.particleCount];
                 int count = ps.GetParticles(particles);
 

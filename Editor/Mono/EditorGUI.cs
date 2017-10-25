@@ -75,7 +75,6 @@ namespace UnityEditor
         private static double s_DragStartValue = 0;
         private static long s_DragStartIntValue = 0;
         private static double s_DragSensitivity = 0;
-        private const float kDragSensitivity = .03f;
         internal const float kMiniLabelW = 13;
         internal const float kLabelW = 80;
         internal const float kSpacing = 5;
@@ -123,6 +122,7 @@ namespace UnityEditor
 
         private static int s_ColorPickID;
 
+        private static int s_CurveID;
         internal static Color kCurveColor = Color.green;
         internal static Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
         internal static EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
@@ -391,6 +391,7 @@ namespace UnityEditor
             internal string controlThatHadFocusValue = "";
             private GUIView viewThatHadFocus;
             private bool m_CommitCommandSentOnLostFocus;
+            private const string CommitCommand = "DelayedControlShouldCommit";
 
             private bool m_IgnoreBeginGUI = false;
 
@@ -435,7 +436,7 @@ namespace UnityEditor
                     if (GUIView.current == viewThatHadFocus)
                         viewThatHadFocus.SetKeyboardControl(GUIUtility.keyboardControl);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
                     m_IgnoreBeginGUI = false;
                     //              Debug.Log ("Afterwards: " + GUIUtility.keyboardControl);
                     messageControl = 0;
@@ -457,26 +458,27 @@ namespace UnityEditor
                     var temp = GUIUtility.keyboardControl;
                     viewThatHadFocus.SetKeyboardControl(0);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
                     m_IgnoreBeginGUI = false;
                     viewThatHadFocus.SetKeyboardControl(temp);
+                    messageControl = 0;
                 }
 
                 base.EndEditing();
-                messageControl = 0;
             }
 
             //*undocumented*
             public string OnGUI(int id, string value, out bool changed)
             {
                 Event evt = Event.current;
-                if (evt.type == EventType.ExecuteCommand && evt.commandName == "DelayedControlShouldCommit" && id == messageControl)
+                if (evt.type == EventType.ExecuteCommand && evt.commandName == CommitCommand && id == messageControl)
                 {
                     m_CommitCommandSentOnLostFocus = false;
-                    changed = value != controlThatHadFocusValue;
                     // Only set changed to true if the value has actually changed. Otherwise EditorGUI.EndChangeCheck will report false positives,
                     // which could for example cause unwanted undo's to be registered (in the case of e.g. editing terrain resolution, this can cause several seconds of delay)
+                    changed = value != controlThatHadFocusValue;
                     evt.Use();
+                    messageControl = 0;
                     return controlThatHadFocusValue;
                 }
                 changed = false;
@@ -679,17 +681,14 @@ namespace UnityEditor
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
                 }
-                else
+                else if (s_DragCandidateState == 0)
                 {
                     // This one is worse: we are the new keyboardControl, but didn't know about it.
                     // this means a Tab operation or setting focus from code.
-                    if (EditorGUIUtility.editingTextField)
-                    {
-                        editor.BeginEditing(id, text, position, style, multiline, passwordField);
-                        // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
-                        if (GUI.skin.settings.cursorColor.a > 0)
-                            editor.SelectAll();
-                    }
+                    editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                    // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
+                    if (GUI.skin.settings.cursorColor.a > 0)
+                        editor.SelectAll();
                 }
             }
 
@@ -1695,20 +1694,6 @@ namespace UnityEditor
             return DoDoubleField(s_RecycledEditor, position2, position, id, value, kDoubleFieldFormatString, style, true);
         }
 
-        private static double CalculateFloatDragSensitivity(double value)
-        {
-            if (Double.IsInfinity(value) || Double.IsNaN(value))
-            {
-                return 0.0;
-            }
-            return Math.Max(1, Math.Pow(Math.Abs(value), 0.5)) * kDragSensitivity;
-        }
-
-        private static long CalculateIntDragSensitivity(long value)
-        {
-            return (long)System.Math.Max(1, System.Math.Pow(System.Math.Abs((double)value), 0.5) * kDragSensitivity);
-        }
-
         // Handle dragging of value
         private static void DragNumberValue(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, double dragSensitivity)
         {
@@ -1802,7 +1787,7 @@ namespace UnityEditor
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
+            return DoFloatField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? (float)NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0f);
         }
 
         internal static float DoFloatField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, float value, string formatString, GUIStyle style, bool draggable, float dragSensitivity)
@@ -1824,7 +1809,7 @@ namespace UnityEditor
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable)
         {
-            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? CalculateFloatDragSensitivity(s_DragStartValue) : 0.0);
+            return DoDoubleField(editor, position, dragHotZone, id, value, formatString, style, draggable, Event.current.GetTypeForControl(id) == EventType.MouseDown ? NumericFieldDraggerUtility.CalculateFloatDragSensitivity(s_DragStartValue) : 0.0);
         }
 
         internal static double DoDoubleField(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, double value, string formatString, GUIStyle style, bool draggable, double dragSensitivity)
@@ -1842,8 +1827,8 @@ namespace UnityEditor
         }
 
         internal static readonly string s_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()";
-        internal static readonly string s_AllowedCharactersForInt = "0123456789-*/+%^()";
 
+        internal static readonly string s_AllowedCharactersForInt = "0123456789-*/+%^()";
 
         static bool HasKeyboardFocus(int controlID)
         {
@@ -1903,43 +1888,14 @@ namespace UnityEditor
                     // clean up the text
                     if (isDouble)
                     {
-                        string lowered = str.ToLower();
-                        if (lowered == "inf" || lowered == "infinity")
+                        if (StringToDouble(str, out doubleVal))
                         {
-                            doubleVal = Double.PositiveInfinity;
-                        }
-                        else if (lowered == "-inf" || lowered == "-infinity")
-                        {
-                            doubleVal = Double.NegativeInfinity;
-                        }
-                        else
-                        {
-                            // Make sure that comma & period are interchangable.
-                            str = str.Replace(',', '.');
-
-                            if (!double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out doubleVal))
-                            {
-                                doubleVal = s_RecycledCurrentEditingFloat = ExpressionEvaluator.Evaluate<double>(str);
-                                return;
-                            }
-
-                            // Don't allow user to enter NaN - it opens a can of worms that can trigger many latent bugs,
-                            // and is not really useful for anything.
-                            if (Double.IsNaN(doubleVal))
-                            {
-                                doubleVal = 0;
-                            }
-
                             s_RecycledCurrentEditingFloat = doubleVal;
                         }
                     }
                     else
                     {
-                        if (!long.TryParse(str, out longVal))
-                        {
-                            longVal = s_RecycledCurrentEditingInt = ExpressionEvaluator.Evaluate<long>(str);
-                            return;
-                        }
+                        StringToLong(str, out longVal);
                         s_RecycledCurrentEditingInt = longVal;
                     }
                 }
@@ -1948,6 +1904,50 @@ namespace UnityEditor
             {
                 str = DoTextField(editor, id, position, str, style, allowedCharacters, out changed, false, false, false);
             }
+        }
+
+        internal static bool StringToDouble(string str, out double value)
+        {
+            string lowered = str.ToLower();
+            if (lowered == "inf" || lowered == "infinity")
+            {
+                value = double.PositiveInfinity;
+            }
+            else if (lowered == "-inf" || lowered == "-infinity")
+            {
+                value = double.NegativeInfinity;
+            }
+            else
+            {
+                // Make sure that comma & period are interchangable.
+                str = str.Replace(',', '.');
+
+                if (!double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture.NumberFormat, out value))
+                {
+                    value = ExpressionEvaluator.Evaluate<double>(str);
+                    return true;
+                }
+
+                // Don't allow user to enter NaN - it opens a can of worms that can trigger many latent bugs,
+                // and is not really useful for anything.
+                if (double.IsNaN(value))
+                {
+                    value = 0;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static bool StringToLong(string str, out long value)
+        {
+            if (!long.TryParse(str, out value))
+            {
+                value = ExpressionEvaluator.Evaluate<long>(str);
+            }
+            return true;
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
@@ -2147,7 +2147,7 @@ namespace UnityEditor
         internal static int IntFieldInternal(Rect position, int value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
-            return DoIntField(s_RecycledEditor, IndentedRect(position), new Rect(0, 0, 0, 0), id, value, kIntFieldFormatString, style, false, CalculateIntDragSensitivity(value));
+            return DoIntField(s_RecycledEditor, IndentedRect(position), new Rect(0, 0, 0, 0), id, value, kIntFieldFormatString, style, false, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
         }
 
         // Make a text field for entering integers.
@@ -2156,14 +2156,14 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoIntField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, CalculateIntDragSensitivity(value));
+            return DoIntField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
         }
 
         /// *listonly*
         internal static long LongFieldInternal(Rect position, long value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
-            return DoLongField(s_RecycledEditor, IndentedRect(position), new Rect(0, 0, 0, 0), id, value, kIntFieldFormatString, style, false, CalculateIntDragSensitivity(value));
+            return DoLongField(s_RecycledEditor, IndentedRect(position), new Rect(0, 0, 0, 0), id, value, kIntFieldFormatString, style, false, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
         }
 
         // Make a text field for entering integers.
@@ -2172,7 +2172,7 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoLongField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, CalculateIntDragSensitivity(value));
+            return DoLongField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
         }
 
         internal static void SliderWithTexture(Rect position, GUIContent label, SerializedProperty property, float leftValue, float rightValue, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
@@ -2650,8 +2650,8 @@ namespace UnityEditor
 
             var enumData = GetNonObsoleteEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.names), style);
-            return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
+            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.displayNames), style);
+            return (i < 0 || i >= enumData.values.Length) ? selected : enumData.values[i];
         }
 
         /// *listonly*
@@ -3049,7 +3049,7 @@ namespace UnityEditor
         {
             public Enum[] values;
             public int[] flagValues;
-            public string[] names;
+            public string[] displayNames;
             public bool flags;
             public Type underlyingType;
             public bool unsigned;
@@ -3070,13 +3070,13 @@ namespace UnityEditor
                     || enumData.underlyingType == typeof(ushort)
                     || enumData.underlyingType == typeof(uint)
                     || enumData.underlyingType == typeof(ulong);
-                enumData.names = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
-                enumData.values = enumData.names.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
+                enumData.displayNames = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
+                enumData.values = enumData.displayNames.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
                 enumData.flagValues = enumData.unsigned ?
                     enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
                     enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
-                for (int i = 0, length = enumData.names.Length; i < length; ++i)
-                    enumData.names[i] = ObjectNames.NicifyVariableName(enumData.names[i]);
+                for (int i = 0, length = enumData.displayNames.Length; i < length; ++i)
+                    enumData.displayNames[i] = ObjectNames.NicifyVariableName(enumData.displayNames[i]);
                 // convert "everything" values to ~0 for unsigned 8- and 16-bit types
                 if (enumData.underlyingType == typeof(ushort))
                 {
@@ -3173,7 +3173,7 @@ namespace UnityEditor
             var flagsInt = EnumFlagsToInt(enumData, enumValue);
 
             EditorGUI.BeginChangeCheck();
-            flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.names, enumData.flagValues, style, out changedFlags, out changedToValue);
+            flagsInt = MaskFieldGUI.DoMaskField(position, id, flagsInt, enumData.displayNames, enumData.flagValues, style, out changedFlags, out changedToValue);
             if (!EditorGUI.EndChangeCheck())
                 return enumValue;
 
@@ -4396,7 +4396,7 @@ namespace UnityEditor
         {
             if (property != null)
             {
-                CurveEditorWindow.property = property;
+                CurveEditorWindow.curve = property.hasMultipleDifferentValues ? new AnimationCurve() : property.animationCurveValue;
             }
             else
             {
@@ -4405,7 +4405,7 @@ namespace UnityEditor
             CurveEditorWindow.color = color;
         }
 
-        private static AnimationCurve DoCurveField(Rect position, int id, AnimationCurve value, Color color, Rect ranges, SerializedProperty property)
+        internal static AnimationCurve DoCurveField(Rect position, int id, AnimationCurve value, Color color, Rect ranges, SerializedProperty property)
         {
             Event evt = Event.current;
 
@@ -4413,12 +4413,24 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (MatchesCurvePopup(value, property))
+            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
             {
-                if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                if (s_CurveID != id)
                 {
-                    SetCurveEditorWindowCurve(value, property, color);
-                    CurveEditorWindow.instance.Repaint();
+                    s_CurveID = id;
+                    if (CurveEditorWindow.visible)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        ShowCurvePopup(GUIView.current, ranges);
+                    }
+                }
+                else
+                {
+                    if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        CurveEditorWindow.instance.Repaint();
+                    }
                 }
             }
 
@@ -4427,6 +4439,8 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition))
                     {
+                        s_CurveID = id;
+                        GUIUtility.keyboardControl = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4448,8 +4462,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-
-                    if (MatchesCurvePopup(value, property))
+                    if (s_CurveID == id)
                     {
                         switch (evt.commandName)
                         {
@@ -4472,6 +4485,7 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(id))
                     {
+                        s_CurveID = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4494,20 +4508,6 @@ namespace UnityEditor
                 settings.vRangeMax = ranges.yMax;
             }
             CurveEditorWindow.instance.Show(GUIView.current, settings);
-        }
-
-        private static bool MatchesCurvePopup(AnimationCurve curve, SerializedProperty property)
-        {
-            if (curve != null)
-                return curve == CurveEditorWindow.curve;
-
-            if (CurveEditorWindow.property == null)
-                return false;
-
-            if (CurveEditorWindow.property.serializedObject == null)
-                return false;
-
-            return SerializedProperty.EqualContents(property, CurveEditorWindow.property);
         }
 
         private static bool ValidTargetForIconSelection(Object[] targets)
@@ -4708,6 +4708,11 @@ namespace UnityEditor
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
             }
 
+            // Temporarily set GUI.enabled = true to enable the Settings button. see Case 947218.
+            var oldGUIEnabledState = GUI.enabled;
+
+            GUI.enabled = true;
+
             switch (evt.type)
             {
                 case EventType.MouseDown:
@@ -4724,6 +4729,8 @@ namespace UnityEditor
                     iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
                     break;
             }
+
+            GUI.enabled = oldGUIEnabledState;
         }
 
         internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue)
@@ -5302,6 +5309,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
         {
+            LayerMaskField(position, property.layerMaskBits, property, label, style, SetLayerMaskValueDelegate);
+        }
+
+        internal static void LayerMaskField(Rect position, UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback)
+        {
+            LayerMaskField(position, layers, null, label, EditorStyles.layerMaskField, callback);
+        }
+
+        internal static void LayerMaskField(Rect position, UInt32 layers, SerializedProperty property, GUIContent label, GUIStyle style, EditorUtility.SelectMenuItemFunction callback)
+        {
             int id = GUIUtility.GetControlID(s_LayerMaskField, FocusType.Keyboard, position);
             if (label != null)
             {
@@ -5318,13 +5335,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
                 else
                 {
-                    style.Draw(position, EditorGUIUtility.TempContent(property.layerMaskStringValue), id, false);
+                    style.Draw(position, EditorGUIUtility.TempContent(SerializedProperty.GetLayerMaskStringValue(layers)), id, false);
                 }
             }
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(id))
             {
-                SerializedProperty propertyWithPath = property.serializedObject.FindProperty(property.propertyPath);
-                EditorUtility.DisplayCustomMenu(position, property.GetLayerMaskNames(), property.hasMultipleDifferentValues ? new int[0] : property.GetLayerMaskSelectedIndex(), SetLayerMaskValueDelegate, propertyWithPath);
+                SerializedProperty propertyWithPath = (property != null) ? property.serializedObject.FindProperty(property.propertyPath) : null;
+                var userData = new Tuple<SerializedProperty, UInt32>(propertyWithPath, layers);
+                EditorUtility.DisplayCustomMenu(position, SerializedProperty.GetLayerMaskNames(layers), (property != null && property.hasMultipleDifferentValues) ? new int[0] : SerializedProperty.GetLayerMaskSelectedIndex(layers), callback, userData);
                 Event.current.Use();
                 EditorGUIUtility.keyboardControl = id;
             }
@@ -5332,9 +5350,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static void SetLayerMaskValueDelegate(object userData, string[] options, int selected)
         {
-            SerializedProperty property = (SerializedProperty)userData;
-            property.ToggleLayerMaskAtIndex(selected);
-            property.serializedObject.ApplyModifiedProperties();
+            var data = (Tuple<SerializedProperty, UInt32>)userData;
+            if (data.Item1 != null)
+            {
+                data.Item1.ToggleLayerMaskAtIndex(selected);
+                data.Item1.serializedObject.ApplyModifiedProperties();
+                data.Item2 = data.Item1.layerMaskBits;
+            }
         }
 
         // Helper function for helping with debugging the editor
@@ -7561,6 +7583,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, style);
             return EditorGUI.Foldout(r, foldout, content, toggleOnLabelClick, style);
+        }
+
+        internal static void LayerMaskField(UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+            EditorGUI.LayerMaskField(r, layers, label, callback);
         }
 
         internal static void LayerMaskField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)

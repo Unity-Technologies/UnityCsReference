@@ -283,7 +283,7 @@ namespace UnityEditor
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            EditorApplication.projectWindowChanged += OnProjectChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
         }
 
         public void OnDisable()
@@ -291,7 +291,7 @@ namespace UnityEditor
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
-            EditorApplication.projectWindowChanged -= OnProjectChanged;
+            EditorApplication.projectChanged -= OnProjectChanged;
         }
 
         void OnPauseStateChanged(PauseState state)

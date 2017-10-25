@@ -75,6 +75,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void OnMouseDown(MouseDownEvent e)
         {
+            if (m_Active)
+            {
+                e.StopImmediatePropagation();
+                return;
+            }
+
             if (!CanStartManipulation(e))
                 return;
 
@@ -85,13 +91,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Start = graphView.ChangeCoordinatesTo(graphView.contentViewContainer, e.localMousePosition);
 
             m_Active = true;
-            target.TakeCapture();
+            target.TakeMouseCapture();
             e.StopPropagation();
         }
 
         protected void OnMouseMove(MouseMoveEvent e)
         {
-            if (!m_Active || !target.HasCapture())
+            if (!m_Active || !target.HasMouseCapture())
                 return;
 
             var graphView = target as GraphView;
@@ -118,11 +124,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Vector3 p = graphView.contentViewContainer.transform.position;
             Vector3 s = graphView.contentViewContainer.transform.scale;
-            // Update the presenter on mouseup
+
             graphView.UpdateViewTransform(p, s);
 
             m_Active = false;
-            target.ReleaseCapture();
+            target.ReleaseMouseCapture();
             e.StopPropagation();
         }
     }

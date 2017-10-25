@@ -191,8 +191,8 @@ namespace UnityEngine.Experimental.UIElements
         public Color GetPropertyColor(string propertyName, Color defaultValue)
         {
             var v = GetPropertyString(propertyName);
-            Color32 l;
-            if (v == null || !ColorUtility.DoTryParseHtmlColor(v, out l))
+            Color l;
+            if (v == null || !ColorUtility.TryParseHtmlString(v, out l))
                 return defaultValue;
             return l;
         }

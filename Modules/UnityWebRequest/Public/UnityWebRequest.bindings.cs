@@ -35,6 +35,9 @@ namespace UnityEngine.Networking
         [System.NonSerialized]
         internal UploadHandler m_UploadHandler;
 
+        [System.NonSerialized]
+        internal CertificateHandler m_CertificateHandler;
+
         internal enum UnityWebRequestMethod
         {
             Get = 0,
@@ -89,6 +92,8 @@ namespace UnityEngine.Networking
         [NativeConditional("ENABLE_UNITYWEBREQUEST")]
         private extern static string GetWebErrorString(UnityWebRequestError err);
 
+        public bool disposeCertificateHandlerOnDispose { get; set; }
+
         public bool disposeDownloadHandlerOnDispose { get; set; }
 
         public bool disposeUploadHandlerOnDispose { get; set; }
@@ -113,6 +118,7 @@ namespace UnityEngine.Networking
         {
             this.disposeDownloadHandlerOnDispose = true;
             this.disposeUploadHandlerOnDispose = true;
+            this.disposeCertificateHandlerOnDispose = true;
         }
 
         public UnityWebRequest()
@@ -177,6 +183,15 @@ namespace UnityEngine.Networking
                 if (uh != null)
                 {
                     uh.Dispose();
+                }
+            }
+
+            if (disposeCertificateHandlerOnDispose)
+            {
+                CertificateHandler ch = this.certificateHandler;
+                if (ch != null)
+                {
+                    ch.Dispose();
                 }
             }
         }
@@ -469,6 +484,25 @@ namespace UnityEngine.Networking
                 if (ret != UnityWebRequestError.OK)
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
                 m_DownloadHandler = value;
+            }
+        }
+
+        private extern UnityWebRequestError SetCertificateHandler(CertificateHandler ch);
+
+        public CertificateHandler certificateHandler
+        {
+            get
+            {
+                return m_CertificateHandler;
+            }
+            set
+            {
+                if (!isModifiable)
+                    throw new InvalidOperationException("UnityWebRequest has already been sent; cannot modify the certificate handler");
+                UnityWebRequestError ret = SetCertificateHandler(value);
+                if (ret != UnityWebRequestError.OK)
+                    throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
+                m_CertificateHandler = value;
             }
         }
 

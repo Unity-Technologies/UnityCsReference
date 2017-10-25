@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -12,6 +13,7 @@ namespace UnityEngine
     // except this one. So to prevent our code compiling against the (string, object, object) version and use the params
     // version instead, we reroute through this.
     // TODO: remove this when the dependency goes away.
+    [VisibleToOtherModules]
     internal sealed partial class UnityString
     {
         public static string Format(string fmt, params object[] args)

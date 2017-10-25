@@ -59,7 +59,6 @@ public void LogError(string warning, [uei.DefaultValue("null")]  Object context 
     public virtual int GetPostprocessOrder() { return 0; }
     
     
-    
 }
 
 }

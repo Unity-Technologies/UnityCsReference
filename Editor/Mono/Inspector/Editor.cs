@@ -195,7 +195,13 @@ namespace UnityEditor
                             );
 
                     if (selectingOne && r.Contains(Event.current.mousePosition))
-                        Selection.objects = new UnityObject[] { defaultPreview.target };
+                    {
+                        if (defaultPreview.target is AssetImporter)
+                            // The new selection should be the asset itself, not the importer
+                            Selection.objects = new[] { AssetDatabase.LoadAssetAtPath<UnityObject>(((AssetImporter)defaultPreview.target).assetPath)};
+                        else
+                            Selection.objects = new UnityObject[] {defaultPreview.target};
+                    }
 
                     // Make room for label underneath
                     r.height -= kPreviewLabelHeight;

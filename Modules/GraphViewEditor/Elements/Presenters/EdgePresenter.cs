@@ -12,10 +12,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     class EdgePresenter : GraphElementPresenter
     {
         [SerializeField]
-        private NodeAnchorPresenter m_OutputPresenter;
+        protected NodeAnchorPresenter m_OutputPresenter;
 
         [SerializeField]
-        private NodeAnchorPresenter m_InputPresenter;
+        protected NodeAnchorPresenter m_InputPresenter;
 
         public virtual NodeAnchorPresenter output
         {

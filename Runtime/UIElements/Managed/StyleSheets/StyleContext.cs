@@ -12,18 +12,20 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     {
         public StyleSheet sheet;
         public StyleComplexSelector complexSelector;
-        public int simpleSelectorIndex;
-        public int depth;
+
+        public override string ToString()
+        {
+            return complexSelector.ToString();
+        }
     }
 
     internal class StyleContext
     {
         public float currentPixelsPerPoint { get; set; }
 
-        private List<RuleMatcher> m_Matchers;
         private VisualElement m_VisualTree;
 
-        private struct RuleRef
+        internal struct RuleRef
         {
             public StyleComplexSelector selector;
             public StyleSheet sheet;
@@ -34,12 +36,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         // resolving styles allows to skip the resolve part when an existing resolved style already exists
         private static Dictionary<Int64, VisualElementStylesData> s_StyleCache = new Dictionary<Int64, VisualElementStylesData>();
 
-        private static StyleContextHierarchyTraversal s_StyleContextHierarchyTraversal = new StyleContextHierarchyTraversal();
+        internal static StyleContextHierarchyTraversal styleContextHierarchyTraversal = new StyleContextHierarchyTraversal();
 
         public StyleContext(VisualElement tree)
         {
             m_VisualTree = tree;
-            m_Matchers = new List<RuleMatcher>(capacity: 0);
         }
 
         public void DirtyStyleSheets()
@@ -50,9 +51,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         public void ApplyStyles()
         {
             Debug.Assert(m_VisualTree.panel != null);
-            s_StyleContextHierarchyTraversal.currentPixelsPerPoint = currentPixelsPerPoint;
-            s_StyleContextHierarchyTraversal.Traverse(m_VisualTree, 0, m_Matchers);
-            m_Matchers.Clear();
+            styleContextHierarchyTraversal.currentPixelsPerPoint = currentPixelsPerPoint;
+            styleContextHierarchyTraversal.Traverse(m_VisualTree);
         }
 
         private static void PropagateDirtyStyleSheets(VisualElement element)
@@ -74,7 +74,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             s_StyleCache.Clear();
         }
 
-        private class StyleContextHierarchyTraversal : HierarchyTraversal
+        internal class StyleContextHierarchyTraversal : HierarchyTraversal
         {
             private List<RuleRef> m_MatchedRules = new List<RuleRef>(capacity: 0);
             private long m_MatchingRulesHash;
@@ -98,11 +98,16 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
             public override void OnBeginElementTest(VisualElement element, List<RuleMatcher> ruleMatchers)
             {
+                element.triggerPseudoMask = 0;
+                element.dependencyPseudoMask = 0;
+
                 if (element != null && element.styleSheets != null)
                 {
-                    foreach (var styleSheetData in element.styleSheets)
+                    for (var index = 0; index < element.styleSheets.Count; index++)
                     {
+                        var styleSheetData = element.styleSheets[index];
                         var complexSelectors = styleSheetData.complexSelectors;
+
                         // To avoid excessive re-allocations, just resize the list right now
                         int futureSize = ruleMatchers.Count + complexSelectors.Length;
                         ruleMatchers.Capacity = Math.Max(ruleMatchers.Capacity, futureSize);
@@ -110,13 +115,12 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         for (int i = 0; i < complexSelectors.Length; i++)
                         {
                             StyleComplexSelector complexSelector = complexSelectors[i];
+
                             // For every complex selector, push a matcher for first sub selector
-                            ruleMatchers.Add(new RuleMatcher()
+                            ruleMatchers.Add(new RuleMatcher
                             {
                                 sheet = styleSheetData,
                                 complexSelector = complexSelector,
-                                simpleSelectorIndex = 0,
-                                depth = int.MaxValue
                             });
                         }
                     }
@@ -127,6 +131,12 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 Int64 matchingRulesHash = elementTypeName.GetHashCode();
                 // Let current DPI contribute to the hash so cache is invalidated when this changes
                 m_MatchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
+            }
+
+            public override void OnProcessMatchResult(UIElements.VisualElement element, ref StyleSheets.RuleMatcher matcher, ref MatchResultInfo matchInfo)
+            {
+                element.triggerPseudoMask |= matchInfo.triggerPseudoMask;
+                element.dependencyPseudoMask |= matchInfo.dependencyPseudoMask;
             }
 
             public override void ProcessMatchedRules(VisualElement element)

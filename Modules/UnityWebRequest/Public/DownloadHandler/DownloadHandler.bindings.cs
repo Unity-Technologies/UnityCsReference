@@ -18,11 +18,13 @@ namespace UnityEngine.Networking
     public class DownloadHandler : IDisposable
     {
         [System.NonSerialized]
+        [VisibleToOtherModules]
         internal IntPtr m_Ptr;
 
         [NativeMethod(IsThreadSafe = true)]
         private extern void Release();
 
+        [VisibleToOtherModules]
         internal DownloadHandler()
         {}
 
@@ -129,6 +131,7 @@ namespace UnityEngine.Networking
         }
 
         [NativeThrows]
+        [VisibleToOtherModules]
         internal extern static byte[] InternalGetByteArray(DownloadHandler dh);
     }
 
@@ -170,10 +173,16 @@ namespace UnityEngine.Networking
     public class DownloadHandlerScript : DownloadHandler
     {
         private extern static IntPtr Create(DownloadHandlerScript obj);
+        private extern static IntPtr CreatePreallocated(DownloadHandlerScript obj, byte[] preallocatedBuffer);
 
         private void InternalCreateScript()
         {
             m_Ptr = Create(this);
+        }
+
+        private void InternalCreateScript(byte[] preallocatedBuffer)
+        {
+            m_Ptr = CreatePreallocated(this, preallocatedBuffer);
         }
 
         public DownloadHandlerScript()
@@ -188,11 +197,9 @@ namespace UnityEngine.Networking
                 throw new System.ArgumentException("Cannot create a preallocated-buffer DownloadHandlerScript backed by a null or zero-length array");
             }
 
-            InternalCreateScript();
-            SetPreallocatedBuffer(preallocatedBuffer);
+            InternalCreateScript(preallocatedBuffer);
         }
 
-        private extern void SetPreallocatedBuffer(byte[] buffer);
     }
 
     [StructLayout(LayoutKind.Sequential)]

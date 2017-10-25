@@ -15,15 +15,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         [SerializeField]
         // TODO TEMP protected while upgrading MaterialGraph. Needs to go back private
-        protected List<GraphElementPresenter> m_Elements = new List<GraphElementPresenter>();
+        protected List<GraphElementPresenter> m_Elements;
 
         [SerializeField]
-        private List<GraphElementPresenter> m_TempElements = new List<GraphElementPresenter>();
+        private List<GraphElementPresenter> m_TempElements;
 
         [SerializeField]
-        public Vector3 position;
+        private Vector3 m_Position;
+        public virtual Vector3 position { get { return m_Position; } set { m_Position = value; } }
+
         [SerializeField]
-        public Vector3 scale;
+        private Vector3 m_Scale;
+        public virtual Vector3 scale { get { return m_Scale; } set { m_Scale = value; } }
 
         public IEnumerable<GraphElementPresenter> allChildren
         {
@@ -49,6 +52,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void OnEnable()
         {
+            if (m_Elements == null)
+                m_Elements = new List<GraphElementPresenter>();
+            if (m_TempElements == null)
+                m_TempElements = new List<GraphElementPresenter>();
+
             m_Elements.Clear();
             m_TempElements.Clear();
         }

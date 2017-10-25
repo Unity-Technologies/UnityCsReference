@@ -11,11 +11,17 @@ namespace UnityEditorInternal
     {
         void SetSelectedPropertyPath(string path);
         void ClearSelectedPropertyPath();
+
+        void SetClearOnPlay(bool enabled);
+        bool GetClearOnPlay();
+
+
         ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType);
         int GetActiveVisibleFrameIndex();
         void SetSearch(string searchString);
         string GetSearch();
         bool IsSearching();
+        bool IsRecording();
         void Repaint();
     }
 }

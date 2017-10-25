@@ -562,7 +562,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (packageCustomScriptAssemblies != null)
                 allCustomScriptAssemblies.AddRange(packageCustomScriptAssemblies);
 
-            var customScriptAssembly = allCustomScriptAssemblies.Single(a => a.Name == AssetPath.GetFileNameWithoutExtension(assemblyName));
+            var customScriptAssembly = allCustomScriptAssemblies.Single(a => a.Name == AssetPath.GetAssemblyNameWithoutExtension(assemblyName));
             return customScriptAssembly;
         }
 
@@ -576,7 +576,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CustomScriptAssembly FindCustomTargetAssemblyFromTargetAssembly(EditorBuildRules.TargetAssembly assembly)
         {
-            var assemblyName = AssetPath.GetFileNameWithoutExtension(assembly.Filename);
+            var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename);
             return FindCustomScriptAssemblyFromAssemblyName(assemblyName);
         }
 
@@ -590,7 +590,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (notCompiledTargetAssemblies != null)
                 foreach (var targetAssembly in notCompiledTargetAssemblies)
                 {
-                    var customScriptAssembly = customScriptAssemblies.Single(a => a.Name == AssetPath.GetFileNameWithoutExtension(targetAssembly.Filename));
+                    var customScriptAssembly = customScriptAssemblies.Single(a => a.Name == AssetPath.GetAssemblyNameWithoutExtension(targetAssembly.Filename));
 
                     var filePath = customScriptAssembly.FilePath;
 
@@ -657,25 +657,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Compile to tempBuildDirectory
             compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, options, UnityEngine.SystemInfo.processorCount);
 
+
             compilationTask.OnCompilationStarted += (assembly, phase) =>
                 {
                     var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                     Console.WriteLine("- Starting compile {0}", assemblyOutputPath);
-
-                    if (assemblyCompilationStarted != null)
-                        assemblyCompilationStarted(assemblyOutputPath);
+                    InvokeAssemblyCompilationStarted(assemblyOutputPath);
                 };
 
             compilationTask.OnCompilationFinished += (assembly, messages) =>
                 {
                     var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                     Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
-
-                    if (assemblyCompilationFinished != null)
-                    {
-                        var convertedMessages = ConvertCompilerMessages(messages);
-                        assemblyCompilationFinished(assemblyOutputPath, convertedMessages);
-                    }
+                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
 
                     if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                         runScriptUpdaterAssemblies.Remove(assembly.Filename);
@@ -705,6 +699,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.Poll();
             return true;
+        }
+
+        public void InvokeAssemblyCompilationStarted(string assemblyOutputPath)
+        {
+            if (assemblyCompilationStarted != null)
+                assemblyCompilationStarted(assemblyOutputPath);
+        }
+
+        public void InvokeAssemblyCompilationFinished(string assemblyOutputPath, List<CompilerMessage> messages)
+        {
+            if (assemblyCompilationFinished != null)
+            {
+                var convertedMessages = ConvertCompilerMessages(messages);
+                assemblyCompilationFinished(assemblyOutputPath, convertedMessages);
+            }
         }
 
         public bool DoesProjectFolderHaveAnyDirtyScripts()
@@ -853,9 +862,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (!string.IsNullOrEmpty(assemblySuffix))
             {
-                var basename = AssetPath.GetFileNameWithoutExtension(assemblyFilename);
-                var extension = AssetPath.GetExtension(assemblyFilename);
-                return string.Concat(basename, assemblySuffix, extension);
+                var basename = AssetPath.GetAssemblyNameWithoutExtension(assemblyFilename);
+                return string.Concat(basename, assemblySuffix, ".dll");
             }
 
             return assemblyFilename;
@@ -888,9 +896,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
         {
-            var assemblyName = AssetPath.GetFileNameWithoutExtension(assemblyNameOrPath);
+            var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyNameOrPath);
             var scriptAssemblies = GetAllScriptAssembliesForLanguage<T>();
-            return scriptAssemblies.SingleOrDefault(a => String.Compare(assemblyName, AssetPath.GetFileNameWithoutExtension(a.Filename), StringComparison.OrdinalIgnoreCase) == 0);
+            return scriptAssemblies.SingleOrDefault(a => String.Compare(assemblyName, AssetPath.GetAssemblyNameWithoutExtension(a.Filename), StringComparison.OrdinalIgnoreCase) == 0);
         }
 
         public EditorBuildRules.TargetAssembly[] GetCustomTargetAssemblies()

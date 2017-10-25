@@ -5,135 +5,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.AssetImporters
 {
-    // Class concept: helper class that holds a generated asset object, during the import phase of scripted importer.
-    //
-    // Motivation: A source asset file can produce multiple objects. Needed a way to generically hold these objects and keep track of which one is the main object.
-    class ImportedObject
-    {
-        // Is this the main part of the asset being imported?
-        public bool mainAssetObject { get; set; }
-
-        public Object obj { get; set; }
-
-        public string localIdentifier { get; set; }
-
-        public Texture2D thumbnail { get; set; }
-    }
-
-    public class AssetImportContext
-    {
-        public string assetPath { get; internal set; }
-        public BuildTarget selectedBuildTarget { get; internal set;  }
-
-        List<ImportedObject> m_ImportedObjects = new List<ImportedObject>();
-        internal List<ImportedObject> importedObjects
-        {
-            get { return m_ImportedObjects; }
-        }
-
-        internal AssetImportContext()
-        {
-        }
-
-        public void SetMainObject(Object obj)
-        {
-            if (obj == null)
-                return;
-
-            var mainObject = m_ImportedObjects.FirstOrDefault(x => x.mainAssetObject);
-            if (mainObject != null)
-            {
-                if (mainObject.obj == obj)
-                    return;
-
-                Debug.LogWarning(string.Format(@"An object was already set as the main object: ""{0}"" conflicting on ""{1}""", assetPath, mainObject.localIdentifier));
-                mainObject.mainAssetObject = false;
-            }
-
-            mainObject = m_ImportedObjects.FirstOrDefault(x => x.obj == obj);
-            if (mainObject == null)
-            {
-                throw new Exception("Before an object can be set as main, it must first be added using AddObjectToAsset.");
-            }
-
-            mainObject.mainAssetObject = true;
-            m_ImportedObjects.Remove(mainObject);
-            m_ImportedObjects.Insert(0, mainObject);
-        }
-
-        public void AddObjectToAsset(string identifier, Object obj)
-        {
-            AddObjectToAsset(identifier, obj, null);
-        }
-
-        public void AddObjectToAsset(string identifier, Object obj, Texture2D thumbnail)
-        {
-            if (obj == null)
-            {
-                throw new ArgumentNullException("obj", "Cannot add a null object : " + (identifier ?? "<null>"));
-            }
-
-            var desc = new ImportedObject()
-            {
-                mainAssetObject = false,
-                localIdentifier = identifier,
-                obj = obj,
-                thumbnail = thumbnail
-            };
-            m_ImportedObjects.Add(desc);
-        }
-    }
-
     // Class Concept: Root, abstract class for all Asset importers implemented in C#.
     public abstract class ScriptedImporter : AssetImporter
     {
-        // Struct Concept: simple struct to carry import request arguments from native code.
-        // Must mirror native counterpart exactly!
-        [StructLayout(LayoutKind.Sequential)]
-        struct ImportRequest
-        {
-            public readonly string m_AssetSourcePath;
-            public readonly BuildTarget m_SelectedBuildTarget;
-        }
-
-        // Struct Concept: simple struct to carry resulting objects of import back to native code.
-        // Must mirror native counterpart exactly!
-        [StructLayout(LayoutKind.Sequential)]
-        struct ImportResult
-        {
-            public Object[] m_Assets;
-            public string[] m_AssetNames;
-            public Texture2D[] m_Thumbnails;
-        }
-
         // Called by native code to invoke the import handling code of the specialized scripted importer class.
         // Marshals the data between the two models (native / managed)
         [RequiredByNativeCode]
-        ImportResult GenerateAssetData(ImportRequest request)
+        void GenerateAssetData(AssetImportContext ctx)
         {
-            var ctx = new AssetImportContext()
-            {
-                assetPath = request.m_AssetSourcePath,
-                selectedBuildTarget = request.m_SelectedBuildTarget
-            };
-
             OnImportAsset(ctx);
-
-            var result = new ImportResult
-            {
-                m_Assets = ctx.importedObjects.Select(x => x.obj).ToArray(),
-                m_AssetNames = ctx.importedObjects.Select(x => x.localIdentifier).ToArray(),
-                m_Thumbnails = ctx.importedObjects.Select(x => x.thumbnail).ToArray()
-            };
-
-            return result;
         }
 
         public abstract void OnImportAsset(AssetImportContext ctx);
@@ -169,9 +56,11 @@ namespace UnityEditor.Experimental.AssetImporters
                     }
                 }
 
+                MethodInfo getImportDependencyHintMethod = importerType.GetMethod("GetHashOfImportedAssetDependencyHintsForTesting", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
                 // Register the importer
                 foreach (var ext in handledExts)
-                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key);
+                    AssetImporter.RegisterImporter(importerType, attribute.version, attribute.importQueuePriority, ext.Key, getImportDependencyHintMethod != null);
             }
         }
 

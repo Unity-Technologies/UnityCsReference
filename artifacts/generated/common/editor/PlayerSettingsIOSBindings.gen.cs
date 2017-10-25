@@ -387,6 +387,16 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
+        internal extern static bool requiresARKitSupport
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
         public extern static string cameraUsageDescription
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -483,6 +493,14 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern internal static  string[] GetURLSchemes () ;
 
+        internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
+            {
+                Version minimumVersion = new Version(7, 0);
+                Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
+                return requestedVersion >= requiredVersion;
+            }
+        
+        
     }
 
 }
