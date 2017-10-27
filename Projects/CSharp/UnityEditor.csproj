@@ -216,6 +216,9 @@ workingdir="${ProjectDir}/../../Tools/Unity.TestableAssemblyMaker/bin" />
 <Compile Include="..\..\Editor\Mono\BuildPlayerWindow.cs" >
 <Link>Editor\Mono\BuildPlayerWindow.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorAssemblies.bindings.cs" >
+<Link>Editor\Mono\EditorAssemblies.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ProvisioningProfile.cs" >
 <Link>Editor\Mono\ProvisioningProfile.cs</Link>
 </Compile>

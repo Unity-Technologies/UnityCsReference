@@ -10,11 +10,8 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal abstract class MonoScriptCompilerBase : ScriptCompilerBase
     {
-        private readonly bool runUpdater;
-
-        protected MonoScriptCompilerBase(MonoIsland island, bool runUpdater) : base(island)
+        protected MonoScriptCompilerBase(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
-            this.runUpdater = runUpdater;
         }
 
         protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments)
@@ -30,8 +27,7 @@ namespace UnityEditor.Scripting.Compilers
         {
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
 
-            if (runUpdater)
-                APIUpdaterHelper.UpdateScripts(responseFile, _island.GetExtensionOfSourceFiles());
+            RunAPIUpdaterIfRequired(responseFile);
 
             var program = new ManagedProgram(monodistro, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level), compiler, " @" + responseFile, setMonoEnvironmentVariables, null);
             program.Start();

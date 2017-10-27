@@ -4,7 +4,6 @@
 
 using System;
 using System.Reflection;
-using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -100,101 +99,43 @@ namespace UnityEditor.Build
         internal static void InitializeBuildCallbacks(BuildCallbacks findFlags)
         {
             CleanupBuildCallbacks();
-            var excludedAssemblies = new HashSet<string>();
-            excludedAssemblies.Add("UnityEditor");
-            excludedAssemblies.Add("UnityEngine.UI");
-            excludedAssemblies.Add("Unity.PackageManager");
-            excludedAssemblies.Add("UnityEngine.Networking");
-            excludedAssemblies.Add("nunit.framework");
-            excludedAssemblies.Add("UnityEditor.TreeEditor");
-            excludedAssemblies.Add("UnityEditor.Graphs");
-            excludedAssemblies.Add("UnityEditor.UI");
-            excludedAssemblies.Add("UnityEditor.TestRunner");
-            excludedAssemblies.Add("UnityEngine.TestRunner");
-            excludedAssemblies.Add("UnityEngine.HoloLens");
-            excludedAssemblies.Add("SyntaxTree.VisualStudio.Unity.Bridge");
-            excludedAssemblies.Add("UnityEditor.Android.Extensions");
             bool findBuildProcessors = (findFlags & BuildCallbacks.BuildProcessors) == BuildCallbacks.BuildProcessors;
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
-            var methodBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
-
-            for (int ai = 0; ai < EditorAssemblies.loadedAssemblies.Length; ai++)
+            foreach (var t in EditorAssemblies.GetAllTypesWithInterface(typeof(IOrderedCallback), true))
             {
-                var assembly = EditorAssemblies.loadedAssemblies[ai];
-                bool assemblyMayHaveAttributes = !excludedAssemblies.Contains(assembly.FullName.Substring(0, assembly.FullName.IndexOf(',')));
-                Type[] types = null;
-                try
+                if (t.IsAbstract || t.IsInterface)
+                    continue;
+                object instance = null;
+                if (findBuildProcessors)
                 {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException e)
-                {
-                    types = e.Types;
-                }
-                for (int ti = 0; ti < types.Length; ti++)
-                {
-                    var t = types[ti];
-                    if (t == null)
-                        continue;
+                    if (ValidateType<IPreprocessBuild>(t))
+                        AddToList(instance = Activator.CreateInstance(t), ref buildPreprocessors);
 
-                    object instance = null;
-                    bool isIOrderedCallback = false;
-                    if (findBuildProcessors)
-                    {
-                        isIOrderedCallback = typeof(IOrderedCallback).IsAssignableFrom(t);
-                        if (isIOrderedCallback)
-                        {
-                            if (ValidateType<IPreprocessBuild>(t))
-                            {
-                                instance = Activator.CreateInstance(t);
-                                AddToList(instance, ref buildPreprocessors);
-                            }
-                            if (ValidateType<IPostprocessBuild>(t))
-                            {
-                                instance = instance == null ? Activator.CreateInstance(t) : instance;
-                                AddToList(instance, ref buildPostprocessors);
-                            }
-                        }
-                    }
-                    if (findSceneProcessors)
-                    {
-                        if (!findBuildProcessors || isIOrderedCallback)
-                        {
-                            if (ValidateType<IProcessScene>(t))
-                            {
-                                instance = instance == null ? Activator.CreateInstance(t) : instance;
-                                AddToList(instance, ref sceneProcessors);
-                            }
-                        }
-                    }
-                    if (findTargetProcessors)
-                    {
-                        if (!findBuildProcessors || isIOrderedCallback)
-                        {
-                            if (ValidateType<IActiveBuildTargetChanged>(t))
-                            {
-                                instance = instance == null ? Activator.CreateInstance(t) : instance;
-                                AddToList(instance, ref buildTargetProcessors);
-                            }
-                        }
-                    }
-
-                    if (!assemblyMayHaveAttributes)
-                        continue;
-                    foreach (MethodInfo m in t.GetMethods(methodBindingFlags))
-                    {
-                        //this skips all property getters/setters and operator overloads
-                        if (m.IsSpecialName)
-                            continue;
-                        if (findBuildProcessors && ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
-                            AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
-
-                        if (findSceneProcessors && ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
-                            AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
-                    }
+                    if (ValidateType<IPostprocessBuild>(t))
+                        AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildPostprocessors);
                 }
+
+                if (findSceneProcessors && ValidateType<IProcessScene>(t))
+                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref sceneProcessors);
+
+                if (findTargetProcessors && ValidateType<IActiveBuildTargetChanged>(t))
+                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildTargetProcessors);
+            }
+
+            if (findBuildProcessors)
+            {
+                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute(typeof(Callbacks.PostProcessBuildAttribute), true, true, true))
+                    if (ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
+                        AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
+            }
+
+            if (findSceneProcessors)
+            {
+                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute(typeof(Callbacks.PostProcessSceneAttribute), true, true, true))
+                    if (ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
+                        AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
             }
 
             if (buildPreprocessors != null)
@@ -209,7 +150,7 @@ namespace UnityEditor.Build
 
         internal static bool ValidateType<T>(Type t)
         {
-            return (!t.IsInterface && !t.IsAbstract && typeof(T).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper));
+            return (typeof(T).IsAssignableFrom(t) && t != typeof(AttributeCallbackWrapper));
         }
 
         static bool ValidateMethod<T>(MethodInfo method, Type[] expectedArguments)

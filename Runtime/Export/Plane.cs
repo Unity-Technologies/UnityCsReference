@@ -32,7 +32,7 @@ namespace UnityEngine
         public Plane(Vector3 inNormal, Vector3 inPoint)
         {
             m_Normal = Vector3.Normalize(inNormal);
-            m_Distance = -Vector3.Dot(inNormal, inPoint);
+            m_Distance = -Vector3.Dot(m_Normal, inPoint);
         }
 
         // Creates a plane.
