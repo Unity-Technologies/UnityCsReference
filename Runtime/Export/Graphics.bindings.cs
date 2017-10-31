@@ -61,6 +61,8 @@ namespace UnityEngine
             get { return IsOrientationEnabled(EnabledOrientation.kAutorotateToLandscapeRight); }
             set { SetOrientationEnabled(EnabledOrientation.kAutorotateToLandscapeRight, value); }
         }
+
+        extern public static Rect safeArea { get; }
     }
 }
 

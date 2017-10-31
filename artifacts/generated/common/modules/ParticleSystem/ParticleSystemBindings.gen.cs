@@ -233,7 +233,9 @@ public enum ParticleSystemStopAction
     
     Disable = 1,
     
-    Destroy = 2
+    Destroy = 2,
+    
+    Callback = 3
 }
 
 public enum ParticleSystemEmitterVelocityMode

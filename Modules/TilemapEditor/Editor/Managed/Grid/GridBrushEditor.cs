@@ -77,7 +77,7 @@ namespace UnityEditor
             }
             if (tool == GridBrushBase.Tool.Move)
             {
-                if (refreshPreviews)
+                if (refreshPreviews && executing)
                 {
                     ClearPreview();
                     PaintPreview(gridLayout, brushTarget, position.min);
