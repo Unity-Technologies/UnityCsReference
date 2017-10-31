@@ -1680,9 +1680,6 @@
 <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs" >
 <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Tilemap\TilemapBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\UnityWebRequest\FriendAttributes.cs" >
 <Link>Modules\UnityWebRequest\FriendAttributes.cs</Link>
 </Compile>

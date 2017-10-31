@@ -102,8 +102,8 @@ namespace UnityEditor.VisualStudioIntegration
         {
             string extension = Path.GetExtension(file);
 
-            // Exclude files coming from packages except if they are internalized.
-            if (AssetDatabase.IsPackagedAssetPath(file) && !AssetDatabase.IsInternalizedPackagedAssetPath(file))
+            // Exclude files coming from packages
+            if (AssetDatabase.IsPackagedAssetPath(file))
                 return false;
 
             // Dll's are not scripts but still need to be included..

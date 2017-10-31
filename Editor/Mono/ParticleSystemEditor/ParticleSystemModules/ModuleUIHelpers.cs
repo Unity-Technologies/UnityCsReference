@@ -123,17 +123,22 @@ namespace UnityEditor
             GUIContent[] labels = { new GUIContent("X"), new GUIContent("Y"), new GUIContent("Z") };
             float elementWidth = (r.width - 2 * kSpacingSubLabel) / 3f;
             r.width = elementWidth;
+
+            SerializedProperty cur = vecProp.Copy();
+            cur.Next(true);
+
             Vector3 vec = vecProp.vector3Value;
 
-            EditorGUI.BeginChangeCheck();
             for (int i = 0; i < 3; ++i)
             {
                 Label(r, labels[i]);
-                vec[i] = FloatDraggable(r, vec[i], 1, 25, "g5");
+                EditorGUI.BeginChangeCheck();
+                float newValue = FloatDraggable(r, cur, 1.0f, 25.0f, "g5");
+                if (EditorGUI.EndChangeCheck())
+                    cur.floatValue = newValue;
+                cur.Next(false);
                 r.x += elementWidth + kSpacingSubLabel;
             }
-            if (EditorGUI.EndChangeCheck())
-                vecProp.vector3Value = vec;
 
             EditorGUI.showMixedValue = false;
             return vec;

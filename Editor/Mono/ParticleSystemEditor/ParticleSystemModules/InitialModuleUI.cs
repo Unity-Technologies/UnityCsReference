@@ -87,7 +87,8 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TextContent("None"),
                 EditorGUIUtility.TextContent("Disable"),
-                EditorGUIUtility.TextContent("Destroy")
+                EditorGUIUtility.TextContent("Destroy"),
+                EditorGUIUtility.TextContent("Callback")
             };
         }
         private static Texts s_Texts;

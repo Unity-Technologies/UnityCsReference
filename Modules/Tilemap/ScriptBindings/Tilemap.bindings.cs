@@ -25,6 +25,7 @@ namespace UnityEngine.Tilemaps
     [NativeHeader("Modules/Grid/Public/Grid.h")]
     [NativeHeader("Runtime/Graphics/SpriteFrame.h")]
     [NativeHeader("Modules/Tilemap/Public/TilemapTile.h")]
+    [NativeHeader("Modules/Tilemap/Public/TilemapMarshalling.h")]
     [NativeType(Header = "Modules/Tilemap/Public/Tilemap.h")]
     public sealed partial class Tilemap : GridLayout
     {
@@ -150,6 +151,14 @@ namespace UnityEngine.Tilemaps
         public bool ContainsTile(TileBase tileAsset) { return ContainsTileAsset(tileAsset); }
 
         public extern int GetUsedTilesCount();
+
+        public int GetUsedTilesNonAlloc(TileBase[] usedTiles)
+        {
+            return Internal_GetUsedTilesNonAlloc(usedTiles);
+        }
+
+        [FreeFunction(Name = "TilemapBindings::GetUsedTilesNonAlloc", HasExplicitThis = true)]
+        internal extern int Internal_GetUsedTilesNonAlloc(Object[] usedTiles);
 
         public extern Sprite GetSprite(Vector3Int position);
 

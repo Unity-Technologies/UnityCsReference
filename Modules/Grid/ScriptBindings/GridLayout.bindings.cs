@@ -27,19 +27,17 @@ namespace UnityEngine
             ZYX = 5
         };
 
-        public Vector3 cellSize
+        public extern Vector3 cellSize
         {
-            get { return GetCellSize(this); }
+            [FreeFunction("GridLayoutBindings::GetCellSize", HasExplicitThis = true)]
+            get;
         }
-        [FreeFunction("GridLayoutBindings::GetCellSize")]
-        private extern static Vector3 GetCellSize(GridLayout self);
 
-        public Vector3 cellGap
+        public extern Vector3 cellGap
         {
-            get { return GetCellGap(this); }
+            [FreeFunction("GridLayoutBindings::GetCellGap", HasExplicitThis = true)]
+            get;
         }
-        [FreeFunction("GridLayoutBindings::GetCellGap")]
-        private extern static Vector3 GetCellGap(GridLayout self);
 
         public extern CellLayout cellLayout
         {
@@ -51,54 +49,34 @@ namespace UnityEngine
             get;
         }
 
-        public Bounds GetBoundsLocal(Vector3Int cellPosition) { return GetBoundsLocal(this, cellPosition); }
+        [FreeFunction("GridLayoutBindings::GetBoundsLocal", HasExplicitThis = true)]
+        public extern Bounds GetBoundsLocal(Vector3Int cellPosition);
 
-        [FreeFunction("GridLayoutBindings::GetBoundsLocal")]
-        private extern static Bounds GetBoundsLocal(GridLayout self, Vector3Int cellPosition);
+        [FreeFunction("GridLayoutBindings::CellToLocal", HasExplicitThis = true)]
+        public extern Vector3 CellToLocal(Vector3Int cellPosition);
 
-        public Vector3 CellToLocal(Vector3Int cellPosition) { return CellToLocal(this, cellPosition); }
+        [FreeFunction("GridLayoutBindings::LocalToCell", HasExplicitThis = true)]
+        public extern Vector3Int LocalToCell(Vector3 localPosition);
 
-        [FreeFunction("GridLayoutBindings::CellToLocal")]
-        private extern static Vector3 CellToLocal(GridLayout self, Vector3Int cellPosition);
+        [FreeFunction("GridLayoutBindings::CellToLocalInterpolated", HasExplicitThis = true)]
+        public extern Vector3 CellToLocalInterpolated(Vector3 cellPosition);
 
-        public Vector3Int LocalToCell(Vector3 localPosition) { return LocalToCell(this, localPosition); }
+        [FreeFunction("GridLayoutBindings::LocalToCellInterpolated", HasExplicitThis = true)]
+        public extern Vector3 LocalToCellInterpolated(Vector3 localPosition);
 
-        [FreeFunction("GridLayoutBindings::LocalToCell")]
-        private extern static Vector3Int LocalToCell(GridLayout self, Vector3 localPosition);
+        [FreeFunction("GridLayoutBindings::CellToWorld", HasExplicitThis = true)]
+        public extern Vector3 CellToWorld(Vector3Int cellPosition);
 
-        public Vector3 CellToLocalInterpolated(Vector3 cellPosition) { return CellToLocalInterpolated(this, cellPosition); }
+        [FreeFunction("GridLayoutBindings::WorldToCell", HasExplicitThis = true)]
+        public extern Vector3Int WorldToCell(Vector3 worldPosition);
 
-        [FreeFunction("GridLayoutBindings::CellToLocalInterpolated")]
-        private extern static Vector3 CellToLocalInterpolated(GridLayout self, Vector3 cellPosition);
+        [FreeFunction("GridLayoutBindings::LocalToWorld", HasExplicitThis = true)]
+        public extern Vector3 LocalToWorld(Vector3 localPosition);
 
-        public Vector3 LocalToCellInterpolated(Vector3 localPosition) { return LocalToCellInterpolated(this, localPosition); }
+        [FreeFunction("GridLayoutBindings::WorldToLocal", HasExplicitThis = true)]
+        public extern Vector3 WorldToLocal(Vector3 worldPosition);
 
-        [FreeFunction("GridLayoutBindings::LocalToCellInterpolated")]
-        private extern static Vector3 LocalToCellInterpolated(GridLayout self, Vector3 localPosition);
-
-        public Vector3 CellToWorld(Vector3Int cellPosition) { return CellToWorld(this, cellPosition); }
-
-        [FreeFunction("GridLayoutBindings::CellToWorld")]
-        private extern static Vector3 CellToWorld(GridLayout self, Vector3Int cellPosition);
-
-        public Vector3Int WorldToCell(Vector3 worldPosition) { return WorldToCell(this, worldPosition); }
-
-        [FreeFunction("GridLayoutBindings::WorldToCell")]
-        private extern static Vector3Int WorldToCell(GridLayout self, Vector3 worldPosition);
-
-        public Vector3 LocalToWorld(Vector3 localPosition) { return LocalToWorld(this, localPosition); }
-
-        [FreeFunction("GridLayoutBindings::LocalToWorld")]
-        private extern static Vector3 LocalToWorld(GridLayout self, Vector3 localPosition);
-
-        public Vector3 WorldToLocal(Vector3 worldPosition) { return WorldToLocal(this, worldPosition); }
-
-        [FreeFunction("GridLayoutBindings::WorldToLocal")]
-        private extern static Vector3 WorldToLocal(GridLayout self, Vector3 worldPosition);
-
-        public Vector3 GetLayoutCellCenter() { return GetLayoutCellCenter(this); }
-
-        [FreeFunction("GridLayoutBindings::GetLayoutCellCenter")]
-        private extern static Vector3 GetLayoutCellCenter(GridLayout self);
+        [FreeFunction("GridLayoutBindings::GetLayoutCellCenter", HasExplicitThis = true)]
+        public extern Vector3 GetLayoutCellCenter();
     }
 }

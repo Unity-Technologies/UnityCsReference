@@ -520,7 +520,7 @@ namespace UnityEditor
         private void PrefabInstanceUpdated(GameObject instance)
         {
             // case 947462: Reset the palette instance after its prefab has been updated as it could have been changed
-            if (m_PaletteInstance != null && instance == m_PaletteInstance)
+            if (m_PaletteInstance != null && instance == m_PaletteInstance && !GridPaintingState.savingPalette)
             {
                 ResetPreviewInstance();
             }

@@ -48,7 +48,7 @@ namespace UnityEngine
         public void SetMinMax(Vector2Int minPosition, Vector2Int maxPosition)
         {
             min = minPosition;
-            max = maxPosition - minPosition;
+            max = maxPosition;
         }
 
         public RectInt(int xMin, int yMin, int width, int height)

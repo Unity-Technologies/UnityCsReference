@@ -11,29 +11,21 @@ namespace UnityEngine
     [NativeType(Header = "Modules/Grid/Public/Grid.h")]
     public sealed partial class Grid : GridLayout
     {
-        public new Vector3 cellSize
+        public new extern Vector3 cellSize
         {
-            get { return GetCellSize(this); }
-            set { SetCellSize(this, value); }
+            [FreeFunction("GridBindings::GetCellSize", HasExplicitThis = true)]
+            get;
+            [FreeFunction("GridBindings::SetCellSize", HasExplicitThis = true)]
+            set;
         }
 
-        [FreeFunction("GridBindings::GetCellSize")]
-        private extern static Vector3 GetCellSize(Grid self);
-
-        [FreeFunction("GridBindings::SetCellSize")]
-        private extern static void SetCellSize(Grid self, Vector3 value);
-
-        public new Vector3 cellGap
+        public new extern Vector3 cellGap
         {
-            get { return GetCellGap(this); }
-            set { SetCellGap(this, value); }
+            [FreeFunction("GridBindings::GetCellGap", HasExplicitThis = true)]
+            get;
+            [FreeFunction("GridBindings::SetCellGap", HasExplicitThis = true)]
+            set;
         }
-
-        [FreeFunction("GridBindings::GetCellGap")]
-        private extern static Vector3 GetCellGap(Grid self);
-
-        [FreeFunction("GridBindings::SetCellGap")]
-        private extern static void SetCellGap(Grid self, Vector3 value);
 
         public new extern GridLayout.CellLayout cellLayout
         {
