@@ -242,7 +242,7 @@ namespace UnityEditor
 
         private void AddCustomSections()
         {
-            AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
             var methodsWithAttributes = methods.MethodsWithAttributes;
             foreach (var method in methodsWithAttributes)
             {
