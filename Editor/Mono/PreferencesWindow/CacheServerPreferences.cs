@@ -37,6 +37,7 @@ namespace UnityEditor
         }
 
         const string kIPAddressKey = "CacheServerIPAddress";
+        const string kIpAddressKeyArgs = "-" + kIPAddressKey;
         const string kModeKey = "CacheServerMode";
         const string kDeprecatedEnabledKey = "CacheServerEnabled";
 
@@ -65,6 +66,10 @@ namespace UnityEditor
 
         public static void WritePreferences()
         {
+            // Don't change anything if there's a command line override
+            if (GetCommandLineRemoteAddressOverride() != null)
+                return;
+
             CacheServerMode oldMode = (CacheServerMode)EditorPrefs.GetInt(kModeKey);
             var oldPath = EditorPrefs.GetString(LocalCacheServer.PathKey);
             var oldCustomPath = EditorPrefs.GetBool(LocalCacheServer.CustomPathKey);
@@ -103,6 +108,17 @@ namespace UnityEditor
             }
         }
 
+        private static string GetCommandLineRemoteAddressOverride()
+        {
+            string address = null;
+            var argv = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(argv, kIpAddressKeyArgs);
+            if (index >= 0 && argv.Length > index + 1)
+                address = argv[index + 1];
+
+            return address;
+        }
+
         [PreferenceItem("Cache Server")]
         private static void OnGUI()
         {
@@ -135,17 +151,33 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
-                s_CacheServerMode = (CacheServerMode)EditorGUILayout.EnumPopup("Cache Server Mode", s_CacheServerMode);
+                var overrideAddress = GetCommandLineRemoteAddressOverride();
+
+                if (overrideAddress != null)
+                {
+                    EditorGUILayout.HelpBox("Cache Server preferences cannot be modified because a remote address was specified via command line argument. To modify Cache Server preferences, restart Unity without the " + kIpAddressKeyArgs + " command line argument.", MessageType.Info, true);
+                }
+
+                using (new EditorGUI.DisabledScope(overrideAddress != null))
+                {
+                    var displayMode = overrideAddress != null ? CacheServerMode.Remote : s_CacheServerMode;
+                    s_CacheServerMode = (CacheServerMode)EditorGUILayout.EnumPopup("Cache Server Mode", displayMode);
+                }
 
                 if (s_CacheServerMode == CacheServerMode.Remote)
                 {
-                    s_CacheServerIPAddress = EditorGUILayout.DelayedTextField("IP Address", s_CacheServerIPAddress);
-                    if (GUI.changed)
+                    using (new EditorGUI.DisabledScope(overrideAddress != null))
                     {
-                        s_ConnectionState = ConnectionState.Unknown;
+                        var displayAddress = overrideAddress != null ? overrideAddress : s_CacheServerIPAddress;
+                        s_CacheServerIPAddress = EditorGUILayout.DelayedTextField("IP Address", displayAddress);
+                        if (GUI.changed)
+                        {
+                            s_ConnectionState = ConnectionState.Unknown;
+                        }
                     }
 
                     GUILayout.Space(5);
+
                     if (GUILayout.Button("Check Connection", GUILayout.Width(150)))
                     {
                         if (InternalEditorUtility.CanConnectToCacheServer())

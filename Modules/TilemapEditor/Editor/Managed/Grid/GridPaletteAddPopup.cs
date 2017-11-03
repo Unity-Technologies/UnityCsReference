@@ -33,7 +33,7 @@ namespace UnityEditor
             m_Owner = owner;
             m_CellSize = new Vector3(1, 1, 0);
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
-            ShowAsDropDown(buttonRect, new Vector2(312, 140));
+            ShowAsDropDown(buttonRect, new Vector2(312, 140), null, ShowMode.PopupMenuWithKeyboardFocus);
         }
 
         internal void OnGUI()

@@ -43,7 +43,7 @@ namespace UnityEditor
                 "", // Other OS
                 "Cursors/macOS",
                 "Cursors/Windows",
-                "" // No cursors for Linux yet
+                "Cursors/Linux",
             };
             // The following paths match the enums in OperatingSystemFamily
             public static readonly Vector2[] mouseCursorOSHotspot =
@@ -51,7 +51,7 @@ namespace UnityEditor
                 Vector2.zero, // Other OS
                 new Vector2(6f, 4f),
                 new Vector2(6f, 4f),
-                Vector2.zero // No cursors for Linux yet
+                new Vector2(6f, 4f),
             };
             // The following paths match the enums in sceneViewEditModes above
             public static readonly string[] mouseCursorTexturePaths =
