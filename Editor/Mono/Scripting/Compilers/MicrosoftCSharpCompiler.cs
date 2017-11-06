@@ -14,8 +14,7 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal class MicrosoftCSharpCompiler : ScriptCompilerBase
     {
-        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater)
-            : base(island)
+        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
 
@@ -169,6 +168,9 @@ namespace UnityEditor.Scripting.Compilers
             AddCustomResponseFileIfPresent(arguments, "csc.rsp");
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+
+            RunAPIUpdaterIfRequired(responseFile);
+
             var psi = new ProcessStartInfo() { Arguments = "\"" + csc + "\" " + argsPrefix + "@" + responseFile, FileName = coreRun, CreateNoWindow = true };
             var program = new Program(psi);
             program.Start();

@@ -509,7 +509,7 @@ namespace UnityEditorInternal
                             else if (isInt)
                                 value = singleProperty.intValue.ToString();
                             else // if (isBool)
-                                value = singleProperty.boolValue.ToString();
+                                value = singleProperty.boolValue ? "1" : "0";
 
                             var modification = new PropertyModification();
 
@@ -533,7 +533,7 @@ namespace UnityEditorInternal
                         else if (isInt)
                             value = propertyIter.intValue.ToString();
                         else // if (isBool)
-                            value = propertyIter.boolValue.ToString();
+                            value = propertyIter.boolValue ? "1" : "0";
 
                         for (int j = 0; j < targetObjects.Length; ++j)
                         {

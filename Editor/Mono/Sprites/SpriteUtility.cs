@@ -56,6 +56,10 @@ namespace UnityEditor
             if (evt.type != EventType.DragUpdated && evt.type != EventType.DragPerform && evt.type != EventType.DragExited)
                 return;
 
+            // Return if any of the dragged objects are null, e.g. a MonoBehaviour without a managed instance
+            if (objectReferences.Any(obj => obj == null))
+                return;
+
             // Regardless of EditorBehaviorMode or SceneView mode we don't handle if texture is dragged over a GO with renderer
             if (objectReferences.Length == 1 && objectReferences[0] as UnityTexture2D != null)
             {

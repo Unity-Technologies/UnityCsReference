@@ -22,12 +22,21 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("showService", parameters);
         }
 
-        extern private static bool SendEvent(string eventName, object parameters);
-
-
         public static bool SendEventTimelineInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("timelineInfo", parameters);
         }
+
+        public static bool SendEventBuildTargetDevice(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildTargetDevice", parameters);
+        }
+
+        public static bool SendEventSceneViewInfo(object parameters)
+        {
+            return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
+        }
+
+        extern private static bool SendEvent(string eventName, object parameters);
     }
 }

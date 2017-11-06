@@ -17,6 +17,8 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
+            // Disable clipping on the root element to fix case 950958
+            visualTree.clipChildren = false;
             s_AppStatusBar = this;
             s_StatusWheel = new GUIContent[12];
             for (int i = 0; i < 12; i++)

@@ -202,6 +202,9 @@
 <Compile Include="..\..\Editor\Mono\BuildPlayerWindow.cs" >
 <Link>Editor\Mono\BuildPlayerWindow.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorAssemblies.bindings.cs" >
+<Link>Editor\Mono\EditorAssemblies.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ProvisioningProfile.cs" >
 <Link>Editor\Mono\ProvisioningProfile.cs</Link>
 </Compile>
@@ -3352,6 +3355,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Src\UnityEditorAnalytics\Managed\EditorAnalytics.bindings.cs" >
 <Link>Editor\Src\UnityEditorAnalytics\Managed\EditorAnalytics.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Src\UnityEditorAnalytics\Managed\BuildEventsHandler.cs" >
+<Link>Editor\Src\UnityEditorAnalytics\Managed\BuildEventsHandler.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UnityEditorAnalytics\UsabilityAnalyticsBindings.gen.cs</Link>

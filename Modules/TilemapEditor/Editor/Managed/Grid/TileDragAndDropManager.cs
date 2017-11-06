@@ -116,7 +116,13 @@ namespace UnityEditor
                     Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
                 if (instance.m_HoverData.Count > 0)
+                {
+                    Tilemap map = Selection.activeGameObject.GetComponentInParent<Tilemap>();
+                    if (map != null)
+                        map.ClearAllEditorPreviewTiles();
+
                     Event.current.Use();
+                }
 
                 instance.m_HoverData = null;
             }

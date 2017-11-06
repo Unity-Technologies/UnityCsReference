@@ -266,10 +266,11 @@ namespace UnityEditor
             return false;
         }
 
-        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray)
+        public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] originalClassNameSpacesArray)
         {
             List<string> classNames = new List<string>();
             List<string> nameSpaces = new List<string>();
+            List<string> originalNamespaces = new List<string>();
             var readerParameters = new ReaderParameters();
 
             // this will resolve any types in assemblies within the same directory as the type's assembly
@@ -302,6 +303,16 @@ namespace UnityEditor
                         {
                             classNames.Add(type.Name);
                             nameSpaces.Add(type.Namespace);
+
+                            var originalNamespace = string.Empty;
+                            var attribute = type.CustomAttributes.SingleOrDefault(a => a.AttributeType.FullName == typeof(UnityEngine.Scripting.APIUpdating.MovedFromAttribute).FullName);
+
+                            if (attribute != null)
+                            {
+                                originalNamespace = (string)attribute.ConstructorArguments[0].Value;
+                            }
+
+                            originalNamespaces.Add(originalNamespace);
                         }
                     }
                     catch (Exception)
@@ -313,6 +324,7 @@ namespace UnityEditor
 
             classNamesArray = classNames.ToArray();
             classNameSpacesArray = nameSpaces.ToArray();
+            originalClassNameSpacesArray = originalNamespaces.ToArray();
         }
 
         /// Extract information about all types in the specified assembly, searchDirs might be used to resolve dependencies.

@@ -124,6 +124,7 @@ namespace UnityEditor
 
         private static int s_ColorPickID;
 
+        private static int s_CurveID;
         internal static Color kCurveColor = Color.green;
         internal static Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
         internal static EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
@@ -391,6 +392,7 @@ namespace UnityEditor
             private int controlThatHadFocus = 0, messageControl = 0;
             internal string controlThatHadFocusValue = "";
             private GUIView viewThatHadFocus;
+            private const string CommitCommand = "DelayedControlShouldCommit";
 
             private bool m_IgnoreBeginGUI = false;
 
@@ -435,7 +437,7 @@ namespace UnityEditor
                     if (GUIView.current == viewThatHadFocus)
                         viewThatHadFocus.SetKeyboardControl(GUIUtility.keyboardControl);
 
-                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent("DelayedControlShouldCommit"));
+                    viewThatHadFocus.SendEvent(EditorGUIUtility.CommandEvent(CommitCommand));
                     m_IgnoreBeginGUI = false;
                     //              Debug.Log ("Afterwards: " + GUIUtility.keyboardControl);
                     messageControl = 0;
@@ -446,19 +448,19 @@ namespace UnityEditor
             public override void EndEditing()
             {
                 base.EndEditing();
-                messageControl = 0;
             }
 
             //*undocumented*
             public string OnGUI(int id, string value, out bool changed)
             {
                 Event evt = Event.current;
-                if (evt.type == EventType.ExecuteCommand && evt.commandName == "DelayedControlShouldCommit" && id == messageControl)
+                if (evt.type == EventType.ExecuteCommand && evt.commandName == CommitCommand && id == messageControl)
                 {
-                    changed = value != controlThatHadFocusValue;
                     // Only set changed to true if the value has actually changed. Otherwise EditorGUI.EndChangeCheck will report false positives,
                     // which could for example cause unwanted undo's to be registered (in the case of e.g. editing terrain resolution, this can cause several seconds of delay)
+                    changed = value != controlThatHadFocusValue;
                     evt.Use();
+                    messageControl = 0;
                     return controlThatHadFocusValue;
                 }
                 changed = false;
@@ -661,17 +663,14 @@ namespace UnityEditor
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
                 }
-                else
+                else if (s_DragCandidateState == 0)
                 {
                     // This one is worse: we are the new keyboardControl, but didn't know about it.
                     // this means a Tab operation or setting focus from code.
-                    if (EditorGUIUtility.editingTextField)
-                    {
-                        editor.BeginEditing(id, text, position, style, multiline, passwordField);
-                        // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
-                        if (GUI.skin.settings.cursorColor.a > 0)
-                            editor.SelectAll();
-                    }
+                    editor.BeginEditing(id, text, position, style, multiline, passwordField);
+                    // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
+                    if (GUI.skin.settings.cursorColor.a > 0)
+                        editor.SelectAll();
                 }
             }
 
@@ -4333,7 +4332,7 @@ namespace UnityEditor
         {
             if (property != null)
             {
-                CurveEditorWindow.property = property;
+                CurveEditorWindow.curve = property.hasMultipleDifferentValues ? new AnimationCurve() : property.animationCurveValue;
             }
             else
             {
@@ -4350,12 +4349,24 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (MatchesCurvePopup(value, property))
+            if (GUIUtility.keyboardControl == id && Event.current.type != EventType.Layout)
             {
-                if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                if (s_CurveID != id)
                 {
-                    SetCurveEditorWindowCurve(value, property, color);
-                    CurveEditorWindow.instance.Repaint();
+                    s_CurveID = id;
+                    if (CurveEditorWindow.visible)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        ShowCurvePopup(GUIView.current, ranges);
+                    }
+                }
+                else
+                {
+                    if (CurveEditorWindow.visible && Event.current.type == EventType.Repaint)
+                    {
+                        SetCurveEditorWindowCurve(value, property, color);
+                        CurveEditorWindow.instance.Repaint();
+                    }
                 }
             }
 
@@ -4364,6 +4375,8 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition))
                     {
+                        s_CurveID = id;
+                        GUIUtility.keyboardControl = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4385,8 +4398,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-
-                    if (MatchesCurvePopup(value, property))
+                    if (s_CurveID == id)
                     {
                         switch (evt.commandName)
                         {
@@ -4409,6 +4421,7 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(id))
                     {
+                        s_CurveID = id;
                         SetCurveEditorWindowCurve(value, property, color);
                         ShowCurvePopup(GUIView.current, ranges);
                         evt.Use();
@@ -4431,20 +4444,6 @@ namespace UnityEditor
                 settings.vRangeMax = ranges.yMax;
             }
             CurveEditorWindow.instance.Show(GUIView.current, settings);
-        }
-
-        private static bool MatchesCurvePopup(AnimationCurve curve, SerializedProperty property)
-        {
-            if (curve != null)
-                return curve == CurveEditorWindow.curve;
-
-            if (CurveEditorWindow.property == null)
-                return false;
-
-            if (CurveEditorWindow.property.serializedObject == null)
-                return false;
-
-            return SerializedProperty.EqualContents(property, CurveEditorWindow.property);
         }
 
         private static bool ValidTargetForIconSelection(Object[] targets)

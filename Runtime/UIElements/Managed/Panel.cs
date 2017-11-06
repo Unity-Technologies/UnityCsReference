@@ -467,7 +467,8 @@ namespace UnityEngine.Experimental.UIElements
             stylePainter.repaintEvent = e;
 
             // paint
-            PaintSubTree(e, visualTree, Matrix4x4.identity, visualTree.layout);
+            Rect clipRect = visualTree.clipChildren ? visualTree.layout : GUIClip.topmostRect;
+            PaintSubTree(e, visualTree, Matrix4x4.identity, clipRect);
 
             if (panelDebug != null)
             {

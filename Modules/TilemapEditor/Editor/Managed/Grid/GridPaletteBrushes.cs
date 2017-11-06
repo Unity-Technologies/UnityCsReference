@@ -98,15 +98,22 @@ namespace UnityEditor
             var editorAssemblies = EditorAssemblies.loadedAssemblies;
             foreach (var editorAssembly in editorAssemblies)
             {
-                IEnumerable<Type> brushTypes = editorAssembly.GetTypes().Where(t => t != typeof(GridBrushBase) && t != typeof(GridBrush) && typeof(GridBrushBase).IsAssignableFrom(t));
-                foreach (var brushType in brushTypes)
+                try
                 {
-                    if (IsDefaultInstanceVisibleGridBrushType(brushType))
+                    IEnumerable<Type> brushTypes = editorAssembly.GetTypes().Where(t => t != typeof(GridBrushBase) && t != typeof(GridBrush) && typeof(GridBrushBase).IsAssignableFrom(t));
+                    foreach (var brushType in brushTypes)
                     {
-                        var brush = LoadOrCreateLibraryGridBrushAsset(brushType);
-                        if (brush != null)
-                            m_Brushes.Add(brush);
+                        if (IsDefaultInstanceVisibleGridBrushType(brushType))
+                        {
+                            var brush = LoadOrCreateLibraryGridBrushAsset(brushType);
+                            if (brush != null)
+                                m_Brushes.Add(brush);
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log(string.Format("TilePalette failed to get types from {0}. Error: {1}", editorAssembly.FullName, ex.Message));
                 }
             }
 

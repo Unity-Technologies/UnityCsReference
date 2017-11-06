@@ -463,6 +463,12 @@ namespace UnityEditorInternal.VR
         {
             if (targetGroup == BuildTargetGroup.Android)
             {
+                List<string> enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup).ToList();
+                if (enabledDevices.Contains("Oculus") && enabledDevices.Contains("daydream"))
+                {
+                    EditorGUILayout.HelpBox("It is recommended to use unique product IDs and build separate APKs when targeting both Oculus and Daydream SDKs to avoid initialization conflicts on some devices.", MessageType.Warning);
+                }
+
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);

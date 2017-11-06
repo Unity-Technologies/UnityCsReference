@@ -2686,6 +2686,21 @@ public sealed partial class Screen
         get;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void GetSafeAreaImpl (out float x, out float y, out float w, out float h) ;
+
+    public static Rect safeArea
+        {
+            get
+            {
+                float x, y, w, h;
+                GetSafeAreaImpl(out x, out y, out w, out h);
+                return new Rect(x, y, w, h);
+            }
+        }
+    
+    
     public extern static float dpi
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

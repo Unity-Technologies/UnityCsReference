@@ -2592,18 +2592,5 @@ namespace UnityEditor
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
         }
-
-        internal static void Report2DAnalytics()
-        {
-            Object[] views = Resources.FindObjectsOfTypeAll(typeof(SceneView));
-            if (views.Length == 1)
-            {
-                SceneView view = views[0] as SceneView;
-                if (view.in2DMode)
-                {
-                    UsabilityAnalytics.Event("2D", "SceneView", "Single 2D", 1);
-                }
-            }
-        }
     }
 } // namespace

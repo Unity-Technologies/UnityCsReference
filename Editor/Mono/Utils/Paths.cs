@@ -64,10 +64,18 @@ namespace UnityEditor.Utils
 
         public static string CreateTempDirectory()
         {
-            string projectPath = Path.GetTempFileName();
-            File.Delete(projectPath);
-            Directory.CreateDirectory(projectPath);
-            return projectPath;
+            for (int i = 0; i < 32; ++i)
+            {
+                string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+                if (File.Exists(tempDirectory) || Directory.Exists(tempDirectory))
+                    continue;
+
+                Directory.CreateDirectory(tempDirectory);
+
+                return tempDirectory;
+            }
+            throw new IOException("CreateTempDirectory failed");
         }
 
         public static string NormalizePath(this string path)

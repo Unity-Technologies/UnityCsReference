@@ -92,8 +92,15 @@ namespace UnityEditor
                     instance.m_Brush = value;
                     instance.m_FlushPaintTargetCache = true;
 
-                    scenePaintTarget = ValidatePaintTarget(Selection.activeGameObject) ? Selection.activeGameObject : null;
+                    // Ensure that current scenePaintTarget is still a valid target after a brush change
+                    if (scenePaintTarget != null && !ValidatePaintTarget(scenePaintTarget))
+                        scenePaintTarget = null;
 
+                    // Use Selection if previous scenePaintTarget was not valid
+                    if (scenePaintTarget == null)
+                        scenePaintTarget = ValidatePaintTarget(Selection.activeGameObject) ? Selection.activeGameObject : null;
+
+                    // Auto select a valid target if there is still no scenePaintTarget
                     if (scenePaintTarget == null)
                         AutoSelectPaintTarget();
 

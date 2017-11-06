@@ -1693,6 +1693,9 @@
 <Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs" >
 <Link>External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs" >
+<Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
+</Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
