@@ -219,6 +219,25 @@ namespace UnityEngine.Experimental.UIElements
                 evt.dispatch = false;
             }
 
+            if (evt.isPropagationStopped)
+            {
+                // Make sure to call default actions at target, but dont call it twice on mouse capture
+                if (evt.target == null && panel != null)
+                {
+                    evt.target = panel.visualTree;
+                }
+                if (evt.target != null && evt.target != MouseCaptureController.mouseCapture)
+                {
+                    evt.dispatch = true;
+                    evt.currentTarget = evt.target;
+                    evt.propagationPhase = PropagationPhase.AtTarget;
+                    evt.target.HandleEvent(evt);
+                    evt.propagationPhase = PropagationPhase.None;
+                    evt.currentTarget = null;
+                    evt.dispatch = false;
+                }
+            }
+
             if (!evt.isPropagationStopped)
             {
                 if (evt is IKeyboardEvent && panel != null)
@@ -303,7 +322,10 @@ namespace UnityEngine.Experimental.UIElements
                             PropagateEvent(evt);
                         }
 
-                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() || e.type == EventType.DragUpdated || evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId())
+                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
+                            evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
+                            evt.GetEventTypeId() == WheelEvent.TypeId() ||
+                            e.type == EventType.DragUpdated)
                         {
                             DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
                             DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
@@ -423,12 +445,10 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             // Phase 2: Target
-            if (!evt.isPropagationStopped)
-            {
-                evt.propagationPhase = PropagationPhase.AtTarget;
-                evt.currentTarget = evt.target;
-                evt.currentTarget.HandleEvent(evt);
-            }
+            // Call HandleEvent() even if propagation is stopped, for the default actions at target.
+            evt.propagationPhase = PropagationPhase.AtTarget;
+            evt.currentTarget = evt.target;
+            evt.currentTarget.HandleEvent(evt);
 
             // Phase 3: bubble Up phase
             // Propagate event from target parent up to root
@@ -453,7 +473,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private static void ExecuteDefaultAction(EventBase evt)
         {
-            if (!evt.isDefaultPrevented && evt.target != null)
+            if (evt.target != null)
             {
                 evt.dispatch = true;
                 evt.currentTarget = evt.target;

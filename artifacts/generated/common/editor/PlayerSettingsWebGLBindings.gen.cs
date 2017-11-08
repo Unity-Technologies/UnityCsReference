@@ -35,6 +35,13 @@ public enum WebGLCompressionFormat
     Disabled
 }
 
+public enum WebGLLinkerTarget
+{
+    Asm,
+    Wasm,
+    Both
+}
+
 public sealed partial class PlayerSettings : UnityEngine.Object
 {
     public sealed partial class WebGL    
@@ -119,7 +126,18 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
+        [System.Obsolete ("useWasm Property deprecated. Use linkerTarget instead")]
         public extern static bool useWasm
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static WebGLLinkerTarget linkerTarget
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

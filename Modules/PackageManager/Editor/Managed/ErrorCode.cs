@@ -5,13 +5,13 @@
 
 namespace UnityEditor.PackageManager
 {
-    public enum ErrorCode : uint
+    public enum ErrorCode
     {
-        Unknown = 0,
-        NotFound = 1,
-        Forbidden = 2,
-        InvalidParameter = 3,
-        Conflict = 4,
+        Unknown,
+        NotFound,
+        Forbidden,
+        InvalidParameter,
+        Conflict,
         // NOTE: Error code success from the C++ API is not defined here
         // since we never create errors for successful requests
     }

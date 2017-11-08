@@ -9,12 +9,13 @@ namespace UnityEngine.Experimental.UIElements
 {
     internal class KeyboardTextEditorEventHandler : TextEditorEventHandler
     {
+        // used in tests
         internal bool m_Changed;
 
         // Drag
         bool m_Dragged;
         bool m_DragToPosition = true;
-        bool m_PostPoneMove;
+        bool m_PostponeMove;
         bool m_SelectAllOnMouseUp = true;
 
         string m_PreDrawCursorText;
@@ -24,9 +25,9 @@ namespace UnityEngine.Experimental.UIElements
         {
         }
 
-        public override void ExecuteDefaultAction(EventBase evt)
+        public override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
             if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
             {
@@ -52,6 +53,11 @@ namespace UnityEngine.Experimental.UIElements
 
         void OnMouseDown(MouseDownEvent evt)
         {
+            if (evt.button != 0)
+            {
+                return;
+            }
+
             textInputField.SyncTextEngine();
             m_Changed = false;
 
@@ -89,21 +95,21 @@ namespace UnityEngine.Experimental.UIElements
                 evt.StopPropagation();
             }
 
-            if (m_Changed)
-            {
-                editorEngine.text = textInputField.CullString(editorEngine.text);
-                textInputField.UpdateText(editorEngine.text);
-                evt.StopPropagation();
-            }
-
             // Scroll offset might need to be updated
             editorEngine.UpdateScrollOffset();
         }
 
         void OnMouseUp(MouseUpEvent evt)
         {
-            if (!textInputField.HasMouseCapture())
+            if (evt.button != 0)
+            {
                 return;
+            }
+
+            if (!textInputField.HasMouseCapture())
+            {
+                return;
+            }
 
             textInputField.SyncTextEngine();
             m_Changed = false;
@@ -112,7 +118,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 editorEngine.MoveSelectionToAltCursor();
             }
-            else if (m_PostPoneMove)
+            else if (m_PostponeMove)
             {
                 editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
             }
@@ -127,16 +133,9 @@ namespace UnityEngine.Experimental.UIElements
 
             m_DragToPosition = true;
             m_Dragged = false;
-            m_PostPoneMove = false;
+            m_PostponeMove = false;
 
             evt.StopPropagation();
-
-            if (m_Changed)
-            {
-                editorEngine.text = textInputField.CullString(editorEngine.text);
-                textInputField.UpdateText(editorEngine.text);
-                evt.StopPropagation();
-            }
 
             // Scroll offset might need to be updated
             editorEngine.UpdateScrollOffset();
@@ -144,8 +143,15 @@ namespace UnityEngine.Experimental.UIElements
 
         void OnMouseMove(MouseMoveEvent evt)
         {
-            if (!textInputField.HasMouseCapture())
+            if (evt.button != 0)
+            {
                 return;
+            }
+
+            if (!textInputField.HasMouseCapture())
+            {
+                return;
+            }
 
             textInputField.SyncTextEngine();
             m_Changed = false;
@@ -174,13 +180,6 @@ namespace UnityEngine.Experimental.UIElements
 
             evt.StopPropagation();
 
-            if (m_Changed)
-            {
-                editorEngine.text = textInputField.CullString(editorEngine.text);
-                textInputField.UpdateText(editorEngine.text);
-                evt.StopPropagation();
-            }
-
             // Scroll offset might need to be updated
             editorEngine.UpdateScrollOffset();
         }
@@ -196,8 +195,10 @@ namespace UnityEngine.Experimental.UIElements
             // Check for action keys.
             if (editorEngine.HandleKeyEvent(evt.imguiEvent))
             {
-                m_Changed = true;
-                textInputField.UpdateText(editorEngine.text);
+                if (textInputField.text != editorEngine.text)
+                {
+                    m_Changed = true;
+                }
                 evt.StopPropagation();
             }
             else
@@ -205,6 +206,8 @@ namespace UnityEngine.Experimental.UIElements
                 // Ignore tab & shift-tab in text fields
                 if (evt.keyCode == KeyCode.Tab || evt.character == '\t')
                     return;
+
+                evt.StopPropagation();
 
                 char c = evt.character;
 
@@ -235,7 +238,6 @@ namespace UnityEngine.Experimental.UIElements
                         editorEngine.ReplaceSelection("");
                         m_Changed = true;
                     }
-                    evt.StopPropagation();
                 }
             }
 
@@ -243,7 +245,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 editorEngine.text = textInputField.CullString(editorEngine.text);
                 textInputField.UpdateText(editorEngine.text);
-                evt.StopPropagation();
             }
 
             // Scroll offset might need to be updated

@@ -110,15 +110,9 @@ namespace UnityEditor
 
                         if (UxmlLiveReloadIsEnabled)
                         {
-                            var it = UIElementsUtility.GetPanelsIterator();
-                            while (it.MoveNext())
-                            {
-                                var view = it.Current.Value.ownerObject as HostView;
-                                if (view != null && view.actualView != null)
-                                {
-                                    view.Reload(view.actualView);
-                                }
-                            }
+                            // Delay the view reloading so we do not try to reload the view that
+                            // is currently active in the current callstack (i.e. ProjectView).
+                            EditorApplication.update += OneShotUxmlLiveReload;
                         }
                     }
                 }
@@ -127,6 +121,29 @@ namespace UnityEditor
                 if (anyUxmlImported && anyUssImported)
                     break;
             }
+        }
+
+        private static void OneShotUxmlLiveReload()
+        {
+            try
+            {
+                var it = UIElementsUtility.GetPanelsIterator();
+                while (it.MoveNext())
+                {
+                    var view = it.Current.Value.ownerObject as HostView;
+                    if (view != null && view.actualView != null)
+                    {
+                        view.Reload(view.actualView);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            // Make sure to unregister ourself to prevent any infinit updates.
+            EditorApplication.update -= OneShotUxmlLiveReload;
         }
 
         public static void FlagStyleSheetChange()

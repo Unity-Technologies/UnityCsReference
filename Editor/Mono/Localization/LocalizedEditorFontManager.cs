@@ -134,56 +134,30 @@ namespace UnityEditor
             }
         }
 
-        private static void ModifyFont(Font font, FontDictionary dict)
+        public static void LocalizeSkin(object obj)
         {
-            var name = font.ToString();
-            if (dict.ContainsKey(name))
-            {
-                // Debug.LogFormat("{0} is for {1}", name, string.Join(", ", dict[name].fontNames));
-                font.fontNames = dict[name].fontNames;
-            }
-            else
-            {
-                Debug.LogError("no matching for:" + name);
-            }
-        }
+            ReadFontSettings();
+            var dict = GetFontDictionary(LocalizationDatabase.currentEditorLanguage);
 
-        private static void UpdateSkinFontInternal(GUISkin skin, FontDictionary dict)
-        {
-            if (skin == null)
+            GUISkin skin = (GUISkin)obj;
+
+            if (dict.ContainsKey(skin.font.ToString()))
             {
-                return;
+                skin.font = Font.CreateDynamicFontFromOSFont(dict[skin.font.ToString()].fontNames, skin.font.fontSize);
             }
+
             var e = skin.GetEnumerator();
             while (e.MoveNext())
             {
                 var s = e.Current as GUIStyle;
                 if (s != null && s.font != null)
                 {
-                    ModifyFont(s.font, dict);
+                    if (dict.ContainsKey(s.font.ToString()))
+                    {
+                        s.font = Font.CreateDynamicFontFromOSFont(dict[s.font.ToString()].fontNames, s.font.fontSize);
+                    }
                 }
             }
-        }
-
-        public static void UpdateSkinFont(SystemLanguage language)
-        {
-            ReadFontSettings();
-            var dict = GetFontDictionary(language);
-            if (dict != null)
-            {
-                UpdateSkinFontInternal(EditorGUIUtility.GetBuiltinSkin((EditorSkin)1), dict);
-                UpdateSkinFontInternal(EditorGUIUtility.GetBuiltinSkin((EditorSkin)2), dict);
-            }
-        }
-
-        public static void UpdateSkinFont()
-        {
-            UpdateSkinFont(LocalizationDatabase.GetCurrentEditorLanguage());
-        }
-
-        private static void OnBoot()
-        {
-            UpdateSkinFont();
         }
     }
 }

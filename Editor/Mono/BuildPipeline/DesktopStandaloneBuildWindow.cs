@@ -3,15 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
-using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using UnityEditor.Modules;
 using System.Collections.Generic;
-using System.Text;
+using UnityEditor;
+using UnityEditor.Modules;
+using UnityEngine;
 
-internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
+internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
 {
     private GUIContent m_StandaloneTarget = EditorGUIUtility.TextContent("Target Platform|Destination platform for standalone build");
     private GUIContent m_Architecture = EditorGUIUtility.TextContent("Architecture|Build m_Architecture for standalone");
@@ -19,9 +16,15 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 
-    public DesktopStandaloneBuildWindowExtension()
+    private bool m_HasIl2CppPlayers;
+    private bool m_IsRunningOnHostPlatform;
+
+    public DesktopStandaloneBuildWindowExtension(bool hasIl2CppPlayers)
     {
         SetupStandaloneSubtargets();
+
+        m_IsRunningOnHostPlatform = Application.platform == GetHostPlatform();
+        m_HasIl2CppPlayers = hasIl2CppPlayers;
     }
 
     private void SetupStandaloneSubtargets()
@@ -154,12 +157,43 @@ internal class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtensi
             EditorUserBuildSettings.selectedStandaloneTarget = newTarget;
             GUIUtility.ExitGUI();
         }
+
+        ShowIl2CppErrorIfNeeded();
+    }
+
+    private void ShowIl2CppErrorIfNeeded()
+    {
+        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
+            return;
+
+        var error = GetCannotBuildIl2CppPlayerInCurrentSetupError();
+        if (string.IsNullOrEmpty(error))
+            return;
+
+        EditorGUILayout.HelpBox(error, MessageType.Error);
     }
 
     public override bool EnabledBuildButton()
     {
-        return true;
+        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) == ScriptingImplementation.Mono2x)
+            return true;
+
+        return string.IsNullOrEmpty(GetCannotBuildIl2CppPlayerInCurrentSetupError());
     }
+
+    protected virtual string GetCannotBuildIl2CppPlayerInCurrentSetupError()
+    {
+        if (!m_IsRunningOnHostPlatform)
+            return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
+
+        if (!m_HasIl2CppPlayers)
+            return "Currently selected scripting backend (IL2CPP) is not installed."; // Note: error should match UWP player error message for consistency.
+
+        return null;
+    }
+
+    protected abstract RuntimePlatform GetHostPlatform();
+    protected abstract string GetHostPlatformName();
 
     public override bool EnabledBuildAndRunButton()
     {

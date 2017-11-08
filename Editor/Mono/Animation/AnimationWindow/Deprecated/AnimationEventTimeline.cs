@@ -136,11 +136,8 @@ namespace UnityEditor
             //  We only display and manipulate animation events from the main
             //  game object in selection.  If we ever want to update to handle
             //  a multiple selection, a single timeline might not be sufficient...
-            if (state.selectedItem == null)
-                return;
-
-            AnimationClip clip = state.selectedItem.animationClip;
-            GameObject animated = state.selectedItem.rootGameObject;
+            AnimationClip clip = state.activeAnimationClip;
+            GameObject animated = state.activeRootGameObject;
 
             GUI.BeginGroup(rect);
             Color backupCol = GUI.color;

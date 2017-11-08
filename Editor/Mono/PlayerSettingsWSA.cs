@@ -33,16 +33,6 @@ namespace UnityEditor
                 {
                     case WSAImageType.PackageLogo:
                     case WSAImageType.SplashScreenImage:
-                    case WSAImageType.StoreTileLogo:
-                    case WSAImageType.StoreTileWideLogo:
-                    case WSAImageType.StoreTileSmallLogo:
-                    case WSAImageType.StoreSmallTile:
-                    case WSAImageType.StoreLargeTile:
-                    case WSAImageType.PhoneAppIcon:
-                    case WSAImageType.PhoneSmallTile:
-                    case WSAImageType.PhoneMediumTile:
-                    case WSAImageType.PhoneWideTile:
-                    case WSAImageType.PhoneSplashScreen:
                     case WSAImageType.UWPSquare44x44Logo:
                     case WSAImageType.UWPSquare71x71Logo:
                     case WSAImageType.UWPSquare150x150Logo:
@@ -157,6 +147,551 @@ namespace UnityEditor
                 {
                     Debug.LogError("Failed to parse value  ('" + capability.ToString() + "," + stringValue + "') to bool type.");
                     return false;
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileLogo80
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo80 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo80 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileLogo
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileLogo140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileLogo180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileLogo180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileWideLogo80
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo80 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo80 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileWideLogo
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileWideLogo140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileWideLogo180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileWideLogo180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileSmallLogo80
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo80 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo80 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileSmallLogo
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileSmallLogo140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeTileSmallLogo180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeTileSmallLogo180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSmallTile80
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile80 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile80 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSmallTile
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSmallTile140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSmallTile180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSmallTile180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeLargeTile80
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile80 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile80 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeLargeTile
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeLargeTile140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeLargeTile180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeLargeTile180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSplashScreenImage
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImage is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImage is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSplashScreenImageScale140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImageScale140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImageScale140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string storeSplashScreenImageScale180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImageScale180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.storeSplashScreenImageScale180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneAppIcon
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneAppIcon140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneAppIcon240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneAppIcon240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSmallTile
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSmallTile140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSmallTile240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSmallTile240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneMediumTile
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneMediumTile140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneMediumTile240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneMediumTile240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneWideTile
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneWideTile140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneWideTile240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneWideTile240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSplashScreenImage
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImage is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImage is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSplashScreenImageScale140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImageScale140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImageScale140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string phoneSplashScreenImageScale240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImageScale240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.phoneSplashScreenImageScale240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string packageLogo140
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo140 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo140 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string packageLogo180
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo180 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo180 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
+            public static string packageLogo240
+            {
+                get
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo240 is deprecated. Use GetVisualAssetsImage() instead.");
+                }
+                set
+                {
+                    throw new NotSupportedException("PlayerSettings.packageLogo240 is deprecated. Use SetVisualAssetsImage() instead.");
+                }
+            }
+
+            [Obsolete("PlayerSettings.enableLowLatencyPresentationAPI is deprecated. It is now always enabled.", true)]
+            public static bool enableLowLatencyPresentationAPI
+            {
+                get
+                {
+                    return true;
+                }
+                set
+                {
                 }
             }
         }

@@ -32,7 +32,6 @@ namespace UnityEditor
             camera.fieldOfView = 15;
             camera.farClipPlane = 10.0f;
             camera.nearClipPlane = 2.0f;
-            camera.backgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
 
             // Explicitly use forward rendering for all previews
             // (deferred fails when generating some static previews at editor launch; and we never want
@@ -210,7 +209,7 @@ namespace UnityEditor
         {
             InitPreview(r);
             var color = new Color(82 / 255f, 82 / 255f, 82 / 255f, 1.0f);
-            var darkGreyBackground = new Texture2D(1, 1, TextureFormat.RGBA32, true, true);
+            var darkGreyBackground = new Texture2D(1, 1, TextureFormat.RGBA32, true);
             darkGreyBackground.SetPixel(0, 0, color);
             darkGreyBackground.Apply();
             Graphics.DrawTexture(new Rect(0, 0, m_RenderTexture.width, m_RenderTexture.height), darkGreyBackground);
@@ -219,6 +218,10 @@ namespace UnityEditor
 
         private void InitPreview(Rect r)
         {
+            camera.backgroundColor = new Color(49.0f / 255.0f, 49.0f / 255.0f, 49.0f / 255.0f, 1.0f);
+            if (QualitySettings.activeColorSpace == ColorSpace.Linear)
+                camera.backgroundColor = camera.backgroundColor.linear;
+
             m_TargetRect = r;
             float scaleFac = GetScaleFactor(r.width, r.height);
 
@@ -236,7 +239,7 @@ namespace UnityEditor
                 // garbage collected each N frames, and in the editor we might be wildly resizing
                 // the inspector, thus using up tons of memory.
                 RenderTextureFormat format = camera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
-                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format, RenderTextureReadWrite.Default);
+                m_RenderTexture = new RenderTexture(rtWidth, rtHeight, 16, format, RenderTextureReadWrite.Linear);
                 m_RenderTexture.hideFlags = HideFlags.HideAndDontSave;
 
                 camera.targetTexture = m_RenderTexture;
@@ -303,23 +306,19 @@ namespace UnityEditor
         public void EndAndDrawPreview(Rect r)
         {
             Texture t = EndPreview();
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GUI.DrawTexture(r, t, ScaleMode.StretchToFill, false);
-            GL.sRGBWrite = false;
         }
 
         public Texture2D EndStaticPreview()
         {
             Unsupported.RestoreOverrideRenderSettings();
 
-            var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+            var tmp = RenderTexture.GetTemporary((int)m_TargetRect.width, (int)m_TargetRect.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-            Graphics.Blit(m_RenderTexture, tmp);
-            GL.sRGBWrite = false;
+            Graphics.Blit(m_RenderTexture, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
 
             RenderTexture.active = tmp;
-            var copy = new Texture2D((int)m_TargetRect.width, (int)m_TargetRect.height, TextureFormat.RGB24, false, true);
+            var copy = new Texture2D((int)m_TargetRect.width, (int)m_TargetRect.height, TextureFormat.RGB24, false, false);
             copy.ReadPixels(new Rect(0, 0, m_TargetRect.width, m_TargetRect.height), 0, 0);
             copy.Apply();
             RenderTexture.ReleaseTemporary(tmp);

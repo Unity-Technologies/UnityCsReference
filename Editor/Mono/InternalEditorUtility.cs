@@ -17,7 +17,7 @@ namespace UnityEditorInternal
 {
     partial class InternalEditorUtility
     {
-        public static Texture2D GetIconForFile(string fileName)
+        public static Texture2D FindIconForFile(string fileName)
         {
             int i = fileName.LastIndexOf('.');
             string extension = i == -1 ? "" : fileName.Substring(i + 1).ToLower();
@@ -41,6 +41,8 @@ namespace UnityEditorInternal
                 case "anim": return EditorGUIUtility.FindTexture("Animation Icon");
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
                 case "mixer": return EditorGUIUtility.FindTexture("AudioMixerController Icon");
+                case "uxml": return EditorGUIUtility.FindTexture("UxmlScript Icon");
+                case "uss": return EditorGUIUtility.FindTexture("UssScript Icon");
 
                 case "ttf": case "otf": case "fon": case "fnt":  return EditorGUIUtility.FindTexture("Font Icon");
 
@@ -71,8 +73,13 @@ namespace UnityEditorInternal
                 case "curves": case "curvesnormalized": case "particlecurves": case "particlecurvessigned": case "particledoublecurves": case "particledoublecurvessigned":
                     return EditorGUIUtility.FindTexture("ScriptableObject Icon");
 
-                default: return EditorGUIUtility.FindTexture("DefaultAsset Icon");
+                default: return null;
             }
+        }
+
+        public static Texture2D GetIconForFile(string fileName)
+        {
+            return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture("DefaultAsset Icon");
         }
 
         public static string[] GetEditorSettingsList(string prefix, int count)

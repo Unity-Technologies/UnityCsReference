@@ -76,11 +76,17 @@
 <Compile Include="..\..\Runtime\Export\ScrollWaitDefinitions.cs" >
 <Link>Runtime\Export\ScrollWaitDefinitions.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\WaitForEndOfFrame.cs" >
+<Link>Runtime\Export\WaitForEndOfFrame.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Quaternion.cs" >
 <Link>Runtime\Export\Quaternion.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_3.cs" >
 <Link>Runtime\Export\UnityEvent_3.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\SystemInfo.bindings.cs" >
+<Link>Runtime\Export\SystemInfo.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\ManagedStreamHelpers.cs" >
 <Link>Runtime\Export\ManagedStreamHelpers.cs</Link>
@@ -121,6 +127,9 @@
 <Compile Include="..\..\Runtime\Export\Debug.deprecated.cs" >
 <Link>Runtime\Export\Debug.deprecated.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Time.bindings.cs" >
+<Link>Runtime\Export\Time.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\BeforeRenderHelper.cs" >
 <Link>Runtime\Export\BeforeRenderHelper.cs</Link>
 </Compile>
@@ -129,6 +138,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Graphics.bindings.cs" >
 <Link>Runtime\Export\Graphics.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\WaitForSeconds.cs" >
+<Link>Runtime\Export\WaitForSeconds.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Color.cs" >
 <Link>Runtime\Export\Color.cs</Link>
@@ -160,11 +172,17 @@
 <Compile Include="..\..\Runtime\Export\Texture.deprecated.cs" >
 <Link>Runtime\Export\Texture.deprecated.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\ExcludeFromObjectFactoryAttribute.cs" >
+<Link>Runtime\Export\ExcludeFromObjectFactoryAttribute.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\AsyncGPUReadback.bindings.cs" >
 <Link>Runtime\Export\AsyncGPUReadback.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\GraphicsManagers.bindings.cs" >
 <Link>Runtime\Export\GraphicsManagers.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\ScriptableObject.bindings.cs" >
+<Link>Runtime\Export\ScriptableObject.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\CastHelper.cs" >
 <Link>Runtime\Export\CastHelper.cs</Link>
@@ -174,6 +192,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\UnityAPICompatibilityVersionAttribute.cs" >
 <Link>Runtime\Export\UnityAPICompatibilityVersionAttribute.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\WaitWhile.cs" >
+<Link>Runtime\Export\WaitWhile.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\BoundsInt.cs" >
 <Link>Runtime\Export\BoundsInt.cs</Link>
@@ -214,6 +235,9 @@
 <Compile Include="..\..\Runtime\Export\Texture.cs" >
 <Link>Runtime\Export\Texture.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\WaitUntil.cs" >
+<Link>Runtime\Export\WaitUntil.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Light.deprecated.cs" >
 <Link>Runtime\Export\Light.deprecated.cs</Link>
 </Compile>
@@ -250,6 +274,12 @@
 <Compile Include="..\..\Runtime\Export\GraphicsRenderers.bindings.cs" >
 <Link>Runtime\Export\GraphicsRenderers.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\WaitForFixedUpdate.cs" >
+<Link>Runtime\Export\WaitForFixedUpdate.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\CustomYieldInstruction.cs" >
+<Link>Runtime\Export\CustomYieldInstruction.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_4.cs" >
 <Link>Runtime\Export\UnityEvent_4.cs</Link>
 </Compile>
@@ -279,6 +309,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Security.cs" >
 <Link>Runtime\Export\Security.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\FailedToLoadScriptObject.cs" >
+<Link>Runtime\Export\FailedToLoadScriptObject.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\ScriptableRenderContext.bindings.cs" >
 <Link>Runtime\Export\ScriptableRenderContext.bindings.cs</Link>
@@ -333,6 +366,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Pose.cs" >
 <Link>Runtime\Export\Pose.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Coroutine.bindings.cs" >
+<Link>Runtime\Export\Coroutine.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs" >
 <Link>Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs</Link>
@@ -691,9 +727,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\RenderingClassesBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\RenderingClassesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TimeBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TimeBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\ScriptableRenderLoopBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\ScriptableRenderLoopBindings.gen.cs</Link>
 </Compile>
@@ -892,9 +925,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\AndroidJavaBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\AndroidJavaBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\BaseClassBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\BaseClassBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\SecurityPublicBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SecurityPublicBindings.gen.cs</Link>
 </Compile>
@@ -960,8 +990,20 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\Constraint.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\Constraint.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimatorControllerParameter.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\Avatar.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\Avatar.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\Motion.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\Motion.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\HumanTrait.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\HumanTrait.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs</Link>
@@ -972,6 +1014,12 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorUtility.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimatorUtility.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationPlayableGraphExtensions.bindings.cs</Link>
 </Compile>
@@ -981,47 +1029,29 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\HumanPoseHandler.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\HumanPoseHandler.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\Animator.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\Animator.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AvatarMask.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AvatarMask.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\RuntimeAnimatorController.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\HumanPoseHandlerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\HumanPoseHandlerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimatorBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorOverrideControllerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimatorOverrideControllerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\RuntimeAnimatorControllerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\RuntimeAnimatorControllerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimatorUtilityBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AvatarBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarBuilderBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AvatarBuilderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorControllerPlayableBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimatorControllerPlayableBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\MotionBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\MotionBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimatorControllerParameterBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimatorControllerParameterBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarMaskBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AvatarMaskBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtility.cs" >
 <Link>Runtime\UI\ScriptBindings\RectTransformUtility.cs</Link>
@@ -1061,12 +1091,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\External\JsonParsers\SimpleJson\SimpleJson.cs" >
-<Link>External\JsonParsers\SimpleJson\SimpleJson.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\Web\FriendAttributes.cs" >
-<Link>Runtime\Web\FriendAttributes.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs</Link>
@@ -1847,6 +1871,12 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Web\FriendAttributes.cs" >
+<Link>Modules\Web\FriendAttributes.cs</Link>
+</Compile>
+<Compile Include="..\..\External\JsonParsers\SimpleJson\SimpleJson.cs" >
+<Link>External\JsonParsers\SimpleJson\SimpleJson.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>

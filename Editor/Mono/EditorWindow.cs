@@ -13,6 +13,7 @@ namespace UnityEditor
 {
     // For bindings see: EditorWindow.bindings
 
+    [ExcludeFromObjectFactory]
     public partial class EditorWindow : ScriptableObject
     {
         [SerializeField]

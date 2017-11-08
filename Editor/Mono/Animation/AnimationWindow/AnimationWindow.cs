@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Animation", useTypeNameAsIconName = true)]
-    internal class AnimationWindow : EditorWindow
+    internal class AnimationWindow : EditorWindow, IHasCustomMenu
     {
         // Active Animation windows
         private static List<AnimationWindow> s_AnimationWindows = new List<AnimationWindow>();
@@ -22,7 +22,8 @@ namespace UnityEditor
 
         [SerializeField] private AnimEditor m_AnimEditor;
 
-        [SerializeField] private bool m_Locked = false;
+        [SerializeField]
+        EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
         private GUIStyle m_LockButtonStyle;
         private GUIContent m_DefaultTitleContent;
@@ -175,34 +176,28 @@ namespace UnityEditor
             if ((gameObject.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
 
-            var selectedItem = GameObjectSelectionItem.Create(gameObject);
-            if (ShouldUpdateGameObjectSelection(selectedItem))
+            var newSelection = GameObjectSelectionItem.Create(gameObject);
+            if (ShouldUpdateGameObjectSelection(newSelection))
             {
-                m_AnimEditor.selectedItem = selectedItem;
+                m_AnimEditor.selection = newSelection;
                 m_AnimEditor.overrideControlInterface = controlInterface;
             }
             else
-            {
-                Object.DestroyImmediate(selectedItem);
                 return false;
-            }
 
             return true;
         }
 
         private bool EditAnimationClipInternal(AnimationClip animationClip, Object sourceObject, IAnimationWindowControl controlInterface)
         {
-            var selectedItem = AnimationClipSelectionItem.Create(animationClip, sourceObject);
-            if (ShouldUpdateSelection(selectedItem))
+            var newSelection = AnimationClipSelectionItem.Create(animationClip, sourceObject);
+            if (ShouldUpdateSelection(newSelection))
             {
-                m_AnimEditor.selectedItem = selectedItem;
+                m_AnimEditor.selection = newSelection;
                 m_AnimEditor.overrideControlInterface = controlInterface;
             }
             else
-            {
-                Object.DestroyImmediate(selectedItem);
                 return false;
-            }
 
             return true;
         }
@@ -213,14 +208,11 @@ namespace UnityEditor
                 m_LockButtonStyle = "IN LockButton";
 
             if (m_AnimEditor.stateDisabled)
-                m_Locked = false;
+                m_LockTracker.isLocked = false;
 
             EditorGUI.BeginChangeCheck();
 
-            using (new EditorGUI.DisabledScope(m_AnimEditor.stateDisabled))
-            {
-                m_Locked = GUI.Toggle(r, m_Locked, GUIContent.none, m_LockButtonStyle);
-            }
+            m_LockTracker.ShowButton(r, m_LockButtonStyle, m_AnimEditor.stateDisabled);
 
             // Selected object could have been changed when unlocking the animation window
             if (EditorGUI.EndChangeCheck())
@@ -229,57 +221,51 @@ namespace UnityEditor
 
         private bool ShouldUpdateGameObjectSelection(GameObjectSelectionItem selectedItem)
         {
-            if (m_Locked)
+            if (m_LockTracker.isLocked)
                 return false;
 
             // Selected game object with no animation player.
             if (selectedItem.rootGameObject == null)
                 return true;
 
-            AnimationWindowSelectionItem currentlySelectedItem = m_AnimEditor.selectedItem;
+            AnimationWindowSelectionItem currentSelection = m_AnimEditor.selection;
 
-            if (currentlySelectedItem != null)
+            // Game object holding animation player has changed.  Update selection.
+            if (selectedItem.rootGameObject != currentSelection.rootGameObject)
+                return true;
+
+            // No clip in current selection, favour new selection.
+            if (currentSelection.animationClip == null)
+                return true;
+
+            // Make sure that animation clip is still referenced in animation player.
+            if (currentSelection.rootGameObject != null)
             {
-                // Game object holding animation player has changed.  Update selection.
-                if (selectedItem.rootGameObject != currentlySelectedItem.rootGameObject)
+                AnimationClip[] allClips = AnimationUtility.GetAnimationClips(currentSelection.rootGameObject);
+                if (!Array.Exists(allClips, x => x == currentSelection.animationClip))
                     return true;
-
-                // No clip in current selection, favour new selection.
-                if (currentlySelectedItem.animationClip == null)
-                    return true;
-
-                // Make sure that animation clip is still referenced in animation player.
-                if (currentlySelectedItem.rootGameObject != null)
-                {
-                    AnimationClip[] allClips = AnimationUtility.GetAnimationClips(currentlySelectedItem.rootGameObject);
-                    if (!Array.Exists(allClips, x => x == currentlySelectedItem.animationClip))
-                        return true;
-                }
-
-                return false;
             }
 
-            return true;
+            return false;
         }
 
         private bool ShouldUpdateSelection(AnimationWindowSelectionItem selectedItem)
         {
-            if (m_Locked)
+            if (m_LockTracker.isLocked)
                 return false;
 
-            AnimationWindowSelectionItem currentlySelectedItem = m_AnimEditor.selectedItem;
-
-            if (currentlySelectedItem != null)
-            {
-                return (selectedItem.GetRefreshHash() != currentlySelectedItem.GetRefreshHash());
-            }
-
-            return true;
+            AnimationWindowSelectionItem currentSelection = m_AnimEditor.selection;
+            return (selectedItem.GetRefreshHash() != currentSelection.GetRefreshHash());
         }
 
         private void UndoRedoPerformed()
         {
             Repaint();
+        }
+
+        public virtual void AddItemsToMenu(GenericMenu menu)
+        {
+            m_LockTracker.AddItemsToMenu(menu, m_AnimEditor.stateDisabled);
         }
     }
 }

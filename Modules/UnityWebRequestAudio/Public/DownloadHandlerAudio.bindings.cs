@@ -25,6 +25,11 @@ namespace UnityEngine.Networking
             InternalCreateAudioClip(url, audioType);
         }
 
+        public DownloadHandlerAudioClip(Uri uri, AudioType audioType)
+        {
+            InternalCreateAudioClip(uri.AbsoluteUri, audioType);
+        }
+
         protected override byte[] GetData()
         {
             return InternalGetByteArray(this);

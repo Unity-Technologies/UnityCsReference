@@ -214,14 +214,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Vector2[] allPoints = renderPoints;
 
-            float minDistance = Mathf.Infinity;
-            for (var i = 0; i < allPoints.Length; i++)
+            for (var i = 0; i < allPoints.Length - 1; i++)
             {
                 Vector2 currentPoint = allPoints[i];
+                Vector2 nextPoint = allPoints[i + 1];
                 float distance = Vector2.Distance(currentPoint, localPoint);
-                minDistance = Mathf.Min(minDistance, distance);
-                if (minDistance < interceptWidth)
-                    return true;
+                float distanceNext = Vector2.Distance(nextPoint, localPoint);
+                float distanceLine = Vector2.Distance(currentPoint, nextPoint);
+                if (distance < distanceLine && distanceNext < distanceLine) // the point is somewhere between the two points
+                {
+                    //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+                    if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
+                            (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
+                            nextPoint.y * currentPoint.x) / distanceLine < interceptWidth)
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;

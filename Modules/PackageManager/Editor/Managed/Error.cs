@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -12,11 +13,15 @@ namespace UnityEditor.PackageManager
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
+    [NativeAsStruct]
     public class Error
     {
         [SerializeField]
+        [NativeName("errorCode")]
         private ErrorCode m_ErrorCode;
+
         [SerializeField]
+        [NativeName("message")]
         private string m_Message;
 
         private Error() {}

@@ -9,7 +9,17 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class ColorField : VisualElement, INotifyValueChanged<Color>
     {
-        public Color value { get; set; }
+        private Color m_Value;
+
+        public Color value
+        {
+            get { return m_Value; }
+            set
+            {
+                m_Value = value;
+                Dirty(ChangeType.Repaint);
+            }
+        }
 
         public bool showEyeDropper { get; set; }
         public bool showAlpha { get; set; }
@@ -55,6 +65,12 @@ namespace UnityEditor.Experimental.UIElements
 
         private void OnGUIHandler()
         {
+            // Dirty repaint on eye dropper update to preview the color under the cursor
+            if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "EyeDropperUpdate")
+            {
+                Dirty(ChangeType.Repaint);
+            }
+
             Color newColor = EditorGUILayout.ColorField(GUIContent.none, value, showEyeDropper, showAlpha, hdr, hdrConfig);
             SetValueAndNotify(newColor);
             if (m_SetKbControl)

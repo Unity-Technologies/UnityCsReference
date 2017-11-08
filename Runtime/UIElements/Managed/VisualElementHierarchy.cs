@@ -407,6 +407,57 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
+        public VisualElement FindCommonAncestor(VisualElement other)
+        {
+            if (panel != other.panel)
+            {
+                return null;
+            }
+
+            // We compute the depth of the 2 elements
+            VisualElement thisSide = this;
+            int thisDepth = 0;
+            while (thisSide != null)
+            {
+                thisDepth++;
+                thisSide = thisSide.shadow.parent;
+            }
+
+            VisualElement otherSide = other;
+            int otherDepth = 0;
+            while (otherSide != null)
+            {
+                otherDepth++;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            //we reset
+            thisSide = this;
+            otherSide = other;
+
+            // we then walk up until both sides are at the same depth
+            while (thisDepth > otherDepth)
+            {
+                thisDepth--;
+                thisSide = thisSide.shadow.parent;
+            }
+
+            while (otherDepth > thisDepth)
+            {
+                otherDepth--;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            // Now both are at the same depth, We then walk up the tree we hit the same element
+            while (thisSide != otherSide)
+            {
+                thisSide = thisSide.shadow.parent;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            return thisSide;
+        }
+
         public IEnumerator<VisualElement> GetEnumerator()
         {
             if (contentContainer == this)

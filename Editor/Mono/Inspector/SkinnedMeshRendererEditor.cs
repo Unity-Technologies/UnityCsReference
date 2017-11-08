@@ -84,6 +84,8 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Materials, true);
 
+            CullDynamicFieldGUI();
+
             serializedObject.ApplyModifiedProperties();
         }
 

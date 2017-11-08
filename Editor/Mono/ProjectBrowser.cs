@@ -9,6 +9,7 @@ using System.Linq;
 using System.IO;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -93,7 +94,13 @@ namespace UnityEditor
         [SerializeField]
         string m_LastProjectPath;
         [SerializeField]
-        bool m_IsLocked;
+        EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
+
+        internal bool isLocked
+        {
+            get { return m_LockTracker.isLocked; }
+            set { m_LockTracker.isLocked = value; }
+        }
 
         bool m_EnableOldAssetTree = true;
         bool m_FocusSearchField;
@@ -592,7 +599,7 @@ namespace UnityEditor
 
                 // If we have a selection try to frame it (could be a non asset object)
                 if (Selection.activeInstanceID != 0)
-                    FrameObjectPrivate(Selection.activeInstanceID, !m_IsLocked, false);
+                    FrameObjectPrivate(Selection.activeInstanceID, !m_LockTracker.isLocked, false);
 
                 // If we did not frame anything above ensure to show Assets folder in two column mode
                 if (m_ViewMode == ViewMode.TwoColumns && !IsShowingFolderContents())
@@ -640,8 +647,7 @@ namespace UnityEditor
                 m_AssetTree.onGUIRowCallback += OnGUIAssetCallback;
                 m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
 
-                string guid = AssetDatabase.AssetPathToGUID("Assets");
-                var data = new AssetsTreeViewDataSource(m_AssetTree, AssetDatabase.GetInstanceIDFromGUID(guid), false, false);
+                var data = new AssetsTreeViewDataSource(m_AssetTree, AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"), false, false);
                 data.foldersFirst = GetShouldShowFoldersFirst();
 
                 m_AssetTree.Init(m_TreeViewRect,
@@ -691,7 +697,7 @@ namespace UnityEditor
 
             // Ensure same selection is framed in new view mode
             if (Selection.activeInstanceID != 0)
-                FrameObjectPrivate(Selection.activeInstanceID, !m_IsLocked, false);
+                FrameObjectPrivate(Selection.activeInstanceID, !m_LockTracker.isLocked, false);
 
             RepaintImmediately();
         }
@@ -1058,7 +1064,7 @@ namespace UnityEditor
 
         bool ShouldFrameAsset(int instanceID)
         {
-            HierarchyProperty h = new HierarchyProperty(HierarchyType.Assets);
+            HierarchyProperty h = new HierarchyProperty(HierarchyType.Assets, false);
             return h.Find(instanceID, null);
         }
 
@@ -1079,14 +1085,14 @@ namespace UnityEditor
             {
                 // If searching we are not showing the asset tree but we set selection anyways to ensure its
                 // setup when clearing search
-                bool revealSelectionAndFrameLast = !m_IsLocked && ShouldFrameAsset(instanceID) && Selection.instanceIDs.Length <= 1;
+                bool revealSelectionAndFrameLast = !m_LockTracker.isLocked && ShouldFrameAsset(instanceID) && Selection.instanceIDs.Length <= 1;
                 m_AssetTree.SetSelection(Selection.instanceIDs, revealSelectionAndFrameLast);
             }
             else if (m_ViewMode == ViewMode.TwoColumns)
             {
                 if (!m_InternalSelectionChange)
                 {
-                    bool frame = !m_IsLocked && Selection.instanceIDs.Length > 0 && ShouldFrameAsset(instanceID);
+                    bool frame = !m_LockTracker.isLocked && Selection.instanceIDs.Length > 0 && ShouldFrameAsset(instanceID);
                     if (frame)
                     {
                         // If searching we keep the search when framing. If folder browsing we change folder
@@ -1268,7 +1274,7 @@ namespace UnityEditor
             {
                 foreach (string folderPath in filter.folders)
                 {
-                    int instanceID = AssetDatabase.GetMainAssetInstanceID(folderPath);
+                    int instanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
                     if (instanceID == 0)
                     {
                         if (EditorUtility.DisplayDialog("Folder not found", "The folder '" + folderPath + "' might have been deleted or belong to another project. Do you want to delete the favorite?", "Delete", "Cancel"))
@@ -1979,6 +1985,8 @@ namespace UnityEditor
                 else
                     menu.AddDisabledItem(assetBrowserText);
 
+                m_LockTracker.AddItemsToMenu(menu);
+
                 if (Unsupported.IsDeveloperBuild())
                 {
                     menu.AddItem(new GUIContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
@@ -2163,7 +2171,7 @@ namespace UnityEditor
         {
             int[] folderInstanceIDs = new int[folders.Length];
             for (int i = 0; i < folders.Length; ++i)
-                folderInstanceIDs[i] = AssetDatabase.GetMainAssetInstanceID(folders[i]);
+                folderInstanceIDs[i] = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folders[i]);
             return folderInstanceIDs;
         }
 
@@ -2270,12 +2278,14 @@ namespace UnityEditor
                 string path = m_SearchFilter.folders[0];
 
                 string[] folderNames = path.Split('/');
-                string folderPath = "";
-                if (folderNames.Length > 0 && folderNames[0] == AssetDatabase.GetPackagesMountPoint())
+                var packagesRoot = AssetDatabase.GetPackagesRootPath();
+                if (path.StartsWith(packagesRoot))
                 {
                     // Translate the packages root mount point
-                    folderNames[0] = AssetDatabase.GetPackagesRootPath();
+                    folderNames = System.Text.RegularExpressions.Regex.Replace(path, "^" + packagesRoot, AssetDatabase.GetPackagesMountPoint()).Split('/');
                 }
+                string folderPath = "";
+
                 foreach (string folderName in folderNames)
                 {
                     if (!string.IsNullOrEmpty(folderPath))
@@ -2307,7 +2317,7 @@ namespace UnityEditor
                     rect.width = size.x;
                     if (GUI.Button(rect, folderContent, style))
                     {
-                        ShowFolderContents(AssetDatabase.GetMainAssetInstanceID(folderPath), false);
+                        ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath), false);
                     }
 
                     rect.x += size.x + 3f;
@@ -2407,7 +2417,7 @@ namespace UnityEditor
 
                 if (m_ListAreaState.m_CreateAssetUtility.BeginNewAssetCreation(instanceID, endAction, pathName, icon, resourceFile))
                 {
-                    ShowFolderContents(AssetDatabase.GetMainAssetInstanceID(m_ListAreaState.m_CreateAssetUtility.folder), true);
+                    ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(m_ListAreaState.m_CreateAssetUtility.folder), true);
                     m_ListArea.BeginNamingNewAsset(m_ListAreaState.m_CreateAssetUtility.originalName, instanceID, isCreatingNewFolder);
                 }
             }
@@ -2430,7 +2440,7 @@ namespace UnityEditor
 
         public void FrameObject(int instanceID, bool ping)
         {
-            bool frame = !m_IsLocked && (ping || ShouldFrameAsset(instanceID));
+            bool frame = !m_LockTracker.isLocked && (ping || ShouldFrameAsset(instanceID));
             FrameObjectPrivate(instanceID, frame, ping);
             if (s_LastInteractedProjectBrowser == this)
             {
@@ -2471,7 +2481,7 @@ namespace UnityEditor
             {
                 string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
                 if (!string.IsNullOrEmpty(containingFolder))
-                    folderInstanceID = AssetDatabase.GetMainAssetInstanceID(containingFolder);
+                    folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(containingFolder);
 
                 if (folderInstanceID == 0)
                     folderInstanceID = ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID();
@@ -2518,6 +2528,7 @@ namespace UnityEditor
 
         // FIXME: The validation logic is duplicated on the C++ side in CanDeleteSelectedAssets
         // Keep these in sync for now
+        [UsedByNativeCode]
         internal static void DeleteSelectedAssets(bool askIfSure)
         {
             int[] treeViewSelection = GetTreeViewFolderSelection();
@@ -2535,6 +2546,33 @@ namespace UnityEditor
 
             // Ensure selection is cleared since StopAssetEditing() will restore selection from a backup saved in StartAssetEditing.
             Selection.instanceIDs = new int[0];
+        }
+
+        [UsedByNativeCode]
+        internal static void RenameSelectedAssets()
+        {
+            ProjectBrowser ob = s_LastInteractedProjectBrowser;
+            if (ob != null)
+            {
+                if (ob.useTreeViewSelectionInsteadOfMainSelection && ob.m_FolderTree != null)
+                {
+                    ob.m_FolderTree.BeginNameEditing(0f);
+                }
+                else if (ob.m_ViewMode == ViewMode.OneColumn && ob.m_AssetTree != null)
+                {
+                    ob.m_AssetTree.BeginNameEditing(0f);
+                }
+                else if (ob.m_ViewMode == ViewMode.TwoColumns && ob.m_ListArea != null)
+                {
+                    ob.m_ListArea.BeginRename(0f);
+                }
+                else
+                {
+                    return;
+                }
+
+                ob.Repaint();
+            }
         }
 
         internal IHierarchyProperty GetHierarchyPropertyUsingFilter(string textFilter)
@@ -2578,7 +2616,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_IsLocked = GUI.Toggle(r, m_IsLocked, GUIContent.none, s_Styles.lockButton);
+            m_LockTracker.ShowButton(r, s_Styles.lockButton);
         }
 
         internal class SavedFiltersContextMenu
@@ -2644,7 +2682,7 @@ namespace UnityEditor
 
             private void SelectSubFolder()
             {
-                int folderInstanceID = AssetDatabase.GetMainAssetInstanceID(m_SubFolder);
+                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(m_SubFolder);
                 if (folderInstanceID != 0)
                     m_Caller.ShowFolderContents(folderInstanceID, false);
             }

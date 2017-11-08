@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -169,7 +170,7 @@ namespace UnityEngine
     public sealed partial class TrailRenderer : Renderer
     {
         [FreeFunction(Name = "TrailRendererScripting::GetPositions", HasExplicitThis = true)]
-        extern public int GetPositions([NotNull] Vector3[] positions);
+        extern public int GetPositions([NotNull][Out] Vector3[] positions);
     }
 
     [NativeHeader("Runtime/Graphics/LineRenderer.h")]
@@ -213,7 +214,7 @@ namespace UnityEngine
     public sealed partial class LineRenderer : Renderer
     {
         [FreeFunction(Name = "LineRendererScripting::GetPositions", HasExplicitThis = true)]
-        extern public int GetPositions([NotNull] Vector3[] positions);
+        extern public int GetPositions([NotNull][Out] Vector3[] positions);
 
         [FreeFunction(Name = "LineRendererScripting::SetPositions", HasExplicitThis = true)]
         extern public void SetPositions([NotNull] Vector3[] positions);

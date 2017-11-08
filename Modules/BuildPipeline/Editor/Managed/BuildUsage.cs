@@ -12,7 +12,6 @@ namespace UnityEditor.Experimental.Build
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Serialize/BuildUsageTags.h")]
     public struct BuildUsageTagGlobal
     {
         internal uint m_LightmapModesUsed;

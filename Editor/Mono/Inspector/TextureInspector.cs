@@ -592,18 +592,15 @@ namespace UnityEditor
             RenderTexture savedRT = RenderTexture.active;
             Rect savedViewport = ShaderUtil.rawViewportRect;
 
-            bool sRGB = !TextureUtil.GetLinearSampled(texture);
-
             RenderTexture tmp = RenderTexture.GetTemporary(
                     width,
                     height,
                     0,
                     RenderTextureFormat.Default,
-                    sRGB ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
+                    RenderTextureReadWrite.Linear);
 
 
             Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             if (mat)
             {
                 // We don't want Materials in Editor Resources Project to be modified in the end, so we use an duplicate.
@@ -613,13 +610,10 @@ namespace UnityEditor
             }
             else
             {
-                Graphics.Blit(texture, tmp);
+                Graphics.Blit(texture, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }
-            GL.sRGBWrite = false;
 
             RenderTexture.active = tmp;
-            // Setting color space on this texture does not matter... internally we just grab the data array
-            // when we call GetAssetPreview it generates a new texture from that data...
             Texture2D copy;
             Texture2D tex2d = target as Texture2D;
             if (tex2d != null && tex2d.alphaIsTransparency)

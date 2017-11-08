@@ -11,7 +11,7 @@ namespace UnityEngine.Experimental.UIElements
             textInputField = field;
         }
 
-        TextInputFieldBase textInputField { get; }
+        TextInputFieldBase textInputField { get; set; }
 
         internal override Rect localPosition
         {
@@ -24,6 +24,16 @@ namespace UnityEngine.Experimental.UIElements
                 OnFocus();
             if (!m_HasFocus && textInputField.hasFocus)
                 OnLostFocus();
+        }
+
+        internal override void OnCursorIndexChange()
+        {
+            textInputField.Dirty(ChangeType.Repaint);
+        }
+
+        internal override void OnSelectIndexChange()
+        {
+            textInputField.Dirty(ChangeType.Repaint);
         }
     }
 }

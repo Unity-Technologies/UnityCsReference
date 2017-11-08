@@ -6,7 +6,7 @@ namespace UnityEngine
 {
     public class WaitForSecondsRealtime : CustomYieldInstruction
     {
-        private float waitTime;
+        float waitTime;
 
         public override bool keepWaiting
         {

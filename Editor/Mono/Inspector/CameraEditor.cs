@@ -103,6 +103,8 @@ namespace UnityEditor
             }
         }
 
+        private RenderTexture m_PreviewTexture;
+
         // should match color in GizmosDrawers.cpp
         private static readonly Color kGizmoCamera = new Color(233f / 255f, 233f / 255f, 233f / 255f, 128f / 255f);
 
@@ -434,16 +436,27 @@ namespace UnityEditor
                     }
                 }
 
-                previewCamera.targetTexture = RenderTexture.GetTemporary((int)previewSize.x, (int)previewSize.y, 24, previewCamera.allowHDR ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32);
+                var previewTexture = GetPreviewTextureWithSize((int)cameraRect.width, (int)cameraRect.height);
+                previewTexture.antiAliasing = QualitySettings.antiAliasing;
+                previewCamera.targetTexture = previewTexture;
+                previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
+
                 Handles.EmitGUIGeometryForCamera(c, previewCamera);
+
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 previewCamera.Render();
-
-                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                GUI.DrawTexture(cameraRect, previewCamera.targetTexture, ScaleMode.StretchToFill, false);
                 GL.sRGBWrite = false;
-
-                RenderTexture.ReleaseTemporary(previewCamera.targetTexture);
+                Graphics.DrawTexture(cameraRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }
+        }
+
+        private RenderTexture GetPreviewTextureWithSize(int width, int height)
+        {
+            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height)
+            {
+                m_PreviewTexture = new RenderTexture(width, height, 24, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
+            }
+            return m_PreviewTexture;
         }
 
         [RequiredByNativeCode]

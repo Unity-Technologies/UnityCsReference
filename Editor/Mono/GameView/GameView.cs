@@ -592,11 +592,10 @@ namespace UnityEditor
             if (!m_TargetTexture)
             {
                 m_CurrentColorSpace = QualitySettings.activeColorSpace;
-                m_TargetTexture = new RenderTexture(0, 0, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default);
+                m_TargetTexture = new RenderTexture(0, 0, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
                 m_TargetTexture.name = "GameView RT";
                 m_TargetTexture.filterMode = FilterMode.Point;
                 m_TargetTexture.hideFlags = HideFlags.HideAndDontSave;
-                EditorGUIUtility.SetGUITextureBlitColorspaceSettings(EditorGUIUtility.GUITextureBlitColorspaceMaterial);
             }
 
             // Changes to these attributes require a release of the texture
@@ -750,15 +749,12 @@ namespace UnityEditor
                 if (m_TargetTexture.IsCreated())
                 {
                     EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos);
-
                     oldState.ApplyAndForget();
                     GUIUtility.s_EditorScreenPointOffset = oldOffset;
 
                     GUI.BeginGroup(m_ZoomArea.drawRect);
-                    GL.sRGBWrite = m_CurrentColorSpace == ColorSpace.Linear;
                     // Actually draw the game view to the screen, without alpha blending
-                    Graphics.DrawTexture(deviceFlippedTargetInView, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitColorspaceMaterial);
-                    GL.sRGBWrite = false;
+                    Graphics.DrawTexture(deviceFlippedTargetInView, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                     GUI.EndGroup();
                 }
             }

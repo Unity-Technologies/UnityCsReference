@@ -194,6 +194,8 @@ namespace UnityEditor
                     if (isCenterIsHot)
                         color = selectedColor;
 
+                    color = ToActiveColorSpace(color);
+
                     scale[i] = UnityEditorInternal.SliderScale.DoAxis(
                             id,
                             scale[i],
@@ -209,7 +211,7 @@ namespace UnityEditor
 
             if (param.ShouldShow(ScaleHandleParam.Handle.XYZ) && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
             {
-                color = centerColor;
+                color = ToActiveColorSpace(centerColor);
                 EditorGUI.BeginChangeCheck();
                 var s = ScaleValueHandle(ids.xyz, scale.x, position, rotation, handleSize * param.xyzSize, CubeHandleCap, SnapSettings.scale);
                 if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(scale.x, 0))

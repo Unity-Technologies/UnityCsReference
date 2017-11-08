@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.Requests
         {
         }
 
-        internal SearchRequest(long operationId, NativeClient.StatusCode initialStatus, string packageIdOrName)
+        internal SearchRequest(long operationId, NativeStatusCode initialStatus, string packageIdOrName)
             : base(operationId, initialStatus)
         {
             m_PackageIdOrName = packageIdOrName;

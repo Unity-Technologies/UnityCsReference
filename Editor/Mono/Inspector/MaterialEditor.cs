@@ -1788,9 +1788,7 @@ namespace UnityEditor
             m_PreviewUtility.Render(true);
             if (viewType == PreviewType.Skybox)
             {
-                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
                 InternalEditorUtility.DrawSkyboxMaterial(mat, m_PreviewUtility.camera);
-                GL.sRGBWrite = false;
             }
         }
 

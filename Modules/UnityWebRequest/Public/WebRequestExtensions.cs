@@ -20,13 +20,31 @@ namespace UnityEngine.Networking
             return request;
         }
 
+        public static UnityWebRequest Get(Uri uri)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbGET, new DownloadHandlerBuffer(), null);
+            return request;
+        }
+
         public static UnityWebRequest Delete(string uri)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbDELETE);
             return request;
         }
 
+        public static UnityWebRequest Delete(Uri uri)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbDELETE);
+            return request;
+        }
+
         public static UnityWebRequest Head(string uri)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbHEAD);
+            return request;
+        }
+
+        public static UnityWebRequest Head(Uri uri)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbHEAD);
             return request;
@@ -115,7 +133,31 @@ namespace UnityEngine.Networking
             return request;
         }
 
+        public static UnityWebRequest Put(Uri uri, byte[] bodyData)
+        {
+            UnityWebRequest request = new UnityWebRequest(
+                    uri,
+                    kHttpVerbPUT,
+                    new DownloadHandlerBuffer(),
+                    new UploadHandlerRaw(bodyData)
+                    );
+
+            return request;
+        }
+
         public static UnityWebRequest Put(string uri, string bodyData)
+        {
+            UnityWebRequest request = new UnityWebRequest(
+                    uri,
+                    kHttpVerbPUT,
+                    new DownloadHandlerBuffer(),
+                    new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyData))
+                    );
+
+            return request;
+        }
+
+        public static UnityWebRequest Put(Uri uri, string bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
                     uri,
@@ -130,7 +172,19 @@ namespace UnityEngine.Networking
         public static UnityWebRequest Post(string uri, string postData)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, postData);
+            return request;
+        }
 
+        public static UnityWebRequest Post(Uri uri, string postData)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, postData);
+            return request;
+        }
+
+        private static void SetupPost(UnityWebRequest request, string postData)
+        {
             byte[] payload = null;
             if (!string.IsNullOrEmpty(postData))
             {
@@ -141,15 +195,25 @@ namespace UnityEngine.Networking
             request.uploadHandler = new UploadHandlerRaw(payload);
             request.uploadHandler.contentType = "application/x-www-form-urlencoded";
             request.downloadHandler = new DownloadHandlerBuffer();
-
-            return request;
         }
 
         // Provides a shim for sending a multipart form as declared by the legacy WWWForm class.
         public static UnityWebRequest Post(string uri, WWWForm formData)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, formData);
+            return request;
+        }
 
+        public static UnityWebRequest Post(Uri uri, WWWForm formData)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, formData);
+            return request;
+        }
+
+        private static void SetupPost(UnityWebRequest request, WWWForm formData)
+        {
             byte[] payload = null;
             if (formData != null)
             {
@@ -168,8 +232,6 @@ namespace UnityEngine.Networking
                 foreach (KeyValuePair<string, string> header in formHeaders)
                     request.SetRequestHeader(header.Key, header.Value);
             }
-
-            return request;
         }
 
         // Provides a way to send a multipart form using the modern IMultipartFormSection API.
@@ -179,10 +241,28 @@ namespace UnityEngine.Networking
             return Post(uri, multipartFormSections, boundary);
         }
 
+        public static UnityWebRequest Post(Uri uri, List<IMultipartFormSection> multipartFormSections)
+        {
+            byte[] boundary = GenerateBoundary();
+            return Post(uri, multipartFormSections, boundary);
+        }
+
         public static UnityWebRequest Post(string uri, List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, multipartFormSections, boundary);
+            return request;
+        }
 
+        public static UnityWebRequest Post(Uri uri, List<IMultipartFormSection> multipartFormSections, byte[] boundary)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, multipartFormSections, boundary);
+            return request;
+        }
+
+        private static void SetupPost(UnityWebRequest request, List<IMultipartFormSection> multipartFormSections, byte[] boundary)
+        {
             byte[] payload = null;
             if (multipartFormSections != null && multipartFormSections.Count != 0)
                 payload = SerializeFormSections(multipartFormSections, boundary);
@@ -192,15 +272,25 @@ namespace UnityEngine.Networking
 
             request.uploadHandler = uploadHandler;
             request.downloadHandler = new DownloadHandlerBuffer();
-
-            return request;
         }
 
         // Provides a way to send a simple urlencoded form body, for simple forms without file sections.
         public static UnityWebRequest Post(string uri, Dictionary<string, string> formFields)
         {
             UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, formFields);
+            return request;
+        }
 
+        public static UnityWebRequest Post(Uri uri, Dictionary<string, string> formFields)
+        {
+            UnityWebRequest request = new UnityWebRequest(uri, kHttpVerbPOST);
+            SetupPost(request, formFields);
+            return request;
+        }
+
+        private static void SetupPost(UnityWebRequest request, Dictionary<string, string> formFields)
+        {
             byte[] payload = null;
             if (formFields != null && formFields.Count != 0)
                 payload = SerializeSimpleForm(formFields);
@@ -210,8 +300,6 @@ namespace UnityEngine.Networking
 
             request.uploadHandler = formUploadHandler;
             request.downloadHandler = new DownloadHandlerBuffer();
-
-            return request;
         }
 
 

@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using UnityEditor.BuildReporting;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -166,9 +167,9 @@ namespace UnityEditor
 
                 if (report != null)
                 {
-                    var resultStr = String.Format("Build completed with a result of '{0}'", report.buildResult.ToString("g"));
+                    var resultStr = String.Format("Build completed with a result of '{0}'", report.summary.result.ToString("g"));
 
-                    switch (report.buildResult)
+                    switch (report.summary.result)
                     {
                         case BuildReporting.BuildResult.Unknown:
                             Debug.LogWarning(resultStr);

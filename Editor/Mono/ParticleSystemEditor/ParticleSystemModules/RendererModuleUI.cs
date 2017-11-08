@@ -44,12 +44,15 @@ namespace UnityEditor
         SerializedProperty m_UseCustomVertexStreams;
         SerializedProperty m_VertexStreams;
         SerializedProperty m_MaskInteraction;
+        SerializedProperty m_EnableGPUInstancing;
 
         ReorderableList m_VertexStreamsList;
         int m_NumTexCoords;
         int m_TexCoordChannelIndex;
+        int m_NumInstancedStreams;
         bool m_HasTangent;
         bool m_HasColor;
+        bool m_HasGPUInstancing;
 
         static bool s_VisualizePivot = false;
 
@@ -89,6 +92,7 @@ namespace UnityEditor
             public GUIContent pivot = EditorGUIUtility.TextContent("Pivot|Applies an offset to the pivot of particles, as a multiplier of its size.");
             public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TextContent("Custom Vertex Streams|Choose whether to send custom particle data to the shader.");
+            public GUIContent enableGPUInstancing = EditorGUIUtility.TextContent("Enable GPU Instancing|Use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
 
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
@@ -143,6 +147,7 @@ namespace UnityEditor
             public string[] vertexStreamPackedTypes = { "POSITION.xyz", "NORMAL.xyz", "TANGENT.xyzw", "COLOR.xyzw" }; // all other types are floats
             public int[] vertexStreamTexCoordChannels = { 0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 3, 1, 1, 2, 3, 1, 3, 1, 3, 3, 1, 1, 1, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3 };
             public string channels = "xyzw|xyz";
+            public int vertexStreamsInstancedStart = 8;
 
             public GUIContent[] vertexStreamsMenuContent;
 
@@ -204,6 +209,8 @@ namespace UnityEditor
             m_ShownMeshes = shownMeshes.ToArray();
 
             m_MaskInteraction = GetProperty0("m_MaskInteraction");
+
+            m_EnableGPUInstancing = GetProperty0("m_EnableGPUInstancing");
 
             m_UseCustomVertexStreams = GetProperty0("m_UseCustomVertexStreams");
             m_VertexStreams = GetProperty0("m_VertexStreams");
@@ -288,6 +295,11 @@ namespace UnityEditor
                         }
                     }
 
+                    if (renderMode == RenderMode.Mesh)
+                    {
+                        GUIToggle(s_Texts.enableGPUInstancing, m_EnableGPUInstancing);
+                    }
+
                     GUIVector3Field(s_Texts.pivot, m_Pivot);
 
                     EditorGUI.BeginChangeCheck();
@@ -351,7 +363,7 @@ namespace UnityEditor
             }
 
             // Plus button
-            if (m_ShownMeshes.Length < k_MaxNumMeshes)
+            if (m_ShownMeshes.Length < k_MaxNumMeshes && !m_ParticleSystemUI.multiEdit)
             {
                 rect.x += kPlusAddRemoveButtonWidth + kPlusAddRemoveButtonSpacing;
                 if (PlusButton(rect))
@@ -391,11 +403,15 @@ namespace UnityEditor
 
         private void DoVertexStreamsGUI(RenderMode renderMode)
         {
+            ParticleSystemRenderer renderer = m_ParticleSystemUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
+
             // render list
             m_NumTexCoords = 0;
             m_TexCoordChannelIndex = 0;
+            m_NumInstancedStreams = 0;
             m_HasTangent = false;
             m_HasColor = false;
+            m_HasGPUInstancing = (renderMode == RenderMode.Mesh) ? renderer.supportsMeshInstancing : false;
             m_VertexStreamsList.DoLayoutList();
 
             if (!m_ParticleSystemUI.multiEdit)
@@ -434,7 +450,6 @@ namespace UnityEditor
                 // check input meshes aren't using too many UV streams
                 if (renderMode == RenderMode.Mesh)
                 {
-                    ParticleSystemRenderer renderer = m_ParticleSystemUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
                     Mesh[] meshes = new Mesh[k_MaxNumMeshes];
                     int numMeshes = renderer.GetMeshes(meshes);
                     for (int i = 0; i < numMeshes; i++)
@@ -494,9 +509,16 @@ namespace UnityEditor
             SerializedProperty vertexStream = m_VertexStreams.GetArrayElementAtIndex(index);
             int vertexStreamValue = vertexStream.intValue;
             string tcName = isWindowView ? "TEX" : "TEXCOORD";
+            string instancedName = isWindowView ? "INST" : "INSTANCED";
 
             int numChannels = s_Texts.vertexStreamTexCoordChannels[vertexStreamValue];
-            if (numChannels != 0)
+            if (m_HasGPUInstancing && vertexStreamValue >= s_Texts.vertexStreamsInstancedStart)
+            {
+                string swizzle = s_Texts.channels.Substring(0, numChannels);
+                GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue] + " (" + instancedName + m_NumInstancedStreams + "." + swizzle + ")", ParticleSystemStyles.Get().label);
+                m_NumInstancedStreams++;
+            }
+            else if (numChannels != 0)
             {
                 int swizzleLength = (m_TexCoordChannelIndex + numChannels > 4) ? numChannels + 1 : numChannels;
                 string swizzle = s_Texts.channels.Substring(m_TexCoordChannelIndex, swizzleLength);

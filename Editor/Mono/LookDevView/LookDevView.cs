@@ -113,7 +113,6 @@ namespace UnityEditor
 
         public static void DrawFullScreenQuad(Rect previewRect)
         {
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GL.PushMatrix();
             GL.LoadOrtho();
             GL.Viewport(previewRect);
@@ -129,7 +128,6 @@ namespace UnityEditor
             GL.Vertex3(1.0F, 0.0F, 0);
             GL.End();
             GL.PopMatrix();
-            GL.sRGBWrite = false;
         }
 
         private PreviewContext[]                        m_PreviewUtilityContexts = new PreviewContext[2];
@@ -1322,11 +1320,11 @@ namespace UnityEditor
             LookDevResources.m_LookDevCompositing.SetPass((int)m_LookDevConfig.lookDevMode);
 
             DrawFullScreenQuad(new Rect(0, 0, previewRect.width, previewRect.height));
+
+            GL.sRGBWrite = false;
             RenderTexture.active = oldActive;
 
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GUI.DrawTexture(previewRect, m_FinalCompositionTexture, ScaleMode.StretchToFill, false);
-            GL.sRGBWrite = false;
         }
 
         void EditorUpdate()
@@ -1368,6 +1366,7 @@ namespace UnityEditor
                 m_LookDevConfig.lookDevContexts[0].envRotation = (m_LookDevConfig.lookDevContexts[0].envRotation + Time.deltaTime * 360.0f * 0.03f * m_LookDevConfig.envRotationSpeed * m_EnvRotationAcc) % 720.0f; // 720 to match GUI
                 m_LookDevConfig.lookDevContexts[1].envRotation = (m_LookDevConfig.lookDevContexts[1].envRotation + Time.deltaTime * 360.0f * 0.03f * m_LookDevConfig.envRotationSpeed * m_EnvRotationAcc) % 720.0f; // 720 to match GUI
 
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 switch (m_LookDevConfig.lookDevMode)
                 {
                     case LookDevMode.Single1:
@@ -1382,6 +1381,7 @@ namespace UnityEditor
                         RenderPreviewDualView();
                         break;
                 }
+                GL.sRGBWrite = false;
             }
         }
 

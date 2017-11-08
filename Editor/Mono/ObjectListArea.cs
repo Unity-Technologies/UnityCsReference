@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal;
 using UnityEngine.Assertions;
 using Math = System.Math;
 using IndexOutOfRangeException = System.IndexOutOfRangeException;
@@ -712,21 +713,10 @@ namespace UnityEditor
             if (m_State.m_SelectedInstanceIDs.Count != 1)
                 return false;
             int instanceID = m_State.m_SelectedInstanceIDs[0];
-
-            // Only main representations can be renamed (currently)
-            if (AssetDatabase.IsSubAsset(instanceID))
-                return false;
-
-            // Builtin assets cannot be renamed
-            if (m_LocalAssets.IsBuiltinAsset(instanceID))
-                return false;
-
-            if (!AssetDatabase.Contains(instanceID))
+            if (!InternalEditorUtility.CanRenameAsset(instanceID))
                 return false;
 
             string name = m_LocalAssets.GetNameOfLocalAsset(instanceID);
-            if (name == null)
-                return false;
 
             return GetRenameOverlay().BeginRename(name, instanceID, delay);
         }

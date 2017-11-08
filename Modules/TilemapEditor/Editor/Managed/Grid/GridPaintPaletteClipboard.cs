@@ -268,7 +268,8 @@ namespace UnityEditor
 
         private void DestroyPreviewInstance()
         {
-            m_Owner.DestroyPreviewInstance();
+            if (m_Owner != null)
+                m_Owner.DestroyPreviewInstance();
         }
 
         private void ResetPreviewInstance()
@@ -331,8 +332,11 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
-            m_CameraPosition = previewUtility.camera.transform.position;
-            m_CameraOrthographicSize = previewUtility.camera.orthographicSize;
+            if (m_Owner)
+            {
+                m_CameraPosition = previewUtility.camera.transform.position;
+                m_CameraOrthographicSize = previewUtility.camera.orthographicSize;
+            }
             m_CameraPositionSaved = true;
             SavePaletteIfNecessary();
             DestroyPreviewInstance();
@@ -342,7 +346,8 @@ namespace UnityEditor
 
         private void OnDestroy()
         {
-            previewUtility.Cleanup();
+            if (m_Owner)
+                previewUtility.Cleanup();
         }
 
         public override void OnGUI()

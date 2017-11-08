@@ -293,7 +293,7 @@ namespace UnityEditorInternal
                 return null;
 
             // Create our icon
-            Texture2D iconWithMips = new Texture2D(maxResolution, maxResolution, TextureFormat.RGBA32, true, true);
+            Texture2D iconWithMips = new Texture2D(maxResolution, maxResolution, TextureFormat.RGBA32, true, false);
 
             // Add max mip
             if (BlitMip(iconWithMips, allMips, 0))

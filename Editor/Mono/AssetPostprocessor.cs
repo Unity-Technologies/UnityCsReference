@@ -322,7 +322,8 @@ namespace UnityEditor
                     var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     var type = inst.GetType();
                     bool hasPreProcessMethod = type.GetMethod("OnPreprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasPostProcessMethod = type.GetMethod("OnPostprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasPostProcessMethod = (type.GetMethod("OnPostprocessTexture", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null) ||
+                        (type.GetMethod("OnPostprocessCubemap", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null);
                     uint version = inst.GetVersion();
                     if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
                     {
@@ -358,6 +359,16 @@ namespace UnityEditor
             {
                 object[] args = { tex };
                 AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessTexture", args);
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessCubemap(Cubemap tex, string pathName)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { tex };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessCubemap", args);
             }
         }
 

@@ -16,6 +16,12 @@ namespace UnityEditor.Experimental.UIElements
         private Panel m_Panel;
         private VisualElement m_Tree;
         private VisualTreeAsset m_LastTree;
+        private Texture2D m_FileTypeIcon;
+
+        protected void OnEnable()
+        {
+            m_FileTypeIcon = EditorGUIUtility.FindTexture("UxmlScript Icon");
+        }
 
         // hack to avoid null references when a scriptedImporter runs and replaces the current selection
         internal override string targetTitle
@@ -39,6 +45,12 @@ namespace UnityEditor.Experimental.UIElements
         public override GUIContent GetPreviewTitle()
         {
             return GUIContent.Temp(targetTitle);
+        }
+
+        private void RenderIcon(Rect iconRect)
+        {
+            Debug.Assert(m_FileTypeIcon != null);
+            GUI.DrawTexture(iconRect, m_FileTypeIcon, ScaleMode.ScaleToFit);
         }
 
         public void Render(VisualTreeAsset vta, Rect r, GUIStyle background)
@@ -78,17 +90,19 @@ namespace UnityEditor.Experimental.UIElements
             m_Panel.visualTree.Dirty(ChangeType.Layout);
             m_Panel.visualTree.Dirty(ChangeType.Repaint);
 
-            var oldClipMatrix = GUIClip.GetMatrix();
-            var oldClipRect = GUIClip.GetTopRect();
             EditorGUI.DrawRect(r, EditorGUIUtility.isProSkin ? EditorGUIUtility.kDarkViewBackground : HostView.kViewColor);
             m_Panel.Repaint(Event.current);
-            GUIClip.SetTransform(oldClipMatrix, oldClipRect);
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
+            const int k_IconSize = 64;
+
             base.OnPreviewGUI(r, background);
-            Render(target as VisualTreeAsset, r, background);
+            if (r.width > k_IconSize || r.height > k_IconSize)
+                Render(target as VisualTreeAsset, r, background);
+            else
+                RenderIcon(r);
         }
     }
 }

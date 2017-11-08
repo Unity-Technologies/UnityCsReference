@@ -52,7 +52,7 @@ namespace UnityEditor.DeploymentTargets
 
         public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
-            LaunchBuildOnTarget(targetGroup, buildReport.buildTarget, BuildProperties.GetFromBuildReport(buildReport), targetId, progressHandler);
+            LaunchBuildOnTarget(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport), targetId, progressHandler);
         }
 
         public static List<DeploymentTargetIdAndStatus> GetKnownTargets(BuildTargetGroup targetGroup, BuildTarget buildTarget)
@@ -80,7 +80,7 @@ namespace UnityEditor.DeploymentTargets
 
         public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport)
         {
-            return FindValidTargetsForLaunchBuild(targetGroup, buildReport.buildTarget, BuildProperties.GetFromBuildReport(buildReport));
+            return FindValidTargetsForLaunchBuild(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport));
         }
     }
 }

@@ -52,7 +52,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
 [assembly: InternalsVisibleTo("UnityEditor.UI")]
+[assembly: InternalsVisibleTo("UnityEditor.AR")]
 [assembly: InternalsVisibleTo("UnityEditor.SpatialTracking")]
+[assembly: InternalsVisibleTo("UnityEditor.HoloLens")]
 
 
 [assembly: AssemblyIsEditorAssembly]

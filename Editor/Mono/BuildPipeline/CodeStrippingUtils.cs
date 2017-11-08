@@ -515,8 +515,7 @@ namespace UnityEditor
                                 foundTypes.Add(className);
                                 if (strippingInfo != null)
                                 {
-                                    var name = definition.Name.Name;
-                                    if (!AssemblyReferenceChecker.IsIgnoredSystemDll(name))
+                                    if (!AssemblyReferenceChecker.IsIgnoredSystemDll(definition))
                                         strippingInfo.RegisterDependency(className, StrippingInfo.RequiredByScripts);
                                 }
                             }
@@ -550,8 +549,7 @@ namespace UnityEditor
                                 foundTypes.Add(className);
                                 if (strippingInfo != null)
                                 {
-                                    var name = definition.Name.Name;
-                                    if (!AssemblyReferenceChecker.IsIgnoredSystemDll(name))
+                                    if (!AssemblyReferenceChecker.IsIgnoredSystemDll(definition))
                                         strippingInfo.RegisterDependency(className, StrippingInfo.RequiredByScripts);
                                 }
                             }

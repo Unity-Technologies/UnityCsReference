@@ -108,11 +108,17 @@ namespace UnityEngine
         // *undocumented*
         public const float kEpsilon = 0.000001F;
 
+        // Is the dot product of two quaternions within tolerance for them to be considered equal?
+        private static bool IsEqualUsingDot(float dot)
+        {
+            // Returns false in the presence of NaN values.
+            return dot > 1.0f - kEpsilon;
+        }
+
         // Are two quaternions equal to each other?
         public static bool operator==(Quaternion lhs, Quaternion rhs)
         {
-            // Returns false in the presence of NaN values.
-            return Dot(lhs, rhs) > 1.0f - kEpsilon;
+            return IsEqualUsingDot(Dot(lhs, rhs));
         }
 
         // Are two quaternions different from each other?
@@ -145,7 +151,7 @@ namespace UnityEngine
         public static float Angle(Quaternion a, Quaternion b)
         {
             float dot = Dot(a, b);
-            return Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1.0F)) * 2.0F * Mathf.Rad2Deg;
+            return IsEqualUsingDot(dot) ? 0.0f : Mathf.Acos(Mathf.Min(Mathf.Abs(dot), 1.0F)) * 2.0F * Mathf.Rad2Deg;
         }
 
         // Makes euler angles positive 0/360 with 0.0001 hacked to support old behaviour of QuaternionToEuler

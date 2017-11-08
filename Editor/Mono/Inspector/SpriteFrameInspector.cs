@@ -177,10 +177,9 @@ namespace UnityEditor
                     height,
                     0,
                     RenderTextureFormat.Default,
-                    RenderTextureReadWrite.Default);
+                    RenderTextureReadWrite.Linear);
 
             RenderTexture.active = tmp;
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
 
             GL.Clear(true, true, new Color(0f, 0f, 0f, 0f));
 
@@ -242,7 +241,6 @@ namespace UnityEditor
             }
             GL.End();
             GL.PopMatrix();
-            GL.sRGBWrite = false;
 
 
             if (spriteRendererMaterial != null)
@@ -253,6 +251,11 @@ namespace UnityEditor
                     spriteRendererMaterial.SetVector("_MainTex_TexelSize", _oldTexelSize);
             }
 
+            var tmp2 = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            Graphics.Blit(tmp, tmp2, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+
+            RenderTexture.active = tmp2;
+
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
             copy.filterMode = texture.filterMode;
@@ -261,6 +264,7 @@ namespace UnityEditor
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             copy.Apply();
             RenderTexture.ReleaseTemporary(tmp);
+            RenderTexture.ReleaseTemporary(tmp2);
 
             savedRTState.Restore();
 

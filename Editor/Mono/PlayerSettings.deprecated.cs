@@ -3,13 +3,25 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor;
 using UnityEngine;
 
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 
 namespace UnityEditor
 {
+    // deprecated in 2018.1
+    [Obsolete("Use AndroidArchitecture instead. (UnityUpgradable) -> AndroidArchitecture", false)]
+    public enum AndroidTargetDevice
+    {
+        [Obsolete("Use AndroidArchitecture.All instead. (UnityUpgradable) -> AndroidArchitecture.All", false)]
+        FAT        = 0,
+        //ARMv6    = 1,
+        //Emulator = 2,
+        [Obsolete("Use AndroidArchitecture.ARMv7 instead. (UnityUpgradable) -> AndroidArchitecture.ARMv7", false)]
+        ARMv7      = 3,
+        [Obsolete("Use AndroidArchitecture.X86 instead. (UnityUpgradable) -> AndroidArchitecture.X86", false)]
+        x86        = 4,
+    }
     // deprecated in 5.1.
     [Obsolete("TargetGlesGraphics is ignored, use SetGraphicsAPIs/GetGraphicsAPIs APIs", false)]
     public enum TargetGlesGraphics
@@ -87,6 +99,42 @@ namespace UnityEditor
 
     partial class PlayerSettings
     {
+        partial class Android
+        {
+            // deprecated in 2018.1
+            [Obsolete("Use targetArchitectures instead. (UnityUpgradable) -> targetArchitectures", false)]
+            public static AndroidTargetDevice targetDevice
+            {
+                get
+                {
+                    switch (targetArchitectures)
+                    {
+                        case AndroidArchitecture.ARMv7:
+                            return AndroidTargetDevice.ARMv7;
+                        case AndroidArchitecture.X86:
+                            return AndroidTargetDevice.x86;
+                        default:
+                            return AndroidTargetDevice.FAT;
+                    }
+                }
+                set
+                {
+                    switch (value)
+                    {
+                        case AndroidTargetDevice.ARMv7:
+                            targetArchitectures = AndroidArchitecture.ARMv7;
+                            break;
+                        case AndroidTargetDevice.x86:
+                            targetArchitectures = AndroidArchitecture.X86;
+                            break;
+                        default:
+                            targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.X86;
+                            break;
+                    }
+                }
+            }
+        }
+
         partial class iOS
         {
             // deprecated in 5.0

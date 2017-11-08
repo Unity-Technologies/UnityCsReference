@@ -54,7 +54,7 @@ namespace UnityEditor
 
                 var assemblyDefinition = AssemblyDefinition.ReadAssembly(fileName, new ReaderParameters { AssemblyResolver = resolver });
 
-                if (ignoreSystemDlls && IsIgnoredSystemDll(assemblyDefinition.Name.Name))
+                if (ignoreSystemDlls && IsIgnoredSystemDll(assemblyDefinition))
                     continue;
 
                 _assemblyFileNames.Add(assemblyFileName);
@@ -101,7 +101,7 @@ namespace UnityEditor
 
                 var assembly = AssemblyDefinition.ReadAssembly(filePath, new ReaderParameters { AssemblyResolver = resolver });
 
-                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly.Name.Name))
+                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly))
                     continue;
 
                 _assemblyFileNames.Add(Path.GetFileName(filePath));
@@ -119,7 +119,7 @@ namespace UnityEditor
         {
             foreach (var assembly in assemblyDefinitions)
             {
-                bool boolIsSystem = IsIgnoredSystemDll(assembly.Name.Name);
+                bool boolIsSystem = IsIgnoredSystemDll(assembly);
                 foreach (var type in assembly.MainModule.Types)
                     CollectReferencedAndDefinedMethods(type, boolIsSystem);
             }
@@ -259,7 +259,7 @@ namespace UnityEditor
         {
             foreach (var assembly in _assemblyDefinitions)
             {
-                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly.Name.Name))
+                if (ignoreSystemDlls && IsIgnoredSystemDll(assembly))
                     continue;
 
                 var assemblyDefinitionsAsArray = new[] {assembly};
@@ -272,11 +272,13 @@ namespace UnityEditor
             return null;
         }
 
-        public static bool IsIgnoredSystemDll(string name)
+        public static bool IsIgnoredSystemDll(AssemblyDefinition assembly)
         {
+            if (AssemblyHelper.IsUnityEngineModule(assembly))
+                return true;
+            var name = assembly.Name.Name;
             return name.StartsWith("System")
                 || name.Equals("UnityEngine")
-                || (name.StartsWith("UnityEngine.") && name.EndsWith("Module"))
                 || name.Equals("UnityEngine.Networking")
                 || name.Equals("Mono.Posix")
                 || name.Equals("Moq");

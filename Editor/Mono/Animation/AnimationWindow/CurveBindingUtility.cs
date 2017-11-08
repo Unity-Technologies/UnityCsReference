@@ -19,7 +19,7 @@ namespace UnityEditorInternal
             }
             else
             {
-                return curve.Evaluate(state.currentTime - curve.timeOffset);
+                return curve.Evaluate(state.currentTime);
             }
         }
 

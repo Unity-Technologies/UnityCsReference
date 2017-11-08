@@ -75,6 +75,20 @@ namespace UnityEditor.Experimental.UIElements
 
         protected abstract T StringToValue(string str);
 
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            {
+                KeyDownEvent kde = evt as KeyDownEvent;
+                if (kde.character == '\n')
+                {
+                    UpdateValueFromText();
+                }
+            }
+        }
+
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -82,14 +96,6 @@ namespace UnityEditor.Experimental.UIElements
             if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 UpdateValueFromText();
-            }
-            else if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
-            {
-                KeyDownEvent kde = evt as KeyDownEvent;
-                if (kde.character == '\n')
-                {
-                    UpdateValueFromText();
-                }
             }
         }
     }

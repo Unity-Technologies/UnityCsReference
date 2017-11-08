@@ -60,12 +60,20 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (evt.propagationPhase != PropagationPhase.DefaultAction)
             {
-                if (m_CallbackRegistry != null)
+                if (!evt.isPropagationStopped)
                 {
-                    m_CallbackRegistry.InvokeCallbacks(evt);
+                    if (m_CallbackRegistry != null)
+                    {
+                        m_CallbackRegistry.InvokeCallbacks(evt);
+                    }
+                }
+
+                if (evt.propagationPhase == PropagationPhase.AtTarget && !evt.isDefaultPrevented)
+                {
+                    ExecuteDefaultActionAtTarget(evt);
                 }
             }
-            else
+            else if (!evt.isDefaultPrevented)
             {
                 ExecuteDefaultAction(evt);
             }
@@ -80,6 +88,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
         }
+
+        protected internal virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
 
         protected internal virtual void ExecuteDefaultAction(EventBase evt) {}
     }

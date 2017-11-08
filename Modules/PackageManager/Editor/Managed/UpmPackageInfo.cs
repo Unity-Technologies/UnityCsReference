@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -14,33 +15,47 @@ namespace UnityEditor.PackageManager
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
+    [NativeAsStruct]
     public class UpmPackageInfo
     {
         [SerializeField]
+        [NativeName("packageId")]
         private string m_PackageId;
         [SerializeField]
+        [NativeName("tag")]
         private string m_Tag;
         [SerializeField]
+        [NativeName("version")]
         private string m_Version;
         [SerializeField]
+        [NativeName("originType")]
         private OriginType m_OriginType;
         [SerializeField]
+        [NativeName("originLocation")]
         private string m_OriginLocation;
         [SerializeField]
+        [NativeName("relationType")]
         private RelationType m_RelationType;
         [SerializeField]
+        [NativeName("resolvedPath")]
         private string m_ResolvedPath;
         [SerializeField]
+        [NativeName("name")]
         private string m_Name;
         [SerializeField]
+        [NativeName("displayName")]
         private string m_DisplayName;
         [SerializeField]
+        [NativeName("category")]
         private string m_Category;
         [SerializeField]
+        [NativeName("description")]
         private string m_Description;
         [SerializeField]
+        [NativeName("status")]
         private PackageStatus m_Status;
         [SerializeField]
+        [NativeName("errors")]
         private Error[] m_Errors;
 
         private UpmPackageInfo() {}

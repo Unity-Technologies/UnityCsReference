@@ -409,7 +409,7 @@ namespace UnityEditor
             if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
             {
                 GUILayout.BeginVertical();
-                GUILayout.Label("Memory Usage: " + Lightmapping.ComputeTotalMemoryUsage().ToString("0.0") + " MB", Styles.LabelStyle);
+                GUILayout.Label("Memory Usage: " + Lightmapping.ComputeTotalMemoryUsageInMB().ToString("0.0") + " MB", Styles.LabelStyle);
                 GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);
                 if (Lightmapping.isRunning)
                 {

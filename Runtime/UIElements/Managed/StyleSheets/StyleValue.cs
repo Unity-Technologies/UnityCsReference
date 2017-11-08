@@ -173,4 +173,67 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             return string.Format("[StyleProperty<{2}>: specifity={0}, value={1}]", specificity, value, typeof(T).Name);
         }
     }
+
+    internal static class StyleValueUtils
+    {
+        public static bool ApplyAndCompare(ref StyleValue<float> current, StyleValue<float> other)
+        {
+            float oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        public static bool ApplyAndCompare(ref StyleValue<int> current, StyleValue<int> other)
+        {
+            int oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        public static bool ApplyAndCompare(ref StyleValue<bool> current, StyleValue<bool> other)
+        {
+            bool oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        public static bool ApplyAndCompare(ref StyleValue<Color> current, StyleValue<Color> other)
+        {
+            Color oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        public static bool ApplyAndCompare(ref StyleValue<CursorStyle> current, StyleValue<CursorStyle> other)
+        {
+            CursorStyle oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+
+        public static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : Object
+        {
+            T oldValue = current.value;
+            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
+            {
+                return oldValue != other.value;
+            }
+            return false;
+        }
+    }
 }

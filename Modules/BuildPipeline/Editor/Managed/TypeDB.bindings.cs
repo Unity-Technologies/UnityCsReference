@@ -11,8 +11,9 @@ using System.Runtime.Serialization;
 
 namespace UnityEditor.Experimental.Build.Player
 {
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
     [Serializable]
+    [UsedByNativeCode]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
     public class TypeDB : ISerializable, IDisposable
     {
         [FreeFunction("TypeDB::Internal_Create")]

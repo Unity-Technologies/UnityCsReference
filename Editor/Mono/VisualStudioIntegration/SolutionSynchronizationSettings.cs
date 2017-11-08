@@ -105,7 +105,7 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <AssemblyName>{7}</AssemblyName>",
                 @"    <TargetFrameworkVersion>{9}</TargetFrameworkVersion>",
                 @"    <FileAlignment>512</FileAlignment>",
-                @"    <BaseDirectory>Assets</BaseDirectory>",
+                @"    <BaseDirectory>{11}</BaseDirectory>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "">",
                 @"    <DebugSymbols>true</DebugSymbols>",

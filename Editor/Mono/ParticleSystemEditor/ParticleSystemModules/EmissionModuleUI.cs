@@ -58,6 +58,7 @@ namespace UnityEditor
             m_BurstList = new ReorderableList(serializedObject, m_Bursts, false, true, true, true);
             m_BurstList.elementHeight = kReorderableListElementHeight;
             m_BurstList.onAddCallback = OnBurstListAddCallback;
+            m_BurstList.onCanAddCallback = OnBurstListCanAddCallback;
             m_BurstList.onRemoveCallback = OnBurstListRemoveCallback;
             m_BurstList.drawHeaderCallback = DrawBurstListHeaderCallback;
             m_BurstList.drawElementCallback = DrawBurstListElementCallback;
@@ -97,12 +98,21 @@ namespace UnityEditor
             SerializedProperty burstCountState = burst.FindPropertyRelative("countCurve.minMaxState");
             SerializedProperty burstCount = burst.FindPropertyRelative("countCurve.scalar");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
-
             burstCountState.intValue = (int)ParticleSystemCurveMode.Constant;
             burstCount.floatValue = 30.0f;
             burstCycleCount.intValue = 1;
 
+            SerializedProperty burstCountMinCurve = burst.FindPropertyRelative("countCurve.minCurve");
+            SerializedProperty burstCountMaxCurve = burst.FindPropertyRelative("countCurve.maxCurve");
+            burstCountMinCurve.animationCurveValue = AnimationCurve.Linear(0.0f, 1.0f, 1.0f, 1.0f);
+            burstCountMaxCurve.animationCurveValue = AnimationCurve.Linear(0.0f, 1.0f, 1.0f, 1.0f);
+
             m_BurstCountCurves.Add(new SerializedMinMaxCurve(this, s_Texts.burstCount, burst.propertyPath + ".countCurve", false, true));
+        }
+
+        private bool OnBurstListCanAddCallback(ReorderableList list)
+        {
+            return !m_ParticleSystemUI.multiEdit;
         }
 
         private void OnBurstListRemoveCallback(ReorderableList list)

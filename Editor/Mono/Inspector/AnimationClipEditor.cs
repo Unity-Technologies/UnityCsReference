@@ -444,7 +444,7 @@ namespace UnityEditor
                 qualityCurvesTime.variableEndEnd = stopTime;
                 qualityCurvesTime.q = q;
 
-                MuscleClipEditorUtilities.CalculateQualityCurves(m_Clip, qualityCurvesTime,
+                MuscleClipUtility.CalculateQualityCurves(m_Clip, qualityCurvesTime,
                     m_QualityCurves[kPose][q], m_QualityCurves[kRotation][q],
                     m_QualityCurves[kHeight][q], m_QualityCurves[kPosition][q]);
             }
@@ -977,7 +977,7 @@ namespace UnityEditor
             float stopTime = m_StopFrame / m_Clip.frameRate;
             float additivePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
 
-            MuscleClipQualityInfo clipQualityInfo = MuscleClipEditorUtilities.GetMuscleClipQualityInfo(m_Clip, startTime,
+            MuscleClipQualityInfo clipQualityInfo = MuscleClipUtility.GetMuscleClipQualityInfo(m_Clip, startTime,
                     stopTime);
 
             bool IsHumanClip = (target as Motion).isHumanMotion;

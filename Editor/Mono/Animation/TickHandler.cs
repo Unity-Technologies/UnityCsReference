@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
@@ -28,50 +29,103 @@ namespace UnityEditor
             m_TickModulos = tickModulos;
         }
 
-        public void SetTickModulosForFrameRate(float frameRate)
+        public List<float> GetTickModulosForFrameRate(float frameRate)
         {
+            List<float> modulos;
+
             // Make frames multiples of 5 and 10, if frameRate is too high (avoid overflow) or not an even number
             if (frameRate > int.MaxValue / 2.0f || frameRate != Mathf.Round(frameRate))
             {
-                SetTickModulos(new float[] {
-                    1f / frameRate, 5f / frameRate, 10f / frameRate, 50f / frameRate,
-                    100f / frameRate, 500f / frameRate, 1000f / frameRate, 5000f / frameRate,
-                    10000f / frameRate, 50000f / frameRate, 100000f / frameRate, 500000f / frameRate
-                });
-            }
-            else
-            {
-                List<int> dividers = new List<int>();
-                int divisor = 1;
-                while (divisor < frameRate)
+                modulos = new List<float>
                 {
-                    if (divisor == frameRate)
-                        break;
-                    int multiple = Mathf.RoundToInt(frameRate / divisor);
-                    if (multiple % 60 == 0) { divisor *= 2; dividers.Add(divisor); }
-                    else if (multiple % 30 == 0) { divisor *= 3; dividers.Add(divisor); }
-                    else if (multiple % 20 == 0) { divisor *= 2; dividers.Add(divisor); }
-                    else if (multiple % 10 == 0) { divisor *= 2; dividers.Add(divisor); }
-                    else if (multiple %  5 == 0) { divisor *= 5; dividers.Add(divisor); }
-                    else if (multiple %  2 == 0) { divisor *= 2; dividers.Add(divisor); }
-                    else if (multiple %  3 == 0) { divisor *= 3; dividers.Add(divisor); }
-                    else
-                        divisor = Mathf.RoundToInt(frameRate);
-                }
-                float[] modulos = new float[9 + dividers.Count];
-                for (int i = 0; i < dividers.Count; i++)
-                    modulos[i] = 1f / dividers[dividers.Count - i - 1];
-                modulos[modulos.Length - 1] = 3600;
-                modulos[modulos.Length - 2] = 60 * 30;
-                modulos[modulos.Length - 3] = 60 * 10;
-                modulos[modulos.Length - 4] = 60 * 5;
-                modulos[modulos.Length - 5] = 60;
-                modulos[modulos.Length - 6] = 30;
-                modulos[modulos.Length - 7] = 10;
-                modulos[modulos.Length - 8] = 5;
-                modulos[modulos.Length - 9] = 1;
-                SetTickModulos(modulos);
+                    1f / frameRate,
+                    5f / frameRate,
+                    10f / frameRate,
+                    50f / frameRate,
+                    100f / frameRate,
+                    500f / frameRate,
+                    1000f / frameRate,
+                    5000f / frameRate,
+                    10000f / frameRate,
+                    50000f / frameRate,
+                    100000f / frameRate,
+                    500000f / frameRate
+                };
+
+                return modulos;
             }
+
+            List<int> dividers = new List<int>();
+            int divisor = 1;
+            while (divisor < frameRate)
+            {
+                if (Math.Abs(divisor - frameRate) < 1e-5)
+                    break;
+                int multiple = Mathf.RoundToInt(frameRate / divisor);
+                if (multiple % 60 == 0)
+                {
+                    divisor *= 2;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 30 == 0)
+                {
+                    divisor *= 3;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 20 == 0)
+                {
+                    divisor *= 2;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 10 == 0)
+                {
+                    divisor *= 2;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 5 == 0)
+                {
+                    divisor *= 5;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 2 == 0)
+                {
+                    divisor *= 2;
+                    dividers.Add(divisor);
+                }
+                else if (multiple % 3 == 0)
+                {
+                    divisor *= 3;
+                    dividers.Add(divisor);
+                }
+                else
+                    divisor = Mathf.RoundToInt(frameRate);
+            }
+            modulos = new List<float>(13 + dividers.Count);
+
+            for (int i = 0; i < dividers.Count; i++)
+                modulos.Add(1f / dividers[dividers.Count - i - 1]);
+
+            // Ticks based on seconds
+            modulos.Add(1);
+            modulos.Add(5);
+            modulos.Add(10);
+            modulos.Add(30);
+            modulos.Add(60);
+            modulos.Add(60 * 5);
+            modulos.Add(60 * 10);
+            modulos.Add(60 * 30);
+            modulos.Add(3600);
+            modulos.Add(3600 * 6);
+            modulos.Add(3600 * 24);
+            modulos.Add(3600 * 24 * 7);
+            modulos.Add(3600 * 24 * 14);
+            return modulos;
+        }
+
+        public void SetTickModulosForFrameRate(float frameRate)
+        {
+            var modulos = GetTickModulosForFrameRate(frameRate);
+            SetTickModulos(modulos.ToArray());
         }
 
         public void SetRanges(float minValue, float maxValue, float minPixel, float maxPixel)

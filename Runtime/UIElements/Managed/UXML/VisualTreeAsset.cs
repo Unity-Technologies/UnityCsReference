@@ -324,9 +324,9 @@ namespace UnityEngine.Experimental.UIElements
     public struct CreationContext
     {
         public static readonly CreationContext Default = new CreationContext();
-        public VisualElement target { get; }
-        public VisualTreeAsset visualTreeAsset { get; }
-        public Dictionary<string, VisualElement> slotInsertionPoints { get; }
+        public VisualElement target { get; private set; }
+        public VisualTreeAsset visualTreeAsset { get; private set; }
+        public Dictionary<string, VisualElement> slotInsertionPoints { get; private set; }
 
         internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints, VisualTreeAsset vta, VisualElement target)
         {

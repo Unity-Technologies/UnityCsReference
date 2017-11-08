@@ -130,6 +130,9 @@
 <Compile Include="..\..\Editor\Mono\SupportedRenderingFeatures.cs" >
 <Link>Editor\Mono\SupportedRenderingFeatures.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorBuildSettings.bindings.cs" >
+<Link>Editor\Mono\EditorBuildSettings.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\MaterialProperty.cs" >
 <Link>Editor\Mono\MaterialProperty.cs</Link>
 </Compile>
@@ -145,8 +148,14 @@
 <Compile Include="..\..\Editor\Mono\ObjectSelector.cs" >
 <Link>Editor\Mono\ObjectSelector.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ObjectFactory.bindings.cs" >
+<Link>Editor\Mono\ObjectFactory.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ComponentUtility.cs" >
 <Link>Editor\Mono\ComponentUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\EditorUtility.bindings.cs" >
+<Link>Editor\Mono\EditorUtility.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\FileUtil.bindings.cs" >
 <Link>Editor\Mono\FileUtil.bindings.cs</Link>
@@ -187,14 +196,23 @@
 <Compile Include="..\..\Editor\Mono\SyncProject.cs" >
 <Link>Editor\Mono\SyncProject.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\PlayerSettingsIOS.bindings.cs" >
+<Link>Editor\Mono\PlayerSettingsIOS.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\DropInfo.cs" >
 <Link>Editor\Mono\DropInfo.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs" >
 <Link>Editor\Mono\ScriptEditorUtility.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorGUIUtility.bindings.cs" >
+<Link>Editor\Mono\EditorGUIUtility.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\EditorGUI.cs" >
 <Link>Editor\Mono\EditorGUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\BlendTree.bindings.cs" >
+<Link>Editor\Mono\BlendTree.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\AssetPostprocessor.cs" >
 <Link>Editor\Mono\AssetPostprocessor.cs</Link>
@@ -207,6 +225,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\ProjectBrowser.cs" >
 <Link>Editor\Mono\ProjectBrowser.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.bindings.cs" >
+<Link>Editor\Mono\EditorUserBuildSettings.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ObjectListAssetStoreGroup.cs" >
 <Link>Editor\Mono\ObjectListAssetStoreGroup.cs</Link>
@@ -228,6 +249,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\DefaultAsset.bindings.cs" >
 <Link>Editor\Mono\DefaultAsset.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\EditorGUI.bindings.cs" >
+<Link>Editor\Mono\EditorGUI.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\DataWatchService.cs" >
 <Link>Editor\Mono\DataWatchService.cs</Link>
@@ -255,6 +279,12 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\SerializedObject.cs" >
 <Link>Editor\Mono\SerializedObject.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\MuscleClipUtility.bindings.cs" >
+<Link>Editor\Mono\MuscleClipUtility.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\MonoScript.bindings.cs" >
+<Link>Editor\Mono\MonoScript.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\CSPreProcess.cs" >
 <Link>Editor\Mono\CSPreProcess.cs</Link>
@@ -322,6 +352,9 @@
 <Compile Include="..\..\Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs" >
 <Link>Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\StateMachine.bindings.cs" >
+<Link>Editor\Mono\StateMachine.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\SerializedProperty.cs" >
 <Link>Editor\Mono\SerializedProperty.cs</Link>
 </Compile>
@@ -340,14 +373,23 @@
 <Compile Include="..\..\Editor\Mono\EditorGUIUtility.cs" >
 <Link>Editor\Mono\EditorGUIUtility.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\AvatarUtility.bindings.cs" >
+<Link>Editor\Mono\AvatarUtility.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\RetainedMode.cs" >
 <Link>Editor\Mono\RetainedMode.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\BuildPlayerSceneTreeView.cs" >
 <Link>Editor\Mono\BuildPlayerSceneTreeView.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.deprecated.cs" >
+<Link>Editor\Mono\EditorUserBuildSettings.deprecated.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ProjectBrowserColumnOne.cs" >
 <Link>Editor\Mono\ProjectBrowserColumnOne.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\BlendTreePreviewUtility.bindings.cs" >
+<Link>Editor\Mono\BlendTreePreviewUtility.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs" >
 <Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
@@ -400,6 +442,9 @@
 <Compile Include="..\..\Editor\Mono\AssetPipeline\NativeFormatImporterUtility.bindings.cs" >
 <Link>Editor\Mono\AssetPipeline\NativeFormatImporterUtility.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\AssetPipeline\MonoImporter.bindings.cs" >
+<Link>Editor\Mono\AssetPipeline\MonoImporter.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\AssetPipeline\LocalCacheServer.cs" >
 <Link>Editor\Mono\AssetPipeline\LocalCacheServer.cs</Link>
 </Compile>
@@ -424,6 +469,9 @@
 <Compile Include="..\..\Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs" >
 <Link>Editor\Mono\VisualStudioIntegration\UnityVSSupport.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImporterImpl.cs" >
+<Link>Editor\Mono\StyleSheets\StyleSheetImporterImpl.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImportErrors.cs" >
 <Link>Editor\Mono\StyleSheets\StyleSheetImportErrors.cs</Link>
 </Compile>
@@ -432,6 +480,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetAssetPostProcessor.cs" >
 <Link>Editor\Mono\StyleSheets\StyleSheetAssetPostProcessor.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetEditor.cs" >
+<Link>Editor\Mono\StyleSheets\StyleSheetEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImporter.cs" >
 <Link>Editor\Mono\StyleSheets\StyleSheetImporter.cs</Link>
@@ -963,9 +1014,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\CurveEditor.cs" >
 <Link>Editor\Mono\Animation\AnimationWindow\CurveEditor.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\AnimationWindowSelection.cs" >
-<Link>Editor\Mono\Animation\AnimationWindow\AnimationWindowSelection.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Animation\AnimationWindow\RectangleTool.cs" >
 <Link>Editor\Mono\Animation\AnimationWindow\RectangleTool.cs</Link>
@@ -1531,6 +1579,9 @@
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\TextValueField.cs" >
 <Link>Editor\Mono\UIElements\Controls\TextValueField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\EnumField.cs" >
+<Link>Editor\Mono\UIElements\Controls\EnumField.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Events\TooltipEvent.cs" >
 <Link>Editor\Mono\UIElements\Events\TooltipEvent.cs</Link>
 </Compile>
@@ -1981,6 +2032,9 @@
 <Compile Include="..\..\Editor\Mono\Localization\LocalizationDatabase.cs" >
 <Link>Editor\Mono\Localization\LocalizationDatabase.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Localization\LocalizationDatabase.bindings.cs" >
+<Link>Editor\Mono\Localization\LocalizationDatabase.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs" >
 <Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
 </Compile>
@@ -2154,6 +2208,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\AssetDatabase\AssetDatabase.deprecated.cs" >
 <Link>Editor\Mono\AssetDatabase\AssetDatabase.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\AssetDatabase\AssetImportInProgressProxy.bindings.cs" >
+<Link>Editor\Mono\AssetDatabase\AssetImportInProgressProxy.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Annotation\AnnotationWindow.cs" >
 <Link>Editor\Mono\Annotation\AnnotationWindow.cs</Link>
@@ -2893,9 +2950,6 @@
 <Compile Include="..\..\Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs" >
 <Link>Editor\Mono\BuildPipeline\PostProcessStandalonePlayer.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\BuildPipeline\StrippingInfo.cs" >
-<Link>Editor\Mono\BuildPipeline\StrippingInfo.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs" >
 <Link>Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs</Link>
 </Compile>
@@ -2928,9 +2982,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\BuildPipeline\BuildUtils.cs" >
 <Link>Editor\Mono\BuildPipeline\BuildUtils.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\BuildPipeline\StrippingInfoWithSizeAnalysis.cs" >
-<Link>Editor\Mono\BuildPipeline\StrippingInfoWithSizeAnalysis.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\BuildPipeline\MonoAssemblyStripping.cs" >
 <Link>Editor\Mono\BuildPipeline\MonoAssemblyStripping.cs</Link>
@@ -3003,9 +3054,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\ModelImporterBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\ModelImporterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\MonoImporterBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\MonoImporterBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\MovieImporterBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\MovieImporterBindings.gen.cs</Link>
 </Compile>
@@ -3054,18 +3102,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\AudioMixerSnapshotControllerBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\AudioMixerSnapshotControllerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\AvatarAnimationBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\AvatarAnimationBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\AvatarUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\AvatarUtilityBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\BlendTreeBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\BlendTreeBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\BlendTreePreviewUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\BlendTreePreviewUtilityBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\BuildPipelineBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\BuildPipelineBindings.gen.cs</Link>
 </Compile>
@@ -3089,9 +3125,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\EditorConnectionInternalBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\EditorConnectionInternalBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\EditorBuildSettingsBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\EditorBuildSettingsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\EditorGraphicsSettingsBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\EditorGraphicsSettingsBindings.gen.cs</Link>
@@ -3152,9 +3185,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\LicenseManagementWindowBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\LicenseManagementWindowBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\LocalizationDatabaseBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\LocalizationDatabaseBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\LODUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\LODUtilityBindings.gen.cs</Link>
@@ -3275,9 +3305,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\UnityStatsBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\UnityStatsBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\MonoScriptBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\MonoScriptBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\OSColorPickerBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\OSColorPickerBindings.gen.cs</Link>
@@ -3413,15 +3440,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Src\BuildReporting\Managed\BuildReportViewerWindow.cs" >
-<Link>Editor\Src\BuildReporting\Managed\BuildReportViewerWindow.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\BuildReporting\Managed\BuildReportHelper.cs" >
-<Link>Editor\Src\BuildReporting\Managed\BuildReportHelper.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\BuildReporting\BuildReportBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Src\VR\Mono\HolographicEmulation.cs" >
 <Link>Editor\Src\VR\Mono\HolographicEmulation.cs</Link>
 </Compile>
@@ -3490,6 +3508,42 @@
 </Compile>
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\TypeDB.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildFile.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildFile.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportHelper.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildReportHelper.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportViewerWindow.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildReportViewerWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildResult.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildResult.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildStep.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildStep.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildStepMessage.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildStepMessage.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildSummary.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildSummary.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildType.cs" >
+<Link>Modules\BuildReportingEditor\Managed\BuildType.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs" >
+<Link>Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\StrippingInfo.cs" >
+<Link>Modules\BuildReportingEditor\Managed\StrippingInfo.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\StrippingInfoWithSizeAnalysis.cs" >
+<Link>Modules\BuildReportingEditor\Managed\StrippingInfoWithSizeAnalysis.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs" >
 <Link>Modules\CloudServicesSettingsEditor\Ads\ScriptBindings\AdvertisementSettings.bindings.cs</Link>
@@ -3611,6 +3665,12 @@
 <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\EdgeConnector.cs" >
 <Link>Modules\GraphViewEditor\Manipulators\EdgeConnector.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\EdgeDragHelper.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\EdgeDragHelper.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\EdgeManipulator.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\EdgeManipulator.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\RectangleSelector.cs" >
 <Link>Modules\GraphViewEditor\Manipulators\RectangleSelector.cs</Link>
 </Compile>
@@ -3632,11 +3692,17 @@
 <Compile Include="..\..\Modules\GraphViewEditor\Utils\RectUtils.cs" >
 <Link>Modules\GraphViewEditor\Utils\RectUtils.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Utils\VisualElementAttacher.cs" >
+<Link>Modules\GraphViewEditor\Utils\VisualElementAttacher.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs" >
 <Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs" >
 <Link>Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\BuildUtilities.cs" >
+<Link>Modules\PackageManager\Editor\Managed\BuildUtilities.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs" >
 <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
@@ -3647,8 +3713,11 @@
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ErrorCode.cs" >
 <Link>Modules\PackageManager\Editor\Managed\ErrorCode.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\PackageManager\Editor\Managed\NativeClient.cs" >
-<Link>Modules\PackageManager\Editor\Managed\NativeClient.cs</Link>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\IShouldIncludeInBuildCallback.cs" >
+<Link>Modules\PackageManager\Editor\Managed\IShouldIncludeInBuildCallback.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\NativeStatusCode.cs" >
+<Link>Modules\PackageManager\Editor\Managed\NativeStatusCode.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\OperationStatus.cs" >
 <Link>Modules\PackageManager\Editor\Managed\OperationStatus.cs</Link>
@@ -3661,6 +3730,9 @@
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCollection.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageCollection.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs" >
+<Link>Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageStatus.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageStatus.cs</Link>
@@ -3692,9 +3764,6 @@
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs" >
 <Link>Modules\PackageManager\Editor\Managed\Requests\SearchRequest.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\PackageManager\PackageManagerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\PackageManager\PackageManagerBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\PresetsEditor\Preset.bindings.cs" >
 <Link>Modules\PresetsEditor\Preset.bindings.cs</Link>
 </Compile>
@@ -3703,6 +3772,9 @@
 </Compile>
 <Compile Include="..\..\Modules\PresetsEditor\PresetEditor.cs" >
 <Link>Modules\PresetsEditor\PresetEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PresetsEditor\PresetSelector.cs" >
+<Link>Modules\PresetsEditor\PresetSelector.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs" >
 <Link>Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs</Link>

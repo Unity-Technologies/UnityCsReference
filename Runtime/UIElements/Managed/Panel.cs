@@ -485,10 +485,12 @@ namespace UnityEngine.Experimental.UIElements
 
                 // validate cache texture size first
                 var worldBound = root.worldBound;
-                int w = (int)worldBound.width;
-                int h = (int)worldBound.height;
-                int textureWidth = (int)(worldBound.width * GUIUtility.pixelsPerPoint);
-                int textureHeight = (int)(worldBound.height * GUIUtility.pixelsPerPoint);
+                int w = Mathf.RoundToInt(worldBound.width);
+                int h = Mathf.RoundToInt(worldBound.height);
+
+                // This needs to be consistent with RoundRect() in GUITexture.cpp. Otherwise, the texture may be stretched.
+                int textureWidth = Mathf.RoundToInt((Mathf.RoundToInt(worldBound.xMax) - Mathf.RoundToInt(worldBound.xMin)) * GUIUtility.pixelsPerPoint);
+                int textureHeight = Mathf.RoundToInt((Mathf.RoundToInt(worldBound.yMax) - Mathf.RoundToInt(worldBound.yMin)) * GUIUtility.pixelsPerPoint);
 
                 var cache = root.renderData.pixelCache;
 
@@ -529,14 +531,16 @@ namespace UnityEngine.Experimental.UIElements
                     // reset clipping
                     var textureClip = new Rect(0, 0, w, h);
                     painter.currentTransform = offset * root.worldTransform;
-                    GUIClip.SetTransform(painter.currentTransform, textureClip);
 
-                    // paint self
-                    painter.currentWorldClip = textureClip;
-                    root.DoRepaint(painter);
-                    root.ClearDirty(ChangeType.Repaint);
+                    using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
+                    {
+                        // paint self
+                        painter.currentWorldClip = textureClip;
+                        root.DoRepaint(painter);
+                        root.ClearDirty(ChangeType.Repaint);
 
-                    PaintSubTreeChildren(e, root, offset, textureClip);
+                        PaintSubTreeChildren(e, root, offset, textureClip);
+                    }
 
                     RenderTexture.active = old;
                 }
@@ -544,7 +548,6 @@ namespace UnityEngine.Experimental.UIElements
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
                 painter.currentTransform = root.worldTransform;
-                GUIClip.SetTransform(painter.currentTransform, currentGlobalClip);
 
                 var painterParams = new TextureStylePainterParameters
                 {
@@ -554,22 +557,28 @@ namespace UnityEngine.Experimental.UIElements
                     scaleMode = ScaleMode.ScaleAndCrop
                 };
 
-                painter.DrawTexture(painterParams);
+                using (new GUIClip.ParentClipScope(painter.currentTransform, currentGlobalClip))
+                {
+                    painter.DrawTexture(painterParams);
+                }
             }
             else
             {
                 stylePainter.currentTransform = offset * root.worldTransform;
-                GUIClip.SetTransform(stylePainter.currentTransform, currentGlobalClip);
 
-                stylePainter.currentWorldClip = currentGlobalClip;
-                stylePainter.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(e.mousePosition);
+                using (new GUIClip.ParentClipScope(stylePainter.currentTransform, currentGlobalClip))
+                {
+                    stylePainter.currentWorldClip = currentGlobalClip;
+                    stylePainter.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(e.mousePosition);
 
-                stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
-                root.DoRepaint(stylePainter);
-                stylePainter.opacity = 1.0f;
-                root.ClearDirty(ChangeType.Repaint);
+                    stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
 
-                PaintSubTreeChildren(e, root, offset, currentGlobalClip);
+                    root.DoRepaint(stylePainter);
+                    stylePainter.opacity = 1.0f;
+                    root.ClearDirty(ChangeType.Repaint);
+
+                    PaintSubTreeChildren(e, root, offset, currentGlobalClip);
+                }
             }
         }
 
@@ -606,7 +615,6 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panelDebug != null)
             {
-                GUIClip.SetTransform(Matrix4x4.identity, new Rect(0, 0, visualTree.style.width, visualTree.style.height));
                 if (panelDebug.EndRepaint())
                     this.visualTree.Dirty(ChangeType.Repaint);
             }

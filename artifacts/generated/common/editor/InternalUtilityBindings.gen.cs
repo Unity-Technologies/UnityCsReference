@@ -88,9 +88,15 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
 {
             #pragma warning disable 169
     IntPtr m_Property;
+    public HierarchyProperty(HierarchyType hierarchyType)
+            : this(hierarchyType, true)
+        {
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public HierarchyProperty (HierarchyType hierarchyType) ;
+    extern public HierarchyProperty (HierarchyType hierarchyType, bool forceImport) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1121,6 +1127,7 @@ internal sealed partial class GradientPreviewCache
 }
 
 [NativeClass(null)]
+[ExcludeFromObjectFactory]
 internal abstract partial class ProjectSettingsBase : Object
 {
 }

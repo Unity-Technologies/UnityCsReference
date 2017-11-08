@@ -18,6 +18,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (text != value)
             {
+                // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
                 using (InputEvent evt = InputEvent.GetPooled(text, value))
                 {
                     evt.target = this;
@@ -55,10 +56,10 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         /* internal for VisualTree tests */
-        internal TextEditorEventHandler editorEventHandler { get; }
+        internal TextEditorEventHandler editorEventHandler { get; private set; }
 
         /* internal for VisualTree tests */
-        internal TextEditorEngine editorEngine { get; }
+        internal TextEditorEngine editorEngine { get; private set; }
 
         public char maskChar { get; set; }
 
@@ -178,7 +179,7 @@ namespace UnityEngine.Experimental.UIElements
             Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                 new Vector2(localPosition.x, localPosition.y + lineHeight);
 
-            Color drawCursorColor = cursorColor != Color.clear ? cursorColor : GUI.skin.settings.cursorColor;
+            Color drawCursorColor = m_CursorColor.GetSpecifiedValueOrDefault(Color.grey);
 
             int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
                 ? selectIndex
@@ -298,6 +299,13 @@ namespace UnityEngine.Experimental.UIElements
         internal virtual bool AcceptCharacter(char c)
         {
             return true;
+        }
+
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            editorEventHandler.ExecuteDefaultActionAtTarget(evt);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)

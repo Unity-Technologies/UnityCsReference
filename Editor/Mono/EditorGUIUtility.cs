@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine.Assertions;
+using UnityEngine.Events;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 
@@ -44,32 +45,19 @@ namespace UnityEditor
             return GUIView.current.hasFocus;
         }
 
-        internal static Material s_GUITextureBlitColorspaceMaterial;
-        internal static Material GUITextureBlitColorspaceMaterial
+        internal static Material s_GUITextureBlit2SRGBMaterial;
+        internal static Material GUITextureBlit2SRGBMaterial
         {
             get
             {
-                if (!s_GUITextureBlitColorspaceMaterial)
+                if (!s_GUITextureBlit2SRGBMaterial)
                 {
-                    Shader shader = EditorGUIUtility.LoadRequired("SceneView/GUITextureBlitColorspace.shader") as Shader;
-                    s_GUITextureBlitColorspaceMaterial = new Material(shader);
-                    SetGUITextureBlitColorspaceSettings(s_GUITextureBlitColorspaceMaterial);
+                    Shader shader = EditorGUIUtility.LoadRequired("SceneView/GUITextureBlit2SRGB.shader") as Shader;
+                    s_GUITextureBlit2SRGBMaterial = new Material(shader);
+                    s_GUITextureBlit2SRGBMaterial.hideFlags = HideFlags.HideAndDontSave;
                 }
-                return s_GUITextureBlitColorspaceMaterial;
-            }
-        }
-
-        internal static void SetGUITextureBlitColorspaceSettings(Material mat)
-        {
-            bool needsGammaConversion = SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal;
-
-            if (needsGammaConversion && QualitySettings.activeColorSpace == ColorSpace.Linear)
-            {
-                mat.SetFloat("_ConvertToGamma", 1.0f);
-            }
-            else
-            {
-                mat.SetFloat("_ConvertToGamma", 0.0f);
+                s_GUITextureBlit2SRGBMaterial.SetFloat("_ManualTex2SRGB", QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
+                return s_GUITextureBlit2SRGBMaterial;
             }
         }
 
@@ -239,6 +227,121 @@ namespace UnityEditor
             }
 
             return rectangle;
+        }
+
+        /// <summary>
+        /// Use this container and helper class when implementing lock behaviour on a window when also using an <see cref="ActiveEditorTracker"/>.
+        /// </summary>
+        [Serializable]
+        internal class EditorLockTrackerWithActiveEditorTracker : EditorLockTracker
+        {
+            internal override bool isLocked
+            {
+                get
+                {
+                    if (m_Tracker != null)
+                    {
+                        base.isLocked = m_Tracker.isLocked;
+                        return m_Tracker.isLocked;
+                    }
+                    return base.isLocked;
+                }
+                set
+                {
+                    if (m_Tracker != null)
+                    {
+                        m_Tracker.isLocked = value;
+                    }
+                    base.isLocked = value;
+                }
+            }
+
+            [SerializeField, HideInInspector]
+            ActiveEditorTracker m_Tracker;
+
+            internal ActiveEditorTracker tracker
+            {
+                get { return m_Tracker; }
+                set
+                {
+                    m_Tracker = value;
+                    if (m_Tracker != null)
+                    {
+                        isLocked = m_Tracker.isLocked;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Use this container and helper class when implementing lock behaviour on a window.
+        /// </summary>
+        [Serializable]
+        internal class EditorLockTracker
+        {
+            [Serializable] public class LockStateEvent : UnityEvent<bool> {}
+            [HideInInspector]
+            internal LockStateEvent lockStateChanged = new LockStateEvent();
+
+            const string k_LockMenuText = "Lock";
+            static readonly GUIContent k_LockMenuGUIContent =  EditorGUIUtility.TextContent(k_LockMenuText);
+
+            /// <summary>
+            /// don't set or get this directly unless from within the <see cref="isLocked"/> property,
+            /// as that property also keeps track of the potentially existing tracker in <see cref="EditorLockTrackerWithActiveEditorTracker"/>
+            /// </summary>
+            [SerializeField, HideInInspector]
+            bool m_IsLocked;
+
+            internal virtual bool isLocked
+            {
+                get
+                {
+                    return m_IsLocked;
+                }
+                set
+                {
+                    bool wasLocked = m_IsLocked;
+                    m_IsLocked = value;
+
+                    if (wasLocked != m_IsLocked)
+                    {
+                        lockStateChanged.Invoke(m_IsLocked);
+                    }
+                }
+            }
+
+            internal virtual void AddItemsToMenu(GenericMenu menu, bool disabled = false)
+            {
+                if (disabled)
+                {
+                    menu.AddDisabledItem(k_LockMenuGUIContent);
+                }
+                else
+                {
+                    menu.AddItem(k_LockMenuGUIContent, isLocked, FlipLocked);
+                }
+            }
+
+            internal void ShowButton(Rect position, GUIStyle lockButtonStyle, bool disabled = false)
+            {
+                using (new EditorGUI.DisabledScope(disabled))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool newLock = GUI.Toggle(position, isLocked, GUIContent.none, lockButtonStyle);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (newLock != isLocked)
+                            FlipLocked();
+                    }
+                }
+            }
+
+            void FlipLocked()
+            {
+                isLocked = !isLocked;
+            }
         }
     }
 }

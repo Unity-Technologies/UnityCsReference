@@ -120,8 +120,8 @@ namespace UnityEditor
                     if (packmanOperationRunning)
                         return;
 
-                    NativeClient.StatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
-                    if (code == NativeClient.StatusCode.Error)
+                    NativeStatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
+                    if (code == NativeStatusCode.Error)
                     {
                         Debug.LogError("Add " + LatestXiaomiPackageId + " error, please add it again.");
                         return;
@@ -143,8 +143,8 @@ namespace UnityEditor
 
                         if (EditorUtility.DisplayDialog("Update Xiaomi SDK", "Are you sure you want to update to " + latestXiaomiPackageVersion + " ?", "Yes", "No"))
                         {
-                            NativeClient.StatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
-                            if (code == NativeClient.StatusCode.Error)
+                            NativeStatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
+                            if (code == NativeStatusCode.Error)
                             {
                                 Debug.LogError("Update " + LatestXiaomiPackageId + " error, please update it again.");
                                 return;
@@ -160,8 +160,8 @@ namespace UnityEditor
                     if (packmanOperationRunning)
                         return;
 
-                    NativeClient.StatusCode code = NativeClient.Remove(out packmanOperationId, CurrentXiaomiPackageId);
-                    if (code == NativeClient.StatusCode.Error)
+                    NativeStatusCode code = NativeClient.Remove(out packmanOperationId, CurrentXiaomiPackageId);
+                    if (code == NativeStatusCode.Error)
                     {
                         Debug.LogError("Remove " + CurrentXiaomiPackageId + " error, please remove it again.");
                         return;
@@ -181,34 +181,34 @@ namespace UnityEditor
             if (isVersionInitialized)
                 return true;
 
-            NativeClient.StatusCode getCurrentVersionOperationStatus;
+            NativeStatusCode getCurrentVersionOperationStatus;
             if (getCurrentVersionOperationId < 0)
                 getCurrentVersionOperationStatus = NativeClient.List(out getCurrentVersionOperationId);
             else
                 getCurrentVersionOperationStatus = NativeClient.GetOperationStatus(getCurrentVersionOperationId);
 
             // Reset and return false if it fails with StatusCode.Error or Status.NotFound.
-            if (getCurrentVersionOperationStatus > NativeClient.StatusCode.Done)
+            if (getCurrentVersionOperationStatus > NativeStatusCode.Done)
             {
                 getCurrentVersionOperationId = -1;
                 return false;
             }
 
-            NativeClient.StatusCode getLatestVersionOperationStatus;
+            NativeStatusCode getLatestVersionOperationStatus;
             if (getLatestVersionOperationId < 0)
                 getLatestVersionOperationStatus = NativeClient.Search(out getLatestVersionOperationId, xiaomiPackageName);
             else
                 getLatestVersionOperationStatus = NativeClient.GetOperationStatus(getLatestVersionOperationId);
 
             // Reset and return false if it fails with StatusCode.Error or Status.NotFound.
-            if (getLatestVersionOperationStatus > NativeClient.StatusCode.Done)
+            if (getLatestVersionOperationStatus > NativeStatusCode.Done)
             {
                 getLatestVersionOperationId = -1;
                 return false;
             }
 
             // Get version info if both operations are done.
-            if (getCurrentVersionOperationStatus == NativeClient.StatusCode.Done && getLatestVersionOperationStatus == NativeClient.StatusCode.Done)
+            if (getCurrentVersionOperationStatus == NativeStatusCode.Done && getLatestVersionOperationStatus == NativeStatusCode.Done)
             {
                 CheckPackmanOperation(getCurrentVersionOperationId, PackmanOperationType.List);
                 CheckPackmanOperation(getLatestVersionOperationId, PackmanOperationType.Search);
@@ -237,23 +237,23 @@ namespace UnityEditor
 
         bool CheckPackmanOperation(long operationId, PackmanOperationType operationType)
         {
-            NativeClient.StatusCode statusCode = NativeClient.GetOperationStatus(operationId);
-            if (statusCode == NativeClient.StatusCode.NotFound)
+            NativeStatusCode statusCode = NativeClient.GetOperationStatus(operationId);
+            if (statusCode == NativeStatusCode.NotFound)
             {
                 Debug.LogError("OperationID " + operationId + " Not Found");
                 return true;
             }
-            else if (statusCode == NativeClient.StatusCode.Error)
+            else if (statusCode == NativeStatusCode.Error)
             {
                 Error error = NativeClient.GetOperationError(operationId);
                 Debug.LogError("OperationID " + operationId + " failed with Error: " + error);
                 return true;
             }
-            else if (statusCode == NativeClient.StatusCode.InProgress || statusCode == NativeClient.StatusCode.InQueue)
+            else if (statusCode == NativeStatusCode.InProgress || statusCode == NativeStatusCode.InQueue)
             {
                 return false;
             }
-            else if (statusCode == NativeClient.StatusCode.Done)
+            else if (statusCode == NativeStatusCode.Done)
             {
                 System.Console.WriteLine("OperationID " + operationId + " Done");
                 switch (operationType)

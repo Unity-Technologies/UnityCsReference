@@ -58,7 +58,6 @@ namespace UnityEditor
         internal SearchMode m_SearchMode = SearchMode.All;
         bool m_FocusSearchField = false;
         bool m_HasSearchFilterFocus = false;
-        int m_SearchFieldControlId;
 
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()
@@ -221,14 +220,14 @@ namespace UnityEditor
                 SetSearchFilter("", (SearchMode)searchMode, true);
 
             string[] enumStrings = System.Enum.GetNames(m_HierarchyType == HierarchyType.GameObjects ? typeof(SearchModeHierarchyWindow) : typeof(SearchMode));
-            m_SearchFieldControlId = GUIUtility.GetControlID(s_SearchableEditorWindowSearchField, FocusType.Keyboard, rect);
+            int searchFieldControlId = GUIUtility.GetControlID(s_SearchableEditorWindowSearchField, FocusType.Keyboard, rect);
 
             EditorGUI.BeginChangeCheck();
-            string searchFilter = EditorGUI.ToolbarSearchField(m_SearchFieldControlId, rect, enumStrings, ref searchMode, m_SearchFilter);
+            string searchFilter = EditorGUI.ToolbarSearchField(searchFieldControlId, rect, enumStrings, ref searchMode, m_SearchFilter);
             if (EditorGUI.EndChangeCheck())
                 SetSearchFilter(searchFilter, (SearchMode)searchMode, true);
 
-            m_HasSearchFilterFocus = GUIUtility.keyboardControl == m_SearchFieldControlId;
+            m_HasSearchFilterFocus = GUIUtility.keyboardControl == searchFieldControlId;
 
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape && m_SearchFilter != "" && GUIUtility.hotControl == 0)
             {

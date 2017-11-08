@@ -897,17 +897,16 @@ namespace UnityEditor
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
                         var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
                         BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
+
+                        EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
+
+                        EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
+
+                        EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                        EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
+
+                        EditorGUILayout.Space();
                     }
-
-                    EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
-
-                    EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
-
-                    EditorGUILayout.PropertyField(m_ForceSingleInstance);
-                    EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
-
-                    EditorGUILayout.Space();
-
 
                     // mobiles color/depth bits setup
                     if (IsMobileTarget(targetGroup))

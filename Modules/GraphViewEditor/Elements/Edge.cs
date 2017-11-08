@@ -120,6 +120,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Add(edgeControl);
 
+            this.AddManipulator(new EdgeManipulator());
             capabilities |= Capabilities.Selectable | Capabilities.Deletable;
         }
 

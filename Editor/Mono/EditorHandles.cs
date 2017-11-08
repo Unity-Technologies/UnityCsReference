@@ -127,6 +127,11 @@ namespace UnityEditor
             return s_AxisColor[axis];
         }
 
+        internal static Color ToActiveColorSpace(Color color)
+        {
+            return (QualitySettings.activeColorSpace == ColorSpace.Linear) ? color.linear : color;
+        }
+
         static Vector3 GetAxisVector(int axis)
         {
             return s_AxisVector[axis];

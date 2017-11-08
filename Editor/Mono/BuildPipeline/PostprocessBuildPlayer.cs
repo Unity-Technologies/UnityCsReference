@@ -13,6 +13,7 @@ using UnityEditorInternal;
 using System;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
+using UnityEditor.BuildReporting;
 using UnityEditor.Modules;
 using UnityEditor.DeploymentTargets;
 using UnityEngine.Scripting;
@@ -25,7 +26,7 @@ namespace UnityEditor
     {
         public static BuildProperties GetFromBuildReport(BuildReporting.BuildReport report)
         {
-            var allData = (BuildProperties[])report.GetAppendices(typeof(BuildProperties));
+            var allData = report.GetAppendices<BuildProperties>();
             if (allData.Length > 0)
                 return allData[0];
 
@@ -90,11 +91,12 @@ namespace UnityEditor
         {
             if (Directory.Exists(StreamingAssets))
             {
-                const string kFileTypeStreamingAssets = "Streaming Assets";
                 var outputPath = Path.Combine(stagingAreaDataPath, "StreamingAssets");
                 FileUtil.CopyDirectoryRecursiveForPostprocess(StreamingAssets, outputPath, true);
                 if (report != null)
-                    report.AddFilesRecursive(outputPath, kFileTypeStreamingAssets);
+                {
+                    report.RecordFilesAddedRecursive(outputPath, CommonRoles.streamingAsset);
+                }
             }
         }
 
@@ -165,7 +167,7 @@ namespace UnityEditor
             try
             {
                 // Early out so as not to show/update progressbars unnecessarily
-                if (buildReport == null || !DeploymentTargetManager.IsExtensionSupported(targetGroup, buildReport.buildTarget))
+                if (buildReport == null || !DeploymentTargetManager.IsExtensionSupported(targetGroup, buildReport.summary.platform))
                     throw new System.NotSupportedException();
 
                 ProgressHandler progressHandler = new ProgressHandler("Deploying Player", delegate(string title, string message, float globalProgress)

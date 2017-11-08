@@ -42,6 +42,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        public EdgeConnector edgeConnector
+        {
+            get { return m_EdgeConnector; }
+        }
+
         public object source { get; set; }
 
         private bool m_Highlight;
@@ -199,7 +204,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (graphView.presenter == null)
                     return;
 
-                TEdgePresenter edgePresenter = ScriptableObject.CreateInstance<TEdgePresenter>();
+                // Check if the edge already has a presenter then do not create it
+                EdgePresenter edgePresenter = edge.GetPresenter<EdgePresenter>();
+
+                if (edgePresenter == null)
+                {
+                    edgePresenter = ScriptableObject.CreateInstance<TEdgePresenter>();
+                }
 
                 edgePresenter.output = edge.output.GetPresenter<NodeAnchorPresenter>();
                 edgePresenter.input = edge.input.GetPresenter<NodeAnchorPresenter>();

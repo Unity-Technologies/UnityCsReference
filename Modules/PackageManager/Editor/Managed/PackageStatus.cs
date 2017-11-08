@@ -5,13 +5,13 @@
 
 namespace UnityEditor.PackageManager
 {
-    public enum PackageStatus : uint
+    public enum PackageStatus
     {
-        Unavailable = 0,
-        InProgress = 1,
-        Error = 2,
-        Available = 3,
-        Unknown = 4
+        Unknown,
+        Unavailable,
+        InProgress,
+        Error,
+        Available
     }
 }
 

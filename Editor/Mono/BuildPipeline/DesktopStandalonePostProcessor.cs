@@ -5,9 +5,10 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.BuildReporting;
 using UnityEditor.Modules;
+using UnityEditor.Utils;
 using UnityEditorInternal;
-using UnityEditor.Scripting.Serialization;
 using UnityEngine;
 
 internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
@@ -161,27 +162,61 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         if (m_PostProcessArgs.target == BuildTarget.StandaloneWindows ||
             m_PostProcessArgs.target == BuildTarget.StandaloneWindows64)
+        {
             CreateApplicationData();
+        }
 
-        PostprocessBuildPlayer.InstallStreamingAssets(DataFolder);
+        PostprocessBuildPlayer.InstallStreamingAssets(DataFolder, m_PostProcessArgs.report);
 
         if (UseIl2Cpp)
         {
             CopyVariationFolderIntoStagingArea();
-            var stagingAreaDirectory = StagingArea + "/Data";
-            var managedDataDirectory = DataFolder + "/Managed";
-            var embeddedResourcesDirectory = managedDataDirectory + "/Resources";
-            var metadataDirectory = managedDataDirectory + "/Metadata";
-            IL2CPPUtils.RunIl2Cpp(stagingAreaDirectory, GetPlatformProvider(m_PostProcessArgs.target), s => {}, m_PostProcessArgs.usedClassRegistry, false);
-            FileUtil.CreateOrCleanDirectory(embeddedResourcesDirectory);
-            IL2CPPUtils.CopyEmbeddedResourceFiles(stagingAreaDirectory, embeddedResourcesDirectory);
-            FileUtil.CreateOrCleanDirectory(metadataDirectory);
-            IL2CPPUtils.CopyMetadataFiles(stagingAreaDirectory, metadataDirectory);
-            IL2CPPUtils.CopySymmapFile(stagingAreaDirectory + "/Native/Data", managedDataDirectory);
+            var stagingAreaDataDirectory = Path.Combine(StagingArea, "Data");
+            IL2CPPUtils.RunIl2Cpp(stagingAreaDataDirectory, GetPlatformProvider(m_PostProcessArgs.target), s => {}, m_PostProcessArgs.usedClassRegistry, false);
 
-            // Are we using IL2CPP code generation with the Mono runtime? If so, strip the assemblies so we can use them for metadata.
+            // Move GameAssembly next to game executable
+            var il2cppOutputNativeDirectory = Path.Combine(stagingAreaDataDirectory, "Native");
+            var gameAssemblyDirectory = GetDirectoryForGameAssembly();
+            foreach (var file in Directory.GetFiles(il2cppOutputNativeDirectory))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName.StartsWith("."))
+                    continue; // Skip files starting with ., as they weren't output by our tools and potentially belong to the OS (like .DS_Store on macOS)
+
+                FileUtil.MoveFileOrDirectory(file, Path.Combine(gameAssemblyDirectory, fileName));
+            }
+
+            if (PlaceIL2CPPSymbolMapNextToExecutable())
+            {
+                // Move symbol map to be next to game executable
+                FileUtil.MoveFileOrDirectory(Paths.Combine(il2cppOutputNativeDirectory, "Data", "SymbolMap"), Path.Combine(StagingArea, "SymbolMap"));
+            }
+
+            // Move il2cpp data directory one directory up
+            FileUtil.MoveFileOrDirectory(Path.Combine(il2cppOutputNativeDirectory, "Data"), Path.Combine(stagingAreaDataDirectory, "il2cpp_data"));
+
+            // Native directory is supposed to be empty at this point
+            FileUtil.DeleteFileOrDirectory(il2cppOutputNativeDirectory);
+
+            var dataBackupFolder = Path.Combine(StagingArea, GetIl2CppDataBackupFolderName());
+            FileUtil.CreateOrCleanDirectory(dataBackupFolder);
+
+            // Move generated C++ code out of Data directory
+            FileUtil.MoveFileOrDirectory(Path.Combine(stagingAreaDataDirectory, "il2cppOutput"), Path.Combine(dataBackupFolder, "il2cppOutput"));
+
+            var managedDataDirectory = Path.Combine(DataFolder, "Managed");
             if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(m_PostProcessArgs.target)))
+            {
+                // Are we using IL2CPP code generation with the Mono runtime? If so, strip the assemblies so we can use them for metadata.
                 StripAssembliesToLeaveOnlyMetadata(m_PostProcessArgs.target, managedDataDirectory);
+            }
+            else
+            {
+                // Otherwise, move them to temp data directory as il2cpp does not need managed assemblies to run
+                FileUtil.MoveFileOrDirectory(Path.Combine(stagingAreaDataDirectory, "Managed"), Path.Combine(dataBackupFolder, "Managed"));
+            }
+
+            ProcessPlatformSpecificIL2CPPOutput(StagingArea);
         }
 
         if (InstallingIntoBuildsFolder)
@@ -194,9 +229,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             CopyVariationFolderIntoStagingArea();
 
         RenameFilesInStagingArea();
-
-        m_PostProcessArgs.report.AddFilesRecursive(StagingArea, "");
-        m_PostProcessArgs.report.RelocateFiles(StagingArea, "");
     }
 
     static void StripAssembliesToLeaveOnlyMetadata(BuildTarget target, string stagingAreaDataManaged)
@@ -219,6 +251,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             m_PostProcessArgs.companyName,
             m_PostProcessArgs.productName
         }));
+        m_PostProcessArgs.report.RecordFileAdded(Path.Combine(DataFolder, "app.info"), CommonRoles.appInfo);
     }
 
     protected virtual bool CopyFilter(string path)
@@ -234,6 +267,29 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         var playerFolder = m_PostProcessArgs.playerPackage + "/Variations/" + GetVariationName();
         FileUtil.CopyDirectoryFiltered(playerFolder, StagingArea, true, f => CopyFilter(f), true);
+
+        // Mark all the managed DLLs in Data/Managed as engine API assemblies
+        // Data/Managed may already contain managed DLLs in the UnityEngine.*.dll naming scheme from the extensions
+        // So we find the files in the source Variations directory and mark the corresponding files in the output
+        foreach (var file in Directory.GetFiles(Path.Combine(playerFolder, "Data/Managed"), "*.dll"))
+        {
+            var filename = Path.GetFileName(file);
+            if (!filename.StartsWith("UnityEngine"))
+                continue;
+
+            var targetFilePath = Path.Combine(StagingArea, "Data/Managed/" + filename);
+            m_PostProcessArgs.report.RecordFileAdded(targetFilePath, CommonRoles.managedEngineApi);
+        }
+
+        // Mark the default resources file
+        m_PostProcessArgs.report.RecordFileAdded(Path.Combine(StagingArea, "Data/Resources/unity default resources"), CommonRoles.builtInResources);
+
+        // Mark up each mono runtime
+        foreach (var monoName in new[] { "Mono", "MonoBleedingEdge" })
+        {
+            m_PostProcessArgs.report.RecordFilesAddedRecursive(Path.Combine(StagingArea, "Data/" + monoName + "/EmbedRuntime"), CommonRoles.monoRuntime);
+            m_PostProcessArgs.report.RecordFilesAddedRecursive(Path.Combine(StagingArea, "Data/" + monoName + "/etc"), CommonRoles.monoConfig);
+        }
     }
 
     protected void CopyStagingAreaIntoDestination()
@@ -256,6 +312,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         //copy entire stagingarea over
         FileUtil.CopyDirectoryFiltered(StagingArea, DestinationFolder, true, f => true, true);
+
+        m_PostProcessArgs.report.RecordFilesMoved(StagingArea, DestinationFolder);
     }
 
     protected abstract string StagingAreaPluginsFolder { get; }
@@ -268,9 +326,15 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         bool deleteBoth = IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
 
         if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+        {
             FileUtil.DeleteFileOrDirectory(Path.Combine(dataFolder, "Mono"));
+            m_PostProcessArgs.report.RecordFilesDeletedRecursive(Path.Combine(dataFolder, "Mono"));
+        }
         if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+        {
             FileUtil.DeleteFileOrDirectory(Path.Combine(dataFolder, "MonoBleedingEdge"));
+            m_PostProcessArgs.report.RecordFilesDeletedRecursive(Path.Combine(dataFolder, "MonoBleedingEdge"));
+        }
     }
 
     protected abstract string DestinationFolderForInstallingIntoBuildsFolder { get; }
@@ -319,6 +383,25 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected abstract void RenameFilesInStagingArea();
 
     protected abstract UnityEditorInternal.IIl2CppPlatformProvider GetPlatformProvider(BuildTarget target);
+
+    protected virtual void ProcessPlatformSpecificIL2CPPOutput(string stagingArea)
+    {
+    }
+
+    protected string GetIl2CppDataBackupFolderName()
+    {
+        return Path.GetFileNameWithoutExtension(m_PostProcessArgs.installPath) + "_BackUpThisFolder_ButDontShipItWithYourGame";
+    }
+
+    protected virtual string GetDirectoryForGameAssembly()
+    {
+        return StagingArea;
+    }
+
+    protected virtual bool PlaceIL2CPPSymbolMapNextToExecutable()
+    {
+        return true;
+    }
 
     internal class ScriptingImplementations : IScriptingImplementations
     {

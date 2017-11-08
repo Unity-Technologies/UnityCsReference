@@ -129,7 +129,6 @@ namespace UnityEditor
 
                 bool requireETC = false;
                 bool requirePVRTC = false;
-                bool requireATC = false;
                 bool requireETC2 = false;
                 bool requireASTC = false;
 
@@ -142,7 +141,6 @@ namespace UnityEditor
                         case BuildTarget.Android:
                             requirePVRTC = true;
                             requireETC = true;
-                            requireATC = true;
                             requireETC2 = true;
                             requireASTC = true;
                             break;
@@ -176,12 +174,6 @@ namespace UnityEditor
                         (int)TextureImporterFormat.PVRTC_RGBA2,
                         (int)TextureImporterFormat.PVRTC_RGB4,
                         (int)TextureImporterFormat.PVRTC_RGBA4
-                    });
-
-                if (requireATC)
-                    formatValues.AddRange(new int[] {
-                        (int)TextureImporterFormat.ATC_RGB4,
-                        (int)TextureImporterFormat.ATC_RGBA8,
                     });
 
                 if (requireETC2)
@@ -239,7 +231,6 @@ namespace UnityEditor
             {
                 bool requireETC = false;
                 bool requirePVRTC = false;
-                bool requireATC = false;
                 bool requireETC2 = false;
                 bool requireASTC = false;
 
@@ -251,7 +242,6 @@ namespace UnityEditor
                     {
                         case BuildTarget.Android:
                             requirePVRTC = true;
-                            requireATC = true;
                             requireETC = true;
                             requireETC2 = true;
                             requireASTC = true;
@@ -279,12 +269,6 @@ namespace UnityEditor
                         (int)TextureImporterFormat.PVRTC_RGBA2,
                         (int)TextureImporterFormat.PVRTC_RGB4,
                         (int)TextureImporterFormat.PVRTC_RGBA4,
-                    });
-
-                if (requireATC)
-                    formatValues.AddRange(new int[] {
-                        (int)TextureImporterFormat.ATC_RGB4,
-                        (int)TextureImporterFormat.ATC_RGBA8,
                     });
 
                 if (requireETC)
@@ -340,8 +324,6 @@ namespace UnityEditor
             TextureImporterFormat.PVRTC_RGB4,
             TextureImporterFormat.PVRTC_RGBA2,
             TextureImporterFormat.PVRTC_RGBA4,
-            TextureImporterFormat.ATC_RGB4,
-            TextureImporterFormat.ATC_RGBA8,
             TextureImporterFormat.ETC_RGB4,
             TextureImporterFormat.ETC2_RGB4,
             TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
@@ -363,6 +345,7 @@ namespace UnityEditor
 #pragma warning disable 649
         internal static string[] s_TextureFormatStringsAll;
         internal static string[] s_TextureFormatStringsWiiU;
+        internal static string[] s_TextureFormatStringsPSP2;
         internal static string[] s_TextureFormatStringsSwitch;
         internal static string[] s_TextureFormatStringsWebGL;
         internal static string[] s_TextureFormatStringsApplePVR;
@@ -1514,6 +1497,8 @@ namespace UnityEditor
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsWiiU == null)
                 s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsPSP2 == null)
+                s_TextureFormatStringsPSP2 = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValuePSP2);
             if (s_TextureFormatStringsSwitch == null)
                 s_TextureFormatStringsSwitch = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSwitch);
             if (s_TextureFormatStringsDefault == null)

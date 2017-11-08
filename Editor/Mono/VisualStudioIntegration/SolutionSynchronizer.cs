@@ -14,8 +14,11 @@ using System.Text.RegularExpressions;
 
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEditor.Utils;
 using UnityEditorInternal;
 using UnityEditor.Scripting.Compilers;
+
+using Mono.Cecil;
 
 namespace UnityEditor.VisualStudioIntegration
 {
@@ -48,6 +51,8 @@ namespace UnityEditor.VisualStudioIntegration
             {"cs", ScriptingLanguage.CSharp},
             {"js", ScriptingLanguage.UnityScript},
             {"boo", ScriptingLanguage.Boo},
+            {"uxml", ScriptingLanguage.None},
+            {"uss", ScriptingLanguage.None},
             {"shader", ScriptingLanguage.None},
             {"compute", ScriptingLanguage.None},
             {"cginc", ScriptingLanguage.None},
@@ -102,9 +107,13 @@ namespace UnityEditor.VisualStudioIntegration
         {
             string extension = Path.GetExtension(file);
 
-            // Exclude files coming from packages
+            // Exclude files coming from packages except if they are internalized.
             if (AssetDatabase.IsPackagedAssetPath(file))
-                return false;
+            {
+                var absolutePath = Path.GetFullPath(file).ConvertSeparatorsToUnity();
+                if (!absolutePath.StartsWith(_projectDirectory))
+                    return false;
+            }
 
             // Dll's are not scripts but still need to be included..
             if (extension == ".dll")
@@ -215,6 +224,14 @@ namespace UnityEditor.VisualStudioIntegration
             StringBuilder projectBuilder = new StringBuilder();
             foreach (string asset in AssetDatabase.GetAllAssetPaths())
             {
+                // Exclude files coming from packages except if they are internalized.
+                if (AssetDatabase.IsPackagedAssetPath(asset))
+                {
+                    var absolutePath = Path.GetFullPath(asset).ConvertSeparatorsToUnity();
+                    if (!absolutePath.StartsWith(_projectDirectory))
+                        continue;
+                }
+
                 string extension = Path.GetExtension(asset);
                 if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
                 {
@@ -302,7 +319,7 @@ namespace UnityEditor.VisualStudioIntegration
                 if (reference.EndsWith("/UnityEditor.dll") || reference.EndsWith("/UnityEngine.dll") || reference.EndsWith("\\UnityEditor.dll") || reference.EndsWith("\\UnityEngine.dll"))
                     continue;
 
-                if (AssemblyHelper.IsUnityEngineModule(Path.GetFileNameWithoutExtension(reference)))
+                if (File.Exists(reference) && AssemblyHelper.IsUnityEngineModule(AssemblyDefinition.ReadAssembly(reference)))
                     continue;
 
                 match = scriptReferenceExpression.Match(reference);
@@ -386,6 +403,7 @@ namespace UnityEditor.VisualStudioIntegration
             string targetLanguageVersion = "4";
             string toolsversion = "4.0";
             string productversion = "10.0.20506";
+            string baseDirectory = ".";
             ScriptingLanguage language = ScriptingLanguageFor(island);
 
             if (island._api_compatibility_level == ApiCompatibilityLevel.NET_4_6)
@@ -413,7 +431,8 @@ namespace UnityEditor.VisualStudioIntegration
                 Path.GetFileNameWithoutExtension(island._output),
                 EditorSettings.projectGenerationRootNamespace,
                 targetframeworkversion,
-                targetLanguageVersion
+                targetLanguageVersion,
+                baseDirectory
             };
 
             try
@@ -493,9 +512,15 @@ namespace UnityEditor.VisualStudioIntegration
 
         private string EscapedRelativePathFor(string file)
         {
-            var projectDir = _projectDirectory.Replace("/", "\\");
-            file = file.Replace("/", "\\");
-            return SecurityElement.Escape(file.StartsWith(projectDir) ? file.Substring(_projectDirectory.Length + 1) : file);
+            var projectDir = _projectDirectory.ConvertSeparatorsToWindows();
+            file = file.ConvertSeparatorsToWindows();
+            var path = Paths.SkipPathPrefix(file, projectDir);
+            if (AssetDatabase.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
+            {
+                var absolutePath = Path.GetFullPath(path).ConvertSeparatorsToWindows();
+                path = Paths.SkipPathPrefix(absolutePath, projectDir);
+            }
+            return SecurityElement.Escape(path);
         }
 
         string ProjectGuid(string assembly)
@@ -597,6 +622,108 @@ namespace UnityEditor.VisualStudioIntegration
                 throw new ArgumentException("Unsupported language", "language");
 
             return ProjectExtensions[language];
+        }
+    }
+
+    /// <summary>
+    /// SolutionPostProcessor inherit from AssetPostprocessor in order to be called by AssetPostprocessingInternal.CallOnGeneratedCSProjectFiles().
+    /// <para>
+    /// This is a temporary solution until Visual Studio Tool for Unity (VSTU) is modified.
+    /// </para>
+    /// </summary>
+    internal class SolutionPostProcessor : AssetPostprocessor
+    {
+        /// <summary>
+        /// Get SolutionPostProcessor process order.
+        /// </summary>
+        /// <returns>int.MaxValue to make sure we are the last one called.</returns>
+        public override int GetPostprocessOrder()
+        {
+            return int.MaxValue;
+        }
+
+        /// <summary>
+        /// Replaces 'Include' attribute value with the appropiate path in the specifed node.
+        /// </summary>
+        /// <param name="node">The XML node.</param>
+        /// <param name="projectDir">The Unity project directory.</param>
+        /// <returns>true if node was updated, false otherwise.</returns>
+        private static bool ReplacePathInNode(XmlNode node, string projectDir)
+        {
+            var path = node.Attributes["Include"].Value;
+            if (AssetDatabase.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
+            {
+                var absolutePath = Path.GetFullPath(path).ConvertSeparatorsToWindows();
+                var newPath = Paths.SkipPathPrefix(absolutePath, projectDir);
+                if (newPath != path)
+                {
+                    node.Attributes["Include"].Value = newPath;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Replace paths in specified CSProj file if exists.
+        /// <para>
+        /// This method will look in all 'Compile' and 'None' XML tags in the CSProj file and
+        /// replaces 'Include' attribute value with the appropiate path. Finally, CSProj file will be rewriten on disk if necessay.
+        /// </para>
+        /// </summary>
+        /// <param name="projectFile">The CSProj file path.</param>
+        /// <param name="projectDir">The Unity project directory.</param>
+        internal static void ReplacePathsInProjectFile(string projectFile, string projectDir)
+        {
+            XmlDocument doc = new XmlDocument();
+            XmlNamespaceManager manager;
+            try
+            {
+                var updated = false;
+                doc.Load(projectFile);
+
+                manager = new XmlNamespaceManager(doc.NameTable);
+                manager.AddNamespace("msb", SolutionSynchronizer.MSBuildNamespaceUri);
+
+                XmlNodeList compileNodes = doc.SelectNodes("//msb:Compile[@Include]", manager);
+                foreach (XmlNode node in compileNodes)
+                    updated |= ReplacePathInNode(node, projectDir);
+
+                XmlNodeList noneNodes = doc.SelectNodes("//msb:None[@Include]", manager);
+                foreach (XmlNode node in noneNodes)
+                    updated |= ReplacePathInNode(node, projectDir);
+
+                if (updated)
+                    doc.Save(projectFile);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("Post processing of CS project file " +  projectFile + " failed, reason: " + e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Callback from AssetPostprocessor which is called after CSProj file(s) are generated.
+        /// </summary>
+        public static void OnGeneratedCSProjectFiles()
+        {
+            if (!UnityVSSupport.IsUnityVSEnabled())
+                return;
+
+            try
+            {
+                var projectDir = Directory.GetCurrentDirectory();
+                var projectFiles = Directory.GetFiles(projectDir, string.Format("*{0}", SolutionSynchronizer.GetProjectExtension(ScriptingLanguage.CSharp)), SearchOption.TopDirectoryOnly);
+                foreach (string projectFile in projectFiles)
+                {
+                    var file = projectFile.Substring(projectDir.Length + 1);
+                    ReplacePathsInProjectFile(file, projectDir);
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("Post processing of CS project files failed, reason: " + e.Message);
+            }
         }
     }
 

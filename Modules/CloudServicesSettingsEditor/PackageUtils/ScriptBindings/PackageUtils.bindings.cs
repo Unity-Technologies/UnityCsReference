@@ -42,14 +42,14 @@ namespace UnityEditor.Connect
             if (IsPackageManagerDisabled())
                 return;
 
-            if (NativeClient.List(out m_listOperationId) == NativeClient.StatusCode.Error)
+            if (NativeClient.List(out m_listOperationId) == NativeStatusCode.Error)
             {
                 Debug.LogWarning("Failed to call list packages!");
                 return;
             }
             m_listOperationRunning = true;
 
-            if (NativeClient.Outdated(out m_outdatedOperationId) == NativeClient.StatusCode.Error)
+            if (NativeClient.Outdated(out m_outdatedOperationId) == NativeStatusCode.Error)
             {
                 Debug.LogWarning("Failed to call outdated package!");
                 return;
@@ -85,7 +85,7 @@ namespace UnityEditor.Connect
             }
 
             long addOperationId = 0;
-            if (NativeClient.Add(out addOperationId, m_outdatedPackages[packageName].packageId) == NativeClient.StatusCode.Error)
+            if (NativeClient.Add(out addOperationId, m_outdatedPackages[packageName].packageId) == NativeStatusCode.Error)
             {
                 Debug.LogWarningFormat("Failed to update outdated package {0}!", packageName);
                 return false;
@@ -104,15 +104,15 @@ namespace UnityEditor.Connect
         {
             if (m_outdatedOperationRunning)
             {
-                NativeClient.StatusCode status = NativeClient.GetOperationStatus(m_outdatedOperationId);
+                NativeStatusCode status = NativeClient.GetOperationStatus(m_outdatedOperationId);
                 switch (status)
                 {
-                    case NativeClient.StatusCode.Error:
-                    case NativeClient.StatusCode.NotFound:
+                    case NativeStatusCode.Error:
+                    case NativeStatusCode.NotFound:
                         m_outdatedOperationRunning = false;
                         Debug.LogWarning("Failed to retrieve outdated package list!");
                         break;
-                    case NativeClient.StatusCode.Done:
+                    case NativeStatusCode.Done:
                     {
                         m_outdatedPackages.Clear();
                         Dictionary<string, OutdatedPackage> outdatedData = NativeClient.GetOutdatedOperationData(m_outdatedOperationId);
@@ -123,8 +123,8 @@ namespace UnityEditor.Connect
                         m_outdatedOperationRunning = false;
                     }
                     break;
-                    case NativeClient.StatusCode.InProgress:
-                    case NativeClient.StatusCode.InQueue:
+                    case NativeStatusCode.InProgress:
+                    case NativeStatusCode.InQueue:
                     default:
                         break;
                 }
@@ -132,15 +132,15 @@ namespace UnityEditor.Connect
 
             if (m_listOperationRunning)
             {
-                NativeClient.StatusCode status = NativeClient.GetOperationStatus(m_listOperationId);
+                NativeStatusCode status = NativeClient.GetOperationStatus(m_listOperationId);
                 switch (status)
                 {
-                    case NativeClient.StatusCode.Error:
-                    case NativeClient.StatusCode.NotFound:
+                    case NativeStatusCode.Error:
+                    case NativeStatusCode.NotFound:
                         m_listOperationRunning = false;
                         Debug.LogWarning("Failed to retrieve package list!");
                         break;
-                    case NativeClient.StatusCode.Done:
+                    case NativeStatusCode.Done:
                     {
                         m_currentPackages.Clear();
                         OperationStatus listData = NativeClient.GetListOperationData(m_listOperationId);
@@ -151,8 +151,8 @@ namespace UnityEditor.Connect
                         m_listOperationRunning = false;
                     }
                     break;
-                    case NativeClient.StatusCode.InProgress:
-                    case NativeClient.StatusCode.InQueue:
+                    case NativeStatusCode.InProgress:
+                    case NativeStatusCode.InQueue:
                     default:
                         break;
                 }

@@ -311,6 +311,7 @@ namespace UnityEditor
         }
     }
 
+    [ExcludeFromObjectFactory]
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
     {
         static Styles s_Styles;
@@ -445,7 +446,8 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             bool showOpenButton = true;
-            if (!(this is AssetImporterEditor))
+            // only show open button for the main object of an asset and for AssetImportInProgressProxy (asset not yet imported)
+            if (!(this is AssetImporterEditor) && !(targets[0] is AssetImportInProgressProxy))
             {
                 var assetPath = AssetDatabase.GetAssetPath(targets[0]);
                 // Don't show open button if the target is not an asset

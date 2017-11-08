@@ -201,9 +201,14 @@ namespace UnityEditor
             return FindAssembliesReferencedBy(tmp, foldersToSearch, target);
         }
 
-        static public bool IsUnityEngineModule(string assemblyName)
+        static public bool IsUnityEngineModule(AssemblyDefinition assembly)
         {
-            return assemblyName.EndsWith("Module") && assemblyName.StartsWith("UnityEngine.");
+            return assembly.CustomAttributes.Any(a => a.AttributeType.FullName == typeof(UnityEngineModuleAssembly).FullName);
+        }
+
+        static public bool IsUnityEngineModule(Assembly assembly)
+        {
+            return assembly.GetCustomAttributes(typeof(UnityEngineModuleAssembly), false).Length > 0;
         }
 
         private static bool IsTypeAUserExtendedScript(AssemblyDefinition assembly, TypeReference type)

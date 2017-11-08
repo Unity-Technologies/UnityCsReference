@@ -448,12 +448,11 @@ namespace UnityEditorInternal
             for (int i = 0; i < length; i++)
             {
                 AnimationWindowKeyframe keyframe = dopeline.keys[i];
-                int timeHash = keyframe.m_TimeHash ^ keyframe.curve.timeOffset.GetHashCode();
                 // Hash optimizations
-                if (previousTimeHash == timeHash)
+                if (previousTimeHash == keyframe.m_TimeHash)
                     continue;
 
-                previousTimeHash = timeHash;
+                previousTimeHash = keyframe.m_TimeHash;
 
                 // Default values
                 Rect rect = GetKeyframeRect(dopeline, keyframe);
@@ -777,29 +776,23 @@ namespace UnityEditorInternal
             // TODO: handle multidropping of other types than sprites/textures
             if (DragAndDrop.objectReferences[0].GetType() == typeof(Sprite) || DragAndDrop.objectReferences[0].GetType() == typeof(Texture2D))
             {
-                foreach (var selectedItem in state.selection.ToArray())
+                if (state.selection.clipIsEditable && state.selection.canAddCurves)
                 {
-                    if (!selectedItem.clipIsEditable)
-                        continue;
-
-                    if (!selectedItem.canAddCurves)
-                        continue;
-
-                    if (DopelineForValueTypeExists(typeof(Sprite)))
-                        continue;
-
-                    if (evt.type == EventType.DragPerform)
+                    if (!DopelineForValueTypeExists(typeof(Sprite)))
                     {
-                        EditorCurveBinding? spriteBinding = CreateNewPptrDopeline(selectedItem, typeof(Sprite));
-                        if (spriteBinding != null)
+                        if (evt.type == EventType.DragPerform)
                         {
-                            DoSpriteDropAfterGeneratingNewDopeline(selectedItem.animationClip, spriteBinding);
+                            EditorCurveBinding? spriteBinding = CreateNewPptrDopeline(state.selection, typeof(Sprite));
+                            if (spriteBinding != null)
+                            {
+                                DoSpriteDropAfterGeneratingNewDopeline(state.activeAnimationClip, spriteBinding);
+                            }
                         }
-                    }
 
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    evt.Use();
-                    return;
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                        evt.Use();
+                        return;
+                    }
                 }
             }
             DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
@@ -1053,7 +1046,7 @@ namespace UnityEditorInternal
 
         private Rect GetKeyframeRect(DopeLine dopeline, AnimationWindowKeyframe keyframe)
         {
-            float time = keyframe != null ? keyframe.time + keyframe.curve.timeOffset : 0f;
+            float time = keyframe != null ? keyframe.time : 0f;
 
             float width = 10f;
             if (dopeline.isPptrDopeline && dopeline.tallMode && (keyframe == null || keyframe.value != null))
@@ -1095,7 +1088,7 @@ namespace UnityEditorInternal
             {
                 foreach (AnimationWindowKeyframe key in state.selectedKeys)
                 {
-                    Vector2 pt = new Vector2(key.time + key.curve.timeOffset, 0.0f);
+                    Vector2 pt = new Vector2(key.time, 0.0f);
                     if (firstKey)
                     {
                         frameBounds.SetMinMax(pt, pt);
@@ -1121,8 +1114,8 @@ namespace UnityEditorInternal
 
                         if (keyCount > 1)
                         {
-                            Vector2 pt1 = new Vector2(curve.m_Keyframes[0].time + curve.timeOffset, 0.0f);
-                            Vector2 pt2 = new Vector2(curve.m_Keyframes[keyCount - 1].time + curve.timeOffset, 0.0f);
+                            Vector2 pt1 = new Vector2(curve.m_Keyframes[0].time, 0.0f);
+                            Vector2 pt2 = new Vector2(curve.m_Keyframes[keyCount - 1].time, 0.0f);
 
                             if (firstKey)
                             {
@@ -1299,13 +1292,13 @@ namespace UnityEditorInternal
         private bool AnyKeyIsSelectedAtTime(DopeLine dopeLine, int keyIndex)
         {
             AnimationWindowKeyframe keyframe = dopeLine.keys[keyIndex];
-            int firstTimeHash = keyframe.m_TimeHash ^ keyframe.curve.timeOffset.GetHashCode();
+            int firstTimeHash = keyframe.m_TimeHash;
 
             int length = dopeLine.keys.Count;
             for (int i = keyIndex; i < length; i++)
             {
                 keyframe = dopeLine.keys[i];
-                int timeHash = keyframe.m_TimeHash ^ keyframe.curve.timeOffset.GetHashCode();
+                int timeHash = keyframe.m_TimeHash;
 
                 if (timeHash != firstTimeHash)
                     return false;
@@ -1409,8 +1402,8 @@ namespace UnityEditorInternal
                                     {
                                         foreach (AnimationWindowKeyframe keyframe in dopeline.keys)
                                         {
-                                            AnimationKeyTime startTime = AnimationKeyTime.Time(timeRect.xMin - keyframe.curve.timeOffset, frameRate);
-                                            AnimationKeyTime endTime = AnimationKeyTime.Time(timeRect.xMax - keyframe.curve.timeOffset, frameRate);
+                                            AnimationKeyTime startTime = AnimationKeyTime.Time(timeRect.xMin, frameRate);
+                                            AnimationKeyTime endTime = AnimationKeyTime.Time(timeRect.xMax, frameRate);
 
                                             AnimationKeyTime keyTime = AnimationKeyTime.Time(keyframe.time, frameRate);
                                             // for dopeline tallmode, we don't want to select the sprite at the end. It just feels wrong.

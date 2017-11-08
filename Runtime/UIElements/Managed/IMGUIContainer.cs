@@ -180,7 +180,15 @@ namespace UnityEngine.Experimental.UIElements
 
             try
             {
-                m_OnGUIHandler();
+                Matrix4x4 currentTransform;
+                Rect clippingRect;
+                GetCurrentTransformAndClip(this, evt, out currentTransform, out clippingRect);
+
+                // Push UIElements matrix in GUIClip to make mouse position relative to the IMGUIContainer top left
+                using (new GUIClip.ParentClipScope(currentTransform, clippingRect))
+                {
+                    m_OnGUIHandler();
+                }
             }
             catch (Exception exception)
             {
@@ -412,6 +420,27 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             return new Vector2(measuredWidth, measuredHeight);
+        }
+
+        private static void GetCurrentTransformAndClip(IMGUIContainer container, Event evt, out Matrix4x4 transform, out Rect clipRect)
+        {
+            clipRect = container.lastWorldClip;
+            if (clipRect.width == 0.0f || clipRect.height == 0.0f)
+            {
+                // lastWorldClip will be empty until the first repaint occurred,
+                // we fall back on the worldBound in this case.
+                clipRect = container.worldBound;
+            }
+
+            transform = container.worldTransform;
+            if (evt.type == EventType.Repaint
+                && container.elementPanel != null
+                && container.elementPanel.stylePainter != null)
+            {
+                // during repaint, we must use in case the current transform is not relative to Panel
+                // this is to account for the pixel caching feature
+                transform = container.elementPanel.stylePainter.currentTransform;
+            }
         }
     }
 }

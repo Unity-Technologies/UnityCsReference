@@ -38,6 +38,9 @@ namespace UnityEngine.Networking
         [System.NonSerialized]
         internal CertificateHandler m_CertificateHandler;
 
+        [System.NonSerialized]
+        internal Uri m_Uri;
+
         internal enum UnityWebRequestMethod
         {
             Get = 0,
@@ -134,6 +137,13 @@ namespace UnityEngine.Networking
             this.url = url;
         }
 
+        public UnityWebRequest(Uri uri)
+        {
+            m_Ptr = Create();
+            InternalSetDefaults();
+            this.uri = uri;
+        }
+
         public UnityWebRequest(string url, string method)
         {
             m_Ptr = Create();
@@ -142,11 +152,29 @@ namespace UnityEngine.Networking
             this.method = method;
         }
 
+        public UnityWebRequest(Uri uri, string method)
+        {
+            m_Ptr = Create();
+            InternalSetDefaults();
+            this.uri = uri;
+            this.method = method;
+        }
+
         public UnityWebRequest(string url, string method, DownloadHandler downloadHandler, UploadHandler uploadHandler)
         {
             m_Ptr = Create();
             InternalSetDefaults();
             this.url = url;
+            this.method = method;
+            this.downloadHandler = downloadHandler;
+            this.uploadHandler = uploadHandler;
+        }
+
+        public UnityWebRequest(Uri uri, string method, DownloadHandler downloadHandler, UploadHandler uploadHandler)
+        {
+            m_Ptr = Create();
+            InternalSetDefaults();
+            this.uri = uri;
             this.method = method;
             this.downloadHandler = downloadHandler;
             this.uploadHandler = uploadHandler;
@@ -327,6 +355,33 @@ namespace UnityEngine.Networking
                 string localUrl = "http://localhost/";
 
                 InternalSetUrl(WebRequestUtils.MakeInitialUrl(value, localUrl));
+            }
+        }
+
+        public Uri uri
+        {
+            get
+            {
+                // always return from native (it will change in case of redirect)
+                return new Uri(GetUrl());
+            }
+            set
+            {
+                if (!value.IsAbsoluteUri)
+                    throw new ArgumentException("URI must be absolute");
+                // For file:// URIs, pass in unescaped URL
+                // For jar:file:// URI expect original string to be well formed (Android specific)
+                // blob:http(s)  URI is received on WebGL for something in memory, use original string
+                string url;
+                if (value.IsFile)
+                    url = WWWTranscoder.URLDecode(value.AbsoluteUri, System.Text.Encoding.UTF8);
+                string scheme = value.Scheme;
+                if (scheme == "jar" || scheme == "blob")
+                    url = value.OriginalString;
+                else
+                    url = value.AbsoluteUri;
+                InternalSetUrl(url);
+                m_Uri = value;
             }
         }
 

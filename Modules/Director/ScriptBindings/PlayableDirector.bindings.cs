@@ -85,8 +85,11 @@ namespace UnityEngine.Playables
         extern public void Stop();
         extern public void Pause();
         extern public void Resume();
+        extern public void RebuildGraph();
         extern public void ClearReferenceValue(PropertyName id);
-        extern internal void StopImmediately();
+
+        extern internal void ProcessPendingGraphChanges();
+
         extern private PlayState GetPlayState();
         extern private void SetWrapMode(DirectorWrapMode mode);
         extern private DirectorWrapMode GetWrapMode();

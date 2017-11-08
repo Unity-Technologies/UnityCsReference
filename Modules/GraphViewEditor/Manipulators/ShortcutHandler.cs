@@ -42,6 +42,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (result == EventPropagation.Stop)
                 {
                     evt.StopPropagation();
+                    if (evt.imguiEvent != null)
+                    {
+                        evt.imguiEvent.Use();
+                    }
                 }
             }
         }

@@ -293,9 +293,7 @@ namespace UnityEditor
                 LookDevResources.m_LookDevCubeToLatlong.SetVector("_WindowParams", new Vector4(m_displayRect.height, -1000.0f, 2, 1.0f)); // Doesn't matter but let's match DrawLatLongThumbnail settings,-1000.0f to be sure to not have clipping issue (we should not clip normally but don't want to create a new shader)
                 LookDevResources.m_LookDevCubeToLatlong.SetVector("_CubeToLatLongParams", new Vector4(Mathf.Deg2Rad * m_SelectedCubemapInfo.angleOffset, 0.5f, 1.0f, 0.0f));
                 LookDevResources.m_LookDevCubeToLatlong.SetPass(0);
-                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
                 LookDevView.DrawFullScreenQuad(new Rect(0, 0, m_HDRIWidth, m_latLongHeight));
-                GL.sRGBWrite = false;
                 RenderTexture.active = oldActive;
 
                 m_RenderOverlayThumbnailOnce = false;
@@ -315,9 +313,7 @@ namespace UnityEditor
             LookDevResources.m_LookDevCubeToLatlong.SetVector("_WindowParams", new Vector4(m_displayRect.height, m_PositionInLookDev.y + DockArea.kTabHeight, overlay.margin.top, EditorGUIUtility.pixelsPerPoint));
             LookDevResources.m_LookDevCubeToLatlong.SetVector("_CubeToLatLongParams", new Vector4(Mathf.Deg2Rad * angleOffset, alpha, intensity, 0.0f));
 
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             Graphics.DrawTexture(textureRect, infos.cubemap, LookDevResources.m_LookDevCubeToLatlong, 1);
-            GL.sRGBWrite = false;
         }
 
         private void DrawSelectionFeedback(Rect textureRect, Color selectionColor1, Color selectionColor2)
@@ -815,14 +811,10 @@ namespace UnityEditor
 
                                     DrawLatLongThumbnail(cubemapShadowInfo, infos.angleOffset, 0.3f, alpha, shadowTextureRect);
 
-                                    GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
                                     GUI.DrawTexture(frameTextureRect, styles.sLatlongFrameTexture);
-                                    GL.sRGBWrite = false;
                                 }
 
-                                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
                                 GUI.DrawTexture(lightIconRect, styles.sLightTexture);
-                                GL.sRGBWrite = false;
                             }
 
                             if (isSelection)

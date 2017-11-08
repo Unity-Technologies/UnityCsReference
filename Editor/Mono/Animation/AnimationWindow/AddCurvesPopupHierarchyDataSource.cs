@@ -31,27 +31,18 @@ namespace UnityEditorInternal
 
         public override void FetchData()
         {
-            if (AddCurvesPopup.selection == null)
-                return;
-
-            AnimationWindowSelectionItem[] selectionItems = AddCurvesPopup.selection.ToArray();
-            if (selectionItems.Length > 1)
+            if (AddCurvesPopup.s_State.selection.canAddCurves)
             {
-                m_RootItem = new AddCurvesPopupObjectNode(null, "", "");
-            }
+                GameObject rootGameObject = AddCurvesPopup.s_State.activeRootGameObject;
+                ScriptableObject scriptableObject = AddCurvesPopup.s_State.activeScriptableObject;
 
-            foreach (AnimationWindowSelectionItem item in selectionItems)
-            {
-                if (!item.canAddCurves)
-                    continue;
-
-                if (item.rootGameObject != null)
+                if (rootGameObject != null)
                 {
-                    AddGameObjectToHierarchy(item.rootGameObject, item, m_RootItem);
+                    AddGameObjectToHierarchy(rootGameObject, rootGameObject, AddCurvesPopup.s_State.activeAnimationClip, m_RootItem);
                 }
-                else if (item.scriptableObject != null)
+                else if (scriptableObject != null)
                 {
-                    AddScriptableObjectToHierarchy(item.scriptableObject, item, m_RootItem);
+                    AddScriptableObjectToHierarchy(scriptableObject, AddCurvesPopup.s_State.activeAnimationClip, m_RootItem);
                 }
             }
 
@@ -59,9 +50,9 @@ namespace UnityEditorInternal
             m_NeedRefreshRows = true;
         }
 
-        private TreeViewItem AddGameObjectToHierarchy(GameObject gameObject, AnimationWindowSelectionItem selectionItem, TreeViewItem parent)
+        private TreeViewItem AddGameObjectToHierarchy(GameObject gameObject, GameObject rootGameObject, AnimationClip animationClip, TreeViewItem parent)
         {
-            string path = AnimationUtility.CalculateTransformPath(gameObject.transform, selectionItem.rootGameObject.transform);
+            string path = AnimationUtility.CalculateTransformPath(gameObject.transform, rootGameObject.transform);
             TreeViewItem node = new AddCurvesPopupGameObjectNode(gameObject, parent, gameObject.name);
             List<TreeViewItem> childNodes = new List<TreeViewItem>();
 
@@ -69,7 +60,7 @@ namespace UnityEditorInternal
                 m_RootItem = node;
 
             // Iterate over all animatable objects
-            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(gameObject, selectionItem.rootGameObject);
+            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(gameObject, rootGameObject);
             List<EditorCurveBinding> singleObjectBindings = new List<EditorCurveBinding>();
             for (int i = 0; i < allCurveBindings.Length; i++)
             {
@@ -83,7 +74,7 @@ namespace UnityEditorInternal
                     // Don't show for the root go
                     if (curveBinding.path != "")
                     {
-                        TreeViewItem newNode = CreateNode(selectionItem, singleObjectBindings.ToArray(), node);
+                        TreeViewItem newNode = CreateNode(singleObjectBindings.ToArray(), node);
                         if (newNode != null)
                             childNodes.Add(newNode);
                         singleObjectBindings.Clear();
@@ -104,7 +95,7 @@ namespace UnityEditorInternal
                         isLastItemOnThisGroup = (allCurveBindings[i + 1].type != curveBinding.type);
 
                     // Let's not add those that already have a existing curve.
-                    if (AnimationWindowUtility.IsCurveCreated(selectionItem.animationClip, curveBinding))
+                    if (AnimationWindowUtility.IsCurveCreated(animationClip, curveBinding))
                         singleObjectBindings.Remove(curveBinding);
 
                     // Remove animator enabled property which shouldn't be animated.
@@ -113,7 +104,7 @@ namespace UnityEditorInternal
 
                     if ((isLastItemOverall || isLastItemOnThisGroup) && singleObjectBindings.Count > 0)
                     {
-                        childNodes.Add(AddAnimatableObjectToHierarchy(selectionItem, singleObjectBindings.ToArray(), node, path));
+                        childNodes.Add(AddAnimatableObjectToHierarchy(singleObjectBindings.ToArray(), node, path));
                         singleObjectBindings.Clear();
                     }
                 }
@@ -125,7 +116,7 @@ namespace UnityEditorInternal
                 for (int i = 0; i < gameObject.transform.childCount; i++)
                 {
                     Transform childTransform = gameObject.transform.GetChild(i);
-                    TreeViewItem childNode = AddGameObjectToHierarchy(childTransform.gameObject, selectionItem, node);
+                    TreeViewItem childNode = AddGameObjectToHierarchy(childTransform.gameObject, rootGameObject, animationClip, node);
                     if (childNode != null)
                         childNodes.Add(childNode);
                 }
@@ -135,14 +126,14 @@ namespace UnityEditorInternal
             return node;
         }
 
-        private TreeViewItem AddScriptableObjectToHierarchy(ScriptableObject scriptableObject, AnimationWindowSelectionItem selectionItem, TreeViewItem parent)
+        private TreeViewItem AddScriptableObjectToHierarchy(ScriptableObject scriptableObject, AnimationClip clip, TreeViewItem parent)
         {
             EditorCurveBinding[] allCurveBindings = AnimationUtility.GetScriptableObjectAnimatableBindings(scriptableObject);
-            EditorCurveBinding[] availableBindings = allCurveBindings.Where(c => !AnimationWindowUtility.IsCurveCreated(selectionItem.animationClip, c)).ToArray();
+            EditorCurveBinding[] availableBindings = allCurveBindings.Where(c => !AnimationWindowUtility.IsCurveCreated(clip, c)).ToArray();
 
             TreeViewItem node = null;
             if (availableBindings.Length > 0)
-                node = AddAnimatableObjectToHierarchy(selectionItem, availableBindings, parent, "");
+                node = AddAnimatableObjectToHierarchy(availableBindings, parent, "");
             else
                 node = new AddCurvesPopupObjectNode(parent, "", scriptableObject.name);
 
@@ -152,11 +143,11 @@ namespace UnityEditorInternal
             return node;
         }
 
-        static string GetClassName(AnimationWindowSelectionItem selectionItem, EditorCurveBinding binding)
+        static string GetClassName(EditorCurveBinding binding)
         {
-            if (selectionItem.rootGameObject != null)
+            if (AddCurvesPopup.s_State.activeRootGameObject != null)
             {
-                Object target = AnimationUtility.GetAnimatedObject(selectionItem.rootGameObject, binding);
+                Object target = AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, binding);
                 if (target)
                     return ObjectNames.GetInspectorTitle(target);
             }
@@ -164,24 +155,24 @@ namespace UnityEditorInternal
             return binding.type.Name;
         }
 
-        static Texture2D GetIcon(AnimationWindowSelectionItem selectionItem, EditorCurveBinding binding)
+        static Texture2D GetIcon(EditorCurveBinding binding)
         {
-            if (selectionItem.rootGameObject != null)
+            if (AddCurvesPopup.s_State.activeRootGameObject != null)
             {
-                return AssetPreview.GetMiniThumbnail(AnimationUtility.GetAnimatedObject(selectionItem.rootGameObject, binding));
+                return AssetPreview.GetMiniThumbnail(AnimationUtility.GetAnimatedObject(AddCurvesPopup.s_State.activeRootGameObject, binding));
             }
-            else if (selectionItem.scriptableObject != null)
+            else if (AddCurvesPopup.s_State.activeScriptableObject != null)
             {
-                return AssetPreview.GetMiniThumbnail(selectionItem.scriptableObject);
+                return AssetPreview.GetMiniThumbnail(AddCurvesPopup.s_State.activeScriptableObject);
             }
 
             return null;
         }
 
-        private TreeViewItem AddAnimatableObjectToHierarchy(AnimationWindowSelectionItem selectionItem, EditorCurveBinding[] curveBindings, TreeViewItem parentNode, string path)
+        private TreeViewItem AddAnimatableObjectToHierarchy(EditorCurveBinding[] curveBindings, TreeViewItem parentNode, string path)
         {
-            TreeViewItem node = new AddCurvesPopupObjectNode(parentNode, path, GetClassName(selectionItem, curveBindings[0]));
-            node.icon = GetIcon(selectionItem, curveBindings[0]);
+            TreeViewItem node = new AddCurvesPopupObjectNode(parentNode, path, GetClassName(curveBindings[0]));
+            node.icon = GetIcon(curveBindings[0]);
 
             List<TreeViewItem> childNodes = new List<TreeViewItem>();
             List<EditorCurveBinding> singlePropertyBindings = new List<EditorCurveBinding>();
@@ -195,7 +186,7 @@ namespace UnityEditorInternal
                 // We expect curveBindings to come sorted by propertyname
                 if (i == curveBindings.Length - 1 || AnimationWindowUtility.GetPropertyGroupName(curveBindings[i + 1].propertyName) != AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName))
                 {
-                    TreeViewItem newNode = CreateNode(selectionItem, singlePropertyBindings.ToArray(), node);
+                    TreeViewItem newNode = CreateNode(singlePropertyBindings.ToArray(), node);
                     if (newNode != null)
                         childNodes.Add(newNode);
                     singlePropertyBindings.Clear();
@@ -208,9 +199,9 @@ namespace UnityEditorInternal
             return node;
         }
 
-        private TreeViewItem CreateNode(AnimationWindowSelectionItem selectionItem, EditorCurveBinding[] curveBindings, TreeViewItem parentNode)
+        private TreeViewItem CreateNode(EditorCurveBinding[] curveBindings, TreeViewItem parentNode)
         {
-            var node = new AddCurvesPopupPropertyNode(parentNode, selectionItem, curveBindings);
+            var node = new AddCurvesPopupPropertyNode(parentNode, curveBindings);
 
             // For RectTransform.position we only want .z
             if (AnimationWindowUtility.IsRectTransformPosition(node.curveBindings[0]))
@@ -244,13 +235,11 @@ namespace UnityEditorInternal
 
     internal class AddCurvesPopupPropertyNode : TreeViewItem
     {
-        public AnimationWindowSelectionItem selectionItem;
         public EditorCurveBinding[] curveBindings;
 
-        public AddCurvesPopupPropertyNode(TreeViewItem parent, AnimationWindowSelectionItem selectionItem, EditorCurveBinding[] curveBindings)
+        public AddCurvesPopupPropertyNode(TreeViewItem parent, EditorCurveBinding[] curveBindings)
             : base(curveBindings[0].GetHashCode(), parent.depth + 1, parent, AnimationWindowUtility.NicifyPropertyGroupName(curveBindings[0].type, AnimationWindowUtility.GetPropertyGroupName(curveBindings[0].propertyName)))
         {
-            this.selectionItem = selectionItem;
             this.curveBindings = curveBindings;
         }
 

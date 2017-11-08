@@ -191,7 +191,6 @@ namespace UnityEngine.Experimental.UIElements
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
-                Dirty(ChangeType.Layout);
                 Dirty(ChangeType.Transform);
             }
         }

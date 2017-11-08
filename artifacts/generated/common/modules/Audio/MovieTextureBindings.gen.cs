@@ -19,6 +19,7 @@ namespace UnityEngine
 
 
 
+[ExcludeFromObjectFactory]
 public sealed partial class MovieTexture : Texture
 {
     private MovieTexture() {}

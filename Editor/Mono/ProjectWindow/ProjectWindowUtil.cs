@@ -210,7 +210,7 @@ namespace UnityEditor
 
         public static void CreateScene()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture("SceneAsset Icon") as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture("SceneAsset Icon"), null);
         }
 
         // Create a prefab
@@ -219,11 +219,11 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePrefab>(), "New Prefab.prefab", EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D, null);
         }
 
-        internal static void CreateAssetWithContent(string filename, string content)
+        internal static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, string resourceFile = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
-            StartNameEditingIfProjectWindowExists(0, action, filename, null, null);
+            StartNameEditingIfProjectWindowExists(0, action, filename, icon, resourceFile);
         }
 
         static void CreateScriptAsset(string templatePath, string destName)
@@ -541,7 +541,7 @@ namespace UnityEditor
             List<int> ancestors = new List<int>();
 
             // Ensure we add the main asset as ancestor if input is a subasset
-            int mainAssetInstanceID = AssetDatabase.GetMainAssetInstanceID(AssetDatabase.GetAssetPath(instanceID));
+            int mainAssetInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetAssetPath(instanceID));
             bool isSubAsset = mainAssetInstanceID != instanceID;
             if (isSubAsset)
                 ancestors.Add(mainAssetInstanceID);
@@ -550,7 +550,7 @@ namespace UnityEditor
             string currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(mainAssetInstanceID));
             while (!string.IsNullOrEmpty(currentFolderPath))
             {
-                int currentInstanceID = AssetDatabase.GetMainAssetInstanceID(currentFolderPath);
+                int currentInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(currentFolderPath);
                 ancestors.Add(currentInstanceID);
                 currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(currentInstanceID));
             }
