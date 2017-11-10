@@ -109,7 +109,7 @@ namespace UnityEngine.Playables
         extern public bool IsDone();
         extern public void Play();
         extern public void Stop();
-        extern public void Evaluate([DefaultValue(0)] float deltaTime);
+        extern public void Evaluate([DefaultValue("0")] float deltaTime);
         extern public DirectorUpdateMode GetTimeUpdateMode();
         extern public void SetTimeUpdateMode(DirectorUpdateMode value);
         extern public IExposedPropertyTable GetResolver();

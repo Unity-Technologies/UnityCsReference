@@ -501,6 +501,10 @@ namespace UnityEngineInternal
             if (targetUrl.StartsWith("jar:file://"))
                 return targetUrl;
 
+            // Prevent blob url slashes from being stripped (to blob:http:/... or blob:https:/...)
+            if (targetUrl.StartsWith("blob:http"))
+                return targetUrl;
+
             var localUri = new System.Uri(localUrl);
 
             if (targetUrl.StartsWith("//"))
