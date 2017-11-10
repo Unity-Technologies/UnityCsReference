@@ -200,7 +200,15 @@ namespace UnityEngine.Playables
             where U : struct, IPlayable
             where V : struct, IPlayable
         {
+            ConnectInput(playable, inputIndex, sourcePlayable, sourceOutputIndex, 0.0f);
+        }
+
+        public static void ConnectInput<U, V>(this U playable, int inputIndex, V sourcePlayable, int sourceOutputIndex, float weight)
+            where U : struct, IPlayable
+            where V : struct, IPlayable
+        {
             playable.GetGraph().Connect(sourcePlayable, sourceOutputIndex, playable, inputIndex);
+            playable.SetInputWeight(inputIndex, weight);
         }
 
         public static int AddInput<U, V>(this U playable, V sourcePlayable, int sourceOutputIndex, float weight = 0.0f)
@@ -209,8 +217,7 @@ namespace UnityEngine.Playables
         {
             var inputIndex = playable.GetInputCount();
             playable.SetInputCount(inputIndex + 1);
-            playable.SetInputWeight(inputIndex, weight);
-            playable.ConnectInput(inputIndex, sourcePlayable, sourceOutputIndex);
+            playable.ConnectInput(inputIndex, sourcePlayable, sourceOutputIndex, weight);
             return inputIndex;
         }
 
