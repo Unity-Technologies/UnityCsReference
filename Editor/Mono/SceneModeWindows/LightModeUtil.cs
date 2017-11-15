@@ -22,13 +22,7 @@ namespace UnityEditor
         }
 
         public  static readonly GUIContent s_enableBaked = EditorGUIUtility.TextContent("Baked Global Illumination|Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
-        public  static readonly string[] s_typenames = { "Realtime", "Mixed", "Baked" };
-        private static readonly GUIContent[] s_modes =
-        {
-            new GUIContent(s_typenames[0]),
-            new GUIContent(s_typenames[1]),
-            new GUIContent(s_typenames[2])
-        };
+
         // combobox content
         private int[]               m_modeVals          = { 0, 0, 0 };
         // cached data
@@ -159,32 +153,6 @@ namespace UnityEditor
         public bool Flush()
         {
             return m_so.ApplyModifiedProperties();
-        }
-
-        // helper function to draw the context sensitive combobox in the lighting explorer
-        public void DrawElement(Rect r, SerializedProperty property, SerializedProperty dependency)
-        {
-            bool is_area = dependency.enumValueIndex == (int)LightType.Area;
-            using (new EditorGUI.DisabledScope(is_area))
-            {
-                EditorGUI.BeginChangeCheck();
-                int newval = EditorGUI.IntPopup(r, property.intValue, s_modes, new int[] { 4, 1, 2 });
-                if (EditorGUI.EndChangeCheck())
-                {
-                    property.intValue = newval;
-                }
-            }
-        }
-
-        // helper function to draw the context sensitive combobox in the light inspector
-        public void DrawElement(SerializedProperty property, GUIContent label)
-        {
-            EditorGUI.BeginChangeCheck();
-            int newval = EditorGUILayout.IntPopup(label, property.intValue, s_modes, new int[] { 4, 1, 2 });
-            if (EditorGUI.EndChangeCheck())
-            {
-                property.intValue = newval;
-            }
         }
 
         // helper function to draw the checkbox for enabling baked GI

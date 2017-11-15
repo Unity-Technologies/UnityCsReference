@@ -53,25 +53,36 @@ namespace UnityEditor
 
         private Hashtable m_CachedGizmoMaterials = new Hashtable();
 
+        public static void GetResolutionArray(ref int[] resolutionList, ref GUIContent[] resolutionStringList)
+        {
+            if (Styles.reflectionResolutionValuesArray == null && Styles.reflectionResolutionTextArray == null)
+            {
+                int cubemapResolution = Mathf.Max(1, ReflectionProbe.minBakedCubemapResolution);
+
+                List<int> envReflectionResolutionValues = new List<int>();
+                List<GUIContent> envReflectionResolutionText = new List<GUIContent>();
+
+                do
+                {
+                    envReflectionResolutionValues.Add(cubemapResolution);
+                    envReflectionResolutionText.Add(new GUIContent(cubemapResolution.ToString()));
+                    cubemapResolution *= 2;
+                }
+                while (cubemapResolution <= ReflectionProbe.maxBakedCubemapResolution);
+
+                Styles.reflectionResolutionValuesArray = envReflectionResolutionValues.ToArray();
+                Styles.reflectionResolutionTextArray = envReflectionResolutionText.ToArray();
+            }
+
+            resolutionList = Styles.reflectionResolutionValuesArray;
+            resolutionStringList = Styles.reflectionResolutionTextArray;
+        }
+
         static internal class Styles
         {
             static Styles()
             {
                 richTextMiniLabel.richText = true;
-
-                // Create a list of cubemap resolutions
-                renderTextureSizesValues.Clear();
-                renderTextureSizes.Clear();
-
-                int cubemapResolution = ReflectionProbe.minBakedCubemapResolution;
-
-                do
-                {
-                    renderTextureSizesValues.Add(cubemapResolution);
-                    renderTextureSizes.Add(new GUIContent(cubemapResolution.ToString()));
-                    cubemapResolution *= 2;
-                }
-                while (cubemapResolution <= ReflectionProbe.maxBakedCubemapResolution);
             }
 
             public static GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
@@ -101,8 +112,8 @@ namespace UnityEditor
             public static GUIContent[] reflectionProbeMode = { new GUIContent("Baked"), new GUIContent("Custom"), new GUIContent("Realtime") };
             public static int[] reflectionProbeModeValues = { (int)ReflectionProbeMode.Baked, (int)ReflectionProbeMode.Custom, (int)ReflectionProbeMode.Realtime };
 
-            public static List<int> renderTextureSizesValues = new List<int>();
-            public static List<GUIContent> renderTextureSizes = new List<GUIContent>();
+            public static int[] reflectionResolutionValuesArray = null;
+            public static GUIContent[] reflectionResolutionTextArray = null;
 
             public static GUIContent[] clearFlags =
             {
@@ -481,7 +492,11 @@ namespace UnityEditor
 
             EditorGUI.indentLevel++;
             {
-                EditorGUILayout.IntPopup(m_Resolution, Styles.renderTextureSizes.ToArray(), Styles.renderTextureSizesValues.ToArray(), Styles.resolutionText, GUILayout.MinWidth(40));
+                int[] reflectionResolutionValuesArray = null;
+                GUIContent[] reflectionResolutionTextArray = null;
+                GetResolutionArray(ref reflectionResolutionValuesArray, ref reflectionResolutionTextArray);
+
+                EditorGUILayout.IntPopup(m_Resolution, reflectionResolutionTextArray, reflectionResolutionValuesArray, Styles.resolutionText, GUILayout.MinWidth(40));
                 EditorGUILayout.PropertyField(m_HDR);
                 EditorGUILayout.PropertyField(m_ShadowDistance);
                 EditorGUILayout.IntPopup(m_ClearFlags, Styles.clearFlags, Styles.clearFlagsValues, Styles.clearFlagsText);
@@ -557,13 +572,14 @@ namespace UnityEditor
 
         public override void OnPreviewGUI(Rect position, GUIStyle style)
         {
-            if (!ValidPreviewSetup())
+            // Fix for case 939947 where we didn't get the Layout event if the texture was null when changing color
+            if (!ValidPreviewSetup() && Event.current.type != EventType.ExecuteCommand)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 Color prevColor = GUI.color;
                 GUI.color = new Color(1, 1, 1, 0.5f);
-                GUILayout.Label("Reflection Probe not baked yet");
+                GUILayout.Label("Reflection Probe not baked/ready yet");
                 GUI.color = prevColor;
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();

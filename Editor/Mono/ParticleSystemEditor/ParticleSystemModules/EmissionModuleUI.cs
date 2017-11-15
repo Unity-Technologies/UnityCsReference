@@ -97,10 +97,14 @@ namespace UnityEditor
             SerializedProperty burstCountState = burst.FindPropertyRelative("countCurve.minMaxState");
             SerializedProperty burstCount = burst.FindPropertyRelative("countCurve.scalar");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
-
             burstCountState.intValue = (int)ParticleSystemCurveMode.Constant;
             burstCount.floatValue = 30.0f;
             burstCycleCount.intValue = 1;
+
+            SerializedProperty burstCountMinCurve = burst.FindPropertyRelative("countCurve.minCurve");
+            SerializedProperty burstCountMaxCurve = burst.FindPropertyRelative("countCurve.maxCurve");
+            burstCountMinCurve.animationCurveValue = AnimationCurve.Linear(0.0f, 1.0f, 1.0f, 1.0f);
+            burstCountMaxCurve.animationCurveValue = AnimationCurve.Linear(0.0f, 1.0f, 1.0f, 1.0f);
 
             m_BurstCountCurves.Add(new SerializedMinMaxCurve(this, s_Texts.burstCount, burst.propertyPath + ".countCurve", false, true));
         }

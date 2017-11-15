@@ -49,6 +49,8 @@ namespace UnityEditor
 
     internal class DataWatchService : IDataWatchService
     {
+        public static DataWatchService sharedInstance = new DataWatchService();
+
         private HashSet<Object> m_DirtySet = new HashSet<Object>();
 
         struct Spy
@@ -117,19 +119,19 @@ namespace UnityEditor
             }
         }
 
-        public void ProcessNotificationQueue()
+        public void FlushDirtySet(HashSet<Object> dirty)
         {
-            PollNativeData();
+            dirty.UnionWith(m_DirtySet);
+            m_DirtySet.Clear();
+        }
 
-            // copy because dirty call could come in while we roll along
-            var tmpDirty = m_DirtySet;
-            m_DirtySet = new HashSet<Object>();
-
+        public void ProcessNotificationQueue(BaseVisualElementPanel panel, HashSet<Object> dirtySet)
+        {
             // since callbacks when being invoked we make copies for safe iteration
             var tmpSpys = new List<Spy>();
 
             // get the set of Dirties from C++ and clear it.
-            foreach (var o in tmpDirty)
+            foreach (var o in dirtySet)
             {
                 Watchers watchers;
                 if (m_Watched.TryGetValue(o, out watchers))
@@ -139,20 +141,18 @@ namespace UnityEditor
 
                     foreach (Spy spy in tmpSpys)
                     {
-                        if (spy.watcher.panel != null)
+                        if (spy.watcher.panel == panel)
                         {
                             // for any watches trigger callbacks
                             spy.onDataChanged();
                         }
-                        else
+                        else if (spy.watcher.panel == null)
                         {
                             Debug.Log("Leaking Data Spies from element: " + spy.watcher);
                         }
                     }
                 }
             }
-
-            tmpDirty.Clear();
         }
 
         static int s_WatchID;

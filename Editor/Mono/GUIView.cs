@@ -25,13 +25,11 @@ namespace UnityEditor
         internal static event Action<GUIView> positionChanged = null;
 
 
-        DataWatchService s_DataWatch = new DataWatchService();
-
         Panel panel
         {
             get
             {
-                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, s_DataWatch, StyleSheetResourceUtil.LoadResource);
+                Panel p = UIElementsUtility.FindOrCreatePanel(GetInstanceID(), ContextType.Editor, DataWatchService.sharedInstance, StyleSheetResourceUtil.LoadResource);
                 if (p.visualTree.styleSheets == null)
                 {
                     p.visualTree.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");

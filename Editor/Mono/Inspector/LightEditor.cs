@@ -186,7 +186,7 @@ namespace UnityEditor
             // Baking type
             if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
             {
-                LightModeUtil.Get().DrawElement(m_Lightmapping, s_Styles.LightmappingMode);
+                EditorGUILayout.PropertyField(m_Lightmapping, s_Styles.LightmappingMode);
 
                 // Warning if GI Baking disabled and m_Lightmapping isn't realtime
                 if (bakingWarningValue)

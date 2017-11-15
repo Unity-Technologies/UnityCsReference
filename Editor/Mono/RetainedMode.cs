@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Scripting;
@@ -14,6 +14,8 @@ namespace UnityEditor
 {
     class RetainedMode : AssetPostprocessor
     {
+        static HashSet<Object> s_TmpDirtySet = new HashSet<Object>();
+
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
@@ -33,6 +35,22 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
+            Debug.Assert(s_TmpDirtySet.Count == 0);
+            try
+            {
+                UpdateSchedulersInternal(s_TmpDirtySet);
+            }
+            finally
+            {
+                s_TmpDirtySet.Clear();
+            }
+        }
+
+        static void UpdateSchedulersInternal(HashSet<Object> tmpDirtySet)
+        {
+            DataWatchService.sharedInstance.PollNativeData();
+            DataWatchService.sharedInstance.FlushDirtySet(tmpDirtySet);
+
             var iterator = UIElementsUtility.GetPanelsIterator();
             while (iterator.MoveNext())
             {
@@ -47,9 +65,7 @@ namespace UnityEditor
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
 
-                DataWatchService service = panel.dataWatch as DataWatchService;
-                Debug.Assert(service != null, "Expect Editor panel to have a DataWatchService object");
-                service.ProcessNotificationQueue();
+                DataWatchService.sharedInstance.ProcessNotificationQueue(panel, tmpDirtySet);
 
                 // Dispatch might have triggered a repaint request.
                 if (panel.visualTree.IsDirty(ChangeType.Repaint))

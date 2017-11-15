@@ -114,7 +114,7 @@ namespace UnityEditor
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
-            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method");
+            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method|Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
             public Compression[] compressionTypes =
             {
@@ -125,7 +125,7 @@ namespace UnityEditor
 
             public GUIContent[] compressionStrings =
             {
-                EditorGUIUtility.TextContent("None"),
+                EditorGUIUtility.TextContent("Default"),
                 EditorGUIUtility.TextContent("LZ4"),
                 EditorGUIUtility.TextContent("LZ4HC"),
             };
@@ -751,7 +751,6 @@ namespace UnityEditor
 
                 if (postprocessor.SupportsLz4Compression())
                 {
-                    styles.compressionMethod.tooltip = "Compression method for Asset Bundles";
                     var cmpIdx = Array.IndexOf(styles.compressionTypes, EditorUserBuildSettings.GetCompressionType(buildTargetGroup));
                     if (cmpIdx == -1)
                         cmpIdx = 0;
