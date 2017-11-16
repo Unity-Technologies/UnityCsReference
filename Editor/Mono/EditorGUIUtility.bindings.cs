@@ -2,13 +2,30 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Bindings;
+using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [NativeHeader("Editor/Src/Utility/EditorGUIUtility.h")]
     public partial class EditorGUIUtility : GUIUtility
     {
+        // Get a texture from its source filename
+        public static Texture2D FindTexture(string name)
+        {
+            return FindTextureByName(name);
+        }
+
+        // Get texture from managed type
+        internal static Texture2D FindTexture(Type type)
+        {
+            return FindTextureByType(type);
+        }
+
+        extern static Texture2D FindTextureByName(string name);
+        extern static Texture2D FindTextureByType([NotNull] Type type);
+
         internal static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
         {
             string text_k = text != null ? text : "";

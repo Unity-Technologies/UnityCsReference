@@ -33,6 +33,7 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Baked Emissive"),
                 EditorGUIUtility.TextContent("Baked UV Charts"),
                 EditorGUIUtility.TextContent("Baked Texel Validity"),
+                EditorGUIUtility.TextContent("Baked UV Overlap"),
             };
 
             public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TextContent("The texture is not available at the moment.");
@@ -54,7 +55,8 @@ namespace UnityEditor
             GITextureType.BakedAlbedo,
             GITextureType.BakedEmissive,
             GITextureType.BakedCharting,
-            GITextureType.BakedTexelValidity
+            GITextureType.BakedTexelValidity,
+            GITextureType.BakedUVOverlap
         };
 
         ZoomableArea m_ZoomablePreview;

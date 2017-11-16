@@ -1585,10 +1585,6 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
-public sealed partial class PSM    
-    {
-    }
-
 }
 
 }

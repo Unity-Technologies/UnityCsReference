@@ -528,7 +528,7 @@ namespace UnityEditor
         {
             public GUIContent header = new GUIContent("Mixers", "All mixers in the project are shown here. By default a mixer outputs to the AudioListener but mixers can also route their output to other mixers. Each mixer shows where it outputs (in parenthesis). To reroute a mixer simply drag the mixer upon another mixer and select a group from the popup.");
             public GUIContent addText = new GUIContent("+", "Add mixer asset. The asset will be saved in the same folder as the current selected mixer or if none is selected saved in the Assets folder.");
-            public Texture2D audioMixerIcon = EditorGUIUtility.FindTexture("AudioMixerController Icon");
+            public Texture2D audioMixerIcon = EditorGUIUtility.FindTexture(typeof(AudioMixerController));
         }
         static Styles s_Styles;
 

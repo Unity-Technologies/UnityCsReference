@@ -13,28 +13,6 @@ namespace UnityEngine
         Distance = 1
     }
 
-    // The available vertex streams (Shuriken).
-    [Flags, Obsolete("ParticleSystemVertexStreams is deprecated. Please use ParticleSystemVertexStream instead.", false)]
-    public enum ParticleSystemVertexStreams
-    {
-        Position = 1 << 0,
-        Normal = 1 << 1,
-        Tangent = 1 << 2,
-        Color = 1 << 3,
-        UV = 1 << 4,
-        UV2BlendAndFrame = 1 << 5,
-        CenterAndVertexID = 1 << 6,
-        Size = 1 << 7,
-        Rotation = 1 << 8,
-        Velocity = 1 << 9,
-        Lifetime = 1 << 10,
-        Custom1 = 1 << 11,
-        Custom2 = 1 << 12,
-        Random = 1 << 13,
-        None = 0,
-        All = 0x7fffffff
-    }
-
     partial class ParticleSystem
     {
         public partial struct MinMaxCurve
@@ -55,7 +33,6 @@ namespace UnityEngine
         [Obsolete("safeCollisionEventSize has been deprecated. Use GetSafeCollisionEventSize() instead (UnityUpgradable) -> ParticlePhysicsExtensions.GetSafeCollisionEventSize(UnityEngine.ParticleSystem)", false)]
         public int safeCollisionEventSize { get { return ParticleSystemExtensionsImpl.GetSafeCollisionEventSize(this); } }
 
-        // Emit a single particle with given parameters.
         [Obsolete("Emit with specific parameters is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties", false)]
         public void Emit(Vector3 position, Vector3 velocity, float size, float lifetime, Color32 color)
         {
@@ -72,7 +49,6 @@ namespace UnityEngine
             Internal_EmitOld(ref particle);
         }
 
-        // Emit a single particle.
         [Obsolete("Emit with a single particle structure is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties", false)]
         public void Emit(ParticleSystem.Particle particle)
         {

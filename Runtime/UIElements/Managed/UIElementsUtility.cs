@@ -212,9 +212,8 @@ namespace UnityEngine.Experimental.UIElements
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
                     // DispatchEvent changes mousePosition.
-                    Vector2 savedMousePosition = s_EventInstance.mousePosition;
                     s_EventDispatcher.DispatchEvent(evt, panel);
-                    s_EventInstance.mousePosition = savedMousePosition;
+                    s_EventInstance.mousePosition = evt.originalMousePosition;
 
                     if (evt.isPropagationStopped)
                     {

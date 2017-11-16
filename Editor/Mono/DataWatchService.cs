@@ -53,6 +53,11 @@ namespace UnityEditor
         public static DataWatchService sharedInstance = new DataWatchService();
         private TimerEventScheduler m_Scheduler = new TimerEventScheduler();
 
+        internal bool disableThrottling
+        {
+            get { return m_Scheduler.disableThrottling; }
+            set { m_Scheduler.disableThrottling = value; }
+        }
 
         struct Spy
         {
@@ -72,21 +77,16 @@ namespace UnityEditor
             public ChangeTrackerHandle tracker;
             public IScheduledItem scheduledItem;
             public Object watchedObject;
-            private DataWatchService service
-            {
-                get
-                {
-                    return DataWatchService.sharedInstance;
-                }
-            }
+            private DataWatchService service;
 
             public bool isModified { get; set; }
 
-            public Watchers(Object watched)
+            public Watchers(Object watched, DataWatchService dataWatch)
             {
                 spyList = new List<Spy>();
                 tracker = ChangeTrackerHandle.AcquireTracker(watched);
                 watchedObject = watched;
+                service = dataWatch;
             }
 
             public void AddSpy(int handle, Action<Object> onDataChanged)
@@ -214,7 +214,7 @@ namespace UnityEditor
             Watchers watchers;
             if (!m_Watched.TryGetValue(watched, out watchers))
             {
-                watchers = new Watchers(watched);
+                watchers = new Watchers(watched, this);
                 m_Watched[watched] = watchers;
 
                 watchers.scheduledItem = m_Scheduler.ScheduleUntil(watchers.OnTimerPoolForChanges, 0, 0, null); //we poll as often as possible

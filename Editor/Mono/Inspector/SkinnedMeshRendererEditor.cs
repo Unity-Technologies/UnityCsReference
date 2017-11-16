@@ -82,6 +82,8 @@ namespace UnityEditor
 
             LightingFieldsGUI();
 
+            RenderRenderingLayer();
+
             EditorGUILayout.PropertyField(m_Materials, true);
 
             CullDynamicFieldGUI();

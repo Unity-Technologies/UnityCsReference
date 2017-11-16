@@ -9,24 +9,6 @@ using System.ComponentModel;
 
 namespace UnityEditor
 {
-    /// Target PSM build platform.
-    ///
-    /// SA: EditorUserBuildSettings.psmBuildSubtarget.
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum PSMBuildSubtarget
-    {
-        /// Build a development package, for use with the Development Assistant
-        /// SA: EditorUserBuildSettings.psmBuildSubtarget.
-        DevAssistant = 0,
-        /// Build a master package, for publishing
-        /// SA: EditorUserBuildSettings.psmBuildSubtarget.
-        Master = 1,
-        /// Build an intermediate master package, for separate publishing
-        /// SA: EditorUserBuildSettings.psmBuildSubtarget.
-        Intermediate = 2,
-    }
-
-
     /// Target PSP2 build platform.
     ///
     /// SA: EditorUserBuildSettings.psp2BuildSubtarget.
@@ -306,15 +288,6 @@ namespace UnityEditor
         }
 
         internal static extern string facebookAccessToken { get; set; }
-
-        ///PSM Build Subtarget
-        public static extern PSMBuildSubtarget psmBuildSubtarget
-        {
-            [NativeMethod("GetSelectedPSMBuildSubtarget")]
-            get;
-            [NativeMethod("SetSelectedPSMBuildSubtarget")]
-            set;
-        }
 
         ///PSP2 Build Subtarget
         public static extern PSP2BuildSubtarget psp2BuildSubtarget

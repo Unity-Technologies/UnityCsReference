@@ -181,7 +181,17 @@ namespace UnityEditor
         {
             TransformManipulator.BeginManipulationHandling(false);
             EditorGUI.BeginChangeCheck();
-            Vector3 pos2 = Handles.PositionHandle(handlePosition, Tools.handleRotation);
+
+            // The AimConstraint changes the rotation of the active object as the object is moved around in the scene.
+            // This leads to very large "jumps" of the object,
+            // as the move tool assumes the handle rotation to not change while the object is dragged.
+            // Solution: when moving an object constrained with the AimConstraint, we ignore the rotation of the object.
+            Quaternion handleRotation = Tools.handleRotation;
+            var aimConstraintComponent = Selection.activeTransform.GetComponent<UnityEngine.Animations.AimConstraint>();
+            if (aimConstraintComponent != null && aimConstraintComponent.constraintActive)
+                handleRotation = TransformManipulator.mouseDownHandleRotation;
+
+            Vector3 pos2 = Handles.PositionHandle(handlePosition, handleRotation);
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
                 Vector3 delta = pos2 - TransformManipulator.mouseDownHandlePosition;

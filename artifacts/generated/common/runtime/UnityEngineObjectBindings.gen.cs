@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngineInternal;
-
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -157,6 +157,11 @@ public static Object[] FindObjectsOfTypeAll(Type type) { return Resources.FindOb
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool DoesObjectWithInstanceIDExist (int instanceID) ;
+
+    [VisibleToOtherModules]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Object FindObjectFromInstanceID (int instanceID) ;
 
 }
 

@@ -195,14 +195,8 @@ namespace UnityEngine.Experimental.UIElements
             {
                 var painterParams = painter.GetDefaultRectParameters(this);
                 painterParams.color = selectionColor;
-                painterParams.borderLeftWidth = 0.0f;
-                painterParams.borderTopWidth = 0.0f;
-                painterParams.borderRightWidth = 0.0f;
-                painterParams.borderBottomWidth = 0.0f;
-                painterParams.borderTopLeftRadius = 0.0f;
-                painterParams.borderTopRightRadius = 0.0f;
-                painterParams.borderBottomRightRadius = 0.0f;
-                painterParams.borderBottomLeftRadius = 0.0f;
+                painterParams.border.SetWidth(0.0f);
+                painterParams.border.SetRadius(0.0f);
 
                 int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
                 int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;

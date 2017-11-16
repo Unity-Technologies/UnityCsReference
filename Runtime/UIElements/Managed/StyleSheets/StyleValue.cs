@@ -34,6 +34,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         MaxWidth,
         MaxHeight,
         Flex,
+        FlexBasis,
         BorderLeftWidth,
         BorderTopWidth,
         BorderRightWidth,

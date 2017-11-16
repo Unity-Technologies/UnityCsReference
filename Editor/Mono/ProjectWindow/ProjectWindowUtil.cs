@@ -210,7 +210,7 @@ namespace UnityEditor
 
         public static void CreateScene()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture("SceneAsset Icon"), null);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
         }
 
         // Create a prefab

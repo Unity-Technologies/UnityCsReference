@@ -10,7 +10,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
     internal
-    abstract class NodeAnchorPresenter : GraphElementPresenter
+    abstract class PortPresenter : GraphElementPresenter
     {
         protected object m_Source;
         public object source
@@ -34,11 +34,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         [SerializeField]
-        private Type m_AnchorType;
-        public virtual Type anchorType
+        private Type m_PortType;
+        public virtual Type portType
         {
-            get { return m_AnchorType; }
-            set { m_AnchorType = value; }
+            get { return m_PortType; }
+            set { m_PortType = value; }
         }
 
         [SerializeField]
@@ -56,7 +56,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return m_Connections.Count != 0;
             }
         }
-        // the anchor is collapsed explicitly : it must be hidden even if the node is not collapsed
+        // the port is collapsed explicitly : it must be hidden even if the node is not collapsed
         public virtual bool collapsed
         {
             get { return false; }
@@ -77,7 +77,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (edgePresenter == null)
             {
-                throw new ArgumentException("The value passed to NodeAnchorPresenter.Connect is null");
+                throw new ArgumentException("The value passed to PortPresenter.Connect is null");
             }
 
             if (!m_Connections.Contains(edgePresenter))
@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (edgePresenter == null)
             {
-                throw new ArgumentException("The value passed to NodeAnchorPresenter.Disconnect is null");
+                throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
             }
 
             m_Connections.Remove(edgePresenter);
@@ -109,7 +109,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected new void OnEnable()
         {
             base.OnEnable();
-            m_AnchorType = typeof(object);
+            m_PortType = typeof(object);
             m_Connections = new List<EdgePresenter>();
 
             SetCapabilities();

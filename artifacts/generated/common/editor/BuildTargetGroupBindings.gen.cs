@@ -52,6 +52,7 @@ public enum BuildTargetGroup
     Tizen = 17,
     PSP2 = 18,
     PS4 = 19,
+    [System.Obsolete ("PSM has been removed in >= 5.3")]
     PSM = 20,
     XboxOne = 21,
     [System.Obsolete ("SamsungTV has been removed as of 2017.3")]

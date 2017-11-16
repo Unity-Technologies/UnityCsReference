@@ -97,7 +97,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Platforms[i++] = new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM);
             Platforms[i++] = new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne);
             Platforms[i++] = new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU);

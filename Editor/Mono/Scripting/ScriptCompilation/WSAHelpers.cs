@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Modules;
+using UnityEditor.Scripting.Compilers;
+
 namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class WSAHelpers
@@ -29,6 +32,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool useDotNetCore = dotNetCoreEnabled && (IsCSharpAssembly(scriptAssembly) || (metroCompilationOverrides != PlayerSettings.WSACompilationOverrides.UseNetCorePartially && IsCSharpFirstPassAssembly(scriptAssembly)));
 
             return useDotNetCore;
+        }
+
+        public static bool BuildingForDotNet(BuildTarget buildTarget, bool buildingForEditor, string assemblyName)
+        {
+            if (buildTarget != BuildTarget.WSAPlayer)
+                return false;
+
+            if (CSharpLanguage.GetCSharpCompiler(buildTarget, buildingForEditor, assemblyName) != CSharpCompiler.Microsoft)
+                return false;
+
+            if (PlayerSettings.GetScriptingBackend(BuildPipeline.GetBuildTargetGroup(buildTarget)) != ScriptingImplementation.WinRTDotNET)
+                return false;
+
+            return true;
         }
     }
 }

@@ -158,6 +158,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         readonly int k_FrameBorder = 30;
+        readonly float k_ContentViewWidth = 10000.0f;
 
         readonly Dictionary<int, Layer> m_ContainerLayers = new Dictionary<int, Layer>();
 
@@ -165,11 +166,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             selection = new List<ISelectable>();
             clippingOptions = ClippingOptions.ClipContents;
+
+            // Hardcode the content view width to a big value as a work around for a bug in the CSSLayout library.
+            // This is a temporary fix to case 958001.
+            // TODO: Remove hardcoded width once latest Yoga library is integrated.
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
                 clippingOptions = ClippingOptions.NoClipping,
-                pickingMode = PickingMode.Ignore
+                pickingMode = PickingMode.Ignore,
+                style = { width = k_ContentViewWidth }
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
@@ -182,7 +188,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
             nodes = this.Query<Layer>().Children<Node>().Build();
-            anchors = contentViewContainer.Query().Children<Layer>().Descendents<NodeAnchor>().Build();
+            ports = contentViewContainer.Query().Children<Layer>().Descendents<Port>().Build();
 
             m_ElementsToRemove = new List<GraphElement>();
             m_GraphViewChange.elementsToRemove = m_ElementsToRemove;
@@ -322,7 +328,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
         public UQuery.QueryState<Node> nodes { get; private set; }
-        public UQuery.QueryState<NodeAnchor> anchors;
+        public UQuery.QueryState<Port> ports;
 
         [Serializable]
         class PersistedViewTransform
@@ -376,9 +382,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return nodes.ToList().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
-        public NodeAnchor GetAnchorByGuid(string guid)
+        public Port GetPortByGuid(string guid)
         {
-            return anchors.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return ports.ToList().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
         public Edge GetEdgeByGuid(string guid)
@@ -911,12 +917,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public virtual List<NodeAnchor> GetCompatibleAnchors(NodeAnchor startAnchor, NodeAdapter nodeAdapter)
+        public virtual List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
-            return anchors.ToList().Where(nap => nap.IsConnectable() &&
-                nap.orientation == startAnchor.orientation &&
-                nap.direction != startAnchor.direction &&
-                nodeAdapter.GetAdapter(nap.source, startAnchor.source) != null)
+            return ports.ToList().Where(nap => nap.IsConnectable() &&
+                nap.orientation == startPort.orientation &&
+                nap.direction != startPort.direction &&
+                nodeAdapter.GetAdapter(nap.source, startPort.source) != null)
                 .ToList();
         }
 
@@ -998,10 +1004,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (connectorColl == null)
                     continue;
 
-                elementsToRemove.UnionWith(connectorColl.inputAnchors.SelectMany(c => c.connections)
+                elementsToRemove.UnionWith(connectorColl.inputPorts.SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElementPresenter>());
-                elementsToRemove.UnionWith(connectorColl.outputAnchors.SelectMany(c => c.connections)
+                elementsToRemove.UnionWith(connectorColl.outputPorts.SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElementPresenter>());
             }
@@ -1047,10 +1053,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (connectorColl == null)
                     continue;
 
-                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
-                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
             }

@@ -41,6 +41,7 @@ namespace UnityEditor
             public GUIContent ClampedPackingResolution = EditorGUIUtility.TextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
             public GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
             public GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
+            public GUIContent UVOverlap = EditorGUIUtility.TextContent("This GameObject has overlapping UVs. Please enable 'Generate Lightmap UVs' on the Asset or fix in your modelling package.");
             public GUIContent Atlas = EditorGUIUtility.TextContent("Baked Lightmap");
             public GUIContent RealtimeLM = EditorGUIUtility.TextContent("Realtime Lightmap");
             public GUIContent ScaleInLightmap = EditorGUIUtility.TextContent("Scale In Lightmap|Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
@@ -256,6 +257,9 @@ namespace UnityEditor
 
                 if (!HasNormals(m_Renderers[0]))
                     EditorGUILayout.HelpBox(s_Styles.NoNormalsNoLightmapping.text, MessageType.Warning);
+
+                if (LightmapEditorSettings.HasUVOverlaps(m_Renderers[0]))
+                    EditorGUILayout.HelpBox(s_Styles.UVOverlap.text, MessageType.Warning);
 
                 m_SerializedObject.ApplyModifiedProperties();
             }

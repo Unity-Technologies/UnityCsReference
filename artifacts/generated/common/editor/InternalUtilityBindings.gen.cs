@@ -633,6 +633,7 @@ internal sealed partial class TimeManager : ProjectSettingsBase
 [NativeClass(null)]
 internal sealed partial class UnityConnectSettings : ProjectSettingsBase
 {
+    private UnityConnectSettings() {}
 }
 
 [System.Obsolete("DDSImporter is obsolete. Use IHVImageFormatImporter instead (UnityUpgradable) -> IHVImageFormatImporter", true)]

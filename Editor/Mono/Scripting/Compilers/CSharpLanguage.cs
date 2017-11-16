@@ -27,7 +27,7 @@ namespace UnityEditor.Scripting.Compilers
             return "CSharp";
         }
 
-        internal static CSharpCompiler GetCSharpCompiler(BuildTarget targetPlatform, bool buildingForEditor,
+        public static CSharpCompiler GetCSharpCompiler(BuildTarget targetPlatform, bool buildingForEditor,
             string assemblyName)
         {
             var target = ModuleManager.GetTargetStringFromBuildTarget(targetPlatform);
@@ -45,6 +45,11 @@ namespace UnityEditor.Scripting.Compilers
                 default:
                     return new MonoCSharpCompiler(island, runUpdater);
             }
+        }
+
+        public override bool CompilerRequiresAdditionalReferences()
+        {
+            return true;
         }
 
         public override string GetNamespace(string fileName, string definedSymbols)

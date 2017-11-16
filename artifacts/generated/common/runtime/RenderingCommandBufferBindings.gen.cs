@@ -18,13 +18,6 @@ namespace UnityEngine.Rendering
 {
 
 
-public enum ComputeQueueType
-{
-    Default = 0,
-    Background = 1,
-    Urgent = 2
-}
-
 [UsedByNativeCode]
 public sealed partial class CommandBuffer : IDisposable
 {

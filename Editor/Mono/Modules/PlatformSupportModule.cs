@@ -241,6 +241,8 @@ namespace UnityEditor.Modules
 
         bool EnabledBuildAndRunButton();
 
+        void GetBuildButtonTitles(out GUIContent buildButtonTitle, out GUIContent buildAndRunButtonTitle);
+
         bool ShouldDrawScriptDebuggingCheckbox();
 
         bool ShouldDrawProfilerCheckbox();

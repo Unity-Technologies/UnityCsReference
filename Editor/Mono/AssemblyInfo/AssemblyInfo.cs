@@ -26,7 +26,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.PSP2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WiiU.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.PSM.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.LinuxStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]

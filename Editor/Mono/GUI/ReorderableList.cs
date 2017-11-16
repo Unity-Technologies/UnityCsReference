@@ -20,6 +20,7 @@ namespace UnityEditorInternal
         public delegate void FooterCallbackDelegate(Rect rect);
         public delegate void ElementCallbackDelegate(Rect rect, int index, bool isActive, bool isFocused);
         public delegate float ElementHeightCallbackDelegate(int index);
+        public delegate void DrawNoneElementCallback(Rect rect);
 
         public delegate void ReorderCallbackDelegate(ReorderableList list);
         public delegate void SelectCallbackDelegate(ReorderableList list);
@@ -36,6 +37,7 @@ namespace UnityEditorInternal
         public FooterCallbackDelegate drawFooterCallback = null;
         public ElementCallbackDelegate drawElementCallback;
         public ElementCallbackDelegate drawElementBackgroundCallback;
+        public DrawNoneElementCallback drawNoneElementCallback = null;
 
         // layout callbacks
         // if supplying own element heights, try to cache the results as this may be called frequently
@@ -605,7 +607,10 @@ namespace UnityEditorInternal
                 elementContentRect = elementRect;
                 elementContentRect.xMin += Defaults.padding;
                 elementContentRect.xMax -= Defaults.padding;
-                s_Defaults.DrawNoneElement(elementContentRect, m_Draggable);
+                if (drawNoneElementCallback == null)
+                    s_Defaults.DrawNoneElement(elementContentRect, m_Draggable);
+                else
+                    drawNoneElementCallback(elementContentRect);
             }
         }
 

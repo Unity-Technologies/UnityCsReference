@@ -80,7 +80,7 @@ public sealed partial class AudioImporter : AssetImporter
             if (platformGroup == BuildTargetGroup.Unknown)
             {
                 Debug.LogError("Unknown platform passed to AudioImporter.ContainsSampleSettingsOverride (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'PSM', 'XboxOne' or 'WSA'");
+                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XboxOne' or 'WSA'");
                 return false;
             }
 
@@ -98,7 +98,7 @@ public sealed partial class AudioImporter : AssetImporter
             if (platformGroup == BuildTargetGroup.Unknown)
             {
                 Debug.LogError("Unknown platform passed to AudioImporter.GetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'PSM', 'XboxOne' or 'WSA'");
+                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XboxOne' or 'WSA'");
                 return defaultSampleSettings;
             }
 
@@ -116,7 +116,7 @@ public sealed partial class AudioImporter : AssetImporter
             if (platformGroup == BuildTargetGroup.Unknown)
             {
                 Debug.LogError("Unknown platform passed to AudioImporter.SetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'PSM', 'XboxOne' or 'WSA'");
+                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XboxOne' or 'WSA'");
                 return false;
             }
 
@@ -134,7 +134,7 @@ public sealed partial class AudioImporter : AssetImporter
             if (platformGroup == BuildTargetGroup.Unknown)
             {
                 Debug.LogError("Unknown platform passed to AudioImporter.ClearSampleSettingOverride (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'PSM', 'XboxOne' or 'WSA'");
+                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XboxOne' or 'WSA'");
                 return false;
             }
 

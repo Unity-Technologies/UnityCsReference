@@ -20,30 +20,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private GraphView m_GraphView;
 
-        private NodeAnchor m_OutputAnchor;
-        private NodeAnchor m_InputAnchor;
+        private Port m_OutputPort;
+        private Port m_InputPort;
 
         private Vector2 m_CandidatePosition;
 
         public bool isGhostEdge { get; set; }
 
-        public NodeAnchor output
+        public Port output
         {
-            get { return m_OutputAnchor; }
+            get { return m_OutputPort; }
             set
             {
-                m_OutputAnchor = value;
-                OnAnchorChanged(false);
+                if (m_OutputPort != null && value != m_OutputPort)
+                {
+                    m_OutputPort.ResetCapColor();
+                }
+                m_OutputPort = value;
+                OnPortChanged(false);
             }
         }
 
-        public NodeAnchor input
+        public Port input
         {
-            get { return m_InputAnchor; }
+            get { return m_InputPort; }
             set
             {
-                m_InputAnchor = value;
-                OnAnchorChanged(true);
+                if (m_InputPort != null && value != m_InputPort)
+                {
+                    m_InputPort.ResetCapColor();
+                }
+                m_InputPort = value;
+                OnPortChanged(true);
             }
         }
 
@@ -140,7 +148,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
         }
 
-        public virtual void OnAnchorChanged(bool isInput)
+        public virtual void OnPortChanged(bool isInput)
         {
         }
 
@@ -148,7 +156,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             // bounding box check succeeded, do more fine grained check by measuring distance to bezier points
 
-            if (m_OutputAnchor == null && m_InputAnchor == null)
+            if (m_OutputPort == null && m_InputPort == null)
                 return false;
 
             if (m_GraphView == null)
@@ -164,6 +172,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             edgeControl.from = from;
             edgeControl.to = to;
 
+            edgeControl.drawFromCap = m_OutputPort == null;
+            edgeControl.drawToCap = m_InputPort == null;
+
             edgeControl.UpdateLayout();
 
             return true;
@@ -177,7 +188,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void GetFromToPoints(ref Vector2 from, ref Vector2 to)
         {
-            if (m_OutputAnchor == null && m_InputAnchor == null)
+            if (m_OutputPort == null && m_InputPort == null)
             {
                 return;
             }
@@ -185,9 +196,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_GraphView == null)
                 m_GraphView = GetFirstOfType<GraphView>();
 
-            if (m_OutputAnchor != null)
+            if (m_OutputPort != null)
             {
-                from = m_OutputAnchor.GetGlobalCenter();
+                from = m_OutputPort.GetGlobalCenter();
                 from = this.WorldToLocal(from);
             }
             else
@@ -195,9 +206,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 from = this.WorldToLocal(new Vector2(m_CandidatePosition.x, m_CandidatePosition.y));
             }
 
-            if (m_InputAnchor != null)
+            if (m_InputPort != null)
             {
-                to = m_InputAnchor.GetGlobalCenter();
+                to = m_InputPort.GetGlobalCenter();
                 to = this.WorldToLocal(to);
             }
             else
@@ -228,17 +239,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     GraphView view = GetFirstAncestorOfType<GraphView>();
                     if (view != null)
                     {
-                        output = view.Query().OfType<NodeAnchor>().Where(t => t.presenter == edgePresenter.output);
+                        output = view.Query().OfType<Port>().Where(t => t.presenter == edgePresenter.output);
                     }
                 }
+
                 if (input == null || input.presenter != edgePresenter.input)
                 {
                     GraphView view = GetFirstAncestorOfType<GraphView>();
                     if (view != null)
                     {
-                        input = view.Query().OfType<NodeAnchor>().Where(t => t.presenter == edgePresenter.input);
+                        input = view.Query().OfType<Port>().Where(t => t.presenter == edgePresenter.input);
                     }
                 }
+
                 if (edgePresenter.output != null || edgePresenter.input != null)
                     edgeControl.orientation = edgePresenter.output != null ? edgePresenter.output.orientation : edgePresenter.input.orientation;
             }
@@ -256,9 +269,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             var edgePresenter = GetPresenter<EdgePresenter>();
             if (edgePresenter == null)
-                edgeControl.endCapColor = m_InputAnchor == null ? edgeControl.startCapColor : edgeColor;
+                edgeControl.endCapColor = m_InputPort == null ? edgeControl.startCapColor : edgeColor;
             else
                 edgeControl.endCapColor = edgePresenter.input == null ? edgeControl.startCapColor : edgeColor;
+
+            if (m_InputPort != null)
+                m_InputPort.capColor = edgeControl.endCapColor;
+
+            if (m_OutputPort != null)
+                m_OutputPort.capColor = edgeControl.startCapColor;
         }
 
         protected virtual EdgeControl CreateEdgeControl()

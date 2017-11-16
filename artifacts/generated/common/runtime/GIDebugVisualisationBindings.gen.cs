@@ -25,7 +25,8 @@ public enum GITextureType
     BakedAlbedo,
     BakedEmissive,
     BakedCharting,
-    BakedTexelValidity
+    BakedTexelValidity,
+    BakedUVOverlap
 }
 
 public sealed partial class GIDebugVisualisation

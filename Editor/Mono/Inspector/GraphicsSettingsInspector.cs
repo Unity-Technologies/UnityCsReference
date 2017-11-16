@@ -153,8 +153,9 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_TransparencySortAxis);
 
                 EditorGUILayout.Space();
-                TierSettingsGUI();
             }
+
+            TierSettingsGUI();
 
             GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
             if (!usingSRP)

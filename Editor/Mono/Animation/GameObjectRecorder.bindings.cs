@@ -16,15 +16,20 @@ namespace UnityEditor.Experimental.Animations
     [NativeType]
     public class GameObjectRecorder : Object
     {
+        [Obsolete("The GameObjectRecorder constructor now takes a root GameObject", true)]
         public GameObjectRecorder()
         {
-            Internal_Create(this);
         }
 
-        extern private static void Internal_Create([Writable] GameObjectRecorder notSelf);
+        public GameObjectRecorder(GameObject root)
+        {
+            Internal_Create(this, root);
+        }
+
+        extern private static void Internal_Create([Writable] GameObjectRecorder notSelf, [NotNull] GameObject root);
 
         // Root.
-        extern public GameObject root { set; get; }
+        extern public GameObject root { get; }
 
         // Bindings.
         extern public void Bind(EditorCurveBinding binding);

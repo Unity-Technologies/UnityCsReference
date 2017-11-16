@@ -100,6 +100,8 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
+            RenderRenderingLayer();
+
             serializedObject.ApplyModifiedProperties();
         }
 

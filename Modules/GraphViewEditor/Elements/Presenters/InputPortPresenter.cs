@@ -8,7 +8,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
     internal
-    class InputNodeAnchorPresenter : NodeAnchorPresenter
+    class InputPortPresenter : PortPresenter
     {
         public override Direction direction
         {

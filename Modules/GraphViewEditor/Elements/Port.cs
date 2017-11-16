@@ -6,18 +6,38 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal
-    class NodeAnchor : GraphElement
+    class Port : GraphElement
     {
         protected EdgeConnector m_EdgeConnector;
 
         protected VisualElement m_ConnectorBox;
         protected VisualElement m_ConnectorText;
 
-        public string anchorName
+        protected Color m_HoleColor;
+        protected VisualElement m_ConnectorBoxCap;
+
+        internal Color capColor
+        {
+            get
+            {
+                if (m_ConnectorBoxCap == null)
+                    return Color.black;
+                return m_ConnectorBoxCap.style.backgroundColor;
+            }
+
+            set
+            {
+                if (m_ConnectorBoxCap != null)
+                    m_ConnectorBoxCap.style.backgroundColor = value;
+            }
+        }
+
+        public string portName
         {
             get { return m_ConnectorText.text; }
             set { m_ConnectorText.text = value; }
@@ -26,19 +46,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Direction direction { get; private set; }
         public Orientation orientation { get; private set; }
 
-        private Type m_AnchorType;
-        public Type anchorType
+        private Type m_PortType;
+        public Type portType
         {
-            get { return m_AnchorType; }
+            get { return m_PortType; }
             private set
             {
-                m_AnchorType = value;
+                m_PortType = value;
                 Type genericClass = typeof(PortSource<>);
-                Type constructedClass = genericClass.MakeGenericType(m_AnchorType);
+                Type constructedClass = genericClass.MakeGenericType(m_PortType);
                 source = Activator.CreateInstance(constructedClass);
 
                 if (string.IsNullOrEmpty(m_ConnectorText.text))
-                    m_ConnectorText.text = m_AnchorType.Name;
+                    m_ConnectorText.text = m_PortType.Name;
             }
         }
 
@@ -55,18 +75,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get
             {
                 // TODO: Remove when removing presenters.
-                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
-                if (anchorPresenter == null)
+                PortPresenter portPresenter = GetPresenter<PortPresenter>();
+                if (portPresenter == null)
                     return m_Highlight;
 
-                return anchorPresenter.highlight;
+                return portPresenter.highlight;
             }
             set
             {
                 // TODO: Remove when removing presenters.
-                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
-                if (anchorPresenter != null)
-                    anchorPresenter.highlight = value;
+                PortPresenter portPresenter = GetPresenter<PortPresenter>();
+                if (portPresenter != null)
+                    portPresenter.highlight = value;
 
                 if (m_Highlight == value)
                     return;
@@ -75,11 +95,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (m_Highlight)
                 {
-                    m_ConnectorBox.AddToClassList("anchorHighlight");
+                    m_ConnectorBox.AddToClassList("portHighlight");
                 }
                 else
                 {
-                    m_ConnectorBox.RemoveFromClassList("anchorHighlight");
+                    m_ConnectorBox.RemoveFromClassList("portHighlight");
                 }
             }
         }
@@ -98,9 +118,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get
             {
                 // TODO: Remove when removing presenters.
-                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
-                if (anchorPresenter != null)
-                    return anchorPresenter.connected;
+                PortPresenter portPresenter = GetPresenter<PortPresenter>();
+                if (portPresenter != null)
+                    return portPresenter.connected;
 
                 return m_Connections.Count > 0;
             }
@@ -111,9 +131,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get
             {
                 // TODO: Remove when removing presenters.
-                NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
-                if (anchorPresenter != null)
-                    return anchorPresenter.collapsed;
+                PortPresenter portPresenter = GetPresenter<PortPresenter>();
+                if (portPresenter != null)
+                    return portPresenter.collapsed;
 
                 return false;
             }
@@ -123,11 +143,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (edge == null)
             {
-                throw new ArgumentException("The value passed to NodeAnchor.Connect is null");
+                throw new ArgumentException("The value passed to Port.Connect is null");
             }
 
             // TODO: Remove when removing presenters.
-            var presenter = GetPresenter<NodeAnchorPresenter>();
+            var presenter = GetPresenter<PortPresenter>();
             if (presenter != null)
             {
                 var edgePresenter = edge.GetPresenter<EdgePresenter>();
@@ -145,11 +165,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (edge == null)
             {
-                throw new ArgumentException("The value passed to NodeAnchorPresenter.Disconnect is null");
+                throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
             }
 
             // TODO: Remove when removing presenters.
-            var presenter = GetPresenter<NodeAnchorPresenter>();
+            var presenter = GetPresenter<PortPresenter>();
             if (presenter != null)
             {
                 var edgePresenter = edge.GetPresenter<EdgePresenter>();
@@ -171,7 +191,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_GraphViewChange.edgesToCreate = m_EdgesToCreate;
             }
 
-            public void OnDropOutsideAnchor(Edge edge, Vector2 position) {}
+            public void OnDropOutsidePort(Edge edge, Vector2 position) {}
             public void OnDrop(GraphView graphView, Edge edge)
             {
                 m_EdgesToCreate.Clear();
@@ -195,7 +215,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         // TODO: Remove when removing presenters.
         protected class DefaultEdgePresenterConnectorListener<TEdgePresenter> : IEdgeConnectorListener where TEdgePresenter : EdgePresenter
         {
-            public void OnDropOutsideAnchor(Edge edge, Vector2 position) {}
+            public void OnDropOutsidePort(Edge edge, Vector2 position) {}
             public void OnDrop(GraphView graphView, Edge edge)
             {
                 if (graphView == null || edge == null)
@@ -212,8 +232,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     edgePresenter = ScriptableObject.CreateInstance<TEdgePresenter>();
                 }
 
-                edgePresenter.output = edge.output.GetPresenter<NodeAnchorPresenter>();
-                edgePresenter.input = edge.input.GetPresenter<NodeAnchorPresenter>();
+                edgePresenter.output = edge.output.GetPresenter<PortPresenter>();
+                edgePresenter.input = edge.input.GetPresenter<PortPresenter>();
 
                 edgePresenter.output.Connect(edgePresenter);
                 edgePresenter.input.Connect(edgePresenter);
@@ -222,38 +242,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        // TODO This is a workaround to avoid having a generic type for the anchor as generic types mess with USS.
-        public static NodeAnchor Create<TEdge>(Orientation orientation, Direction direction, Type type) where TEdge : Edge, new()
+        // TODO This is a workaround to avoid having a generic type for the port as generic types mess with USS.
+        public static Port Create<TEdge>(Orientation orientation, Direction direction, Type type) where TEdge : Edge, new()
         {
             var connectorListener = new DefaultEdgeConnectorListener();
-            var anchor = new NodeAnchor(orientation, direction, type)
+            var port = new Port(orientation, direction, type)
             {
                 m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
             };
-            anchor.AddManipulator(anchor.m_EdgeConnector);
-            return anchor;
+            port.AddManipulator(port.m_EdgeConnector);
+            return port;
         }
 
         // TODO: Remove when removing presenters.
-        public static NodeAnchor Create<TEdgePresenter, TEdge>(NodeAnchorPresenter presenter)
+        public static Port Create<TEdgePresenter, TEdge>(PortPresenter presenter)
             where TEdgePresenter : EdgePresenter
             where TEdge : Edge, new()
         {
             var connectorListener = new DefaultEdgePresenterConnectorListener<TEdgePresenter>();
-            var anchor = new NodeAnchor(Orientation.Horizontal, Direction.Input, typeof(object))
+            var port = new Port(Orientation.Horizontal, Direction.Input, typeof(object))
             {
                 m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
                 presenter = presenter
             };
-            anchor.AddManipulator(anchor.m_EdgeConnector);
-            return anchor;
+            port.AddManipulator(port.m_EdgeConnector);
+            return port;
         }
 
         public virtual void UpdateClasses(bool fakeConnection)
         {
-            NodeAnchorPresenter anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+            PortPresenter portPresenter = GetPresenter<PortPresenter>();
 
-            if (anchorPresenter.connected || fakeConnection)
+            if (portPresenter.connected || fakeConnection)
             {
                 AddToClassList("connected");
             }
@@ -268,12 +288,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return new VisualElement();
         }
 
-        protected NodeAnchor(Orientation anchorOrientation, Direction anchorDirection, Type type)
+        protected Port(Orientation portOrientation, Direction portDirection, Type type)
         {
             // currently we don't want to be styled as .graphElement since we're contained in a Node
             ClearClassList();
 
-            var tpl = EditorGUIUtility.Load("UXML/GraphView/NodeAnchor.uxml") as VisualTreeAsset;
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/Port.uxml") as VisualTreeAsset;
             tpl.CloneTree(this, null);
             m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorBox.AddToClassList("connector");
@@ -281,11 +301,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ConnectorText = this.Q(name: "type");
             m_ConnectorText.AddToClassList("type");
 
+            m_ConnectorBoxCap = this.Q(name: "cap");
+
+            VisualElement hole = this.Q(name: "hole");
+            if (hole != null)
+            {
+                m_HoleColor = hole.style.backgroundColor;
+            }
+
             m_Connections = new HashSet<Edge>();
 
-            orientation = anchorOrientation;
-            direction = anchorDirection;
-            anchorType = type;
+            orientation = portOrientation;
+            direction = portDirection;
+            portType = type;
         }
 
         private void UpdateConnector()
@@ -293,11 +321,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_EdgeConnector == null)
                 return;
 
-            var anchorPresenter = GetPresenter<NodeAnchorPresenter>();
+            var portPresenter = GetPresenter<PortPresenter>();
 
             if (m_EdgeConnector.target == null || !m_EdgeConnector.target.HasMouseCapture())  // if the edge connector has capture, it means that an edge is being created. so don't remove the manipulator at the moment.
             {
-                if (!anchorPresenter.connected || anchorPresenter.direction != Direction.Input)
+                if (!portPresenter.connected || portPresenter.direction != Direction.Input)
                 {
                     this.AddManipulator(m_EdgeConnector);
                 }
@@ -310,15 +338,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Node node
         {
-            get { return this.GetFirstAncestorOfType<Node>(); }
+            get { return GetFirstAncestorOfType<Node>(); }
         }
 
         public bool IsConnectable()
         {
             // TODO: Remove when removing presenters.
-            NodeAnchorPresenter anchorPresenter = presenter as NodeAnchorPresenter;
-            if (anchorPresenter != null)
-                return anchorPresenter.IsConnectable();
+            PortPresenter portPresenter = presenter as PortPresenter;
+            if (portPresenter != null)
+                return portPresenter.IsConnectable();
 
             return true;
         }
@@ -328,38 +356,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             UpdateConnector();
             UpdateClasses(false);
 
-            var anchorPresenter = GetPresenter<NodeAnchorPresenter>();
-            Type anchorType = anchorPresenter.anchorType;
+            var portPresenter = GetPresenter<PortPresenter>();
+            Type portType = portPresenter.portType;
             Type genericClass = typeof(PortSource<>);
             try
             {
-                Type constructedClass = genericClass.MakeGenericType(anchorType);
-                anchorPresenter.source = Activator.CreateInstance(constructedClass);
+                Type constructedClass = genericClass.MakeGenericType(portType);
+                portPresenter.source = Activator.CreateInstance(constructedClass);
             }
             catch (Exception e)
             {
-                Debug.Log("Couldn't build PortSouce<" + (anchorType == null ? "null" : anchorType.Name) + "> " + e.Message);
+                Debug.Log("Couldn't build PortSouce<" + (portType == null ? "null" : portType.Name) + "> " + e.Message);
             }
 
-            if (anchorPresenter.highlight)
+            if (portPresenter.highlight)
             {
-                m_ConnectorBox.AddToClassList("anchorHighlight");
+                m_ConnectorBox.AddToClassList("portHighlight");
             }
             else
             {
-                m_ConnectorBox.RemoveFromClassList("anchorHighlight");
+                m_ConnectorBox.RemoveFromClassList("portHighlight");
             }
 
-            string anchorName = string.IsNullOrEmpty(anchorPresenter.name) ? anchorType.Name : anchorPresenter.name;
-            m_ConnectorText.text = anchorName;
+            string portName = string.IsNullOrEmpty(portPresenter.name) ? portType.Name : portPresenter.name;
+            m_ConnectorText.text = portName;
 
-            anchorPresenter.capabilities &= ~Capabilities.Selectable;
+            portPresenter.capabilities &= ~Capabilities.Selectable;
 
             // Cache some stuff for easier access from the outside.
-            direction = anchorPresenter.direction;
-            orientation = anchorPresenter.orientation;
-            anchorType = anchorPresenter.anchorType;
-            source = anchorPresenter.source;
+            direction = portPresenter.direction;
+            orientation = portPresenter.orientation;
+            portType = portPresenter.portType;
+            source = portPresenter.source;
         }
 
         public override Vector3 GetGlobalCenter()
@@ -370,6 +398,37 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public override bool ContainsPoint(Vector2 localPoint)
         {
             return m_ConnectorBox.ContainsPoint(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));
+        }
+
+        internal void ResetCapColor()
+        {
+            m_ConnectorBoxCap.style.backgroundColor = StyleValue<Color>.nil;
+        }
+
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            {
+                m_ConnectorBox.pseudoStates |= PseudoStates.Hover;
+                m_ConnectorBoxCap.pseudoStates |= PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+            {
+                m_ConnectorBox.pseudoStates &= ~PseudoStates.Hover;
+                m_ConnectorBoxCap.pseudoStates &= ~PseudoStates.Hover;
+            }
+            else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+            {
+                // When an edge connect ends, we need to clear out the hover states
+                var mouseUp = (MouseUpEvent)evt;
+                if (!layout.Contains(mouseUp.localMousePosition))
+                {
+                    m_ConnectorBox.pseudoStates &= ~PseudoStates.Hover;
+                    m_ConnectorBoxCap.pseudoStates &= ~PseudoStates.Hover;
+                }
+            }
         }
     }
 }

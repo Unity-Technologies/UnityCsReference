@@ -2,12 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-
 using UnityEngine;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -39,6 +35,8 @@ namespace UnityEditor
             DrawPropertiesExcluding(serializedObject, m_ExcludedProperties);
 
             m_Probes.OnGUI(targets, (Renderer)target, false);
+
+            RenderRenderingLayer();
 
             serializedObject.ApplyModifiedProperties();
         }

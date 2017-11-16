@@ -41,7 +41,6 @@ namespace UnityEditor
             public GUIContent platformTitle = EditorGUIUtility.TextContent("Platform|Which platform to build for");
             public GUIContent switchPlatform = EditorGUIUtility.TextContent("Switch Platform");
             public GUIContent build = EditorGUIUtility.TextContent("Build");
-            public GUIContent export = EditorGUIUtility.TextContent("Export");
             public GUIContent buildAndRun = EditorGUIUtility.TextContent("Build And Run");
             public GUIContent scenesInBuild = EditorGUIUtility.TextContent("Scenes In Build|Which scenes to include in the build");
 
@@ -857,10 +856,13 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            GUIContent buildButton = styles.build;
-            if (platform.targetGroup == BuildTargetGroup.Android
-                && EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                buildButton = styles.export;
+            GUIContent buildButton = null;
+            GUIContent buildAndRunButton = null;
+            if (buildWindowExtension != null)
+                buildWindowExtension.GetBuildButtonTitles(out buildButton, out buildAndRunButton);
+
+            buildButton = buildButton ?? styles.build;
+            buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
 
             // Build Button
             GUI.enabled = enableBuildButton;
@@ -871,7 +873,7 @@ namespace UnityEditor
             }
             // Build and Run button
             GUI.enabled = enableBuildAndRunButton;
-            if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
+            if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
                 BuildPlayerAndRun(true);
                 GUIUtility.ExitGUI();

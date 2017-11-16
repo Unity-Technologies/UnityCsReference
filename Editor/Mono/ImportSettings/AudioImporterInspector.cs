@@ -432,8 +432,7 @@ namespace UnityEditor
 
             allowedFormats.Add(AudioCompressionFormat.PCM);
 
-            if (platform != BuildTargetGroup.PSM && // Currently Vorbis is not supported on Vita
-                platform != BuildTargetGroup.PSP2)
+            if (platform != BuildTargetGroup.PSP2) // Currently Vorbis is not supported on Vita
             {
                 allowedFormats.Add(AudioCompressionFormat.Vorbis);
             }
@@ -448,9 +447,6 @@ namespace UnityEditor
             {
                 allowedFormats.Add(AudioCompressionFormat.MP3);
             }
-
-            if (platform == BuildTargetGroup.PSM)
-                allowedFormats.Add(AudioCompressionFormat.VAG);
 
             if (platform == BuildTargetGroup.PSP2)
             {

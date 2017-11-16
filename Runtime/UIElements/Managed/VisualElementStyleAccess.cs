@@ -111,6 +111,20 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+
+        StyleValue<float> IStyle.flexBasis
+        {
+            get { return effectiveStyle.flexBasis; }
+            set
+            {
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexBasis, value))
+                {
+                    Dirty(ChangeType.Layout);
+                    cssNode.FlexBasis = value.value;
+                }
+            }
+        }
+
         StyleValue<Overflow> IStyle.overflow
         {
             get
@@ -600,7 +614,12 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.backgroundColor; }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundColor, value))
+                if (value.specificity == 0 && value == default(Color))
+                {
+                    inlineStyle.backgroundColor = sharedStyle.backgroundColor;
+                    Dirty(ChangeType.Repaint);
+                }
+                else if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }

@@ -9,6 +9,7 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 
 namespace UnityEngine
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct Bounds
     {
         private Vector3 m_Center;
@@ -105,6 +106,10 @@ namespace UnityEngine
                 (min.y <= bounds.max.y) && (max.y >= bounds.min.y) &&
                 (min.z <= bounds.max.z) && (max.z >= bounds.min.z);
         }
+
+        public bool IntersectRay(Ray ray) { float dist; return IntersectRayAABB(ray, this, out dist); }
+        public bool IntersectRay(Ray ray, out float distance) { return IntersectRayAABB(ray, this, out distance); }
+
 
         /// *listonly*
         override public string ToString()

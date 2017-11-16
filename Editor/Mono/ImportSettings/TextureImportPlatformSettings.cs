@@ -415,7 +415,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
         };
 
         public static readonly int[] kTextureFormatsValueAndroid =
@@ -457,7 +458,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
         };
 
         public static readonly int[] kTextureFormatsValueTizen =

@@ -7,8 +7,9 @@ using uei=UnityEngine.Internal;
 using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
-using UnityEngine;
 using System.Linq;
+using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor
 {

@@ -48,7 +48,7 @@ namespace UnityEditor
             return new Rect(totalPosition.x + EditorGUIUtility.labelWidth, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth, totalPosition.height);
         }
 
-        protected static Rect PrefixLabel(Rect totalPosition, GUIContent label)
+        internal static Rect PrefixLabel(Rect totalPosition, GUIContent label)
         {
             if (!EditorGUI.LabelHasContent(label))
                 return EditorGUI.IndentedRect(totalPosition);

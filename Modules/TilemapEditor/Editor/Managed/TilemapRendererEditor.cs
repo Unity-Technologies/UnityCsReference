@@ -40,6 +40,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(m_MaskInteraction);
+            RenderRenderingLayer();
             serializedObject.ApplyModifiedProperties();
         }
     }

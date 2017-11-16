@@ -11,7 +11,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     internal
     interface IEdgeConnectorListener
     {
-        void OnDropOutsideAnchor(Edge edge, Vector2 position);
+        void OnDropOutsidePort(Edge edge, Vector2 position);
         void OnDrop(GraphView graphView, Edge edge);
     }
 
@@ -66,14 +66,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            var graphElement = e.target as NodeAnchor;
+            var graphElement = e.target as Port;
             if (graphElement == null)
             {
                 return;
             }
 
             m_EdgeCandidate = new TEdge();
-            m_EdgeDragHelper.draggedNodeAnchor = graphElement;
+            m_EdgeDragHelper.draggedPort = graphElement;
             m_EdgeDragHelper.edgeCandidate = m_EdgeCandidate;
 
             if (m_EdgeDragHelper.HandleMouseDown(e))
@@ -117,7 +117,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (e.keyCode != KeyCode.Escape || !m_Active)
                 return;
 
-            var graphElement = e.target as NodeAnchor;
+            var graphElement = e.target as Port;
             var graphView = graphElement.GetFirstAncestorOfType<GraphView>();
             graphView.RemoveElement(m_EdgeCandidate);
 

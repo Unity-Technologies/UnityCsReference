@@ -22,3 +22,6 @@ using System.Runtime.CompilerServices;
 
 // needed for UnityEngine.UnsafeUtility (this probably should not live in Core module!)
 [assembly: InternalsVisibleTo("UnityEngine.InputModule")]
+
+// needed for UnityEngine.UnsafeUtility and Object.FindObjectFromInstanceID.
+[assembly: InternalsVisibleTo("UnityEngine.Physics2DModule")]

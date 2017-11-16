@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements
             double v = value;
             v += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
             v = MathUtils.RoundBasedOnMinimumDifference(v, sensitivity);
-            value = v;
+            SetValueAndNotify(v);
         }
 
         protected override string ValueToString(double v)

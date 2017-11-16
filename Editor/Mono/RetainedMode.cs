@@ -24,7 +24,7 @@ namespace UnityEditor
         }
 
         static HashSet<Object> s_TmpDirtySet = new HashSet<Object>();
-
+        static bool s_FontInitialized = false;
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
@@ -33,6 +33,11 @@ namespace UnityEditor
 
         static void OnBeginContainer(IMGUIContainer c)
         {
+            if (!s_FontInitialized)
+            {
+                s_FontInitialized = true;
+                LocalizedEditorFontManager.LocalizeEditorFonts();
+            }
             HandleUtility.BeginHandles();
         }
 

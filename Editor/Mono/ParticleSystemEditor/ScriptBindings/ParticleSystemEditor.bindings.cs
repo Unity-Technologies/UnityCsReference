@@ -11,6 +11,7 @@ namespace UnityEditor
 {
     [NativeHeader("Runtime/ParticleSystem/ParticleSystem.h")]
     [NativeHeader("Editor/Src/ParticleSystem/ParticleSystemEditor.h")]
+    [NativeHeader("ParticleSystemScriptingClasses.h")]
     [StaticAccessor("ParticleSystemEditor", StaticAccessorType.DoubleColon)]
     internal static class ParticleSystemEditorUtils
     {

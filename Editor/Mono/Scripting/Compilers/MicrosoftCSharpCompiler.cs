@@ -20,40 +20,12 @@ namespace UnityEditor.Scripting.Compilers
 
         private BuildTarget BuildTarget { get { return _island._target; } }
 
-        private static string[] GetReferencesFromMonoDistribution()
-        {
-            return new[]
-            {
-                "mscorlib.dll",
-                "System.dll",
-                "System.Core.dll",
-                "System.Runtime.Serialization.dll",
-                "System.Xml.dll",
-                "System.Xml.Linq.dll",
-                "UnityScript.dll",
-                "UnityScript.Lang.dll",
-                "Boo.Lang.dll",
-            };
-        }
-
         private string[] GetClassLibraries()
         {
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
             if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
             {
-                var monoAssemblyDirectory = GetMonoProfileLibDirectory();
-                var classLibraries = new List<string>();
-                classLibraries.AddRange(GetReferencesFromMonoDistribution().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
-
-                if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                {
-                    // Assemblies compiled against .NET 4.6 in Visual Studio might reference facade DLLs. Therefore we
-                    // need to reference them too, as otherwise compiler will complain about them being missing.
-                    var facadesDirectory = Path.Combine(monoAssemblyDirectory, "Facades");
-                    classLibraries.AddRange(Directory.GetFiles(facadesDirectory, "*.dll"));
-                }
-
-                return classLibraries.ToArray();
+                return new string[] {};
             }
 
             if (BuildTarget != BuildTarget.WSAPlayer)

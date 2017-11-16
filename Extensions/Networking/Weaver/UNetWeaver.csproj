@@ -16,7 +16,7 @@
     <DebugType>full</DebugType>
     <Optimize>False</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="MessageClassProcessor.cs" />
     <Compile Include="MonoBehaviourProcessor.cs" />
     <Compile Include="Program.cs" />
@@ -53,7 +54,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UNetWeaver.cs" />
-    <Compile Include="Helpers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

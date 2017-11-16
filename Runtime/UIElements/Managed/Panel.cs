@@ -451,6 +451,9 @@ namespace UnityEngine.Experimental.UIElements
 
         private void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
         {
+            if (root == null || root.panel != this)
+                return;
+
             if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible ||
                 root.style.opacity.GetSpecifiedValueOrDefault(1.0f) < Mathf.Epsilon)
                 return;
@@ -502,8 +505,6 @@ namespace UnityEngine.Experimental.UIElements
                     cache = root.renderData.pixelCache = null;
                 }
 
-                float oldOpacity = stylePainter.opacity;
-
                 // if the child node world transforms are not up to date due to changes below the pixel cache this is fine.
                 if (root.IsDirty(ChangeType.Repaint)
                     || root.renderData.pixelCache == null)
@@ -519,30 +520,83 @@ namespace UnityEngine.Experimental.UIElements
                                     RenderTextureReadWrite.Linear);
                     }
 
-                    // render sub tree to texture
+
+                    bool hasRoundedBorderRects = (root.style.borderTopLeftRadius > 0 ||
+                                                  root.style.borderTopRightRadius > 0 ||
+                                                  root.style.borderBottomLeftRadius > 0 ||
+                                                  root.style.borderBottomRightRadius > 0);
+
+                    RenderTexture temporaryTexture = null;
                     var old = RenderTexture.active;
-                    RenderTexture.active = cache;
 
-                    GL.Clear(true, true, new Color(0, 0, 0, 0));
-
-                    // fix up transform for subtree to match texture upper left
-                    offset = Matrix4x4.Translate(new Vector3(-worldBound.x, -worldBound.y, 0));
-
-                    // reset clipping
-                    var textureClip = new Rect(0, 0, w, h);
-                    painter.currentTransform = offset * root.worldTransform;
-
-                    using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
+                    try
                     {
-                        // paint self
-                        painter.currentWorldClip = textureClip;
-                        root.DoRepaint(painter);
-                        root.ClearDirty(ChangeType.Repaint);
+                        //we first render to a temp texture, then blit the result into the result pixelCache again to mask the rounder corners
+                        if (hasRoundedBorderRects)
+                        {
+                            temporaryTexture = cache = RenderTexture.GetTemporary(textureWidth, textureHeight, 32,
+                                        RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                        }
 
-                        PaintSubTreeChildren(e, root, offset, textureClip);
+
+                        // render the texture again to clip the round rect borders
+                        RenderTexture.active = cache;
+
+                        GL.Clear(true, true, new Color(0, 0, 0, 0));
+                        // fix up transform for subtree to match texture upper left
+                        offset = Matrix4x4.Translate(new Vector3(-worldBound.x, -worldBound.y, 0));
+
+                        // reset clipping
+                        var textureClip = new Rect(0, 0, w, h);
+                        painter.currentTransform = offset * root.worldTransform;
+
+                        using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
+                        {
+                            // paint self
+                            painter.currentWorldClip = textureClip;
+                            root.DoRepaint(painter);
+                            root.ClearDirty(ChangeType.Repaint);
+
+                            PaintSubTreeChildren(e, root, offset, textureClip);
+                        }
+
+                        //#region round border clipping
+                        if (hasRoundedBorderRects)
+                        {
+                            RenderTexture newCache = root.renderData.pixelCache;
+
+                            RenderTexture.active = newCache;
+
+                            // fix up transform for subtree to match texture upper left
+                            painter.currentTransform = offset * root.worldTransform;
+
+                            using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
+                            {
+                                GL.Clear(true, true, new Color(0, 0, 0, 0));
+
+                                var textureParams = painter.GetDefaultTextureParameters(root);
+                                textureParams.texture = cache;
+                                textureParams.scaleMode = ScaleMode.StretchToFill;
+
+                                textureParams.border.SetWidth(0.0f);
+
+                                //we blit the texture, clipping the round corners
+                                painter.DrawTexture(textureParams);
+
+                                //we draw the border again
+                                painter.DrawBorder(root);
+                            }
+                        }
                     }
-
-                    RenderTexture.active = old;
+                    finally
+                    {
+                        if (temporaryTexture != null)
+                        {
+                            RenderTexture.ReleaseTemporary(temporaryTexture);
+                        }
+                        RenderTexture.active = old;
+                    }
+                    //#endregion
                 }
 
                 // now actually paint the texture to previous group

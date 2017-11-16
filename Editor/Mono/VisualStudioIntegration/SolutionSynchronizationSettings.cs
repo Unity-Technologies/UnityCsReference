@@ -129,7 +129,7 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  </PropertyGroup>",
                 @"  <ItemGroup>",
                 @"    <Reference Include=""System"" />",
-                @"    <Reference Include=""System.XML"" />",
+                @"    <Reference Include=""System.Xml"" />",
                 @"    <Reference Include=""System.Core"" />",
                 @"    <Reference Include=""System.Runtime.Serialization"" />",
                 @"    <Reference Include=""System.Xml.Linq"" />",

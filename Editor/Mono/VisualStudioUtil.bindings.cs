@@ -2,23 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using scm=System.ComponentModel;
-using uei=UnityEngine.Internal;
-using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
-
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditorInternal
 {
-
-
-internal static partial class VisualStudioUtil
-{
-    public class VisualStudio
+    //*undocumented*
+    [NativeType(Header = "Editor/Platform/Windows/VisualStudioUtilities.h")]
+    internal static class VisualStudioUtil
+    {
+        public class VisualStudio
         {
             public readonly string DevEnvPath;
             public readonly string Edition;
@@ -32,11 +27,9 @@ internal static partial class VisualStudioUtil
                 Version = version;
                 Workloads = workloads;
             }
-
         }
-    
-    
-    public static IEnumerable<VisualStudio> ParseRawDevEnvPaths(string[] rawDevEnvPaths)
+
+        public static IEnumerable<VisualStudio> ParseRawDevEnvPaths(string[] rawDevEnvPaths)
         {
             if (rawDevEnvPaths != null)
             {
@@ -50,13 +43,9 @@ internal static partial class VisualStudioUtil
                 }
             }
         }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  string[] FindVisualStudioDevEnvPaths (int visualStudioVersion, string[] requiredWorkloads) ;
 
-}
-
-
+        [FreeFunction("VisualStudioUtilities::FindVisualStudioDevEnvPaths")]
+        [NativeConditional("UNITY_WIN")]
+        internal extern static string[] FindVisualStudioDevEnvPaths(int visualStudioVersion, string[] requiredWorkloads);
+    }
 }
