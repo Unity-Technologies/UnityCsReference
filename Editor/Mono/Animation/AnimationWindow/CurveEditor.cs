@@ -24,8 +24,6 @@ namespace UnityEditor
         bool clipIsEditable { get; }
         bool animationIsEditable { get; }
 
-        float timeOffset { get; }
-
         int id { get; }
     }
 
@@ -69,7 +67,6 @@ namespace UnityEditor
 
         public GameObject rootGameObjet { get { return m_SelectionBinding != null ? m_SelectionBinding.rootGameObject : null; } }
         public AnimationClip animationClip { get { return m_SelectionBinding != null ? m_SelectionBinding.animationClip : null; } }
-        public float timeOffset { get { return m_SelectionBinding != null ? m_SelectionBinding.timeOffset : 0.0f; } }
         public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
         public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
         public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }
@@ -318,41 +315,6 @@ namespace UnityEditor
 
                 return TimeArea.TimeFormat.None;
             }
-        }
-
-        private Matrix4x4 TimeOffsetMatrix(CurveWrapper cw)
-        {
-            return Matrix4x4.TRS(new Vector3(cw.timeOffset * m_Scale.x, 0.0f, 0.0f), Quaternion.identity, Vector3.one);
-        }
-
-        private Matrix4x4 DrawingToOffsetViewMatrix(CurveWrapper cw)
-        {
-            return TimeOffsetMatrix(cw) * drawingToViewMatrix;
-        }
-
-        private Vector2 DrawingToOffsetViewTransformPoint(CurveWrapper cw, Vector2 lhs)
-        {
-            return new Vector2(lhs.x * m_Scale.x + m_Translation.x + cw.timeOffset * m_Scale.x, lhs.y * m_Scale.y + m_Translation.y);
-        }
-
-        private Vector3 DrawingToOffsetViewTransformPoint(CurveWrapper cw, Vector3 lhs)
-        {
-            return new Vector3(lhs.x * m_Scale.x + m_Translation.x + cw.timeOffset * m_Scale.x, lhs.y * m_Scale.y + m_Translation.y, 0);
-        }
-
-        private Vector2 OffsetViewToDrawingTransformPoint(CurveWrapper cw, Vector2 lhs)
-        {
-            return new Vector2((lhs.x - m_Translation.x - cw.timeOffset * m_Scale.x) / m_Scale.x , (lhs.y - m_Translation.y) / m_Scale.y);
-        }
-
-        private Vector3 OffsetViewToDrawingTransformPoint(CurveWrapper cw, Vector3 lhs)
-        {
-            return new Vector3((lhs.x - m_Translation.x - cw.timeOffset * m_Scale.x) / m_Scale.x , (lhs.y - m_Translation.y) / m_Scale.y, 0);
-        }
-
-        private Vector2 OffsetMousePositionInDrawing(CurveWrapper cw)
-        {
-            return OffsetViewToDrawingTransformPoint(cw, Event.current.mousePosition);
         }
 
         internal Bounds m_DefaultBounds = new Bounds(new Vector3(0.5f, 0.5f, 0), new Vector3(1, 1, 0));
@@ -817,16 +779,13 @@ namespace UnityEditor
             {
                 List<CurveSelection> selected = selectedCurves;
 
-                CurveWrapper curveWrapper = GetCurveWrapperFromSelection(selected[0]);
-                float timeOffset = (curveWrapper != null) ? curveWrapper.timeOffset : 0f;
-
                 Keyframe keyframe = GetKeyframeFromSelection(selected[0]);
-                m_SelectionBounds = new Bounds(new Vector2(keyframe.time + timeOffset, keyframe.value), Vector2.zero);
+                m_SelectionBounds = new Bounds(new Vector2(keyframe.time, keyframe.value), Vector2.zero);
 
                 for (int i = 1; i < selected.Count; ++i)
                 {
                     keyframe = GetKeyframeFromSelection(selected[i]);
-                    m_SelectionBounds.Encapsulate(new Vector2(keyframe.time + timeOffset, keyframe.value));
+                    m_SelectionBounds.Encapsulate(new Vector2(keyframe.time, keyframe.value));
                 }
             }
             else
@@ -1040,7 +999,7 @@ namespace UnityEditor
                         if (isEditable)
                         {
                             menu.AddItem(new GUIContent(deleteKeyLabel), false, DeleteKeys, keyList);
-                            menu.AddItem(new GUIContent(editKeyLabel), false, StartEditingSelectedPointsContext, OffsetMousePositionInDrawing(GetCurveWrapperFromSelection(mouseKey)));
+                            menu.AddItem(new GUIContent(editKeyLabel), false, StartEditingSelectedPointsContext, mousePositionInDrawing);
                         }
                         else
                         {
@@ -1194,7 +1153,7 @@ namespace UnityEditor
                             if (IsLeftTangentEditable(cs))
                             {
                                 CurveSelection tangent = new CurveSelection(cs.curveID, cs.key, CurveSelection.SelectionType.InTangent);
-                                float d = (DrawingToOffsetViewTransformPoint(curveWrapper, GetPosition(tangent)) - mousePos).sqrMagnitude;
+                                float d = (DrawingToViewTransformPoint(GetPosition(tangent)) - mousePos).sqrMagnitude;
                                 if (d <= nearestDist)
                                 {
                                     m_SelectedTangentPoint = tangent;
@@ -1205,7 +1164,7 @@ namespace UnityEditor
                             if (IsRightTangentEditable(cs))
                             {
                                 CurveSelection tangent = new CurveSelection(cs.curveID, cs.key, CurveSelection.SelectionType.OutTangent);
-                                float d = (DrawingToOffsetViewTransformPoint(curveWrapper, GetPosition(tangent)) - mousePos).sqrMagnitude;
+                                float d = (DrawingToViewTransformPoint(GetPosition(tangent)) - mousePos).sqrMagnitude;
                                 if (d <= nearestDist)
                                 {
                                     m_SelectedTangentPoint = tangent;
@@ -1232,7 +1191,7 @@ namespace UnityEditor
 
                         if ((curveWrapper != null) && curveWrapper.animationIsEditable)
                         {
-                            Vector2 newPosition = OffsetMousePositionInDrawing(curveWrapper);
+                            Vector2 newPosition = mousePositionInDrawing;
                             Keyframe key = GetKeyframeFromSelection(dragged);
 
                             if (dragged.type == CurveSelection.SelectionType.InTangent)
@@ -1714,7 +1673,7 @@ namespace UnityEditor
 
         Vector2 GetGUIPoint(CurveWrapper cw, Vector3 point)
         {
-            return HandleUtility.WorldToGUIPoint(DrawingToOffsetViewTransformPoint(cw, point));
+            return HandleUtility.WorldToGUIPoint(DrawingToViewTransformPoint(point));
         }
 
         Rect GetWorldRect(CurveWrapper cw, Rect rect)
@@ -1728,7 +1687,7 @@ namespace UnityEditor
 
         Vector2 GetWorldPoint(CurveWrapper cw, Vector2 point)
         {
-            return OffsetViewToDrawingTransformPoint(cw, point);
+            return ViewToDrawingTransformPoint(point);
         }
 
         Rect GetCurveRect(CurveWrapper cw)
@@ -1761,6 +1720,8 @@ namespace UnityEditor
         // Returns an index into m_AnimationCurves
         int GetCurveAtPosition(Vector2 viewPos, out Vector2 closestPointOnCurve)
         {
+            Vector2 localPos = ViewToDrawingTransformPoint(viewPos);
+
             // Find the closest curve at the time corresponding to the position
             int maxPixelDist = (int)Mathf.Sqrt(kMaxPickDistSqr);
             float smallestDist = kMaxPickDistSqr;
@@ -1775,20 +1736,18 @@ namespace UnityEditor
                 if (wrapper.hidden || wrapper.readOnly)
                     continue;
 
-                Vector2 localPos = OffsetViewToDrawingTransformPoint(wrapper, viewPos);
-
                 // Sample the curves at pixel intervals in the area around the desired time,
                 // corresponding to the max cursor distance allowed.
                 Vector2 valL;
                 valL.x = localPos.x - maxPixelDist / scale.x;
                 valL.y = wrapper.renderer.EvaluateCurveSlow(valL.x);
-                valL = DrawingToOffsetViewTransformPoint(wrapper, valL);
+                valL = DrawingToViewTransformPoint(valL);
                 for (int x = -maxPixelDist; x < maxPixelDist; x++)
                 {
                     Vector2 valR;
                     valR.x = localPos.x + (x + 1) / scale.x;
                     valR.y = wrapper.renderer.EvaluateCurveSlow(valR.x);
-                    valR = DrawingToOffsetViewTransformPoint(wrapper, valR);
+                    valR = DrawingToViewTransformPoint(valR);
 
                     float dist = HandleUtility.DistancePointLine(viewPos, valL, valR);
                     dist = dist * dist;
@@ -1804,7 +1763,7 @@ namespace UnityEditor
             }
 
             if (closest >= 0)
-                closestPointOnCurve = OffsetViewToDrawingTransformPoint(m_AnimationCurves[closest], closestPointOnCurve);
+                closestPointOnCurve = ViewToDrawingTransformPoint(closestPointOnCurve);
             return closest;
         }
 
@@ -1829,8 +1788,8 @@ namespace UnityEditor
                 // If there is only one curve, allow creating keys on it by double/right-clicking anywhere
                 // if the click is to the left or right of the existing keys, or if there are no existing keys.
                 CurveWrapper cw = m_AnimationCurves[singleCurveIndex];
-                Vector2 localPos = OffsetViewToDrawingTransformPoint(cw, viewPos);
-                float time = localPos.x - cw.timeOffset;
+                Vector2 localPos = ViewToDrawingTransformPoint(viewPos);
+                float time = localPos.x;
                 if (cw.curve.keys.Length == 0 || time < cw.curve.keys[0].time || time > cw.curve.keys[cw.curve.keys.Length - 1].time)
                 {
                     if (CreateKeyFromClick(singleCurveIndex, localPos))
@@ -2121,7 +2080,7 @@ namespace UnityEditor
             if (clickedCurveIndex >= 0)
             {
                 MoveCurveToFront(m_AnimationCurves[clickedCurveIndex].id);
-                timeValue = OffsetMousePositionInDrawing(m_AnimationCurves[clickedCurveIndex]);
+                timeValue = mousePositionInDrawing;
                 curves = new[] { m_AnimationCurves[clickedCurveIndex] };
                 return true;
             }
@@ -2144,19 +2103,18 @@ namespace UnityEditor
 
                 if (IsRegion(cw, cw2))
                 {
-                    Vector2 localPos1 = OffsetMousePositionInDrawing(cw);
-                    Vector2 localPos2 = OffsetMousePositionInDrawing(cw2);
-
-                    float v1 = cw.renderer.EvaluateCurveSlow(localPos1.x);
-                    float v2 = cw2.renderer.EvaluateCurveSlow(localPos2.x);
+                    float mouseY = mousePositionInDrawing.y;
+                    float time = mousePositionInDrawing.x;
+                    float v1 = cw.renderer.EvaluateCurveSlow(time);
+                    float v2 = cw2.renderer.EvaluateCurveSlow(time);
                     if (v1 > v2)
                     {
                         float tmp = v1;
                         v1 = v2; v2 = tmp;
                     }
-                    if (localPos1.y >= v1 && localPos1.y <= v2)
+                    if (mouseY >= v1 && mouseY <= v2)
                     {
-                        timeValue = localPos1;
+                        timeValue = mousePositionInDrawing;
                         curves = new[] {cw, cw2};
                         MoveCurveToFront(cw.id);
                         return true;
@@ -2798,7 +2756,7 @@ namespace UnityEditor
                             if ((curveWrapper == null) || curveWrapper.hidden)
                                 continue;
 
-                            if ((DrawingToOffsetViewTransformPoint(curveWrapper, GetPosition(cs)) - evt.mousePosition).sqrMagnitude <= kMaxPickDistSqr)
+                            if ((DrawingToViewTransformPoint(GetPosition(cs)) - evt.mousePosition).sqrMagnitude <= kMaxPickDistSqr)
                             {
                                 Keyframe keyframe = GetKeyframeFromSelection(cs);
                                 SetupKeyOrCurveDragging(new Vector2(keyframe.time, keyframe.value), curveWrapper, id, evt.mousePosition);
@@ -3205,13 +3163,13 @@ namespace UnityEditor
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {
                     Vector2 leftTangent = GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.InTangent));
-                    DrawCurveLine(curveWrapper, leftTangent, keyPoint);
+                    DrawLine(leftTangent, keyPoint);
                 }
 
                 if (IsRightTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[curve.keys.Length - 1].time)
                 {
                     Vector2 rightTangent = GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.OutTangent));
-                    DrawCurveLine(curveWrapper, keyPoint, rightTangent);
+                    DrawLine(keyPoint, rightTangent);
                 }
             }
             GL.End();
@@ -3240,13 +3198,13 @@ namespace UnityEditor
 
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {
-                    Vector2 leftTangent = DrawingToOffsetViewTransformPoint(curveWrapper, GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.InTangent)));
+                    Vector2 leftTangent = DrawingToViewTransformPoint(GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.InTangent)));
                     DrawPoint(leftTangent, CurveWrapper.SelectionMode.None);
                 }
 
                 if (IsRightTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[curve.keys.Length - 1].time)
                 {
-                    Vector2 rightTangent = DrawingToOffsetViewTransformPoint(curveWrapper, GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.OutTangent)));
+                    Vector2 rightTangent = DrawingToViewTransformPoint(GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.OutTangent)));
                     DrawPoint(rightTangent, CurveWrapper.SelectionMode.None);
                 }
             }
@@ -3273,7 +3231,7 @@ namespace UnityEditor
                 Vector2 newPoint = m_DraggedCoord + m_MoveCoord;
                 newPoint.x = Mathf.Clamp(newPoint.x, hRangeMin, hRangeMax);
                 newPoint.y = Mathf.Clamp(newPoint.y, smallestVRangeMin, smallestVRangeMax);
-                Vector2 p = DrawingToOffsetViewTransformPoint(m_DraggingKey, newPoint);
+                Vector2 p = DrawingToViewTransformPoint(newPoint);
 
                 Vector2 axisUiScalars = m_DraggingKey.getAxisUiScalarsCallback != null ? m_DraggingKey.getAxisUiScalarsCallback() : Vector2.one;
                 if (axisUiScalars.x >= 0f)
@@ -3332,8 +3290,8 @@ namespace UnityEditor
             Vector3 prevA = new Vector3(0.0f, maxCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
             Vector3 prevB = new Vector3(0.0f, minCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
 
-            Vector3 screenPrevA = DrawingToOffsetViewMatrix(maxCurve).MultiplyPoint(prevA);
-            Vector3 screenPrevB = DrawingToOffsetViewMatrix(minCurve).MultiplyPoint(prevB);
+            Vector3 screenPrevA = drawingToViewMatrix.MultiplyPoint(prevA);
+            Vector3 screenPrevB = drawingToViewMatrix.MultiplyPoint(prevB);
 
             for (int i = 0; i < sampleTimes.Count; ++i)
             {
@@ -3341,8 +3299,8 @@ namespace UnityEditor
                 Vector3 valueA = new Vector3(time, maxCurve.renderer.EvaluateCurveSlow(time), 0.0f);
                 Vector3 valueB = new Vector3(time, minCurve.renderer.EvaluateCurveSlow(time), 0.0f);
 
-                Vector3 screenValueA = DrawingToOffsetViewMatrix(maxCurve).MultiplyPoint(valueA);
-                Vector3 screenValueB = DrawingToOffsetViewMatrix(minCurve).MultiplyPoint(valueB);
+                Vector3 screenValueA = drawingToViewMatrix.MultiplyPoint(valueA);
+                Vector3 screenValueB = drawingToViewMatrix.MultiplyPoint(valueB);
 
                 // Add triangles
                 if (prevA.y >= prevB.y && valueA.y >= valueB.y)
@@ -3452,7 +3410,7 @@ namespace UnityEditor
             }
 
             Rect framed = shownArea;
-            renderer.DrawCurve(framed.xMin - cw.timeOffset, framed.xMax, color, DrawingToOffsetViewMatrix(cw), settings.wrapColor * cw.wrapColorMultiplier);
+            renderer.DrawCurve(framed.xMin, framed.xMax, color, drawingToViewMatrix, settings.wrapColor * cw.wrapColorMultiplier);
         }
 
         void DrawPointsOnCurve(CurveWrapper cw, List<CurveSelection> selected, bool hasFocus)
@@ -3470,7 +3428,7 @@ namespace UnityEditor
                 for (int i = 0; i < keys.Length; ++i)
                 {
                     Keyframe k = keys[i];
-                    DrawPoint(DrawingToOffsetViewTransformPoint(cw, new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.None);
+                    DrawPoint(DrawingToViewTransformPoint(new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.None);
                 }
             }
             else
@@ -3491,13 +3449,13 @@ namespace UnityEditor
                     if (selectionIdx < selected.Count && selected[selectionIdx].key == pointIdx && selected[selectionIdx].curveID == cw.id)
                     {
                         if (selected[selectionIdx].semiSelected)
-                            DrawPoint(DrawingToOffsetViewTransformPoint(cw, new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.SemiSelected);
+                            DrawPoint(DrawingToViewTransformPoint(new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.SemiSelected);
                         else
-                            DrawPoint(DrawingToOffsetViewTransformPoint(cw, new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.Selected, settings.rectangleToolFlags == RectangleToolFlags.NoRectangleTool ? MouseCursor.MoveArrow : MouseCursor.Arrow);
+                            DrawPoint(DrawingToViewTransformPoint(new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.Selected, settings.rectangleToolFlags == RectangleToolFlags.NoRectangleTool ? MouseCursor.MoveArrow : MouseCursor.Arrow);
                         selectionIdx++;
                     }
                     else
-                        DrawPoint(DrawingToOffsetViewTransformPoint(cw, new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.None);
+                        DrawPoint(DrawingToViewTransformPoint(new Vector2(k.time, k.value)), CurveWrapper.SelectionMode.None);
                     pointIdx++;
                 }
                 GUI.color = Color.white;
@@ -3548,12 +3506,6 @@ namespace UnityEditor
             GL.Vertex(DrawingToViewTransformPoint(new Vector3(rhs.x, rhs.y, 0)));
         }
 
-        void DrawCurveLine(CurveWrapper cw, Vector2 lhs, Vector2 rhs)
-        {
-            GL.Vertex(DrawingToOffsetViewTransformPoint(cw, new Vector3(lhs.x, lhs.y, 0)));
-            GL.Vertex(DrawingToOffsetViewTransformPoint(cw, new Vector3(rhs.x, rhs.y, 0)));
-        }
-
         void DrawWrapperPopups()
         {
             if (!settings.showWrapperPopups)
@@ -3570,6 +3522,7 @@ namespace UnityEditor
 
             if (curve != null && curve.length >= 2 && curve.preWrapMode != WrapMode.Default)
             {
+                GUI.BeginGroup(drawRect);
                 Color oldText = GUI.contentColor;
 
                 var preKey = curve.keys[0];
@@ -3598,6 +3551,7 @@ namespace UnityEditor
                 }
 
                 GUI.contentColor = oldText;
+                GUI.EndGroup();
             }
         }
 

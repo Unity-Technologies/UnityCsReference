@@ -133,7 +133,7 @@ namespace UnityEditor
                 int remappedMaterialCount = 0;
                 foreach (var entry in externalObjectMap)
                 {
-                    if (entry.Key.type == typeof(Material))
+                    if (entry.Key.type == typeof(Material) && Array.Exists(materialsList, x => x.name == entry.Key.name))
                         ++remappedMaterialCount;
                 }
 

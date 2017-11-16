@@ -82,8 +82,9 @@ namespace UnityEngine.Events
             if (min != Int32.MaxValue)
                 m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, min);
 
-            // Strip module assembly name, as some platforms use modules, and some don't.
+            // Strip module assembly name.
             // The non-modular version will always work, due to type forwarders.
+            // This way, when a type gets moved to a differnet module, previously serialized UnityEvents still work.
             i = m_ObjectArgumentAssemblyTypeName.IndexOf(", UnityEngine.");
             if (i != -1 && m_ObjectArgumentAssemblyTypeName.EndsWith("Module"))
                 m_ObjectArgumentAssemblyTypeName = m_ObjectArgumentAssemblyTypeName.Substring(0, i) + ", UnityEngine";

@@ -5,12 +5,12 @@
 
 namespace UnityEditor.PackageManager
 {
-    public enum RelationType : uint
+    public enum RelationType
     {
-        ReadOnly = 0,
-        Excluded = 1,
-        Internalized = 2,
-        Unknown = 3
+        Unknown,
+        ReadOnly,
+        Excluded,
+        Internalized
     }
 }
 

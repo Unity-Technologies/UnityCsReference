@@ -20,72 +20,12 @@ namespace UnityEngine.Experimental.UIElements
             get { return this; }
         }
 
-        static bool ApplyAndCompare(ref StyleValue<float> current, StyleValue<float> other)
-        {
-            float oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
-        static bool ApplyAndCompare(ref StyleValue<int> current, StyleValue<int> other)
-        {
-            int oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
-        static bool ApplyAndCompare(ref StyleValue<bool> current, StyleValue<bool> other)
-        {
-            bool oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
-        static bool ApplyAndCompare(ref StyleValue<Color> current, StyleValue<Color> other)
-        {
-            Color oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
-        static bool ApplyAndCompare(ref StyleValue<CursorStyle> current, StyleValue<CursorStyle> other)
-        {
-            CursorStyle oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
-        static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : Object
-        {
-            T oldValue = current.value;
-            if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
-            {
-                return oldValue != other.value;
-            }
-            return false;
-        }
-
         StyleValue<float> IStyle.width
         {
             get { return effectiveStyle.width; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.width, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.width, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.Width = value.value;
@@ -98,7 +38,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.height; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.height, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.height, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.Height = value.value;
@@ -111,7 +51,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.maxWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.maxWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.maxWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.MaxWidth = value.value;
@@ -124,7 +64,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.maxHeight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.maxHeight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.maxHeight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.MaxHeight = value.value;
@@ -137,7 +77,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.minWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.minWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.minWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.MinWidth = value.value;
@@ -150,7 +90,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.minHeight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.minHeight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.minHeight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.MinHeight = value.value;
@@ -163,10 +103,24 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.flex; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.flex, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flex, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.Flex = value.value;
+                }
+            }
+        }
+
+
+        StyleValue<float> IStyle.flexBasis
+        {
+            get { return effectiveStyle.flexBasis; }
+            set
+            {
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexBasis, value))
+                {
+                    Dirty(ChangeType.Layout);
+                    cssNode.FlexBasis = value.value;
                 }
             }
         }
@@ -179,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.overflow, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.overflow, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.Overflow = (CSSOverflow)value.value;
@@ -192,9 +146,15 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionLeft; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.positionLeft, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionLeft, value))
                 {
+                    ChangeType saveChangedNeeded = changesNeeded;
+
                     Dirty(ChangeType.Layout);
+
+                    if ((saveChangedNeeded & ChangeType.Repaint) == 0)
+                        ClearDirty(ChangeType.Repaint);
+
                     cssNode.SetPosition(CSSEdge.Left, value.value);
                 }
             }
@@ -205,9 +165,15 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionTop; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.positionTop, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionTop, value))
                 {
+                    ChangeType saveChangedNeeded = changesNeeded;
+
                     Dirty(ChangeType.Layout);
+
+                    if ((saveChangedNeeded & ChangeType.Repaint) == 0)
+                        ClearDirty(ChangeType.Repaint);
+
                     cssNode.SetPosition(CSSEdge.Top, value.value);
                 }
             }
@@ -218,7 +184,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionRight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.positionRight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionRight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPosition(CSSEdge.Right, value.value);
@@ -231,7 +197,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.positionBottom; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.positionBottom, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionBottom, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPosition(CSSEdge.Bottom, value.value);
@@ -244,7 +210,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginLeft; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.marginLeft, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginLeft, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetMargin(CSSEdge.Left, value.value);
@@ -257,7 +223,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginTop; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.marginTop, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginTop, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetMargin(CSSEdge.Top, value.value);
@@ -270,7 +236,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginRight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.marginRight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginRight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetMargin(CSSEdge.Right, value.value);
@@ -283,7 +249,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.marginBottom; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.marginBottom, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginBottom, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetMargin(CSSEdge.Bottom, value.value);
@@ -296,7 +262,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderLeft; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderLeft, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderLeft, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Left, value.value);
@@ -309,7 +275,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTop; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderTop, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTop, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Top, value.value);
@@ -322,7 +288,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderRight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderRight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderRight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Right, value.value);
@@ -335,7 +301,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottom; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderBottom, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottom, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Bottom, value.value);
@@ -348,7 +314,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderLeftWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderLeftWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderLeftWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Left, value.value);
@@ -361,7 +327,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTopWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderTopWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTopWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Top, value.value);
@@ -374,7 +340,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderRightWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderRightWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderRightWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Right, value.value);
@@ -387,7 +353,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottomWidth; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderBottomWidth, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottomWidth, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetBorder(CSSEdge.Bottom, value.value);
@@ -412,7 +378,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTopLeftRadius; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderTopLeftRadius, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTopLeftRadius, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -424,7 +390,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderTopRightRadius; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderTopRightRadius, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTopRightRadius, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -436,7 +402,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottomRightRadius; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderBottomRightRadius, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottomRightRadius, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -448,7 +414,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderBottomLeftRadius; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderBottomLeftRadius, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottomLeftRadius, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -460,7 +426,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingLeft; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.paddingLeft, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingLeft, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPadding(CSSEdge.Left, value.value);
@@ -473,7 +439,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingTop; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.paddingTop, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingTop, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPadding(CSSEdge.Top, value.value);
@@ -486,7 +452,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingRight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.paddingRight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingRight, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPadding(CSSEdge.Right, value.value);
@@ -499,7 +465,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.paddingBottom; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.paddingBottom, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingBottom, value))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.SetPadding(CSSEdge.Bottom, value.value);
@@ -515,7 +481,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.positionType, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionType, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     PositionType posType = (PositionType)value.value;
@@ -538,7 +504,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignSelf.value, effectiveStyle.alignSelf.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.alignSelf, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignSelf, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.AlignSelf = (CSSAlign)value.value;
@@ -551,7 +517,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<TextAnchor>((TextAnchor)effectiveStyle.textAlignment.value, effectiveStyle.textAlignment.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.textAlignment, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.textAlignment, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -563,7 +529,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<FontStyle>((FontStyle)effectiveStyle.fontStyle.value, effectiveStyle.fontStyle.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.fontStyle, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.fontStyle, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                 }
@@ -575,7 +541,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<TextClipping>((TextClipping)effectiveStyle.textClipping.value, effectiveStyle.textClipping.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.textClipping, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.textClipping, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -587,7 +553,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.font; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.font, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.font, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
@@ -599,7 +565,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.fontSize; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.fontSize, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.fontSize, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
@@ -611,7 +577,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.wordWrap; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.wordWrap, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.wordWrap, value))
                 {
                     Dirty(ChangeType.Layout);
                 }
@@ -623,7 +589,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.textColor; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.textColor, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.textColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -635,7 +601,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<FlexDirection>((FlexDirection)effectiveStyle.flexDirection.value, effectiveStyle.flexDirection.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.flexDirection, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexDirection, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                     cssNode.FlexDirection = (CSSFlexDirection)value.value;
@@ -648,7 +614,12 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.backgroundColor; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.backgroundColor, value))
+                if (value.specificity == 0 && value == default(Color))
+                {
+                    inlineStyle.backgroundColor = sharedStyle.backgroundColor;
+                    Dirty(ChangeType.Repaint);
+                }
+                else if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -660,7 +631,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.borderColor; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.borderColor, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderColor, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -672,7 +643,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.backgroundImage; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.backgroundImage, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundImage, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -684,7 +655,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<ScaleMode>((ScaleMode)effectiveStyle.backgroundSize.value, effectiveStyle.backgroundSize.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.backgroundSize, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundSize, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -696,7 +667,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignItems.value, effectiveStyle.alignItems.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.alignItems, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignItems, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.AlignItems = (CSSAlign)value.value;
@@ -709,7 +680,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Align>((Align)effectiveStyle.alignContent.value, effectiveStyle.alignContent.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.alignContent, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.AlignContent = (CSSAlign)value.value;
@@ -722,7 +693,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Justify>((Justify)effectiveStyle.justifyContent.value, effectiveStyle.justifyContent.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.justifyContent, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.justifyContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.JustifyContent = (CSSJustify)value.value;
@@ -735,7 +706,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return new StyleValue<Wrap>((Wrap)effectiveStyle.flexWrap.value, effectiveStyle.flexWrap.specificity); }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.flexWrap, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexWrap, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
                     cssNode.Wrap = (CSSWrap)value.value;
@@ -748,7 +719,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceLeft; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.sliceLeft, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.sliceLeft, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -760,7 +731,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceTop; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.sliceTop, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.sliceTop, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -772,7 +743,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceRight; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.sliceRight, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.sliceRight, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -784,7 +755,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.sliceBottom; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.sliceBottom, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.sliceBottom, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -796,7 +767,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.opacity; }
             set
             {
-                if (ApplyAndCompare(ref inlineStyle.opacity, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.opacity, value))
                 {
                     Dirty(ChangeType.Repaint);
                 }
@@ -808,7 +779,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return effectiveStyle.cursor; }
             set
             {
-                ApplyAndCompare(ref inlineStyle.cursor, value);
+                StyleValueUtils.ApplyAndCompare(ref inlineStyle.cursor, value);
             }
         }
 

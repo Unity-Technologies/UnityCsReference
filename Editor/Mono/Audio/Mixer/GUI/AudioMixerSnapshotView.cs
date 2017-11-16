@@ -24,7 +24,7 @@ namespace UnityEditor
             public GUIContent starIcon = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Start snapshot");
             public GUIContent header = new GUIContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.");
             public GUIContent addButton = new GUIContent("+");
-            public Texture2D snapshotsIcon = EditorGUIUtility.FindTexture("AudioMixerSnapshot Icon");
+            public Texture2D snapshotsIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerSnapshot));
         }
         static Styles s_Styles;
 

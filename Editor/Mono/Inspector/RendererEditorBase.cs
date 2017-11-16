@@ -4,16 +4,17 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Linq;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal class RendererEditorBase : Editor
     {
         private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TextContent("Dynamic Occluded|Controls if dynamic occlusion culling should be performed for this renderer.");
+
 
         internal class Probes
         {
@@ -280,10 +281,28 @@ namespace UnityEditor
             }
         }
 
+        private static string[] m_LayerNames;
+        private static string[] layerNames
+        {
+            get
+            {
+                if (m_LayerNames == null)
+                {
+                    m_LayerNames = new string[32];
+                    for (int i = 0; i < m_LayerNames.Length; ++i)
+                    {
+                        m_LayerNames[i] = string.Format("Layer{0}", i + 1);
+                    }
+                }
+                return m_LayerNames;
+            }
+        }
+
         private SerializedProperty m_SortingOrder;
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
-
+        private SerializedProperty m_RenderingLayerMask;
+        static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TextContent("Rendering Layer Mask|Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
 
         protected Probes m_Probes;
 
@@ -292,6 +311,7 @@ namespace UnityEditor
             m_SortingOrder = serializedObject.FindProperty("m_SortingOrder");
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
             m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
+            m_RenderingLayerMask = serializedObject.FindProperty("m_RenderingLayerMask");
         }
 
         protected void RenderSortingLayerFields()
@@ -316,10 +336,56 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_DynamicOccludee, m_DynamicOccludeeLabel);
         }
 
+        protected void RenderRenderingLayer()
+        {
+            RenderRenderingLayer(m_RenderingLayerMask, target as Renderer, targets.ToArray());
+        }
+
+        internal static void RenderRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
+        {
+            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+            if (!usingSRP || target == null)
+                return;
+
+            EditorGUI.showMixedValue = layerMask.hasMultipleDifferentValues;
+
+            var renderer = target;
+            var mask = (int)renderer.renderingLayerMask;
+
+            EditorGUI.BeginChangeCheck();
+
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, m_RenderingLayerMaskStyle, layerMask);
+            if (useMiniStyle)
+            {
+                rect = ModuleUI.PrefixLabel(rect, m_RenderingLayerMaskStyle);
+                mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames,
+                        ParticleSystemStyles.Get().popup);
+            }
+            else
+                mask = EditorGUI.MaskField(rect, m_RenderingLayerMaskStyle, mask, layerNames);
+            EditorGUI.EndProperty();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObjects(targets, "Set rendering layer mask");
+                foreach (var t in targets)
+                {
+                    var r = t as Renderer;
+                    if (r != null)
+                    {
+                        r.renderingLayerMask = (uint)mask;
+                        EditorUtility.SetDirty(t);
+                    }
+                }
+            }
+            EditorGUI.showMixedValue = false;
+        }
+
         protected void RenderCommonProbeFields(bool useMiniStyle)
         {
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
-            bool isDeferredReflections = isDeferredRenderingPath && (UnityEngine.Rendering.GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
+            bool isDeferredReflections = isDeferredRenderingPath && (GraphicsSettings.GetShaderMode(BuiltinShaderType.DeferredReflections) != BuiltinShaderMode.Disabled);
             m_Probes.RenderReflectionProbeUsage(useMiniStyle, isDeferredRenderingPath, isDeferredReflections);
             m_Probes.RenderProbeAnchor(useMiniStyle);
         }

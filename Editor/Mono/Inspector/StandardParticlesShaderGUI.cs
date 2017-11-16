@@ -76,7 +76,6 @@ namespace UnityEditor
             public static string blendingOptionsText = "Blending Options";
             public static string mainOptionsText = "Main Options";
             public static string mapsOptionsText = "Maps";
-            public static string advancedOptionsText = "Advanced Options";
             public static string requiredVertexStreamsText = "Required Vertex Streams";
 
             public static string streamPositionText = "Position (POSITION.xyz)";
@@ -85,6 +84,7 @@ namespace UnityEditor
             public static string streamUVText = "UV (TEXCOORD0.xy)";
             public static string streamUV2Text = "UV2 (TEXCOORD0.zw)";
             public static string streamAnimBlendText = "AnimBlend (TEXCOORD1.x)";
+            public static string streamAnimFrameText = "AnimFrame (INSTANCED0.x)";
             public static string streamTangentText = "Tangent (TANGENT.xyzw)";
 
             public static GUIContent streamApplyToAllSystemsText = new GUIContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
@@ -210,11 +210,6 @@ namespace UnityEditor
                 foreach (var obj in blendMode.targets)
                     MaterialChanged((Material)obj);
             }
-
-            EditorGUILayout.Space();
-
-            GUILayout.Label(Styles.advancedOptionsText, EditorStyles.boldLabel);
-            m_MaterialEditor.RenderQueueField();
 
             EditorGUILayout.Space();
 
@@ -479,6 +474,7 @@ namespace UnityEditor
             bool useLighting = (material.GetFloat("_LightingEnabled") > 0.0f);
             bool useFlipbookBlending = (material.GetFloat("_FlipbookMode") > 0.0f);
             bool useTangents = material.GetTexture("_BumpMap") && useLighting;
+            bool useGPUInstancing = ShaderUtil.HasProceduralInstancing(material.shader);
 
             GUILayout.Label(Styles.streamPositionText, EditorStyles.label);
 
@@ -488,14 +484,18 @@ namespace UnityEditor
             GUILayout.Label(Styles.streamColorText, EditorStyles.label);
             GUILayout.Label(Styles.streamUVText, EditorStyles.label);
 
-            if (useFlipbookBlending)
+            if (useTangents)
+                GUILayout.Label(Styles.streamTangentText, EditorStyles.label);
+
+            if (useGPUInstancing)
+            {
+                GUILayout.Label(Styles.streamAnimFrameText, EditorStyles.label);
+            }
+            else if (useFlipbookBlending && !useGPUInstancing)
             {
                 GUILayout.Label(Styles.streamUV2Text, EditorStyles.label);
                 GUILayout.Label(Styles.streamAnimBlendText, EditorStyles.label);
             }
-
-            if (useTangents)
-                GUILayout.Label(Styles.streamTangentText, EditorStyles.label);
 
             // Build the list of expected vertex streams
             List<ParticleSystemVertexStream> streams = new List<ParticleSystemVertexStream>();
@@ -507,21 +507,30 @@ namespace UnityEditor
             streams.Add(ParticleSystemVertexStream.Color);
             streams.Add(ParticleSystemVertexStream.UV);
 
-            if (useFlipbookBlending)
+            if (useTangents)
+                streams.Add(ParticleSystemVertexStream.Tangent);
+
+            List<ParticleSystemVertexStream> instancedStreams = new List<ParticleSystemVertexStream>(streams);
+
+            if (useGPUInstancing)
+            {
+                instancedStreams.Add(ParticleSystemVertexStream.AnimFrame);
+            }
+            else if (useFlipbookBlending)
             {
                 streams.Add(ParticleSystemVertexStream.UV2);
                 streams.Add(ParticleSystemVertexStream.AnimBlend);
             }
-
-            if (useTangents)
-                streams.Add(ParticleSystemVertexStream.Tangent);
 
             // Set the streams on all systems using this material
             if (GUILayout.Button(Styles.streamApplyToAllSystemsText, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
             {
                 foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
                 {
-                    renderer.SetActiveVertexStreams(streams);
+                    if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
+                        renderer.SetActiveVertexStreams(instancedStreams);
+                    else
+                        renderer.SetActiveVertexStreams(streams);
                 }
             }
 
@@ -531,7 +540,14 @@ namespace UnityEditor
             foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
             {
                 renderer.GetActiveVertexStreams(rendererStreams);
-                if (!rendererStreams.SequenceEqual(streams))
+
+                bool streamsValid;
+                if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
+                    streamsValid = rendererStreams.SequenceEqual(instancedStreams);
+                else
+                    streamsValid = rendererStreams.SequenceEqual(streams);
+
+                if (!streamsValid)
                     Warnings += "  " + renderer.name + "\n";
             }
             if (Warnings != "")

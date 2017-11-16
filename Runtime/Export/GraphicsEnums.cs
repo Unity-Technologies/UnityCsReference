@@ -288,8 +288,14 @@ namespace UnityEngine
         PVRTC_RGB4  = 32,
         PVRTC_RGBA4 = 33,
         ETC_RGB4    = 34,
-        ATC_RGB4    = 35,
-        ATC_RGBA8   = 36,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.ATC_RGB4 has been deprecated. Use ETC_RGB4 instead (UnityUpgradable) -> ETC_RGB4", true)]
+        ATC_RGB4 = 35,
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureFormat.ATC_RGBA8 has been deprecated. Use ETC2_RGBA8 instead (UnityUpgradable) -> ETC2_RGBA8", true)]
+        ATC_RGBA8 = 36,
 
         EAC_R = 41,
         EAC_R_SIGNED = 42,
@@ -752,8 +758,9 @@ namespace UnityEngine.Rendering
 
     public enum BuiltinRenderTextureType
     {
-        PropertyName = -3, // Property id
-        BufferPtr = -2, // Raw buffer pointer
+        PropertyName = -4, // Property id
+        BufferPtr = -3, // Raw buffer pointer
+        RenderTexture = -2, // Render texture. We cannot just use BufferPtr because we need lazy resolve of the buffer pointer here (the RT might not be created yet)
         BindableTexture = -1, // a bindable texture, of any dimension, that is not a render texture
         None = 0, // "nothing", just need zero default value for RenderTargetIdentifier
         CurrentActive = 1,  // currently active RT
@@ -836,6 +843,7 @@ namespace UnityEngine.Rendering
         PlayStationVita = 12,
         PlayStation4 = 13,
         XboxOne = 14,
+        [System.Obsolete("PlayStationMobile is no longer supported in Unity 5.3+")]
         PlayStationMobile = 15,
         Metal = 16,
         OpenGLCore = 17,
@@ -917,19 +925,16 @@ namespace UnityEngine.Rendering
             if (tex == null)
             {
                 m_Type = BuiltinRenderTextureType.None;
-                m_InstanceID = 0;
-                m_BufferPointer = IntPtr.Zero;
             }
             else if (tex is RenderTexture)
             {
-                m_Type = BuiltinRenderTextureType.BufferPtr;
-                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+                m_Type = BuiltinRenderTextureType.RenderTexture;
             }
             else
             {
                 m_Type = BuiltinRenderTextureType.BindableTexture;
-                m_BufferPointer = IntPtr.Zero;
             }
+            m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = tex ? tex.GetInstanceID() : 0;
             m_MipLevel = 0;
@@ -942,19 +947,16 @@ namespace UnityEngine.Rendering
             if (tex == null)
             {
                 m_Type = BuiltinRenderTextureType.None;
-                m_InstanceID = 0;
-                m_BufferPointer = IntPtr.Zero;
             }
             else if (tex is RenderTexture)
             {
-                m_Type = BuiltinRenderTextureType.BufferPtr;
-                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+                m_Type = BuiltinRenderTextureType.RenderTexture;
             }
             else
             {
                 m_Type = BuiltinRenderTextureType.BindableTexture;
-                m_BufferPointer = IntPtr.Zero;
             }
+            m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = tex ? tex.GetInstanceID() : 0;
             m_MipLevel = mipLevel;
@@ -1207,6 +1209,14 @@ namespace UnityEngine.Rendering
         Medium = 50,
         High = 75,
         Unlimited = 100
+    }
+
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
+    public enum ComputeQueueType
+    {
+        Default = 0,
+        Background = 1,
+        Urgent = 2
     }
 } // namespace UnityEngine.Rendering
 

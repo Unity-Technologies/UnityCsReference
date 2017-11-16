@@ -13,6 +13,7 @@ using System.Collections.Generic;
 namespace UnityEngine
 {
 [RequireComponent(typeof(Transform))]
+[UsedByNativeCode]
 public sealed partial class ParticleSystem : Component
 {
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3688,120 +3689,6 @@ public sealed partial class ParticleSystem : Component
 [RequireComponent(typeof(Transform))]
 public sealed partial class ParticleSystemRenderer : Renderer
 {
-    public extern ParticleSystemRenderMode renderMode
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float lengthScale
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float velocityScale
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float cameraVelocityScale
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float normalDirection
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern ParticleSystemRenderSpace alignment
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public Vector3 pivot
-    {
-        get { Vector3 tmp; INTERNAL_get_pivot(out tmp); return tmp;  }
-        set { INTERNAL_set_pivot(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_get_pivot (out Vector3 value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void INTERNAL_set_pivot (ref Vector3 value) ;
-
-    public extern ParticleSystemSortMode sortMode
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float sortingFudge
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float minParticleSize
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern float maxParticleSize
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
     public extern  Mesh mesh
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3825,16 +3712,6 @@ public sealed partial class ParticleSystemRenderer : Renderer
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public void SetMeshes (Mesh[] meshes, int size) ;
-
-    public extern  Material trailMaterial
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
 
     public extern  int activeVertexStreamsCount
     {
@@ -3869,105 +3746,11 @@ public sealed partial class ParticleSystemRenderer : Renderer
 
     
     
-    [System.Obsolete ("EnableVertexStreams is deprecated. Use SetActiveVertexStreams instead.")]
-public void EnableVertexStreams(ParticleSystemVertexStreams streams) { Internal_SetVertexStreams(streams, true); }
-    [System.Obsolete ("DisableVertexStreams is deprecated. Use SetActiveVertexStreams instead.")]
-public void DisableVertexStreams(ParticleSystemVertexStreams streams) { Internal_SetVertexStreams(streams, false); }
-    [System.Obsolete ("AreVertexStreamsEnabled is deprecated. Use GetActiveVertexStreams instead.")]
-public bool AreVertexStreamsEnabled(ParticleSystemVertexStreams streams)  { return Internal_GetEnabledVertexStreams(streams) == streams; }
-    [System.Obsolete ("GetEnabledVertexStreams is deprecated. Use GetActiveVertexStreams instead.")]
-public ParticleSystemVertexStreams GetEnabledVertexStreams(ParticleSystemVertexStreams streams)  { return Internal_GetEnabledVertexStreams(streams); }
-    
-    
-    [System.Obsolete ("Internal_SetVertexStreams is deprecated. Use SetActiveVertexStreams instead.")]
-internal void Internal_SetVertexStreams(ParticleSystemVertexStreams streams, bool enabled)
-        {
-            List<ParticleSystemVertexStream> streamList = new List<ParticleSystemVertexStream>(activeVertexStreamsCount);
-            GetActiveVertexStreams(streamList);
-
-            if (enabled)
-            {
-                if ((streams & ParticleSystemVertexStreams.Position) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Position)) { streamList.Add(ParticleSystemVertexStream.Position); } }
-                if ((streams & ParticleSystemVertexStreams.Normal) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Normal)) { streamList.Add(ParticleSystemVertexStream.Normal); } }
-                if ((streams & ParticleSystemVertexStreams.Tangent) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Tangent)) { streamList.Add(ParticleSystemVertexStream.Tangent); } }
-                if ((streams & ParticleSystemVertexStreams.Color) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Color)) { streamList.Add(ParticleSystemVertexStream.Color); } }
-                if ((streams & ParticleSystemVertexStreams.UV) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.UV)) { streamList.Add(ParticleSystemVertexStream.UV); } }
-                if ((streams & ParticleSystemVertexStreams.UV2BlendAndFrame) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.UV2)) { streamList.Add(ParticleSystemVertexStream.UV2); streamList.Add(ParticleSystemVertexStream.AnimBlend); streamList.Add(ParticleSystemVertexStream.AnimFrame); } }
-                if ((streams & ParticleSystemVertexStreams.CenterAndVertexID) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Center)) { streamList.Add(ParticleSystemVertexStream.Center); streamList.Add(ParticleSystemVertexStream.VertexID); } }
-                if ((streams & ParticleSystemVertexStreams.Size) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.SizeXYZ)) { streamList.Add(ParticleSystemVertexStream.SizeXYZ); } }
-                if ((streams & ParticleSystemVertexStreams.Rotation) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Rotation3D)) { streamList.Add(ParticleSystemVertexStream.Rotation3D); } }
-                if ((streams & ParticleSystemVertexStreams.Velocity) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Velocity)) { streamList.Add(ParticleSystemVertexStream.Velocity); } }
-                if ((streams & ParticleSystemVertexStreams.Lifetime) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.AgePercent)) { streamList.Add(ParticleSystemVertexStream.AgePercent); streamList.Add(ParticleSystemVertexStream.InvStartLifetime); } }
-                if ((streams & ParticleSystemVertexStreams.Custom1) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Custom1XYZW)) { streamList.Add(ParticleSystemVertexStream.Custom1XYZW); } }
-                if ((streams & ParticleSystemVertexStreams.Custom2) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.Custom2XYZW)) { streamList.Add(ParticleSystemVertexStream.Custom2XYZW); } }
-                if ((streams & ParticleSystemVertexStreams.Random) != 0) { if (!streamList.Contains(ParticleSystemVertexStream.StableRandomXYZ)) { streamList.Add(ParticleSystemVertexStream.StableRandomXYZ); streamList.Add(ParticleSystemVertexStream.VaryingRandomX); } }
-            }
-            else
-            {
-                if ((streams & ParticleSystemVertexStreams.Position) != 0) { streamList.Remove(ParticleSystemVertexStream.Position); }
-                if ((streams & ParticleSystemVertexStreams.Normal) != 0) { streamList.Remove(ParticleSystemVertexStream.Normal); }
-                if ((streams & ParticleSystemVertexStreams.Tangent) != 0) { streamList.Remove(ParticleSystemVertexStream.Tangent); }
-                if ((streams & ParticleSystemVertexStreams.Color) != 0) { streamList.Remove(ParticleSystemVertexStream.Color); }
-                if ((streams & ParticleSystemVertexStreams.UV) != 0) { streamList.Remove(ParticleSystemVertexStream.UV); }
-                if ((streams & ParticleSystemVertexStreams.UV2BlendAndFrame) != 0) { streamList.Remove(ParticleSystemVertexStream.UV2); streamList.Remove(ParticleSystemVertexStream.AnimBlend); streamList.Remove(ParticleSystemVertexStream.AnimFrame); }
-                if ((streams & ParticleSystemVertexStreams.CenterAndVertexID) != 0) { streamList.Remove(ParticleSystemVertexStream.Center); streamList.Remove(ParticleSystemVertexStream.VertexID); }
-                if ((streams & ParticleSystemVertexStreams.Size) != 0) { streamList.Remove(ParticleSystemVertexStream.SizeXYZ); }
-                if ((streams & ParticleSystemVertexStreams.Rotation) != 0) { streamList.Remove(ParticleSystemVertexStream.Rotation3D); }
-                if ((streams & ParticleSystemVertexStreams.Velocity) != 0) { streamList.Remove(ParticleSystemVertexStream.Velocity); }
-                if ((streams & ParticleSystemVertexStreams.Lifetime) != 0) { streamList.Remove(ParticleSystemVertexStream.AgePercent); streamList.Remove(ParticleSystemVertexStream.InvStartLifetime); }
-                if ((streams & ParticleSystemVertexStreams.Custom1) != 0) { streamList.Remove(ParticleSystemVertexStream.Custom1XYZW); }
-                if ((streams & ParticleSystemVertexStreams.Custom2) != 0) { streamList.Remove(ParticleSystemVertexStream.Custom2XYZW); }
-                if ((streams & ParticleSystemVertexStreams.Random) != 0) { streamList.Remove(ParticleSystemVertexStream.StableRandomXYZW); streamList.Remove(ParticleSystemVertexStream.VaryingRandomX); }
-            }
-
-            SetActiveVertexStreams(streamList);
-        }
-    
-    
-    [System.Obsolete ("Internal_GetVertexStreams is deprecated. Use GetActiveVertexStreams instead.")]
-internal ParticleSystemVertexStreams Internal_GetEnabledVertexStreams(ParticleSystemVertexStreams streams)
-        {
-            List<ParticleSystemVertexStream> streamList = new List<ParticleSystemVertexStream>(activeVertexStreamsCount);
-            GetActiveVertexStreams(streamList);
-
-            ParticleSystemVertexStreams deprecatedStreams = 0;
-            if (streamList.Contains(ParticleSystemVertexStream.Position)) deprecatedStreams |= ParticleSystemVertexStreams.Position;
-            if (streamList.Contains(ParticleSystemVertexStream.Normal)) deprecatedStreams |= ParticleSystemVertexStreams.Normal;
-            if (streamList.Contains(ParticleSystemVertexStream.Tangent)) deprecatedStreams |= ParticleSystemVertexStreams.Tangent;
-            if (streamList.Contains(ParticleSystemVertexStream.Color)) deprecatedStreams |= ParticleSystemVertexStreams.Color;
-            if (streamList.Contains(ParticleSystemVertexStream.UV)) deprecatedStreams |= ParticleSystemVertexStreams.UV;
-            if (streamList.Contains(ParticleSystemVertexStream.UV2)) deprecatedStreams |= ParticleSystemVertexStreams.UV2BlendAndFrame;
-            if (streamList.Contains(ParticleSystemVertexStream.Center)) deprecatedStreams |= ParticleSystemVertexStreams.CenterAndVertexID;
-            if (streamList.Contains(ParticleSystemVertexStream.SizeXYZ)) deprecatedStreams |= ParticleSystemVertexStreams.Size;
-            if (streamList.Contains(ParticleSystemVertexStream.Rotation3D)) deprecatedStreams |= ParticleSystemVertexStreams.Rotation;
-            if (streamList.Contains(ParticleSystemVertexStream.Velocity)) deprecatedStreams |= ParticleSystemVertexStreams.Velocity;
-            if (streamList.Contains(ParticleSystemVertexStream.AgePercent)) deprecatedStreams |= ParticleSystemVertexStreams.Lifetime;
-            if (streamList.Contains(ParticleSystemVertexStream.Custom1XYZW)) deprecatedStreams |= ParticleSystemVertexStreams.Custom1;
-            if (streamList.Contains(ParticleSystemVertexStream.Custom2XYZW)) deprecatedStreams |= ParticleSystemVertexStreams.Custom2;
-            if (streamList.Contains(ParticleSystemVertexStream.StableRandomXYZ)) deprecatedStreams |= ParticleSystemVertexStreams.Random;
-
-            return (deprecatedStreams & streams);
-        }
-    
-    
-    internal extern  bool editorEnabled
+    internal extern  bool supportsMeshInstancing
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern SpriteMaskInteraction maskInteraction
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
     }
 
 }

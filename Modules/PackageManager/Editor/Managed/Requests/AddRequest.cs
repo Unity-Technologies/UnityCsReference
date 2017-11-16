@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.Requests
         {
         }
 
-        internal AddRequest(long operationId, NativeClient.StatusCode initialStatus)
+        internal AddRequest(long operationId, NativeStatusCode initialStatus)
             : base(operationId, initialStatus)
         {
         }

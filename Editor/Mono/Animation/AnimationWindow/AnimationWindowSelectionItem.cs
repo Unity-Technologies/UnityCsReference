@@ -14,15 +14,12 @@ namespace UnityEditorInternal
 {
     internal class AnimationWindowSelectionItem : ScriptableObject, System.IEquatable<AnimationWindowSelectionItem>, ISelectionBinding
     {
-        [SerializeField] private float m_TimeOffset;
         [SerializeField] private int m_Id;
         [SerializeField] private GameObject m_GameObject;
         [SerializeField] private ScriptableObject m_ScriptableObject;
         [SerializeField] private AnimationClip m_AnimationClip;
 
         private List<AnimationWindowCurve> m_CurvesCache = null;
-
-        public virtual float timeOffset { get { return m_TimeOffset; } set { m_TimeOffset = value; } }
 
         public virtual int id { get { return m_Id; } set { m_Id = value; } }
 
@@ -54,6 +51,15 @@ namespace UnityEditorInternal
                 if (gameObject != null)
                     return AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(gameObject.transform);
                 return null;
+            }
+        }
+
+        public bool disabled
+        {
+            get
+            {
+                // To be editable, a selection must at least contain an animation clip.
+                return (animationClip == null);
             }
         }
 
@@ -298,8 +304,6 @@ namespace UnityEditorInternal
         public static AnimationWindowSelectionItem Create()
         {
             AnimationWindowSelectionItem selectionItem = CreateInstance(typeof(AnimationWindowSelectionItem)) as AnimationWindowSelectionItem;
-            selectionItem.hideFlags = HideFlags.HideAndDontSave;
-
             return selectionItem;
         }
 

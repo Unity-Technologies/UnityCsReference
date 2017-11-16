@@ -20,12 +20,16 @@ namespace UnityEngine
         {
             Vertex,
             Normal,
+            Tangent,
             Color,
             TexCoord0,
             TexCoord1,
             TexCoord2,
             TexCoord3,
-            Tangent,
+            TexCoord4,
+            TexCoord5,
+            TexCoord6,
+            TexCoord7,
         }
         // WARNING: MUST be kept in sync with InternalScriptingShaderChannel in Runtime/Graphics/GraphicsScriptBindings.h
         internal enum InternalVertexChannelType

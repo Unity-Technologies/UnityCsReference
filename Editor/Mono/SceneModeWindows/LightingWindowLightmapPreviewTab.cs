@@ -341,9 +341,8 @@ namespace UnityEditor
             float totalAlbedoEmissiveSize = 0.0f;
             foreach (var entry in gbufferHashToLightmapIndices)
             {
-                float gbufferDataSize;
                 Hash128 gbufferHash = entry.Key;
-                Lightmapping.GetGBufferMemory(ref gbufferHash, out gbufferDataSize);
+                float gbufferDataSize = Lightmapping.GetGBufferMemory(ref gbufferHash);
                 totalGBuffersSize += gbufferDataSize;
 
                 SortedList<int, int> lightmapIndices = entry.Value;
@@ -362,10 +361,11 @@ namespace UnityEditor
             if (gbufferHashToLightmapIndices.Count > 0)
             {
                 const bool toggleOnLabelClick = true;
-                string foldoutNameFull =
-                    "G-buffers (" + SizeString(totalGBuffersSize) + ") | " +
-                    "Lightmaps (" + SizeString(totalLightmapsSize) + ") | " +
-                    "Albedo/Emissive (" + SizeString(totalAlbedoEmissiveSize) + ")";
+                string foldoutNameFull = String.Format(
+                        "G-buffers ({0}) | Lightmaps ({1}) | Albedo/Emissive ({2})",
+                        SizeString(totalGBuffersSize),
+                        SizeString(totalLightmapsSize),
+                        SizeString(totalAlbedoEmissiveSize));
                 bool showDetailsOld = EditorPrefs.GetBool(kEditorPrefsGBuffersLightmapsAlbedoEmissive, true);
 
                 bool showDetails = EditorGUILayout.Foldout(showDetailsOld, foldoutNameFull, toggleOnLabelClick, s_Styles.boldFoldout);
@@ -382,9 +382,8 @@ namespace UnityEditor
                             GUILayout.Space(15);
                             GUILayout.BeginVertical();
                             {
-                                float gbufferDataSize;
                                 Hash128 gbufferHash = entry.Key;
-                                Lightmapping.GetGBufferMemory(ref gbufferHash, out gbufferDataSize);
+                                float gbufferDataSize = Lightmapping.GetGBufferMemory(ref gbufferHash);
                                 GUILayout.Label(new GUIContent("G-buffer: " + gbufferDataSize.ToString("0.0") + " MB", gbufferHash.ToString()), EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
 
                                 SortedList<int, int> lightmapIndices = entry.Value;
@@ -427,23 +426,32 @@ namespace UnityEditor
 
         void LightmapRow(int index, LightmapData[] lightmaps, bool showDirLightmap, bool showShadowMask, GlobalMapsViewType viewType)
         {
+            int statsLineCount = (viewType == GlobalMapsViewType.Performance) ? 5 : 7;
+            float lightmapFieldSize =
+                2 * EditorStyles.miniLabel.margin.top +
+                (statsLineCount - 1) * Mathf.Max(EditorStyles.miniLabel.margin.top, EditorStyles.miniLabel.margin.bottom) +
+                2 * EditorStyles.miniLabel.padding.top +
+                (statsLineCount - 1) * EditorStyles.miniLabel.padding.vertical +
+                (statsLineCount - 1) * EditorStyles.miniLabel.lineHeight +
+                EditorStyles.miniLabel.font.fontSize;
+
             GUILayout.Space(5);
 
             GUILayout.BeginHorizontal();
-            int statsLineCount = (viewType == GlobalMapsViewType.Performance) ? 5 : 7;
+
             GUILayout.Space(20);
-            lightmaps[index].lightmapColor = LightmapField(lightmaps[index].lightmapColor, index, statsLineCount);
+            lightmaps[index].lightmapColor = LightmapField(lightmaps[index].lightmapColor, index, lightmapFieldSize);
 
             if (showDirLightmap)
             {
                 GUILayout.Space(5);
-                lightmaps[index].lightmapDir = LightmapField(lightmaps[index].lightmapDir, index, statsLineCount);
+                lightmaps[index].lightmapDir = LightmapField(lightmaps[index].lightmapDir, index, lightmapFieldSize);
             }
 
             if (showShadowMask)
             {
                 GUILayout.Space(5);
-                lightmaps[index].shadowMask = LightmapField(lightmaps[index].shadowMask, index, statsLineCount);
+                lightmaps[index].shadowMask = LightmapField(lightmaps[index].shadowMask, index, lightmapFieldSize);
             }
 
             GUILayout.Space(5);
@@ -456,15 +464,8 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        Texture2D LightmapField(Texture2D lightmap, int index, int statsLineCount)
+        Texture2D LightmapField(Texture2D lightmap, int index, float size)
         {
-            float size =
-                2 * EditorStyles.miniLabel.margin.top +
-                (statsLineCount - 1) * Mathf.Max(EditorStyles.miniLabel.margin.top, EditorStyles.miniLabel.margin.bottom) +
-                2 * EditorStyles.miniLabel.padding.top +
-                (statsLineCount - 1) * EditorStyles.miniLabel.padding.vertical +
-                (statsLineCount - 1) * EditorStyles.miniLabel.lineHeight +
-                EditorStyles.miniLabel.font.fontSize;
             Rect rect = GUILayoutUtility.GetRect(size, size, EditorStyles.objectField);
 
             MenuSelectLightmapUsers(rect, index);

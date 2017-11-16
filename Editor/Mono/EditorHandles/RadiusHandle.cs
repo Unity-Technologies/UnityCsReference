@@ -120,7 +120,7 @@ namespace UnityEditor
                         col.a = Mathf.Clamp01(backfaceAlphaMultiplier * origCol.a * 2);
                     else
                         col.a = Mathf.Clamp01(origCol.a * 2);
-                    color = col;
+                    color = ToActiveColorSpace(col);
 
                     Vector3 pos = position + radius * dirs[i];
                     bool temp = GUI.changed;

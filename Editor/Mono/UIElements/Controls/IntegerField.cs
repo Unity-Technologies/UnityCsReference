@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.UIElements
             float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
             long v = value;
             v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            value = v;
+            SetValueAndNotify(v);
         }
 
         protected override string ValueToString(long v)

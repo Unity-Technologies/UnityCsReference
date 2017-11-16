@@ -284,23 +284,18 @@ internal sealed partial class GUIClip
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     private extern static void INTERNAL_CALL_SetMatrix (ref Matrix4x4 m);
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    internal static Matrix4x4 GetTransform () {
-        Matrix4x4 result;
-        INTERNAL_CALL_GetTransform ( out result );
-        return result;
+    internal static void Internal_PushParentClip (Matrix4x4 objectTransform, Rect clipRect) {
+        INTERNAL_CALL_Internal_PushParentClip ( ref objectTransform, ref clipRect );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetTransform (out Matrix4x4 value);
+    private extern static void INTERNAL_CALL_Internal_PushParentClip (ref Matrix4x4 objectTransform, ref Rect clipRect);
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-    internal static void SetTransform (Matrix4x4 objectTransform, Rect clipRect) {
-        INTERNAL_CALL_SetTransform ( ref objectTransform, ref clipRect );
-    }
-
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetTransform (ref Matrix4x4 objectTransform, ref Rect clipRect);
+    extern internal static  void Internal_PopParentClip () ;
+
     public static Rect visibleRect
     {
         get { Rect tmp; INTERNAL_get_visibleRect(out tmp); return tmp;  }

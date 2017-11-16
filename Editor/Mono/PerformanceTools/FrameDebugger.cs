@@ -42,7 +42,10 @@ namespace UnityEditorInternal
         DrawProcedural,
         ComputeDispatch,
         PluginEvent,
-        InstancedMesh
+        InstancedMesh,
+        BeginRenderpass,
+        NextSubpass,
+        EndSubpass
         // ReSharper restore InconsistentNaming
     };
 
@@ -244,7 +247,10 @@ namespace UnityEditor
             "Draw Procedural",
             "Compute Shader",
             "Plugin Event",
-            "Draw Mesh (instanced)"
+            "Draw Mesh (instanced)",
+            "Begin Renderpass",
+            "Next Subpass",
+            "End Renderpass"
         };
 
         // Cached strings built from FrameDebuggerEventData.

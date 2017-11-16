@@ -195,16 +195,16 @@ namespace UnityEditor
             }
         }
 
-        public static string GenerateLinkXmlToPreserveDerivedTypes(string stagingArea, string librariesFolder, RuntimeClassRegistry usedClasses)
+        public static string GenerateLinkXmlToPreserveDerivedTypes(string librariesFolder, RuntimeClassRegistry usedClasses)
         {
-            string path = Path.GetFullPath(Path.Combine(stagingArea, "preserved_derived_types.xml"));
+            string path = Path.GetTempFileName();
 
             using (TextWriter w = new StreamWriter(path))
             {
                 w.WriteLine("<linker>");
                 foreach (var assembly in CollectAllAssemblies(librariesFolder, usedClasses))
                 {
-                    if (AssemblyHelper.IsUnityEngineModule(assembly.Name.Name))
+                    if (AssemblyHelper.IsUnityEngineModule(assembly))
                         continue;
 
                     var typesToPreserve = new HashSet<TypeDefinition>();
@@ -269,10 +269,6 @@ namespace UnityEditor
             }
             catch (AssemblyResolutionException e)
             {
-                // Skip module dlls if we can't find them - we might build for a platform without modular UnityEngine support.
-                if (AssemblyHelper.IsUnityEngineModule(assemblyName.Name))
-                    return null;
-
                 // DefaultAssemblyResolver doesn't handle windows runtime references correctly. But that is okay, as they cannot derive from managed types anyway
                 if (e.AssemblyReference.IsWindowsRuntime)
                     return null;

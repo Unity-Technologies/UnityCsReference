@@ -490,6 +490,12 @@ namespace UnityEditor
 
                 // Load data
                 UnityObject[] loadedWindows = InternalEditorUtility.LoadSerializedFileAndForget(path);
+
+                if (loadedWindows == null || loadedWindows.Length == 0)
+                {
+                    throw new ArgumentException("Window layout at '" + path + "' could not be loaded.");
+                }
+
                 List<UnityObject> newWindows = new List<UnityObject>();
 
                 // At this point, unparented editor windows are neither desired nor desirable.
@@ -621,7 +627,12 @@ namespace UnityEditor
                 Debug.LogError("Failed to load window layout: " + ex);
 
                 int option = 0;
-                if (!Application.isTestRun)
+
+
+                UnityObject[] containerWindows = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
+
+                // Only show dialog if an actual window is present. If not, revert to default immediately
+                if (!Application.isTestRun && containerWindows.Length > 0)
                     option = EditorUtility.DisplayDialogComplex("Failed to load window layout", "This can happen if layout contains custom windows and there are compile errors in the project.", "Load Default Layout", "Quit", "Revert Factory Settings");
 
                 switch (option)

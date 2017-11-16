@@ -26,7 +26,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.PSP2.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WiiU.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.PSM.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.LinuxStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
@@ -52,7 +51,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
 [assembly: InternalsVisibleTo("UnityEditor.UI")]
+[assembly: InternalsVisibleTo("UnityEditor.AR")]
 [assembly: InternalsVisibleTo("UnityEditor.SpatialTracking")]
+[assembly: InternalsVisibleTo("UnityEditor.HoloLens")]
 
 
 [assembly: AssemblyIsEditorAssembly]

@@ -15,12 +15,10 @@ namespace UnityEditorInternal
         public static AnimationClipSelectionItem Create(AnimationClip animationClip, Object sourceObject)
         {
             AnimationClipSelectionItem selectionItem = CreateInstance(typeof(AnimationClipSelectionItem)) as AnimationClipSelectionItem;
-            selectionItem.hideFlags = HideFlags.HideAndDontSave;
 
             selectionItem.gameObject = sourceObject as GameObject;
             selectionItem.scriptableObject = sourceObject as ScriptableObject;
             selectionItem.animationClip = animationClip;
-            selectionItem.timeOffset = 0.0f;
             selectionItem.id = 0; // no need for id since there's only one item in selection.
 
             return selectionItem;

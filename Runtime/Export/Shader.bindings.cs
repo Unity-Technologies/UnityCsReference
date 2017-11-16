@@ -10,6 +10,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using PassType = UnityEngine.Rendering.PassType;
 
+//
+// Shader
+//
+
 namespace UnityEngine
 {
     internal enum DisableBatchingType
@@ -145,8 +149,14 @@ namespace UnityEngine
         }
 
     }
+}
 
+//
+// Material
+//
 
+namespace UnityEngine
+{
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/Material.h")]
     public partial class Material : Object
@@ -163,6 +173,7 @@ namespace UnityEngine
         [Obsolete("Creating materials from shader source string is no longer supported. Use Shader assets instead.", false)]
         public Material(string contents) { CreateWithString(this); }
 
+        static extern internal Material GetDefaultMaterial();
 
         extern public Shader shader { get; set; }
 
@@ -302,7 +313,130 @@ namespace UnityEngine
         [NativeName("SetTextureOffsetFromScript")] extern private void SetTextureOffsetImpl(int name, Vector2 offset);
         [NativeName("SetTextureScaleFromScript")]  extern private void SetTextureScaleImpl(int name, Vector2 scale);
     }
+}
 
+//
+// MaterialPropertyBlock
+//
+
+namespace UnityEngine
+{
+    [NativeHeader("Runtime/Shaders/ShaderPropertySheet.h")]
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    public sealed partial class MaterialPropertyBlock
+    {
+        // TODO: set int is missing
+        // TODO: get int/color/buffer is missing
+
+        [NativeName("GetFloatFromScript")]   extern private float     GetFloatImpl(int name);
+        [NativeName("GetVectorFromScript")]  extern private Vector4   GetVectorImpl(int name);
+        [NativeName("GetColorFromScript")]   extern private Color     GetColorImpl(int name);
+        [NativeName("GetMatrixFromScript")]  extern private Matrix4x4 GetMatrixImpl(int name);
+        [NativeName("GetTextureFromScript")] extern private Texture   GetTextureImpl(int name);
+
+        private object GetValueImpl(int name, Type t)
+        {
+            if (t == typeof(float))          return GetFloatImpl(name);
+            else if (t == typeof(Vector4))   return GetVectorImpl(name);
+            else if (t == typeof(Color))     return GetColorImpl(name);
+            else if (t == typeof(Matrix4x4)) return GetMatrixImpl(name);
+            else if (t == typeof(Texture))   return GetTextureImpl(name);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+        [NativeName("SetFloatFromScript")]   extern private void SetFloatImpl(int name, float value);
+        [NativeName("SetVectorFromScript")]  extern private void SetVectorImpl(int name, Vector4 value);
+        [NativeName("SetColorFromScript")]   extern private void SetColorImpl(int name, Color value);
+        [NativeName("SetMatrixFromScript")]  extern private void SetMatrixImpl(int name, Matrix4x4 value);
+        [NativeName("SetTextureFromScript")] extern private void SetTextureImpl(int name, [NotNull] Texture value);
+        [NativeName("SetBufferFromScript")]  extern private void SetBufferImpl(int name, ComputeBuffer value);
+
+        private void SetValueImpl(int name, object value, Type t)
+        {
+            if (t == typeof(float))              SetFloatImpl(name, (float)value);
+            else if (t == typeof(Color))         SetColorImpl(name, (Color)value);
+            else if (t == typeof(Vector4))       SetVectorImpl(name, (Vector4)value);
+            else if (t == typeof(Matrix4x4))     SetMatrixImpl(name, (Matrix4x4)value);
+            else if (t == typeof(Texture))       SetTextureImpl(name, (Texture)value);
+            else if (t == typeof(ComputeBuffer)) SetBufferImpl(name, (ComputeBuffer)value);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+        [NativeName("SetFloatArrayFromScript")]  extern private void SetFloatArrayImpl(int name, float[] values, int count);
+        [NativeName("SetVectorArrayFromScript")] extern private void SetVectorArrayImpl(int name, Vector4[] values, int count);
+        [NativeName("SetMatrixArrayFromScript")] extern private void SetMatrixArrayImpl(int name, Matrix4x4[] values, int count);
+
+        private void SetValueArrayImpl(int name, System.Array values, int count, Type t)
+        {
+            if (values == null) throw new ArgumentNullException("values");
+            if (values.Length == 0) throw new ArgumentException("Zero-sized array is not allowed.");
+            if (values.Length < count) throw new ArgumentException("array has less elements than passed count.");
+
+            if (t == typeof(float))          SetFloatArrayImpl(name, (float[])values, count);
+            else if (t == typeof(Vector4))   SetVectorArrayImpl(name, (Vector4[])values, count);
+            else if (t == typeof(Matrix4x4)) SetMatrixArrayImpl(name, (Matrix4x4[])values, count);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+        [NativeName("GetFloatArrayFromScript")]  extern private float[]     GetFloatArrayImpl(int name);
+        [NativeName("GetVectorArrayFromScript")] extern private Vector4[]   GetVectorArrayImpl(int name);
+        [NativeName("GetMatrixArrayFromScript")] extern private Matrix4x4[] GetMatrixArrayImpl(int name);
+
+        private System.Array GetValueArrayImpl(int name, Type t)
+        {
+            if (t == typeof(float))          return GetFloatArrayImpl(name);
+            else if (t == typeof(Vector4))   return GetVectorArrayImpl(name);
+            else if (t == typeof(Matrix4x4)) return GetMatrixArrayImpl(name);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+        [NativeName("GetFloatArrayCountFromScript")]  extern private int GetFloatArrayCountImpl(int name);
+        [NativeName("GetVectorArrayCountFromScript")] extern private int GetVectorArrayCountImpl(int name);
+        [NativeName("GetMatrixArrayCountFromScript")] extern private int GetMatrixArrayCountImpl(int name);
+
+        private int GetValueArrayCountImpl(int name, Type t)
+        {
+            if (t == typeof(float))          return GetFloatArrayCountImpl(name);
+            else if (t == typeof(Vector4))   return GetVectorArrayCountImpl(name);
+            else if (t == typeof(Matrix4x4)) return GetMatrixArrayCountImpl(name);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+        [NativeName("ExtractFloatArrayFromScript")]  extern private void ExtractFloatArrayImpl(int name, [Out] float[] val);
+        [NativeName("ExtractVectorArrayFromScript")] extern private void ExtractVectorArrayImpl(int name, [Out] Vector4[] val);
+        [NativeName("ExtractMatrixArrayFromScript")] extern private void ExtractMatrixArrayImpl(int name, [Out] Matrix4x4[] val);
+
+        private void ExtractValueArrayImpl(int name, System.Array values, Type t)
+        {
+            if (t == typeof(float))          ExtractFloatArrayImpl(name,  (float[])values);
+            else if (t == typeof(Vector4))   ExtractVectorArrayImpl(name, (Vector4[])values);
+            else if (t == typeof(Matrix4x4)) ExtractMatrixArrayImpl(name, (Matrix4x4[])values);
+            else throw new ArgumentException("Unsupported type for value");
+        }
+
+    }
+
+    public sealed partial class MaterialPropertyBlock
+    {
+        [NativeMethod(Name = "MaterialPropertyBlockScripting::Create", IsFreeFunction = true)]
+        extern private static System.IntPtr CreateImpl();
+        [NativeMethod(Name = "MaterialPropertyBlockScripting::Destroy", IsFreeFunction = true, IsThreadSafe = true)]
+        extern private static void DestroyImpl(System.IntPtr mpb);
+
+        extern public bool isEmpty {[NativeName("IsEmpty")] get; }
+
+        extern private void Clear(bool keepMemory);
+        public void Clear() { Clear(true); }
+    }
+}
+
+//
+// ShaderVariantCollection
+//
+
+namespace UnityEngine
+{
     public sealed partial class ShaderVariantCollection : Object
     {
         public partial struct ShaderVariant

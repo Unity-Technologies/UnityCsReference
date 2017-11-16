@@ -64,6 +64,7 @@ namespace UnityEditor
         BakedIndices = 29,
         BakedCharting = 30,
         SpriteMask = 31,
+        BakedUVOverlap = 32,
     }
 
     internal class SceneRenderModeWindow : PopupWindowContent
@@ -125,6 +126,7 @@ namespace UnityEditor
                 DrawCameraMode.BakedEmissive,
                 DrawCameraMode.BakedCharting,
                 DrawCameraMode.BakedTexelValidity,
+                DrawCameraMode.BakedUVOverlap,
                 DrawCameraMode.BakedIndices,
                 DrawCameraMode.LightOverlap,
 
@@ -169,6 +171,7 @@ namespace UnityEditor
                 EditorGUIUtility.TextContent("Lightmap Indices"),
                 EditorGUIUtility.TextContent("UV Charts"),
                 EditorGUIUtility.TextContent("Sprite Mask"),
+                EditorGUIUtility.TextContent("UV Overlap"),
             };
         }
 

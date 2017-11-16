@@ -112,6 +112,8 @@ namespace UnityEngine.Experimental.UIElements
         private readonly List<ScheduledItem> m_ScheduleTransactions = new List<ScheduledItem>();
         private readonly List<ScheduledItem> m_UnscheduleTransactions = new List<ScheduledItem>();
 
+        internal bool disableThrottling = false;
+
         private int m_LastUpdatedIndex = -1;
         private class TimerEventSchedulerItem : ScheduledItem
         {
@@ -264,7 +266,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     currentTime = Panel.TimeSinceStartupMs();
 
-                    if (currentTime >= maxTime)
+                    if (!disableThrottling && currentTime >= maxTime)
                     {
                         //We spent too much time on this frame updating items, we break for now, we'll resume next frame
                         break;

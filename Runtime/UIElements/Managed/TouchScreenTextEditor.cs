@@ -26,9 +26,9 @@ namespace UnityEngine.Experimental.UIElements
             secureText = string.Empty;
         }
 
-        public override void ExecuteDefaultAction(EventBase evt)
+        public override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
             long mouseEventType = MouseDownEvent.TypeId();
 

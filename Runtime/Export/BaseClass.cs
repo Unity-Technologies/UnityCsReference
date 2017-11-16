@@ -105,6 +105,7 @@ namespace UnityEngine
         // In the player on PS4
         PS4 = 25,
         // In the player on PSM
+        [System.Obsolete("PSM export is no longer supported in Unity >= 5.3")]
         PSM = 26,
         // In the player on XboxOne
         XboxOne = 27,
@@ -116,24 +117,6 @@ namespace UnityEngine
         tvOS = 31,
         // Nintendo Switch
         Switch = 32,
-    }
-
-    // The operating system family application is running. Returned by SystemInfo.operatingSystemFamily.
-    // NOTE: also match with enum in SystemInfo.h
-    // ADD_NEW_OPERATING_SYSTEM_FAMILY_HERE
-    public enum  OperatingSystemFamily
-    {
-        // For operating systems that do not fall into any other category.
-        Other = 0,
-
-        // MacOSX operating system family.
-        MacOSX = 1,
-
-        // Windows operating system family.
-        Windows = 2,
-
-        // Linux operating system family.
-        Linux = 3,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.
@@ -242,28 +225,6 @@ namespace UnityEngine
         Log = 3,
         // LogType used for Exceptions.
         Exception = 4
-    }
-    // Enumeration for [[SystemInfo.deviceType]], denotes a coarse grouping of kinds of devices.
-    public enum DeviceType
-    {
-        // Device type is unknown. You should never see this in practice.
-        Unknown = 0,
-        // A handheld device like mobile phone or a tablet.
-        Handheld = 1,
-        // A stationary gaming console.
-        Console = 2,
-        // Desktop or laptop computer.
-        Desktop = 3,
-    }
-
-    // Enumeration for [[SystemInfo.batteryStatus]]
-    public enum BatteryStatus
-    {
-        Unknown = 0,
-        Charging = 1,
-        Discharging = 2,
-        NotCharging = 3,
-        Full = 4
     }
 
     // Priority of a thread.

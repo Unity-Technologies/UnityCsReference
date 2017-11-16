@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Utils;
 using File = System.IO.File;
 
 namespace UnityEditor.Scripting.ScriptCompilation
@@ -417,7 +419,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var scriptAssemblyReferences = new List<ScriptAssembly>();
             var references = new List<string>();
-
             bool buildingForEditor = settings.BuildingForEditor;
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
@@ -475,8 +476,59 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
                 references.AddRange(assemblies.EditorAssemblyReferences);
 
+            references.AddRange(GenerateAdditionalReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename));
+
             scriptAssembly.ScriptAssemblyReferences = scriptAssemblyReferences.ToArray();
             scriptAssembly.References = references.ToArray();
+        }
+
+        public static List<string> GenerateAdditionalReferences(ApiCompatibilityLevel apiCompatibilityLevel, BuildTarget buildTarget, SupportedLanguage supportedLanguage,
+            bool buildingForEditor, string assemblyName)
+        {
+            var additionalReferences = new List<string>();
+
+            if (WSAHelpers.BuildingForDotNet(buildTarget, buildingForEditor, assemblyName))
+                return additionalReferences;
+
+            // The language may not be compatible with these additional references
+            if (supportedLanguage != null && !supportedLanguage.CompilerRequiresAdditionalReferences())
+                return additionalReferences;
+
+            // For .NET 2.0 profile, the new mcs.exe references class libraries out of 2.0-api folder (even though we run against 2.0 at runtime)
+            var profile = apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0
+                ? "2.0-api"
+                : BuildPipeline.CompatibilityProfileToClassLibFolder(apiCompatibilityLevel);
+
+            var monoAssemblyDirectory = MonoInstallationFinder.GetProfileDirectory(profile,
+                    MonoInstallationFinder.MonoBleedingEdgeInstallation);
+
+            additionalReferences.AddRange(GetAdditionalReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
+
+            // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
+            // used later by the language compilers.
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            {
+                var facadesDirectory = Path.Combine(monoAssemblyDirectory, "Facades");
+                additionalReferences.AddRange(Directory.GetFiles(facadesDirectory, "*.dll"));
+            }
+
+            return additionalReferences;
+        }
+
+        internal static string[] GetAdditionalReferences()
+        {
+            return new[]
+            {
+                "mscorlib.dll",
+                "System.dll",
+                "System.Core.dll",
+                "System.Runtime.Serialization.dll",
+                "System.Xml.dll",
+                "System.Xml.Linq.dll",
+                "UnityScript.dll",
+                "UnityScript.Lang.dll",
+                "Boo.Lang.dll",
+            };
         }
 
         public static List<string> GetUnityReferences(ScriptAssembly scriptAssembly, PrecompiledAssembly[] unityAssemblies, EditorScriptCompilationOptions options)

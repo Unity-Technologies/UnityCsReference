@@ -6,9 +6,9 @@ namespace UnityEngine.Experimental.UIElements
 {
     internal class TextEditorEventHandler
     {
-        protected TextEditorEngine editorEngine { get; }
+        protected TextEditorEngine editorEngine { get; private set; }
 
-        protected TextInputFieldBase textInputField { get; }
+        protected TextInputFieldBase textInputField { get; private set; }
 
         protected TextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
         {
@@ -16,6 +16,8 @@ namespace UnityEngine.Experimental.UIElements
             this.textInputField = textInputField;
             this.textInputField.SyncTextEngine();
         }
+
+        public virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
 
         public virtual void ExecuteDefaultAction(EventBase evt)
         {

@@ -118,7 +118,10 @@ namespace UnityEditor
                 m_CurveEditor.settings = settings;
             m_CurveEditor.settings.hTickLabelOffset = 10;
             m_CurveEditor.settings.rectangleToolFlags = CurveEditorSettings.RectangleToolFlags.MiniRectangleTool;
-            m_CurveEditor.settings.undoRedoSelection = true;
+
+            // As there is no guarantee animation curve changes are recorded in undo redo, we can't really
+            // handle curve selection in undo redo either.
+            m_CurveEditor.settings.undoRedoSelection = false;
             m_CurveEditor.settings.showWrapperPopups = true;
 
             // For each of horizontal and vertical axis, if we have a finite range for that axis, use that range,

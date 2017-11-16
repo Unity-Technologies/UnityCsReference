@@ -325,6 +325,26 @@ namespace UnityEngine
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal sealed partial class GUIClip
     {
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal struct ParentClipScope : IDisposable
+        {
+            private bool m_Disposed;
+
+            public ParentClipScope(Matrix4x4 objectTransform, Rect clipRect)
+            {
+                m_Disposed = false;
+                Internal_PushParentClip(objectTransform, clipRect);
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                Internal_PopParentClip();
+            }
+        }
+
         // Push a clip rect to the stack with pixel offsets.
         internal static void Push(Rect screenRect, Vector2 scrollOffset, Vector2 renderOffset, bool resetOffset)
         {

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -10,6 +11,7 @@ using UnityEngine.Bindings;
 using OpaqueSortMode = UnityEngine.Rendering.OpaqueSortMode;
 using CameraEvent = UnityEngine.Rendering.CameraEvent;
 using CommandBuffer = UnityEngine.Rendering.CommandBuffer;
+using ComputeQueueType = UnityEngine.Rendering.ComputeQueueType;
 
 namespace UnityEngine
 {
@@ -46,6 +48,7 @@ namespace UnityEngine
 
         extern public float depth { get; set; }
         extern public float aspect { get; set; }
+        extern public void ResetAspect();
 
         extern public Vector3 velocity { get; }
 
@@ -61,12 +64,20 @@ namespace UnityEngine
         extern public Color backgroundColor { get; set; }
         extern public CameraClearFlags clearFlags { get; set; }
 
+        extern public DepthTextureMode depthTextureMode { get; set; }
+        extern public bool clearStencilAfterLightingPass { get; set; }
+
         extern public void SetReplacementShader(Shader shader, string replacementTag);
         extern public void ResetReplacementShader();
 
-
         [NativeProperty("NormalizedViewportRect")] extern public Rect rect      { get; set; }
         [NativeProperty("ScreenViewportRect")]     extern public Rect pixelRect { get; set; }
+
+        extern public int pixelWidth  {[FreeFunction("CameraScripting::GetPixelWidth",  HasExplicitThis = true)] get; }
+        extern public int pixelHeight {[FreeFunction("CameraScripting::GetPixelHeight", HasExplicitThis = true)] get; }
+
+        extern public int scaledPixelWidth  {[FreeFunction("CameraScripting::GetScaledPixelWidth",  HasExplicitThis = true)] get; }
+        extern public int scaledPixelHeight {[FreeFunction("CameraScripting::GetScaledPixelHeight", HasExplicitThis = true)] get; }
 
         extern public RenderTexture targetTexture { get; set; }
         extern public RenderTexture activeTexture {[NativeName("GetCurrentTargetTexture")] get; }
@@ -79,6 +90,8 @@ namespace UnityEngine
         extern public Matrix4x4 previousViewProjectionMatrix { get; }
         extern public void ResetWorldToCameraMatrix();
         extern public void ResetProjectionMatrix();
+
+        [FreeFunction("CameraScripting::CalculateObliqueMatrix", HasExplicitThis = true)] extern public Matrix4x4 CalculateObliqueMatrix(Vector4 clipPlane);
 
         extern public Vector3 WorldToScreenPoint(Vector3 position);
         extern public Vector3 WorldToViewportPoint(Vector3 position);
@@ -93,6 +106,18 @@ namespace UnityEngine
         extern private Ray ScreenPointToRay(Vector2 pos);
         public Ray ScreenPointToRay(Vector3 pos) { return ScreenPointToRay((Vector2)pos); }
 
+        [FreeFunction("CameraScripting::RaycastTry", HasExplicitThis = true)]   extern internal GameObject RaycastTry(Ray ray, float distance, int layerMask);
+        [FreeFunction("CameraScripting::RaycastTry2D", HasExplicitThis = true)] extern internal GameObject RaycastTry2D(Ray ray, float distance, int layerMask);
+
+        [FreeFunction("CameraScripting::CalculateViewportRayVectors", HasExplicitThis = true)]
+        extern private void CalculateFrustumCornersInternal(Rect viewport, float z, MonoOrStereoscopicEye eye, [Out] Vector3[] outCorners);
+
+        public void CalculateFrustumCorners(Rect viewport, float z, MonoOrStereoscopicEye eye, Vector3[] outCorners)
+        {
+            if (outCorners == null)     throw new ArgumentNullException("outCorners");
+            if (outCorners.Length < 4)  throw new ArgumentException("outCorners minimum size is 4", "outCorners");
+            CalculateFrustumCornersInternal(viewport, z, eye, outCorners);
+        }
 
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
         extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }
@@ -132,12 +157,19 @@ namespace UnityEngine
         // extern public void AddCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
         // extern public void RemoveCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
         [NativeName("AddCommandBuffer")]    extern private void AddCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
+        [NativeName("AddCommandBufferAsync")]    extern private void AddCommandBufferAsyncImpl(CameraEvent evt, [NotNull] CommandBuffer buffer, ComputeQueueType queueType);
         [NativeName("RemoveCommandBuffer")] extern private void RemoveCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
 
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferImpl(evt, buffer);
+        }
+
+        public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
+        {
+            if (buffer == null) throw new NullReferenceException("buffer is null");
+            AddCommandBufferAsyncImpl(evt, buffer, queueType);
         }
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)

@@ -494,18 +494,6 @@ namespace UnityEditor
             }
         }
 
-        static void LinearToGammaArray(Color[] colors)
-        {
-            int s = colors.Length;
-            for (int i = 0; i < s; i++)
-            {
-                Color c = colors[i];
-                Color c2 = c.gamma;
-                c2.a = c.a;
-                colors[i] = c2;
-            }
-        }
-
         // returns -1 if tonemapping is disabled
         float GetTonemappingExposureAdjusment()
         {
@@ -578,9 +566,6 @@ namespace UnityEditor
                         break;
                 }
 
-                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
-                    LinearToGammaArray(sliderColors);
-
                 // Tonemapping (we do not tonemap the Hue vertical slider)
                 if (m_ColorBoxMode != ColorBoxMode.SV_H)
                     DoTonemapping(sliderColors, exposureValue, m_HDRValues.m_TonemappingType);
@@ -593,7 +578,7 @@ namespace UnityEditor
 
         public static Texture2D MakeTexture(int width, int height)
         {
-            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
             tex.hideFlags = HideFlags.HideAndDontSave;
             tex.wrapMode = TextureWrapMode.Clamp;
             tex.hideFlags = HideFlags.HideAndDontSave;
@@ -657,8 +642,6 @@ namespace UnityEditor
                         HSVToRGBArray(m_Colors, 1.0f);
                         break;
                 }
-                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
-                    LinearToGammaArray(m_Colors);
 
                 DoTonemapping(m_Colors, exposureValue, m_HDRValues.m_TonemappingType);
 
@@ -1258,7 +1241,7 @@ namespace UnityEditor
 
         static Texture2D CreateGradientTexture(string name, int width, int height, Color leftColor, Color rightColor)
         {
-            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
             texture.name = name;
             texture.hideFlags = HideFlags.HideAndDontSave;
             var pixels = new Color[width * height];
@@ -1663,8 +1646,6 @@ namespace UnityEditor
             if (styles == null)
                 styles = new Styles();
 
-            GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
-
             Texture2D preview = get.m_Preview;
             int width = (int)Mathf.Ceil(position.width / kPixelSize);
             int height = (int)Mathf.Ceil(position.height / kPixelSize);
@@ -1705,8 +1686,6 @@ namespace UnityEditor
             // Draw selected pixelSize
             Rect newR = new Rect((p.x - mPos.x) * xStep + position.x, (p.y - mPos.y) * yStep + position.y, xStep, yStep);
             styles.eyeDropperPickedPixel.Draw(newR, false, false, false, false);
-
-            GL.sRGBWrite = false;
         }
 
         protected override void OldOnGUI()

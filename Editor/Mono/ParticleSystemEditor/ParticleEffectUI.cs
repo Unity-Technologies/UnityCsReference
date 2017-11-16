@@ -48,18 +48,20 @@ namespace UnityEditor
 
         internal class Texts
         {
-            public GUIContent previewSpeed = EditorGUIUtility.TextContent("Playback Speed");
+            public GUIContent previewSpeed = EditorGUIUtility.TextContent("Playback Speed|Playback Speed is also affected by the Time Scale setting in the Time Manager.");
+            public GUIContent previewSpeedDisabled = EditorGUIUtility.TextContent("Playback Speed|Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
             public GUIContent previewTime = EditorGUIUtility.TextContent("Playback Time");
             public GUIContent particleCount = EditorGUIUtility.TextContent("Particles");
             public GUIContent subEmitterParticleCount = EditorGUIUtility.TextContent("Sub Emitter Particles");
             public GUIContent particleSpeeds = EditorGUIUtility.TextContent("Speed Range");
             public GUIContent play = EditorGUIUtility.TextContent("Play");
+            public GUIContent playDisabled = EditorGUIUtility.TextContent("Play|Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
             public GUIContent stop = EditorGUIUtility.TextContent("Stop");
             public GUIContent pause = EditorGUIUtility.TextContent("Pause");
             public GUIContent restart = EditorGUIUtility.TextContent("Restart");
             public GUIContent addParticleSystem = EditorGUIUtility.TextContent("|Create Particle System");
-            public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes");
-            public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform)");
+            public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes.");
+            public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).");
             public GUIContent previewLayers = EditorGUIUtility.TextContent("Simulate Layers|Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
@@ -451,9 +453,18 @@ namespace UnityEditor
             if (!isPlayMode)
             {
                 EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
-                ParticleSystemEditorUtils.simulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.simulationSpeed /*, ParticleSystemStyles.Get().numberField*/), 0f, 10f);
+                if (Time.timeScale == 0.0f)
+                {
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.FloatField(s_Texts.previewSpeedDisabled, 0.0f);
+                    }
+                }
+                else
+                {
+                    ParticleSystemEditorUtils.simulationSpeed = Mathf.Clamp(EditorGUILayout.FloatField(s_Texts.previewSpeed, ParticleSystemEditorUtils.simulationSpeed), 0f, 10f);
+                }
                 EditorGUI.kFloatFieldFormatString = oldFormat;
-
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.kFloatFieldFormatString = s_Texts.secondsFloatFieldFormatString;
@@ -529,8 +540,12 @@ namespace UnityEditor
             else
                 EditorGUILayout.LabelField(s_Texts.particleSpeeds, GUIContent.Temp("0.0 - 0.0"));
 
-            EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers, SetPreviewLayersDelegate);
-            ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);
+            if (!EditorApplication.isPlaying)
+            {
+                EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers, SetPreviewLayersDelegate);
+                ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);
+            }
+
             ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
 
             EditorGUIUtility.labelWidth = 0.0f;
@@ -682,18 +697,24 @@ namespace UnityEditor
             if (evt.type == EventType.Layout)
                 m_TimeHelper.Update();
 
+            bool disablePlayButton = (Time.timeScale == 0.0f);
+            GUIContent playText = disablePlayButton ? s_Texts.playDisabled : s_Texts.play;
+
             if (!EditorApplication.isPlaying)
             {
                 // Edit Mode: Play/Stop buttons
                 GUILayout.BeginHorizontal(GUILayout.Width(210.0f));
                 {
-                    bool isPlaying = ParticleSystemEditorUtils.playbackIsPlaying && !ParticleSystemEditorUtils.playbackIsPaused;
-                    if (GUILayout.Button(isPlaying ? s_Texts.pause : s_Texts.play, "ButtonLeft"))
+                    using (new EditorGUI.DisabledScope(disablePlayButton))
                     {
-                        if (isPlaying)
-                            Pause();
-                        else
-                            Play();
+                        bool isPlaying = ParticleSystemEditorUtils.playbackIsPlaying && !ParticleSystemEditorUtils.playbackIsPaused && !disablePlayButton;
+                        if (GUILayout.Button(isPlaying ? s_Texts.pause : playText, "ButtonLeft"))
+                        {
+                            if (isPlaying)
+                                Pause();
+                            else
+                                Play();
+                        }
                     }
 
                     if (GUILayout.Button(s_Texts.restart, "ButtonMid"))
@@ -714,10 +735,13 @@ namespace UnityEditor
                 // Play mode: we only handle play/stop (due to problems with determining if a system with subemitters is playing we cannot pause)
                 GUILayout.BeginHorizontal();
                 {
-                    if (GUILayout.Button(s_Texts.play))
+                    using (new EditorGUI.DisabledScope(disablePlayButton))
                     {
-                        Stop();
-                        Play();
+                        if (GUILayout.Button(playText))
+                        {
+                            Stop();
+                            Play();
+                        }
                     }
                     if (GUILayout.Button(s_Texts.stop))
                     {

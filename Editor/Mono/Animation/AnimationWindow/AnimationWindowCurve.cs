@@ -41,7 +41,6 @@ namespace UnityEditorInternal
 
         public GameObject rootGameObject { get { return m_SelectionBinding != null ? m_SelectionBinding.rootGameObject : null; } }
         public ScriptableObject scriptableObject { get { return m_SelectionBinding != null ? m_SelectionBinding.scriptableObject : null; } }
-        public float timeOffset { get { return m_SelectionBinding != null ? m_SelectionBinding.timeOffset : 0.0f; } }
         public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
         public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
         public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }

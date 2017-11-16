@@ -278,10 +278,10 @@ public enum TextureImporterFormat
     
     ETC_RGB4 = 34,
     
+    [System.Obsolete("Use ETC_RGB4 (UnityUpgradable) -> ETC_RGB4")]
     ATC_RGB4 = 35,
-    
+    [System.Obsolete("Use ETC2_RGBA8 (UnityUpgradable) -> ETC2_RGBA8")]
     ATC_RGBA8 = 36,
-    
     
     EAC_R = 41,
     

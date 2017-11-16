@@ -20,6 +20,7 @@ public enum AudioMixerUpdateMode
     UnscaledTime = 1
 }
 
+[ExcludeFromObjectFactory]
 public partial class AudioMixer : Object
 {
     

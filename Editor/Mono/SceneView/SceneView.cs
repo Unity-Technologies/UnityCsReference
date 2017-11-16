@@ -953,7 +953,7 @@ namespace UnityEditor
 
             if (m_SceneTargetTexture == null)
             {
-                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format);
+                m_SceneTargetTexture = new RenderTexture(0, 0, 24, format, RenderTextureReadWrite.sRGB);
                 m_SceneTargetTexture.name = "SceneView RT";
                 m_SceneTargetTexture.antiAliasing = msaa;
                 m_SceneTargetTexture.hideFlags = HideFlags.HideAndDontSave;
@@ -965,7 +965,6 @@ namespace UnityEditor
                 m_SceneTargetTexture.height = height;
             }
             m_SceneTargetTexture.Create();
-            EditorGUIUtility.SetGUITextureBlitColorspaceSettings(EditorGUIUtility.GUITextureBlitColorspaceMaterial);
         }
 
         internal bool IsCameraDrawModeEnabled(DrawCameraMode mode)
@@ -1130,9 +1129,7 @@ namespace UnityEditor
                 GUI.BeginGroup(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight));
                 if (evt.type == EventType.Repaint)
                 {
-                    GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                    Graphics.DrawTexture(r, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitColorspaceMaterial);
-                    GL.sRGBWrite = false;
+                    Graphics.DrawTexture(r, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                 }
                 Handles.SetCamera(cameraRect, m_Camera);
 
@@ -1608,6 +1605,8 @@ namespace UnityEditor
 
             SetupCamera();
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
+            if (evt.type == EventType.Repaint)
+                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
 
             SetupCustomSceneLighting();
 
@@ -1649,6 +1648,7 @@ namespace UnityEditor
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.colorFormat = RenderTextureFormat.ARGB32;
                 rtDesc.depthBufferBits = 0;
+                rtDesc.sRGB = false;
                 ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
                 Graphics.SetRenderTarget(ldrSceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
@@ -1662,10 +1662,7 @@ namespace UnityEditor
                 // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
                 // view won't be able to properly render to the rendertexture as needed.
                 // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
-                bool sRGBWriteOld = GL.sRGBWrite;
-                GL.sRGBWrite = false;
                 HandleSelectionAndOnSceneGUI();
-                GL.sRGBWrite = sRGBWriteOld;
             }
 
             // Handle commands
@@ -1682,12 +1679,10 @@ namespace UnityEditor
                 Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
 
             // Draw default scene manipulation tools (Move/Rotate/...)
-            {
-                bool sRGBWriteOld = GL.sRGBWrite;
+            DefaultHandles();
+
+            if (evt.type == EventType.Repaint)
                 GL.sRGBWrite = false;
-                DefaultHandles();
-                GL.sRGBWrite = sRGBWriteOld;
-            }
 
             if (!UseSceneFiltering())
             {
@@ -1701,11 +1696,9 @@ namespace UnityEditor
                     GUIClip.Pop();
                 if (evt.type == EventType.Repaint)
                 {
-                    GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
-                    Graphics.DrawTexture(guiRect, ldrSceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitColorspaceMaterial);
+                    Graphics.DrawTexture(guiRect, ldrSceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
                     if (RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
                         RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
-                    GL.sRGBWrite = false;
                     Profiler.EndSample();
                 }
             }
@@ -1856,7 +1849,15 @@ namespace UnityEditor
 
 
         /// Is the scene view ortho.
-        public bool orthographic { get { return m_Ortho.value; } set {m_Ortho.value = value; } }
+        public bool orthographic
+        {
+            get { return m_Ortho.value; }
+            set
+            {
+                m_Ortho.value = value;
+                svRot.UpdateGizmoLabel(this, m_Rotation.target * Vector3.forward, m_Ortho.target);
+            }
+        }
 
         public void FixNegativeSize()
         {

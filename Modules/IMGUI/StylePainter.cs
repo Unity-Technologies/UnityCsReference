@@ -9,20 +9,69 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal struct BorderParameters
+    {
+        public float leftWidth;
+        public float topWidth;
+        public float rightWidth;
+        public float bottomWidth;
+
+        public float topLeftRadius;
+        public float topRightRadius;
+        public float bottomRightRadius;
+        public float bottomLeftRadius;
+
+        public void SetWidth(float top, float right, float bottom, float left)
+        {
+            topWidth = top;
+            rightWidth = right;
+            bottomWidth = bottom;
+            leftWidth = left;
+        }
+
+        public void SetWidth(float allBorders)
+        {
+            SetWidth(allBorders, allBorders, allBorders, allBorders);
+        }
+
+        public void SetRadius(float topLeft, float topRight, float bottomRight, float bottomLeft)
+        {
+            topLeftRadius = topLeft;
+            topRightRadius = topRight;
+            bottomRightRadius = bottomRight;
+            bottomLeftRadius = bottomLeft;
+        }
+
+        public void SetRadius(float radius)
+        {
+            SetRadius(radius, radius, radius, radius);
+        }
+
+        public Vector4 GetWidths()
+        {
+            return new Vector4(leftWidth,
+                topWidth,
+                rightWidth,
+                bottomWidth);
+        }
+
+        public Vector4 GetRadiuses()
+        {
+            return new Vector4(topLeftRadius,
+                topRightRadius,
+                bottomRightRadius,
+                bottomLeftRadius);
+        }
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct TextureStylePainterParameters
     {
         public Rect rect;
         public Color color;
         public Texture texture;
         public ScaleMode scaleMode;
-        public float borderLeftWidth;
-        public float borderTopWidth;
-        public float borderRightWidth;
-        public float borderBottomWidth;
-        public float borderTopLeftRadius;
-        public float borderTopRightRadius;
-        public float borderBottomRightRadius;
-        public float borderBottomLeftRadius;
+        public BorderParameters border;
         public int sliceLeft;
         public int sliceTop;
         public int sliceRight;
@@ -34,14 +83,7 @@ namespace UnityEngine
     {
         public Rect rect;
         public Color color;
-        public float borderLeftWidth;
-        public float borderTopWidth;
-        public float borderRightWidth;
-        public float borderBottomWidth;
-        public float borderTopLeftRadius;
-        public float borderTopRightRadius;
-        public float borderBottomRightRadius;
-        public float borderBottomLeftRadius;
+        public BorderParameters border;
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -117,16 +159,8 @@ namespace UnityEngine
             Rect screenRect = painterParams.rect;
             Color color = painterParams.color;
 
-            var borderWidths = new Vector4(
-                    painterParams.borderLeftWidth,
-                    painterParams.borderTopWidth,
-                    painterParams.borderRightWidth,
-                    painterParams.borderBottomWidth);
-            var borderRadiuses = new Vector4(
-                    painterParams.borderTopLeftRadius,
-                    painterParams.borderTopRightRadius,
-                    painterParams.borderBottomRightRadius,
-                    painterParams.borderBottomLeftRadius);
+            var borderWidths = painterParams.border.GetWidths();
+            var borderRadiuses = painterParams.border.GetRadiuses();
 
             DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidths, borderRadiuses);
         }
@@ -178,16 +212,8 @@ namespace UnityEngine
                     break;
             }
 
-            var borderWidths = new Vector4(
-                    painterParams.borderLeftWidth,
-                    painterParams.borderTopWidth,
-                    painterParams.borderRightWidth,
-                    painterParams.borderBottomWidth);
-            var borderRadiuses = new Vector4(
-                    painterParams.borderTopLeftRadius,
-                    painterParams.borderTopRightRadius,
-                    painterParams.borderBottomRightRadius,
-                    painterParams.borderBottomLeftRadius);
+            var borderWidths = painterParams.border.GetWidths();
+            var borderRadiuses = painterParams.border.GetRadiuses();
 
             DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom);
         }

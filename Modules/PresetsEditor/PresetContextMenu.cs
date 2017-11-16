@@ -2,144 +2,119 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    internal static class PresetContextMenu
+    internal class PresetContextMenu : PresetSelectorReceiver
     {
         static class Style
         {
             public static GUIContent presetIcon = EditorGUIUtility.IconContent("Preset.Context");
-            public static GUIContent saveAsPreset = new GUIContent("Save Preset");
         }
 
-        static IEnumerable<Preset> FindAllPresetsForObject(Object target)
-        {
-            return AssetDatabase.FindAssets("t:Preset")
-                .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)))
-                .Where(preset => preset.CanBeAppliedTo(target));
-        }
+        Object[] m_Targets;
+        Preset[] m_Presets;
+        AssetImporterTabbedEditor[] m_ImporterEditors;
+        SerializedObject m_ImporterSerialized;
 
-        private class PropertyModComparer : IEqualityComparer<PropertyModification>
-        {
-            public bool Equals(PropertyModification x, PropertyModification y)
-            {
-                return x.propertyPath == y.propertyPath && x.value == y.value;
-            }
-
-            public int GetHashCode(PropertyModification obj)
-            {
-                return obj.propertyPath.GetHashCode() << 2 & obj.value.GetHashCode();
-            }
-        }
-
-        [EditorHeaderItem(typeof(Object), -999)]
+        [EditorHeaderItem(typeof(Object), -1001)]
         static bool DisplayPresetsMenu(Rect rectangle, Object[] targets)
         {
             var target = targets[0];
-            if (Preset.IsExcludedFromPresets(target))
-                return false;
 
-            if ((target.hideFlags & HideFlags.NotEditable) != 0)
+            if (Preset.IsExcludedFromPresets(target)
+                || (target.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
-
-            // don't display on empty components
-            if (target is Component)
-            {
-                var singleObject = new SerializedObject(target);
-                if (!singleObject.GetIterator().NextVisible(true))
-                    return false;
-            }
 
             if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,
                     EditorStyles.iconButton))
             {
-                GenericMenu menu = new GenericMenu();
-                menu.AddItem(Style.saveAsPreset, false, targets.Length == 1 ? CreatePreset : (GenericMenu.MenuFunction2)null, target);
-
-                foreach (var preset in FindAllPresetsForObject(target))
-                {
-                    var tpl = new Tuple<Preset, Object[]>(preset, targets);
-                    menu.AddItem(new GUIContent("Apply Preset/" + preset.name), false, ApplyPreset, tpl);
-                }
-                if (menu.GetItemCount() == 1)
-                {
-                    menu.AddDisabledItem(new GUIContent("Apply Preset/No matching Preset found"));
-                }
-
-                menu.DropDown(rectangle);
+                CreateAndShow(targets);
             }
             return true;
         }
 
-        static bool ApplyImportSettingsBeforeSavingPreset(ref Preset preset, Object target)
+        static void CreateAndShow(Object[] targets)
         {
-            // make sure modifications to importer get applied before creating preset.
-            foreach (InspectorWindow i in InspectorWindow.GetAllInspectorWindows())
+            var instance = CreateInstance<PresetContextMenu>();
+            if (targets[0] is AssetImporter)
             {
-                ActiveEditorTracker activeEditor = i.tracker;
-                foreach (Editor e in activeEditor.activeEditors)
+                // we need to keep our own instance of the selected importer in order to handle the Apply/Reset correctly
+                instance.m_ImporterEditors = Resources
+                    .FindObjectsOfTypeAll<AssetImporterTabbedEditor>()
+                    .Where(e => e.targets == targets)
+                    .ToArray();
+                instance.m_Targets = new[] {Instantiate(targets[0])};
+                instance.m_ImporterSerialized = new SerializedObject(targets);
+                var prop = instance.m_ImporterEditors[0].m_SerializedObject.GetIterator();
+                while (prop.Next(true))
                 {
-                    var editor = e as AssetImporterEditor;
-                    if (editor != null && editor.target == target && editor.HasModified())
-                    {
-                        if (EditorUtility.DisplayDialog("Unapplied import settings", "Apply settings before creating a new preset", "Apply", "Cancel"))
-                        {
-                            editor.ApplyAndImport();
-                            // after reimporting, the target object has changed, so update the preset with the newly imported values.
-                            preset.UpdateProperties(editor.target);
-                            return false;
-                        }
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        static string CreatePresetDialog(ref Preset preset, Object target)
-        {
-            if (target is AssetImporter && ApplyImportSettingsBeforeSavingPreset(ref preset, target))
-                return null;
-
-            return EditorUtility.SaveFilePanelInProject("New Preset", preset.GetTargetTypeName(), "preset", "", ProjectWindowUtil.GetActiveFolderPath());
-        }
-
-        static void CreatePreset(object target)
-        {
-            Object targetObject = target as Object;
-            var preset = new Preset(targetObject);
-            var path = CreatePresetDialog(ref preset, targetObject);
-            if (!string.IsNullOrEmpty(path))
-            {
-                AssetDatabase.CreateAsset(preset, path);
-            }
-        }
-
-        static void ApplyPreset(object presetObjectsTuple)
-        {
-            var tpl = presetObjectsTuple as Tuple<Preset, Object[]>;
-
-            if (tpl.Item2[0] is AssetImporter)
-            {
-                foreach (var o in tpl.Item2)
-                {
-                    tpl.Item1.ApplyTo(o);
-                    ((AssetImporter)o).SaveAndReimport();
+                    instance.m_ImporterSerialized.CopyFromSerializedProperty(prop);
                 }
             }
             else
             {
-                Undo.RecordObjects(tpl.Item2, "Apply Preset");
-                foreach (var o in tpl.Item2)
-                    tpl.Item1.ApplyTo(o);
+                instance.m_Targets = targets;
+                instance.m_Presets = targets.Select(t => new Preset(t)).ToArray();
             }
+            PresetSelector.ShowSelector(targets[0], null, true, instance);
+        }
+
+        void RevertValues()
+        {
+            if (m_ImporterEditors != null)
+            {
+                foreach (var assetImporterTabbedEditor in m_ImporterEditors)
+                {
+                    var seria = m_ImporterSerialized.GetIterator();
+                    while (seria.Next(true))
+                    {
+                        assetImporterTabbedEditor.m_SerializedObject.CopyFromSerializedProperty(seria);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < m_Targets.Length; i++)
+                {
+                    m_Presets[i].ApplyTo(m_Targets[i]);
+                }
+            }
+        }
+
+        public override void OnSelectionChanged(Preset selection)
+        {
+            if (selection == null)
+            {
+                RevertValues();
+            }
+            else
+            {
+                foreach (var target in m_Targets)
+                {
+                    selection.ApplyTo(target);
+                }
+                if (m_ImporterEditors != null)
+                {
+                    foreach (var assetImporterTabbedEditor in m_ImporterEditors)
+                    {
+                        var seria = new SerializedObject(m_Targets).GetIterator();
+                        while (seria.Next(true))
+                        {
+                            assetImporterTabbedEditor.m_SerializedObject.CopyFromSerializedProperty(seria);
+                        }
+                    }
+                }
+            }
+            InspectorWindow.RepaintAllInspectors();
+        }
+
+        public override void OnSelectionClosed(Preset selection)
+        {
+            OnSelectionChanged(selection);
+            DestroyImmediate(this);
         }
     }
 }

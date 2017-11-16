@@ -191,7 +191,6 @@ namespace UnityEngine.Experimental.UIElements
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
-                Dirty(ChangeType.Layout);
                 Dirty(ChangeType.Transform);
             }
         }
@@ -487,11 +486,11 @@ namespace UnityEngine.Experimental.UIElements
 
             Dirty(ChangeType.Styles);
 
-            if (m_Children != null)
+            if (m_Children != null && m_Children.Count > 0)
             {
-                foreach (var child in m_Children)
+                for (var index = 0; index < m_Children.Count; index++)
                 {
-                    // make sure the child enters and leaves panel too
+                    var child = m_Children[index];
                     child.ChangePanel(p);
                 }
             }
@@ -857,7 +856,7 @@ namespace UnityEngine.Experimental.UIElements
             AtMost = CSSMeasureMode.AtMost
         }
 
-        protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        public Vector2 MeasureTextSize(string testStr, float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
             var stylePainter = elementPanel.stylePainter;
 
@@ -865,7 +864,7 @@ namespace UnityEngine.Experimental.UIElements
             float measuredHeight = float.NaN;
 
             Font usedFont = style.font;
-            if (m_Text  == null || usedFont == null)
+            if (m_Text == null || usedFont == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
             if (widthMode == MeasureMode.Exactly)
@@ -875,7 +874,7 @@ namespace UnityEngine.Experimental.UIElements
             else
             {
                 var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = text;
+                textParams.text = testStr;
                 textParams.font = usedFont;
                 textParams.wordWrapWidth = 0.0f;
                 textParams.wordWrap = false;
@@ -896,7 +895,7 @@ namespace UnityEngine.Experimental.UIElements
             else
             {
                 var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = text;
+                textParams.text = testStr;
                 textParams.font = usedFont;
                 textParams.wordWrapWidth = measuredWidth;
                 textParams.richText = true;
@@ -909,6 +908,11 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
             return new Vector2(measuredWidth, measuredHeight);
+        }
+
+        protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        {
+            return MeasureTextSize(text, width, widthMode, height, heightMode);
         }
 
         internal long Measure(CSSNode node, float width, CSSMeasureMode widthMode, float height, CSSMeasureMode heightMode)
@@ -932,6 +936,7 @@ namespace UnityEngine.Experimental.UIElements
         void FinalizeLayout()
         {
             cssNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.FlexBasis = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
             cssNode.SetPosition(CSSEdge.Left, style.positionLeft.GetSpecifiedValueOrDefault(float.NaN));
             cssNode.SetPosition(CSSEdge.Top, style.positionTop.GetSpecifiedValueOrDefault(float.NaN));
             cssNode.SetPosition(CSSEdge.Right, style.positionRight.GetSpecifiedValueOrDefault(float.NaN));
@@ -1200,19 +1205,12 @@ namespace UnityEngine.Experimental.UIElements
                 color = Color.white,
                 texture = style.backgroundImage,
                 scaleMode = style.backgroundSize,
-                borderLeftWidth = style.borderLeftWidth,
-                borderTopWidth = style.borderTopWidth,
-                borderRightWidth = style.borderRightWidth,
-                borderBottomWidth = style.borderBottomWidth,
-                borderTopLeftRadius = style.borderTopLeftRadius,
-                borderTopRightRadius = style.borderTopRightRadius,
-                borderBottomRightRadius = style.borderBottomRightRadius,
-                borderBottomLeftRadius = style.borderBottomLeftRadius,
                 sliceLeft = style.sliceLeft,
                 sliceTop = style.sliceTop,
                 sliceRight = style.sliceRight,
                 sliceBottom = style.sliceBottom
             };
+            painter.SetBorderFromStyle(ref painterParams.border, style);
             return painterParams;
         }
 
@@ -1223,15 +1221,8 @@ namespace UnityEngine.Experimental.UIElements
             {
                 rect = ve.rect,
                 color = style.backgroundColor,
-                borderLeftWidth = style.borderLeftWidth,
-                borderTopWidth = style.borderTopWidth,
-                borderRightWidth = style.borderRightWidth,
-                borderBottomWidth = style.borderBottomWidth,
-                borderTopLeftRadius = style.borderTopLeftRadius,
-                borderTopRightRadius = style.borderTopRightRadius,
-                borderBottomRightRadius = style.borderBottomRightRadius,
-                borderBottomLeftRadius = style.borderBottomLeftRadius
             };
+            painter.SetBorderFromStyle(ref painterParams.border, style);
             return painterParams;
         }
 
@@ -1278,20 +1269,14 @@ namespace UnityEngine.Experimental.UIElements
             if (style.backgroundColor != Color.clear)
             {
                 var painterParams = painter.GetDefaultRectParameters(ve);
-                painterParams.borderLeftWidth = 0.0f;
-                painterParams.borderTopWidth = 0.0f;
-                painterParams.borderRightWidth = 0.0f;
-                painterParams.borderBottomWidth = 0.0f;
+                painterParams.border.SetWidth(0.0f);
                 painter.DrawRect(painterParams);
             }
 
             if (style.backgroundImage.value != null)
             {
                 var painterParams = painter.GetDefaultTextureParameters(ve);
-                painterParams.borderLeftWidth = 0.0f;
-                painterParams.borderTopWidth = 0.0f;
-                painterParams.borderRightWidth = 0.0f;
-                painterParams.borderBottomWidth = 0.0f;
+                painterParams.border.SetWidth(0.0f);
                 painter.DrawTexture(painterParams);
             }
         }
@@ -1313,6 +1298,12 @@ namespace UnityEngine.Experimental.UIElements
             {
                 painter.DrawText(painter.GetDefaultTextParameters(ve));
             }
+        }
+
+        internal static void SetBorderFromStyle(this IStylePainter painter, ref BorderParameters border, IStyle style)
+        {
+            border.SetWidth(style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth);
+            border.SetRadius(style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius);
         }
     }
 }

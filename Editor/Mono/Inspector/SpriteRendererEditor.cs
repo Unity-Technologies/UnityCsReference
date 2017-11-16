@@ -140,6 +140,8 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_MaskInteraction);
 
+            RenderRenderingLayer();
+
             CheckForErrors();
 
             serializedObject.ApplyModifiedProperties();

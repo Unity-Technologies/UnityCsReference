@@ -177,6 +177,10 @@ public sealed partial class ShaderUtil
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool HasInstancing (Shader s) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  bool HasProceduralInstancing (Shader s) ;
+
     internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)
         {
             if (materialsArray.hasMultipleDifferentValues)

@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -12,11 +13,14 @@ namespace UnityEditor.PackageManager
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
+    [NativeAsStruct]
     class OutdatedPackage
     {
         [SerializeField]
+        [NativeName("current")]
         private UpmPackageInfo m_Current;
         [SerializeField]
+        [NativeName("latest")]
         private UpmPackageInfo m_Latest;
 
         private OutdatedPackage() {}

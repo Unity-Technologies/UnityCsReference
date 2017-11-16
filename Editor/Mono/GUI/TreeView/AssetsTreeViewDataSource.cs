@@ -45,7 +45,8 @@ namespace UnityEditor
                 SetExpanded(m_RootItem, true);
 
             // Find start Item
-            IHierarchyProperty property = new HierarchyProperty(k_HierarchyType);
+            var property = new HierarchyProperty(k_HierarchyType, false);
+
             property.Reset();
             bool found = property.Find(m_RootInstanceID, null);
             if (!found)

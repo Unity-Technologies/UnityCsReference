@@ -42,20 +42,14 @@ namespace UnityEditor
                 m_dictionary.Add(key, value);
             }
 
-            private string trim_key(string key)
-            {
-                int idx = key.IndexOf(" (UnityEngine.Font)");
-                return key.Substring(0, idx);
-            }
-
             public bool ContainsKey(string key)
             {
-                return m_dictionary.ContainsKey(trim_key(key));
+                return m_dictionary.ContainsKey(key);
             }
 
             public FontSetting this[string key]
             {
-                get { return m_dictionary[trim_key(key)]; }
+                get { return m_dictionary[key]; }
             }
         }
 
@@ -83,7 +77,7 @@ namespace UnityEditor
             string filepath = null;
             if (filepath == null || !System.IO.File.Exists(filepath))
             {
-                filepath = UnityEditor.LocalizationDatabase.GetLocalizationResourceFolder() + "/fontsettings.txt";
+                filepath = EditorApplication.applicationContentsPath + "/Resources/fontsettings.txt";
             }
             if (!System.IO.File.Exists(filepath))
             {
@@ -134,56 +128,32 @@ namespace UnityEditor
             }
         }
 
-        private static void ModifyFont(Font font, FontDictionary dict)
-        {
-            var name = font.ToString();
-            if (dict.ContainsKey(name))
-            {
-                // Debug.LogFormat("{0} is for {1}", name, string.Join(", ", dict[name].fontNames));
-                font.fontNames = dict[name].fontNames;
-            }
-            else
-            {
-                Debug.LogError("no matching for:" + name);
-            }
-        }
-
-        private static void UpdateSkinFontInternal(GUISkin skin, FontDictionary dict)
-        {
-            if (skin == null)
-            {
-                return;
-            }
-            var e = skin.GetEnumerator();
-            while (e.MoveNext())
-            {
-                var s = e.Current as GUIStyle;
-                if (s != null && s.font != null)
-                {
-                    ModifyFont(s.font, dict);
-                }
-            }
-        }
-
-        public static void UpdateSkinFont(SystemLanguage language)
+        public static void LocalizeEditorFonts()
         {
             ReadFontSettings();
-            var dict = GetFontDictionary(language);
-            if (dict != null)
+
+            var dict = GetFontDictionary(LocalizationDatabase.currentEditorLanguage);
+            /*
+            We have the Lucida Grande ttf asset which was always the font we used in the editor.
+            But on windows we call ReplaceFontForWindows to override the font used for that asset.
+            It would probably make sense to rename the asset to something generic, such as "EditorFont" instead,
+            though that might possibly break some things.
+            */
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Bold.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small Bold.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Big.ttf"));
+        }
+
+        static void ReplaceFontForLocalization(FontDictionary dict, Font font)
+        {
+            if (dict.ContainsKey(font.name))
             {
-                UpdateSkinFontInternal(EditorGUIUtility.GetBuiltinSkin((EditorSkin)1), dict);
-                UpdateSkinFontInternal(EditorGUIUtility.GetBuiltinSkin((EditorSkin)2), dict);
+                font.fontNames = dict[font.name].fontNames;
+                // Avoid the font to be unloaded in EditorUtility.UnloadUnusedAssetsIgnoreManagedReferences and lose the font name information.
+                font.hideFlags = HideFlags.HideAndDontSave;
             }
-        }
-
-        public static void UpdateSkinFont()
-        {
-            UpdateSkinFont(LocalizationDatabase.GetCurrentEditorLanguage());
-        }
-
-        private static void OnBoot()
-        {
-            UpdateSkinFont();
         }
     }
 }

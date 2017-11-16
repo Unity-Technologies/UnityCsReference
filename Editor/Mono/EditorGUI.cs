@@ -111,13 +111,13 @@ namespace UnityEditor
 
         private static GUIContent[] s_WHLabels = {EditorGUIUtility.TextContent("W"), EditorGUIUtility.TextContent("H")};
 
-        private static GUIContent s_CenterLabel = EditorGUIUtility.TextContent("Center");
-        private static GUIContent s_ExtentLabel = EditorGUIUtility.TextContent("Extent");
-        private static GUIContent s_PositionLabel = EditorGUIUtility.TextContent("Position");
-        private static GUIContent s_SizeLabel = EditorGUIUtility.TextContent("Size");
+        private static GUIContent s_CenterLabel = EditorGUIUtility.TrTextContent("Center");
+        private static GUIContent s_ExtentLabel = EditorGUIUtility.TrTextContent("Extent");
+        private static GUIContent s_PositionLabel = EditorGUIUtility.TrTextContent("Position");
+        private static GUIContent s_SizeLabel = EditorGUIUtility.TrTextContent("Size");
 
-        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TextContent("Clipping Planes|Distances from the camera to start and stop rendering.");
-        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TextContent("Near|The closest point relative to the camera that drawing will occur."), EditorGUIUtility.TextContent("Far|The furthest point relative to the camera that drawing will occur.\n") };
+        internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "Distances from the camera to start and stop rendering.");
+        internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point relative to the camera that drawing will occur."), EditorGUIUtility.TrTextContent("Far", "The furthest point relative to the camera that drawing will occur.\n") };
         internal const float kNearFarLabelsWidth = 35f;
 
         private static int s_ColorPickID;
@@ -149,7 +149,7 @@ namespace UnityEditor
 
         private static bool s_ShowMixedValue;
 
-        private static GUIContent s_MixedValueContent = EditorGUIUtility.TextContent("\u2014|Mixed Values");
+        private static GUIContent s_MixedValueContent = EditorGUIUtility.TrTextContent("\u2014", "Mixed Values");
 
         internal static GUIContent mixedValueContent
         {
@@ -518,26 +518,26 @@ namespace UnityEditor
             {
                 if (RecycledTextEditor.s_AllowContextCutOrPaste)
                 {
-                    pm.AddItem(EditorGUIUtility.TextContent("Cut"), false, new PopupMenuEvent("Cut", GUIView.current).SendEvent);
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent("Cut", GUIView.current).SendEvent);
                 }
-                pm.AddItem(EditorGUIUtility.TextContent("Copy"), false, new PopupMenuEvent("Copy", GUIView.current).SendEvent);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent("Copy", GUIView.current).SendEvent);
             }
             else
             {
                 if (RecycledTextEditor.s_AllowContextCutOrPaste)
                 {
-                    pm.AddDisabledItem(EditorGUIUtility.TextContent("Cut"));
+                    pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
                 }
-                pm.AddDisabledItem(EditorGUIUtility.TextContent("Copy"));
+                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
             }
 
             if (s_RecycledEditor.CanPaste() && RecycledTextEditor.s_AllowContextCutOrPaste)
             {
-                pm.AddItem(EditorGUIUtility.TextContent("Paste"), false, new PopupMenuEvent("Paste", GUIView.current).SendEvent);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, new PopupMenuEvent("Paste", GUIView.current).SendEvent);
             }
             else
             {
-                // pm.AddDisabledItem (EditorGUIUtility.TextContent ("Paste"));
+                // pm.AddDisabledItem (EditorGUIUtility.TrTextContent ("Paste"));
             }
 
             pm.ShowAsContext();
@@ -2256,7 +2256,7 @@ namespace UnityEditor
 
             if (property.serializedObject.targetObjects.Length == 1 && property.isInstantiatedPrefab)
             {
-                pm.AddItem(EditorGUIUtility.TextContent("Revert Value to Prefab"), false, TargetChoiceHandler.SetPrefabOverride, propertyWithPath);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Revert Value to Prefab"), false, TargetChoiceHandler.SetPrefabOverride, propertyWithPath);
             }
 
             // If property is an element in an array, show duplicate and delete menu options
@@ -2271,12 +2271,12 @@ namespace UnityEditor
                     {
                         pm.AddSeparator("");
                     }
-                    pm.AddItem(EditorGUIUtility.TextContent("Duplicate Array Element"), false, (a) =>
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
                         {
                             TargetChoiceHandler.DuplicateArrayElement(a);
                             EditorGUIUtility.editingTextField = false;
                         }, propertyWithPath);
-                    pm.AddItem(EditorGUIUtility.TextContent("Delete Array Element"), false, (a) =>
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
                         {
                             TargetChoiceHandler.DeleteArrayElement(a);
                             EditorGUIUtility.editingTextField = false;
@@ -2291,7 +2291,7 @@ namespace UnityEditor
                 {
                     pm.AddSeparator("");
                 }
-                pm.AddItem(EditorGUIUtility.TextContent("Print Property Path"), false, e => Debug.Log(((SerializedProperty)e).propertyPath), propertyWithPath);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Print Property Path"), false, e => Debug.Log(((SerializedProperty)e).propertyPath), propertyWithPath);
             }
 
             if (EditorApplication.contextualPropertyMenu != null)
@@ -2606,6 +2606,12 @@ namespace UnityEditor
             return PopupInternal(position, EditorGUIUtility.TempContent(label), selectedIndex, EditorGUIUtility.TempContent(displayedOptions), style);
         }
 
+        /// *listonly*
+        private static int PopupInternal(Rect position, GUIContent label, int selectedIndex, string[] displayedOptions, GUIStyle style)
+        {
+            return PopupInternal(position, label, selectedIndex, EditorGUIUtility.TempContent(displayedOptions), style);
+        }
+
         // Make a generic popup selection field.
         private static int PopupInternal(Rect position, GUIContent label, int selectedIndex, GUIContent[] displayedOptions, GUIStyle style)
         {
@@ -2619,7 +2625,7 @@ namespace UnityEditor
         private static void Popup(Rect position, SerializedProperty property, GUIContent label)
         {
             BeginChangeCheck();
-            int idx = EditorGUI.Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EditorGUIUtility.TempContent(property.enumDisplayNames));
+            int idx = EditorGUI.Popup(position, label, property.hasMultipleDifferentValues ? -1 : property.enumValueIndex, EditorGUIUtility.TempContent(property.enumLocalizedDisplayNames));
             if (EndChangeCheck())
             {
                 property.enumValueIndex = idx;
@@ -2648,10 +2654,11 @@ namespace UnityEditor
                 throw new ArgumentException("Parameter selected must be of type System.Enum", "selected");
             }
 
+            bool localize = EditorUtility.IsUnityAssembly(enumType);
             var enumData = GetNonObsoleteEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            i = Popup(position, label, i, EditorGUIUtility.TempContent(enumData.displayNames), style);
-            return (i < 0 || i >= enumData.values.Length) ? selected : enumData.values[i];
+            i = Popup(position, label, i, localize ? EditorGUIUtility.TrTempContent(enumData.displayNames) : EditorGUIUtility.TempContent(enumData.displayNames), style);
+            return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
         }
 
         /// *listonly*
@@ -2914,7 +2921,7 @@ namespace UnityEditor
                     }
                 }
                 ArrayUtility.Add(ref tagValues, "");
-                ArrayUtility.Add(ref tagValues, "Add Tag...");
+                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag..."));
 
                 DoPopup(position, id, i, EditorGUIUtility.TempContent(tagValues), style);
                 return tag;
@@ -2962,7 +2969,7 @@ namespace UnityEditor
                     }
                 }
                 ArrayUtility.Add(ref tagValues, "");
-                ArrayUtility.Add(ref tagValues, "Add Tag...");
+                ArrayUtility.Add(ref tagValues, L10n.Tr("Add Tag..."));
 
                 DoPopup(position, id, i, EditorGUIUtility.TempContent(tagValues), style);
                 return tag;
@@ -3030,7 +3037,7 @@ namespace UnityEditor
                 string[] layers = InternalEditorUtility.GetLayersWithId();
 
                 ArrayUtility.Add(ref layers, "");
-                ArrayUtility.Add(ref layers, "Add Layer...");
+                ArrayUtility.Add(ref layers, L10n.Tr("Add Layer..."));
 
                 DoPopup(position, id, count, EditorGUIUtility.TempContent(layers), style);
                 Event.current.Use();
@@ -5162,6 +5169,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
         public static GUIContent BeginProperty(Rect totalPosition, GUIContent label, SerializedProperty property)
         {
+            return BeginPropertyInternal(totalPosition, label, property);
+        }
+
+        // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
+        internal static GUIContent BeginPropertyInternal(Rect totalPosition, GUIContent label, SerializedProperty property)
+        {
             Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             if (s_PendingPropertyKeyboardHandling != null)
@@ -5186,7 +5199,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 throw new NullReferenceException(error);
             }
 
-            s_PropertyFieldTempContent.text = (label == null) ? L10n.Tr(property.displayName) : label.text; // no necessary to be translated.
+            s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
             s_PropertyFieldTempContent.tooltip = EditorGUI.isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
             string attributeTooltip = ScriptAttributeUtility.GetHandler(property).tooltip;
             if (attributeTooltip != null)
@@ -5206,9 +5219,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
-            var targetObjectTypeName = property.serializedObject.targetObject != null ?
-                property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
-            GUIDebugger.LogBeginProperty(targetObjectTypeName, property.propertyPath, totalPosition);
+
+            if (GUIDebugger.active)
+            {
+                var targetObjectTypeName = property.serializedObject.targetObject != null ?
+                    property.serializedObject.targetObject.GetType().AssemblyQualifiedName : null;
+                GUIDebugger.LogBeginProperty(targetObjectTypeName, property.propertyPath, totalPosition);
+            }
+
             showMixedValue = property.hasMultipleDifferentValues;
 
             if (property.isAnimated)
@@ -5231,7 +5249,10 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Ends a Property wrapper started with ::ref::BeginProperty.
         public static void EndProperty()
         {
-            GUIDebugger.LogEndProperty();
+            if (GUIDebugger.active)
+            {
+                GUIDebugger.LogEndProperty();
+            }
 
             showMixedValue = false;
             PropertyGUIData data = s_PropertyStack.Pop();
@@ -5434,8 +5455,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     mat = GetMaterialForSpecialTexture(image);
                 }
 
-                GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear) && !TextureUtil.GetLinearSampled(image);
-
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
 
@@ -5471,7 +5490,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
                 }
 
-                GL.sRGBWrite = false;
                 if (manualResolve)
                 {
                     RenderTexture.ReleaseTemporary(image as RenderTexture);
@@ -5626,12 +5644,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return ScriptAttributeUtility.GetHandler(property).OnGUI(position, property, label, includeChildren);
         }
 
-        static string s_ArrayMultiInfoFormatString = EditorGUIUtility.TextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.").text;
+        static string s_ArrayMultiInfoFormatString = EditorGUIUtility.TrTextContent("This field cannot display arrays with more than {0} elements when multiple objects are selected.").text;
         static GUIContent s_ArrayMultiInfoContent = new GUIContent();
 
         internal static bool DefaultPropertyField(Rect position, SerializedProperty property, GUIContent label)
         {
-            label = BeginProperty(position, label, property);
+            label = BeginPropertyInternal(position, label, property);
 
             SerializedPropertyType type = property.propertyType;
 
@@ -6893,6 +6911,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         /// *listonly*
+        public static int Popup(GUIContent label, int selectedIndex, string[] displayedOptions, params GUILayoutOption[] options)
+        {
+            return Popup(label, selectedIndex, displayedOptions, EditorStyles.popup, options);
+        }
+
+        /// *listonly*
         public static int Popup(string label, int selectedIndex, string[] displayedOptions, GUIStyle style, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
@@ -6907,6 +6931,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         // Make a generic popup selection field.
         public static int Popup(GUIContent label, int selectedIndex, GUIContent[] displayedOptions, GUIStyle style, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.Popup(r, label, selectedIndex, displayedOptions, style);
+        }
+
+        internal static int Popup(GUIContent label, int selectedIndex, string[] displayedOptions, GUIStyle style, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.Popup(r, label, selectedIndex, displayedOptions, style);
@@ -7608,6 +7638,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             EditorGUILayout.LabelField(wide ? GUIContent.none : EditorGUIUtility.blankContent,
                 EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)),
+                EditorStyles.helpBox);
+        }
+
+        // Make a help box with a message to the user.
+        public static void HelpBox(GUIContent content, bool wide = true)
+        {
+            EditorGUILayout.LabelField(wide ? GUIContent.none : EditorGUIUtility.blankContent,
+                content,
                 EditorStyles.helpBox);
         }
 

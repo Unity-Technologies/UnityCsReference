@@ -27,7 +27,7 @@ namespace UnityEditor.Experimental.UIElements
         [MenuItem("Assets/Create/UIElements View")]
         public static void CreateTemplateMenuItem()
         {
-            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate);
+            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate, EditorGUIUtility.FindTexture("UxmlScript Icon"));
         }
 
         internal struct Error
@@ -468,7 +468,7 @@ namespace UnityEditor.Experimental.UIElements
                         foreach (Property prop in parsed.StyleRules[0].Declarations)
                         {
                             ssb.BeginProperty(prop.Name);
-                            StyleSheetImporter.VisitValue(errors, ssb, prop.Term);
+                            StyleSheetImporterImpl.VisitValue(errors, ssb, prop.Term);
                             ssb.EndProperty();
                         }
 

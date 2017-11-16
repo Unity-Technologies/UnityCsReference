@@ -76,8 +76,12 @@ namespace UnityEngine
                 int oldCursorIndex = m_CursorIndex;
                 m_CursorIndex = value;
                 ClampTextIndex(ref m_CursorIndex);
+
                 if (m_CursorIndex != oldCursorIndex)
+                {
                     m_RevealCursor = true;
+                    OnCursorIndexChange();
+                }
             }
         }
 
@@ -86,8 +90,12 @@ namespace UnityEngine
             get { return m_SelectIndex; }
             set
             {
+                int oldIndex = m_SelectIndex;
                 m_SelectIndex = value;
                 ClampTextIndex(ref m_SelectIndex);
+
+                if (oldIndex != m_SelectIndex)
+                    OnSelectIndexChange();
             }
         }
 
@@ -1435,6 +1443,14 @@ namespace UnityEngine
                 OnLostFocus();
             if (m_HasFocus == false && controlID == GUIUtility.keyboardControl)
                 OnFocus();
+        }
+
+        internal virtual void OnCursorIndexChange()
+        {
+        }
+
+        internal virtual void OnSelectIndexChange()
+        {
         }
 
         private void ClampTextIndex(ref int index)

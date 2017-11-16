@@ -13,11 +13,9 @@ namespace UnityEditorInternal
         public static GameObjectSelectionItem Create(GameObject gameObject)
         {
             GameObjectSelectionItem selectionItem = CreateInstance(typeof(GameObjectSelectionItem)) as GameObjectSelectionItem;
-            selectionItem.hideFlags = HideFlags.HideAndDontSave;
 
             selectionItem.gameObject = gameObject;
             selectionItem.animationClip = null;
-            selectionItem.timeOffset = 0.0f;
             selectionItem.id = 0; // no need for id since there's only one item in selection.
 
             if (selectionItem.rootGameObject != null)

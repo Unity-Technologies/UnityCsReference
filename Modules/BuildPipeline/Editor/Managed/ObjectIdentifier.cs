@@ -22,7 +22,6 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/ObjectIdentifier.h")]
     public struct ObjectIdentifier
     {
         [NativeName("guid")]

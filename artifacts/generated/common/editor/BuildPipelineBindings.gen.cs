@@ -185,7 +185,7 @@ public sealed partial class BuildPipeline
         }
     
     
-    public static string BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
+    public static BuildReport BuildPlayer(EditorBuildSettingsScene[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
             BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
             buildPlayerOptions.scenes = EditorBuildSettingsScene.GetActiveSceneList(levels);
@@ -196,7 +196,7 @@ public sealed partial class BuildPipeline
         }
     
     
-    public static string BuildPlayer(string[] levels, string locationPathName, BuildTarget target, BuildOptions options)
+    public static BuildReport BuildPlayer(string[] levels, string locationPathName, BuildTarget target, BuildOptions options)
         {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
             BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
@@ -209,36 +209,32 @@ public sealed partial class BuildPipeline
         }
     
     
-    public static string BuildPlayer(BuildPlayerOptions buildPlayerOptions)
+    public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
             return BuildPlayer(buildPlayerOptions.scenes, buildPlayerOptions.locationPathName, buildPlayerOptions.assetBundleManifestPath, buildPlayerOptions.targetGroup, buildPlayerOptions.target, buildPlayerOptions.options);
         }
     
     
-    private static string BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
+    private static BuildReport BuildPlayer(string[] scenes, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
         {
             if (isBuildingPlayer)
-            {
-                return "Cannot start a new build because there is already a build in progress.";
-            }
+                throw new InvalidOperationException("Cannot start a new build because there is already a build in progress.");
 
             if (buildTargetGroup == BuildTargetGroup.Unknown)
                 buildTargetGroup = GetBuildTargetGroup(target);
 
             string locationPathNameError;
             if (!ValidateLocationPathNameForBuildTargetGroup(locationPathName, buildTargetGroup, target, options, out locationPathNameError))
-            {
-                return locationPathNameError;
-            }
+                throw new ArgumentException(locationPathNameError);
 
             try
             {
-                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options).SummarizeErrors();
+                return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, options);
             }
             catch (System.Exception exception)
             {
                 LogBuildExceptionAndExit("BuildPipeline.BuildPlayer", exception);
-                return "";
+                return null;
             }
         }
     
@@ -283,14 +279,14 @@ public sealed partial class BuildPipeline
     [System.Obsolete ("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, BuildOptions options)
         {
-            return BuildPlayer(levels, locationPath, target, options | BuildOptions.BuildAdditionalStreamedScenes);
+            return BuildPlayer(levels, locationPath, target, options | BuildOptions.BuildAdditionalStreamedScenes).SummarizeErrors();
         }
     
     
     [System.Obsolete ("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
 public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target)
         {
-            return BuildPlayer(levels, locationPath, target, BuildOptions.BuildAdditionalStreamedScenes);
+            return BuildPlayer(levels, locationPath, target, BuildOptions.BuildAdditionalStreamedScenes).SummarizeErrors();
         }
     
     
@@ -309,7 +305,7 @@ internal static string BuildStreamedSceneAssetBundle(string[] levels, string loc
             try
             {
                 var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC);
-                crc = report.crc;
+                crc = report.summary.crc;
 
                 var summary = report.SummarizeErrors();
                 Object.DestroyImmediate(report, true);
@@ -481,7 +477,7 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  bool IsBuildTargetSupported (BuildTargetGroup buildTargetGroup, BuildTarget target) ;
+    extern public static  bool IsBuildTargetSupported (BuildTargetGroup buildTargetGroup, BuildTarget target) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

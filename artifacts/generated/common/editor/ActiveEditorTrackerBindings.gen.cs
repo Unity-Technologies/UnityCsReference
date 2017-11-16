@@ -9,6 +9,8 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using UnityEngine;
 using Object = UnityEngine.Object;
+using System.Collections.Generic;
+using System;
 
 namespace UnityEditor
 {
@@ -59,6 +61,30 @@ public sealed partial class ActiveEditorTracker
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
     }
+
+    internal void GetObjectsLockedByThisTracker(List<Object> lockedObjects)
+        {
+            if (lockedObjects == null)
+                throw new ArgumentNullException("The results list 'lockedObjects' cannot be null");
+            GetObjectsLockedByThisTrackerInternal(lockedObjects);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal void GetObjectsLockedByThisTrackerInternal (object lockedObjects) ;
+
+    internal void SetObjectsLockedByThisTracker(List<Object> toBeLocked)
+        {
+            if (toBeLocked == null)
+                throw new ArgumentNullException("The list 'toBeLocked' cannot be null");
+            SetObjectsLockedByThisTrackerInternal(toBeLocked);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal void SetObjectsLockedByThisTrackerInternal (object toBeLocked) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

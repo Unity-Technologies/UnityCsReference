@@ -18,20 +18,19 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-
-
-public enum AndroidTargetDevice
+[Flags]
+public enum AndroidArchitecture : uint
 {
     
-    FAT = 0,
+    None = 0,
+    
+    ARMv7 = 1 << 0,
     
     
     
+    X86 = 1 << 2,
     
-    
-    ARMv7 = 3,
-    
-    x86 = 4
+    All = 0xffffffff,
 }
 
 public enum AndroidSdkVersions
@@ -275,7 +274,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        public extern static AndroidTargetDevice targetDevice
+        public extern static AndroidArchitecture targetArchitectures
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

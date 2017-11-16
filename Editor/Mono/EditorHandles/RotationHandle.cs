@@ -155,6 +155,7 @@ namespace UnityEditor
 
                 var axisColor = GetColorByAxis(i);
                 color = isStatic ? Color.Lerp(axisColor, staticColor, staticBlend) : axisColor;
+                color = ToActiveColorSpace(color);
                 var axisDir = GetAxisVector(i);
 
                 var radius = size * param.axisSize[i];
@@ -171,7 +172,7 @@ namespace UnityEditor
 
             if (isHot && evt.type == EventType.Repaint)
             {
-                color = s_DisabledHandleColor;
+                color = ToActiveColorSpace(s_DisabledHandleColor);
                 Handles.DrawWireDisc(position, camTr.forward, size * param.axisSize[0]);
             }
 
@@ -179,7 +180,7 @@ namespace UnityEditor
                 && param.ShouldShow(RotationHandleParam.Handle.CameraAxis)
                 && (isHot && ids.cameraAxis == GUIUtility.hotControl || !isHot))
             {
-                color = centerColor;
+                color = ToActiveColorSpace(centerColor);
                 rotation = UnityEditorInternal.Disc.Do(ids.cameraAxis, rotation, position, Camera.current.transform.forward, size * param.cameraAxisSize, false, 0, param.enableRayDrag, true, k_RotationPieColor);
             }
 

@@ -13,12 +13,14 @@ using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using Object = UnityEngine.Object;
 using UnityEditor.VersionControl;
+using UnityEngine.Events;
 using UnityEngine.Profiling;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
-    internal class InspectorWindow : EditorWindow, IHasCustomMenu
+    internal class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
     {
         public Vector2 m_ScrollPosition;
         public InspectorMode   m_InspectorMode = InspectorMode.Normal;
@@ -35,6 +37,16 @@ namespace UnityEditor
 
         bool m_ResetKeyboardControl;
         protected ActiveEditorTracker m_Tracker;
+
+        [SerializeField]
+        protected List<Object> m_ObjectsLockedBeforeSerialization = new List<Object>();
+
+        [SerializeField]
+        protected List<int> m_InstanceIDsLockedBeforeSerialization = new List<int>();
+
+        [SerializeField]
+        EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
+
         Editor m_LastInteractedEditor;
         bool m_IsOpenForEdit = false;
 
@@ -117,14 +129,55 @@ namespace UnityEditor
 
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
+
             // ensure tracker is valid here in case domain is reloaded before first time inspector is drawn
             // fixes case 829182
             CreateTracker();
+
+            RestoreLockStateFromSerializedData();
+
+            if (m_LockTracker == null)
+            {
+                m_LockTracker = new EditorGUIUtility.EditorLockTrackerWithActiveEditorTracker();
+            }
+            m_LockTracker.tracker = tracker;
+            m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
+
+
+            EditorApplication.projectWasLoaded += OnProjectWasLoaded;
+        }
+
+        private void OnProjectWasLoaded()
+        {
+            // EditorApplication.projectWasLoaded, which acalls this, fires after OnEnabled
+            // therefore the logic in OnEnabled already tried to de-serialize the locked opbjects, including those it only had InstanceIDs of
+            // This needs to get fixed here as the InstanceIDs have been reshuffled with the new session and could resolving to random Objects
+            if (m_InstanceIDsLockedBeforeSerialization.Count > 0)
+            {
+                // Game objects will have new instanceIDs in a new Unity session, so take out all objects that where reconstructed from InstanceIDs
+                for (int i = m_InstanceIDsLockedBeforeSerialization.Count - 1; i >= 0; i--)
+                {
+                    for (int j = m_ObjectsLockedBeforeSerialization.Count - 1; j >= 0; j--)
+                    {
+                        if (m_ObjectsLockedBeforeSerialization[j] == null || m_ObjectsLockedBeforeSerialization[j].GetInstanceID() == m_InstanceIDsLockedBeforeSerialization[i])
+                        {
+                            m_ObjectsLockedBeforeSerialization.RemoveAt(j);
+                            break;
+                        }
+                    }
+                }
+                m_InstanceIDsLockedBeforeSerialization.Clear();
+                RestoreLockStateFromSerializedData();
+            }
         }
 
         protected virtual void OnDisable()
         {
             m_AllInspectors.Remove(this);
+            if (m_LockTracker != null)
+                m_LockTracker.lockStateChanged.RemoveListener(LockStateChanged);
+
+            EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
         }
 
         void OnLostFocus()
@@ -177,7 +230,7 @@ namespace UnityEditor
                 menu.AddItem(new GUIContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
 
             menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Lock"), isLocked, FlipLocked);
+            m_LockTracker.AddItemsToMenu(menu);
         }
 
         void RefreshTitle()
@@ -212,20 +265,19 @@ namespace UnityEditor
             SetMode(InspectorMode.DebugInternal);
         }
 
-        void FlipLocked()
-        {
-            isLocked = !isLocked;
-        }
-
         public bool isLocked
         {
             get
             {
-                return tracker.isLocked;
+                //this makes sure the getter for InspectorWindow.tracker gets called and creates an ActiveEditorTracker if needed
+                m_LockTracker.tracker = tracker;
+                return m_LockTracker.isLocked;
             }
             set
             {
-                tracker.isLocked = value;
+                //this makes sure the getter for InspectorWindow.tracker gets called and creates an ActiveEditorTracker if needed
+                m_LockTracker.tracker = tracker;
+                m_LockTracker.isLocked = value;
             }
         }
 
@@ -325,12 +377,12 @@ namespace UnityEditor
 
         protected virtual void ShowButton(Rect r)
         {
-            bool willLock = GUI.Toggle(r, isLocked, GUIContent.none, styles.lockButton);
-            if (willLock != isLocked)
-            {
-                isLocked = willLock;
-                tracker.RebuildIfNecessary();
-            }
+            m_LockTracker.ShowButton(r, styles.lockButton);
+        }
+
+        private void LockStateChanged(bool lockeState)
+        {
+            tracker.RebuildIfNecessary();
         }
 
 
@@ -1500,6 +1552,61 @@ namespace UnityEditor
                 m_lastRenderedTime = EditorApplication.timeSinceStartup;
                 Repaint();
             }
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            m_ObjectsLockedBeforeSerialization.Clear();
+
+            m_InstanceIDsLockedBeforeSerialization.Clear();
+
+            if (m_Tracker != null && m_Tracker.isLocked)
+            {
+                m_Tracker.GetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
+                // take out non persistent and track them in a list of instance IDs, because they wouldn't survive serialization as Objects
+                for (int i = m_ObjectsLockedBeforeSerialization.Count - 1; i >= 0; i--)
+                {
+                    if (!EditorUtility.IsPersistent(m_ObjectsLockedBeforeSerialization[i]))
+                    {
+                        m_InstanceIDsLockedBeforeSerialization.Add(m_ObjectsLockedBeforeSerialization[i].GetInstanceID());
+                        m_ObjectsLockedBeforeSerialization.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+        }
+
+        void RestoreLockStateFromSerializedData()
+        {
+            // try to retrieve all Objects from their stored instance ids in the list.
+            // this is only used for nonpersistent objects (scene objects)
+
+            if (m_InstanceIDsLockedBeforeSerialization.Count > 0)
+            {
+                for (int i = 0; i < m_InstanceIDsLockedBeforeSerialization.Count; i++)
+                {
+                    Object instance = EditorUtility.InstanceIDToObject(m_InstanceIDsLockedBeforeSerialization[i]);
+                    //don't add null objects (i.e.
+                    if (instance)
+                        m_ObjectsLockedBeforeSerialization.Add(instance);
+                }
+            }
+
+            for (int i = m_ObjectsLockedBeforeSerialization.Count - 1; i >= 0; i--)
+            {
+                if (m_ObjectsLockedBeforeSerialization[i] == null)
+                {
+                    m_ObjectsLockedBeforeSerialization.RemoveAt(i);
+                }
+            }
+
+            // set the tracker to the serialized list. if it contains nulls or is empty, the tracker won't lock
+            // this fixes case 775007
+            m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
+            tracker.RebuildIfNecessary();
         }
     }
 }

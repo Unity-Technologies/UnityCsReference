@@ -10,6 +10,31 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
+    internal interface IGraphViewSelection
+    {
+        int version { get; set; }
+        List<string> selectedElements { get; set; }
+    }
+
+    internal class GraphViewUndoRedoSelection : ScriptableObject, IGraphViewSelection
+    {
+        [SerializeField]
+        private int m_Version;
+        [SerializeField]
+        private List<string> m_SelectedElements;
+
+        public int version
+        {
+            get { return m_Version; }
+            set { m_Version = value; }
+        }
+        public List<string> selectedElements
+        {
+            get { return m_SelectedElements; }
+            set { m_SelectedElements = value; }
+        }
+    }
+
     internal
     struct GraphViewChange
     {
@@ -60,6 +85,30 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        [Serializable]
+        class PersistedSelection : IGraphViewSelection
+        {
+            [SerializeField]
+            private int m_Version;
+            [SerializeField]
+            private List<string> m_SelectedElements;
+
+            public int version
+            {
+                get { return m_Version; }
+                set { m_Version = value; }
+            }
+            public List<string> selectedElements
+            {
+                get { return m_SelectedElements; }
+                set { m_SelectedElements = value; }
+            }
+        }
+        private const string k_SelectionUndoRedoLabel = "Change GraphView Selection";
+        private int m_SavedSelectionVersion;
+        private PersistedSelection m_PersistedSelection;
+        private GraphViewUndoRedoSelection m_GraphViewUndoRedoSelection;
+
         class ContentViewContainer : VisualElement
         {
             public override bool Overlaps(Rect r)
@@ -99,6 +148,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         bool m_FrameAnimate = false;
 
+        public bool isReframable { get; set; }
+
         public enum FrameType
         {
             All = 0,
@@ -107,6 +158,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         readonly int k_FrameBorder = 30;
+        readonly float k_ContentViewWidth = 10000.0f;
 
         readonly Dictionary<int, Layer> m_ContainerLayers = new Dictionary<int, Layer>();
 
@@ -114,11 +166,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             selection = new List<ISelectable>();
             clippingOptions = ClippingOptions.ClipContents;
+
+            // Hardcode the content view width to a big value as a work around for a bug in the CSSLayout library.
+            // This is a temporary fix to case 958001.
+            // TODO: Remove hardcoded width once latest Yoga library is integrated.
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
                 clippingOptions = ClippingOptions.NoClipping,
-                pickingMode = PickingMode.Ignore
+                pickingMode = PickingMode.Ignore,
+                style = { width = k_ContentViewWidth }
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
@@ -131,10 +188,125 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
             nodes = this.Query<Layer>().Children<Node>().Build();
-            anchors = contentViewContainer.Query().Children<Layer>().Descendents<NodeAnchor>().Build();
+            ports = contentViewContainer.Query().Children<Layer>().Descendents<Port>().Build();
 
             m_ElementsToRemove = new List<GraphElement>();
             m_GraphViewChange.elementsToRemove = m_ElementsToRemove;
+
+            isReframable = true;
+            focusIndex = 0;
+
+            RegisterCallback<IMGUIEvent>(OnValidateCommand);
+            RegisterCallback<IMGUIEvent>(OnExecuteCommand);
+            RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+        }
+
+        internal override void ChangePanel(BaseVisualElementPanel p)
+        {
+            if (p == panel)
+                return;
+
+            if (p == null)
+            {
+                Undo.ClearUndo(m_GraphViewUndoRedoSelection);
+                Undo.undoRedoPerformed -= UndoRedoPerformed;
+                ScriptableObject.DestroyImmediate(m_GraphViewUndoRedoSelection);
+                m_GraphViewUndoRedoSelection = null;
+
+                if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
+                    ClearSavedSelection();
+            }
+            else if (panel == null)
+            {
+                Undo.undoRedoPerformed += UndoRedoPerformed;
+                m_GraphViewUndoRedoSelection = ScriptableObject.CreateInstance<GraphViewUndoRedoSelection>();
+                m_GraphViewUndoRedoSelection.selectedElements = new List<string>();
+                m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            base.ChangePanel(p);
+        }
+
+        private void ClearSavedSelection()
+        {
+            if (m_PersistedSelection == null)
+                return;
+
+            m_PersistedSelection.selectedElements.Clear();
+            SavePersistentData();
+        }
+
+        private bool ShouldRecordUndo()
+        {
+            return m_GraphViewUndoRedoSelection != null &&
+                m_PersistedSelection != null &&
+                m_SavedSelectionVersion == m_GraphViewUndoRedoSelection.version;
+        }
+
+        private void RestoreSavedSelection(IGraphViewSelection graphViewSelection)
+        {
+            if (graphViewSelection.version == m_SavedSelectionVersion)
+                return;
+
+            // Update both selection objects' versions.
+            m_GraphViewUndoRedoSelection.version = graphViewSelection.version;
+            m_PersistedSelection.version = graphViewSelection.version;
+
+            ClearSelection();
+            List<string> invalidGuids = null;
+            foreach (string guid in graphViewSelection.selectedElements)
+            {
+                var element = GetElementByGuid(guid);
+                if (element == null)
+                {
+                    if (invalidGuids == null)
+                        invalidGuids = new List<string>();
+
+                    invalidGuids.Add(guid);
+                    continue;
+                }
+
+                AddToSelection(element);
+            }
+
+            // Remove invalid GUIDs.
+            if (invalidGuids != null)
+            {
+                foreach (string guid in invalidGuids)
+                    graphViewSelection.selectedElements.Remove(guid);
+            }
+
+            m_SavedSelectionVersion = graphViewSelection.version;
+
+            IGraphViewSelection selectionObjectToSync = m_GraphViewUndoRedoSelection;
+            if (graphViewSelection is GraphViewUndoRedoSelection)
+                selectionObjectToSync = m_PersistedSelection;
+
+            selectionObjectToSync.selectedElements.Clear();
+            selectionObjectToSync.selectedElements.AddRange(graphViewSelection.selectedElements);
+        }
+
+        private void UndoRedoPerformed()
+        {
+            RestoreSavedSelection(m_GraphViewUndoRedoSelection);
+        }
+
+        private void RecordSelectionUndoPre()
+        {
+            if (m_GraphViewUndoRedoSelection == null)
+                return;
+
+            Undo.RegisterCompleteObjectUndo(m_GraphViewUndoRedoSelection, k_SelectionUndoRedoLabel);
+        }
+
+        private void RecordSelectionUndoPost()
+        {
+            m_GraphViewUndoRedoSelection.version++;
+            m_SavedSelectionVersion = m_GraphViewUndoRedoSelection.version;
+
+            m_PersistedSelection.version++;
+            SavePersistentData();
         }
 
         void AddLayer(int index)
@@ -156,7 +328,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
         public UQuery.QueryState<Node> nodes { get; private set; }
-        public UQuery.QueryState<NodeAnchor> anchors;
+        public UQuery.QueryState<Port> ports;
 
         [Serializable]
         class PersistedViewTransform
@@ -210,9 +382,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return nodes.ToList().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
-        public NodeAnchor GetAnchorByGuid(string guid)
+        public Port GetPortByGuid(string guid)
         {
-            return anchors.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return ports.ToList().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
         public Edge GetEdgeByGuid(string guid)
@@ -246,7 +418,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_PersistedViewTransform = GetOrCreatePersistentData<PersistedViewTransform>(m_PersistedViewTransform, key);
 
+            m_PersistedSelection = GetOrCreatePersistentData<PersistedSelection>(m_PersistedSelection, key);
+            if (m_PersistedSelection.selectedElements == null)
+                m_PersistedSelection.selectedElements = new List<string>();
+
             UpdateViewTransform(m_PersistedViewTransform.position, m_PersistedViewTransform.scale);
+            RestoreSavedSelection(m_PersistedSelection);
         }
 
         void UpdateContentZoomer()
@@ -389,6 +566,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             selection.Add(selectable);
             contentViewContainer.Dirty(ChangeType.Repaint);
+
+            if (ShouldRecordUndo())
+            {
+                RecordSelectionUndoPre();
+                m_GraphViewUndoRedoSelection.selectedElements.Add(graphElement.persistenceKey);
+                m_PersistedSelection.selectedElements.Add(graphElement.persistenceKey);
+                RecordSelectionUndoPost();
+            }
         }
 
         public virtual void RemoveFromSelection(ISelectable selectable)
@@ -405,6 +590,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             selection.Remove(selectable);
             graphElement.OnUnselected();
             contentViewContainer.Dirty(ChangeType.Repaint);
+
+            if (ShouldRecordUndo())
+            {
+                RecordSelectionUndoPre();
+                m_GraphViewUndoRedoSelection.selectedElements.Remove(graphElement.persistenceKey);
+                m_PersistedSelection.selectedElements.Remove(graphElement.persistenceKey);
+                RecordSelectionUndoPost();
+            }
         }
 
         public virtual void ClearSelection()
@@ -420,16 +613,316 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 graphElement.OnUnselected();
             }
 
+            bool selectionWasNotEmpty = selection.Any();
             selection.Clear();
             contentViewContainer.Dirty(ChangeType.Repaint);
+
+            if (ShouldRecordUndo() && selectionWasNotEmpty)
+            {
+                RecordSelectionUndoPre();
+                m_GraphViewUndoRedoSelection.selectedElements.Clear();
+                m_PersistedSelection.selectedElements.Clear();
+                RecordSelectionUndoPost();
+            }
         }
 
-        public virtual List<NodeAnchor> GetCompatibleAnchors(NodeAnchor startAnchor, NodeAdapter nodeAdapter)
+        void OnEnterPanel(AttachToPanelEvent e)
         {
-            return anchors.ToList().Where(nap => nap.IsConnectable() &&
-                nap.orientation == startAnchor.orientation &&
-                nap.direction != startAnchor.direction &&
-                nodeAdapter.GetAdapter(nap.source, startAnchor.source) != null)
+            if (isReframable)
+                panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+        }
+
+        void OnLeavePanel(DetachFromPanelEvent e)
+        {
+            if (isReframable)
+                panel.visualTree.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+        }
+
+        void OnKeyDownShortcut(KeyDownEvent evt)
+        {
+            if (!isReframable)
+                return;
+
+            if (MouseCaptureController.IsMouseCaptureTaken())
+                return;
+
+            EventPropagation result = EventPropagation.Continue;
+            switch (evt.character)
+            {
+                case 'a':
+                    result = FrameAll();
+                    break;
+
+                case 'o':
+                    result = FrameOrigin();
+                    break;
+
+                case '[':
+                    result = FramePrev();
+                    break;
+
+                case ']':
+                    result = FrameNext();
+                    break;
+            }
+
+            if (result == EventPropagation.Stop)
+            {
+                evt.StopPropagation();
+                if (evt.imguiEvent != null)
+                {
+                    evt.imguiEvent.Use();
+                }
+            }
+        }
+
+        void OnValidateCommand(IMGUIEvent evt)
+        {
+            Event e = evt.imguiEvent;
+            if (e != null && e.type == EventType.ValidateCommand)
+            {
+                if ((e.commandName == "Copy" && canCopySelection)
+                    || (e.commandName == "Paste" && canPaste)
+                    || (e.commandName == "Duplicate" && canDuplicateSelection)
+                    || (e.commandName == "Cut" && canCutSelection)
+                    || ((e.commandName == "Delete" || e.commandName == "SoftDelete") && canDeleteSelection))
+                {
+                    evt.StopPropagation();
+                    e.Use();
+                }
+                else if (e.commandName == "FrameSelected")
+                {
+                    evt.StopPropagation();
+                    e.Use();
+                }
+            }
+        }
+
+        public enum AskUser
+        {
+            AskUser,
+            DontAskUser
+        }
+
+        void OnExecuteCommand(IMGUIEvent evt)
+        {
+            Event e = evt.imguiEvent;
+            if (e != null && e.type == EventType.ExecuteCommand)
+            {
+                if (e.commandName == "Copy")
+                {
+                    CopySelectionCallback();
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "Paste")
+                {
+                    PasteCallback();
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "Duplicate")
+                {
+                    DuplicateSelectionCallback();
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "Cut")
+                {
+                    CutSelectionCallback();
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "Delete")
+                {
+                    DeleteSelectionCallback(AskUser.DontAskUser);
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "SoftDelete")
+                {
+                    DeleteSelectionCallback(AskUser.AskUser);
+                    evt.StopPropagation();
+                }
+                else if (e.commandName == "FrameSelected")
+                {
+                    FrameSelection();
+                    evt.StopPropagation();
+                }
+
+                if (evt.isPropagationStopped)
+                {
+                    e.Use();
+                }
+            }
+        }
+
+        // The system clipboard is unreliable, at least on Windows.
+        // For testing clipboard operations on GraphView,
+        // set m_UseInternalClipboard to true.
+        internal bool m_UseInternalClipboard = false;
+        string m_Clipboard = string.Empty;
+
+        internal string clipboard
+        {
+            get
+            {
+                if (m_UseInternalClipboard)
+                {
+                    return m_Clipboard;
+                }
+                else
+                {
+                    return EditorGUIUtility.systemCopyBuffer;
+                }
+            }
+
+            set
+            {
+                if (m_UseInternalClipboard)
+                {
+                    m_Clipboard = value;
+                }
+                else
+                {
+                    EditorGUIUtility.systemCopyBuffer = value;
+                }
+            }
+        }
+
+        protected internal virtual bool canCopySelection
+        {
+            get { return selection.Count > 0; }
+        }
+
+        protected internal void CopySelectionCallback()
+        {
+            string data = SerializeGraphElements(selection.OfType<GraphElement>());
+            if (!string.IsNullOrEmpty(data))
+            {
+                clipboard = data;
+            }
+        }
+
+        protected internal virtual bool canCutSelection
+        {
+            get { return canCopySelection; }
+        }
+
+        protected internal void CutSelectionCallback()
+        {
+            CopySelectionCallback();
+            DeleteSelectionOperation("Cut", AskUser.DontAskUser);
+        }
+
+        protected internal virtual bool canPaste
+        {
+            get { return CanPasteSerializedData(clipboard); }
+        }
+
+        protected internal void PasteCallback()
+        {
+            UnserializeAndPasteOperation("Paste", clipboard);
+        }
+
+        protected internal virtual bool canDuplicateSelection
+        {
+            get { return canCopySelection; }
+        }
+
+        protected internal void DuplicateSelectionCallback()
+        {
+            string serializedData = SerializeGraphElements(selection.OfType<GraphElement>());
+            UnserializeAndPasteOperation("Duplicate", serializedData);
+        }
+
+        protected internal virtual bool canDeleteSelection
+        {
+            get { return canCopySelection; }
+        }
+
+        protected internal void DeleteSelectionCallback(AskUser askUser)
+        {
+            DeleteSelectionOperation("Delete", askUser);
+        }
+
+        public delegate string SerializeGraphElementsDelegate(IEnumerable<GraphElement> elements);
+        public delegate bool CanPasteSerializedDataDelegate(string data);
+        public delegate void UnserializeAndPasteDelegate(string operationName, string data);
+        public delegate void DeleteSelectionDelegate(string operationName, AskUser askUser);
+
+        public SerializeGraphElementsDelegate serializeGraphElements { get; set; }
+        public CanPasteSerializedDataDelegate canPasteSerializedData { get; set; }
+        public UnserializeAndPasteDelegate unserializeAndPaste { get; set; }
+        public DeleteSelectionDelegate deleteSelection { get; set; }
+
+        const string m_SerializedDataMimeType = "application/vnd.unity.graphview.elements";
+
+        protected string SerializeGraphElements(IEnumerable<GraphElement> elements)
+        {
+            if (serializeGraphElements != null)
+            {
+                string data = serializeGraphElements(elements);
+                if (!string.IsNullOrEmpty(data))
+                {
+                    data = m_SerializedDataMimeType + " " + data;
+                }
+                return data;
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+        protected bool CanPasteSerializedData(string data)
+        {
+            if (canPasteSerializedData != null)
+            {
+                if (data.StartsWith(m_SerializedDataMimeType))
+                {
+                    return canPasteSerializedData(data.Substring(m_SerializedDataMimeType.Length + 1));
+                }
+                else
+                {
+                    return canPasteSerializedData(data);
+                }
+            }
+            if (data.StartsWith(m_SerializedDataMimeType))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        protected void UnserializeAndPasteOperation(string operationName, string data)
+        {
+            if (unserializeAndPaste != null)
+            {
+                if (data.StartsWith(m_SerializedDataMimeType))
+                {
+                    unserializeAndPaste(operationName, data.Substring(m_SerializedDataMimeType.Length + 1));
+                }
+                else
+                {
+                    unserializeAndPaste(operationName, data);
+                }
+            }
+        }
+
+        protected void DeleteSelectionOperation(string operationName, AskUser askUser)
+        {
+            if (deleteSelection != null)
+            {
+                deleteSelection(operationName, askUser);
+            }
+            else
+            {
+                DeleteSelection();
+            }
+        }
+
+        public virtual List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
+        {
+            return ports.ToList().Where(nap => nap.IsConnectable() &&
+                nap.orientation == startPort.orientation &&
+                nap.direction != startPort.direction &&
+                nodeAdapter.GetAdapter(nap.source, startPort.source) != null)
                 .ToList();
         }
 
@@ -511,10 +1004,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (connectorColl == null)
                     continue;
 
-                elementsToRemove.UnionWith(connectorColl.inputAnchors.SelectMany(c => c.connections)
+                elementsToRemove.UnionWith(connectorColl.inputPorts.SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElementPresenter>());
-                elementsToRemove.UnionWith(connectorColl.outputAnchors.SelectMany(c => c.connections)
+                elementsToRemove.UnionWith(connectorColl.outputPorts.SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElementPresenter>());
             }
@@ -560,10 +1053,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (connectorColl == null)
                     continue;
 
-                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
-                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<NodeAnchor>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
             }

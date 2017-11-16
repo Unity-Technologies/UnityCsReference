@@ -167,7 +167,6 @@ public sealed partial class TouchScreenKeyboard
                     case RuntimePlatform.TizenPlayer:
                     case RuntimePlatform.WiiU:
                     case RuntimePlatform.Switch:
-                    case RuntimePlatform.PSM:
                         return true;
                     case RuntimePlatform.WSAPlayerX86:
                     case RuntimePlatform.WSAPlayerX64:

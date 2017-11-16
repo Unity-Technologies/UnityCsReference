@@ -104,6 +104,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static string[] GetExtensionsSupportedByCompiler()
+        {
+            return Instance.GetExtensionsSupportedByCompiler();
+        }
+
+        [RequiredByNativeCode]
         public static void DirtyAllScripts()
         {
             Instance.DirtyAllScripts();

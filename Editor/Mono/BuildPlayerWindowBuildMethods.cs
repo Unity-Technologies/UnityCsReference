@@ -11,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using UnityEditor.BuildReporting;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -166,9 +167,9 @@ namespace UnityEditor
 
                 if (report != null)
                 {
-                    var resultStr = String.Format("Build completed with a result of '{0}'", report.buildResult.ToString("g"));
+                    var resultStr = String.Format("Build completed with a result of '{0}'", report.summary.result.ToString("g"));
 
-                    switch (report.buildResult)
+                    switch (report.summary.result)
                     {
                         case BuildReporting.BuildResult.Unknown:
                             Debug.LogWarning(resultStr);
@@ -307,23 +308,10 @@ namespace UnityEditor
                     defaultName = FileUtil.GetLastPathNameComponent(previousPath);
                 }
 
-
-                // When exporting Eclipse project, we're saving a folder, not file,
-                // deal with it separately:
-                if (target == BuildTarget.Android
-                    && EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                {
-                    var exportProjectTitle  = "Export Google Android Project";
-                    var exportProjectFolder = EditorUtility.SaveFolderPanel(exportProjectTitle, previousPath, "");
-
-                    if (exportProjectFolder == String.Empty)
-                        return false;
-
-                    EditorUserBuildSettings.SetBuildLocation(target, exportProjectFolder);
-                    return true;
-                }
-
                 string extension = PostprocessBuildPlayer.GetExtensionForBuildTarget(targetGroup, target, options);
+                // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
+                if (extension != Path.GetExtension(defaultName).Replace(".", ""))
+                    defaultName = string.Empty;
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 

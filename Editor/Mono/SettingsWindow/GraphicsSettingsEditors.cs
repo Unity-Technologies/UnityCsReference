@@ -339,11 +339,15 @@ namespace UnityEditor
                 if (!vertical)
                     EditorGUILayout.LabelField(Styles.standardShaderSettings, EditorStyles.boldLabel);
 
-                EditorGUILayout.LabelField(Styles.standardShaderQuality);
-                EditorGUILayout.LabelField(Styles.reflectionProbeBoxProjection);
-                EditorGUILayout.LabelField(Styles.reflectionProbeBlending);
-                EditorGUILayout.LabelField(Styles.detailNormalMap);
-                EditorGUILayout.LabelField(Styles.semitransparentShadows);
+                bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+                if (!usingSRP)
+                {
+                    EditorGUILayout.LabelField(Styles.standardShaderQuality);
+                    EditorGUILayout.LabelField(Styles.reflectionProbeBoxProjection);
+                    EditorGUILayout.LabelField(Styles.reflectionProbeBlending);
+                    EditorGUILayout.LabelField(Styles.detailNormalMap);
+                    EditorGUILayout.LabelField(Styles.semitransparentShadows);
+                }
                 EditorGUILayout.LabelField(Styles.enableLPPV);
 
                 if (!vertical)
@@ -352,11 +356,14 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.renderingSettings, EditorStyles.boldLabel);
                 }
 
-                EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
-                EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
-                EditorGUILayout.LabelField(Styles.useHDR);
-                EditorGUILayout.LabelField(Styles.hdrMode);
-                EditorGUILayout.LabelField(Styles.renderingPath);
+                if (!usingSRP)
+                {
+                    EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
+                    EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
+                    EditorGUILayout.LabelField(Styles.useHDR);
+                    EditorGUILayout.LabelField(Styles.hdrMode);
+                    EditorGUILayout.LabelField(Styles.renderingPath);
+                }
                 EditorGUILayout.LabelField(Styles.realtimeGICPUUsage);
             }
 
@@ -410,14 +417,19 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
+
                 if (!vertical)
                     EditorGUILayout.LabelField(Styles.empty, EditorStyles.boldLabel);
 
-                ts.standardShaderQuality        = ShaderQualityPopup(ts.standardShaderQuality);
-                ts.reflectionProbeBoxProjection = EditorGUILayout.Toggle(ts.reflectionProbeBoxProjection);
-                ts.reflectionProbeBlending      = EditorGUILayout.Toggle(ts.reflectionProbeBlending);
-                ts.detailNormalMap              = EditorGUILayout.Toggle(ts.detailNormalMap);
-                ts.semitransparentShadows       = EditorGUILayout.Toggle(ts.semitransparentShadows);
+                bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+                if (!usingSRP)
+                {
+                    ts.standardShaderQuality = ShaderQualityPopup(ts.standardShaderQuality);
+                    ts.reflectionProbeBoxProjection = EditorGUILayout.Toggle(ts.reflectionProbeBoxProjection);
+                    ts.reflectionProbeBlending = EditorGUILayout.Toggle(ts.reflectionProbeBlending);
+                    ts.detailNormalMap = EditorGUILayout.Toggle(ts.detailNormalMap);
+                    ts.semitransparentShadows = EditorGUILayout.Toggle(ts.semitransparentShadows);
+                }
                 ts.enableLPPV                   = EditorGUILayout.Toggle(ts.enableLPPV);
 
                 if (!vertical)
@@ -426,11 +438,14 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.empty, EditorStyles.boldLabel);
                 }
 
-                ts.cascadedShadowMaps           = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
-                ts.prefer32BitShadowMaps        = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
-                ts.hdr                          = EditorGUILayout.Toggle(ts.hdr);
-                ts.hdrMode                      = HDRModePopup(ts.hdrMode);
-                ts.renderingPath                = RenderingPathPopup(ts.renderingPath);
+                if (!usingSRP)
+                {
+                    ts.cascadedShadowMaps = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
+                    ts.prefer32BitShadowMaps = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
+                    ts.hdr = EditorGUILayout.Toggle(ts.hdr);
+                    ts.hdrMode = HDRModePopup(ts.hdrMode);
+                    ts.renderingPath = RenderingPathPopup(ts.renderingPath);
+                }
                 ts.realtimeGICPUUsage           = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
 
                 if (EditorGUI.EndChangeCheck())

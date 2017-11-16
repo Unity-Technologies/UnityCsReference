@@ -128,27 +128,6 @@ namespace UnityEngine.Experimental.UIElements
             GUI.enabled = container.enabledInHierarchy;
             GUILayoutUtility.BeginContainer(cache);
             GUIUtility.ResetGlobalState();
-
-            var clippingRect = container.lastWorldClip;
-            if (clippingRect.width == 0.0f || clippingRect.height == 0.0f)
-            {
-                // lastWorldClip will be empty until the first repaint occurred,
-                // we fall back on the worldBound in this case.
-                clippingRect = container.worldBound;
-            }
-
-            Matrix4x4 currentTransform = container.worldTransform;
-
-            if (evt.type == EventType.Repaint
-                && container.elementPanel != null
-                && container.elementPanel.stylePainter != null)
-            {
-                // during repaint, we must use in case the current transform is not relative to Panel
-                // this is to account for the pixel caching feature
-                currentTransform = container.elementPanel.stylePainter.currentTransform;
-            }
-
-            GUIClip.SetTransform(currentTransform, clippingRect);
         }
 
         // End the 2D GUI.
@@ -213,7 +192,13 @@ namespace UnityEngine.Experimental.UIElements
 
             if (s_EventInstance.type == EventType.Repaint)
             {
+                // If this is an individual repaint event (not part of a RepaintAll then we have to handle sRGBWrite ourselves)
+                bool oldSRGBWrite = GL.sRGBWrite;
+                if (oldSRGBWrite)
+                    GL.sRGBWrite = false;
                 panel.Repaint(s_EventInstance);
+                if (oldSRGBWrite)
+                    GL.sRGBWrite = true;
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
                 // in order to suspend to suspend OnGUI() processing on the native side
@@ -227,9 +212,8 @@ namespace UnityEngine.Experimental.UIElements
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
                     // DispatchEvent changes mousePosition.
-                    Vector2 savedMousePosition = s_EventInstance.mousePosition;
                     s_EventDispatcher.DispatchEvent(evt, panel);
-                    s_EventInstance.mousePosition = savedMousePosition;
+                    s_EventInstance.mousePosition = evt.originalMousePosition;
 
                     if (evt.isPropagationStopped)
                     {

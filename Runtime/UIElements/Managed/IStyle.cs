@@ -16,6 +16,7 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<float> minWidth { get; set; }
         StyleValue<float> minHeight { get; set; }
         StyleValue<float> flex { get; set; }
+        StyleValue<float> flexBasis { get; set; }
         StyleValue<Overflow> overflow { get; set; }
         StyleValue<float> positionLeft { get; set; }
         StyleValue<float> positionTop { get; set; }

@@ -13,8 +13,18 @@ namespace UnityEditor.Experimental.UIElements
         private const string k_CurveColorProperty = "curve-color";
 
         private bool m_SetKbControl;
+        private AnimationCurve m_Value;
 
-        public AnimationCurve value { get; set; }
+        public AnimationCurve value
+        {
+            get { return m_Value; }
+            set
+            {
+                m_Value = value;
+                Dirty(ChangeType.Repaint);
+            }
+        }
+
         public Rect ranges { get; set; }
 
         StyleValue<Color> m_CurveColor;

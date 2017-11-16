@@ -160,7 +160,7 @@ namespace UnityEditor
             }
 
             // Plus button
-            if (m_ShownCollisionShapes.Length < k_MaxNumCollisionShapes)
+            if (m_ShownCollisionShapes.Length < k_MaxNumCollisionShapes && !m_ParticleSystemUI.multiEdit)
             {
                 rect.x += kPlusAddRemoveButtonWidth + kPlusAddRemoveButtonSpacing;
                 if (PlusButton(rect))

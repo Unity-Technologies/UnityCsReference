@@ -12,12 +12,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     class EdgePresenter : GraphElementPresenter
     {
         [SerializeField]
-        protected NodeAnchorPresenter m_OutputPresenter;
+        protected PortPresenter m_OutputPresenter;
 
         [SerializeField]
-        protected NodeAnchorPresenter m_InputPresenter;
+        protected PortPresenter m_InputPresenter;
 
-        public virtual NodeAnchorPresenter output
+        public virtual PortPresenter output
         {
             get { return m_OutputPresenter; }
             set
@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public virtual NodeAnchorPresenter input
+        public virtual PortPresenter input
         {
             get { return m_InputPresenter; }
             set

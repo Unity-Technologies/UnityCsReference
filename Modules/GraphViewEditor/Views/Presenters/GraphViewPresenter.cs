@@ -82,13 +82,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_TempElements.Clear();
         }
 
-        public virtual List<NodeAnchorPresenter> GetCompatibleAnchors(NodeAnchorPresenter startAnchor, NodeAdapter nodeAdapter)
+        public virtual List<PortPresenter> GetCompatiblePorts(PortPresenter startPort, NodeAdapter nodeAdapter)
         {
-            return allChildren.OfType<NodeAnchorPresenter>()
+            return allChildren.OfType<PortPresenter>()
                 .Where(nap => nap.IsConnectable() &&
-                nap.orientation == startAnchor.orientation &&
-                nap.direction != startAnchor.direction &&
-                nodeAdapter.GetAdapter(nap.source, startAnchor.source) != null)
+                nap.orientation == startPort.orientation &&
+                nap.direction != startPort.direction &&
+                nodeAdapter.GetAdapter(nap.source, startPort.source) != null)
                 .ToList();
         }
     }

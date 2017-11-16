@@ -30,12 +30,14 @@ namespace UnityEditorInternal
                 {
                     profile = provisioningProfile;
                     prop.stringValue = profile.UUID;
+                    prop.serializedObject.ApplyModifiedProperties();
                     GUI.FocusControl("");
                 }
+                GUIUtility.ExitGUI();
             }
 
-            GUILayout.EndHorizontal();
             EditorGUI.EndProperty();
+            GUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.indentLevel++;
@@ -68,6 +70,7 @@ namespace UnityEditorInternal
 
                     GUI.FocusControl("");
                 }
+                GUIUtility.ExitGUI();
             }
 
             GUILayout.EndHorizontal();

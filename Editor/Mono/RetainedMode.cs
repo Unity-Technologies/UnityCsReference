@@ -24,7 +24,7 @@ namespace UnityEditor
         }
 
         static HashSet<Object> s_TmpDirtySet = new HashSet<Object>();
-
+        static bool s_FontInitialized = false;
         static RetainedMode()
         {
             UIElementsUtility.s_BeginContainerCallback = OnBeginContainer;
@@ -33,6 +33,11 @@ namespace UnityEditor
 
         static void OnBeginContainer(IMGUIContainer c)
         {
+            if (!s_FontInitialized)
+            {
+                s_FontInitialized = true;
+                LocalizedEditorFontManager.LocalizeEditorFonts();
+            }
             HandleUtility.BeginHandles();
         }
 
@@ -110,15 +115,9 @@ namespace UnityEditor
 
                         if (UxmlLiveReloadIsEnabled)
                         {
-                            var it = UIElementsUtility.GetPanelsIterator();
-                            while (it.MoveNext())
-                            {
-                                var view = it.Current.Value.ownerObject as HostView;
-                                if (view != null && view.actualView != null)
-                                {
-                                    view.Reload(view.actualView);
-                                }
-                            }
+                            // Delay the view reloading so we do not try to reload the view that
+                            // is currently active in the current callstack (i.e. ProjectView).
+                            EditorApplication.update += OneShotUxmlLiveReload;
                         }
                     }
                 }
@@ -127,6 +126,29 @@ namespace UnityEditor
                 if (anyUxmlImported && anyUssImported)
                     break;
             }
+        }
+
+        private static void OneShotUxmlLiveReload()
+        {
+            try
+            {
+                var it = UIElementsUtility.GetPanelsIterator();
+                while (it.MoveNext())
+                {
+                    var view = it.Current.Value.ownerObject as HostView;
+                    if (view != null && view.actualView != null)
+                    {
+                        view.Reload(view.actualView);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            // Make sure to unregister ourself to prevent any infinit updates.
+            EditorApplication.update -= OneShotUxmlLiveReload;
         }
 
         public static void FlagStyleSheetChange()

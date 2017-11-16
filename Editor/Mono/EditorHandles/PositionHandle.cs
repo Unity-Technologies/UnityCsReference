@@ -313,6 +313,8 @@ namespace UnityEditor
                     if (isHot && (ids[s_DoPositionHandle_Internal_PrevPlaneIndex[i]] == GUIUtility.hotControl || ids[i + 3] == GUIUtility.hotControl))
                         color = selectedColor;
 
+                    color = ToActiveColorSpace(color);
+
                     s_DoPositionHandle_ArrowCapConeOffset = isHot
                         ? rotation * Vector3.Scale(Vector3.Scale(axisVector, param.axisOffset), s_DoPositionHandle_AxisHandlesOctant)
                         : Vector3.zero;
@@ -323,7 +325,7 @@ namespace UnityEditor
             VertexSnapping.HandleKeyAndMouseMove(ids.xyz);
             if (param.ShouldShow(PositionHandleParam.Handle.XYZ) && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
             {
-                color = centerColor;
+                color = ToActiveColorSpace(centerColor);
                 GUI.SetNextControlName("FreeMoveAxis");
                 position = FreeMoveHandle(ids.xyz, position, rotation, size * kFreeMoveHandleSizeFactor, GridSnapping.active ? Vector3.zero : SnapSettings.move, RectangleHandleCap);
             }
@@ -366,6 +368,8 @@ namespace UnityEditor
                 color = preselectionColor;
             else
                 updateOpacityFillColor = true;
+
+            color = ToActiveColorSpace(color);
 
 
             // NOTE: The planar transform handles always face toward the camera so they won't
@@ -420,7 +424,9 @@ namespace UnityEditor
             verts[1] = position + positionOffset + handleOffset + (-axis1 + axis2) * handleSize * 0.5f;
             verts[2] = position + positionOffset + handleOffset + (-axis1 - axis2) * handleSize * 0.5f;
             verts[3] = position + positionOffset + handleOffset + (axis1 - axis2) * handleSize * 0.5f;
-            Handles.DrawSolidRectangleWithOutline(verts, updateOpacityFillColor ? new Color(color.r, color.g, color.b, 0.1f) : color, Color.clear);
+            Color faceColor = updateOpacityFillColor ? new Color(color.r, color.g, color.b, 0.1f) : color;
+            faceColor = ToActiveColorSpace(faceColor);
+            Handles.DrawSolidRectangleWithOutline(verts, faceColor, Color.clear);
 
             // And then render the handle itself (this is the colored outline)
             position = Slider2D(id,

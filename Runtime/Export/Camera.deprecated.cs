@@ -41,6 +41,11 @@ namespace UnityEngine
         public float fov { get { return fieldOfView; } set { fieldOfView = value; } }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Camera.ResetFieldOfView has been deprecated in Unity 5.6 and will be removed in the future. Please replace it by explicitly setting the camera's FOV to 60 degrees.", false)]
+        // for some weird reason cpp ResetFieldOfView was doing much less than SetFOV. Now we explicitly call SetFOV(60)
+        public void ResetFieldOfView() { fieldOfView = 60; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Property hdr has been deprecated. Use Camera.allowHDR instead (UnityUpgradable) -> UnityEngine.Camera.allowHDR", false)]
         public bool hdr { get { return allowHDR; } set { allowHDR = value; } }
 

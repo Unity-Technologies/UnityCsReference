@@ -448,30 +448,18 @@ namespace UnityEditorInternal
             if (canPreview == false)
                 return;
 
-            bool changed = false;
-
-            AnimationMode.BeginSampling();
-
-            AnimationWindowSelectionItem[] selectedItems = state.selection.ToArray();
-            for (int i = 0; i < selectedItems.Length; ++i)
+            if (state.activeAnimationClip != null)
             {
-                AnimationWindowSelectionItem selectedItem = selectedItems[i];
-                if (selectedItem.animationClip != null)
-                {
-                    Undo.FlushUndoRecordObjects();
+                AnimationMode.BeginSampling();
 
-                    AnimationMode.SampleAnimationClip(selectedItem.rootGameObject, selectedItem.animationClip, time.time - selectedItem.timeOffset);
-                    if (m_CandidateClip != null)
-                        AnimationMode.SampleCandidateClip(selectedItem.rootGameObject, m_CandidateClip, 0f);
+                Undo.FlushUndoRecordObjects();
 
-                    changed = true;
-                }
-            }
+                AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time.time);
+                if (m_CandidateClip != null)
+                    AnimationMode.SampleCandidateClip(state.activeRootGameObject, m_CandidateClip, 0f);
 
-            AnimationMode.EndSampling();
+                AnimationMode.EndSampling();
 
-            if (changed)
-            {
                 SceneView.RepaintAll();
                 InspectorWindow.RepaintAllInspectors();
 
@@ -676,22 +664,18 @@ namespace UnityEditorInternal
             if (previewing == false)
                 return false;
 
-            var selectedItem = state.selectedItem;
-            if (selectedItem != null)
-            {
-                GameObject gameObject = null;
-                if (targetObject is Component)
-                    gameObject = ((Component)targetObject).gameObject;
-                else if (targetObject is GameObject)
-                    gameObject = (GameObject)targetObject;
+            GameObject gameObject = null;
+            if (targetObject is Component)
+                gameObject = ((Component)targetObject).gameObject;
+            else if (targetObject is GameObject)
+                gameObject = (GameObject)targetObject;
 
-                if (gameObject != null)
+            if (gameObject != null)
+            {
+                Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(gameObject.transform);
+                if (state.selection.animationPlayer == animationPlayer)
                 {
-                    Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(gameObject.transform);
-                    if (selectedItem.animationPlayer == animationPlayer)
-                    {
-                        return selectedItem.animationIsEditable;
-                    }
+                    return state.selection.animationIsEditable;
                 }
             }
 

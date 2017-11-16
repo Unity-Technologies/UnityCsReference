@@ -83,7 +83,7 @@ namespace UnityEngine.Experimental.UIElements
                     var element = currentTarget as VisualElement;
                     if (element != null)
                     {
-                        imguiEvent.mousePosition = element.WorldToLocal(imguiEvent.mousePosition);
+                        imguiEvent.mousePosition = element.WorldToLocal(m_OriginalMousePosition);
                     }
                 }
             }
@@ -91,8 +91,30 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool dispatch { get; internal set; }
 
+
+        private Event m_ImguiEvent;
+
         // We aim to make this internal.
-        public /*internal*/ Event imguiEvent { get; protected set; }
+        public /*internal*/ Event imguiEvent
+        {
+            get { return m_ImguiEvent; }
+            protected set
+            {
+                m_ImguiEvent = value;
+                if (m_ImguiEvent != null)
+                    m_OriginalMousePosition = value.mousePosition; // when assigned, it is assumed that the imguievent is not touched and therefore in world coordinates.
+            }
+        }
+
+        Vector2 m_OriginalMousePosition;
+
+        public Vector2 originalMousePosition
+        {
+            get
+            {
+                return m_OriginalMousePosition;
+            }
+        }
 
         protected virtual void Init()
         {

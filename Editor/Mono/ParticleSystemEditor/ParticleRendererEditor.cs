@@ -31,6 +31,8 @@ namespace UnityEditor
 
             m_Probes.OnGUI(targets, (Renderer)target, false);
 
+            RenderRenderingLayer();
+
             serializedObject.ApplyModifiedProperties();
         }
     }

@@ -57,7 +57,14 @@ namespace UnityEditor
         [SerializeField]
         private int m_CurrenRootInstanceID = 0;
         [SerializeField]
-        bool m_Locked;
+        EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
+
+        internal bool isLocked
+        {
+            get { return m_LockTracker.isLocked; }
+            set { m_LockTracker.isLocked = value; }
+        }
+
         [SerializeField]
         string m_CurrentSortingName = ""; // serialize as string
         [NonSerialized]
@@ -364,7 +371,7 @@ namespace UnityEditor
                 selectionSyncNeeded = false;
 
                 bool userJustInteracted = (EditorApplication.timeSinceStartup - m_LastUserInteractionTime) < 0.2;
-                bool frame = !m_Locked || m_FrameOnSelectionSync || userJustInteracted;
+                bool frame = !m_LockTracker.isLocked || m_FrameOnSelectionSync || userJustInteracted;
                 bool animatedFraming = userJustInteracted && frame;
                 m_FrameOnSelectionSync = false;
 
@@ -693,7 +700,7 @@ namespace UnityEditor
             EditorSceneManager.SetTargetSceneForNewGameObjects(kInvalidSceneHandle);
 
             // Ensure framing when creating game objects even if we are locked
-            if (m_Locked)
+            if (m_LockTracker.isLocked)
                 m_FrameOnSelectionSync = true;
         }
 
@@ -1246,10 +1253,9 @@ namespace UnityEditor
         {
             int itemID = (int)userData;
             var scene = EditorSceneManager.GetSceneByHandle(itemID);
-            string guid = AssetDatabase.AssetPathToGUID(scene.path);
-            int instanceID = AssetDatabase.GetInstanceIDFromGUID(guid);
-            Selection.activeInstanceID = instanceID;
-            EditorGUIUtility.PingObject(instanceID);
+            var sceneObject = AssetDatabase.LoadMainAssetAtPath(scene.path);
+            Selection.activeObject = sceneObject;
+            EditorGUIUtility.PingObject(sceneObject);
         }
 
         private void SelectAll()
@@ -1266,6 +1272,7 @@ namespace UnityEditor
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
+            m_LockTracker.AddItemsToMenu(menu);
             if (Unsupported.IsDeveloperBuild())
             {
                 menu.AddItem(new GUIContent("DEVELOPER/Toggle DebugMode"), false, ToggleDebugMode);
@@ -1302,7 +1309,8 @@ namespace UnityEditor
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
-            m_Locked = GUI.Toggle(r, m_Locked, GUIContent.none, s_Styles.lockButton);
+
+            m_LockTracker.ShowButton(r, s_Styles.lockButton);
         }
     }
 

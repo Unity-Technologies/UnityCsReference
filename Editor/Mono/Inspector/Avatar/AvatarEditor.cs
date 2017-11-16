@@ -93,6 +93,8 @@ namespace UnityEditor
 
         protected bool HasModified()
         {
+            if (!m_Inspector)
+                return false;
             if (serializedObject.hasModifiedProperties)
                 return true;
 
@@ -466,17 +468,6 @@ namespace UnityEditor
             m_GameObject = Instantiate(prefab) as GameObject;
             if (serializedObject.FindProperty("m_OptimizeGameObjects").boolValue)
                 AnimatorUtility.DeoptimizeTransformHierarchy(m_GameObject);
-
-            Animator animator = m_GameObject.GetComponent<Animator>();
-
-            if (animator != null && animator.runtimeAnimatorController == null)
-            {
-                Animations.AnimatorController controller = new Animations.AnimatorController();
-                controller.hideFlags = HideFlags.DontSave;
-                controller.AddLayer("preview");
-                controller.layers[0].stateMachine.hideFlags = HideFlags.DontSave;
-                animator.runtimeAnimatorController = controller;
-            }
 
             // First get all available modelBones
             Dictionary<Transform, bool> modelBones = AvatarSetupTool.GetModelBones(m_GameObject.transform, true, null);

@@ -37,7 +37,8 @@ namespace UnityEditorInternal
         [SerializeField] public bool showCurveEditor; // Do we show dopesheet or curves
         [SerializeField] public bool linkedWithSequencer; // Toggle Sequencer selection mode.
         [SerializeField] private TimeArea m_TimeArea; // Either curveeditor or dopesheet depending on which is selected
-        [SerializeField] private AnimationWindowSelection m_Selection; // Internal selection
+        [SerializeField] private AnimationWindowSelectionItem m_EmptySelection;
+        [SerializeField] private AnimationWindowSelectionItem m_Selection; // Internal selection
         [SerializeField] private AnimationWindowKeySelection m_KeySelection; // What is selected. Hashes persist cache reload, because they are from keyframe time+value
         [SerializeField] private int m_ActiveKeyframeHash; // Which keyframe is active (selected key that user previously interacted with)
         [SerializeField] private float m_FrameRate = kDefaultFrameRate;
@@ -87,42 +88,39 @@ namespace UnityEditorInternal
         public const float kDefaultFrameRate = 60.0f;
         public const string kEditCurveUndoLabel = "Edit Curve";
 
-        public AnimationWindowSelection selection
+        public AnimationWindowSelectionItem selection
         {
             get
             {
-                if (m_Selection == null)
-                    m_Selection = new AnimationWindowSelection();
+                if (m_Selection != null)
+                    return m_Selection;
 
-                return m_Selection;
-            }
-        }
-
-        public AnimationWindowSelectionItem selectedItem
-        {
-            get
-            {
-                if ((m_Selection != null) && (m_Selection.count > 0))
+                if (m_EmptySelection == null)
                 {
-                    return m_Selection.First();
+                    m_EmptySelection = AnimationClipSelectionItem.Create(null, null);
+                    m_EmptySelection.hideFlags = HideFlags.HideAndDontSave;
                 }
 
-                return null;
+                return m_EmptySelection;
             }
 
             set
             {
-                if (m_Selection == null)
-                    m_Selection = new AnimationWindowSelection();
+                if (m_Selection != null)
+                    Object.DestroyImmediate(m_Selection);
 
-                if (value == null)
+                // Make a copy and take ownership
+                if (value != null)
                 {
-                    m_Selection.Clear();
+                    m_Selection = Object.Instantiate(value);
+                    m_Selection.hideFlags = HideFlags.HideAndDontSave;
                 }
                 else
                 {
-                    m_Selection.Set(value);
+                    m_Selection = null;
                 }
+
+                OnSelectionChanged();
             }
         }
 
@@ -131,12 +129,15 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (selectedItem != null)
+                return selection.animationClip;
+            }
+            set
+            {
+                if (selection.canChangeAnimationClip)
                 {
-                    return selectedItem.animationClip;
+                    selection.animationClip = value;
+                    OnSelectionChanged();
                 }
-
-                return null;
             }
         }
 
@@ -146,12 +147,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (selectedItem != null)
-                {
-                    return selectedItem.gameObject;
-                }
-
-                return null;
+                return selection.gameObject;
             }
         }
 
@@ -160,12 +156,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (selectedItem != null)
-                {
-                    return selectedItem.rootGameObject;
-                }
-
-                return null;
+                return selection.rootGameObject;
             }
         }
 
@@ -173,12 +164,15 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (selectedItem != null)
-                {
-                    return selectedItem.animationPlayer;
-                }
+                return selection.animationPlayer;
+            }
+        }
 
-                return null;
+        public ScriptableObject activeScriptableObject
+        {
+            get
+            {
+                return selection.scriptableObject;
             }
         }
 
@@ -187,18 +181,16 @@ namespace UnityEditorInternal
         {
             get
             {
-                if (selectedItem != null)
-                {
-                    return selectedItem.objectIsOptimized;
-                }
-
-                return false;
+                return selection.objectIsOptimized;
             }
         }
 
         public bool disabled
         {
-            get { return selection.disabled; }
+            get
+            {
+                return selection.disabled;
+            }
         }
 
         public IAnimationWindowControl controlInterface
@@ -250,7 +242,7 @@ namespace UnityEditorInternal
 
             if (refresh == RefreshType.Everything)
             {
-                selection.Refresh();
+                selection.ClearCache();
 
                 m_ActiveKeyframeCache = null;
                 m_ActiveCurvesCache = null;
@@ -312,7 +304,6 @@ namespace UnityEditorInternal
             // NoOps...
             onStartLiveEdit += () => {};
             onEndLiveEdit += () => {};
-            onFrameRateChange += (float frameRate) => {};
 
             if (m_ControlInterface == null)
                 m_ControlInterface = CreateInstance(typeof(AnimationWindowControl)) as AnimationWindowControl;
@@ -330,11 +321,8 @@ namespace UnityEditorInternal
 
         public void OnDestroy()
         {
-            if (m_Selection != null)
-            {
-                m_Selection.Clear();
-            }
-
+            Object.DestroyImmediate(m_EmptySelection);
+            Object.DestroyImmediate(m_Selection);
             Object.DestroyImmediate(m_KeySelection);
             Object.DestroyImmediate(m_ControlInterface);
             Object.DestroyImmediate(m_OverrideControlInterface);
@@ -342,10 +330,14 @@ namespace UnityEditorInternal
 
         public void OnSelectionChanged()
         {
-            onFrameRateChange(frameRate);
+            if (onFrameRateChange != null)
+                onFrameRateChange(frameRate);
 
             // reset back time at 0 upon selection change.
             controlInterface.OnSelectionChanged();
+
+            if (animEditor != null)
+                animEditor.OnSelectionChanged();
         }
 
         // Set this property to ask for refresh at the next OnGUI.
@@ -370,8 +362,7 @@ namespace UnityEditorInternal
         void CurveWasModified(AnimationClip clip, EditorCurveBinding binding, AnimationUtility.CurveModifiedType type)
         {
             // AnimationWindow doesn't care if some other clip somewhere changed
-            AnimationWindowSelectionItem[] selectedItems = Array.FindAll(selection.ToArray(), item => item.animationClip == clip);
-            if (selectedItems.Length == 0)
+            if (activeAnimationClip != clip)
                 return;
 
             // Refresh curves that already exist.
@@ -380,19 +371,17 @@ namespace UnityEditorInternal
                 bool didFind = false;
                 bool hadPhantom = false;
                 int hashCode = binding.GetHashCode();
-                for (int i = 0; i < selectedItems.Length; ++i)
+
+                List<AnimationWindowCurve> curves = selection.curves;
+                for (int j = 0; j < curves.Count; ++j)
                 {
-                    List<AnimationWindowCurve> curves = selectedItems[i].curves;
-                    for (int j = 0; j < curves.Count; ++j)
+                    AnimationWindowCurve curve = curves[j];
+                    int curveHash = curve.GetBindingHashCode();
+                    if (curveHash == hashCode)
                     {
-                        AnimationWindowCurve curve = curves[j];
-                        int curveHash = curve.GetBindingHashCode();
-                        if (curveHash == hashCode)
-                        {
-                            m_ModifiedCurves.Add(curve.GetHashCode());
-                            didFind = true;
-                            hadPhantom |= curve.binding.isPhantom;
-                        }
+                        m_ModifiedCurves.Add(curve.GetHashCode());
+                        didFind = true;
+                        hadPhantom |= curve.binding.isPhantom;
                     }
                 }
 
@@ -506,11 +495,8 @@ namespace UnityEditorInternal
 
         public void StartRecording()
         {
-            if (selectedItem != null)
-            {
-                controlInterface.StartRecording(selectedItem.sourceObject);
-                controlInterface.ResampleAnimation();
-            }
+            controlInterface.StartRecording(selection.sourceObject);
+            controlInterface.ResampleAnimation();
         }
 
         public void StopRecording()
@@ -711,7 +697,7 @@ namespace UnityEditorInternal
                     if (keys.Count > 0)
                     {
                         AnimationWindowKeyframe key = keys[0];
-                        float time = key.time + key.curve.timeOffset;
+                        float time = key.time;
                         float val = key.isPPtrCurve ? 0.0f : (float)key.value;
 
                         Bounds bounds = new Bounds(new Vector2(time, val), Vector2.zero);
@@ -720,7 +706,7 @@ namespace UnityEditorInternal
                         {
                             key = keys[i];
 
-                            time = key.time + key.curve.timeOffset;
+                            time = key.time;
                             val = key.isPPtrCurve ? 0.0f : (float)key.value;
 
                             bounds.Encapsulate(new Vector2(time, val));
@@ -1048,15 +1034,14 @@ namespace UnityEditorInternal
             foreach (AnimationWindowKeyframe keyframe in selectedKeys)
             {
                 s_KeyframeClipboard.Add(new AnimationWindowKeyframe(keyframe));
-                float candidate = keyframe.time + keyframe.curve.timeOffset;
-                if (candidate < smallestTime)
-                    smallestTime = candidate;
+                if (keyframe.time < smallestTime)
+                    smallestTime = keyframe.time;
             }
             if (s_KeyframeClipboard.Count > 0) // copying selected keys
             {
                 foreach (AnimationWindowKeyframe keyframe in s_KeyframeClipboard)
                 {
-                    keyframe.time -= smallestTime - keyframe.curve.timeOffset;
+                    keyframe.time -= smallestTime;
                 }
             }
             else // No selected keys, lets copy entire curves
@@ -1128,11 +1113,10 @@ namespace UnityEditorInternal
                     // If nothing is selected, create a new curve in first selected clip.
                     else
                     {
-                        AnimationWindowSelectionItem targetSelection = selection.First();
-                        if (targetSelection.animationIsEditable)
+                        if (selection.animationIsEditable)
                         {
-                            newKeyframe.curve = new AnimationWindowCurve(targetSelection.animationClip, keyframe.curve.binding, keyframe.curve.valueType);
-                            newKeyframe.curve.selectionBinding = targetSelection;
+                            newKeyframe.curve = new AnimationWindowCurve(selection.animationClip, keyframe.curve.binding, keyframe.curve.valueType);
+                            newKeyframe.curve.selectionBinding = selection;
                             newKeyframe.time = keyframe.time;
                         }
                     }
@@ -1141,7 +1125,7 @@ namespace UnityEditorInternal
                 if (newKeyframe.curve == null || !newKeyframe.curve.animationIsEditable)
                     continue;
 
-                newKeyframe.time += time.time - newKeyframe.curve.timeOffset;
+                newKeyframe.time += time.time;
 
                 //  Only allow pasting of key frame from numerical curves to numerical curves or from pptr curves to pptr curves.
                 if ((newKeyframe.time >= 0.0f) && (newKeyframe.curve != null) && (newKeyframe.curve.isPPtrCurve == keyframe.curve.isPPtrCurve))
@@ -1437,10 +1421,10 @@ namespace UnityEditorInternal
         // Set scene active go to be the same as the one selected from hierarchy
         private void SyncSceneSelection(int[] selectedNodeIDs)
         {
-            if (selectedItem == null || !selectedItem.canSyncSceneSelection)
+            if (!selection.canSyncSceneSelection)
                 return;
 
-            GameObject rootGameObject = selectedItem.rootGameObject;
+            GameObject rootGameObject = selection.rootGameObject;
             if (rootGameObject == null)
                 return;
 
@@ -1524,7 +1508,8 @@ namespace UnityEditorInternal
                 if (m_FrameRate != value)
                 {
                     m_FrameRate = value;
-                    onFrameRateChange(m_FrameRate);
+                    if (onFrameRateChange != null)
+                        onFrameRateChange(m_FrameRate);
                 }
             }
         }
@@ -1603,22 +1588,10 @@ namespace UnityEditorInternal
         {
             get
             {
-                float minTime = 0.0f;
-                float maxTime = 0.0f;
+                if (activeAnimationClip != null)
+                    return new Vector2(activeAnimationClip.startTime, activeAnimationClip.stopTime);
 
-                if (selection.count > 0)
-                {
-                    minTime = float.MaxValue;
-                    maxTime = float.MinValue;
-
-                    foreach (var selectedItem in selection.ToArray())
-                    {
-                        minTime = Mathf.Min(minTime, selectedItem.animationClip.startTime + selectedItem.timeOffset);
-                        maxTime = Mathf.Max(maxTime, selectedItem.animationClip.stopTime + selectedItem.timeOffset);
-                    }
-                }
-
-                return new Vector2(minTime, maxTime);
+                return Vector2.zero;
             }
         }
 

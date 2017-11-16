@@ -252,6 +252,8 @@ namespace UnityEngine.Animations
             GetAnimatorClipInfoInternal(ref m_Handle, layerIndex, false, clips);
         }
 
+        extern private static void GetAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex, bool isCurrent, object clips);
+
         // Gets the number of AnimatorClipInfo currently played by the current state
         public int GetCurrentAnimatorClipInfoCount(int layerIndex)
         {
@@ -433,6 +435,7 @@ namespace UnityEngine.Animations
         extern private static AnimatorClipInfo[] GetNextAnimatorClipInfoInternal(ref PlayableHandle handle, int layerIndex);
         extern private static string ResolveHashInternal(ref PlayableHandle handle, int hash);
         extern private static bool IsInTransitionInternal(ref PlayableHandle handle, int layerIndex);
+        extern private static AnimatorControllerParameter[] GetParametersArrayInternal(ref PlayableHandle handle);
         extern private static int GetParameterCountInternal(ref PlayableHandle handle);
         [ThreadSafe]
         extern private static int StringToHash(string name);

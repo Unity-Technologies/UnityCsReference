@@ -220,7 +220,9 @@ namespace UnityEditor
         static EventType s_EventTypeBefore = EventType.Ignore;
         static TransformData[] s_MouseDownState = null;
         static Vector3 s_StartHandlePosition = Vector3.zero;
+        static Quaternion s_StartHandleRotation = Quaternion.identity;
         public static Vector3 mouseDownHandlePosition { get { return s_StartHandlePosition; } }
+        public static Quaternion mouseDownHandleRotation { get { return s_StartHandleRotation; } set { s_StartHandleRotation = value; } }
         static Vector3 s_StartLocalHandleOffset = Vector3.zero;
         static int s_HotControl = 0;
         static bool s_LockHandle = false;
@@ -231,7 +233,12 @@ namespace UnityEditor
 
         private static void BeginEventCheck()
         {
+            var previousEvent = s_EventTypeBefore;
             s_EventTypeBefore = Event.current.GetTypeForControl(s_HotControl);
+            if (!active || (previousEvent != EventType.MouseDown && s_EventTypeBefore == EventType.MouseDown))
+            {
+                s_StartHandleRotation = Tools.handleRotation;
+            }
         }
 
         private static EventType EndEventCheck()
@@ -266,6 +273,7 @@ namespace UnityEditor
             }
             else if (s_MouseDownState != null && (usedEvent == EventType.MouseUp || GUIUtility.hotControl != s_HotControl))
             {
+                s_StartHandleRotation = Tools.handleRotation;
                 s_MouseDownState = null;
                 if (s_LockHandle)
                     Tools.UnlockHandlePosition();

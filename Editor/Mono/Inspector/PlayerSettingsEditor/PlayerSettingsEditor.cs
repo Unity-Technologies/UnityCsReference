@@ -165,6 +165,7 @@ namespace UnityEditor
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TextContent("Virtual Reality moved to XR Settings");
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TextContent("Lightmap Encoding|Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { new GUIContent("Normal Quality"), new GUIContent("High Quality")};
+            public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TextContent("Mono is not supported on iOS11 and above.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -897,17 +898,16 @@ namespace UnityEditor
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
                         var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
                         BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
+
+                        EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
+
+                        EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
+
+                        EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                        EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
+
+                        EditorGUILayout.Space();
                     }
-
-                    EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
-
-                    EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
-
-                    EditorGUILayout.PropertyField(m_ForceSingleInstance);
-                    EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
-
-                    EditorGUILayout.Space();
-
 
                     // mobiles color/depth bits setup
                     if (IsMobileTarget(targetGroup))
@@ -1609,7 +1609,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.Android ||
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
-                targetGroup == BuildTargetGroup.PSM ||
                 targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA ||
                 targetGroup == BuildTargetGroup.Switch)
@@ -1810,6 +1809,12 @@ namespace UnityEditor
                 {
                     newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                 }
+
+                if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
+                {
+                    EditorGUILayout.HelpBox(Styles.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
+                }
+
                 if (newBackend != currBackend)
                     PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
             }
@@ -1979,12 +1984,9 @@ namespace UnityEditor
             vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(Styles.vertexChannelCompressionMask, vertexFlags);
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
-            // PSM doesn't support stripping of mesh components, as we don't know the SourceMap of the shader
-            if (targetGroup != BuildTargetGroup.PSM)
-                EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, Styles.stripUnusedMeshComponents);
+            EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, Styles.stripUnusedMeshComponents);
 
-            if (targetGroup == BuildTargetGroup.PSP2 ||
-                targetGroup == BuildTargetGroup.PSM)
+            if (targetGroup == BuildTargetGroup.PSP2)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_VideoMemoryForVertexBuffers, Styles.videoMemoryForVertexBuffers);
@@ -2269,11 +2271,6 @@ namespace UnityEditor
                 if (settingsExtension != null)
                 {
                     settingsExtension.PublishSectionGUI(h, kLabelFloatMinW, kLabelFloatMaxW);
-                }
-
-                if (targetGroup == BuildTargetGroup.PSM)
-                {
-                    // key creation?
                 }
             }
             EndSettingsBox();

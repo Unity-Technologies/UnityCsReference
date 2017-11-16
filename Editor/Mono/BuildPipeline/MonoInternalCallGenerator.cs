@@ -220,7 +220,7 @@ namespace UnityEditor
 
                     for (int i = 0; i < assemblies.Length; i++)
                     {
-                        if (AssemblyHelper.IsUnityEngineModule(assemblies[i].Name.Name))
+                        if (AssemblyHelper.IsUnityEngineModule(assemblies[i]))
                             inputAssemblies.Add(assemblies[i]);
                     }
 

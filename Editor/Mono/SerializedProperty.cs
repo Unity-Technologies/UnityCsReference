@@ -79,6 +79,40 @@ namespace UnityEditor
             get { return type == "PPtr<MonoScript>"; }
         }
 
+        private bool isUnityAssembly
+        {
+            get
+            {
+                return EditorUtility.IsUnityAssembly(m_SerializedObject.targetObject);
+            }
+        }
+
+        internal string localizedDisplayName
+        {
+            get
+            {
+                // cannot be cached because the displayName varies with array..
+                return isUnityAssembly ? L10n.Tr(displayName) : displayName;
+            }
+        }
+
+        internal string[] enumLocalizedDisplayNames
+        {
+            get
+            {
+                string[] names = enumDisplayNames;
+                if (!isUnityAssembly)
+                    return names;
+
+                var res = new string[names.Length];
+                for (var i = 0; i < res.Length; ++i)
+                {
+                    res[i] = L10n.Tr(names[i]);
+                }
+                return res;
+            }
+        }
+
         // Returns a copy of the SerializedProperty iterator in its current state. This is useful if you want to keep a reference to the current property but continue with the iteration.
         public SerializedProperty Copy()
         {

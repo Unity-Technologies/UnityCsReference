@@ -414,6 +414,7 @@ public sealed partial class NetworkTransport
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Shutdown () ;
 
+    [Obsolete("This function has been deprecated. Use AssetDatabase utilities instead.")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  string GetAssetId (GameObject go) ;

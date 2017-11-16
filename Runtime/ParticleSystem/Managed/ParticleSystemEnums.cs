@@ -164,7 +164,8 @@ namespace UnityEngine
     {
         None = 0,
         Disable = 1,
-        Destroy = 2
+        Destroy = 2,
+        Callback = 3                // Calls OnParticleSystemStopped.
     }
 
     // The emitter velocity mode for particle systems

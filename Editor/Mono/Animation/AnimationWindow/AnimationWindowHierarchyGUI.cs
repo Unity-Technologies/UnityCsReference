@@ -158,7 +158,6 @@ namespace UnityEditorInternal
             // the control id counter to shift when scrolling through the view.
             if (DoTreeViewButton(m_HierarchyItemButtonControlIDs[row], rectWithMargin, k_AnimatePropertyLabel, GUI.skin.button))
             {
-                AddCurvesPopup.selection = state.selection;
                 AddCurvesPopupHierarchyDataSource.showEntireHierarchy = true;
 
                 if (AddCurvesPopup.ShowAtPosition(rectWithMargin, state, OnNewCurveAdded))
@@ -391,13 +390,12 @@ namespace UnityEditorInternal
                     {
                         string undoLabel = "Edit Key";
 
-                        float newKeyTime = state.currentTime - curve.timeOffset;
-                        AnimationKeyTime newAnimationKeyTime = AnimationKeyTime.Time(newKeyTime, curve.clip.frameRate);
+                        AnimationKeyTime newAnimationKeyTime = AnimationKeyTime.Time(state.currentTime, curve.clip.frameRate);
 
                         AnimationWindowKeyframe existingKeyframe = null;
                         foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                         {
-                            if (Mathf.Approximately(keyframe.time, newKeyTime))
+                            if (Mathf.Approximately(keyframe.time, state.currentTime))
                                 existingKeyframe = keyframe;
                         }
 

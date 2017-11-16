@@ -62,7 +62,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             if (!m_CurPanel.HasValue)
                 return false;
-            if (!Event.current.isMouse)
+            if (Event.current == null || !Event.current.isMouse)
                 return false;
             VisualElement e = m_CurPanel.Value.Panel.Pick(ev.mousePosition);
             if (e != null)

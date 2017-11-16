@@ -573,8 +573,8 @@ namespace UnityEditor
             Quaternion.LookRotation(new Vector3(0, 0, 1)),
         };
 
-        static string[] kDirNames = { "Right", "Top", "Front", "Left", "Bottom", "Back", "Iso", "Persp", "2D" };
-        static string[] kMenuDirNames = { "Free", "Right", "Top", "Front", "Left", "Bottom", "Back", "", "Perspective" };
+        internal static string[] kDirNames = { "Right", "Top", "Front", "Left", "Bottom", "Back", "Iso", "Persp", "2D" };
+        internal static string[] kMenuDirNames = { "Free", "Right", "Top", "Front", "Left", "Bottom", "Back", "", "Perspective" };
 
         private static readonly GUIContent[] s_HandleAxisLabels =
         {
@@ -586,8 +586,8 @@ namespace UnityEditor
 
 
         int currentDir = 7;
-        AnimBool[] dirVisible = { new AnimBool(true), new AnimBool(true), new AnimBool(true) };
-        AnimBool[] dirNameVisible = { new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool() };
+        internal AnimBool[] dirVisible = { new AnimBool(true), new AnimBool(true), new AnimBool(true) };
+        internal AnimBool[] dirNameVisible = { new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool(), new AnimBool() };
         float faded2Dgray { get { return dirNameVisible[8].faded; } }
         float fadedRotationLock { get { return Mathf.Lerp(kRotationLockedAlpha, 1.0f, m_RotationLocked.faded); } }
 
@@ -695,6 +695,9 @@ namespace UnityEditor
                     c = Color.Lerp(c, Color.gray, faded2Dgray);
                 }
                 c.a *= a * fadedVisibility;
+
+                if (QualitySettings.activeColorSpace == ColorSpace.Linear)
+                    c = c.linear;
 
                 Handles.color = c;
 

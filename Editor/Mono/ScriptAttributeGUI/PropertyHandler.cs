@@ -143,7 +143,7 @@ namespace UnityEditor
                 oldLabelWidth = EditorGUIUtility.labelWidth;
                 oldFieldWidth = EditorGUIUtility.fieldWidth;
                 // Draw with custom drawer
-                propertyDrawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.displayName));
+                propertyDrawer.OnGUISafe(position, property.Copy(), label ?? EditorGUIUtility.TempContent(property.localizedDisplayName));
                 // Restore widths
                 EditorGUIUtility.labelWidth = oldLabelWidth;
                 EditorGUIUtility.fieldWidth = oldFieldWidth;

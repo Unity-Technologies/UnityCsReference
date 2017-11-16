@@ -17,21 +17,21 @@ namespace UnityEditorInternal
 {
     static internal class AnimationWindowUtility
     {
-        public static void CreateDefaultCurves(AnimationWindowState state, AnimationWindowSelectionItem selectionItem, EditorCurveBinding[] properties)
+        public static void CreateDefaultCurves(AnimationWindowState state, EditorCurveBinding[] properties)
         {
-            properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(selectionItem.animationClip, properties);
+            properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(state.activeAnimationClip, properties);
             foreach (EditorCurveBinding prop in properties)
-                state.SaveCurve(CreateDefaultCurve(selectionItem, prop));
+                state.SaveCurve(CreateDefaultCurve(state, prop));
         }
 
-        public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowSelectionItem selectionItem, EditorCurveBinding binding)
+        public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, EditorCurveBinding binding)
         {
-            AnimationClip animationClip = selectionItem.animationClip;
-            Type type = selectionItem.GetEditorCurveValueType(binding);
+            AnimationClip animationClip = state.activeAnimationClip;
+            Type type = state.selection.GetEditorCurveValueType(binding);
 
             AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, binding, type);
 
-            object currentValue = CurveBindingUtility.GetCurrentValue(selectionItem.rootGameObject, binding);
+            object currentValue = CurveBindingUtility.GetCurrentValue(state.activeRootGameObject, binding);
             if (animationClip.length == 0.0F)
             {
                 AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, animationClip.frameRate));
@@ -132,7 +132,7 @@ namespace UnityEditorInternal
                 if (!curve.animationIsEditable)
                     continue;
 
-                AnimationKeyTime shiftedMouseKeyTime = AnimationKeyTime.Time(time.time - curve.timeOffset, time.frameRate);
+                AnimationKeyTime shiftedMouseKeyTime = AnimationKeyTime.Time(time.time, time.frameRate);
 
                 object value = CurveBindingUtility.GetCurrentValue(state, curve);
                 AnimationWindowKeyframe keyframe = AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, shiftedMouseKeyTime);
@@ -155,8 +155,7 @@ namespace UnityEditorInternal
                 if (!curve.animationIsEditable)
                     continue;
 
-                AnimationKeyTime shiftedMouseKeyTime = AnimationKeyTime.Time(time.time - curve.timeOffset, time.frameRate);
-                curve.RemoveKeyframe(shiftedMouseKeyTime);
+                curve.RemoveKeyframe(time);
 
                 state.SaveCurve(curve, undoLabel);
             }
@@ -746,11 +745,9 @@ namespace UnityEditorInternal
             {
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
-                    float offsetTime = keyframe.time + curve.timeOffset;
-
-                    if (offsetTime < candidate && offsetTime >= nextTime.time)
+                    if (keyframe.time < candidate && keyframe.time >= nextTime.time)
                     {
-                        candidate = offsetTime;
+                        candidate = keyframe.time;
                         found = true;
                     }
                 }
@@ -770,11 +767,9 @@ namespace UnityEditorInternal
             {
                 foreach (AnimationWindowKeyframe keyframe in curve.m_Keyframes)
                 {
-                    float offsetTime = keyframe.time + curve.timeOffset;
-
-                    if (offsetTime > candidate && offsetTime <= previousTime.time)
+                    if (keyframe.time > candidate && keyframe.time <= previousTime.time)
                     {
-                        candidate = offsetTime;
+                        candidate = keyframe.time;
                         found = true;
                     }
                 }

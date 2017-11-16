@@ -57,6 +57,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"min-width", StylePropertyID.MinWidth},
             {"min-height", StylePropertyID.MinHeight},
             {"flex", StylePropertyID.Flex},
+            {"flex-basis", StylePropertyID.FlexBasis},
             {"overflow", StylePropertyID.Overflow},
             {"position-left", StylePropertyID.PositionLeft},
             {"position-top", StylePropertyID.PositionTop},

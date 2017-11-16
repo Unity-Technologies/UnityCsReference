@@ -12,31 +12,30 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/AssetBundleBuildInput.h")]
-    public struct BuildInput
+    public struct AssetIdentifier
     {
-        [Serializable]
-        [UsedByNativeCode]
-        [StructLayout(LayoutKind.Sequential)]
-        public struct AssetIdentifier
+        [NativeName("asset")]
+        internal GUID m_Asset;
+        public GUID asset
         {
-            [NativeName("asset")]
-            internal GUID m_Asset;
-            public GUID asset
-            {
-                get { return m_Asset; }
-                set { m_Asset = value; }
-            }
-
-            [NativeName("address")]
-            internal string m_Address;
-            public string address
-            {
-                get { return m_Address; }
-                set { m_Address = value; }
-            }
+            get { return m_Asset; }
+            set { m_Asset = value; }
         }
 
+        [NativeName("address")]
+        internal string m_Address;
+        public string address
+        {
+            get { return m_Address; }
+            set { m_Address = value; }
+        }
+    }
+
+    [Serializable]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BuildInput
+    {
         [Serializable]
         [UsedByNativeCode]
         [StructLayout(LayoutKind.Sequential)]

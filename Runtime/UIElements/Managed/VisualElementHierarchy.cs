@@ -184,6 +184,32 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        public void BringToFront()
+        {
+            if (shadow.parent == null)
+                return;
+
+            shadow.parent.shadow.BringToFront(this);
+        }
+
+        public void SendToBack()
+        {
+            if (shadow.parent == null)
+                return;
+
+            shadow.parent.shadow.SendToBack(this);
+        }
+
+        public void PlaceBehind(VisualElement sibling)
+        {
+            if (shadow.parent == null || sibling.shadow.parent != shadow.parent)
+            {
+                throw new ArgumentException("VisualElements are not siblings");
+            }
+
+            shadow.parent.shadow.PlaceBehind(this, sibling);
+        }
+
         public struct Hierarchy
         {
             private readonly VisualElement m_Owner;
@@ -230,16 +256,7 @@ namespace UnityEngine.Experimental.UIElements
                     m_Owner.cssNode.SetMeasureFunction(null);
                 }
 
-                if (index >= m_Owner.m_Children.Count)
-                {
-                    m_Owner.m_Children.Add(child);
-                    m_Owner.cssNode.Insert(m_Owner.cssNode.Count, child.cssNode);
-                }
-                else
-                {
-                    m_Owner.m_Children.Insert(index, child);
-                    m_Owner.cssNode.Insert(index, child.cssNode);
-                }
+                PutChildAtIndex(child, index);
 
                 child.SetEnabledFromHierarchy(m_Owner.enabledInHierarchy);
 
@@ -275,8 +292,8 @@ namespace UnityEngine.Experimental.UIElements
 
                 var child = m_Owner.m_Children[index];
                 child.shadow.SetParent(null);
-                m_Owner.m_Children.RemoveAt(index);
-                m_Owner.cssNode.RemoveAt(index);
+
+                RemoveChildAtIndex(index);
 
                 if (childCount == 0)
                 {
@@ -297,6 +314,58 @@ namespace UnityEngine.Experimental.UIElements
                     }
                     m_Owner.m_Children.Clear();
                     m_Owner.cssNode.Clear();
+                    m_Owner.Dirty(ChangeType.Layout);
+                }
+            }
+
+            internal void BringToFront(VisualElement child)
+            {
+                if (childCount > 1)
+                {
+                    int index = m_Owner.m_Children.IndexOf(child);
+
+                    if (index >= 0 && index < childCount - 1)
+                    {
+                        RemoveChildAtIndex(index);
+                        PutChildAtIndex(child, childCount);
+                        m_Owner.Dirty(ChangeType.Layout);
+                    }
+                }
+            }
+
+            internal void SendToBack(VisualElement child)
+            {
+                if (childCount > 1)
+                {
+                    int index = m_Owner.m_Children.IndexOf(child);
+
+                    if (index > 0)
+                    {
+                        RemoveChildAtIndex(index);
+                        PutChildAtIndex(child, 0);
+                        m_Owner.Dirty(ChangeType.Layout);
+                    }
+                }
+            }
+
+            internal void PlaceBehind(VisualElement child, VisualElement over)
+            {
+                if (childCount > 0)
+                {
+                    int index = m_Owner.m_Children.IndexOf(child);
+                    if (index < 0)
+                        return;
+
+                    RemoveChildAtIndex(index);
+
+                    index = m_Owner.m_Children.IndexOf(over);
+
+                    if (index < 0) //how can this happen?
+                    {
+                        index = childCount;
+                    }
+
+                    PutChildAtIndex(child, index);
                     m_Owner.Dirty(ChangeType.Layout);
                 }
             }
@@ -347,14 +416,39 @@ namespace UnityEngine.Experimental.UIElements
 
             public void Sort(Comparison<VisualElement> comp)
             {
-                m_Owner.m_Children.Sort(comp);
-
-                m_Owner.cssNode.Clear();
-                for (int i = 0; i < m_Owner.m_Children.Count; i++)
+                if (childCount > 0)
                 {
-                    m_Owner.cssNode.Insert(i, m_Owner.m_Children[i].cssNode);
+                    m_Owner.m_Children.Sort(comp);
+
+                    m_Owner.cssNode.Clear();
+                    for (int i = 0; i < m_Owner.m_Children.Count; i++)
+                    {
+                        m_Owner.cssNode.Insert(i, m_Owner.m_Children[i].cssNode);
+                    }
+                    m_Owner.Dirty(ChangeType.Layout);
                 }
-                m_Owner.Dirty(ChangeType.Layout);
+            }
+
+            // manipulates the children list (without sending events or dirty flags)
+            private void PutChildAtIndex(VisualElement child, int index)
+            {
+                if (index >= childCount)
+                {
+                    m_Owner.m_Children.Add(child);
+                    m_Owner.cssNode.Insert(m_Owner.cssNode.Count, child.cssNode);
+                }
+                else
+                {
+                    m_Owner.m_Children.Insert(index, child);
+                    m_Owner.cssNode.Insert(index, child.cssNode);
+                }
+            }
+
+            // manipulates the children list (without sending events or dirty flags)
+            private void RemoveChildAtIndex(int index)
+            {
+                m_Owner.m_Children.RemoveAt(index);
+                m_Owner.cssNode.RemoveAt(index);
             }
         }
 
@@ -405,6 +499,57 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             return false;
+        }
+
+        public VisualElement FindCommonAncestor(VisualElement other)
+        {
+            if (panel != other.panel)
+            {
+                return null;
+            }
+
+            // We compute the depth of the 2 elements
+            VisualElement thisSide = this;
+            int thisDepth = 0;
+            while (thisSide != null)
+            {
+                thisDepth++;
+                thisSide = thisSide.shadow.parent;
+            }
+
+            VisualElement otherSide = other;
+            int otherDepth = 0;
+            while (otherSide != null)
+            {
+                otherDepth++;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            //we reset
+            thisSide = this;
+            otherSide = other;
+
+            // we then walk up until both sides are at the same depth
+            while (thisDepth > otherDepth)
+            {
+                thisDepth--;
+                thisSide = thisSide.shadow.parent;
+            }
+
+            while (otherDepth > thisDepth)
+            {
+                otherDepth--;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            // Now both are at the same depth, We then walk up the tree we hit the same element
+            while (thisSide != otherSide)
+            {
+                thisSide = thisSide.shadow.parent;
+                otherSide = otherSide.shadow.parent;
+            }
+
+            return thisSide;
         }
 
         public IEnumerator<VisualElement> GetEnumerator()

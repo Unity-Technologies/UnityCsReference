@@ -5,12 +5,12 @@
 
 namespace UnityEditor.PackageManager
 {
-    public enum OriginType : uint
+    public enum OriginType
     {
-        Registry = 0,
-        Url = 1,
-        Path = 2,
-        Unknown = 3
+        Unknown,
+        Registry,
+        Url,
+        Path
     }
 }
 

@@ -193,6 +193,9 @@ namespace UnityEditor
                 case BuildTarget.WiiU:
                     testValues = kTextureFormatsValueWiiU;
                     break;
+                case BuildTarget.PSP2:
+                    testValues = kTextureFormatsValuePSP2;
+                    break;
                 case BuildTarget.Switch:
                     testValues = kTextureFormatsValueSwitch;
                     break;
@@ -337,6 +340,18 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBA16, // R4G4B4A4
         };
 
+        public static readonly int[] kTextureFormatsValuePSP2 =
+        {
+            (int)TextureImporterFormat.DXT1,
+            (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.RGB16,
+            (int)TextureImporterFormat.RGB24,
+            (int)TextureImporterFormat.RGBA16,
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.Alpha8,
+            (int)TextureImporterFormat.RGBAHalf,
+        };
+
         public static readonly int[] kTextureFormatsValueSwitch =
         {
             (int)TextureImporterFormat.DXT1,
@@ -400,7 +415,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
         };
 
         public static readonly int[] kTextureFormatsValueAndroid =
@@ -425,9 +441,6 @@ namespace UnityEditor
             (int)TextureImporterFormat.PVRTC_RGB4,
             (int)TextureImporterFormat.PVRTC_RGBA4,
 
-            (int)TextureImporterFormat.ATC_RGB4,
-            (int)TextureImporterFormat.ATC_RGBA8,
-
             (int)TextureImporterFormat.ASTC_RGB_4x4,
             (int)TextureImporterFormat.ASTC_RGB_5x5,
             (int)TextureImporterFormat.ASTC_RGB_6x6,
@@ -445,7 +458,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGB24,
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.RGBAHalf,
         };
 
         public static readonly int[] kTextureFormatsValueTizen =

@@ -15,7 +15,6 @@ namespace UnityEditorInternal
         const float k_WindowPadding = 3;
 
         internal static AnimationWindowState s_State;
-        internal static AnimationWindowSelection selection { get; set; }
 
         private static AddCurvesPopup s_AddCurvesPopup;
         private static long s_LastClosedTime;
@@ -48,7 +47,7 @@ namespace UnityEditorInternal
 
         internal static void AddNewCurve(AddCurvesPopupPropertyNode node)
         {
-            AnimationWindowUtility.CreateDefaultCurves(s_State, node.selectionItem, node.curveBindings);
+            AnimationWindowUtility.CreateDefaultCurves(s_State, node.curveBindings);
             if (NewCurveAddedCallback != null)
                 NewCurveAddedCallback(node);
         }

@@ -116,4 +116,10 @@ namespace UnityEngine
     internal class RejectDragAndDropMaterial : Attribute
     {
     }
+
+    [AttributeUsage(AttributeTargets.Assembly)]
+    [VisibleToOtherModules]
+    internal class UnityEngineModuleAssembly : Attribute
+    {
+    }
 }

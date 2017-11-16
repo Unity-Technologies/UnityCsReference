@@ -10,20 +10,39 @@ using System.Collections.Generic;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal
-    enum LineType
-    {
-        Bezier,
-        PolyLine,
-        StraightLine,
-    }
-
-
-    internal
     class EdgeControl : VisualElement
     {
+        private struct EdgeCornerSweepValues
+        {
+            public Vector2 circleCenter;
+            public double sweepAngle;
+            public double startAngle;
+            public double endAngle;
+            public Vector2 crossPoint1;
+            public Vector2 crossPoint2;
+            public float radius;
+        }
+
+        private VisualElement m_FromCap;
+        private VisualElement m_ToCap;
+        private GraphView m_GraphView;
+
         public EdgeControl()
         {
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+
+            m_FromCap = new VisualElement();
+            m_FromCap.AddToClassList("edgeCap");
+            m_FromCap.pseudoStates |= PseudoStates.Invisible;
+            Add(m_FromCap);
+
+            m_ToCap = new VisualElement();
+            m_ToCap.AddToClassList("edgeCap");
+            m_ToCap.pseudoStates |= PseudoStates.Invisible;
+            Add(m_ToCap);
+
+            m_DrawFromCap = false;
+            m_DrawToCap = false;
         }
 
         private bool m_ControlPointsDirty = true;
@@ -32,6 +51,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         Mesh m_Mesh;
         public const float k_MinEdgeWidth = 1.75f;
+
+        public const float k_EdgeLengthFromPort = 12.0f;
+        public const float k_EdgeTurnDiameter = 16.0f;
+        public const float k_EdgeSweepResampleRatio = 4.0f;
+        public const int k_EdgeStraightLineSegmentDivisor = 5;
 
         Color m_InputColor = Color.grey;
         Color m_OutputColor = Color.grey;
@@ -49,18 +73,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private LineType m_LineType;
-        public LineType lineType
-        {
-            get { return m_LineType; }
-            set
-            {
-                if (m_LineType == value)
-                    return;
-                m_LineType = value;
-                PointsChanged();
-            }
-        }
         public Color edgeColor
         {
             get { return m_InputColor; }
@@ -122,6 +134,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_EdgeWidth == value)
                     return;
                 m_EdgeWidth = value;
+                m_MeshDirty = true;
                 UpdateLayout(); // The layout depends on the edges width
                 Dirty(ChangeType.Repaint);
             }
@@ -149,7 +162,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-
         // The end of the edge in graph coordinates.
         private Vector2 m_To;
         public Vector2 to
@@ -165,7 +177,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-
         // The control points in graph coordinates.
         private Vector2[] m_ControlPoints;
         public Vector2[] controlPoints
@@ -175,6 +186,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return m_ControlPoints;
             }
         }
+
         public Vector2[] renderPoints
         {
             get
@@ -184,22 +196,47 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected virtual void DrawEndpoint(Vector2 pos, bool start)
+        private bool m_DrawFromCap;
+        public bool drawFromCap
         {
-            Handles.DrawSolidDisc(pos, new Vector3(0.0f, 0.0f, -1.0f), capRadius);
+            get { return m_DrawFromCap; }
+            set
+            {
+                if (value == m_DrawFromCap)
+                    return;
+                m_DrawFromCap = value;
+                if (!m_DrawFromCap)
+                    m_FromCap.pseudoStates |= PseudoStates.Invisible;
+                else
+                    m_FromCap.pseudoStates &= ~PseudoStates.Invisible;
+                Dirty(ChangeType.Layout);
+            }
+        }
+
+        private bool m_DrawToCap;
+        public bool drawToCap
+        {
+            get { return m_DrawToCap; }
+            set
+            {
+                if (value == m_DrawToCap)
+                    return;
+                m_DrawToCap = value;
+                if (!m_DrawToCap)
+                    m_ToCap.pseudoStates |= PseudoStates.Invisible;
+                else
+                    m_ToCap.pseudoStates &= ~PseudoStates.Invisible;
+                Dirty(ChangeType.Layout);
+            }
         }
 
         public override void DoRepaint()
         {
-            // Edges do NOT call base.DoRepaint. It would create a visual artifact.
-            Color oldColor = Handles.color;
-            DrawEdge();
+            m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (m_FromCap.layout.size / 2), m_FromCap.layout.size);
+            m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (m_ToCap.layout.size / 2), m_ToCap.layout.size);
 
-            Handles.color = startCapColor;
-            DrawEndpoint(parent.ChangeCoordinatesTo(this, from), true);
-            Handles.color = endCapColor;
-            DrawEndpoint(parent.ChangeCoordinatesTo(this, to), true);
-            Handles.color = oldColor;
+            // Edges do NOT call base.DoRepaint. It would create a visual artifact.
+            DrawEdge();
         }
 
         public override bool ContainsPoint(Vector2 localPoint)
@@ -214,14 +251,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Vector2[] allPoints = renderPoints;
 
-            float minDistance = Mathf.Infinity;
-            for (var i = 0; i < allPoints.Length; i++)
+            for (var i = 0; i < allPoints.Length - 1; i++)
             {
                 Vector2 currentPoint = allPoints[i];
+                Vector2 nextPoint = allPoints[i + 1];
                 float distance = Vector2.Distance(currentPoint, localPoint);
-                minDistance = Mathf.Min(minDistance, distance);
-                if (minDistance < interceptWidth)
-                    return true;
+                float distanceNext = Vector2.Distance(nextPoint, localPoint);
+                float distanceLine = Vector2.Distance(currentPoint, nextPoint);
+                if (distance < distanceLine && distanceNext < distanceLine) // the point is somewhere between the two points
+                {
+                    //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+                    if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
+                            (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
+                            nextPoint.y * currentPoint.x) / distanceLine < interceptWidth)
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;
@@ -274,30 +320,208 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_MeshDirty = true;
 
             m_RenderPoints.Clear();
-            switch (lineType)
+
+            float diameter = k_EdgeTurnDiameter;
+
+            Vector2 p1 = parent.ChangeCoordinatesTo(this, m_ControlPoints[0]);
+            Vector2 p2 = parent.ChangeCoordinatesTo(this, m_ControlPoints[1]);
+            Vector2 p3 = parent.ChangeCoordinatesTo(this, m_ControlPoints[2]);
+            Vector2 p4 = parent.ChangeCoordinatesTo(this, m_ControlPoints[3]);
+
+            // We have to handle a special case of the edge when it is a straight line, but not
+            // when going backwards in space (where the start point is in front in y to the end point).
+            // We do this by turning the line into 3 linear segments with no curves. This also
+            // avoids possible NANs in later angle calculations.
+            if ((orientation == Orientation.Horizontal && Mathf.Abs(p1.y - p4.y) < 2 && p1.x + k_EdgeLengthFromPort < p4.x - k_EdgeLengthFromPort) ||
+                (orientation == Orientation.Vertical && Mathf.Abs(p1.x - p4.x) < 2 && p1.y + k_EdgeLengthFromPort < p4.y - k_EdgeLengthFromPort))
             {
-                case LineType.Bezier:
+                float safeSpan = orientation == Orientation.Horizontal
+                    ? Mathf.Abs((p1.x + k_EdgeLengthFromPort) - (p4.x - k_EdgeLengthFromPort))
+                    : Mathf.Abs((p1.y + k_EdgeLengthFromPort) - (p4.y - k_EdgeLengthFromPort));
 
+                float safeSpan3 = safeSpan / k_EdgeStraightLineSegmentDivisor;
+                float nodeToP2Dist = Mathf.Min(safeSpan3, diameter);
+                nodeToP2Dist = Mathf.Max(0, nodeToP2Dist);
 
-                    Vector3 start = controlPoints[0];
-                    Vector3 tStart = controlPoints[1];
-                    Vector3 end = controlPoints[3];
-                    Vector3 tEnd = controlPoints[2];
+                var offset = orientation == Orientation.Horizontal
+                    ? new Vector2(diameter - nodeToP2Dist, 0)
+                    : new Vector2(0, diameter - nodeToP2Dist);
 
-                    BezierSubdiv.GetBezierSubDiv(m_RenderPoints, parent.ChangeCoordinatesTo(this, start), parent.ChangeCoordinatesTo(this, end), parent.ChangeCoordinatesTo(this, tStart), parent.ChangeCoordinatesTo(this, tEnd));
+                m_RenderPoints.Add(p1);
+                m_RenderPoints.Add(p2 - offset);
+                m_RenderPoints.Add(p3 + offset);
+                m_RenderPoints.Add(p4);
 
-                    break;
-                case LineType.PolyLine:
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[0]));
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[1]));
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[2]));
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[3]));
-                    break;
+                return;
+            }
 
-                case LineType.StraightLine:
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[0]));
-                    m_RenderPoints.Add(parent.ChangeCoordinatesTo(this, m_ControlPoints[1]));
-                    break;
+            m_RenderPoints.Add(p1);
+
+            EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
+            EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
+
+            ValidateCornerSweepValues(ref corner1, ref corner2);
+
+            GetRoundedCornerPoints(m_RenderPoints, corner1, Direction.Output);
+            GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
+
+            m_RenderPoints.Add(p4);
+        }
+
+        private void ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
+        {
+            // Get the midpoint between the two corner circle centers.
+            Vector2 circlesMidpoint = (corner1.circleCenter + corner2.circleCenter) / 2;
+
+            // Find the angle to the corner circles midpoint so we can compare it to the sweep angles of each corner.
+            Vector2 p2CenterToCross1 = corner1.circleCenter - corner1.crossPoint1;
+            Vector2 p2CenterToCirclesMid = corner1.circleCenter - circlesMidpoint;
+            double angleToCirclesMid = orientation == Orientation.Horizontal
+                ? Math.Atan2(p2CenterToCross1.y, p2CenterToCross1.x) - Math.Atan2(p2CenterToCirclesMid.y, p2CenterToCirclesMid.x)
+                : Math.Atan2(p2CenterToCross1.x, p2CenterToCross1.y) - Math.Atan2(p2CenterToCirclesMid.x, p2CenterToCirclesMid.y);
+
+            // We need the angle to the circles midpoint to match the turn direction of the first corner's sweep angle.
+            angleToCirclesMid = Math.Sign(angleToCirclesMid) * 2 * Mathf.PI - angleToCirclesMid;
+            if (Mathf.Abs((float)angleToCirclesMid) > 1.5 * Mathf.PI)
+                angleToCirclesMid = -1 * Math.Sign(angleToCirclesMid) * 2 * Mathf.PI + angleToCirclesMid;
+
+            // Calculate the maximum sweep angle so that both corner sweeps and with the tangents of the 2 circles meeting each other.
+            float h = p2CenterToCirclesMid.magnitude;
+            float p2AngleToMidTangent = Mathf.Acos(corner1.radius / h);
+            float maxSweepAngle = Mathf.Abs((float)corner1.sweepAngle) - p2AngleToMidTangent * 2;
+
+            // If the angle to the circles midpoint is within the sweep angle, we need to apply our maximum sweep angle
+            // calculated above, otherwise the maximum sweep angle is irrelevant.
+            if (Mathf.Abs((float)angleToCirclesMid) < Mathf.Abs((float)corner1.sweepAngle))
+            {
+                corner1.sweepAngle = Math.Sign(corner1.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner1.sweepAngle));
+                corner2.sweepAngle = Math.Sign(corner2.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner2.sweepAngle));
+            }
+        }
+
+        private EdgeCornerSweepValues GetCornerSweepValues(
+            Vector2 p1, Vector2 cornerPoint, Vector2 p2, float diameter, Direction closestPortDirection)
+        {
+            EdgeCornerSweepValues corner = new EdgeCornerSweepValues();
+
+            // Calculate initial radius. This radius can change depending on the sharpness of the corner.
+            corner.radius = diameter / 2;
+
+            // Calculate vectors from p1 to cornerPoint.
+            Vector2 d1Corner = (cornerPoint - p1).normalized;
+            Vector2 d1 = d1Corner * diameter;
+            float dx1 = d1.x;
+            float dy1 = d1.y;
+
+            // Calculate vectors from p2 to cornerPoint.
+            Vector2 d2Corner = (cornerPoint - p2).normalized;
+            Vector2 d2 = d2Corner * diameter;
+            float dx2 = d2.x;
+            float dy2 = d2.y;
+
+            // Calculate the angle of the corner (divided by 2).
+            float angle = (float)(Math.Atan2(dy1, dx1) - Math.Atan2(dy2, dx2)) / 2;
+
+            // Calculate the length of the segment between the cornerPoint and where
+            // the corner circle with given radius meets the line.
+            float tan = (float)Math.Abs(Math.Tan(angle));
+            float segment = corner.radius / tan;
+
+            // If the segment is larger than the diameter, we need to cap the segment
+            // to the diameter and reduce the radius to match the segment. This is what
+            // makes the corner turn radii get smaller as the edge corners get tighter.
+            if (segment > diameter)
+            {
+                segment = diameter;
+                corner.radius = diameter * tan;
+            }
+
+            // Calculate both cross points (where the circle touches the p1-cornerPoint line
+            // and the p2-cornerPoint line).
+            corner.crossPoint1 = cornerPoint - (d1Corner * segment);
+            corner.crossPoint2 = cornerPoint - (d2Corner * segment);
+
+            // Calculation of the coordinates of the circle center.
+            corner.circleCenter = GetCornerCircleCenter(cornerPoint, corner.crossPoint1, corner.crossPoint2, segment, corner.radius);
+
+            // Calculate the starting and ending angles.
+            corner.startAngle = Math.Atan2(corner.crossPoint1.y - corner.circleCenter.y, corner.crossPoint1.x - corner.circleCenter.x);
+            corner.endAngle = Math.Atan2(corner.crossPoint2.y - corner.circleCenter.y, corner.crossPoint2.x - corner.circleCenter.x);
+
+            // Get the full sweep angle from the starting and ending angles.
+            corner.sweepAngle = corner.endAngle - corner.startAngle;
+
+            // If we are computing the second corner (into the input port), we want to start
+            // the sweep going backwards.
+            if (closestPortDirection == Direction.Input)
+            {
+                double endAngle = corner.endAngle;
+                corner.endAngle = corner.startAngle;
+                corner.startAngle = endAngle;
+            }
+
+            // Validate the sweep angle so it turns into the correct direction.
+            if (corner.sweepAngle > Math.PI)
+                corner.sweepAngle = -2 * Math.PI + corner.sweepAngle;
+            else if (corner.sweepAngle < -Math.PI)
+                corner.sweepAngle = 2 * Math.PI + corner.sweepAngle;
+
+            return corner;
+        }
+
+        private Vector2 GetCornerCircleCenter(Vector2 cornerPoint, Vector2 crossPoint1, Vector2 crossPoint2, float segment, float radius)
+        {
+            float dx = cornerPoint.x * 2 - crossPoint1.x - crossPoint2.x;
+            float dy = cornerPoint.y * 2 - crossPoint1.y - crossPoint2.y;
+
+            var cornerToCenterVector = new Vector2(dx, dy);
+
+            float L = cornerToCenterVector.magnitude;
+            float d = new Vector2(segment, radius).magnitude;
+            float factor = d / L;
+
+            return new Vector2(cornerPoint.x - cornerToCenterVector.x * factor, cornerPoint.y - cornerToCenterVector.y * factor);
+        }
+
+        private void GetRoundedCornerPoints(List<Vector2> points, EdgeCornerSweepValues corner, Direction closestPortDirection)
+        {
+            // Calculate the number of points that will sample the arc from the sweep angle.
+            int pointsCount = Mathf.CeilToInt((float)Math.Abs(corner.sweepAngle * k_EdgeSweepResampleRatio));
+            int sign = Math.Sign(corner.sweepAngle);
+            bool backwards = (closestPortDirection == Direction.Input);
+
+            for (int i = 0; i < pointsCount; ++i)
+            {
+                // If we are computing the second corner (into the input port), the sweep is going backwards
+                // but we still need to add the points to the list in the correct order.
+                float sweepIndex = backwards ? i - pointsCount : i;
+
+                double sweepedAngle = corner.startAngle + sign * sweepIndex / k_EdgeSweepResampleRatio;
+
+                var pointX = (float)(corner.circleCenter.x + Math.Cos(sweepedAngle) * corner.radius);
+                var pointY = (float)(corner.circleCenter.y + Math.Sin(sweepedAngle) * corner.radius);
+
+                // Check if we overlap the previous point. If we do, we skip this point so that we
+                // don't cause the edge polygons to twist.
+                if (i == 0 && backwards)
+                {
+                    if (orientation == Orientation.Horizontal)
+                    {
+                        if (corner.sweepAngle < 0 && points[points.Count - 1].y > pointY)
+                            continue;
+                        else if (corner.sweepAngle >= 0 && points[points.Count - 1].y < pointY)
+                            continue;
+                    }
+                    else
+                    {
+                        if (corner.sweepAngle < 0 && points[points.Count - 1].x < pointX)
+                            continue;
+                        else if (corner.sweepAngle >= 0 && points[points.Count - 1].x > pointX)
+                            continue;
+                    }
+                }
+
+                points.Add(new Vector2(pointX, pointY));
             }
         }
 
@@ -305,82 +529,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_ControlPointsDirty == false) return;
 
-            Vector2 usedTo = to;
-            Vector2 usedFrom = from;
-
-            if (orientation == Orientation.Horizontal && from.x < to.x)
-            {
-                Vector2 tmp = usedTo;
-                usedTo = usedFrom;
-                usedFrom = tmp;
-            }
-
-            if (lineType == LineType.StraightLine)
-            {
-                if (m_ControlPoints == null || m_ControlPoints.Length != 2)
-                    m_ControlPoints = new Vector2[2];
-
-                m_ControlPoints[0] = usedTo;
-                m_ControlPoints[1] = usedFrom;
-
-                return;
-            }
+            float offset = k_EdgeLengthFromPort + k_EdgeTurnDiameter;
 
             if (m_ControlPoints == null || m_ControlPoints.Length != 4)
                 m_ControlPoints = new Vector2[4];
 
-            m_ControlPoints[0] = usedTo;
-            m_ControlPoints[3] = usedFrom;
+            m_ControlPoints[0] = from;
 
-            switch (lineType)
+            if (orientation == Orientation.Horizontal)
             {
-                case LineType.Bezier:
-
-                    const float minTangent = 30;
-
-                    float weight = .5f;
-                    float weight2 = 1 - weight;
-                    float y = 0;
-                    float cleverness = Mathf.Clamp01(((usedTo - usedFrom).magnitude - 10) / 50);
-
-                    if (orientation == Orientation.Horizontal)
-                    {
-                        m_ControlPoints[1] = usedTo + new Vector2((usedFrom.x - usedTo.x) * weight + minTangent, y) * cleverness;
-                        m_ControlPoints[2] = usedFrom + new Vector2((usedFrom.x - usedTo.x) * -weight2 - minTangent, -y) * cleverness;
-                    }
-                    else
-                    {
-                        float tangentSize = usedTo.y - usedFrom.y + 100.0f;
-                        tangentSize = Mathf.Min((usedTo - usedFrom).magnitude, tangentSize);
-                        if (tangentSize < 0.0f)
-                            tangentSize = -tangentSize;
-
-                        m_ControlPoints[1] = usedTo + new Vector2(0, tangentSize * -0.5f);
-                        m_ControlPoints[2] = usedFrom + new Vector2(0, tangentSize * 0.5f);
-                    }
-                    break;
-
-                case LineType.PolyLine:
-
-                    if (orientation == Orientation.Horizontal)
-                    {
-                        m_ControlPoints[2] = new Vector2((usedTo.x + usedFrom.x) / 2, usedFrom.y);
-                        m_ControlPoints[1] = new Vector2((usedTo.x + usedFrom.x) / 2, usedTo.y);
-                    }
-                    else
-                    {
-                        m_ControlPoints[2] = new Vector2(usedFrom.x, (usedTo.y + usedFrom.y) / 2);
-                        m_ControlPoints[1] = new Vector2(usedTo.x, (usedTo.y + usedFrom.y) / 2);
-                    }
-                    break;
-
-                case LineType.StraightLine:
-
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException("Unsupported LineType: " + lineType);
+                m_ControlPoints[1] = new Vector2(from.x + offset, from.y);
+                m_ControlPoints[2] = new Vector2(to.x - offset, to.y);
             }
+            else
+            {
+                m_ControlPoints[1] = new Vector2(from.x, from.y + offset);
+                m_ControlPoints[2] = new Vector2(to.x, to.y - offset);
+            }
+
+            m_ControlPoints[3] = to;
         }
 
         void ComputeLayout()
@@ -403,23 +570,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
             }
 
-            GraphView graphView = GetFirstAncestorOfType<GraphView>();
-
-            if (graphView != null)
+            if (m_GraphView == null)
             {
-                //Make sure that we have the place to display Edges with EdgeControl.k_MinEdgeWidth at the lowest level of zoom.
-                float margin = Mathf.Max(edgeWidth * 0.5f + 1, EdgeControl.k_MinEdgeWidth / graphView.minScale.x);
+                m_GraphView = GetFirstAncestorOfType<GraphView>();
+            }
 
-                rect.xMin -= margin;
-                rect.yMin -= margin;
-                rect.width += margin * 2;
-                rect.height += margin * 2;
+            //Make sure that we have the place to display Edges with EdgeControl.k_MinEdgeWidth at the lowest level of zoom.
+            float margin = Mathf.Max(edgeWidth * 0.5f + 1, EdgeControl.k_MinEdgeWidth / m_GraphView.minScale.x);
 
-                if (layout != rect)
-                {
-                    layout = rect;
-                    m_RenderPointsDirty = true;
-                }
+            rect.xMin -= margin;
+            rect.yMin -= margin;
+            rect.width += margin * 2;
+            rect.height += margin * 2;
+
+            if (layout != rect)
+            {
+                layout = rect;
+                m_RenderPointsDirty = true;
             }
         }
 
@@ -479,12 +646,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Color inputColor = this.inputColor;
             Color outputColor = this.outputColor;
 
-            GraphView view = this.GetFirstAncestorOfType<GraphView>();
-
             float realWidth = edgeWidth;
-            if (realWidth * view.scale < k_MinEdgeWidth)
+            if (realWidth * m_GraphView.scale < k_MinEdgeWidth)
             {
-                realWidth = k_MinEdgeWidth / view.scale;
+                realWidth = k_MinEdgeWidth / m_GraphView.scale;
 
                 // make up for bigger edge by fading it.
                 inputColor.a = outputColor.a = edgeWidth / realWidth;
@@ -601,7 +766,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             // Send the view zoom factor so that the antialias width do not grow when zooming in.
-            lineMat.SetFloat("_ZoomFactor", view.scale * realWidth / edgeWidth * EditorGUIUtility.pixelsPerPoint);
+            lineMat.SetFloat("_ZoomFactor", m_GraphView.scale * realWidth / edgeWidth * EditorGUIUtility.pixelsPerPoint);
 
             // Send the view zoom correction so that the vertex shader can scale the edge triangles when below m_MinWidth.
             lineMat.SetFloat("_ZoomCorrection", realWidth / edgeWidth);
@@ -619,78 +784,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 UnityEngine.Object.DestroyImmediate(m_Mesh);
                 m_Mesh = null;
-            }
-        }
-
-        class BezierSubdiv
-        {
-            public static void GetBezierSubDiv(List<Vector2> points, Vector2 start, Vector2 end, Vector2 tStart, Vector2 tEnd)
-            {
-                points.Clear();
-
-                points.Add(start);
-
-                AddBezierRecurse(points, start, tStart, tEnd, end, 0);
-
-                points.Add(end);
-            }
-
-            const float k_DistanceTolerance = 0.5f;
-
-            const int k_MaxRecursion = 20;
-
-            static void AddBezierRecurse(List<Vector2> points, Vector2 start, Vector2 tangentStart, Vector2 tangentEnd, Vector2 end, int level)
-            {
-                // Prevention of infinite recursion.
-                if (level > k_MaxRecursion)
-                {
-                    return;
-                }
-
-                float x1 = start.x;
-                float y1 = start.y;
-                float x2 = tangentStart.x;
-                float y2 = tangentStart.y;
-                float x3 = tangentEnd.x;
-                float y3 = tangentEnd.y;
-                float x4 = end.x;
-                float y4 = end.y;
-                // Calculate all the mid-points of the line segments
-                //----------------------
-                float x12 = (x1 + x2) / 2;
-                float y12 = (y1 + y2) / 2;
-                float x23 = (x2 + x3) / 2;
-                float y23 = (y2 + y3) / 2;
-                float x34 = (x3 + x4) / 2;
-                float y34 = (y3 + y4) / 2;
-                float x123 = (x12 + x23) / 2;
-                float y123 = (y12 + y23) / 2;
-                float x234 = (x23 + x34) / 2;
-                float y234 = (y23 + y34) / 2;
-                float x1234 = (x123 + x234) / 2;
-                float y1234 = (y123 + y234) / 2;
-
-                if (level > 0) // Enforce subdivision first time
-                {
-                    // Try to approximate the full cubic curve by a single straight line
-                    //------------------
-                    float dx = x4 - x1;
-                    float dy = y4 - y1;
-
-                    float d2 = Mathf.Abs(((x2 - x4) * dy - (y2 - y4) * dx));
-                    float d3 = Mathf.Abs(((x3 - x4) * dy - (y3 - y4) * dx));
-
-                    if ((d2 + d3) * (d2 + d3) <= k_DistanceTolerance * (dx * dx + dy * dy))
-                    {
-                        points.Add(new Vector2(x1234, y1234));
-                        return;
-                    }
-                }
-
-                // Continue subdivision
-                //----------------------
-                AddBezierRecurse(points, new Vector2(x1, y1), new Vector2(x12, y12), new Vector2(x123, y123), new Vector2(x1234, y1234), level + 1);
-                AddBezierRecurse(points, new Vector2(x1234, y1234), new Vector2(x234, y234), new Vector2(x34, y34), new Vector2(x4, y4), level + 1);
             }
         }
     }

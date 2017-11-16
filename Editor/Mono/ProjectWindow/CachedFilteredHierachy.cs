@@ -38,7 +38,7 @@ namespace UnityEditor
                             // at the samwe time so dont keep a reference in m_Icon here
                             string path = AssetDatabase.GetAssetPath(instanceID);
                             if (path != null)
-                                return AssetDatabase.GetCachedIcon(path) as Texture2D;
+                                return InternalEditorUtility.FindIconForFile(path) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
                         }
                         else if (type == HierarchyType.GameObjects)
                         {
@@ -114,7 +114,7 @@ namespace UnityEditor
 
         public void SetResults(int[] instanceIDs)
         {
-            HierarchyProperty property = new HierarchyProperty(m_HierarchyType);
+            HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
             property.Reset();
 
             System.Array.Resize(ref m_Results, instanceIDs.Length);
@@ -201,7 +201,7 @@ namespace UnityEditor
             List<FilterResult> list = new List<FilterResult>();
             foreach (string folderPath in m_SearchFilter.folders)
             {
-                int folderInstanceID = AssetDatabase.GetMainAssetInstanceID(folderPath);
+                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
                 if (property.Find(folderInstanceID, null))
                 {
                     int folderDepth = property.depth;
@@ -245,7 +245,7 @@ namespace UnityEditor
             m_Results = new FilterResult[0];
             if (m_SearchFilter.GetState() != SearchFilter.State.EmptySearchFilter)
             {
-                HierarchyProperty hierarchyProperty = new HierarchyProperty(m_HierarchyType);
+                HierarchyProperty hierarchyProperty = new HierarchyProperty(m_HierarchyType, false);
                 hierarchyProperty.SetSearchFilter(m_SearchFilter);
                 AddResults(hierarchyProperty);
 
@@ -281,7 +281,7 @@ namespace UnityEditor
                 // Reset visible flags if filter string is empty (see BaseHiearchyProperty::SetSearchFilter)
                 if (m_HierarchyType == HierarchyType.GameObjects)
                 {
-                    HierarchyProperty gameObjects = new HierarchyProperty(HierarchyType.GameObjects);
+                    HierarchyProperty gameObjects = new HierarchyProperty(HierarchyType.GameObjects, false);
                     gameObjects.SetSearchFilter(m_SearchFilter);
                 }
             }
@@ -351,7 +351,7 @@ namespace UnityEditor
             if (filteredHierarchy.searchFilter.GetState() != SearchFilter.State.EmptySearchFilter)
                 return new FilteredHierarchyProperty(filteredHierarchy);
             else
-                return new HierarchyProperty(filteredHierarchy.hierarchyType);
+                return new HierarchyProperty(filteredHierarchy.hierarchyType, false);
         }
 
         public FilteredHierarchyProperty(FilteredHierarchy filter)

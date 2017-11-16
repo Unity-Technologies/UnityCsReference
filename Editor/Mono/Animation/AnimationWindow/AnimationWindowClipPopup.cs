@@ -17,11 +17,7 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            AnimationWindowSelectionItem selectedItem = state.selectedItem;
-            if (selectedItem == null)
-                return;
-
-            if (selectedItem.canChangeAnimationClip)
+            if (state.selection.canChangeAnimationClip)
             {
                 string[] menuContent = GetClipMenuContent();
                 EditorGUI.BeginChangeCheck();
@@ -31,11 +27,11 @@ namespace UnityEditor
                 {
                     if (menuContent[selectedIndex] == AnimationWindowStyles.createNewClip.text)
                     {
-                        AnimationClip newClip = AnimationWindowUtility.CreateNewClip(selectedItem.rootGameObject.name);
+                        AnimationClip newClip = AnimationWindowUtility.CreateNewClip(state.selection.rootGameObject.name);
                         if (newClip)
                         {
                             AnimationWindowUtility.AddClipToAnimationPlayerComponent(state.activeAnimationPlayer, newClip);
-                            state.selection.UpdateClip(state.selectedItem, newClip);
+                            state.activeAnimationClip = newClip;
 
                             //  Layout has changed, bail out now.
                             EditorGUIUtility.ExitGUI();
@@ -43,7 +39,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        state.selection.UpdateClip(state.selectedItem, IndexToClip(selectedIndex));
+                        state.activeAnimationClip = IndexToClip(selectedIndex);
                     }
                 }
             }
@@ -59,8 +55,7 @@ namespace UnityEditor
             List<string> content = new List<string>();
             content.AddRange(GetClipNames());
 
-            var selectedItem = state.selectedItem;
-            if (selectedItem.rootGameObject != null && selectedItem.animationIsEditable)
+            if (state.selection.rootGameObject != null && state.selection.animationIsEditable)
             {
                 content.Add("");
                 content.Add(AnimationWindowStyles.createNewClip.text);

@@ -14,17 +14,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     class NodePresenter : SimpleElementPresenter
     {
         [SerializeField]
-        protected List<NodeAnchorPresenter> m_InputAnchors;
-        public List<NodeAnchorPresenter> inputAnchors
+        protected List<PortPresenter> m_InputPorts;
+        public List<PortPresenter> inputPorts
         {
-            get { return m_InputAnchors ?? (m_InputAnchors = new List<NodeAnchorPresenter>()); }
+            get { return m_InputPorts ?? (m_InputPorts = new List<PortPresenter>()); }
         }
 
         [SerializeField]
-        protected List<NodeAnchorPresenter> m_OutputAnchors;
-        public List<NodeAnchorPresenter> outputAnchors
+        protected List<PortPresenter> m_OutputPorts;
+        public List<PortPresenter> outputPorts
         {
-            get { return m_OutputAnchors ?? (m_OutputAnchors = new List<NodeAnchorPresenter>()); }
+            get { return m_OutputPorts ?? (m_OutputPorts = new List<PortPresenter>()); }
         }
 
         [SerializeField]
@@ -57,7 +57,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override IEnumerable<GraphElementPresenter> allChildren
         {
-            get { return inputAnchors.Concat(outputAnchors).Cast<GraphElementPresenter>(); }
+            get { return inputPorts.Concat(outputPorts).Cast<GraphElementPresenter>(); }
         }
 
         public override IEnumerable<GraphElementPresenter> allElements
@@ -65,11 +65,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get
             {
                 yield return this;
-                foreach (var inpt in inputAnchors)
+                foreach (var inpt in inputPorts)
                 {
                     yield return inpt;
                 }
-                foreach (var outpt in outputAnchors)
+                foreach (var outpt in outputPorts)
                 {
                     yield return outpt;
                 }

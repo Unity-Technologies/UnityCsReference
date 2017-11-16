@@ -20,16 +20,16 @@ namespace UnityEditor.PackageManager.Requests
         private Error m_Error;
 
         [SerializeField]
-        private NativeClient.StatusCode m_Status = NativeClient.StatusCode.NotFound;
+        private NativeStatusCode m_Status = NativeStatusCode.NotFound;
 
         [SerializeField]
         private long m_Id;
 
-        private NativeClient.StatusCode NativeStatusCode
+        private NativeStatusCode NativeStatus
         {
             get
             {
-                if (m_Status <= NativeClient.StatusCode.InProgress)
+                if (m_Status <= NativeStatusCode.InProgress)
                 {
                     m_Status = NativeClient.GetOperationStatus(Id);
                 }
@@ -53,19 +53,19 @@ namespace UnityEditor.PackageManager.Requests
         {
             get
             {
-                switch (NativeStatusCode)
+                switch (NativeStatus)
                 {
-                    case NativeClient.StatusCode.InProgress:
-                    case NativeClient.StatusCode.InQueue:
+                    case NativeStatusCode.InProgress:
+                    case NativeStatusCode.InQueue:
                         return StatusCode.InProgress;
-                    case NativeClient.StatusCode.Error:
-                    case NativeClient.StatusCode.NotFound:
+                    case NativeStatusCode.Error:
+                    case NativeStatusCode.NotFound:
                         return StatusCode.Failure;
-                    case NativeClient.StatusCode.Done:
+                    case NativeStatusCode.Done:
                         return StatusCode.Success;
                 }
 
-                throw new NotSupportedException(String.Format("Unknown native status code {0}", NativeStatusCode));
+                throw new NotSupportedException(String.Format("Unknown native status code {0}", NativeStatus));
             }
         }
 
@@ -94,7 +94,7 @@ namespace UnityEditor.PackageManager.Requests
 
                     if (m_Error == null)
                     {
-                        if (NativeStatusCode == NativeClient.StatusCode.NotFound)
+                        if (NativeStatus == NativeStatusCode.NotFound)
                         {
                             m_Error = new Error(ErrorCode.NotFound, "Operation not found");
                         }
@@ -117,7 +117,7 @@ namespace UnityEditor.PackageManager.Requests
         {
         }
 
-        internal Request(long operationId, NativeClient.StatusCode initialStatus)
+        internal Request(long operationId, NativeStatusCode initialStatus)
         {
             m_Id = operationId;
             m_Status = initialStatus;
@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.Requests
         {
         }
 
-        internal Request(long operationId, NativeClient.StatusCode initialStatus)
+        internal Request(long operationId, NativeStatusCode initialStatus)
             : base(operationId, initialStatus)
         {
         }

@@ -78,68 +78,49 @@ namespace UnityEditorInternal
             List<AnimationWindowHierarchyNode> nodes = new List<AnimationWindowHierarchyNode>();
             List<AnimationWindowCurve> singlePropertyCurves = new List<AnimationWindowCurve>();
 
-            foreach (var selectedItem in state.selection.ToArray())
+            AnimationWindowCurve[] curves = state.allCurves.ToArray();
+            AnimationWindowHierarchyNode parentNode = (AnimationWindowHierarchyNode)m_RootItem;
+
+            for (int i = 0; i < curves.Length; i++)
             {
-                AnimationWindowCurve[] curves = selectedItem.curves.ToArray();
+                AnimationWindowCurve curve = curves[i];
+                AnimationWindowCurve nextCurve = i < curves.Length - 1 ? curves[i + 1] : null;
 
-                AnimationWindowHierarchyNode parentNode = (AnimationWindowHierarchyNode)m_RootItem;
-                if (state.selection.count > 1)
+                singlePropertyCurves.Add(curve);
+
+                bool areSameGroup = nextCurve != null && AnimationWindowUtility.GetPropertyGroupName(nextCurve.propertyName) == AnimationWindowUtility.GetPropertyGroupName(curve.propertyName);
+                bool areSamePathAndType = nextCurve != null && curve.path.Equals(nextCurve.path) && curve.type == nextCurve.type;
+
+                // We expect curveBindings to come sorted by propertyname
+                // So we compare curve vs nextCurve. If its different path or different group (think "scale.xyz" as group), then we know this is the last element of such group.
+                if (i == curves.Length - 1 || !areSameGroup || !areSamePathAndType)
                 {
-                    AnimationWindowHierarchyNode clipNode = AddClipNodeToHierarchy(selectedItem, curves, parentNode);
-                    nodes.Add(clipNode);
-
-                    parentNode = clipNode;
-                }
-
-                for (int i = 0; i < curves.Length; i++)
-                {
-                    AnimationWindowCurve curve = curves[i];
-                    AnimationWindowCurve nextCurve = i < curves.Length - 1 ? curves[i + 1] : null;
-
-                    singlePropertyCurves.Add(curve);
-
-                    bool areSameGroup = nextCurve != null && AnimationWindowUtility.GetPropertyGroupName(nextCurve.propertyName) == AnimationWindowUtility.GetPropertyGroupName(curve.propertyName);
-                    bool areSamePathAndType = nextCurve != null && curve.path.Equals(nextCurve.path) && curve.type == nextCurve.type;
-
-                    // We expect curveBindings to come sorted by propertyname
-                    // So we compare curve vs nextCurve. If its different path or different group (think "scale.xyz" as group), then we know this is the last element of such group.
-                    if (i == curves.Length - 1 || !areSameGroup || !areSamePathAndType)
-                    {
-                        if (singlePropertyCurves.Count > 1)
-                            nodes.Add(AddPropertyGroupToHierarchy(selectedItem, singlePropertyCurves.ToArray(), parentNode));
-                        else
-                            nodes.Add(AddPropertyToHierarchy(selectedItem, singlePropertyCurves[0], parentNode));
-                        singlePropertyCurves.Clear();
-                    }
+                    if (singlePropertyCurves.Count > 1)
+                        nodes.Add(AddPropertyGroupToHierarchy(singlePropertyCurves.ToArray(), parentNode));
+                    else
+                        nodes.Add(AddPropertyToHierarchy(singlePropertyCurves[0], parentNode));
+                    singlePropertyCurves.Clear();
                 }
             }
 
             return nodes;
         }
 
-        private AnimationWindowHierarchyClipNode AddClipNodeToHierarchy(AnimationWindowSelectionItem selectedItem, AnimationWindowCurve[] curves, AnimationWindowHierarchyNode parentNode)
-        {
-            AnimationWindowHierarchyClipNode clipNode = new AnimationWindowHierarchyClipNode(parentNode, selectedItem.id, selectedItem.animationClip.name);
-            clipNode.curves = curves;
-
-            return clipNode;
-        }
-
-        private AnimationWindowHierarchyPropertyGroupNode AddPropertyGroupToHierarchy(AnimationWindowSelectionItem selectedItem, AnimationWindowCurve[] curves, AnimationWindowHierarchyNode parentNode)
+        private AnimationWindowHierarchyPropertyGroupNode AddPropertyGroupToHierarchy(AnimationWindowCurve[] curves, AnimationWindowHierarchyNode parentNode)
         {
             List<AnimationWindowHierarchyNode> childNodes = new List<AnimationWindowHierarchyNode>();
 
             System.Type animatableObjectType = curves[0].type;
-            AnimationWindowHierarchyPropertyGroupNode node = new AnimationWindowHierarchyPropertyGroupNode(animatableObjectType, selectedItem.id, AnimationWindowUtility.GetPropertyGroupName(curves[0].propertyName), curves[0].path, parentNode);
+            AnimationWindowHierarchyPropertyGroupNode node = new AnimationWindowHierarchyPropertyGroupNode(animatableObjectType, 0, AnimationWindowUtility.GetPropertyGroupName(curves[0].propertyName), curves[0].path, parentNode);
 
-            node.icon = GetIcon(selectedItem, curves[0].binding);
+            node.icon = GetIcon(curves[0].binding);
 
             node.indent = curves[0].depth;
             node.curves = curves;
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                AnimationWindowHierarchyPropertyNode childNode = AddPropertyToHierarchy(selectedItem, curve, node);
+                AnimationWindowHierarchyPropertyNode childNode = AddPropertyToHierarchy(curve, node);
                 // For child nodes we do not want to display the type in front (It is already shown by the group node)
                 childNode.displayName = AnimationWindowUtility.GetPropertyDisplayName(childNode.propertyName);
                 childNodes.Add(childNode);
@@ -149,25 +130,25 @@ namespace UnityEditorInternal
             return node;
         }
 
-        private AnimationWindowHierarchyPropertyNode AddPropertyToHierarchy(AnimationWindowSelectionItem selectedItem, AnimationWindowCurve curve, AnimationWindowHierarchyNode parentNode)
+        private AnimationWindowHierarchyPropertyNode AddPropertyToHierarchy(AnimationWindowCurve curve, AnimationWindowHierarchyNode parentNode)
         {
-            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, selectedItem.id, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve);
+            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, 0, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve);
 
             if (parentNode.icon != null)
                 node.icon = parentNode.icon;
             else
-                node.icon = GetIcon(selectedItem, curve.binding);
+                node.icon = GetIcon(curve.binding);
 
             node.indent = curve.depth;
             node.curves = new[] { curve };
             return node;
         }
 
-        public Texture2D GetIcon(AnimationWindowSelectionItem selectedItem, EditorCurveBinding curveBinding)
+        public Texture2D GetIcon(EditorCurveBinding curveBinding)
         {
-            if (selectedItem.rootGameObject != null)
+            if (state.activeRootGameObject != null)
             {
-                Object animatedObject = AnimationUtility.GetAnimatedObject(selectedItem.rootGameObject, curveBinding);
+                Object animatedObject = AnimationUtility.GetAnimatedObject(state.activeRootGameObject, curveBinding);
                 if (animatedObject != null)
                     return AssetPreview.GetMiniThumbnail(animatedObject);
             }

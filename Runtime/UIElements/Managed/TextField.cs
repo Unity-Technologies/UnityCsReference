@@ -99,19 +99,41 @@ namespace UnityEngine.Experimental.UIElements
             {
                 // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
                 // so before drawing make sure we hide them ourselves
-                string drawText = text;
-                text = "".PadRight(text.Length, maskChar);
-
+                string drawText = "".PadRight(text.Length, maskChar);
                 if (!hasFocus)
-                    base.DoRepaint(painter);
+                {
+                    // We don't have the focus, don't draw the selection and cursor
+                    painter.DrawBackground(this);
+                    painter.DrawBorder(this);
+                    if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
+                    {
+                        var textParams = painter.GetDefaultTextParameters(this);
+                        textParams.text = drawText;
+                        painter.DrawText(textParams);
+                    }
+                }
                 else
-                    DrawWithTextSelectionAndCursor(painter, text);
-
-                text = drawText;
+                {
+                    DrawWithTextSelectionAndCursor(painter, drawText);
+                }
             }
             else
             {
                 base.DoRepaint(painter);
+            }
+        }
+
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            {
+                KeyDownEvent kde = evt as KeyDownEvent;
+                if (kde.character == '\n')
+                {
+                    SetValueAndNotify(text);
+                }
             }
         }
 
@@ -122,14 +144,6 @@ namespace UnityEngine.Experimental.UIElements
             if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 SetValueAndNotify(text);
-            }
-            else if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
-            {
-                KeyDownEvent kde = evt as KeyDownEvent;
-                if (kde.character == '\n')
-                {
-                    SetValueAndNotify(text);
-                }
             }
         }
     }

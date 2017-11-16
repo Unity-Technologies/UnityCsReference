@@ -117,6 +117,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return languages.Count(l => l.GetExtensionICanCompile() == extension) > 0;
         }
 
+        public string[] GetExtensionsSupportedByCompiler()
+        {
+            var languages = ScriptCompilers.SupportedLanguages;
+            return languages.Select(language => language.GetExtensionICanCompile()).ToArray();
+        }
+
         public void DirtyAllScripts()
         {
             areAllScriptsDirty = true;
@@ -1029,9 +1035,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options);
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory(), assemblySuffix);
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, precompiledAssemblies);
+            var additionalReferences = EditorBuildRules.GenerateAdditionalReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
-            var references = unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences);
+            var references = unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences).Concat(additionalReferences);
 
             if (assemblyBuilder.additionalReferences != null && assemblyBuilder.additionalReferences.Length > 0)
                 references = references.Concat(assemblyBuilder.additionalReferences);

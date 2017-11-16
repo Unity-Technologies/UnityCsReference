@@ -543,7 +543,6 @@ namespace UnityEditor
 
             RenderTexture tmp = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
             RenderTexture.active = tmp;
-            GL.sRGBWrite = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GL.Clear(true, true, new Color(0f, 0f, 0f, 0.1f));
 
             previewSpriteDefaultMaterial.mainTexture = sprite.texture;
@@ -551,7 +550,6 @@ namespace UnityEditor
 
             RenderSpriteImmediate(sprite, color, transform);
 
-            GL.sRGBWrite = false;
             UnityTexture2D copy = new UnityTexture2D(width, height, TextureFormat.ARGB32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
@@ -591,7 +589,6 @@ namespace UnityEditor
             }
             GL.End();
             GL.PopMatrix();
-            GL.sRGBWrite = false;
         }
 
         public static UnityTexture2D CreateTemporaryDuplicate(UnityTexture2D original, int width, int height)
@@ -602,17 +599,14 @@ namespace UnityEditor
             RenderTexture save = RenderTexture.active;
             var savedViewport = ShaderUtil.rawViewportRect;
 
-            bool sRGB = !TextureUtil.GetLinearSampled(original);
             RenderTexture tmp = RenderTexture.GetTemporary(
                     width,
                     height,
                     0,
                     RenderTextureFormat.Default,
-                    sRGB ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
+                    RenderTextureReadWrite.sRGB);
 
-            GL.sRGBWrite = (sRGB && QualitySettings.activeColorSpace == ColorSpace.Linear);
-            Graphics.Blit(original, tmp);
-            GL.sRGBWrite = false;
+            Graphics.Blit(original, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
 
             RenderTexture.active = tmp;
 

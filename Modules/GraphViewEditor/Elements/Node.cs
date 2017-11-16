@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Expanded = value;
                 m_CollapseButton.text = m_Expanded ? "collapse" : "expand";
 
-                RefreshAnchors();
+                RefreshPorts();
             }
         }
 
@@ -85,16 +85,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             orientation = nodePresenter.orientation;
         }
 
-        protected virtual void OnAnchorRemoved(NodeAnchor anchor)
+        protected virtual void OnPortRemoved(Port port)
         {}
 
         // TODO: Remove when removing presenters.
-        private void ProcessRemovedAnchors(IList<NodeAnchor> currentAnchors, VisualElement anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
+        private void ProcessRemovedPorts(IList<Port> currentPorts, VisualElement portContainer, IList<PortPresenter> currentPresenters)
         {
-            foreach (var anchor in currentAnchors)
+            foreach (var port in currentPorts)
             {
                 bool contains = false;
-                var inputPres = anchor.GetPresenter<NodeAnchorPresenter>();
+                var inputPres = port.GetPresenter<PortPresenter>();
                 foreach (var newPres in currentPresenters)
                 {
                     if (newPres == inputPres)
@@ -106,22 +106,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!contains)
                 {
-                    OnAnchorRemoved(anchor);
-                    anchorContainer.Remove(anchor);
+                    OnPortRemoved(port);
+                    portContainer.Remove(port);
                 }
             }
         }
 
         // TODO: Remove when removing presenters.
-        private void ProcessAddedAnchors(IList<NodeAnchor> currentAnchors, VisualElement anchorContainer, IList<NodeAnchorPresenter> currentPresenters)
+        private void ProcessAddedPorts(IList<Port> currentPorts, VisualElement portContainer, IList<PortPresenter> currentPresenters)
         {
             int index = 0;
             foreach (var newPres in currentPresenters)
             {
                 bool contains = false;
-                foreach (var currAnchor in currentAnchors)
+                foreach (Port currPort in currentPorts)
                 {
-                    if (newPres == currAnchor.GetPresenter<NodeAnchorPresenter>())
+                    if (newPres == currPort.GetPresenter<PortPresenter>())
                     {
                         contains = true;
                         break;
@@ -130,44 +130,44 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!contains)
                 {
-                    anchorContainer.Insert(index, InstantiateNodeAnchor(newPres));
+                    portContainer.Insert(index, InstantiatePort(newPres));
                 }
 
                 index++;
             }
         }
 
-        public virtual NodeAnchor InstantiateNodeAnchor(Orientation orientation, Direction direction, Type type)
+        public virtual Port InstantiatePort(Orientation orientation, Direction direction, Type type)
         {
-            return NodeAnchor.Create<Edge>(orientation, direction, type);
+            return Port.Create<Edge>(orientation, direction, type);
         }
 
-        public virtual NodeAnchor InstantiateNodeAnchor(NodeAnchorPresenter newPres)
+        public virtual Port InstantiatePort(PortPresenter newPres)
         {
-            return NodeAnchor.Create<EdgePresenter, Edge>(newPres);
+            return Port.Create<EdgePresenter, Edge>(newPres);
         }
 
-        private int ShowAnchors(bool show, IList<NodeAnchor> currentAnchors)
+        private int ShowPorts(bool show, IList<Port> currentPorts)
         {
             int count = 0;
-            foreach (var anchor in currentAnchors)
+            foreach (var port in currentPorts)
             {
-                if ((show || anchor.connected) && !anchor.collapsed)
+                if ((show || port.connected) && !port.collapsed)
                 {
-                    anchor.visible = true;
-                    anchor.RemoveFromClassList("hidden");
+                    port.visible = true;
+                    port.RemoveFromClassList("hidden");
                     count++;
                 }
                 else
                 {
-                    anchor.visible = false;
-                    anchor.AddToClassList("hidden");
+                    port.visible = false;
+                    port.AddToClassList("hidden");
                 }
             }
             return count;
         }
 
-        public void RefreshAnchors()
+        public void RefreshPorts()
         {
             var nodePresenter = GetPresenter<NodePresenter>();
 
@@ -176,24 +176,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // TODO: Remove when removing presenters.
             if (nodePresenter != null)
             {
-                var currentInputs = inputContainer.Query<NodeAnchor>().ToList();
-                var currentOutputs = outputContainer.Query<NodeAnchor>().ToList();
+                var currentInputs = inputContainer.Query<Port>().ToList();
+                var currentOutputs = outputContainer.Query<Port>().ToList();
 
-                ProcessRemovedAnchors(currentInputs, inputContainer, nodePresenter.inputAnchors);
-                ProcessRemovedAnchors(currentOutputs, outputContainer, nodePresenter.outputAnchors);
+                ProcessRemovedPorts(currentInputs, inputContainer, nodePresenter.inputPorts);
+                ProcessRemovedPorts(currentOutputs, outputContainer, nodePresenter.outputPorts);
 
-                ProcessAddedAnchors(currentInputs, inputContainer, nodePresenter.inputAnchors);
-                ProcessAddedAnchors(currentOutputs, outputContainer, nodePresenter.outputAnchors);
+                ProcessAddedPorts(currentInputs, inputContainer, nodePresenter.inputPorts);
+                ProcessAddedPorts(currentOutputs, outputContainer, nodePresenter.outputPorts);
 
                 expandedState = nodePresenter.expanded;
             }
 
             // Refresh the lists after all additions and everything took place
-            var updatedInputs = inputContainer.Query<NodeAnchor>().ToList();
-            var updatedOutputs = outputContainer.Query<NodeAnchor>().ToList();
+            var updatedInputs = inputContainer.Query<Port>().ToList();
+            var updatedOutputs = outputContainer.Query<Port>().ToList();
 
-            ShowAnchors(expandedState, updatedInputs);
-            int outputCount = ShowAnchors(expandedState, updatedOutputs);
+            ShowPorts(expandedState, updatedInputs);
+            int outputCount = ShowPorts(expandedState, updatedOutputs);
 
             // Show output container only if we have one or more child
             if (outputCount > 0)
@@ -223,7 +223,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // the property setter to apply here.
             m_Expanded = nodePresenter.expanded;
 
-            RefreshAnchors();
+            RefreshPorts();
 
             m_TitleLabel.text = nodePresenter.title;
 
@@ -256,10 +256,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Node(Orientation nodeOrientation = Orientation.Horizontal)
         {
-            clippingOptions = ClippingOptions.ClipAndCacheContents;
-
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
             mainContainer = tpl.CloneTree(null);
+            mainContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
             leftContainer = mainContainer.Q(name: "left");
             rightContainer = mainContainer.Q(name: "right");
             titleContainer = mainContainer.Q(name: "title");

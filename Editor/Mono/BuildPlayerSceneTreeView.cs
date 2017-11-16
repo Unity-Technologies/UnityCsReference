@@ -248,7 +248,7 @@ namespace UnityEditor
         protected override void DoubleClickedItem(int id)
         {
             BuildPlayerSceneTreeViewItem item = FindItem(id , rootItem) as BuildPlayerSceneTreeViewItem;
-            int instanceID = AssetDatabase.GetInstanceIDFromGUID(AssetDatabase.AssetPathToGUID(item.fullName));
+            int instanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(item.fullName);
             EditorGUIUtility.PingObject(instanceID);
         }
 

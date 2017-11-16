@@ -41,7 +41,6 @@ namespace UnityEditor
             public GUIContent platformTitle = EditorGUIUtility.TextContent("Platform|Which platform to build for");
             public GUIContent switchPlatform = EditorGUIUtility.TextContent("Switch Platform");
             public GUIContent build = EditorGUIUtility.TextContent("Build");
-            public GUIContent export = EditorGUIUtility.TextContent("Export");
             public GUIContent buildAndRun = EditorGUIUtility.TextContent("Build And Run");
             public GUIContent scenesInBuild = EditorGUIUtility.TextContent("Scenes In Build|Which scenes to include in the build");
 
@@ -113,7 +112,7 @@ namespace UnityEditor
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
-            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method|Compression applied to Player data (scenes and resources).\nNone - no compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
+            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method|Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
             public Compression[] compressionTypes =
             {
@@ -124,7 +123,7 @@ namespace UnityEditor
 
             public GUIContent[] compressionStrings =
             {
-                EditorGUIUtility.TextContent("None"),
+                EditorGUIUtility.TextContent("Default"),
                 EditorGUIUtility.TextContent("LZ4"),
                 EditorGUIUtility.TextContent("LZ4HC"),
             };
@@ -857,10 +856,13 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            GUIContent buildButton = styles.build;
-            if (platform.targetGroup == BuildTargetGroup.Android
-                && EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                buildButton = styles.export;
+            GUIContent buildButton = null;
+            GUIContent buildAndRunButton = null;
+            if (buildWindowExtension != null)
+                buildWindowExtension.GetBuildButtonTitles(out buildButton, out buildAndRunButton);
+
+            buildButton = buildButton ?? styles.build;
+            buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
 
             // Build Button
             GUI.enabled = enableBuildButton;
@@ -871,7 +873,7 @@ namespace UnityEditor
             }
             // Build and Run button
             GUI.enabled = enableBuildAndRunButton;
-            if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
+            if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
                 BuildPlayerAndRun(true);
                 GUIUtility.ExitGUI();

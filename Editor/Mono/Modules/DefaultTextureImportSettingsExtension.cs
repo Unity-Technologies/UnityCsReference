@@ -158,6 +158,11 @@ namespace UnityEditor.Modules
                                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueWiiU;
                                     formatStrings = TextureImporterInspector.s_TextureFormatStringsWiiU;
                                 }
+                                else if (platformSettings.m_Target == BuildTarget.PSP2)
+                                {
+                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValuePSP2;
+                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsPSP2;
+                                }
                                 else if (platformSettings.m_Target == BuildTarget.Switch)
                                 {
                                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueSwitch;

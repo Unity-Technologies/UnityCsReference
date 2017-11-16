@@ -251,9 +251,7 @@ namespace UnityEditor
 
         public static int GetAssetsFolderInstanceID()
         {
-            string rootDir = "Assets";
-            string guid = AssetDatabase.AssetPathToGUID(rootDir);
-            int instanceID = AssetDatabase.GetInstanceIDFromGUID(guid);
+            int instanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             return instanceID;
         }
 
@@ -276,9 +274,8 @@ namespace UnityEditor
             TreeViewItem packagesRootItem = null;
             if (Unsupported.IsDeveloperBuild() && EditorPrefs.GetBool("ShowPackagesFolder"))
             {
-                var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesRootPath());
-                var packagesFolderInstanceID = AssetDatabase.GetInstanceIDFromGUID(packagesGuid);
-                string packagesDisplayName = AssetDatabase.GetPackagesRootPath();
+                var packagesFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetPackagesRootPath());
+                string packagesDisplayName = AssetDatabase.GetPackagesMountPoint();
                 packagesRootItem = new TreeViewItem(packagesFolderInstanceID, depth, m_RootItem, packagesDisplayName);
                 ReadAssetDatabase(HierarchyType.Packages, packagesRootItem, depth + 1);
             }
@@ -309,7 +306,7 @@ namespace UnityEditor
         private void ReadAssetDatabase(HierarchyType htype, TreeViewItem parent, int baseDepth)
         {
             // Read from Assets directory
-            IHierarchyProperty property = new HierarchyProperty(htype);
+            IHierarchyProperty property = new HierarchyProperty(htype, false);
             property.Reset();
 
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);

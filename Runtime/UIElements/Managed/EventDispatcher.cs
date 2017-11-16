@@ -72,18 +72,16 @@ namespace UnityEngine.Experimental.UIElements
             // send MouseLeave events to elements between CA and previousTopElementUnderMouse
             // and send MouseEnter events to elements between CA and currentTopElementUnderMouse.
 
-            VisualElement p;
             int prevDepth = 0;
-            p = previousTopElementUnderMouse;
+            var p = previousTopElementUnderMouse;
             while (p != null)
             {
                 prevDepth++;
                 p = p.shadow.parent;
             }
 
-            VisualElement c;
             int currDepth = 0;
-            c = currentTopElementUnderMouse;
+            var c = currentTopElementUnderMouse;
             while (c != null)
             {
                 currDepth++;
@@ -219,6 +217,25 @@ namespace UnityEngine.Experimental.UIElements
                 evt.dispatch = false;
             }
 
+            if (evt.isPropagationStopped)
+            {
+                // Make sure to call default actions at target, but dont call it twice on mouse capture
+                if (evt.target == null && panel != null)
+                {
+                    evt.target = panel.visualTree;
+                }
+                if (evt.target != null && evt.target != MouseCaptureController.mouseCapture)
+                {
+                    evt.dispatch = true;
+                    evt.currentTarget = evt.target;
+                    evt.propagationPhase = PropagationPhase.AtTarget;
+                    evt.target.HandleEvent(evt);
+                    evt.propagationPhase = PropagationPhase.None;
+                    evt.currentTarget = null;
+                    evt.dispatch = false;
+                }
+            }
+
             if (!evt.isPropagationStopped)
             {
                 if (evt is IKeyboardEvent && panel != null)
@@ -303,7 +320,10 @@ namespace UnityEngine.Experimental.UIElements
                             PropagateEvent(evt);
                         }
 
-                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() || e.type == EventType.DragUpdated || evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId())
+                        if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
+                            evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
+                            evt.GetEventTypeId() == WheelEvent.TypeId() ||
+                            e.type == EventType.DragUpdated)
                         {
                             DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
                             DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
@@ -329,7 +349,7 @@ namespace UnityEngine.Experimental.UIElements
                         evt.target = panel.focusController.focusedElement;
                         PropagateEvent(evt);
                     }
-                    else if (panel != null)
+                    else
                     {
                         invokedHandleEvent = true;
                         PropagateToIMGUIContainer(panel.visualTree, evt, captureVE);
@@ -402,58 +422,57 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            var paths = BuildPropagationPath(evt.target as VisualElement);
-
-            evt.dispatch = true;
-
-            if (evt.capturable && paths.capturePath.Count > 0)
+            using (var paths = BuildPropagationPath(evt.target as VisualElement))
             {
-                // Phase 1: Capture phase
-                // Propagate event from root to target.parent
-                evt.propagationPhase = PropagationPhase.Capture;
+                evt.dispatch = true;
 
-                for (int i = paths.capturePath.Count - 1; i >= 0; i--)
+                if (evt.capturable && paths.capturePath.Count > 0)
                 {
-                    if (evt.isPropagationStopped)
-                        break;
+                    // Phase 1: Capture phase
+                    // Propagate event from root to target.parent
+                    evt.propagationPhase = PropagationPhase.Capture;
 
-                    evt.currentTarget = paths.capturePath[i];
-                    evt.currentTarget.HandleEvent(evt);
+                    for (int i = paths.capturePath.Count - 1; i >= 0; i--)
+                    {
+                        if (evt.isPropagationStopped)
+                            break;
+
+                        evt.currentTarget = paths.capturePath[i];
+                        evt.currentTarget.HandleEvent(evt);
+                    }
                 }
-            }
 
-            // Phase 2: Target
-            if (!evt.isPropagationStopped)
-            {
+                // Phase 2: Target
+                // Call HandleEvent() even if propagation is stopped, for the default actions at target.
                 evt.propagationPhase = PropagationPhase.AtTarget;
                 evt.currentTarget = evt.target;
                 evt.currentTarget.HandleEvent(evt);
-            }
 
-            // Phase 3: bubble Up phase
-            // Propagate event from target parent up to root
-            if (evt.bubbles && paths.bubblePath.Count > 0)
-            {
-                evt.propagationPhase = PropagationPhase.BubbleUp;
-
-                for (int i = 0; i < paths.bubblePath.Count; i++)
+                // Phase 3: bubble Up phase
+                // Propagate event from target parent up to root
+                if (evt.bubbles && paths.bubblePath.Count > 0)
                 {
-                    if (evt.isPropagationStopped)
-                        break;
+                    evt.propagationPhase = PropagationPhase.BubbleUp;
 
-                    evt.currentTarget = paths.bubblePath[i];
-                    evt.currentTarget.HandleEvent(evt);
+                    foreach (VisualElement ve in paths.bubblePath)
+                    {
+                        if (evt.isPropagationStopped)
+                            break;
+
+                        evt.currentTarget = ve;
+                        evt.currentTarget.HandleEvent(evt);
+                    }
                 }
-            }
 
-            evt.dispatch = false;
-            evt.propagationPhase = PropagationPhase.None;
-            evt.currentTarget = null;
+                evt.dispatch = false;
+                evt.propagationPhase = PropagationPhase.None;
+                evt.currentTarget = null;
+            }
         }
 
         private static void ExecuteDefaultAction(EventBase evt)
         {
-            if (!evt.isDefaultPrevented && evt.target != null)
+            if (evt.target != null)
             {
                 evt.dispatch = true;
                 evt.currentTarget = evt.target;
@@ -467,41 +486,74 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        struct PropagationPaths
+        private const int k_DefaultPropagationDepth = 16;
+        private static readonly PropagationPaths k_EmptyPropagationPaths = new PropagationPaths(0);
+
+        struct PropagationPaths : IDisposable
         {
-            public List<VisualElement> capturePath;
-            public List<VisualElement> bubblePath;
+            public readonly List<VisualElement> capturePath;
+            public readonly List<VisualElement> bubblePath;
 
             public PropagationPaths(int initialSize)
             {
                 capturePath = new List<VisualElement>(initialSize);
                 bubblePath = new List<VisualElement>(initialSize);
             }
+
+            public void Dispose()
+            {
+                PropagationPathsPool.Release(this);
+            }
+
+            public void Clear()
+            {
+                bubblePath.Clear();
+                capturePath.Clear();
+            }
+        }
+
+        private static class PropagationPathsPool
+        {
+            private static readonly List<PropagationPaths> s_Available = new List<PropagationPaths>();
+
+            public static PropagationPaths Acquire()
+            {
+                if (s_Available.Count != 0)
+                {
+                    PropagationPaths po = s_Available[0];
+                    s_Available.RemoveAt(0);
+                    return po;
+                }
+                else
+                {
+                    PropagationPaths po = new PropagationPaths(k_DefaultPropagationDepth);
+                    return po;
+                }
+            }
+
+            public static void Release(PropagationPaths po)
+            {
+                po.Clear();
+                s_Available.Add(po);
+            }
         }
 
         private static PropagationPaths BuildPropagationPath(VisualElement elem)
         {
-            var ret = new PropagationPaths(16);
-
             if (elem == null)
-                return ret;
-
+                return k_EmptyPropagationPaths;
+            var ret = PropagationPathsPool.Acquire();
             while (elem.shadow.parent != null)
             {
                 if (elem.shadow.parent.enabledInHierarchy)
                 {
                     if (elem.shadow.parent.HasCaptureHandlers())
-                    {
                         ret.capturePath.Add(elem.shadow.parent);
-                    }
                     if (elem.shadow.parent.HasBubbleHandlers())
-                    {
                         ret.bubblePath.Add(elem.shadow.parent);
-                    }
                 }
                 elem = elem.shadow.parent;
             }
-
             return ret;
         }
     }

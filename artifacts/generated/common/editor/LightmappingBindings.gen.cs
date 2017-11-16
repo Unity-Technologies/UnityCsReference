@@ -231,13 +231,13 @@ public sealed partial class Lightmapping
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool GetGBufferHash (int lightmapIndex, out Hash128 gbufferHash) ;
 
-    internal static bool GetGBufferMemory (ref Hash128 gbufferHash, out float gbufferDataSize) {
-        return INTERNAL_CALL_GetGBufferMemory ( ref gbufferHash, out gbufferDataSize );
+    internal static float GetGBufferMemory (ref Hash128 gbufferHash) {
+        return INTERNAL_CALL_GetGBufferMemory ( ref gbufferHash );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_GetGBufferMemory (ref Hash128 gbufferHash, out float gbufferDataSize);
+    private extern static float INTERNAL_CALL_GetGBufferMemory (ref Hash128 gbufferHash);
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void GetTransmissionTexturesMemLabels (out string[] labels, out float[] sizes) ;
@@ -252,7 +252,7 @@ public sealed partial class Lightmapping
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  float ComputeTotalMemoryUsage () ;
+    extern internal static  float ComputeTotalMemoryUsageInMB () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -560,6 +560,10 @@ public sealed partial class LightmapEditorSettings
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool HasClampedResolution (Renderer renderer) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  bool HasUVOverlaps (Renderer renderer) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
