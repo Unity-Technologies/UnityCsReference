@@ -118,6 +118,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, "m_ClothInterCollisionDistance", "m_ClothInterCollisionStiffness", "m_ClothInterCollisionSettingsToggle");
             LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref show, ref scrollPos, GetValue, SetValue);
 
@@ -153,6 +154,7 @@ namespace UnityEditor
                 }
                 EditorGUI.indentLevel--;
             }
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

@@ -3,36 +3,38 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using UnityEditorInternal.VR;
 
 namespace UnityEditorInternal.VR
 {
     partial class VREditor
     {
-        [Obsolete("Use GetVREnabledOnTargetGroup instead.")]
-        public static bool GetVREnabled(BuildTargetGroup targetGroup)
+        private static Dictionary<BuildTargetGroup, bool> dirtyDeviceLists = new Dictionary<BuildTargetGroup, bool>();
+
+        public static bool IsDeviceListDirty(BuildTargetGroup targetGroup)
         {
-            return GetVREnabledOnTargetGroup(targetGroup);
+            if (dirtyDeviceLists.ContainsKey(targetGroup))
+                return dirtyDeviceLists[targetGroup];
+
+            return false;
         }
 
-        [Obsolete("UseSetVREnabledOnTargetGroup instead.")]
-        public static void SetVREnabled(BuildTargetGroup targetGroup, bool value)
+        private static void SetDeviceListDirty(BuildTargetGroup targetGroup)
         {
-            SetVREnabledOnTargetGroup(targetGroup, value);
+            if (dirtyDeviceLists.ContainsKey(targetGroup))
+                dirtyDeviceLists[targetGroup] = true;
+            else
+                dirtyDeviceLists.Add(targetGroup, true);
         }
 
-        [Obsolete("Use GetVREnabledDevicesOnTargetGroup instead.")]
-        public static string[] GetVREnabledDevices(BuildTargetGroup targetGroup)
+        public static void ClearDeviceListDirty(BuildTargetGroup targetGroup)
         {
-            return GetVREnabledDevicesOnTargetGroup(targetGroup);
-        }
-
-        [Obsolete("Use SetVREnabledDevicesOnTargetGroup instead.")]
-        public static void SetVREnabledDevices(BuildTargetGroup targetGroup, string[] devices)
-        {
-            SetVREnabledDevicesOnTargetGroup(targetGroup, devices);
+            if (dirtyDeviceLists.ContainsKey(targetGroup))
+                dirtyDeviceLists[targetGroup] = false;
         }
 
         public static VRDeviceInfoEditor[] GetEnabledVRDeviceInfo(BuildTargetGroup targetGroup)
@@ -56,6 +58,62 @@ namespace UnityEditorInternal.VR
                     return true;
             }
             return false;
+        }
+
+        public static string[] GetAvailableVirtualRealitySDKs(BuildTargetGroup targetGroup)
+        {
+            VRDeviceInfoEditor[] deviceInfos = GetAllVRDeviceInfo(targetGroup);
+            string[] sdks = new string[deviceInfos.Length];
+
+            for (int i = 0; i < deviceInfos.Length; ++i)
+            {
+                sdks[i] = deviceInfos[i].deviceNameKey;
+            }
+
+            return sdks;
+        }
+
+        // APIs Exposed to PlayerSettings for Scripting Reference
+        public static string[] GetVirtualRealitySDKs(BuildTargetGroup targetGroup)
+        {
+            return GetVREnabledDevicesOnTargetGroup(targetGroup);
+        }
+
+        public static void SetVirtualRealitySDKs(BuildTargetGroup targetGroup, string[] sdks)
+        {
+            SetVREnabledDevicesOnTargetGroup(targetGroup, sdks);
+            SetDeviceListDirty(targetGroup);
+        }
+    }
+}
+
+namespace UnityEditor
+{
+    partial class PlayerSettings
+    {
+        public static string[] GetAvailableVirtualRealitySDKs(BuildTargetGroup targetGroup)
+        {
+            return VREditor.GetAvailableVirtualRealitySDKs(targetGroup);
+        }
+
+        public static bool GetVirtualRealitySupported(BuildTargetGroup targetGroup)
+        {
+            return VREditor.GetVREnabledOnTargetGroup(targetGroup);
+        }
+
+        public static void SetVirtualRealitySupported(BuildTargetGroup targetGroup, bool value)
+        {
+            VREditor.SetVREnabledOnTargetGroup(targetGroup, value);
+        }
+
+        public static string[] GetVirtualRealitySDKs(BuildTargetGroup targetGroup)
+        {
+            return VREditor.GetVirtualRealitySDKs(targetGroup);
+        }
+
+        public static void SetVirtualRealitySDKs(BuildTargetGroup targetGroup, string[] sdks)
+        {
+            VREditor.SetVirtualRealitySDKs(targetGroup, sdks);
         }
     }
 }
