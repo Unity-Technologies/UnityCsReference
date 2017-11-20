@@ -125,6 +125,12 @@ namespace UnityEditorInternal.VR
             if (!TargetGroupSupportsVirtualReality(targetGroup) && !TargetGroupSupportsAugmentedReality(targetGroup))
                 return;
 
+            if (VREditor.IsDeviceListDirty(targetGroup))
+            {
+                VREditor.ClearDeviceListDirty(targetGroup);
+                m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
+            }
+
             // Check to see if any devices require an install and need their GUI hidden
             CheckDevicesRequireInstall(targetGroup);
 
