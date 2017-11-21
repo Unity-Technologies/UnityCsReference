@@ -64,6 +64,8 @@ namespace UnityEditor.U2D
             public readonly GUIContent disabledPackLabel = EditorGUIUtility.TextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.");
             public readonly GUIContent packableListLabel = EditorGUIUtility.TextContent("Objects for Packing|Only accept Folder, Sprite Sheet(Texture) and Sprite.");
 
+            public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TextContent("This scale will produce a Sprite Atlas variant with a packed texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/texture formats.");
+
             public readonly GUIContent smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
             public readonly GUIContent largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
             public readonly GUIContent alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
@@ -188,7 +190,6 @@ namespace UnityEditor.U2D
             m_EnableRotation = serializedObject.FindProperty("m_EditorData.packingParameters.enableRotation");
             m_Padding = serializedObject.FindProperty("m_EditorData.packingParameters.padding");
 
-            m_Hash = serializedObject.FindProperty("m_EditorData.hashString").stringValue;
             m_MasterAtlas = serializedObject.FindProperty("m_MasterAtlas");
             m_BindAsDefault = serializedObject.FindProperty("m_EditorData.bindAsDefault");
             m_VariantMultiplier = serializedObject.FindProperty("m_EditorData.variantMultiplier");
@@ -383,6 +384,10 @@ namespace UnityEditor.U2D
         {
             EditorGUILayout.LabelField(s_Styles.variantSettingLabel, EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(m_VariantMultiplier, s_Styles.variantMultiplierLabel);
+
+            // Test if the multiplier scale a power of two size (1024) into another power of 2 size.
+            if (!Mathf.IsPowerOfTwo((int)(m_VariantMultiplier.floatValue * 1024)))
+                EditorGUILayout.HelpBox(s_Styles.notPowerOfTwoWarning.text, MessageType.Warning, true);
         }
 
         private void HandleBoolToIntPropertyField(SerializedProperty prop, GUIContent content)

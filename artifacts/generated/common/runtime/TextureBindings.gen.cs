@@ -956,6 +956,11 @@ public partial class RenderTexture : Texture
         }
     
     
+    internal protected RenderTexture()
+        {
+        }
+    
+    
     private void SetRenderTextureDescriptor (RenderTextureDescriptor desc) {
         INTERNAL_CALL_SetRenderTextureDescriptor ( this, ref desc );
     }
@@ -1348,21 +1353,35 @@ public partial struct CustomRenderTextureUpdateZone
 [UsedByNativeCode]
 public sealed partial class CustomRenderTexture : RenderTexture
 {
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  void Internal_CreateCustomRenderTexture ([Writable] CustomRenderTexture rt, RenderTextureReadWrite readWrite) ;
+
     public CustomRenderTexture(int width, int height, RenderTextureFormat format, RenderTextureReadWrite readWrite)
-            : base(width, height, 0, format, readWrite)
         {
+            Internal_CreateCustomRenderTexture(this, readWrite);
+
+            this.width = width;
+            this.height = height;
+            this.format = format;
         }
     
     
     public CustomRenderTexture(int width, int height, RenderTextureFormat format)
-            : base(width, height, 0, format)
         {
+            Internal_CreateCustomRenderTexture(this, RenderTextureReadWrite.Default);
+            this.width = width;
+            this.height = height;
+            this.format = format;
         }
     
     
     public CustomRenderTexture(int width, int height)
-            : base(width, height, 0)
         {
+            Internal_CreateCustomRenderTexture(this, RenderTextureReadWrite.Default);
+            this.width = width;
+            this.height = height;
+            this.format = RenderTextureFormat.Default;
         }
     
     
