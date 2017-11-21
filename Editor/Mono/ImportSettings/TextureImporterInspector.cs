@@ -350,6 +350,7 @@ namespace UnityEditor
 
         internal static string[] s_TextureFormatStringsAll;
         internal static string[] s_TextureFormatStringsWiiU;
+        internal static string[] s_TextureFormatStringsPSP2;
         internal static string[] s_TextureFormatStringsWebGL;
         internal static string[] s_TextureFormatStringsApplePVR;
         internal static string[] s_TextureFormatStringsAndroid;
@@ -1463,6 +1464,8 @@ namespace UnityEditor
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsWiiU == null)
                 s_TextureFormatStringsWiiU = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWiiU);
+            if (s_TextureFormatStringsPSP2 == null)
+                s_TextureFormatStringsPSP2 = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValuePSP2);
             if (s_TextureFormatStringsDefault == null)
                 s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
             if (s_NormalFormatStringsDefault == null)

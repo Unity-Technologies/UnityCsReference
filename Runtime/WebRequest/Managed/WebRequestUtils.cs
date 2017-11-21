@@ -212,9 +212,9 @@ namespace UnityEngine
                     {
                         for (int i = 0; i < formData.Count; i++)
                         {
-                            byte[] name = WWWTranscoder.URLEncode(System.Text.Encoding.UTF8.GetBytes((string)fieldNames[i]));
+                            byte[] name = WWWTranscoder.DataEncode(System.Text.Encoding.UTF8.GetBytes((string)fieldNames[i]));
                             byte[] formBytes = (byte[])formData[i];
-                            byte[] value = WWWTranscoder.URLEncode(formBytes);
+                            byte[] value = WWWTranscoder.DataEncode(formBytes);
 
                             if (i > 0) memStream.Write(ampersand, 0, (int)ampersand.Length);
                             memStream.Write(name, 0, (int)name.Length);
@@ -234,10 +234,11 @@ namespace UnityEngine
         private static byte[] ucHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789ABCDEF");
         private static byte[] lcHexChars = WWWForm.DefaultEncoding.GetBytes("0123456789abcdef");
         private static byte urlEscapeChar = (byte)'%';
-        private static byte urlSpace = (byte)'+';
+        private static byte[] urlSpace = new byte[] { (byte)'+' };
+        private static byte[] dataSpace = WWWForm.DefaultEncoding.GetBytes("%20");
         private static byte[] urlForbidden = WWWForm.DefaultEncoding.GetBytes("@&;:<>=?\"'/\\!#%+$,{}|^[]`");
         private static byte qpEscapeChar = (byte)'=';
-        private static byte qpSpace = (byte)'_';
+        private static byte[] qpSpace = new byte[] {  (byte)'_' };
         private static byte[] qpForbidden = WWWForm.DefaultEncoding.GetBytes("&;=?\"'%+_");
 
         private static byte Hex2Byte(byte[] b, int offset)
@@ -290,6 +291,22 @@ namespace UnityEngine
             return Encode(toEncode, urlEscapeChar, urlSpace, urlForbidden, false);
         }
 
+        public static string DataEncode(string toEncode)
+        {
+            return DataEncode(toEncode, Encoding.UTF8);
+        }
+
+        public static string DataEncode(string toEncode, Encoding e)
+        {
+            byte[] data = Encode(e.GetBytes(toEncode), urlEscapeChar, dataSpace, urlForbidden, false);
+            return WWWForm.DefaultEncoding.GetString(data, 0, data.Length);
+        }
+
+        public static byte[] DataEncode(byte[] toEncode)
+        {
+            return Encode(toEncode, urlEscapeChar, dataSpace, urlForbidden, false);
+        }
+
         public static string QPEncode(string toEncode)
         {
             return QPEncode(toEncode, Encoding.UTF8);
@@ -306,7 +323,7 @@ namespace UnityEngine
             return Encode(toEncode, qpEscapeChar, qpSpace, qpForbidden, true);
         }
 
-        public static byte[] Encode(byte[] input, byte escapeChar, byte space, byte[] forbidden, bool uppercase)
+        public static byte[] Encode(byte[] input, byte escapeChar, byte[] space, byte[] forbidden, bool uppercase)
         {
             using (MemoryStream memStream = new MemoryStream(input.Length * 2))
             {
@@ -315,7 +332,7 @@ namespace UnityEngine
                 {
                     if (input[i] == 32)
                     {
-                        memStream.WriteByte(space);
+                        memStream.Write(space, 0, space.Length);
                     }
                     else if (input[i] < 32 || input[i] > 126 || ByteArrayContains(forbidden, input[i]))
                     {
@@ -361,6 +378,22 @@ namespace UnityEngine
             return Decode(toEncode, urlEscapeChar, urlSpace);
         }
 
+        public static string DataDecode(string toDecode)
+        {
+            return DataDecode(toDecode, Encoding.UTF8);
+        }
+
+        public static string DataDecode(string toDecode, Encoding e)
+        {
+            byte[] data = Decode(WWWForm.DefaultEncoding.GetBytes(toDecode), urlEscapeChar, dataSpace);
+            return e.GetString(data, 0, data.Length);
+        }
+
+        public static byte[] DataDecode(byte[] toDecode)
+        {
+            return Decode(toDecode, urlEscapeChar, dataSpace);
+        }
+
         public static string QPDecode(string toEncode)
         {
             return QPDecode(toEncode, Encoding.UTF8);
@@ -377,15 +410,26 @@ namespace UnityEngine
             return Decode(toEncode, qpEscapeChar, qpSpace);
         }
 
-        public static byte[] Decode(byte[] input, byte escapeChar, byte space)
+        private static bool ByteSubArrayEquals(byte[] array, int index, byte[] comperand)
+        {
+            if (array.Length - index < comperand.Length)
+                return false;
+            for (int i = 0; i < comperand.Length; ++i)
+                if (array[index + i] != comperand[i])
+                    return false;
+            return true;
+        }
+
+        public static byte[] Decode(byte[] input, byte escapeChar, byte[] space)
         {
             using (MemoryStream memStream = new MemoryStream(input.Length))
             {
                 // decode
                 for (int i = 0; i < input.Length; i++)
                 {
-                    if (input[i] == space)
+                    if (ByteSubArrayEquals(input, i, space))
                     {
+                        i += space.Length - 1;
                         memStream.WriteByte((byte)32);
                     }
                     else if (input[i] == escapeChar && i + 2 < input.Length)

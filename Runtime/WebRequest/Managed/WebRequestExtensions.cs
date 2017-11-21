@@ -133,7 +133,7 @@ namespace UnityEngine.Networking
             byte[] payload = null;
             if (!string.IsNullOrEmpty(postData))
             {
-                string urlencoded = WWWTranscoder.URLEncode(postData, System.Text.Encoding.UTF8);
+                string urlencoded = WWWTranscoder.DataEncode(postData, System.Text.Encoding.UTF8);
                 payload = System.Text.Encoding.UTF8.GetBytes(urlencoded);
             }
 
@@ -293,7 +293,7 @@ namespace UnityEngine.Networking
             foreach (KeyValuePair<string, string> pair in formFields)
             {
                 if (queryString.Length > 0) { queryString += "&"; }
-                queryString += System.Uri.EscapeDataString(pair.Key) + "=" + System.Uri.EscapeDataString(pair.Value);
+                queryString += WWWTranscoder.DataEncode(pair.Key) + "=" + WWWTranscoder.DataEncode(pair.Value);
             }
             return System.Text.Encoding.UTF8.GetBytes(queryString);
         }

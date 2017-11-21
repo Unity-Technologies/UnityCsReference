@@ -163,6 +163,9 @@ namespace UnityEditor
                 case BuildTarget.WiiU:
                     testValues = kTextureFormatsValueWiiU;
                     break;
+                case BuildTarget.PSP2:
+                    testValues = kTextureFormatsValuePSP2;
+                    break;
                 // on gles mobile targets we use rgb normal maps, so we can use whatever format we want
                 case BuildTarget.iOS:
                 case BuildTarget.tvOS:
@@ -298,6 +301,18 @@ namespace UnityEditor
             (int)TextureImporterFormat.Alpha8,
             (int)TextureImporterFormat.RGBA32,
             (int)TextureImporterFormat.RGBA16, // R4G4B4A4
+        };
+
+        public static readonly int[] kTextureFormatsValuePSP2 =
+        {
+            (int)TextureImporterFormat.DXT1,
+            (int)TextureImporterFormat.DXT5,
+            (int)TextureImporterFormat.RGB16,
+            (int)TextureImporterFormat.RGB24,
+            (int)TextureImporterFormat.RGBA16,
+            (int)TextureImporterFormat.RGBA32,
+            (int)TextureImporterFormat.Alpha8,
+            (int)TextureImporterFormat.RGBAHalf,
         };
 
         public static readonly int[] kTextureFormatsValueApplePVR =
