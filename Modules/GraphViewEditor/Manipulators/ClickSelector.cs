@@ -37,6 +37,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (CanStartManipulation(e))
             {
+                if (!(target as ISelectable).HitTest(e.localMousePosition))
+                {
+                    return;
+                }
                 var ge = e.currentTarget as GraphElement;
                 if (ge != null)
                 {

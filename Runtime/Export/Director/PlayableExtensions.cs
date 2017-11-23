@@ -99,6 +99,12 @@ namespace UnityEngine.Playables
             return playable.GetHandle().GetTime();
         }
 
+        public static double GetPreviousTime<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetPreviousTime();
+        }
+
         public static void SetDone<U>(this U playable, bool value)
             where U : struct, IPlayable
         {
@@ -237,6 +243,18 @@ namespace UnityEngine.Playables
             where U : struct, IPlayable
         {
             return playable.GetHandle().IsDelayed();
+        }
+
+        public static void SetLeadTime<U>(this U playable, float value)
+            where U : struct, IPlayable
+        {
+            playable.GetHandle().SetLeadTime(value);
+        }
+
+        public static float GetLeadTime<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetLeadTime();
         }
     }
 }

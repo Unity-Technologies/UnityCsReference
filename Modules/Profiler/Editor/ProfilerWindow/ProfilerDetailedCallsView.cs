@@ -9,8 +9,9 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace UnityEditorInternal
+namespace UnityEditorInternal.Profiling
 {
+    [Serializable]
     internal class ProfilerDetailedCallsView : ProfilerDetailedView
     {
         [NonSerialized]
@@ -23,13 +24,16 @@ namespace UnityEditorInternal
         GUIContent m_TotalSelectedPropertyTimeLabel = new GUIContent("", "Total time of all calls of the selected function in the frame.");
 
         [SerializeField]
-        SplitterState m_VertSplit = new SplitterState(new[] { 40f, 60f }, new[] { 50, 50 }, null);
+        SplitterState m_VertSplit;
+
+        [SerializeField]
+        CallsTreeViewController m_CalleesTreeView;
 
         [SerializeField]
         CallsTreeViewController m_CallersTreeView;
 
-        [SerializeField]
-        CallsTreeViewController m_CalleesTreeView;
+        public delegate void FrameItemCallback(int id);
+        public event FrameItemCallback frameItemEvent;
 
         struct CallsData
         {
@@ -39,8 +43,8 @@ namespace UnityEditorInternal
 
         class CallInformation
         {
+            public int id; // FrameDataView item id
             public string name;
-            public string path;
             public int callsCount;
             public int gcAllocBytes;
             public double totalCallTimeMs;
@@ -70,7 +74,7 @@ namespace UnityEditorInternal
             internal CallsData m_CallsData;
             Type m_Type;
 
-            static string s_NoneText = LocalizationDatabase.GetLocalizedString("None");
+            public event FrameItemCallback frameItemEvent;
 
             public CallsTreeView(Type type, TreeViewState treeViewState, MultiColumnHeader multicolumnHeader)
                 : base(treeViewState, multicolumnHeader)
@@ -90,11 +94,14 @@ namespace UnityEditorInternal
                 m_CallsData = callsData;
 
                 // Cache Time % value
-                foreach (var callInfo in m_CallsData.calls)
+                if (m_CallsData.calls != null)
                 {
-                    callInfo.timePercent = m_Type == Type.Callees
-                        ? callInfo.totalCallTimeMs / m_CallsData.totalSelectedPropertyTime
-                        : callInfo.totalSelfTimeMs / callInfo.totalCallTimeMs;
+                    foreach (var callInfo in m_CallsData.calls)
+                    {
+                        callInfo.timePercent = m_Type == Type.Callees
+                            ? callInfo.totalCallTimeMs / m_CallsData.totalSelectedPropertyTime
+                            : callInfo.totalSelfTimeMs / callInfo.totalCallTimeMs;
+                    }
                 }
 
                 OnSortingChanged(multiColumnHeader);
@@ -102,7 +109,7 @@ namespace UnityEditorInternal
 
             protected override TreeViewItem BuildRoot()
             {
-                var root = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+                var root = new TreeViewItem { id = 0, depth = -1 };
                 var allItems = new List<TreeViewItem>();
 
                 if (m_CallsData.calls != null && m_CallsData.calls.Count != 0)
@@ -113,7 +120,7 @@ namespace UnityEditorInternal
                 }
                 else
                 {
-                    allItems.Add(new TreeViewItem { id = 1, depth = 0, displayName = s_NoneText });
+                    allItems.Add(new TreeViewItem { id = 1, depth = 0, displayName = kNoneText });
                 }
 
                 SetupParentsAndChildrenFromDepths(root, allItems);
@@ -122,11 +129,12 @@ namespace UnityEditorInternal
 
             protected override void RowGUI(RowGUIArgs args)
             {
-                var item = args.item;
+                if (Event.current.rawType != EventType.Repaint)
+                    return;
 
                 for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
                 {
-                    CellGUI(args.GetCellRect(i), item, (Column)args.GetColumn(i), ref args);
+                    CellGUI(args.GetCellRect(i), args.item, (Column)args.GetColumn(i), ref args);
                 }
             }
 
@@ -151,24 +159,24 @@ namespace UnityEditorInternal
                     case Column.Calls:
                     {
                         var value = callInfo.callsCount.ToString();
-                        DefaultGUI.LabelRightAligned(cellRect, value, args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, value, args.selected, args.focused);
                     }
                     break;
                     case Column.GcAlloc:
                     {
                         var value = callInfo.gcAllocBytes;
-                        DefaultGUI.LabelRightAligned(cellRect, value.ToString(), args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, value.ToString(), args.selected, args.focused);
                     }
                     break;
                     case Column.TimeMs:
                     {
                         var value = m_Type == Type.Callees ? callInfo.totalCallTimeMs : callInfo.totalSelfTimeMs;
-                        DefaultGUI.LabelRightAligned(cellRect, value.ToString("f2"), args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, value.ToString("f2"), args.selected, args.focused);
                     }
                     break;
                     case Column.TimePercent:
                     {
-                        DefaultGUI.LabelRightAligned(cellRect, (callInfo.timePercent * 100f).ToString("f2"), args.selected, args.focused);
+                        DefaultGUI.Label(cellRect, (callInfo.timePercent * 100f).ToString("f2"), args.selected, args.focused);
                     }
                     break;
                 }
@@ -179,34 +187,47 @@ namespace UnityEditorInternal
                 if (header.sortedColumnIndex == -1)
                     return; // No column to sort for (just use the order the data are in)
 
-                var orderMultiplier = header.IsSortedAscending(header.sortedColumnIndex) ? 1 : -1;
-                Comparison<CallInformation> comparison;
-                switch ((Column)header.sortedColumnIndex)
+                if (m_CallsData.calls != null)
                 {
-                    case Column.Name:
-                        comparison = (callInfo1, callInfo2) => callInfo1.name.CompareTo(callInfo2.name) * orderMultiplier;
-                        break;
-                    case Column.Calls:
-                        comparison = (callInfo1, callInfo2) => callInfo1.callsCount.CompareTo(callInfo2.callsCount) * orderMultiplier;
-                        break;
-                    case Column.GcAlloc:
-                        comparison = (callInfo1, callInfo2) => callInfo1.gcAllocBytes.CompareTo(callInfo2.gcAllocBytes) * orderMultiplier;
-                        break;
-                    case Column.TimeMs:
-                        comparison = (callInfo1, callInfo2) => callInfo1.totalCallTimeMs.CompareTo(callInfo2.totalCallTimeMs) * orderMultiplier;
-                        break;
-                    case Column.TimePercent:
-                        comparison = (callInfo1, callInfo2) => callInfo1.timePercent.CompareTo(callInfo2.timePercent) * orderMultiplier;
-                        break;
-                    case Column.Count:
-                        comparison = (callInfo1, callInfo2) => callInfo1.callsCount.CompareTo(callInfo2.callsCount) * orderMultiplier;
-                        break;
-                    default:
-                        return;
+                    var orderMultiplier = header.IsSortedAscending(header.sortedColumnIndex) ? 1 : -1;
+                    Comparison<CallInformation> comparison;
+                    switch ((Column)header.sortedColumnIndex)
+                    {
+                        case Column.Name:
+                            comparison = (callInfo1, callInfo2) => callInfo1.name.CompareTo(callInfo2.name) * orderMultiplier;
+                            break;
+                        case Column.Calls:
+                            comparison = (callInfo1, callInfo2) => callInfo1.callsCount.CompareTo(callInfo2.callsCount) * orderMultiplier;
+                            break;
+                        case Column.GcAlloc:
+                            comparison = (callInfo1, callInfo2) => callInfo1.gcAllocBytes.CompareTo(callInfo2.gcAllocBytes) * orderMultiplier;
+                            break;
+                        case Column.TimeMs:
+                            comparison = (callInfo1, callInfo2) => callInfo1.totalCallTimeMs.CompareTo(callInfo2.totalCallTimeMs) * orderMultiplier;
+                            break;
+                        case Column.TimePercent:
+                            comparison = (callInfo1, callInfo2) => callInfo1.timePercent.CompareTo(callInfo2.timePercent) * orderMultiplier;
+                            break;
+                        case Column.Count:
+                            comparison = (callInfo1, callInfo2) => callInfo1.callsCount.CompareTo(callInfo2.callsCount) * orderMultiplier;
+                            break;
+                        default:
+                            return;
+                    }
+
+                    m_CallsData.calls.Sort(comparison);
                 }
 
-                m_CallsData.calls.Sort(comparison);
                 Reload();
+            }
+
+            protected override void DoubleClickedItem(int id)
+            {
+                if (m_CallsData.calls == null || m_CallsData.calls.Count == 0)
+                    return;
+
+                if (frameItemEvent != null)
+                    frameItemEvent.Invoke(m_CallsData.calls[id - 1].id);
             }
         }
 
@@ -214,10 +235,10 @@ namespace UnityEditorInternal
         class CallsTreeViewController
         {
             [NonSerialized]
-            CallsTreeView m_View;
+            bool m_Initialized;
 
             [NonSerialized]
-            bool m_Initialized;
+            CallsTreeView.Type m_Type;
 
             [SerializeField]
             TreeViewState m_ViewState;
@@ -225,8 +246,7 @@ namespace UnityEditorInternal
             [SerializeField]
             MultiColumnHeaderState m_ViewHeaderState;
 
-            [SerializeField]
-            CallsTreeView.Type m_Type;
+            CallsTreeView m_View;
 
             static class Styles
             {
@@ -240,13 +260,10 @@ namespace UnityEditorInternal
                 public static GUIContent timePctCalleesLabel = new GUIContent("Time %", "Shows how often child call was called from the selected function");
             }
 
-            public delegate void CallSelectedCallback(string path, Event evt);
+            public event FrameItemCallback frameItemEvent;
 
-            public event CallSelectedCallback callSelected;
-
-            public CallsTreeViewController(CallsTreeView.Type type)
+            public CallsTreeViewController()
             {
-                m_Type = type;
             }
 
             void InitIfNeeded()
@@ -276,6 +293,7 @@ namespace UnityEditorInternal
                 }
 
                 m_View = new CallsTreeView(m_Type, m_ViewState, multiColumnHeader);
+                m_View.frameItemEvent += frameItemEvent;
 
                 m_Initialized = true;
             }
@@ -296,36 +314,36 @@ namespace UnityEditorInternal
                     new MultiColumnHeaderState.Column
                     {
                         headerContent = Styles.callsLabel,
-                        headerTextAlignment = TextAlignment.Right,
+                        headerTextAlignment = TextAlignment.Left,
                         sortedAscending = false,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 60, minWidth = 60,
                         autoResize = false, allowToggleVisibility = true
                     },
                     new MultiColumnHeaderState.Column
                     {
                         headerContent = Styles.gcAllocLabel,
-                        headerTextAlignment = TextAlignment.Right,
+                        headerTextAlignment = TextAlignment.Left,
                         sortedAscending = false,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 60, minWidth = 60,
                         autoResize = false, allowToggleVisibility = true
                     },
                     new MultiColumnHeaderState.Column
                     {
                         headerContent = (m_Type == CallsTreeView.Type.Callers ? Styles.timeMsCallersLabel : Styles.timeMsCalleesLabel),
-                        headerTextAlignment = TextAlignment.Right,
+                        headerTextAlignment = TextAlignment.Left,
                         sortedAscending = false,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 60, minWidth = 60,
                         autoResize = false, allowToggleVisibility = true
                     },
                     new MultiColumnHeaderState.Column
                     {
                         headerContent = (m_Type == CallsTreeView.Type.Callers ? Styles.timePctCallersLabel : Styles.timePctCalleesLabel),
-                        headerTextAlignment = TextAlignment.Right,
+                        headerTextAlignment = TextAlignment.Left,
                         sortedAscending = false,
-                        sortingArrowAlignment = TextAlignment.Center,
+                        sortingArrowAlignment = TextAlignment.Right,
                         width = 60, minWidth = 60,
                         autoResize = false, allowToggleVisibility = true
                     },
@@ -336,6 +354,11 @@ namespace UnityEditorInternal
                     sortedColumnIndex = (int)CallsTreeView.Column.TimeMs
                 };
                 return state;
+            }
+
+            public void SetType(CallsTreeView.Type type)
+            {
+                m_Type = type;
             }
 
             public void SetCallsData(CallsData callsData)
@@ -350,211 +373,171 @@ namespace UnityEditorInternal
                 InitIfNeeded();
 
                 m_View.OnGUI(r);
-                HandleCommandEvents();
-            }
-
-            void HandleCommandEvents()
-            {
-                if (GUIUtility.keyboardControl != m_View.treeViewControlID)
-                    return;
-
-                if (m_ViewState.selectedIDs.Count == 0)
-                    return;
-                var callInfoIndex = m_ViewState.selectedIDs.First() - 1;
-                if (callInfoIndex >= m_View.m_CallsData.calls.Count)
-                    return;
-                var callInfo = m_View.m_CallsData.calls[callInfoIndex];
-                if (callSelected != null)
-                {
-                    var evt = Event.current;
-                    callSelected.Invoke(callInfo.path, evt);
-                }
             }
         }
 
-        struct ParentCallInfo
+        public ProfilerDetailedCallsView()
         {
-            public string name;
-            public string path;
-            public float timeMs;
         }
-
-        public ProfilerDetailedCallsView(ProfilerHierarchyGUI mainProfilerHierarchyGUI)
-            : base(mainProfilerHierarchyGUI) {}
 
         void InitIfNeeded()
         {
             if (m_Initialized)
                 return;
 
-            if (m_CallersTreeView == null)
-                m_CallersTreeView = new CallsTreeViewController(CallsTreeView.Type.Callers);
-            m_CallersTreeView.callSelected += OnCallSelected;
+            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
+                m_VertSplit = new SplitterState(new[] { 40f, 60f }, new[] { 50, 50 }, null);
 
             if (m_CalleesTreeView == null)
-                m_CalleesTreeView = new CallsTreeViewController(CallsTreeView.Type.Callees);
-            m_CalleesTreeView.callSelected += OnCallSelected;
+                m_CalleesTreeView = new CallsTreeViewController();
+            m_CalleesTreeView.SetType(CallsTreeView.Type.Callees);
+            m_CalleesTreeView.frameItemEvent += frameItemEvent;
+
+            if (m_CallersTreeView == null)
+                m_CallersTreeView = new CallsTreeViewController();
+            m_CallersTreeView.SetType(CallsTreeView.Type.Callers);
+            m_CallersTreeView.frameItemEvent += frameItemEvent;
 
             m_Initialized = true;
         }
 
-        public void DoGUI(GUIStyle headerStyle, int frameIndex, ProfilerViewType viewType)
+        public void DoGUI(GUIStyle headerStyle, FrameDataView frameDataView, IList<int> selection)
         {
-            var selectedPropertyPath = ProfilerDriver.selectedPropertyPath;
-            if (string.IsNullOrEmpty(selectedPropertyPath))
+            if (frameDataView == null || !frameDataView.IsValid() || selection.Count == 0)
             {
                 DrawEmptyPane(headerStyle);
                 return;
             }
 
-            InitIfNeeded();
-            UpdateIfNeeded(frameIndex, viewType, selectedPropertyPath);
+            var selectedId = selection[0];
 
-            GUILayout.BeginVertical();
+            InitIfNeeded();
+            UpdateIfNeeded(frameDataView, selectedId);
+
             GUILayout.Label(m_TotalSelectedPropertyTimeLabel, EditorStyles.label);
             SplitterGUILayout.BeginVerticalSplit(m_VertSplit, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
             // Callees
-            var rect = EditorGUILayout.BeginVertical();
+            var rect = EditorGUILayout.BeginHorizontal();
             m_CalleesTreeView.OnGUI(rect);
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
 
             // Callers
-            rect = EditorGUILayout.BeginVertical();
+            rect = EditorGUILayout.BeginHorizontal();
             m_CallersTreeView.OnGUI(rect);
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
 
-            SplitterGUILayout.EndHorizontalSplit();
-            GUILayout.EndVertical();
+            SplitterGUILayout.EndVerticalSplit();
         }
 
-        void UpdateIfNeeded(int frameIndex, ProfilerViewType viewType, string selectedPropertyPath)
+        void UpdateIfNeeded(FrameDataView frameDataView, int selectedId)
         {
-            if (m_CachedProfilerPropertyConfig.EqualsTo(frameIndex, viewType, ProfilerColumn.DontSort))
+            var needReload = m_SelectedID != selectedId || !Equals(m_FrameDataView, frameDataView);
+            if (!needReload)
                 return;
 
-            var property = m_MainProfilerHierarchyGUI.GetRootProperty();
-            var selectedPropertyName = GetProfilerPropertyName(selectedPropertyPath);
+            m_FrameDataView = frameDataView;
+            m_SelectedID = selectedId;
 
             m_TotalSelectedPropertyTime = 0;
 
-            var callers = new Dictionary<string, CallInformation>();
-            var callees = new Dictionary<string, CallInformation>();
+            var selectedMarkerId = m_FrameDataView.GetItemMarkerID(m_SelectedID);
 
-            var parentCalls = new Stack<ParentCallInfo>();
-            var parentIsSelected = false;
-            while (property.Next(true))
+            var callers = new Dictionary<int, CallInformation>();
+            var callees = new Dictionary<int, CallInformation>();
+
+            var stack = new Stack<int>();
+            stack.Push(m_FrameDataView.GetRootItemID());
+
+            while (stack.Count > 0)
             {
-                var propertyName = property.propertyName;
-                var propertyDepth = property.depth;
-                float propertyTime;
+                var current = stack.Pop();
+                if (!m_FrameDataView.HasItemChildren(current))
+                    continue;
 
-                if (parentCalls.Count + 1 != propertyDepth)
+                var markerId = m_FrameDataView.GetItemMarkerID(current);
+
+                var childrenId = m_FrameDataView.GetItemChildren(current);
+                foreach (var childId in childrenId)
                 {
-                    while (parentCalls.Count + 1 > propertyDepth)
-                        parentCalls.Pop();
-                    parentIsSelected = parentCalls.Count != 0 && selectedPropertyName == parentCalls.Peek().name;
-                }
-
-                if (parentCalls.Count != 0)
-                {
-                    var parent = parentCalls.Peek();
-
-                    // Add caller
-                    CallInformation callInfo;
-                    int propertyCalls;
-                    int propertyGcAlloc;
-                    if (selectedPropertyName == propertyName)
+                    var childMarkerId = m_FrameDataView.GetItemMarkerID(childId);
+                    if (childMarkerId == selectedMarkerId)
                     {
-                        propertyTime = property.GetColumnAsSingle(ProfilerColumn.TotalTime);
-                        propertyCalls = (int)property.GetColumnAsSingle(ProfilerColumn.Calls);
-                        propertyGcAlloc = (int)property.GetColumnAsSingle(ProfilerColumn.GCMemory);
-                        if (!callers.TryGetValue(parent.name, out callInfo))
+                        var totalSelfTime = m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
+                        m_TotalSelectedPropertyTime += totalSelfTime;
+
+                        if (current != 0)
                         {
-                            callers.Add(parent.name, new CallInformation()
+                            // Add markerId to callers (except root)
+                            CallInformation callInfo;
+                            var totalTime = m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.TotalTime);
+                            var calls = (int)m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.Calls);
+                            var gcAlloc = (int)m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.GCMemory);
+                            if (!callers.TryGetValue(markerId, out callInfo))
                             {
-                                name = parent.name, path = parent.path, callsCount = propertyCalls, gcAllocBytes = propertyGcAlloc, totalCallTimeMs = parent.timeMs, totalSelfTimeMs = propertyTime
+                                callers.Add(markerId, new CallInformation()
+                                {
+                                    id = current,
+                                    name = m_FrameDataView.GetItemFunctionName(current),
+                                    callsCount = calls,
+                                    gcAllocBytes = gcAlloc,
+                                    totalCallTimeMs = totalTime,
+                                    totalSelfTimeMs = totalSelfTime
+                                });
+                            }
+                            else
+                            {
+                                callInfo.callsCount += calls;
+                                callInfo.gcAllocBytes += gcAlloc;
+                                callInfo.totalCallTimeMs += totalTime;
+                                callInfo.totalSelfTimeMs += totalSelfTime;
+                            }
+                        }
+                    }
+
+                    if (markerId == selectedMarkerId)
+                    {
+                        // Add childMarkerId to callees
+                        CallInformation callInfo;
+                        var totalTime = m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
+                        var calls = (int)m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.Calls);
+                        var gcAlloc = (int)m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.GCMemory);
+                        if (!callees.TryGetValue(childMarkerId, out callInfo))
+                        {
+                            callees.Add(childMarkerId, new CallInformation()
+                            {
+                                id = childId,
+                                name = m_FrameDataView.GetItemFunctionName(childId),
+                                callsCount = calls,
+                                gcAllocBytes = gcAlloc,
+                                totalCallTimeMs = totalTime,
+                                totalSelfTimeMs = 0
                             });
                         }
                         else
                         {
-                            callInfo.callsCount += propertyCalls;
-                            callInfo.gcAllocBytes += propertyGcAlloc;
-                            callInfo.totalCallTimeMs += parent.timeMs;
-                            callInfo.totalSelfTimeMs += propertyTime;
-                        }
-                        m_TotalSelectedPropertyTime += propertyTime;
-                    }
-
-                    // Add callee
-                    if (parentIsSelected)
-                    {
-                        propertyTime = property.GetColumnAsSingle(ProfilerColumn.TotalTime);
-                        propertyCalls = (int)property.GetColumnAsSingle(ProfilerColumn.Calls);
-                        propertyGcAlloc = (int)property.GetColumnAsSingle(ProfilerColumn.GCMemory);
-                        if (!callees.TryGetValue(propertyName, out callInfo))
-                        {
-                            callees.Add(propertyName, new CallInformation()
-                            {
-                                name = propertyName, path = property.propertyPath, callsCount = propertyCalls, gcAllocBytes = propertyGcAlloc, totalCallTimeMs = propertyTime, totalSelfTimeMs = 0
-                            });
-                        }
-                        else
-                        {
-                            callInfo.callsCount += propertyCalls;
-                            callInfo.gcAllocBytes += propertyGcAlloc;
-                            callInfo.totalCallTimeMs += propertyTime;
+                            callInfo.callsCount += calls;
+                            callInfo.gcAllocBytes += gcAlloc;
+                            callInfo.totalCallTimeMs += totalTime;
                         }
                     }
-                }
-                else
-                {
-                    if (selectedPropertyName == propertyName)
-                    {
-                        propertyTime = property.GetColumnAsSingle(ProfilerColumn.TotalTime);
-                        m_TotalSelectedPropertyTime += propertyTime;
-                    }
-                }
 
-                if (property.HasChildren)
-                {
-                    propertyTime = property.GetColumnAsSingle(ProfilerColumn.TotalTime);
-                    parentCalls.Push(new ParentCallInfo() { name = propertyName, path = property.propertyPath, timeMs = propertyTime });
-
-                    parentIsSelected = selectedPropertyName == propertyName;
+                    stack.Push(childId);
                 }
             }
 
             m_CallersTreeView.SetCallsData(new CallsData() { calls = callers.Values.ToList(), totalSelectedPropertyTime = m_TotalSelectedPropertyTime });
             m_CalleesTreeView.SetCallsData(new CallsData() { calls = callees.Values.ToList(), totalSelectedPropertyTime = m_TotalSelectedPropertyTime });
 
-            m_TotalSelectedPropertyTimeLabel.text = selectedPropertyName + string.Format(" - Total time: {0:f2} ms", m_TotalSelectedPropertyTime);
-
-            m_CachedProfilerPropertyConfig.Set(frameIndex, viewType, ProfilerColumn.TotalTime);
+            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemFunctionName(selectedId) + string.Format(" - Total time: {0:f2} ms", m_TotalSelectedPropertyTime);
         }
 
-        static string GetProfilerPropertyName(string propertyPath)
+        public void Clear()
         {
-            var pathDelimiterPos = propertyPath.LastIndexOf('/');
-            return pathDelimiterPos == -1
-                ? propertyPath
-                : propertyPath.Substring(pathDelimiterPos + 1);
-        }
-
-        void OnCallSelected(string path, Event evt)
-        {
-            var eventType = evt.type;
-            if (eventType != EventType.ExecuteCommand && eventType != EventType.ValidateCommand)
-                return;
-
-            // Avoid GC alloc through .commandName for other commands
-            if (evt.commandName != "FrameSelected")
-                return;
-
-            if (eventType == EventType.ExecuteCommand)
-                m_MainProfilerHierarchyGUI.SelectPath(path);
-
-            evt.Use();
+            if (m_CalleesTreeView != null)
+                m_CallersTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });
+            if (m_CalleesTreeView != null)
+                m_CalleesTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });
         }
     }
 }

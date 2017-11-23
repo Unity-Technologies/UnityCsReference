@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Linq;
+using UnityEngine.Experimental.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -68,7 +69,7 @@ namespace UnityEditor
             {
                 if (IsUsingLightProbeProxyVolume(selectionCount))
                 {
-                    if (LightProbeProxyVolume.isFeatureSupported)
+                    if (LightProbeProxyVolume.isFeatureSupported && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
                     {
                         LightProbeProxyVolume lightProbeProxyVol = renderer.GetComponent<LightProbeProxyVolume>();
                         bool invalidProxyVolumeOverride = (renderer.lightProbeProxyVolumeOverride == null) ||
@@ -87,6 +88,9 @@ namespace UnityEditor
 
             internal void RenderReflectionProbeUsage(bool useMiniStyle, bool isDeferredRenderingPath, bool isDeferredReflections)
             {
+                if (!SupportedRenderingFeatures.active.rendererSupportsReflectionProbes)
+                    return;
+
                 using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
                 {
                     // reflection probe usage field; UI disabled when using deferred reflections
@@ -125,7 +129,9 @@ namespace UnityEditor
                         {
                             EditorGUILayout.Popup(m_LightProbeUsage, m_LightProbeBlendModeOptions, m_LightProbeUsageStyle);
 
-                            if (!m_LightProbeUsage.hasMultipleDifferentValues && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume)
+                            if (!m_LightProbeUsage.hasMultipleDifferentValues
+                                && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
+                                && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
                             {
                                 EditorGUI.indentLevel++;
                                 EditorGUILayout.PropertyField(m_LightProbeVolumeOverride, m_LightProbeVolumeOverrideStyle);
@@ -141,7 +147,9 @@ namespace UnityEditor
                         {
                             ModuleUI.GUIPopup(m_LightProbeUsageStyle, m_LightProbeUsage, m_LightProbeBlendModeOptions);
 
-                            if (!m_LightProbeUsage.hasMultipleDifferentValues && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume)
+                            if (!m_LightProbeUsage.hasMultipleDifferentValues
+                                && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
+                                && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
                             {
                                 EditorGUI.indentLevel++;
                                 ModuleUI.GUIObject(m_LightProbeVolumeOverrideStyle, m_LightProbeVolumeOverride);

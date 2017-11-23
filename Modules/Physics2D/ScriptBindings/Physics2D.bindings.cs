@@ -14,6 +14,7 @@ namespace UnityEngine
 {
     [NativeHeader("Physics2DScriptingClasses.h")]
     [NativeHeader("Modules/Physics2D/PhysicsManager2D.h")]
+    [NativeHeader("Physics2DScriptingClasses.h")]
     [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
     public partial class Physics2D
     {
@@ -39,9 +40,6 @@ namespace UnityEngine
         extern public static bool queriesStartInColliders { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
-        extern public static bool changeStopsCallbacks { get; set; }
-
-        [StaticAccessor("GetPhysics2DSettings()")]
         extern public static bool callbacksOnDisable { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
@@ -49,6 +47,9 @@ namespace UnityEngine
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static bool autoSimulation { get; set; }
+
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static PhysicsJobOptions2D jobOptions { get; set; }
 
         [StaticAccessor("GetPhysics2DSettings()")]
         extern public static float velocityThreshold { get; set; }
@@ -2042,7 +2043,6 @@ namespace UnityEngine
         public float max { get { return m_UpperAngle; } set { m_UpperAngle = value; } }
     }
 
-
     // JointTranslationLimits2D is used by the SliderJoint2D to limit the joints translation.
     [StructLayout(LayoutKind.Sequential)]
     public struct JointTranslationLimits2D
@@ -2057,7 +2057,6 @@ namespace UnityEngine
         public float max { get { return m_UpperTranslation; } set { m_UpperTranslation = value; } }
     }
 
-
     // JointMotor2D is used by the HingeJoint2D, SliderJoint2D and WheelJoint2D to motorize a joint.
     [StructLayout(LayoutKind.Sequential)]
     public struct JointMotor2D
@@ -2071,7 +2070,6 @@ namespace UnityEngine
         // The maximum torque in N-m the motor can use to achieve the desired motor speed.
         public float maxMotorTorque { get { return m_MaximumMotorTorque; } set { m_MaximumMotorTorque = value; } }
     }
-
 
     // JointSuspension2D is used by the WheelJoint2D to add suspension to a joint.
     [StructLayout(LayoutKind.Sequential)]
@@ -2170,6 +2168,47 @@ namespace UnityEngine
             if (other.collider == null) return -1;
             return fraction.CompareTo(other.fraction);
         }
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct PhysicsJobOptions2D
+    {
+        private bool m_UseMultithreading;
+        private bool m_UseConsistencySorting;
+        private int m_InterpolationPosesPerJob;
+        private int m_NewContactsPerJob;
+        private int m_CollideContactsPerJob;
+        private int m_ClearFlagsPerJob;
+        private int m_ClearBodyForcesPerJob;
+        private int m_SyncDiscreteFixturesPerJob;
+        private int m_SyncContinuousFixturesPerJob;
+        private int m_FindNearestContactsPerJob;
+        private int m_UpdateTriggerContactsPerJob;
+        private int m_IslandSolverCostThreshold;
+        private int m_IslandSolverBodyCostScale;
+        private int m_IslandSolverContactCostScale;
+        private int m_IslandSolverJointCostScale;
+        private int m_IslandSolverBodiesPerJob;
+        private int m_IslandSolverContactsPerJob;
+
+        public bool useMultithreading { get { return m_UseMultithreading; } set { m_UseMultithreading = value; } }
+        public bool useConsistencySorting { get { return m_UseConsistencySorting; } set { m_UseConsistencySorting = value; } }
+        public int interpolationPosesPerJob { get { return m_InterpolationPosesPerJob; } set { m_InterpolationPosesPerJob = value; } }
+        public int newContactsPerJob { get { return m_NewContactsPerJob; } set { m_NewContactsPerJob = value; } }
+        public int collideContactsPerJob { get { return m_CollideContactsPerJob; } set { m_CollideContactsPerJob = value; } }
+        public int clearFlagsPerJob { get { return m_ClearFlagsPerJob; } set { m_ClearFlagsPerJob = value; } }
+        public int clearBodyForcesPerJob { get { return m_ClearBodyForcesPerJob; } set { m_ClearBodyForcesPerJob = value; } }
+        public int syncDiscreteFixturesPerJob { get { return m_SyncDiscreteFixturesPerJob; } set { m_SyncDiscreteFixturesPerJob = value; } }
+        public int syncContinuousFixturesPerJob { get { return m_SyncContinuousFixturesPerJob; } set { m_SyncContinuousFixturesPerJob = value; } }
+        public int findNearestContactsPerJob { get { return m_FindNearestContactsPerJob; } set { m_FindNearestContactsPerJob = value; } }
+        public int updateTriggerContactsPerJob { get { return m_UpdateTriggerContactsPerJob; } set { m_UpdateTriggerContactsPerJob = value; } }
+        public int islandSolverCostThreshold { get { return m_IslandSolverCostThreshold; } set { m_IslandSolverCostThreshold = value; } }
+        public int islandSolverBodyCostScale { get { return m_IslandSolverBodyCostScale; } set { m_IslandSolverBodyCostScale = value; } }
+        public int islandSolverContactCostScale { get { return m_IslandSolverContactCostScale; } set { m_IslandSolverContactCostScale = value; } }
+        public int islandSolverJointCostScale { get { return m_IslandSolverJointCostScale; } set { m_IslandSolverJointCostScale = value; } }
+        public int islandSolverBodiesPerJob { get { return m_IslandSolverBodiesPerJob; } set { m_IslandSolverBodiesPerJob = value; } }
+        public int islandSolverContactsPerJob { get { return m_IslandSolverContactsPerJob; } set { m_IslandSolverContactsPerJob = value; } }
     }
 
     #endregion

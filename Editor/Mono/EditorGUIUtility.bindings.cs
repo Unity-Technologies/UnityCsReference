@@ -108,9 +108,10 @@ namespace UnityEditor
             return TrTextContentWithIcon(text, null, messageType);
         }
 
-        internal static GUIContent TrIconContent(string name, string tooltip = null)
+        internal static GUIContent TrIconContent(string iconName, string tooltip = null)
         {
-            GUIContent gc = (GUIContent)s_IconGUIContents[name];
+            string key = (tooltip == null ? iconName : iconName + tooltip);
+            GUIContent gc = (GUIContent)s_IconGUIContents[key];
             if (gc != null)
             {
                 return gc;
@@ -121,26 +122,26 @@ namespace UnityEditor
             {
                 gc.tooltip = L10n.Tr(tooltip);
             }
-            gc.image = LoadIconRequired(name);
-            s_IconGUIContents[name] = gc;
+            gc.image = LoadIconRequired(iconName);
+            s_IconGUIContents[key] = gc;
             return gc;
         }
 
         internal static GUIContent TrIconContent(Texture icon, string tooltip = null)
         {
-            GUIContent gc = (GUIContent)s_IconGUIContents[tooltip];
+            GUIContent gc = (tooltip != null) ? (GUIContent)s_IconGUIContents[tooltip] : null;
             if (gc != null)
             {
                 return gc;
             }
             gc = new GUIContent();
-
+            gc.image = icon;
             if (tooltip != null)
             {
                 gc.tooltip = L10n.Tr(tooltip);
+                s_IconGUIContents[tooltip] = gc;
             }
-            gc.image = icon;
-            s_IconGUIContents[tooltip] = gc;
+
             return gc;
         }
 

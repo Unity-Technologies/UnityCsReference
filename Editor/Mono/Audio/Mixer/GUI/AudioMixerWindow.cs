@@ -736,7 +736,7 @@ namespace UnityEditor
             menu.AddSeparator("");
             menu.AddItem(new GUIContent("Use RMS metering for display"), EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, true); });
             menu.AddItem(new GUIContent("Use peak metering for display"), !EditorPrefs.GetBool(kAudioMixerUseRMSMetering, true), delegate { EditorPrefs.SetBool(kAudioMixerUseRMSMetering, false); });
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 menu.AddSeparator("");
                 menu.AddItem(new GUIContent("DEVELOPER/Groups Rendered Above"), m_GroupsRenderedAboveSections, delegate { m_GroupsRenderedAboveSections = !m_GroupsRenderedAboveSections; });

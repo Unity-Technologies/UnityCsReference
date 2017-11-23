@@ -16,6 +16,14 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
+public enum WeightedMode
+{
+    None = 0,
+    In = 1 << 0,
+    Out = 1 << 1,
+    Both = In | Out
+}
+
 [RequiredByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct Keyframe
@@ -25,9 +33,14 @@ public partial struct Keyframe
     float m_InTangent;
     float m_OutTangent;
     
+    int m_TangentMode;
     
     
-            int m_TangentMode;
+    int m_WeightedMode;
+    
+    
+    float m_InWeight;
+    float m_OutWeight;
     
     
     public Keyframe(float time, float value)
@@ -36,6 +49,9 @@ public partial struct Keyframe
             m_Value = value;
             m_InTangent = 0;
             m_OutTangent = 0;
+            m_WeightedMode = 0;
+            m_InWeight = 0f;
+            m_OutWeight = 0f;
             m_TangentMode = 0;
         }
     
@@ -46,6 +62,22 @@ public partial struct Keyframe
             m_Value = value;
             m_InTangent = inTangent;
             m_OutTangent = outTangent;
+            m_WeightedMode = 0;
+            m_InWeight = 0f;
+            m_OutWeight = 0f;
+            m_TangentMode = 0;
+        }
+    
+    
+    public Keyframe(float time, float value, float inTangent, float outTangent, float inWeight, float outWeight)
+        {
+            m_Time = time;
+            m_Value = value;
+            m_InTangent = inTangent;
+            m_OutTangent = outTangent;
+            m_WeightedMode = (int)WeightedMode.Both;
+            m_InWeight = inWeight;
+            m_OutWeight = outWeight;
             m_TangentMode = 0;
         }
     
@@ -62,7 +94,20 @@ public partial struct Keyframe
     public float outTangent { get { return m_OutTangent; } set { m_OutTangent = value; }  }
     
     
-    public int tangentMode
+    public float inWeight { get { return m_InWeight; } set { m_InWeight = value; }  }
+    
+    
+    public float outWeight { get { return m_OutWeight; } set { m_OutWeight = value; }  }
+    
+    
+    public WeightedMode weightedMode { get { return (WeightedMode)m_WeightedMode; } set { m_WeightedMode = (int)value; } }
+    
+    
+    [System.Obsolete ("Use AnimationUtility.SetLeftTangentMode, AnimationUtility.SetRightTangentMode, AnimationUtility.GetLeftTangentMode or AnimationUtility.GetRightTangentMode instead.")]
+    public int tangentMode { get { return tangentModeInternal; } set { tangentModeInternal = value; } }
+    
+    
+    internal int tangentModeInternal
         {
             get
             {

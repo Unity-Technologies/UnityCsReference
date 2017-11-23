@@ -60,6 +60,17 @@ namespace UnityEditor.PackageManager
         }
 
         /// <summary>
+        /// Searches the registry for all available packages.
+        /// </summary>
+        /// <returns>A SearchRequest instance</returns>
+        public static SearchRequest SearchAll()
+        {
+            long operationId;
+            var status = NativeClient.SearchAll(out operationId);
+            return new SearchRequest(operationId, status, string.Empty);
+        }
+
+        /// <summary>
         /// Resets the list of packages installed for this project to the editor's default configuration.
         /// This operation will clear all packages added to the project and keep only the packages set for the current editor default configuration.
         /// </summary>

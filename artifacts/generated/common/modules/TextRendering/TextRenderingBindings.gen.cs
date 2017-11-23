@@ -349,7 +349,7 @@ public partial struct CharacterInfo
         #pragma warning disable 0618
             public int advance
         {
-            get { return (int)width; }
+            get { return (int)Math.Round(width, MidpointRounding.AwayFromZero); }
             set { width = value; }
         }
     
@@ -524,6 +524,10 @@ public sealed partial class Font : Object
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Font GetDefault () ;
+
     public Font() { Internal_CreateFont(this, null); }
     
     

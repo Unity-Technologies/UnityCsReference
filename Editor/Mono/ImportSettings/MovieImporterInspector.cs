@@ -66,7 +66,7 @@ namespace UnityEditor
 
             ApplyRevertGUI();
 
-            MovieTexture movie = assetEditor.target as MovieTexture;
+            MovieTexture movie = assetTarget as MovieTexture;
             if (movie && movie.loop)
             {
                 EditorGUILayout.Space();

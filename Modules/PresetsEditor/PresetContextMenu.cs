@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
 namespace UnityEditor
@@ -16,7 +17,7 @@ namespace UnityEditor
 
         Object[] m_Targets;
         Preset[] m_Presets;
-        AssetImporterTabbedEditor[] m_ImporterEditors;
+        AssetImporterEditor[] m_ImporterEditors;
         SerializedObject m_ImporterSerialized;
 
         [EditorHeaderItem(typeof(Object), -1001)]
@@ -24,7 +25,7 @@ namespace UnityEditor
         {
             var target = targets[0];
 
-            if (Preset.IsExcludedFromPresets(target)
+            if (Preset.IsObjectExcludedFromPresets(target)
                 || (target.hideFlags & HideFlags.NotEditable) != 0)
                 return false;
 
@@ -43,7 +44,7 @@ namespace UnityEditor
             {
                 // we need to keep our own instance of the selected importer in order to handle the Apply/Reset correctly
                 instance.m_ImporterEditors = Resources
-                    .FindObjectsOfTypeAll<AssetImporterTabbedEditor>()
+                    .FindObjectsOfTypeAll<AssetImporterEditor>()
                     .Where(e => e.targets == targets)
                     .ToArray();
                 instance.m_Targets = new[] {Instantiate(targets[0])};

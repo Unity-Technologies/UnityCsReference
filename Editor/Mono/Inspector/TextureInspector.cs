@@ -604,7 +604,7 @@ namespace UnityEditor
             if (mat)
             {
                 // We don't want Materials in Editor Resources Project to be modified in the end, so we use an duplicate.
-                if (Unsupported.IsDeveloperBuild())
+                if (Unsupported.IsSourceBuild())
                     mat = new Material(mat);
                 Graphics.Blit(texture, tmp, mat);
             }
@@ -632,7 +632,7 @@ namespace UnityEditor
             ShaderUtil.rawViewportRect = savedViewport;
 
             // Kill the duplicate
-            if (mat && Unsupported.IsDeveloperBuild())
+            if (mat && Unsupported.IsSourceBuild())
                 Object.DestroyImmediate(mat);
 
             return copy;

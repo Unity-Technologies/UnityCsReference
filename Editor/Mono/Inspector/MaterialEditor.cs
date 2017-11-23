@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
@@ -237,12 +238,16 @@ namespace UnityEditor
         }
 
         // Note: this is called from native code.
-        internal void OnSelectedShaderPopup(string command, Shader shader)
+        internal void OnSelectedShaderPopup(object shaderNameObj)
         {
             serializedObject.Update();
-
-            if (shader != null)
-                SetShader(shader);
+            var shaderName = (string)shaderNameObj;
+            if (!string.IsNullOrEmpty(shaderName))
+            {
+                var shader = Shader.Find(shaderName);
+                if (shader != null)
+                    SetShader(shader);
+            }
 
             PropertiesChanged();
         }
@@ -270,21 +275,79 @@ namespace UnityEditor
             position = EditorGUI.PrefixLabel(position, 47385, EditorGUIUtility.TempContent("Shader"));
             EditorGUI.showMixedValue = HasMultipleMixedShaderValues();
 
-            GUIContent buttonContent = EditorGUIUtility.TempContent(m_Shader != null ? m_Shader.name : "No Shader Selected");
+            var buttonContent = EditorGUIUtility.TempContent(m_Shader != null ? m_Shader.name : "No Shader Selected");
             if (EditorGUI.DropdownButton(position, buttonContent, FocusType.Keyboard, style))
             {
-                EditorGUI.showMixedValue = false;
-                Vector2 pos = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
-
-                // @TODO: SetupShaderPopupMenu in ShaderMenu.cpp needs to be able to accept null
-                // so no choice is selected when the shaders are different for the selected materials.
-                InternalEditorUtility.SetupShaderMenu(target as Material);
-                EditorUtility.Internal_DisplayPopupMenu(new Rect(pos.x, pos.y, position.width, position.height), "CONTEXT/ShaderPopup", this, 0);
-                Event.current.Use();
+                var menu = new GenericMenu();
+                CreateShaderList(menu);
+                menu.DropDown(position);
             }
-            EditorGUI.showMixedValue = false;
 
+            EditorGUI.showMixedValue = false;
             GUI.enabled = wasEnabled;
+        }
+
+        private void CreateShaderList(GenericMenu menu)
+        {
+            var shaders = ShaderUtil.GetAllShaderInfo();
+            var noSubmenuList = new List<string>();
+            var submenuList = new List<string>();
+            var legacyList = new List<string>();
+            var notSupportedList = new List<string>();
+            var failedCompilationList = new List<string>();
+
+            foreach (var shader in shaders)
+            {
+                if (shader.name.StartsWith("Deprecated") || shader.name.StartsWith("Hidden"))
+                {
+                    continue;
+                }
+                if (shader.hasErrors)
+                {
+                    failedCompilationList.Add(shader.name);
+                    continue;
+                }
+                if (!shader.supported)
+                {
+                    notSupportedList.Add(shader.name);
+                    continue;
+                }
+                if (shader.name.StartsWith("Legacy Shaders/"))
+                {
+                    legacyList.Add(shader.name);
+                    continue;
+                }
+                if (shader.name.Contains("/"))
+                {
+                    submenuList.Add(shader.name);
+                    continue;
+                }
+                noSubmenuList.Add(shader.name);
+            }
+
+            noSubmenuList.Sort();
+            submenuList.Sort();
+            legacyList.Sort();
+            notSupportedList.Sort();
+            failedCompilationList.Sort();
+
+            noSubmenuList.ForEach(s => AddShaderToMenu("", menu, s));
+            submenuList.ForEach(s => AddShaderToMenu("", menu, s));
+            if (legacyList.Any())
+                menu.AddSeparator("");
+            legacyList.ForEach(s => AddShaderToMenu("", menu, s));
+            if (notSupportedList.Any())
+                menu.AddSeparator("");
+            notSupportedList.ForEach(s => AddShaderToMenu("Not supported/", menu, s));
+            if (failedCompilationList.Any())
+                menu.AddSeparator("");
+            failedCompilationList.ForEach(s => AddShaderToMenu("Failed to compile/", menu, s));
+        }
+
+        private void AddShaderToMenu(string prefix, GenericMenu menu, string shaderName)
+        {
+            var selected = m_Shader != null ? m_Shader.name == shaderName : false;
+            menu.AddItem(new GUIContent(prefix + shaderName), selected, OnSelectedShaderPopup, shaderName);
         }
 
         public virtual void Awake()
@@ -651,7 +714,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = prop.hasMixedValue;
             bool isHDR = ((prop.flags & MaterialProperty.PropFlags.HDR) != 0);
             bool showAlpha = true;
-            Color newValue = EditorGUI.ColorField(position, label, prop.colorValue, true, showAlpha, isHDR, null);
+            Color newValue = EditorGUI.ColorField(position, label, prop.colorValue, true, showAlpha, isHDR);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 prop.colorValue = newValue;
@@ -732,6 +795,8 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             if ((prop.flags & MaterialProperty.PropFlags.PerRendererData) != 0)
+                GUI.enabled = false;
+            if ((prop.flags & MaterialProperty.PropFlags.NonModifiableTextureData) != 0)
                 GUI.enabled = false;
 
             EditorGUI.showMixedValue = prop.hasMixedValue;

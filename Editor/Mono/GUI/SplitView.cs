@@ -693,7 +693,7 @@ namespace UnityEditor
                                 if (dock && dock.m_Selected < dock.m_Panes.Count && dock.m_Panes[dock.m_Selected])
                                     name = dock.m_Panes[dock.m_Selected].GetType().ToString();
 
-                                if (Unsupported.IsDeveloperBuild())
+                                if (Unsupported.IsDeveloperMode())
                                     Debug.LogError("Real sizes out of bounds for: " + name + " index: " + i + " RealSizes: " + splitState.realSizes.Length);
 
                                 SetupSplitter();

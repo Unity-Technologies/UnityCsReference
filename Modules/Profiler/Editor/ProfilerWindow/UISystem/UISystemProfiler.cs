@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 
 namespace UnityEditor
@@ -41,7 +42,7 @@ namespace UnityEditor
 
             var treeRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             treeRect.yMin -= EditorGUIUtility.standardVerticalSpacing;
-            m_TreeViewControl.property = win.CreateProperty(ProfilerColumn.DontSort);
+            m_TreeViewControl.property = win.CreateProperty();
 
             if (!m_TreeViewControl.property.frameDataReady)
             {

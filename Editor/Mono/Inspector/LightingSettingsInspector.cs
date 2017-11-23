@@ -2,15 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine;
 using System.Linq;
-using UnityEngineInternal;
 using UnityEditor.AnimatedValues;
-using Object = UnityEngine.Object;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -181,10 +176,14 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_CastShadows, s_Styles.CastShadows, true);
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
-            using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
-                EditorGUILayout.PropertyField(m_ReceiveShadows, s_Styles.ReceiveShadows, true);
+            if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            {
+                using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
+                    EditorGUILayout.PropertyField(m_ReceiveShadows, s_Styles.ReceiveShadows, true);
+            }
 
-            EditorGUILayout.PropertyField(m_MotionVectors, s_Styles.MotionVectors, true);
+            if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+                EditorGUILayout.PropertyField(m_MotionVectors, s_Styles.MotionVectors, true);
 
             if (!showLightmapSettings)
                 return;

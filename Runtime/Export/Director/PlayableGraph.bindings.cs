@@ -101,8 +101,13 @@ namespace UnityEngine.Playables
             Evaluate(0);
         }
 
+        public static PlayableGraph Create()
+        {
+            return Create(null);
+        }
+
         // Bindings methods.
-        extern public static PlayableGraph Create();
+        extern public static PlayableGraph Create(string name);
         extern public void Destroy();
         extern public bool IsValid();
         extern public bool IsPlaying();
@@ -130,5 +135,7 @@ namespace UnityEngine.Playables
         extern private void DisconnectInternal(PlayableHandle playable, int inputPort);
         extern private void DestroyPlayableInternal(PlayableHandle playable);
         extern private void DestroySubgraphInternal(PlayableHandle playable);
+
+        extern public string GetEditorName();
     }
 }

@@ -24,7 +24,6 @@ namespace UnityEditor.Experimental.UIElements
         public bool showEyeDropper { get; set; }
         public bool showAlpha { get; set; }
         public bool hdr { get; set; }
-        public ColorPickerHDRConfig hdrConfig { get; set; }
 
         private bool m_SetKbControl;
 
@@ -71,7 +70,7 @@ namespace UnityEditor.Experimental.UIElements
                 Dirty(ChangeType.Repaint);
             }
 
-            Color newColor = EditorGUILayout.ColorField(GUIContent.none, value, showEyeDropper, showAlpha, hdr, hdrConfig);
+            Color newColor = EditorGUILayout.ColorField(GUIContent.none, value, showEyeDropper, showAlpha, hdr);
             SetValueAndNotify(newColor);
             if (m_SetKbControl)
             {

@@ -338,7 +338,11 @@ namespace UnityEditor
             if (target is AssetImporter && ApplyImportSettingsBeforeSavingPreset(ref preset, target))
                 return null;
 
-            return EditorUtility.SaveFilePanelInProject("New Preset", preset.GetTargetTypeName(), "preset", "", ProjectWindowUtil.GetActiveFolderPath());
+            return EditorUtility.SaveFilePanelInProject("New Preset",
+                preset.GetTargetTypeName(),
+                "preset",
+                "",
+                ProjectWindowUtil.GetActiveFolderPath());
         }
 
         static void CreatePreset(Object target)

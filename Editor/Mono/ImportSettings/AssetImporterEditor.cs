@@ -14,7 +14,11 @@ namespace UnityEditor.Experimental.AssetImporters
         bool m_MightHaveModified = false;
 
         private Editor m_AssetEditor;
-        protected internal virtual Editor assetEditor { get { return m_AssetEditor; } internal set { m_AssetEditor = value; } }
+        internal Editor assetEditor { private get { return m_AssetEditor; } set { m_AssetEditor = value; } }
+
+        protected internal Object[] assetTargets { get { return m_AssetEditor != null ? m_AssetEditor.targets : null; } }
+        protected internal Object assetTarget { get { return m_AssetEditor != null ? m_AssetEditor.target : null; } }
+        protected internal SerializedObject assetSerializedObject { get { return m_AssetEditor != null ? m_AssetEditor.serializedObject : null; } }
 
         internal override string targetTitle
         {
@@ -22,21 +26,18 @@ namespace UnityEditor.Experimental.AssetImporters
             {
                 var title = string.Empty;
 
-                // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
-                // try to get the target from the serialized object
-                if (assetEditor != null && assetEditor.target == null)
+                if (assetEditor != null)
                 {
-                    assetEditor.InternalSetTargets(assetEditor.serializedObject.targetObjects);
-                }
-
-                // make this problem easier to find in the future, instead of millions of NullReferenceExceptions :)
-                if (assetEditor == null || assetEditor.target == null)
-                {
-                    Debug.LogError("AssetImporterEditor: assetEditor has null targets!");
-                }
-                else
-                {
-                    title = assetEditor.targetTitle;
+                    // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
+                    // try to get the target from the serialized object
+                    if (assetEditor.target == null)
+                    {
+                        assetEditor.InternalSetTargets(assetEditor.serializedObject.targetObjects);
+                    }
+                    if (assetEditor.target != null)
+                    {
+                        title = assetEditor.targetTitle;
+                    }
                 }
 
                 return string.Format("{0} Import Settings", title);
@@ -256,6 +257,8 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected void ApplyRevertGUI()
         {
+            if (assetEditor == null || assetEditor.target == null) return;
+
             m_MightHaveModified = true;
             EditorGUILayout.Space();
 

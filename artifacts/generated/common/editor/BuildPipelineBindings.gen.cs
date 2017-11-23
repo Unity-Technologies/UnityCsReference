@@ -73,7 +73,8 @@ public enum BuildOptions
     
     ComputeCRC = 1 << 20,
     
-    StrictMode = 1 << 21
+    StrictMode = 1 << 21,
+    IncludeTestAssemblies = 1 << 22
 }
 
 [System.Flags]

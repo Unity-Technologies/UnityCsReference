@@ -45,6 +45,7 @@ public sealed partial class Application
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void Quit () ;
 
+    [System.Obsolete ("CancelQuit is deprecated. Use the wantsToQuit event instead.")]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void CancelQuit () ;

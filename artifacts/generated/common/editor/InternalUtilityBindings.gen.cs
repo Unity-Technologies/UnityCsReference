@@ -607,6 +607,7 @@ internal sealed partial class Physics2DSettings : ProjectSettingsBase
 }
 
 [NativeClass(null)]
+[ExcludeFromPreset]
 internal sealed partial class MonoManager : ProjectSettingsBase
 {
     private MonoManager() {}

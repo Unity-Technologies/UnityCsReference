@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -14,6 +15,15 @@ namespace UnityEditor
 {
     static class TileDragAndDrop
     {
+        private enum UserTileCreationMode
+        {
+            Overwrite,
+            CreateUnique,
+            Reuse,
+        }
+
+        private static readonly string k_TileExtension = "asset";
+
         public static List<Sprite> GetSpritesFromTexture(Texture2D texture)
         {
             string path = AssetDatabase.GetAssetPath(texture);
@@ -197,16 +207,56 @@ namespace UnityEditor
                 return result;
             }
 
+            UserTileCreationMode userTileCreationMode = UserTileCreationMode.Overwrite;
             string path = "";
             bool multipleTiles = sheet.Count > 1;
             if (multipleTiles)
             {
+                bool userInterventionRequired = false;
                 path = EditorUtility.SaveFolderPanel("Generate tiles into folder ", defaultPath, "");
                 path = FileUtil.GetProjectRelativePath(path);
+
+                // Check if this will overwrite any existing assets
+                foreach (var item in sheet.Values)
+                {
+                    if (item is Sprite)
+                    {
+                        var tilePath = FileUtil.CombinePaths(path, String.Format("{0}.{1}", item.name, k_TileExtension));
+                        if (File.Exists(tilePath))
+                        {
+                            userInterventionRequired = true;
+                            break;
+                        }
+                    }
+                }
+                // There are existing tile assets in the folder with names matching the items to be created
+                if (userInterventionRequired)
+                {
+                    var option = EditorUtility.DisplayDialogComplex("Overwrite?", String.Format("Assets exist at {0}. Do you wish to overwrite existing assets?", path), "Overwrite", "Create New Copy", "Reuse");
+                    switch (option)
+                    {
+                        case 0: // Overwrite
+                        {
+                            userTileCreationMode = UserTileCreationMode.Overwrite;
+                        }
+                        break;
+                        case 1: // Create New Copy
+                        {
+                            userTileCreationMode = UserTileCreationMode.CreateUnique;
+                        }
+                        break;
+                        case 2: // Reuse
+                        {
+                            userTileCreationMode = UserTileCreationMode.Reuse;
+                        }
+                        break;
+                    }
+                }
             }
             else
             {
-                path = EditorUtility.SaveFilePanelInProject("Generate new tile", sheet.Values.First().name, "asset", "Generate new tile", defaultPath);
+                // Do not check if this will overwrite new tile as user has explicitly selected the file to save to
+                path = EditorUtility.SaveFilePanelInProject("Generate new tile", sheet.Values.First().name, k_TileExtension, "Generate new tile", defaultPath);
             }
 
             if (string.IsNullOrEmpty(path))
@@ -222,9 +272,31 @@ namespace UnityEditor
                 {
                     tile = CreateTile(item.Value as Sprite);
                     tilePath = multipleTiles
-                        ? path + "/" + tile.name + ".asset"
+                        ? FileUtil.CombinePaths(path, String.Format("{0}.{1}", tile.name, k_TileExtension))
                         : path;
-                    AssetDatabase.CreateAsset(tile, tilePath);
+                    switch (userTileCreationMode)
+                    {
+                        case UserTileCreationMode.CreateUnique:
+                        {
+                            if (File.Exists(tilePath))
+                                tilePath = AssetDatabase.GenerateUniqueAssetPath(tilePath);
+                            AssetDatabase.CreateAsset(tile, tilePath);
+                        }
+                        break;
+                        case UserTileCreationMode.Overwrite:
+                        {
+                            AssetDatabase.CreateAsset(tile, tilePath);
+                        }
+                        break;
+                        case UserTileCreationMode.Reuse:
+                        {
+                            if (File.Exists(tilePath))
+                                tile = AssetDatabase.LoadAssetAtPath<TileBase>(tilePath);
+                            else
+                                AssetDatabase.CreateAsset(tile, tilePath);
+                        }
+                        break;
+                    }
                 }
                 else
                 {

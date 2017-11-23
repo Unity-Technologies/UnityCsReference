@@ -387,9 +387,9 @@ namespace UnityEditorInternal
             var target = EditorUserBuildSettings.activeBuildTarget;
 
             PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
-            PrecompiledAssembly[] precompiledAssemblies = GetPrecompiledAssemblies(false, group, target);
 
-            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, precompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty);
+            PrecompiledAssembly[] allPrecompiledAssemblies = GetPrecompiledAssemblies(false, @group, target);
+            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, allPrecompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
         }
 
         // Do not remove. Called through reflection by Visual Studio Tools for Unity.

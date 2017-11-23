@@ -24,15 +24,6 @@ namespace UnityEditor
 
 public sealed partial class Unsupported
 {
-    private static bool s_FakeNonDeveloperBuild = EditorPrefs.GetBool("FakeNonDeveloperBuild", false);
-    internal static bool fakeNonDeveloperBuild
-        {
-            get { return s_FakeNonDeveloperBuild; }
-            set { s_FakeNonDeveloperBuild = value; EditorPrefs.SetBool("FakeNonDeveloperBuild", value); }
-        }
-    
-    
-    
     internal static Vector3 MakeNiceVector3 (Vector3 vector) {
         Vector3 result;
         INTERNAL_CALL_MakeNiceVector3 ( ref vector, out result );
@@ -72,13 +63,17 @@ public sealed partial class Unsupported
 
     public static bool IsDeveloperBuild()
         {
-            return IsDeveloperBuildInternal() && !s_FakeNonDeveloperBuild;
+            return IsSourceBuild();
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool IsDeveloperBuildInternal () ;
+    extern public static  bool IsDeveloperMode () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool IsSourceBuild () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -112,7 +107,7 @@ public sealed partial class Unsupported
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetAllowCursorLock (bool allow) ;
 
-    static internal bool SetOverrideRenderSettings(Scene scene)
+    public static bool SetOverrideRenderSettings(Scene scene)
         {
             return SetOverrideRenderSettingsInternal(scene.handle);
         }
@@ -124,7 +119,7 @@ public sealed partial class Unsupported
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  void RestoreOverrideRenderSettings () ;
+    extern public static  void RestoreOverrideRenderSettings () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -265,7 +260,7 @@ public sealed partial class Unsupported
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ClearSkinCache () ;
 
-    internal extern static bool useScriptableRenderPipeline
+    public extern static bool useScriptableRenderPipeline
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

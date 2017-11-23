@@ -19,6 +19,7 @@ namespace UnityEditor
     {
         const string kEditorPrefsGBuffersLightmapsAlbedoEmissive = "LightingWindowGlobalMapsGLAE";
         const string kEditorPrefsTransmissionTextures = "LightingWindowGlobalMapsTT";
+        const string kEditorPrefsGeometryData = "LightingWindowGlobalMapsGD";
         const string kEditorPrefsInFlight = "LightingWindowGlobalMapsIF";
 
         Vector2 m_ScrollPositionLightmaps = Vector2.zero;
@@ -207,7 +208,18 @@ namespace UnityEditor
             return sum;
         }
 
-        private void ShowObjectNamesAndSizes(string foldoutName, string editorPrefsName, string[] objectNames, float[] sizes)
+        System.UInt64 SumCounts(System.UInt64[] counts)
+        {
+            System.UInt64 sum = 0;
+            foreach (var count in counts)
+                sum += count;
+
+            return sum;
+        }
+
+        enum Precision { Tenths, Hundredths }
+
+        private void ShowObjectNamesSizesAndCounts(string foldoutName, string editorPrefsName, string[] objectNames, float[] sizes, System.UInt64[] counts, Precision precision)
         {
             Debug.Assert(objectNames.Length == sizes.Length);
 
@@ -215,7 +227,9 @@ namespace UnityEditor
                 return;
 
             const bool toggleOnLabelClick = true;
-            string foldoutNameFull = foldoutName + " (" + SizeString(SumSizes(sizes)) + ")";
+            string countString = counts.Length > 0 ? (SumCounts(counts).ToString() + " tris, ") : "";
+            string sizeString = SizeString(SumSizes(sizes));
+            string foldoutNameFull = foldoutName + " (" + countString + sizeString + ")";
             bool showDetailsOld = EditorPrefs.GetBool(editorPrefsName, true);
 
             bool showDetails = EditorGUILayout.Foldout(showDetailsOld, foldoutNameFull, toggleOnLabelClick, s_Styles.boldFoldout);
@@ -248,9 +262,17 @@ namespace UnityEditor
                 GUILayout.EndVertical();
 
                 GUILayout.BeginVertical();
+                for (int i = 0; i < counts.Length; ++i)
+                {
+                    GUILayout.Label(counts[i].ToString(), EditorStyles.miniLabel);
+                }
+                GUILayout.EndVertical();
+
+                GUILayout.BeginVertical();
+                string format = (precision == Precision.Tenths) ? "0.0" : "0.00";
                 for (int i = 0; i < sizes.Length; ++i)
                 {
-                    GUILayout.Label(sizes[i].ToString("0.0") + " MB", EditorStyles.miniLabel);
+                    GUILayout.Label(sizes[i].ToString(format) + " MB", EditorStyles.miniLabel);
                 }
                 GUILayout.EndVertical();
 
@@ -279,7 +301,7 @@ namespace UnityEditor
 
             GlobalMapsViewType viewType = GlobalMapsViewType.Performance;
 
-            if (EditorPrefs.GetBool("InternalMode", false))
+            if (EditorPrefs.GetBool("DeveloperMode", false))
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
@@ -400,11 +422,20 @@ namespace UnityEditor
                 }
             }
 
+            System.UInt64[] dummyCounts = new System.UInt64[0];
             {
                 string[] objectNames;
                 float[] sizes;
                 Lightmapping.GetTransmissionTexturesMemLabels(out objectNames, out sizes);
-                ShowObjectNamesAndSizes("Transmission textures", kEditorPrefsTransmissionTextures, objectNames, sizes);
+                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, objectNames, sizes, dummyCounts, Precision.Tenths);
+            }
+
+            {
+                string[] objectNames;
+                float[] sizes;
+                System.UInt64[] triCounts;
+                Lightmapping.GetGeometryMemory(out objectNames, out sizes, out triCounts);
+                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, objectNames, sizes, triCounts, Precision.Hundredths);
             }
 
             {
@@ -412,7 +443,7 @@ namespace UnityEditor
                 float[] sizes;
                 Lightmapping.GetNotShownMemLabels(out objectNames, out sizes);
                 string remainingEntriesFoldoutName = Lightmapping.isProgressiveLightmapperDone ? "Leaks" : "In-flight";
-                ShowObjectNamesAndSizes(remainingEntriesFoldoutName, kEditorPrefsInFlight, objectNames, sizes);
+                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, objectNames, sizes, dummyCounts, Precision.Tenths);
             }
         }
 

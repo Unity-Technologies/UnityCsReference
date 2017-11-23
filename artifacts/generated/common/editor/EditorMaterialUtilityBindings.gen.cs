@@ -30,6 +30,10 @@ public sealed partial class EditorMaterialUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetShaderDefaults (Shader shader, string[] name, Texture[] textures) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetShaderNonModifiableDefaults (Shader shader, string[] name, Texture[] textures) ;
+
 }
 
 }

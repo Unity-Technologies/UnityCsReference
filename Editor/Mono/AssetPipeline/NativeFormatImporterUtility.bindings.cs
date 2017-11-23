@@ -17,18 +17,10 @@ namespace UnityEditor
     {
         static NativeFormatImporterUtility()
         {
-            foreach (var type in EditorAssemblies.GetAllTypesWithAttribute(typeof(AssetFileNameExtensionAttribute), false))
+            foreach (var type in EditorAssemblies.GetAllTypesWithAttribute<AssetFileNameExtensionAttribute>())
             {
-                AssetFileNameExtensionAttribute attr;
-                try
-                {
-                    attr = type.GetCustomAttributes(typeof(AssetFileNameExtensionAttribute), false)[0]
-                        as AssetFileNameExtensionAttribute;
-                }
-                catch (TypeLoadException)
-                {
-                    continue;
-                }
+                var attr = type.GetCustomAttributes(typeof(AssetFileNameExtensionAttribute), false)[0]
+                    as AssetFileNameExtensionAttribute;
                 try
                 {
                     RegisterExtensionForType(type, attr.preferredExtension, attr.otherExtensions.ToArray());

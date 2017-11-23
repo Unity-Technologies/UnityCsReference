@@ -51,7 +51,9 @@ namespace UnityEditor
 
         static internal IEnumerable<Type> SubclassesOf(Type parent)
         {
-            return loadedTypes.Where(klass => klass.IsSubclassOf(parent));
+            return parent.IsInterface ?
+                GetAllTypesWithInterface(parent) :
+                loadedTypes.Where(klass => klass.IsSubclassOf(parent));
         }
 
         static internal List<RuntimeInitializeClassInfo> m_RuntimeInitializeClassInfoList;
@@ -61,12 +63,6 @@ namespace UnityEditor
         private static void SetLoadedEditorAssemblies(Assembly[] assemblies)
         {
             loadedAssemblies = assemblies;
-        }
-
-        //this method finds all public classes that implement any of the passed in interface types
-        static internal void FindClassesThatImplementAnyInterface(List<Type> results, params Type[] interfaces)
-        {
-            results.AddRange(loadedTypes.Where(x => interfaces.Any(i => i.IsAssignableFrom(x) && i != x)));
         }
 
         [RequiredByNativeCode]
@@ -94,45 +90,6 @@ namespace UnityEditor
             m_TotalNumRuntimeInitializeMethods += methodNames.Count;
         }
 
-        private static void ProcessStaticMethodAttributes(Type type)
-        {
-            List<string> runtimeInitializeMethodNames = null;
-            List<RuntimeInitializeLoadType> runtimeInitializeLoadTypes = null;
-            MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            for (int i =  0; i < methods.GetLength(0); i++)
-            {
-                MethodInfo mi = methods[i];
-                if (Attribute.IsDefined(mi, typeof(RuntimeInitializeOnLoadMethodAttribute)))
-                {
-                    RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
-                    object[] attrs = mi.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attrs != null && attrs.Length > 0)
-                        loadType = ((RuntimeInitializeOnLoadMethodAttribute)attrs[0]).loadType;
-
-                    if (runtimeInitializeMethodNames == null)
-                    {
-                        runtimeInitializeMethodNames = new List<string>();
-                        runtimeInitializeLoadTypes = new List<RuntimeInitializeLoadType>();
-                    }
-                    runtimeInitializeMethodNames.Add(mi.Name);
-                    runtimeInitializeLoadTypes.Add(loadType);
-                }
-                if (Attribute.IsDefined(mi, typeof(InitializeOnLoadMethodAttribute)))
-                {
-                    try
-                    {
-                        mi.Invoke(null, null);
-                    }
-                    catch (TargetInvocationException x)
-                    {
-                        Debug.LogError(x.InnerException);
-                    }
-                }
-            }
-            if (runtimeInitializeMethodNames != null)
-                StoreRuntimeInitializeClassInfo(type, runtimeInitializeMethodNames, runtimeInitializeLoadTypes);
-        }
-
         private static void ProcessEditorInitializeOnLoad(Type type)
         {
             try
@@ -145,44 +102,43 @@ namespace UnityEditor
             }
         }
 
+        private static void ProcessRuntimeInitializeOnLoad(MethodInfo method)
+        {
+            RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
+
+            object[] attrs = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+            if (attrs != null && attrs.Length > 0)
+                loadType = ((RuntimeInitializeOnLoadMethodAttribute)attrs[0]).loadType;
+
+            StoreRuntimeInitializeClassInfo(method.DeclaringType, new List<string>() { method.Name }, new List<RuntimeInitializeLoadType>() { loadType });
+        }
+
+        private static void ProcessInitializeOnLoadMethod(MethodInfo method)
+        {
+            try
+            {
+                method.Invoke(null, null);
+            }
+            catch (TargetInvocationException x)
+            {
+                Debug.LogError(x.InnerException);
+            }
+        }
+
         [RequiredByNativeCode]
         private static int[] ProcessInitializeOnLoadAttributes()
         {
-            List<int> failedAssemblies = null;
-            Assembly[] assemblies = loadedAssemblies;
             m_TotalNumRuntimeInitializeMethods = 0;
             m_RuntimeInitializeClassInfoList = new List<RuntimeInitializeClassInfo>();
-            for (int ass = 0; ass < assemblies.Length; ++ass)
-            {
-                int oldTotalNumRuntimeInitializeMethods = m_TotalNumRuntimeInitializeMethods;
-                int oldRuntimeInitializeClassInfoListCount = m_RuntimeInitializeClassInfoList.Count;
-                try
-                {
-                    Type[] types = AssemblyHelper.GetTypesFromAssembly(assemblies[ass]);
-                    foreach (var type in types)
-                    {
-                        if (type.IsDefined(typeof(InitializeOnLoadAttribute), false))
-                        {
-                            ProcessEditorInitializeOnLoad(type);
-                        }
-                        ProcessStaticMethodAttributes(type);
-                    }
-                }
-                catch (Exception x)
-                {
-                    Debug.LogException(x);
-                    if (failedAssemblies == null)
-                        failedAssemblies = new List<int>();
-                    if (oldTotalNumRuntimeInitializeMethods != m_TotalNumRuntimeInitializeMethods)
-                        m_TotalNumRuntimeInitializeMethods = oldTotalNumRuntimeInitializeMethods;
-                    if (oldRuntimeInitializeClassInfoListCount != m_RuntimeInitializeClassInfoList.Count)
-                        m_RuntimeInitializeClassInfoList.RemoveRange(oldRuntimeInitializeClassInfoListCount, m_RuntimeInitializeClassInfoList.Count - oldRuntimeInitializeClassInfoListCount);
-                    failedAssemblies.Add(ass);
-                }
-            }
-            if (failedAssemblies == null)
-                return null;
-            return failedAssemblies.ToArray();
+
+            foreach (Type type in GetAllTypesWithAttribute<InitializeOnLoadAttribute>())
+                ProcessEditorInitializeOnLoad(type);
+            foreach (MethodInfo method in GetAllMethodsWithAttribute<RuntimeInitializeOnLoadMethodAttribute>())
+                ProcessRuntimeInitializeOnLoad(method);
+            foreach (MethodInfo method in GetAllMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
+                ProcessInitializeOnLoadMethod(method);
+
+            return null;
         }
     }
 }

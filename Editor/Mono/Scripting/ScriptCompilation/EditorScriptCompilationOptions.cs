@@ -15,5 +15,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingEditorOnlyAssembly = 1 << 2,
         BuildingForIl2Cpp = 1 << 3,
         BuildingWithAsserts = 1 << 4,
+        BuildingIncludingTestAssemblies = 1 << 5,
     };
 }

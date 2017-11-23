@@ -211,6 +211,7 @@ public Color[] GetPixels( [uei.DefaultValue("0")] int miplevel )
 
 }
 
+[ExcludeFromPreset]
 public sealed partial class Cubemap : Texture
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -235,6 +236,7 @@ public sealed partial class Cubemap : Texture
 
 }
 
+[ExcludeFromPreset]
 public sealed partial class Texture3D : Texture
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

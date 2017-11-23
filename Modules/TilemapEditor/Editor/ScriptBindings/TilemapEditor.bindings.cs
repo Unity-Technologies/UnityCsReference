@@ -9,6 +9,7 @@ namespace UnityEditor
 {
     [NativeHeader("Runtime/BaseClasses/GameObject.h")]
     [NativeType(Header = "Modules/TilemapEditor/Editor/TilemapEditorUserSettings.h")]
+    [ExcludeFromPreset]
     [ExcludeFromObjectFactory]
     internal sealed partial class TilemapEditorUserSettings : Object
     {

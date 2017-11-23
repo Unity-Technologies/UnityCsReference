@@ -24,6 +24,7 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawDevelopmentPlayerCheckbox() { return true; }
         public virtual bool ShouldDrawExplicitNullCheckbox() { return false; }
         public virtual bool ShouldDrawExplicitDivideByZeroCheckbox() { return false; }
+        public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() { return false; }
         public virtual bool ShouldDrawForceOptimizeScriptsCheckbox() { return false; }
     }
 }

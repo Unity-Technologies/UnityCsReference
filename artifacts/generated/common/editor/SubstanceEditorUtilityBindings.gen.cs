@@ -110,6 +110,7 @@ public sealed partial class SubstanceImporter : AssetImporter
 }
 
 [NativeClass(null)]
+[ExcludeFromPreset]
 public sealed partial class SubstanceArchive : Object
 {
     private SubstanceArchive() {}

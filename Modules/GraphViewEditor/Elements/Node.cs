@@ -65,6 +65,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected readonly Button m_CollapseButton;
 
+        public override Rect GetPosition()
+        {
+            if (ClassListContains("vertical"))
+            {
+                return base.GetPosition();
+            }
+            else
+            {
+                return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
+            }
+        }
+
         public override void SetPosition(Rect newPos)
         {
             if (ClassListContains("vertical"))

@@ -96,14 +96,6 @@ namespace UnityEditor
             Debug.Log(string.Format("Saved screenshot at {0}", path));
         }
 
-        [MenuItem("Window/Screenshot/Toggle DeveloperBuild", false, 1000, true)]
-        public static void ToggleFakeNonDeveloperBuild()
-        {
-            Unsupported.fakeNonDeveloperBuild = !Unsupported.fakeNonDeveloperBuild;
-            InternalEditorUtility.RequestScriptReload();
-            InternalEditorUtility.RepaintAllViews();
-        }
-
         static GUIView GetMouseOverView()
         {
             GUIView v = GUIView.mouseOverView;

@@ -11,6 +11,9 @@ namespace UnityEditorInternal
     {
         public float            m_InTangent;
         public float            m_OutTangent;
+        public float            m_InWeight;
+        public float            m_OutWeight;
+        public WeightedMode     m_WeightedMode;
         public int              m_TangentMode;
         public int              m_TimeHash;
         int                     m_Hash;
@@ -49,6 +52,24 @@ namespace UnityEditorInternal
             set { m_OutTangent = value; }
         }
 
+        public float inWeight
+        {
+            get { return m_InWeight; }
+            set { m_InWeight = value; }
+        }
+
+        public float outWeight
+        {
+            get { return m_OutWeight; }
+            set { m_OutWeight = value; }
+        }
+
+        public WeightedMode weightedMode
+        {
+            get { return m_WeightedMode; }
+            set { m_WeightedMode = value; }
+        }
+
         public AnimationWindowCurve curve
         {
             get { return m_curve; }
@@ -73,6 +94,9 @@ namespace UnityEditorInternal
             this.curve = key.curve;
             this.m_InTangent = key.m_InTangent;
             this.m_OutTangent = key.m_OutTangent;
+            this.m_InWeight = key.inWeight;
+            this.m_OutWeight = key.outWeight;
+            this.m_WeightedMode = key.weightedMode;
             this.m_TangentMode = key.m_TangentMode;
             this.m_curve = key.m_curve;
         }
@@ -84,7 +108,10 @@ namespace UnityEditorInternal
             this.curve = curve;
             this.m_InTangent = key.inTangent;
             this.m_OutTangent = key.outTangent;
-            this.m_TangentMode = key.tangentMode;
+            this.m_InWeight = key.inWeight;
+            this.m_OutWeight = key.outWeight;
+            this.m_WeightedMode = key.weightedMode;
+            this.m_TangentMode = key.tangentModeInternal;
             this.m_curve = curve;
         }
 
@@ -120,6 +147,28 @@ namespace UnityEditorInternal
                 }
             }
             return -1;
+        }
+
+        public Keyframe ToKeyframe()
+        {
+            var keyframe = new Keyframe(time, (float)value, inTangent, outTangent);
+
+            keyframe.tangentModeInternal = m_TangentMode;
+            keyframe.weightedMode = weightedMode;
+            keyframe.inWeight = inWeight;
+            keyframe.outWeight = outWeight;
+
+            return keyframe;
+        }
+
+        public ObjectReferenceKeyframe ToObjectReferenceKeyframe()
+        {
+            var keyframe = new ObjectReferenceKeyframe();
+
+            keyframe.time = time;
+            keyframe.value = (UnityEngine.Object)value;
+
+            return keyframe;
         }
     }
 }

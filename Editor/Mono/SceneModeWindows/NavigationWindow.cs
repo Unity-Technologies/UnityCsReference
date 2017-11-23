@@ -499,7 +499,7 @@ namespace UnityEditor
                 }
             }
 
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 GUILayout.Label("Internal");
 

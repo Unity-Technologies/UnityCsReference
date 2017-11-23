@@ -81,7 +81,7 @@ namespace UnityEditor.Web
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(new GUIContent("Reload"), false, Reload);
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
                 menu.AddItem(new GUIContent("About"), false, About);
         }
 

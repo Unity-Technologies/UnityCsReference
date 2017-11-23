@@ -59,6 +59,15 @@ namespace UnityEditorInternal
             LoadKeyframes(clip);
         }
 
+        public void LoadKeyframes(AnimationCurve curve)
+        {
+            if (curve == null)
+                return;
+
+            for (int i = 0; i < curve.length; i++)
+                m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
+        }
+
         public void LoadKeyframes(AnimationClip clip)
         {
             m_Keyframes = new List<AnimationWindowKeyframe>();
@@ -66,14 +75,16 @@ namespace UnityEditorInternal
             if (!m_Binding.isPPtrCurve)
             {
                 AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
-                for (int i = 0; curve != null && i < curve.length; i++)
-                    m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
+                LoadKeyframes(curve);
             }
             else
             {
                 ObjectReferenceKeyframe[] curve = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-                for (int i = 0; curve != null && i < curve.Length; i++)
-                    m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
+                if (curve != null)
+                {
+                    for (int i = 0; i < curve.Length; i++)
+                        m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
+                }
             }
         }
 
@@ -177,8 +188,7 @@ namespace UnityEditorInternal
                 // Make sure we don't get two keyframes in an exactly the same time. We just ignore those.
                 if (Mathf.Abs(m_Keyframes[i].time - lastFrameTime) > AnimationWindowCurve.timeEpsilon)
                 {
-                    Keyframe newKeyframe = new Keyframe(m_Keyframes[i].time, (float)m_Keyframes[i].value, m_Keyframes[i].m_InTangent, m_Keyframes[i].m_OutTangent);
-                    newKeyframe.tangentMode = m_Keyframes[i].m_TangentMode;
+                    Keyframe newKeyframe = m_Keyframes[i].ToKeyframe();
                     keys.Add(newKeyframe);
                     lastFrameTime = m_Keyframes[i].time;
                 }
@@ -200,9 +210,7 @@ namespace UnityEditorInternal
                 // Make sure we don't get two keyframes in an exactly the same time. We just ignore those.
                 if (Mathf.Abs(m_Keyframes[i].time - lastFrameTime) > AnimationWindowCurve.timeEpsilon)
                 {
-                    ObjectReferenceKeyframe newKeyframe = new ObjectReferenceKeyframe();
-                    newKeyframe.time = m_Keyframes[i].time;
-                    newKeyframe.value = (UnityEngine.Object)m_Keyframes[i].value;
+                    ObjectReferenceKeyframe newKeyframe = m_Keyframes[i].ToObjectReferenceKeyframe();
                     lastFrameTime = newKeyframe.time;
                     keys.Add(newKeyframe);
                 }
@@ -247,8 +255,8 @@ namespace UnityEditorInternal
                     else
                     {
                         //  Create an animation curve stub and evaluate.
-                        Keyframe keyframe = new Keyframe(key.time, (float)key.value, key.m_InTangent, key.m_OutTangent);
-                        Keyframe nextKeyframe = new Keyframe(nextKey.time, (float)nextKey.value, nextKey.m_InTangent, nextKey.m_OutTangent);
+                        Keyframe keyframe = key.ToKeyframe();
+                        Keyframe nextKeyframe = nextKey.ToKeyframe();
 
                         AnimationCurve animationCurve = new AnimationCurve();
                         animationCurve.keys = new Keyframe[2] { keyframe, nextKeyframe };
@@ -307,6 +315,11 @@ namespace UnityEditorInternal
                     m_Keyframes[i].time > startTime && m_Keyframes[i].time < endTime)
                     m_Keyframes.RemoveAt(i);
             }
+        }
+
+        public void Clear()
+        {
+            m_Keyframes.Clear();
         }
     }
 }

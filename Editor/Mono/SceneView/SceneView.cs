@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
@@ -22,6 +23,50 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Scene", useTypeNameAsIconName = true)]
     public class SceneView : SearchableEditorWindow, IHasCustomMenu
     {
+        [Serializable]
+        public struct CameraMode
+        {
+            internal CameraMode(DrawCameraMode drawMode, string name, string section)
+            {
+                this.drawMode = drawMode;
+                this.name = name;
+                this.section = section;
+            }
+
+            public DrawCameraMode drawMode;
+            public string name;
+            public string section;
+
+            public static bool operator==(CameraMode a, CameraMode z)
+            {
+                return a.drawMode == z.drawMode && a.name == z.name && a.section == z.section;
+            }
+
+            public static bool operator!=(CameraMode a, CameraMode z)
+            {
+                return !(a == z);
+            }
+
+            public override bool Equals(System.Object otherObject)
+            {
+                if (ReferenceEquals(otherObject, null))
+                    return false;
+                if (!(otherObject is CameraMode))
+                    return false;
+                return this == (CameraMode)otherObject;
+            }
+
+            public override int GetHashCode()
+            {
+                return ToString().GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0}||{1}||{2}", drawMode, name, section);
+            }
+        }
+
         private static SceneView s_LastActiveSceneView;
         private static SceneView s_CurrentDrawingSceneView;
 
@@ -64,6 +109,9 @@ namespace UnityEditor
 
         public double lastFramingTime = 0;
         private const double k_MaxDoubleKeypressTime = 0.5;
+
+        public event Func<CameraMode, bool> onValidateCameraMode;
+        public event Action<CameraMode> onCameraModeChanged;
 
         [Serializable]
         public class SceneViewState
@@ -140,6 +188,13 @@ namespace UnityEditor
             }
         }
 
+        private static List<CameraMode> s_UserDefinedModes = new List<CameraMode>();
+
+        internal static List<CameraMode> userDefinedModes
+        {
+            get { return s_UserDefinedModes; }
+        }
+
         internal Object m_OneClickDragObject;
 
         public bool m_AudioPlay = false;
@@ -160,15 +215,36 @@ namespace UnityEditor
         //And if possible AutoUpgrade it to the new way of doing this.
         internal static OnSceneFunc onPreSceneGUIDelegate;
 
+        [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode m_RenderMode = 0;
 
+        [SerializeField]
+        CameraMode m_CameraMode;
+
+        [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode renderMode
         {
-            get { return m_RenderMode; }
+            get { return m_CameraMode.drawMode; }
             set
             {
-                m_RenderMode = value;
+                if (value == DrawCameraMode.UserDefined)
+                    throw new ArgumentException("Use cameraMode to set user-defined modes");
+                cameraMode = SceneRenderModeWindow.GetBuiltinCameraMode(value);
+            }
+        }
+
+        public CameraMode cameraMode
+        {
+            get { return m_CameraMode; }
+            set
+            {
+                m_CameraMode = value;
+                #pragma warning disable 618
+                m_RenderMode = value.drawMode;
+                #pragma warning restore 618
                 SetupPBRValidation();
+                if (onCameraModeChanged != null)
+                    onCameraModeChanged(m_CameraMode);
             }
         }
 
@@ -446,6 +522,9 @@ namespace UnityEditor
             if (m_2DMode)
                 LookAt(pivot, Quaternion.identity, size, true, true);
 
+            if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !s_UserDefinedModes.Contains(m_CameraMode))
+                AddCameraMode(m_CameraMode.name, m_CameraMode.section);
+
             base.OnEnable();
         }
 
@@ -559,13 +638,13 @@ namespace UnityEditor
             GUILayout.BeginHorizontal("toolbar");
             {
                 // render mode popup
-                GUIContent modeContent = SceneRenderModeWindow.GetGUIContent(m_RenderMode);
+                GUIContent modeContent = EditorGUIUtility.TextContent(m_CameraMode.name);
                 modeContent.tooltip = LocalizationDatabase.GetLocalizedString("The Draw Mode used to display the Scene.");
                 Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
                 if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
                 {
                     Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    PopupWindow.Show(rect, new SceneRenderModeWindow(this));
+                    PopupWindow.Show(rect, new SceneRenderModeWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
                     GUIUtility.ExitGUI();
                 }
 
@@ -576,7 +655,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, "toolbarbutton");
-                if (renderMode == DrawCameraMode.ShadowCascades) // cascade visualization requires actual lights with shadows
+                if (cameraMode.drawMode == DrawCameraMode.ShadowCascades) // cascade visualization requires actual lights with shadows
                     m_SceneLighting = true;
 
                 GUI.enabled = !Application.isPlaying;
@@ -592,7 +671,7 @@ namespace UnityEditor
                 if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
                 {
                     Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    PopupWindow.Show(rect, new SceneFXWindow(this));
+                    PopupWindow.Show(rect, new SceneFXWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
                     GUIUtility.ExitGUI();
                 }
 
@@ -967,14 +1046,18 @@ namespace UnityEditor
             m_SceneTargetTexture.Create();
         }
 
-        internal bool IsCameraDrawModeEnabled(DrawCameraMode mode)
+        public bool IsCameraDrawModeEnabled(CameraMode mode)
         {
-            return Handles.IsCameraDrawModeEnabled(m_Camera, mode);
+            if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
+                return false;
+            return (onValidateCameraMode == null ||
+                    onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
         }
 
         internal bool IsSceneCameraDeferred()
         {
-            if (m_Camera == null)
+            bool usingScriptableRenderPipeline = (GraphicsSettings.renderPipelineAsset != null);
+            if (m_Camera == null || usingScriptableRenderPipeline)
                 return false;
             if (m_Camera.actualRenderingPath == RenderingPath.DeferredLighting || m_Camera.actualRenderingPath == RenderingPath.DeferredShading)
                 return true;
@@ -1025,7 +1108,7 @@ namespace UnityEditor
             m_Camera.targetTexture = m_SceneTargetTexture;
 
             // Do not use deferred rendering when using search filtering or wireframe/overdraw/mipmaps rendering modes.
-            if (UseSceneFiltering() || !DoesCameraDrawModeSupportDeferred(m_RenderMode))
+            if (UseSceneFiltering() || !DoesCameraDrawModeSupportDeferred(m_CameraMode.drawMode))
             {
                 if (IsSceneCameraDeferred())
                     m_Camera.renderingPath = RenderingPath.Forward;
@@ -1041,14 +1124,14 @@ namespace UnityEditor
             Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedWire);
 
             // Setup shader replacement if needed by overlay mode
-            if (m_RenderMode == DrawCameraMode.Overdraw)
+            if (m_CameraMode.drawMode == DrawCameraMode.Overdraw)
             {
                 // show overdraw
                 if (!s_ShowOverdrawShader)
                     s_ShowOverdrawShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewShowOverdraw.shader") as Shader;
                 m_Camera.SetReplacementShader(s_ShowOverdrawShader, "RenderType");
             }
-            else if (m_RenderMode == DrawCameraMode.Mipmaps)
+            else if (m_CameraMode.drawMode == DrawCameraMode.Mipmaps)
             {
                 // show mip levels
                 if (!s_ShowMipsShader)
@@ -1104,7 +1187,7 @@ namespace UnityEditor
                     Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowRest);
 
                     float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
-                    Handles.DrawCamera(cameraRect, m_Camera, m_RenderMode);
+                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode);
                     Handles.DrawCameraFade(m_Camera, fade);
 
                     // Second pass: Draw aura for objects which do meet search filter, but are occluded.
@@ -1113,11 +1196,11 @@ namespace UnityEditor
                     if (!s_AuraShader)
                         s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
                     m_Camera.SetReplacementShader(s_AuraShader, "");
-                    Handles.DrawCamera(cameraRect, m_Camera, m_RenderMode);
+                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode);
 
                     // Third pass: Draw objects which do meet filter normally
                     m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
-                    Handles.DrawCamera(cameraRect, m_Camera, m_RenderMode, gridParam);
+                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
 
                     if (fade < 1)
                         Repaint();
@@ -1144,31 +1227,32 @@ namespace UnityEditor
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     pushedGUIClip = true;
                 }
-                Handles.DrawCameraStep1(cameraRect, m_Camera, m_RenderMode, gridParam);
+                Handles.DrawCameraStep1(cameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
                 DrawRenderModeOverlay(cameraRect);
             }
         }
 
         void SetupPBRValidation()
         {
-            if (m_RenderMode == DrawCameraMode.ValidateAlbedo)
+            DrawCameraMode renderMode = m_CameraMode.drawMode;
+            if (renderMode == DrawCameraMode.ValidateAlbedo)
             {
                 CreateAlbedoSwatchData();
                 UpdateAlbedoSwatch();
             }
 
-            if ((m_RenderMode == DrawCameraMode.ValidateAlbedo || m_RenderMode == DrawCameraMode.ValidateMetalSpecular) &&
+            if ((renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular) &&
                 lastRenderMode != DrawCameraMode.ValidateAlbedo && lastRenderMode != DrawCameraMode.ValidateMetalSpecular)
             {
                 SceneView.onSceneGUIDelegate += DrawValidateAlbedoSwatches;
             }
-            else if ((m_RenderMode != DrawCameraMode.ValidateAlbedo && m_RenderMode != DrawCameraMode.ValidateMetalSpecular) &&
+            else if ((renderMode != DrawCameraMode.ValidateAlbedo && renderMode != DrawCameraMode.ValidateMetalSpecular) &&
                      (lastRenderMode == DrawCameraMode.ValidateAlbedo || lastRenderMode == DrawCameraMode.ValidateMetalSpecular))
             {
                 SceneView.onSceneGUIDelegate -= DrawValidateAlbedoSwatches;
             }
 
-            lastRenderMode = m_RenderMode;
+            lastRenderMode = renderMode;
         }
 
         void DoClearCamera(Rect cameraRect)
@@ -1454,7 +1538,7 @@ namespace UnityEditor
 
         internal void DrawPBRSettingsForScene()
         {
-            if (m_RenderMode == DrawCameraMode.ValidateAlbedo)
+            if (m_CameraMode.drawMode == DrawCameraMode.ValidateAlbedo)
             {
                 if (PlayerSettings.colorSpace == ColorSpace.Gamma)
                 {
@@ -1498,7 +1582,7 @@ namespace UnityEditor
             EditorGUI.indentLevel++;
             string modeString;
 
-            if (m_RenderMode == DrawCameraMode.ValidateAlbedo)
+            if (m_CameraMode.drawMode == DrawCameraMode.ValidateAlbedo)
             {
                 modeString = "Luminance";
             }
@@ -1550,7 +1634,7 @@ namespace UnityEditor
 
         void DrawValidateAlbedoSwatches(SceneView sceneView)
         {
-            if (sceneView.m_RenderMode == DrawCameraMode.ValidateAlbedo || sceneView.m_RenderMode == DrawCameraMode.ValidateMetalSpecular)
+            if (sceneView.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || sceneView.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
             {
                 sceneView.PrepareValidationUI();
                 SceneViewOverlay.Window(new GUIContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
@@ -1657,7 +1741,7 @@ namespace UnityEditor
             if (!UseSceneFiltering())
             {
                 // Blit to final target RT in deferred mode
-                Handles.DrawCameraStep2(m_Camera, m_RenderMode);
+                Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode);
 
                 // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
                 // view won't be able to properly render to the rendertexture as needed.
@@ -1796,7 +1880,7 @@ namespace UnityEditor
         void DrawRenderModeOverlay(Rect cameraRect)
         {
             // show destination alpha channel
-            if (m_RenderMode == DrawCameraMode.AlphaChannel)
+            if (m_CameraMode.drawMode == DrawCameraMode.AlphaChannel)
             {
                 if (!s_AlphaOverlayMaterial)
                     s_AlphaOverlayMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewAlphaMaterial.mat") as Material;
@@ -1807,17 +1891,17 @@ namespace UnityEditor
             }
 
             // show one of deferred buffers
-            if (m_RenderMode == DrawCameraMode.DeferredDiffuse ||
-                m_RenderMode == DrawCameraMode.DeferredSpecular ||
-                m_RenderMode == DrawCameraMode.DeferredSmoothness ||
-                m_RenderMode == DrawCameraMode.DeferredNormal)
+            if (m_CameraMode.drawMode == DrawCameraMode.DeferredDiffuse ||
+                m_CameraMode.drawMode == DrawCameraMode.DeferredSpecular ||
+                m_CameraMode.drawMode == DrawCameraMode.DeferredSmoothness ||
+                m_CameraMode.drawMode == DrawCameraMode.DeferredNormal)
             {
                 if (!s_DeferredOverlayMaterial)
                     s_DeferredOverlayMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewDeferredMaterial.mat") as Material;
                 Handles.BeginGUI();
                 if (Event.current.type == EventType.Repaint)
                 {
-                    s_DeferredOverlayMaterial.SetInt("_DisplayMode", (int)m_RenderMode - (int)DrawCameraMode.DeferredDiffuse);
+                    s_DeferredOverlayMaterial.SetInt("_DisplayMode", (int)m_CameraMode.drawMode - (int)DrawCameraMode.DeferredDiffuse);
                     Graphics.DrawTexture(cameraRect, EditorGUIUtility.whiteTexture, s_DeferredOverlayMaterial);
                 }
                 Handles.EndGUI();
@@ -1941,7 +2025,7 @@ namespace UnityEditor
 
         private void SetSceneCameraHDRAndDepthModes()
         {
-            if (!m_SceneLighting || !DoesCameraDrawModeSupportHDR(m_RenderMode))
+            if (!m_SceneLighting || !DoesCameraDrawModeSupportHDR(m_CameraMode.drawMode))
             {
                 m_Camera.allowHDR = false;
                 m_Camera.depthTextureMode = DepthTextureMode.None;
@@ -1963,7 +2047,7 @@ namespace UnityEditor
 
         void SetupCamera()
         {
-            if (m_RenderMode == DrawCameraMode.Overdraw)
+            if (m_CameraMode.drawMode == DrawCameraMode.Overdraw)
             {
                 // overdraw
                 m_Camera.backgroundColor = Color.black;
@@ -1975,7 +2059,10 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                UpdateImageEffects(UseSceneFiltering() ? false : m_RenderMode == DrawCameraMode.Textured && sceneViewState.showImageEffects);
+                bool enableImageEffects = false;
+                if (!UseSceneFiltering())
+                    enableImageEffects = m_CameraMode.drawMode == DrawCameraMode.Textured && sceneViewState.showImageEffects;
+                UpdateImageEffects(enableImageEffects);
             }
 
             EditorUtility.SetCameraAnimateMaterials(m_Camera, sceneViewState.showMaterialUpdate);
@@ -2012,11 +2099,13 @@ namespace UnityEditor
             m_Camera.farClipPlane = farClip;
 
             m_Camera.renderingPath = GetSceneViewRenderingPath();
-            if (!CheckDrawModeForRenderingPath(m_RenderMode))
-                m_RenderMode = DrawCameraMode.Textured;
+            if (!CheckDrawModeForRenderingPath(m_CameraMode.drawMode))
+                m_CameraMode = GetBuiltinCameraMode(DrawCameraMode.Textured);
             SetSceneCameraHDRAndDepthModes();
 
-            if (m_RenderMode == DrawCameraMode.Textured || m_RenderMode == DrawCameraMode.TexturedWire)
+            if (m_CameraMode.drawMode == DrawCameraMode.Textured ||
+                m_CameraMode.drawMode == DrawCameraMode.TexturedWire ||
+                m_CameraMode.drawMode == DrawCameraMode.UserDefined)
             {
                 Handles.EnableCameraFlares(m_Camera, sceneViewState.showFlares);
                 Handles.EnableCameraSkybox(m_Camera, sceneViewState.showSkybox);
@@ -2670,6 +2759,29 @@ namespace UnityEditor
             HandleUtility.ignoreRaySnapObjects = null;
             Tools.vertexDragging = false;
             Tools.handleOffset = Vector3.zero;
+        }
+
+        public static CameraMode AddCameraMode(string name, string section)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("Cannot be null or empty", "name");
+            if (string.IsNullOrEmpty(section))
+                throw new ArgumentException("Cannot be null or empty", "section");
+            var newMode = new CameraMode(DrawCameraMode.UserDefined, name, section);
+            if (s_UserDefinedModes.Contains(newMode))
+                throw new InvalidOperationException(string.Format("A mode named {0} already exists in section {1}", name, section));
+            s_UserDefinedModes.Add(newMode);
+            return newMode;
+        }
+
+        public static void ClearUserDefinedCameraModes()
+        {
+            s_UserDefinedModes.Clear();
+        }
+
+        public static CameraMode GetBuiltinCameraMode(DrawCameraMode cameraMode)
+        {
+            return SceneRenderModeWindow.GetBuiltinCameraMode(cameraMode);
         }
     }
 } // namespace

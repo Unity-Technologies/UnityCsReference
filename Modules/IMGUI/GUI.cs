@@ -18,6 +18,7 @@ namespace UnityEngine
 
         private static readonly int s_RepeatButtonHash      = "repeatButton".GetHashCode();
         private static readonly int s_ToggleHash            = "Toggle".GetHashCode();
+        private static readonly int s_ButtonGridHash        = "ButtonGrid".GetHashCode();
         private static readonly int s_SliderHash            = "Slider".GetHashCode();
         private static readonly int s_BeginGroupHash        = "BeginGroup".GetHashCode();
         private static readonly int s_ScrollviewHash        = "scrollView".GetHashCode();
@@ -1006,7 +1007,7 @@ namespace UnityEngine
 
                 if (controlNames != null)
                     GUI.SetNextControlName(controlNames[buttonIndex]);
-                var id = GUIUtility.GetControlID(content, FocusType.Passive, buttonRect);
+                var id = GUIUtility.GetControlID(s_ButtonGridHash, FocusType.Passive, buttonRect);
                 if (buttonIndex == selected)
                     selectedButtonID = id;
 

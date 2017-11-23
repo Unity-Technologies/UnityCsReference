@@ -66,8 +66,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public delegate GraphViewChange GraphViewChanged(GraphViewChange graphViewChange);
         public GraphViewChanged graphViewChanged { get; set; }
 
+        public delegate void GroupNodeTitleChanged(GroupNode groupNode, string title);
+        public delegate void ElementAddedToGroupNode(GroupNode groupNode, GraphElement element);
+        public delegate void ElementRemovedFromGroupNode(GroupNode groupNode, GraphElement element);
+
+        public GroupNodeTitleChanged groupNodeTitleChanged { get; set; }
+        public ElementAddedToGroupNode elementAddedToGroupNode { get; set; }
+        public ElementRemovedFromGroupNode elementRemovedFromGroupNode { get; set; }
+
         private GraphViewChange m_GraphViewChange;
         private List<GraphElement> m_ElementsToRemove;
+
+        public delegate void ElementResized(VisualElement visualElement);
+        public ElementResized elementResized { get; set; }
+
+        public delegate void ViewTransformChanged(GraphView graphView);
+        public ViewTransformChanged viewTransformChanged { get; set; }
 
         // TODO: Remove when removing presenters.
         public GraphViewPresenter presenter
@@ -144,6 +158,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             UpdatePersistedViewTransform();
+
+            if (viewTransformChanged != null)
+                viewTransformChanged(this);
         }
 
         bool m_FrameAnimate = false;
@@ -300,12 +317,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Undo.RegisterCompleteObjectUndo(m_GraphViewUndoRedoSelection, k_SelectionUndoRedoLabel);
         }
 
+        private IVisualElementScheduledItem m_OnTimerTicker;
+
         private void RecordSelectionUndoPost()
         {
             m_GraphViewUndoRedoSelection.version++;
             m_SavedSelectionVersion = m_GraphViewUndoRedoSelection.version;
 
             m_PersistedSelection.version++;
+
+            if (m_OnTimerTicker == null)
+            {
+                m_OnTimerTicker = schedule.Execute(DelayPersistentDataSave);
+            }
+
+            m_OnTimerTicker.ExecuteLater(1);
+        }
+
+        private void DelayPersistentDataSave()
+        {
+            m_OnTimerTicker = null;
             SavePersistentData();
         }
 

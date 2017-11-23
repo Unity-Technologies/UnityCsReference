@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
@@ -780,7 +780,7 @@ namespace UnityEditor
 
         static Quaternion GetLocalSpaceRotation(ReflectionProbe probe)
         {
-            bool supportsRotation = (SupportedRenderingFeatures.active.reflectionProbe & SupportedRenderingFeatures.ReflectionProbe.Rotation) != 0;
+            bool supportsRotation = (SupportedRenderingFeatures.active.reflectionProbeSupportFlags & SupportedRenderingFeatures.ReflectionProbeSupportFlags.Rotation) != 0;
             if (supportsRotation)
                 return probe.transform.rotation;
             else

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using File = System.IO.File;
@@ -32,6 +33,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public Func<BuildTarget, EditorScriptCompilationOptions, bool> IsCompatibleFunc { get; private set; }
             public List<TargetAssembly> References { get; private set; }
             public TargetAssemblyType Type { get; private set; }
+            public OptionalUnityReferences OptionalUnityReferences { get; set; }
 
             public TargetAssembly()
             {
@@ -73,6 +75,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public PrecompiledAssembly[] UnityAssemblies { get; set; }
             public PrecompiledAssembly[] PrecompiledAssemblies { get; set; }
             public TargetAssembly[] CustomTargetAssemblies { get; set; }
+            public TargetAssembly[] PredefinedAssembliesCustomTargetReferences { get; set; }
             public string[] EditorAssemblyReferences { get; set; }
         }
 
@@ -152,7 +155,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll", null, customAssembly.AssemblyFlags,
                         TargetAssemblyType.Custom, path => path.StartsWith(pathPrefixLowerCase) ? pathPrefixLowerCase.Length : -1,
-                        (BuildTarget target, EditorScriptCompilationOptions options) => customAssembly.IsCompatibleWith(target, options));
+                        (BuildTarget target, EditorScriptCompilationOptions options) => customAssembly.IsCompatibleWith(target, options))
+                {
+                    OptionalUnityReferences = customAssembly.OptionalUnityReferences,
+                };
 
                 targetAssemblies.Add(targetAssembly);
                 nameToTargetAssembly[customAssembly.Name] = targetAssembly;
@@ -449,7 +455,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // For predefined target assembly add references to custom target assemblies
             if (assemblies.CustomTargetAssemblies != null && (targetAssembly.Type & TargetAssemblyType.Predefined) == TargetAssemblyType.Predefined)
             {
-                foreach (var customTargetAssembly in assemblies.CustomTargetAssemblies)
+                foreach (var customTargetAssembly in assemblies.PredefinedAssembliesCustomTargetReferences ?? Enumerable.Empty<TargetAssembly>())
                 {
                     ScriptAssembly scriptAssemblyReference;
 
@@ -469,8 +475,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // Add pre-compiled assemblies as references
-            var precompiledReferences = GetPrecompiledReferences(scriptAssembly, assemblies.PrecompiledAssemblies);
+            PrecompiledAssembly[] precompiledAssembliesForReferences = assemblies.PrecompiledAssemblies ?? new PrecompiledAssembly[] {};
+            if (settings.OptionalUnityReferences != OptionalUnityReferences.None)
+            {
+                precompiledAssembliesForReferences = precompiledAssembliesForReferences.Where(x => x.OptionalUnityReferences == OptionalUnityReferences.None || ((targetAssembly.OptionalUnityReferences & x.OptionalUnityReferences & settings.OptionalUnityReferences) != 0)).ToArray();
+            }
 
+            var precompiledReferences = GetPrecompiledReferences(scriptAssembly, precompiledAssembliesForReferences);
             references.AddRange(precompiledReferences);
 
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
@@ -536,7 +547,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var references = new List<string>();
 
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
-            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor)  == EditorScriptCompilationOptions.BuildingForEditor;
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) referencees.
             if (unityAssemblies != null)
@@ -639,10 +650,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll", language,
                         AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass, TargetAssemblyType.Predefined, FilterAssemblyInFirstpassEditorFolder,
-                        IsCompatibleWithEditor);
+                        IsCompatibleWithEditor)
+                {
+                    OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
+                };
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll", language,
-                        AssemblyFlags.EditorOnly, TargetAssemblyType.Predefined, FilterAssemblyInEditorFolder, IsCompatibleWithEditor);
+                        AssemblyFlags.EditorOnly, TargetAssemblyType.Predefined, FilterAssemblyInEditorFolder, IsCompatibleWithEditor)
+                {
+                    OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
+                };
 
                 runtimeFirstPassAssemblies.Add(runtimeFirstPass);
                 runtimeAssemblies.Add(runtime);

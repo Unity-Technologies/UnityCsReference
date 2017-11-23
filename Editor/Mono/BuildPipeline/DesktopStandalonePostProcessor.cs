@@ -172,7 +172,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         {
             CopyVariationFolderIntoStagingArea();
             var stagingAreaDataDirectory = Path.Combine(StagingArea, "Data");
-            IL2CPPUtils.RunIl2Cpp(stagingAreaDataDirectory, GetPlatformProvider(m_PostProcessArgs.target), s => {}, m_PostProcessArgs.usedClassRegistry, false);
+            IL2CPPUtils.RunIl2Cpp(stagingAreaDataDirectory, GetPlatformProvider(m_PostProcessArgs.target), null, m_PostProcessArgs.usedClassRegistry);
 
             // Move GameAssembly next to game executable
             var il2cppOutputNativeDirectory = Path.Combine(stagingAreaDataDirectory, "Native");
@@ -256,11 +256,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     protected virtual bool CopyFilter(string path)
     {
-        bool result = true;
-        if (Path.GetExtension(path) == ".mdb" && Path.GetFileName(path).StartsWith("UnityEngine."))
-            result = false;
-        result &= !path.Contains("UnityEngine.xml");
-        return result;
+        // Don't copy UnityEngine mdb files
+        return Path.GetExtension(path) != ".mdb" || !Path.GetFileName(path).StartsWith("UnityEngine.");
     }
 
     protected virtual void CopyVariationFolderIntoStagingArea()
@@ -413,7 +410,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         public ScriptingImplementation[] Enabled()
         {
             // Enable il2cpp for internal builds
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
             }

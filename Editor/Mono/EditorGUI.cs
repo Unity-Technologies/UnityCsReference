@@ -2175,31 +2175,6 @@ namespace UnityEditor
             return DoLongField(s_RecycledEditor, position2, position, id, value, kIntFieldFormatString, style, true, NumericFieldDraggerUtility.CalculateIntDragSensitivity(value));
         }
 
-        internal static void SliderWithTexture(Rect position, GUIContent label, SerializedProperty property, float leftValue, float rightValue, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
-        {
-            // Do slider control
-            label = BeginProperty(position, label, property);
-
-            BeginChangeCheck();
-
-            float newValue = SliderWithTexture(position, label, property.floatValue, leftValue, rightValue, power, sliderStyle, thumbStyle, sliderBackground);
-
-            if (EndChangeCheck())
-            {
-                property.floatValue = newValue;
-            }
-
-            EndProperty();
-        }
-
-        internal static float SliderWithTexture(Rect position, GUIContent label, float sliderValue, float leftValue, float rightValue, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
-        {
-            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
-            Rect controlRect = PrefixLabel(position, id, label);
-            Rect dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
-            return DoSlider(controlRect, dragZone, id, sliderValue, leftValue, rightValue, kFloatFieldFormatString, power, sliderStyle, thumbStyle, sliderBackground);
-        }
-
         /// *listonly*
         public static float Slider(Rect position, float value, float leftValue, float rightValue)
         {
@@ -2417,11 +2392,18 @@ namespace UnityEditor
 
         private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground)
         {
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, sliderStyle, thumbStyle, sliderBackground);
+        }
+
+        private static float DoSlider(
+            Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin, float textFieldMax, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground
+            )
+        {
             int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
             // Map some nonsensical edge cases to avoid breaking the UI.
             // A slider with such a large range is basically useless, anyway.
-            left = Mathf.Clamp(left, float.MinValue, float.MaxValue);
-            right = Mathf.Clamp(right, float.MinValue, float.MaxValue);
+            sliderMin = Mathf.Clamp(sliderMin, float.MinValue, float.MaxValue);
+            sliderMax = Mathf.Clamp(sliderMax, float.MinValue, float.MaxValue);
 
             float w = position.width;
             if (w >= kSliderMinW + kSpacing + EditorGUIUtility.fieldWidth)
@@ -2436,28 +2418,29 @@ namespace UnityEditor
                 }
 
                 // Remap slider values according to power curve, if it's not identity
-                float remapLeft = left;
-                float remapRight = right;
+                var remapLeft = sliderMin;
+                var remapRight = sliderMax;
+                var newSliderValue = value;
                 if (power != 1f)
                 {
-                    remapLeft = PowPreserveSign(left, 1f / power);
-                    remapRight = PowPreserveSign(right, 1f / power);
-                    value = PowPreserveSign(value, 1f / power);
+                    remapLeft = PowPreserveSign(sliderMin, 1f / power);
+                    remapRight = PowPreserveSign(sliderMax, 1f / power);
+                    newSliderValue = PowPreserveSign(value, 1f / power);
                 }
 
                 Rect sliderRect = new Rect(position.x, position.y, sWidth, position.height);
 
                 if (sliderBackground != null && Event.current.type == EventType.Repaint)
                 {
-                    Rect bgRect = sliderStyle.overflow.Add(sliderRect);
+                    var bgRect = sliderStyle.overflow.Add(sliderStyle.padding.Remove(sliderRect));
                     Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, Color.grey);
                 }
 
-                value = GUI.Slider(sliderRect, value, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId);
+                newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId);
                 if (power != 1f)
                 {
-                    value = PowPreserveSign(value, power);
-                    value = Mathf.Clamp(value, Mathf.Min(left, right), Mathf.Max(left, right));
+                    newSliderValue = PowPreserveSign(newSliderValue, power);
+                    newSliderValue = Mathf.Clamp(newSliderValue, Mathf.Min(sliderMin, sliderMax), Mathf.Max(sliderMin, sliderMax));
                 }
 
                 // Do slider labels if present
@@ -2484,7 +2467,7 @@ namespace UnityEditor
                 {
                     // Change by approximately 1/100 of entire range, or 1/10 if holding down shift
                     // But round to nearest power of ten to get nice resulting numbers.
-                    float delta = MathUtils.GetClosestPowerOfTen(Mathf.Abs((right - left) * 0.01f));
+                    float delta = MathUtils.GetClosestPowerOfTen(Mathf.Abs((sliderMax - sliderMin) * 0.01f));
                     if (formatString == kIntFieldFormatString && delta < 1)
                     {
                         delta = 1;
@@ -2500,28 +2483,35 @@ namespace UnityEditor
                     // This feels more right since 1.0 is the "next" one.
                     if (Event.current.keyCode == KeyCode.LeftArrow)
                     {
-                        value -= delta * 0.5001f;
+                        newSliderValue -= delta * 0.5001f;
                     }
                     else
                     {
-                        value += delta * 0.5001f;
+                        newSliderValue += delta * 0.5001f;
                     }
 
                     // Now round to a multiple of our delta value so we get a round end result instead of just a round delta.
-                    value = MathUtils.RoundToMultipleOf(value, delta);
+                    newSliderValue = MathUtils.RoundToMultipleOf(newSliderValue, delta);
                     GUI.changed = true;
                     Event.current.Use();
                 }
                 if (EndChangeCheck())
                 {
-                    float ValuesPerPixel = (right - left) / (sWidth - GUI.skin.horizontalSlider.padding.horizontal - GUI.skin.horizontalSliderThumb.fixedWidth);
-                    value = MathUtils.RoundBasedOnMinimumDifference(value, Mathf.Abs(ValuesPerPixel));
+                    float valuesPerPixel = (sliderMax - sliderMin) / (sWidth - GUI.skin.horizontalSlider.padding.horizontal - GUI.skin.horizontalSliderThumb.fixedWidth);
+                    newSliderValue = MathUtils.RoundBasedOnMinimumDifference(newSliderValue, Mathf.Abs(valuesPerPixel));
+                    value = Mathf.Clamp(newSliderValue, Mathf.Min(sliderMin, sliderMax), Mathf.Max(sliderMin, sliderMax));
                     if (s_RecycledEditor.IsEditingControl(id))
                     {
                         s_RecycledEditor.EndEditing();
                     }
                 }
-                value = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth, position.height), dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+
+                BeginChangeCheck();
+                var newTextFieldValue = DoFloatField(s_RecycledEditor, new Rect(position.x + sWidth + kSpacing, position.y, EditorGUIUtility.fieldWidth, position.height), dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+                if (EndChangeCheck())
+                {
+                    value = Mathf.Clamp(newTextFieldValue, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
+                }
             }
             else
             {
@@ -2529,8 +2519,8 @@ namespace UnityEditor
                 position.x = position.xMax - w;
                 position.width = w;
                 value = DoFloatField(s_RecycledEditor, position, dragZonePosition, id, value, formatString, EditorStyles.numberField, true);
+                value = Mathf.Clamp(value, Mathf.Min(textFieldMin, textFieldMax), Mathf.Max(textFieldMin, textFieldMax));
             }
-            value = Mathf.Clamp(value, Mathf.Min(left, right), Mathf.Max(left, right));
             return value;
         }
 
@@ -4061,14 +4051,14 @@ namespace UnityEditor
         public static Color ColorField(Rect position, Color value)
         {
             int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
-            return DoColorField(IndentedRect(position), id, value, true, true, false, null);
+            return DoColorField(IndentedRect(position), id, value, true, true, false);
         }
 
         /// *listonly*
         internal static Color ColorField(Rect position, Color value, bool showEyedropper, bool showAlpha)
         {
             int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
-            return DoColorField(position, id, value, showEyedropper, showAlpha, false, null);
+            return DoColorField(position, id, value, showEyedropper, showAlpha, false);
         }
 
         /// *listonly*
@@ -4081,23 +4071,32 @@ namespace UnityEditor
         public static Color ColorField(Rect position, GUIContent label, Color value)
         {
             int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
-            return DoColorField(PrefixLabel(position, id, label), id, value, true, true, false, null);
+            return DoColorField(PrefixLabel(position, id, label), id, value, true, true, false);
         }
 
         /// *listonly*
         internal static Color ColorField(Rect position, GUIContent label, Color value, bool showEyedropper, bool showAlpha)
         {
             int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
-            return DoColorField(PrefixLabel(position, id, label), id, value, showEyedropper, showAlpha, false, null);
+            return DoColorField(PrefixLabel(position, id, label), id, value, showEyedropper, showAlpha, false);
         }
 
+        #pragma warning disable 612
+        [Obsolete("Use EditorGUI.ColorField(Rect position, GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr)")]
         public static Color ColorField(Rect position, GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
         {
-            int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
-            return DoColorField(PrefixLabel(position, id, label), id, value, showEyedropper, showAlpha, hdr, hdrConfig);
+            return ColorField(position, label, value, showEyedropper, showAlpha, hdr);
         }
 
-        private static Color DoColorField(Rect position, int id, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig)
+        #pragma warning restore 612
+
+        public static Color ColorField(Rect position, GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr)
+        {
+            int id = GUIUtility.GetControlID(s_ColorHash, FocusType.Keyboard, position);
+            return DoColorField(PrefixLabel(position, id, label), id, value, showEyedropper, showAlpha, hdr);
+        }
+
+        private static Color DoColorField(Rect position, int id, Color value, bool showEyedropper, bool showAlpha, bool hdr)
         {
             Event evt = Event.current;
             GUIStyle style = EditorStyles.colorField;
@@ -4120,7 +4119,7 @@ namespace UnityEditor
                                 // Left click: Show the ColorPicker
                                 GUIUtility.keyboardControl = id;
                                 showMixedValue = false;
-                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr, hdrConfig);
+                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                                 GUIUtility.ExitGUI();
                                 break;
 
@@ -4207,7 +4206,8 @@ namespace UnityEditor
                     {
                         case "UndoRedoPerformed":
                             // Set color in ColorPicker in case an undo/redo has been made
-                            if (GUIUtility.keyboardControl == id && ColorPicker.visible)
+                            // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
+                            if ((GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id) && ColorPicker.visible)
                                 ColorPicker.color = value;
                             break;
 
@@ -4219,8 +4219,8 @@ namespace UnityEditor
                     break;
 
                 case EventType.ExecuteCommand:
-
-                    if (GUIUtility.keyboardControl == id)
+                    // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
+                    if (GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id)
                     {
                         switch (evt.commandName)
                         {
@@ -4228,14 +4228,12 @@ namespace UnityEditor
                                 HandleUtility.Repaint();
                                 break;
                             case "EyeDropperClicked":
-                            {
                                 GUI.changed = true;
                                 HandleUtility.Repaint();
                                 Color c = EyeDropper.GetLastPickedColor();
                                 c.a = value.a;
                                 s_ColorPickID = 0;
                                 return c;
-                            }
                             case "EyeDropperCancelled":
                                 HandleUtility.Repaint();
                                 s_ColorPickID = 0;
@@ -4244,7 +4242,6 @@ namespace UnityEditor
                                 GUI.changed = true;
                                 HandleUtility.Repaint();
                                 return ColorPicker.color;
-
                             case "Copy":
                                 ColorClipboard.SetColor(value);
                                 evt.Use();
@@ -4272,68 +4269,7 @@ namespace UnityEditor
                     {
                         Event.current.Use();
                         showMixedValue = false;
-                        ColorPicker.Show(GUIView.current, value, showAlpha, hdr, hdrConfig);
-                        GUIUtility.ExitGUI();
-                    }
-                    break;
-            }
-            return origColor;
-        }
-
-        internal static Color ColorSelector(Rect activatorRect, Rect renderRect, int id, Color value)
-        {
-            Event evt = Event.current;
-            Color origColor = value;
-            value = showMixedValue ? Color.white : value;
-
-            switch (evt.GetTypeForControl(id))
-            {
-                case EventType.MouseDown:
-                    if (activatorRect.Contains(evt.mousePosition))
-                    {
-                        evt.Use();
-                        GUIUtility.keyboardControl = id;
-                        showMixedValue = false;
-                        ColorPicker.Show(GUIView.current, value, false, false, null);
-                        GUIUtility.ExitGUI();
-                    }
-                    break;
-                case EventType.Repaint:
-
-                    if (renderRect.height > 0f && renderRect.width > 0)
-                        DrawRect(renderRect, value);
-                    break;
-
-                case EventType.ValidateCommand:
-                    if (evt.commandName == "UndoRedoPerformed")
-                    {
-                        // Set color in ColorPicker in case an undo/redo has been made
-                        if (GUIUtility.keyboardControl == id && ColorPicker.visible)
-                            ColorPicker.color = value;
-                    }
-                    break;
-
-                case EventType.ExecuteCommand:
-                    if (GUIUtility.keyboardControl == id)
-                    {
-                        switch (evt.commandName)
-                        {
-                            case "ColorPickerChanged":
-                            {
-                                evt.Use();
-                                GUI.changed = true;
-                                HandleUtility.Repaint();
-                                return ColorPicker.color;
-                            }
-                        }
-                    }
-                    break;
-                case EventType.KeyDown:
-                    if (evt.MainActionKeyForControl(id))
-                    {
-                        evt.Use();
-                        showMixedValue = false;
-                        ColorPicker.Show(GUIView.current, value, false, false, null);
+                        ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
                         GUIUtility.ExitGUI();
                     }
                     break;
@@ -4793,7 +4729,7 @@ namespace UnityEditor
         internal static bool HelpIconButton(Rect position, Object[] objs)
         {
             var obj = objs[0];
-            bool isDevBuild = Unsupported.IsDeveloperBuild();
+            bool isDevBuild = Unsupported.IsSourceBuild();
             // For efficiency, only check in development builds if this script is a user script.
             bool monoBehaviourFallback = !isDevBuild;
             if (!monoBehaviourFallback)
@@ -5383,7 +5319,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Helper function for helping with debugging the editor
         internal static void ShowRepaints()
         {
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 Color temp = GUI.backgroundColor;
                 GUI.backgroundColor = new Color(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, 1f);
@@ -6079,6 +6015,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         internal static bool s_CollectingToolTips;
+
+        internal static int AdvancedPopup(Rect rect, int selectedIndex, string[] displayedOptions)
+        {
+            return StatelessAdvancedDropdown.SearchablePopup(rect, selectedIndex, displayedOptions, "MiniPullDown");
+        }
+
+        internal static int AdvancedPopup(Rect rect, int selectedIndex, string[] displayedOptions, GUIStyle style)
+        {
+            return StatelessAdvancedDropdown.SearchablePopup(rect, selectedIndex, displayedOptions, style);
+        }
     }
 
 
@@ -6784,12 +6730,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
             EditorGUI.Slider(r, property, leftValue, rightValue);
         }
 
-        internal static void SliderWithTexture(GUIContent label, SerializedProperty property, float leftValue, float rightValue, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, params GUILayoutOption[] options)
-        {
-            Rect r = s_LastRect = GetSliderRect(false, options);
-            EditorGUI.SliderWithTexture(r, label, property, leftValue, rightValue, power, sliderStyle, thumbStyle, sliderBackground);
-        }
-
         /// *listonly*
         public static void Slider(SerializedProperty property, float leftValue, float rightValue, string label, params GUILayoutOption[] options)
         {
@@ -7488,10 +7428,21 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return EditorGUI.ColorField(r, label, value);
         }
 
-        public static Color ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig, params GUILayoutOption[] options)
+        #pragma warning disable 612
+        [Obsolete("Use EditorGUILayout.ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, params GUILayoutOption[] options)")]
+        public static Color ColorField(
+            GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig, params GUILayoutOption[] options
+            )
+        {
+            return ColorField(label, value, showEyedropper, showAlpha, hdr);
+        }
+
+        #pragma warning restore 612
+
+        public static Color ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
-            return EditorGUI.ColorField(r, label, value, showEyedropper, showAlpha, hdr, hdrConfig);
+            return EditorGUI.ColorField(r, label, value, showEyedropper, showAlpha, hdr);
         }
 
         /// *listonly*
@@ -8390,6 +8341,17 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             s_LastRect = GUILayoutUtility.GetRect(content, style, options);
             return EditorGUI.DropdownButton(s_LastRect, content, focusType, style);
+        }
+
+        internal static int AdvancedPopup(int selectedIndex, string[] displayedOptions, params GUILayoutOption[] options)
+        {
+            return AdvancedPopup(selectedIndex, displayedOptions, "MiniPullDown", options);
+        }
+
+        internal static int AdvancedPopup(int selectedIndex, string[] displayedOptions, GUIStyle style, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.AdvancedPopup(r, selectedIndex, displayedOptions, style);
         }
     }
 }

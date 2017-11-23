@@ -320,6 +320,28 @@ namespace UnityEngine
             Matrix4x4 newMat =  Matrix4x4.TRS(point, Quaternion.identity, new Vector3(scale.x, scale.y, 1)) * Matrix4x4.TRS(-point, Quaternion.identity, Vector3.one);
             GUI.matrix = newMat * mat;
         }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal struct ManualTex2SRGBScope : IDisposable
+        {
+            private bool m_Disposed;
+            private bool m_WasEnabled;
+
+            public ManualTex2SRGBScope(bool enabled)
+            {
+                m_Disposed = false;
+                m_WasEnabled = GUIUtility.manualTex2SRGBEnabled;
+                GUIUtility.manualTex2SRGBEnabled = enabled;
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                GUIUtility.manualTex2SRGBEnabled = m_WasEnabled;
+            }
+        }
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]

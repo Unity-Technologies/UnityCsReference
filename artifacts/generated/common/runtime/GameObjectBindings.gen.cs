@@ -19,6 +19,7 @@ namespace UnityEngine
 {
 
 
+[ExcludeFromPreset]
 public sealed partial class GameObject : Object
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

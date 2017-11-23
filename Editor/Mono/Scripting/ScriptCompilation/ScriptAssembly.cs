@@ -21,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Defines { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
+        public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public string FilenameSuffix { get; set; }
 
         public ScriptAssemblySettings()

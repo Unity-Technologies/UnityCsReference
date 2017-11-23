@@ -160,6 +160,8 @@ namespace UnityEditor
         private bool m_EnableEditorAnalytics;
         private bool m_ShowAssetStoreSearchHits;
         private bool m_VerifySavingAssets;
+        private bool m_DeveloperMode;
+        private bool m_DeveloperModeDirty;
         private bool m_AllowAttachedDebuggingOfEditor;
         private bool m_AllowAttachedDebuggingOfEditorStateChangedThisSession;
         private string m_GpuDevice;
@@ -283,7 +285,7 @@ namespace UnityEditor
                 ArrayUtility.Insert(ref m_EditorLanguageNames, 0, defaultLanguage);
             }
 
-            if (Unsupported.IsDeveloperBuild() || UnityConnect.preferencesEnabled)
+            if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
             {
                 m_Sections.Add(new Section("Unity Services", ShowUnityConnectPrefs));
             }
@@ -294,8 +296,7 @@ namespace UnityEditor
         private void AddCustomSections()
         {
             AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-            var methodsWithAttributes = methods.MethodsWithAttributes;
-            foreach (var method in methodsWithAttributes)
+            foreach (var method in methods.methodsWithAttributes)
             {
                 OnGUIDelegate callback = Delegate.CreateDelegate(typeof(OnGUIDelegate), method.info) as OnGUIDelegate;
                 if (callback != null)
@@ -600,6 +601,16 @@ namespace UnityEditor
                 assetStoreSearchChanged = true;
 
             m_VerifySavingAssets = EditorGUILayout.Toggle(Styles.verifySavingAssets, m_VerifySavingAssets);
+
+            // Only show this toggle if this is a source build or we're already in developer mode.
+            // We don't want to show this to users yet.
+            if (Unsupported.IsSourceBuild() || m_DeveloperMode)
+            {
+                EditorGUI.BeginChangeCheck();
+                m_DeveloperMode = EditorGUILayout.Toggle("Developer Mode", m_DeveloperMode);
+                if (EditorGUI.EndChangeCheck())
+                    m_DeveloperModeDirty = true;
+            }
 
             using (new EditorGUI.DisabledScope(!pro))
             {
@@ -1061,7 +1072,7 @@ namespace UnityEditor
 
             EditorPrefs.SetBool("kAutoRefresh", m_AutoRefresh);
 
-            if (Unsupported.IsDeveloperBuild() || UnityConnect.preferencesEnabled)
+            if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
                 UnityConnectPrefs.StorePanelPrefs();
 
             EditorPrefs.SetBool("ReopenLastUsedProjectOnStartup", m_ReopenLastUsedProjectOnStartup);
@@ -1069,6 +1080,12 @@ namespace UnityEditor
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("ShowAssetStoreSearchHits", m_ShowAssetStoreSearchHits);
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
+
+            // The Preferences window always writes all preferences, we don't want this behavior since we
+            // want the default value to just match "IsSourceBuild" until the developer has explicitly changed it.
+            if (m_DeveloperModeDirty)
+                EditorPrefs.SetBool("DeveloperMode", m_DeveloperMode);
+
             EditorPrefs.SetBool("AllowAttachedDebuggingOfEditor", m_AllowAttachedDebuggingOfEditor);
 
             EditorPrefs.SetBool("Editor.kEnableEditorLocalization", m_EnableEditorLocalization);
@@ -1168,6 +1185,7 @@ namespace UnityEditor
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
             m_ShowAssetStoreSearchHits = EditorPrefs.GetBool("ShowAssetStoreSearchHits", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
+            m_DeveloperMode = Unsupported.IsDeveloperMode();
 
             m_GICacheSettings.m_EnableCustomPath = EditorPrefs.GetBool("GICacheEnableCustomPath");
             m_GICacheSettings.m_CachePath = EditorPrefs.GetString("GICacheFolder");

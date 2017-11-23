@@ -27,6 +27,9 @@ namespace UnityEditor.PackageManager
         extern public static NativeStatusCode Search([Out] out long operationId, string packageId);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
+        extern public static NativeStatusCode SearchAll([Out] out long operationId);
+
+        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode Outdated([Out] out long operationId);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]

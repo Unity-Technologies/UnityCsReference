@@ -6,8 +6,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor.Accessibility;
+using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -40,7 +43,6 @@ namespace UnityEditor
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TextContent("Save|Save current profiling information to a binary file");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TextContent("Load|Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
-            public static readonly GUIContent[] detailedPaneTypes = GetLocalizedDetailedPaneTypes();
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TextContent("Color Blind Mode");
 
@@ -62,15 +64,6 @@ namespace UnityEditor
                 return gc;
             }
 
-            static GUIContent[] GetLocalizedDetailedPaneTypes()
-            {
-                var types = new GUIContent[3];
-                types[(int)HierarchyViewDetailPaneType.None] = EditorGUIUtility.TextContent("No Details");
-                types[(int)HierarchyViewDetailPaneType.Objects] = EditorGUIUtility.TextContent("Show Related Objects");
-                types[(int)HierarchyViewDetailPaneType.CallersAndCallees] = EditorGUIUtility.TextContent("Show Calls");
-                return types;
-            }
-
             public static readonly GUIStyle background = "OL Box";
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
@@ -86,12 +79,14 @@ namespace UnityEditor
 
         private static readonly ProfilerArea[] ms_StackedAreas = { ProfilerArea.CPU, ProfilerArea.GPU, ProfilerArea.UI, ProfilerArea.GlobalIllumination };
 
-        private bool m_FocusSearchField = false;
-        private string m_SearchString = "";
+        [NonSerialized]
+        bool m_Initialized;
 
-        private SplitterState m_VertSplit = new SplitterState(new[] { 50f, 50f }, new[] { 50, 50 }, null);
-        private SplitterState m_ViewSplit = new SplitterState(new[] { 70f, 30f }, new[] { 450, 50 }, null);
-        private SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
+        [SerializeField]
+        SplitterState m_VertSplit;
+
+        SplitterState m_ViewSplit = new SplitterState(new[] { 70f, 30f }, new[] { 450, 50 }, null);
+        SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
 
         // For keeping correct "Recording" state on window maximizing
         [SerializeField]
@@ -106,70 +101,37 @@ namespace UnityEditor
         private Vector2 m_PaneScroll_AudioClips = Vector2.zero;
 
         [SerializeField]
-        private string m_ActiveNativePlatformSupportModule;
+        string m_ActiveNativePlatformSupportModule;
 
         static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
 
         [SerializeField]
-        private ProfilerViewType m_ViewType = ProfilerViewType.Hierarchy;
+        ProfilerViewType m_ViewType = ProfilerViewType.Hierarchy;
 
         [SerializeField]
-        private ProfilerArea m_CurrentArea = ProfilerArea.CPU;
+        ProfilerArea m_CurrentArea = ProfilerArea.CPU;
 
-        private ProfilerMemoryView m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
-        private ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Stats;
-
-        [SerializeField]
-        private bool m_ShowInactiveDSPChains = false;
+        ProfilerMemoryView m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
+        ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Stats;
 
         [SerializeField]
-        private bool m_HighlightAudibleDSPChains = true;
+        bool m_ShowInactiveDSPChains = false;
 
         [SerializeField]
-        private float m_DSPGraphZoomFactor = 1.0f;
+        bool m_HighlightAudibleDSPChains = true;
 
-        private int m_CurrentFrame = -1;
-        private int m_LastFrameFromTick = -1;
-        private int m_PrevLastFrame = -1;
-        private int m_LastAudioProfilerFrame = -1;
+        [SerializeField]
+        float m_DSPGraphZoomFactor = 1.0f;
 
-        private readonly string[] k_CPUProfilerViewTypeNames = new string[]
-        {
-            "Hierarchy",
-            "Timeline",
-            "Raw Hierarchy"
-        };
-
-        private readonly int[] k_CPUProfilerViewTypes = new int[]
-        {
-            (int)ProfilerViewType.Hierarchy,
-            (int)ProfilerViewType.Timeline,
-            (int)ProfilerViewType.RawHierarchy
-        };
-
-        private readonly string[] k_GPUProfilerViewTypeNames = new string[]
-        {
-            "Hierarchy",
-            "Raw Hierarchy"
-        };
-
-        private readonly int[] k_GPUProfilerViewTypes = new int[]
-        {
-            (int)ProfilerViewType.Hierarchy,
-            (int)ProfilerViewType.RawHierarchy
-        };
-
-        private readonly int[] k_HierarchyViewDetailPaneTypes = new[]
-        {
-            (int)HierarchyViewDetailPaneType.None,
-            (int)HierarchyViewDetailPaneType.Objects,
-            (int)HierarchyViewDetailPaneType.CallersAndCallees,
-        };
+        int m_CurrentFrame = -1;
+        int m_LastFrameFromTick = -1;
+        int m_PrevLastFrame = -1;
+        int m_LastAudioProfilerFrame = -1;
 
         // Profiler charts
-        private ProfilerChart[] m_Charts;
+        ProfilerChart[] m_Charts;
 
-        private float[] m_ChartOldMax = new[]
+        float[] m_ChartOldMax = new[]
         {
             -1.0f, // Cpu
             -1.0f, // Gpu
@@ -186,26 +148,23 @@ namespace UnityEditor
             0, // GlobalIllumination,
             0, // AreaCount,
         };
-        private float m_ChartMaxClamp = 70000.0f;
+        float m_ChartMaxClamp = 70000.0f;
 
         // Profiling GUI constants
         const float kRowHeight = 16;
         const float kIndentPx = 16;
         const float kBaseIndent = 8;
-        const float kSmallMargin = 4;
 
         const float kNameColumnSize = 350;
-        const float kColumnSize = 80;
 
-        const float kFoldoutSize = 14;
-        const int kFirst = -999999;
-        const int kLast = 999999;
+        FrameDataView m_FrameDataView;
 
         [SerializeField]
-        private ProfilerHierarchyGUI m_CPUHierarchyGUI = new ProfilerHierarchyGUI(ProfilerColumn.TotalTime);
+        ProfilerFrameDataHierarchyView m_CPUFrameDataHierarchyView;
         [SerializeField]
-        private ProfilerHierarchyGUI m_GPUHierarchyGUI = new ProfilerHierarchyGUI(ProfilerColumn.TotalGPUTime);
-        private ProfilerTimelineGUI m_CPUTimelineGUI;
+        ProfilerFrameDataHierarchyView m_GPUFrameDataHierarchyView;
+
+        ProfilerTimelineGUI m_CPUTimelineGUI;
 
         struct CachedProfilerPropertyConfig
         {
@@ -243,43 +202,6 @@ namespace UnityEditor
 
         [SerializeField]
         private bool m_ClearOnPlay;
-        private enum HierarchyViewDetailPaneType
-        {
-            None,
-            Objects,
-            CallersAndCallees,
-        }
-
-        [SerializeField]
-        HierarchyViewDetailPaneType m_HierarchyViewDetailPaneType = HierarchyViewDetailPaneType.None;
-
-        void BuildColumns()
-        {
-            var cpuHierarchyColumns = new[] {
-                ProfilerColumn.FunctionName, ProfilerColumn.TotalPercent, ProfilerColumn.SelfPercent,
-                ProfilerColumn.Calls, ProfilerColumn.GCMemory, ProfilerColumn.TotalTime,
-                ProfilerColumn.SelfTime, ProfilerColumn.WarningCount
-            };
-
-            var cpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalPercent, ProfilerColumn.SelfPercent,
-                                           ProfilerColumn.Calls, ProfilerColumn.GCMemory, ProfilerColumn.TotalTime, ProfilerColumn.SelfTime };
-
-            var objectText = EditorGUIUtility.TextContent("Object").text;
-            var names = ProfilerColumnNames(cpuDetailColumns);
-            names[0] = objectText;
-            var cpuDetailHierarchyGUI = new ProfilerHierarchyGUI(this, null, kProfilerDetailColumnSettings, cpuDetailColumns, names, true, ProfilerColumn.TotalTime);
-            m_CPUHierarchyGUI.Setup(this, cpuDetailHierarchyGUI, kProfilerColumnSettings, cpuHierarchyColumns, ProfilerColumnNames(cpuHierarchyColumns), false);
-            m_CPUTimelineGUI = new ProfilerTimelineGUI(this);
-
-            var gpuHierarchyColumns = new[] { ProfilerColumn.FunctionName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
-            var gpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
-
-            names = ProfilerColumnNames(gpuDetailColumns);
-            names[0] = objectText;
-            var gpuDetailHierarchyGUI = new ProfilerHierarchyGUI(this, null, kProfilerGPUDetailColumnSettings, gpuDetailColumns, names, true, ProfilerColumn.TotalGPUTime);
-            m_GPUHierarchyGUI.Setup(this, gpuDetailHierarchyGUI, kProfilerGPUColumnSettings, gpuHierarchyColumns, ProfilerColumnNames(gpuHierarchyColumns), false);
-            m_UISystemProfiler = new UISystemProfiler();
-        }
 
         private static string[] ProfilerColumnNames(ProfilerColumn[] columns)
         {
@@ -341,13 +263,7 @@ namespace UnityEditor
             return names;
         }
 
-        const string kProfilerColumnSettings = "VisibleProfilerColumnsV2";
-        const string kProfilerDetailColumnSettings = "VisibleProfilerDetailColumns";
-        const string kProfilerGPUColumnSettings = "VisibleProfilerGPUColumns";
-        const string kProfilerGPUDetailColumnSettings = "VisibleProfilerGPUDetailColumns";
-        const string kProfilerVisibleGraphsSettings = "VisibleProfilerGraphs";
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
-
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
 
         public void SetSelectedPropertyPath(string path)
@@ -363,7 +279,6 @@ namespace UnityEditor
         {
             if (ProfilerDriver.selectedPropertyPath != string.Empty)
             {
-                m_CPUHierarchyGUI.selectedIndex = -1;
                 ProfilerDriver.selectedPropertyPath = string.Empty;
                 UpdateCharts();
             }
@@ -371,8 +286,7 @@ namespace UnityEditor
 
         public ProfilerProperty CreateProperty()
         {
-            var sort = m_CurrentArea == ProfilerArea.CPU ? m_CPUHierarchyGUI.sortType : m_GPUHierarchyGUI.sortType;
-            return CreateProperty(sort);
+            return CreateProperty(ProfilerColumn.DontSort);
         }
 
         public ProfilerProperty CreateProperty(ProfilerColumn sortType)
@@ -390,21 +304,6 @@ namespace UnityEditor
             return m_CurrentFrame == -1 ? m_LastFrameFromTick : m_CurrentFrame;
         }
 
-        public void SetSearch(string searchString)
-        {
-            m_SearchString = string.IsNullOrEmpty(searchString) ? string.Empty : searchString;
-        }
-
-        public string GetSearch()
-        {
-            return m_SearchString;
-        }
-
-        public bool IsSearching()
-        {
-            return !string.IsNullOrEmpty(m_SearchString) && m_SearchString.Length > 0;
-        }
-
         public bool IsRecording()
         {
             return m_Recording && ((EditorApplication.isPlaying && !EditorApplication.isPaused) || !ProfilerDriver.IsConnectionEditor());
@@ -412,11 +311,20 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            InitializeIfNeeded();
+
             titleContent = GetLocalizedTitleContent();
             m_AttachProfilerUI.OnProfilerTargetChanged = ClearFramesCallback;
             m_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
+        }
+
+        void InitializeIfNeeded()
+        {
+            if (m_Initialized)
+                return;
+
             Initialize();
         }
 
@@ -451,28 +359,74 @@ namespace UnityEditor
                 m_Charts[(int)i] = chart;
             }
 
+            if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
+                m_VertSplit = new SplitterState(new[] { 50f, 50f }, new[] { 50, 50 }, null);
+
             if (m_ReferenceListView == null)
                 m_ReferenceListView = new MemoryTreeList(this, null);
             if (m_MemoryListView == null)
                 m_MemoryListView = new MemoryTreeListClickable(this, m_ReferenceListView);
 
+            if (m_CPUFrameDataHierarchyView == null)
+                m_CPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView(false);
+            m_CPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
+            m_CPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
+
+            if (m_GPUFrameDataHierarchyView == null)
+                m_GPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView(true);
+            m_GPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
+            m_GPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
+
+            m_CPUTimelineGUI = new ProfilerTimelineGUI(this);
+            m_CPUTimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
+
+            m_UISystemProfiler = new UISystemProfiler();
+
             UpdateCharts();
-            BuildColumns();
             foreach (var chart in m_Charts)
                 chart.LoadAndBindSettings();
+
+            m_Initialized = true;
         }
 
-        private ProfilerChart CreateProfilerChart(ProfilerArea i, Chart.ChartType chartType, float scale, int length)
+        void CPUOrGPUViewSelectionChanged(int id)
         {
-            ProfilerChart newChart = (i == ProfilerArea.UIDetails) ?
-                new UISystemProfilerChart(chartType, scale, length) :
-                new ProfilerChart(i, chartType, scale, length);
+            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+                return;
+
+            var ancestors = m_FrameDataView.GetItemAncestors(id);
+            var propertyPathBuilder = new StringBuilder();
+            foreach (var ancestor in ancestors)
+            {
+                propertyPathBuilder.Append(m_FrameDataView.GetItemFunctionName(ancestor));
+                propertyPathBuilder.Append('/');
+            }
+            propertyPathBuilder.Append(m_FrameDataView.GetItemFunctionName(id));
+            SetSelectedPropertyPath(propertyPathBuilder.ToString());
+        }
+
+        void CPUOrGPUViewTypeChanged(ProfilerViewType viewtype)
+        {
+            if (m_ViewType == viewtype)
+                return;
+
+            if (m_ViewType == ProfilerViewType.Timeline)
+                m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath(ProfilerDriver.selectedPropertyPath);
+
+            m_ViewType = viewtype;
+        }
+
+        ProfilerChart CreateProfilerChart(ProfilerArea i, Chart.ChartType chartType, float scale, int length)
+        {
+            ProfilerChart newChart = (i == ProfilerArea.UIDetails)
+                ? new UISystemProfilerChart(chartType, scale, length)
+                : new ProfilerChart(i, chartType, scale, length);
             newChart.selected += OnChartSelected;
             newChart.closed += OnChartClosed;
             return newChart;
         }
 
-        private void OnChartClosed(Chart sender)
+        void OnChartClosed(Chart sender)
         {
             var currentAreaChart = m_Charts[(int)m_CurrentArea];
             if (currentAreaChart == sender)
@@ -484,7 +438,7 @@ namespace UnityEditor
             profilerChart.active = false;
         }
 
-        private void OnChartSelected(Chart sender)
+        void OnChartSelected(Chart sender)
         {
             ProfilerArea newArea = m_CurrentArea;
             for (int i = 0, numCharts = m_Charts.Length; i < numCharts; ++i)
@@ -498,8 +452,9 @@ namespace UnityEditor
             if (m_CurrentArea == newArea)
                 return;
             m_CurrentArea = newArea;
+
             // if switched out of CPU area, reset selected property
-            if (m_CurrentArea != ProfilerArea.CPU && m_CPUHierarchyGUI.selectedIndex != -1)
+            if (m_CurrentArea != ProfilerArea.CPU)
             {
                 ClearSelectedPropertyPath();
             }
@@ -584,17 +539,14 @@ namespace UnityEditor
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(
-                Styles.accessibilityModeLabel,
-                UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default,
-                OnToggleColorBlindMode
-                );
+            menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
         }
 
         private void OnToggleColorBlindMode()
         {
-            UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default ?
-                ColorBlindCondition.Deuteranopia : ColorBlindCondition.Default;
+            UserAccessiblitySettings.colorBlindCondition = UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default
+                ? ColorBlindCondition.Deuteranopia
+                : ColorBlindCondition.Default;
         }
 
         static void ShowProfilerWindow()
@@ -643,15 +595,13 @@ namespace UnityEditor
             {
                 if (deep)
                 {
-                    doApply = EditorUtility.DisplayDialog("Enable deep script profiling", "Enabling deep profiling requires reloading scripts.",
-                            "Reload", "Cancel");
+                    doApply = EditorUtility.DisplayDialog("Enable deep script profiling", "Enabling deep profiling requires reloading scripts.", "Reload", "Cancel");
                 }
                 else
                 {
                     doApply = EditorUtility.DisplayDialog("Disable deep script profiling", "Disabling deep profiling requires reloading all scripts", "Reload", "Cancel");
                 }
             }
-
 
             if (doApply)
             {
@@ -681,213 +631,45 @@ namespace UnityEditor
                 SetCurrentFrame(nextFrame);
         }
 
-        void DrawCPUOrGPUHierarchyViewToolbar(ProfilerProperty property, bool showDetailedView, bool hasTimeline)
+        void DrawCPUTimelineViewToolbar(ProfilerTimelineGUI timelineView, FrameDataView frameDataView)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            DrawCPUorGPUCommonToolbar(property, hasTimeline);
-
-            GUILayout.FlexibleSpace();
-
-            SearchFieldGUI();
-
-            if (!showDetailedView)
-                m_HierarchyViewDetailPaneType = DrawCPUOrGPUDetailedViewPopup();
+            timelineView.DrawToolbar(frameDataView);
 
             EditorGUILayout.EndHorizontal();
 
             HandleCommandEvents();
         }
 
-        void DrawCPUTimelineViewToolbar(ProfilerProperty property)
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            var sidebarWidth = Chart.kSideWidth - 1;
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.Width(sidebarWidth));
-            DrawCPUorGPUCommonToolbar(property, true);
-            EditorGUILayout.EndHorizontal();
-
-            var height = EditorStyles.toolbar.CalcHeight(GUIContent.none, 0f);
-            var timeRulerRect = EditorGUILayout.GetControlRect(false, height, GUIStyle.none, GUILayout.ExpandWidth(true));
-            var iter = new ProfilerFrameDataIterator();
-            iter.SetRoot(GetActiveVisibleFrameIndex(), 0);
-            var frameTime = iter.frameTimeMS;
-            m_CPUTimelineGUI.DoTimeRulerGUI(timeRulerRect, frameTime);
-
-            EditorGUILayout.EndHorizontal();
-
-            HandleCommandEvents();
-        }
-
-        void DrawCPUorGPUCommonToolbar(ProfilerProperty property, bool hasTimeline)
-        {
-            if (hasTimeline)
-                m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, k_CPUProfilerViewTypeNames, k_CPUProfilerViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-            else
-            {
-                if (m_ViewType == ProfilerViewType.Timeline)
-                    m_ViewType = ProfilerViewType.Hierarchy;
-                m_ViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)m_ViewType, k_GPUProfilerViewTypeNames, k_GPUProfilerViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-            }
-
-            if (!hasTimeline || m_ViewType != ProfilerViewType.Timeline)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(string.Format("CPU:{0}ms   GPU:{1}ms", property.frameTime, property.frameGpuTime), EditorStyles.miniLabel);
-            }
-        }
-
-        void HandleCommandEvents()
-        {
-            Event evt = Event.current;
-            EventType eventType = evt.type;
-            if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand)
-            {
-                bool execute = eventType == EventType.ExecuteCommand;
-                if (Event.current.commandName == "Find")
-                {
-                    if (execute)
-                        m_FocusSearchField = true;
-                    evt.Use();
-                }
-            }
-        }
-
-        const string kSearchControlName = "ProfilerSearchField";
-        static readonly int s_HashControlID = kSearchControlName.GetHashCode();
-
-        internal void SearchFieldGUI()
-        {
-            Event evt = Event.current;
-
-            Rect rect = GUILayoutUtility.GetRect(50f, 300f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField);
-
-            GUI.SetNextControlName(kSearchControlName);
-            if (m_FocusSearchField)
-            {
-                EditorGUI.FocusTextInControl(kSearchControlName);
-                if (Event.current.type == EventType.Repaint)
-                    m_FocusSearchField = false;
-            }
-
-            // On Esc we clear the search field
-            if (evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape && GUI.GetNameOfFocusedControl() == kSearchControlName)
-                m_SearchString = "";
-
-            // On arrow down/up swicth to control selection in list area
-            if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow) && GUI.GetNameOfFocusedControl() == kSearchControlName)
-            {
-                m_CPUHierarchyGUI.SelectFirstRow();
-                m_CPUHierarchyGUI.SetKeyboardFocus();
-                Repaint();
-                evt.Use();
-            }
-
-            bool hasSelectedSearchResult = m_CPUHierarchyGUI.selectedIndex != -1;
-
-            // Do search field
-            EditorGUI.BeginChangeCheck();
-            int id = GUIUtility.GetControlID(s_HashControlID, FocusType.Keyboard, position);
-            m_SearchString = EditorGUI.ToolbarSearchField(id, rect, m_SearchString, false);
-            if (EditorGUI.EndChangeCheck())
-            {
-                // Detect if search field has been cleared (pressing the 'x')
-                if (!IsSearching() && GUIUtility.keyboardControl == 0)
-                {
-                    if (hasSelectedSearchResult)
-                    {
-                        m_CPUHierarchyGUI.FrameSelection();
-                    }
-                }
-            }
-        }
+        void HandleCommandEvents() {}
 
         private static bool CheckFrameData(ProfilerProperty property)
         {
             return property.frameDataReady;
         }
 
-        private void DrawCPUOrGPUPane(ProfilerHierarchyGUI mainPane, ProfilerTimelineGUI timelinePane)
+        private void DrawCPUOrGPUPane(ProfilerFrameDataHierarchyView hierarchyView, ProfilerTimelineGUI timelinePane)
         {
-            var showDetailedView = m_HierarchyViewDetailPaneType != HierarchyViewDetailPaneType.None;
-            var property = GetRootProfilerProperty();
-            if (!CheckFrameData(property))
-            {
-                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView, timelinePane != null);
-
-                GUILayout.Label(Styles.noData, Styles.label);
-
-                return;
-            }
+            var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
 
             if (timelinePane != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                DrawCPUTimelineViewToolbar(property);
+                DrawCPUTimelineViewToolbar(timelinePane, frameDataView);
 
                 float lowerPaneSize = m_VertSplit.realSizes[1];
                 lowerPaneSize -= EditorStyles.toolbar.CalcHeight(GUIContent.none, 10.0f) + 2.0f;
-                timelinePane.DoGUI(GetActiveVisibleFrameIndex(), position.width, position.height - lowerPaneSize, lowerPaneSize);
+                timelinePane.DoGUI(frameDataView, position.width, position.height - lowerPaneSize, lowerPaneSize);
             }
             else
             {
-                if (showDetailedView)
-                    SplitterGUILayout.BeginHorizontalSplit(m_ViewSplit);
-
-                // Hierarchy view area
-                GUILayout.BeginVertical();
-
-                DrawCPUOrGPUHierarchyViewToolbar(property, showDetailedView, timelinePane != null);
-
-                bool expandAll = false;
-                mainPane.DoGUI(property, m_SearchString, expandAll);
-                GUILayout.EndVertical();
-
-                if (showDetailedView)
-                {
-                    // Detailed view area
-                    GUILayout.BeginVertical();
-                    EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-
-                    m_HierarchyViewDetailPaneType = DrawCPUOrGPUDetailedViewPopup();
-                    GUILayout.FlexibleSpace();
-
-                    EditorGUILayout.EndHorizontal();
-
-                    switch (m_HierarchyViewDetailPaneType)
-                    {
-                        case HierarchyViewDetailPaneType.Objects:
-                            mainPane.detailedObjectsView.DoGUI(Styles.header, GetActiveVisibleFrameIndex(), m_ViewType);
-                            break;
-                        case HierarchyViewDetailPaneType.CallersAndCallees:
-                            mainPane.detailedCallsView.DoGUI(Styles.header, GetActiveVisibleFrameIndex(), m_ViewType);
-                            break;
-                    }
-
-                    GUILayout.EndVertical();
-                    SplitterGUILayout.EndHorizontalSplit();
-                }
+                hierarchyView.DoGUI(frameDataView);
             }
-        }
-
-        HierarchyViewDetailPaneType DrawCPUOrGPUDetailedViewPopup()
-        {
-            return (HierarchyViewDetailPaneType)EditorGUILayout.IntPopup((int)m_HierarchyViewDetailPaneType, Styles.detailedPaneTypes, k_HierarchyViewDetailPaneTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-        }
-
-        public ProfilerProperty GetRootProfilerProperty()
-        {
-            var sortType = m_CurrentArea == ProfilerArea.CPU ? m_CPUHierarchyGUI.sortType : m_GPUHierarchyGUI.sortType;
-            return GetRootProfilerProperty(sortType);
         }
 
         public ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType)
         {
-            if (m_CPUOrGPUProfilerProperty != null &&
-                m_CPUOrGPUProfilerPropertyConfig.frameIndex == GetActiveVisibleFrameIndex() &&
-                m_CPUOrGPUProfilerPropertyConfig.area == m_CurrentArea &&
-                m_CPUOrGPUProfilerPropertyConfig.viewType == m_ViewType &&
-                m_CPUOrGPUProfilerPropertyConfig.sortType == sortType)
+            if (m_CPUOrGPUProfilerProperty != null && m_CPUOrGPUProfilerPropertyConfig.frameIndex == GetActiveVisibleFrameIndex() && m_CPUOrGPUProfilerPropertyConfig.area == m_CurrentArea && m_CPUOrGPUProfilerPropertyConfig.viewType == m_ViewType && m_CPUOrGPUProfilerPropertyConfig.sortType == sortType)
             {
                 m_CPUOrGPUProfilerProperty.ResetToRoot();
                 return m_CPUOrGPUProfilerProperty;
@@ -903,6 +685,19 @@ namespace UnityEditor
             m_CPUOrGPUProfilerPropertyConfig.sortType = sortType;
 
             return m_CPUOrGPUProfilerProperty;
+        }
+
+        public FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, bool sortAscending)
+        {
+            var frameIndex = GetActiveVisibleFrameIndex();
+            if (m_FrameDataView != null && m_FrameDataView.IsValid())
+            {
+                if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.viewType == viewType)
+                    return m_FrameDataView;
+            }
+
+            m_FrameDataView = new FrameDataView(viewType, frameIndex, 0, profilerSortColumn, sortAscending);
+            return m_FrameDataView;
         }
 
         private void DrawMemoryPane(SplitterState splitter)
@@ -937,25 +732,10 @@ namespace UnityEditor
 
         private String[] msgNames =
         {
-            "UserMessage",
-            "ObjectDestroy",
-            "ClientRpc",
-            "ObjectSpawn",
-            "Owner",
-            "Command",
-            "LocalPlayerTransform",
-            "SyncEvent",
-            "SyncVars",
-            "SyncList",
-            "ObjectSpawnScene",
-            "NetworkInfo",
-            "SpawnFinished",
-            "ObjectHide",
-            "CRC",
-            "ClientAuthority"
+            "UserMessage", "ObjectDestroy", "ClientRpc", "ObjectSpawn", "Owner", "Command", "LocalPlayerTransform", "SyncEvent", "SyncVars", "SyncList", "ObjectSpawnScene", "NetworkInfo", "SpawnFinished", "ObjectHide", "CRC", "ClientAuthority"
         };
 
-        private bool[] msgFoldouts = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
+        private bool[] msgFoldouts = { true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
 
         void DrawNetworkOperationsPane()
         {
@@ -979,7 +759,7 @@ namespace UnityEditor
                 if (!NetworkDetailStats.m_NetworkOperations.ContainsKey(msgId))
                     continue;
 
-                msgFoldouts[msgId] = EditorGUILayout.Foldout(msgFoldouts[msgId],  msgNames[msgId] + ":");
+                msgFoldouts[msgId] = EditorGUILayout.Foldout(msgFoldouts[msgId], msgNames[msgId] + ":");
                 if (msgFoldouts[msgId])
                 {
                     EditorGUILayout.BeginVertical();
@@ -1028,7 +808,9 @@ namespace UnityEditor
             bool oldState = (AudioSettings.profilerCaptureFlags & (int)toggleFlag) != 0;
             bool newState = GUILayout.Toggle(oldState, "Record", EditorStyles.toolbarButton);
             if (oldState != newState)
-                ProfilerDriver.SetAudioCaptureFlags((AudioSettings.profilerCaptureFlags & ~(int)toggleFlag) | (newState ? (int)toggleFlag : 0));
+                ProfilerDriver.SetAudioCaptureFlags((AudioSettings.profilerCaptureFlags & ~(int)toggleFlag) | (newState
+                                                                                                               ? (int)toggleFlag
+                                                                                                               : 0));
         }
 
         private void DrawAudioPane()
@@ -1039,8 +821,8 @@ namespace UnityEditor
             if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Channels, "Channels", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Channels;
             if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Groups, "Groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Groups;
             if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.ChannelsAndGroups, "Channels and groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.ChannelsAndGroups;
-            if (Unsupported.IsDeveloperBuild() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.DSPGraph, "DSP Graph", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.DSPGraph;
-            if (Unsupported.IsDeveloperBuild() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Clips, "Clips", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Clips;
+            if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.DSPGraph, "DSP Graph", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.DSPGraph;
+            if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Clips, "Clips", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Clips;
             if (newShowDetailedAudioPane != m_ShowDetailedAudioPane)
             {
                 m_ShowDetailedAudioPane = newShowDetailedAudioPane;
@@ -1145,11 +927,11 @@ namespace UnityEditor
                 bool resetAllAudioClipPlayCountsOnPlay = GUILayout.Toggle(AudioUtil.resetAllAudioClipPlayCountsOnPlay, "Reset play count on play", EditorStyles.toolbarButton);
                 if (resetAllAudioClipPlayCountsOnPlay != AudioUtil.resetAllAudioClipPlayCountsOnPlay)
                     AudioUtil.resetAllAudioClipPlayCountsOnPlay = resetAllAudioClipPlayCountsOnPlay;
-                if (Unsupported.IsDeveloperBuild())
+                if (Unsupported.IsDeveloperMode())
                 {
                     GUILayout.Space(5);
                     bool showAllGroups = EditorPrefs.GetBool("AudioProfilerShowAllGroups");
-                    bool newShowAllGroups = GUILayout.Toggle(showAllGroups, "Show all groups (dev-builds only)", EditorStyles.toolbarButton);
+                    bool newShowAllGroups = GUILayout.Toggle(showAllGroups, "Show all groups (dev mode only)", EditorStyles.toolbarButton);
                     if (showAllGroups != newShowAllGroups)
                         EditorPrefs.SetBool("AudioProfilerShowAllGroups", newShowAllGroups);
                 }
@@ -1192,11 +974,7 @@ namespace UnityEditor
                                     continue;
                                 if (m_ShowDetailedAudioPane == ProfilerAudioView.Groups && !isGroup)
                                     continue;
-                                items.Add(new AudioProfilerGroupInfoWrapper(
-                                        s,
-                                        property.GetAudioProfilerNameByOffset(s.assetNameOffset),
-                                        property.GetAudioProfilerNameByOffset(s.objectNameOffset),
-                                        m_ShowDetailedAudioPane == ProfilerAudioView.Channels));
+                                items.Add(new AudioProfilerGroupInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset), property.GetAudioProfilerNameByOffset(s.objectNameOffset), m_ShowDetailedAudioPane == ProfilerAudioView.Channels));
                             }
                             m_AudioProfilerGroupViewBackend.SetData(items);
                             if (m_AudioProfilerGroupView == null)
@@ -1217,7 +995,9 @@ namespace UnityEditor
         {
             var currentRect = new Rect(1, kRowHeight * row, GUIClip.visibleRect.width, kRowHeight);
 
-            var background = (row % 2 == 0 ? Styles.entryEven : Styles.entryOdd);
+            var background = (row % 2 == 0
+                              ? Styles.entryEven
+                              : Styles.entryOdd);
             if (Event.current.type == EventType.Repaint)
                 background.Draw(currentRect, GUIContent.none, false, false, selected, false);
         }
@@ -1235,8 +1015,7 @@ namespace UnityEditor
                 if (GUILayout.Button("Take Sample: " + m_AttachProfilerUI.GetConnectedProfiler(), EditorStyles.toolbarButton))
                     RefreshMemoryData();
 
-                m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences,
-                        EditorStyles.toolbarButton);
+                m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences, EditorStyles.toolbarButton);
 
                 if (m_AttachProfilerUI.IsEditor())
                     GUILayout.Label("Memory usage in editor is not as it would be in a player", EditorStyles.toolbarButton);
@@ -1256,38 +1035,23 @@ namespace UnityEditor
         {
             if (timeMax < 1500)
             {
-                data.SetGrid(
-                    new float[] { 1000, 250, 100 },
-                    new[] { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" }
-                    );
+                data.SetGrid(new float[] { 1000, 250, 100 }, new[] { "1ms (1000FPS)", "0.25ms (4000FPS)", "0.1ms (10000FPS)" });
             }
             else if (timeMax < 10000)
             {
-                data.SetGrid(
-                    new float[] { 8333, 4000, 1000 },
-                    new[] { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" }
-                    );
+                data.SetGrid(new float[] { 8333, 4000, 1000 }, new[] { "8ms (120FPS)", "4ms (250FPS)", "1ms (1000FPS)" });
             }
             else if (timeMax < 30000)
             {
-                data.SetGrid(
-                    new float[] { 16667, 10000, 5000 },
-                    new[] { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" }
-                    );
+                data.SetGrid(new float[] { 16667, 10000, 5000 }, new[] { "16ms (60FPS)", "10ms (100FPS)", "5ms (200FPS)" });
             }
             else if (timeMax < 100000)
             {
-                data.SetGrid(
-                    new float[] { 66667, 33333, 16667 },
-                    new[] { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" }
-                    );
+                data.SetGrid(new float[] { 66667, 33333, 16667 }, new[] { "66ms (15FPS)", "33ms (30FPS)", "16ms (60FPS)" });
             }
             else
             {
-                data.SetGrid(
-                    new float[] { 500000, 200000, 66667 },
-                    new[] { "500ms (2FPS)", "200ms (5FPS)", "66ms (15FPS)" }
-                    );
+                data.SetGrid(new float[] { 500000, 200000, 66667 }, new[] { "500ms (2FPS)", "200ms (5FPS)", "66ms (15FPS)" });
             }
         }
 
@@ -1335,14 +1099,12 @@ namespace UnityEditor
             string warning = null;
             if (!ProfilerDriver.isGPUProfilerSupported)
             {
-                warning =
-                    "GPU profiling is not supported by the graphics card driver. Please update to a newer version if available.";
+                warning = "GPU profiling is not supported by the graphics card driver. Please update to a newer version if available.";
 
                 if (Application.platform == RuntimePlatform.OSXEditor)
                 {
                     if (!ProfilerDriver.isGPUProfilerSupportedByOS)
-                        warning =
-                            "GPU profiling requires Mac OS X 10.7 (Lion) and a capable video card. GPU profiling is currently not supported on mobile.";
+                        warning = "GPU profiling requires Mac OS X 10.7 (Lion) and a capable video card. GPU profiling is currently not supported on mobile.";
                     else
                         warning = "GPU profiling is not supported by the graphics card driver (or it was disabled because of driver bugs).";
                 }
@@ -1372,6 +1134,7 @@ namespace UnityEditor
                 timeMax = timeMaxExcludeFirst;
 
             timeMax = Math.Min(timeMax, m_ChartMaxClamp);
+
             // Do not apply the new scale immediately, but gradually go towards it
             if (m_ChartOldMax[(int)i] > 0.0f)
                 timeMax = Mathf.Lerp(m_ChartOldMax[(int)i], timeMax, 0.4f);
@@ -1437,8 +1200,12 @@ namespace UnityEditor
         {
             string title = EditorGUIUtility.TempContent("Save profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
-            string directory = string.IsNullOrEmpty(recent) ? "" : System.IO.Path.GetDirectoryName(recent);
-            string filename = string.IsNullOrEmpty(recent) ? "" : System.IO.Path.GetFileName(recent);
+            string directory = string.IsNullOrEmpty(recent)
+                ? ""
+                : System.IO.Path.GetDirectoryName(recent);
+            string filename = string.IsNullOrEmpty(recent)
+                ? ""
+                : System.IO.Path.GetFileName(recent);
 
             string selected = EditorUtility.SaveFilePanel(title, directory, filename, "data");
             if (selected.Length != 0)
@@ -1552,17 +1319,13 @@ namespace UnityEditor
             {
                 string[] names = new string[]
                 {
-                    "None",
-                    "Managed Allocations"
+                    "None", "Managed Allocations"
                 };
-                if (Unsupported.IsDeveloperBuild())
+                if (Unsupported.IsDeveloperMode())
                 {
                     names = new string[]
                     {
-                        "None",
-                        "Managed Allocations",
-                        "All Allocations (fast)",
-                        "All Allocations (full)"
+                        "None", "Managed Allocations", "All Allocations (fast)", "All Allocations (full)"
                     };
                 }
 
@@ -1576,18 +1339,11 @@ namespace UnityEditor
 
         void Clear()
         {
-            // Reset cached property
-            if (m_CPUOrGPUProfilerProperty != null)
-            {
-                m_CPUOrGPUProfilerProperty.Cleanup();
-                m_CPUOrGPUProfilerProperty = null;
-            }
-            m_CPUOrGPUProfilerPropertyConfig.frameIndex = -1;
-
-            m_CPUHierarchyGUI.ClearCaches();
-            m_GPUHierarchyGUI.ClearCaches();
+            m_CPUFrameDataHierarchyView.Clear();
+            m_GPUFrameDataHierarchyView.Clear();
 
             ProfilerDriver.ClearAllFrames();
+
             NetworkDetailStats.m_NetworkOperations.Clear();
         }
 
@@ -1626,9 +1382,9 @@ namespace UnityEditor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (area == ProfilerArea.Rendering)
             {
-                if (GUILayout.Button(
-                        GUI.enabled ? Styles.frameDebugger : Styles.noFrameDebugger,
-                        EditorStyles.toolbarButton))
+                if (GUILayout.Button(GUI.enabled
+                        ? Styles.frameDebugger
+                        : Styles.noFrameDebugger, EditorStyles.toolbarButton))
                 {
                     FrameDebuggerWindow dbg = FrameDebuggerWindow.ShowFrameDebuggerWindow();
                     dbg.EnableIfNeeded();
@@ -1673,22 +1429,14 @@ namespace UnityEditor
         void OnGUI()
         {
             CheckForPlatformModuleChange();
-
-            /*// need to do this in non layout event to not have exceptions
-            if (Event.current.type != EventType.Layout !Profiler.supported  )
-            {
-                Close();
-                GUIUtility.ExitGUI();
-            }*/
+            InitializeIfNeeded();
 
             // Initialization
-
             DrawMainToolbar();
 
             SplitterGUILayout.BeginVerticalSplit(m_VertSplit);
 
             m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
-            //GUILayout.Box (GUIContent.none, Styles.paneLeftBackground, GUILayout.Width (Chart.kSideWidth));
 
             if (m_PrevLastFrame != ProfilerDriver.lastFrameIndex)
             {
@@ -1720,10 +1468,10 @@ namespace UnityEditor
             switch (m_CurrentArea)
             {
                 case ProfilerArea.CPU:
-                    DrawCPUOrGPUPane(m_CPUHierarchyGUI, m_CPUTimelineGUI);
+                    DrawCPUOrGPUPane(m_CPUFrameDataHierarchyView, m_CPUTimelineGUI);
                     break;
                 case ProfilerArea.GPU:
-                    DrawCPUOrGPUPane(m_GPUHierarchyGUI, null);
+                    DrawCPUOrGPUPane(m_GPUFrameDataHierarchyView, null);
                     break;
                 case ProfilerArea.Memory:
                     DrawMemoryPane(m_ViewSplit);

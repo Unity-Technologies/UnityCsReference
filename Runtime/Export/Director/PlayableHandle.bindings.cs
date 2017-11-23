@@ -185,6 +185,12 @@ namespace UnityEngine.Playables
         extern internal double GetDelay();
         [VisibleToOtherModules]
         extern internal bool IsDelayed();
+        [VisibleToOtherModules]
+        extern internal double GetPreviousTime();
+        [VisibleToOtherModules]
+        extern internal void SetLeadTime(float value);
+        [VisibleToOtherModules]
+        extern internal float GetLeadTime();
 
         extern private object GetScriptInstance();
         extern private PlayableHandle GetInputHandle(int index);

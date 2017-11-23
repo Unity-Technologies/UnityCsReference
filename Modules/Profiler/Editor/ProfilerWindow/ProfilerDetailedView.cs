@@ -4,60 +4,45 @@
 
 using System;
 using UnityEditor;
+using UnityEditorInternal.Profiling;
 using UnityEngine;
 
-namespace UnityEditorInternal
+namespace UnityEditorInternal.Profiling
 {
     internal abstract class ProfilerDetailedView
     {
-        protected struct CachedProfilerPropertyConfig
-        {
-            public bool EqualsTo(int frameIndex, ProfilerViewType viewType, ProfilerColumn sortType)
-            {
-                return this.frameIndex == frameIndex &&
-                    this.sortType == sortType &&
-                    this.viewType == viewType &&
-                    this.propertyPath == ProfilerDriver.selectedPropertyPath;
-            }
+        protected static readonly string kNoneText = LocalizationDatabase.GetLocalizedString("None");
 
-            public void Set(int frameIndex, ProfilerViewType viewType, ProfilerColumn sortType)
-            {
-                this.frameIndex = frameIndex;
-                this.sortType = sortType;
-                this.viewType = viewType;
-                this.propertyPath = ProfilerDriver.selectedPropertyPath;
-            }
-
-            public string propertyPath;
-            public int frameIndex;
-            public ProfilerColumn sortType;
-            public ProfilerViewType viewType;
-        }
-
-        protected readonly ProfilerHierarchyGUI m_MainProfilerHierarchyGUI;
-        protected CachedProfilerPropertyConfig m_CachedProfilerPropertyConfig;
-        protected ProfilerProperty m_CachedProfilerProperty;
-
-        static class Styles
+        protected static class Styles
         {
             public static GUIContent emptyText = new GUIContent("");
             public static GUIContent selectLineText = new GUIContent("Select Line for the detailed information");
-        }
 
-        protected ProfilerDetailedView(ProfilerHierarchyGUI mainProfilerHierarchyGUI)
-        {
-            m_MainProfilerHierarchyGUI = mainProfilerHierarchyGUI;
-        }
+            public static readonly GUIStyle expandedArea = GUIStyle.none;
+            public static readonly GUIStyle callstackScroll = GUIStyle.none;
+            public static readonly GUIStyle callstackTextArea = EditorStyles.textArea;
 
-        public void ResetCachedProfilerProperty()
-        {
-            if (m_CachedProfilerProperty != null)
+            static Styles()
             {
-                m_CachedProfilerProperty.Cleanup();
-                m_CachedProfilerProperty = null;
-            }
+                expandedArea.stretchWidth = true;
+                expandedArea.stretchHeight = true;
+                expandedArea.padding = new RectOffset(0, 0, 0, 0);
 
-            m_CachedProfilerPropertyConfig.frameIndex = -1;
+                callstackScroll.padding = new RectOffset(5, 5, 5, 5);
+
+                callstackTextArea.margin = new RectOffset(0, 0, 0, 0);
+                callstackTextArea.padding = new RectOffset(3, 3, 3, 3);
+                callstackTextArea.wordWrap = false;
+                callstackTextArea.stretchWidth = true;
+                callstackTextArea.stretchHeight = true;
+            }
+        }
+
+        protected FrameDataView m_FrameDataView;
+        protected int m_SelectedID = -1;
+
+        protected ProfilerDetailedView()
+        {
         }
 
         protected void DrawEmptyPane(GUIStyle headerStyle)

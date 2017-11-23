@@ -186,6 +186,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddWatch();
         }
 
+        public virtual Rect GetPosition()
+        {
+            return layout;
+        }
+
         public virtual void SetPosition(Rect newPos)
         {
             // set absolute position from presenter
@@ -198,6 +203,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void OnUnselected()
         {
+        }
+
+        public virtual bool HitTest(Vector2 localPoint)
+        {
+            return ContainsPoint(localPoint);
         }
 
         public virtual void Select(VisualElement selectionContainer, bool additive)

@@ -7,12 +7,14 @@ using System.Linq;
 using UnityEditor.Callbacks;
 using UnityEditor.Modules;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [NativeHeader("Editor/Src/AssetPipeline/PluginImporter.h")]
+    [ExcludeFromPreset]
     public sealed partial class PluginImporter : AssetImporter
     {
         [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
@@ -117,7 +119,7 @@ namespace UnityEditor
         internal static IEnumerable<PluginDesc> GetExtensionPlugins(BuildTarget target)
         {
             IEnumerable<IEnumerable<PluginDesc>> pluginDescriptions =
-                AttributeHelper.CallMethodsWithAttribute<IEnumerable<PluginDesc>>(typeof(RegisterPluginsAttribute), target);
+                AttributeHelper.CallMethodsWithAttribute<IEnumerable<PluginDesc>, RegisterPluginsAttribute>(target);
             foreach (IEnumerable<PluginDesc> extensionPlugins in pluginDescriptions)
             {
                 foreach (PluginDesc pluginDesc in extensionPlugins)

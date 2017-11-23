@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -13,6 +15,7 @@ namespace UnityEditor
         [SerializeField] private GameObject m_ScenePaintTarget; // Which GameObject in scene is considered as painting target
         [SerializeField] private GridBrushBase m_Brush; // Which brush will handle painting callbacks
         [SerializeField] private PaintableGrid m_ActiveGrid; // Grid that has painting focus (can be palette, too)
+        [SerializeField] private HashSet<Object> m_InterestedPainters = new HashSet<Object>(); // A list of objects that can paint using the GridPaintingState
 
         private GameObject[] m_CachedPaintTargets = null;
         private bool m_FlushPaintTargetCache;
@@ -31,6 +34,7 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            m_InterestedPainters.Clear();
             EditorApplication.hierarchyChanged -= HierarchyChanged;
             Selection.selectionChanged -= OnSelectionChange;
             FlushCache();
@@ -38,7 +42,7 @@ namespace UnityEditor
 
         private void OnSelectionChange()
         {
-            if (validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
+            if (hasInterestedPainters && validTargets == null && ValidatePaintTarget(Selection.activeGameObject))
             {
                 scenePaintTarget = Selection.activeGameObject;
             }
@@ -46,9 +50,12 @@ namespace UnityEditor
 
         private void HierarchyChanged()
         {
-            m_FlushPaintTargetCache = true;
-            if (validTargets == null || !validTargets.Contains(scenePaintTarget))
-                AutoSelectPaintTarget();
+            if (hasInterestedPainters)
+            {
+                m_FlushPaintTargetCache = true;
+                if (validTargets == null || !validTargets.Contains(scenePaintTarget))
+                    AutoSelectPaintTarget();
+            }
         }
 
         public static void AutoSelectPaintTarget()
@@ -181,6 +188,21 @@ namespace UnityEditor
                 }
                 return instance.m_CachedPaintTargets;
             }
+        }
+
+        public static void RegisterPainterInterest(Object painter)
+        {
+            instance.m_InterestedPainters.Add(painter);
+        }
+
+        public static void UnregisterPainterInterest(Object painter)
+        {
+            instance.m_InterestedPainters.Remove(painter);
+        }
+
+        public bool hasInterestedPainters
+        {
+            get { return m_InterestedPainters.Count > 0; }
         }
 
         public bool areToolModesAvailable { get { return true; } }

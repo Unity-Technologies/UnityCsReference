@@ -19,7 +19,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public abstract void HandleMouseUp(MouseUpEvent evt);
         public abstract void Reset(bool didConnect = false);
 
-        internal const int k_PanAreaWidth = 20;
+        internal const int k_PanAreaWidth = 100;
         internal const int k_PanSpeed = 4;
         internal const int k_PanInterval = 10;
     }

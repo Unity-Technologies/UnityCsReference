@@ -865,7 +865,7 @@ namespace UnityEditor
         private static void GUIColor(Rect rect, SerializedProperty colorProp, bool hdr)
         {
             EditorGUI.BeginChangeCheck();
-            Color newValue = EditorGUI.ColorField(rect, GUIContent.none, colorProp.colorValue, false, true, hdr, ColorPicker.defaultHDRConfig);
+            Color newValue = EditorGUI.ColorField(rect, GUIContent.none, colorProp.colorValue, false, true, hdr);
             if (EditorGUI.EndChangeCheck())
                 colorProp.colorValue = newValue;
         }

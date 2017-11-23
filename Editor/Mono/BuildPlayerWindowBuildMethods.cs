@@ -205,7 +205,7 @@ namespace UnityEditor
 
                 // Pick location for the build
                 string newLocation = "";
-                bool installInBuildFolder = EditorUserBuildSettings.installInBuildFolder && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) && (Unsupported.IsDeveloperBuild()
+                bool installInBuildFolder = EditorUserBuildSettings.installInBuildFolder && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) && (Unsupported.IsSourceBuild()
                                                                                                                                                                                    || IsMetroPlayer(buildTarget));
 
                 //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be

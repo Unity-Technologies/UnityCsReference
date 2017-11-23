@@ -180,11 +180,6 @@ namespace UnityEditor.Networking.PlayerConnection
         {
             instance.m_connectedPlayers.RemoveAll(c => c.playerId == playerId);
             instance.m_PlayerEditorConnectionEvents.disconnectionEvent.Invoke(playerId);
-
-            if (!instance.ConnectedPlayers.Any())
-            {
-                instance.Cleanup();
-            }
         }
     }
 }

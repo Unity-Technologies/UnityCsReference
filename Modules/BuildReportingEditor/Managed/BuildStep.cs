@@ -18,6 +18,8 @@ namespace UnityEditor.BuildReporting
 
         public BuildStepMessage[] messages { get; }
 
+        public int depth { get; }
+
         public override string ToString()
         {
             return string.Format("{0} ({1}ms)", name, duration.Milliseconds);

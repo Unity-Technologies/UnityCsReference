@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
-using System;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -324,13 +324,17 @@ namespace UnityEditor
 
                     GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
 
-                    // Disable ReceiveShadows options for Deferred rendering path
-                    using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
+                    if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
                     {
-                        GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
+                        // Disable ReceiveShadows options for Deferred rendering path
+                        using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
+                        {
+                            GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
+                        }
                     }
 
-                    GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
+                    if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+                        GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
 
                     EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
                     GUIInt(s_Texts.sortingOrder, m_SortingOrder);

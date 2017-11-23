@@ -325,6 +325,8 @@ namespace UnityEditor
         // Are divide by zeros actively checked?
         public static extern bool explicitDivideByZeroChecks { get; set; }
 
+        public static extern bool explicitArrayBoundsChecks { get; set; }
+
         // Should we write out submission materials when building?
         public static extern bool needSubmissionMaterials { get; set; }
 

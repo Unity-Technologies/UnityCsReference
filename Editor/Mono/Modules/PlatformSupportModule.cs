@@ -253,6 +253,8 @@ namespace UnityEditor.Modules
 
         bool ShouldDrawExplicitDivideByZeroCheckbox();
 
+        bool ShouldDrawExplicitArrayBoundsCheckbox();
+
         // Force full optimisations for script complilation in Development builds.
         // Useful for forcing optimized compiler for IL2CPP when profiling.
         bool ShouldDrawForceOptimizeScriptsCheckbox();

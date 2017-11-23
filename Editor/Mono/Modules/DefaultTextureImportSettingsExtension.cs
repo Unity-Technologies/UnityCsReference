@@ -109,8 +109,8 @@ namespace UnityEditor.Modules
                     {
                         format = (int)TextureImporter.FormatFromTextureParameters(settings,
                                 platformSettings.platformTextureSettings,
-                                imp.DoesSourceTextureHaveAlpha(),
-                                imp.IsSourceTextureHDR(),
+                                editor.assetTarget && imp.DoesSourceTextureHaveAlpha(),
+                                editor.assetTarget && imp.IsSourceTextureHDR(),
                                 platformSettings.m_Target);
 
                         formatValues = new int[] { format };
