@@ -166,7 +166,7 @@ namespace UnityEditorInternal
 
         public static int GetLastColumnIndex()
         {
-            return Unsupported.IsDeveloperBuild() ? ((int)ColumnIndices._LastColumn - 1) : (int)ColumnIndices.Duration;
+            return Unsupported.IsDeveloperMode() ? ((int)ColumnIndices._LastColumn - 1) : (int)ColumnIndices.Duration;
         }
     }
 

@@ -291,7 +291,7 @@ namespace UnityEditor
         {
             public GUIContent header = new GUIContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.");
             public GUIContent addText = new GUIContent("+", "Add child group");
-            public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture("AudioMixerGroup Icon");
+            public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerGroup));
         }
         static Styles s_Styles;
 

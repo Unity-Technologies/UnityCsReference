@@ -58,11 +58,21 @@ namespace UnityEngine.Experimental.U2D
         public int[] sprites;
     }
 
+    [NativeType(Header = "Modules/SpriteShape/Public/SpriteShapeRenderer.h")]
+    public sealed partial class SpriteShapeRenderer : Renderer
+    {
+        extern internal int GetVertexCount();
+        extern internal int GetIndexCount();
+    }
+
     [NativeHeader("Modules/SpriteShape/Public/SpriteShapeUtility.h")]
     public class SpriteShapeUtility
     {
         [NativeThrows]
         [FreeFunction("SpriteShapeUtility::Generate")]
         extern public static int[] Generate(Mesh mesh, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
+        [NativeThrows]
+        [FreeFunction("SpriteShapeUtility::GenerateSpriteShape")]
+        extern public static void GenerateSpriteShape(SpriteShapeRenderer renderer, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
     }
 }

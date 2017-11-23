@@ -108,10 +108,9 @@ namespace UnityEditor
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var colorUsage = (ColorUsageAttribute)attribute;
-            var hdrConfig = ColorPickerHDRConfig.Temp(colorUsage.minBrightness, colorUsage.maxBrightness, colorUsage.minExposureValue, colorUsage.maxExposureValue);
 
             EditorGUI.BeginChangeCheck();
-            Color newColor = EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr, hdrConfig);
+            Color newColor = EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr);
             if (EditorGUI.EndChangeCheck())
             {
                 property.colorValue = newColor;

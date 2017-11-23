@@ -138,7 +138,6 @@ namespace UnityEditor
             switch (target)
             {
                 case BuildTarget.PSP2:
-                case BuildTarget.PSM:
                 case BuildTarget.Android:
                 case BuildTarget.WSAPlayer:
                     return true;

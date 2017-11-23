@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.AssetImporters
         [RequiredByNativeCode]
         internal static void RegisterScriptedImporters()
         {
-            var importers = AttributeHelper.FindEditorClassesWithAttribute(typeof(ScriptedImporterAttribute));
+            var importers = EditorAssemblies.GetAllTypesWithAttribute<ScriptedImporterAttribute>();
             foreach (var importer in importers)
             {
                 var importerType = importer as Type;

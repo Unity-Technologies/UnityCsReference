@@ -241,6 +241,8 @@ namespace UnityEditor.Modules
 
         bool EnabledBuildAndRunButton();
 
+        void GetBuildButtonTitles(out GUIContent buildButtonTitle, out GUIContent buildAndRunButtonTitle);
+
         bool ShouldDrawScriptDebuggingCheckbox();
 
         bool ShouldDrawProfilerCheckbox();
@@ -250,6 +252,8 @@ namespace UnityEditor.Modules
         bool ShouldDrawExplicitNullCheckbox();
 
         bool ShouldDrawExplicitDivideByZeroCheckbox();
+
+        bool ShouldDrawExplicitArrayBoundsCheckbox();
 
         // Force full optimisations for script complilation in Development builds.
         // Useful for forcing optimized compiler for IL2CPP when profiling.

@@ -41,7 +41,6 @@ namespace UnityEditor
             public GUIContent platformTitle = EditorGUIUtility.TextContent("Platform|Which platform to build for");
             public GUIContent switchPlatform = EditorGUIUtility.TextContent("Switch Platform");
             public GUIContent build = EditorGUIUtility.TextContent("Build");
-            public GUIContent export = EditorGUIUtility.TextContent("Export");
             public GUIContent buildAndRun = EditorGUIUtility.TextContent("Build And Run");
             public GUIContent scenesInBuild = EditorGUIUtility.TextContent("Scenes In Build|Which scenes to include in the build");
 
@@ -110,6 +109,7 @@ namespace UnityEditor
             public GUIContent symlinkiOSLibraries = EditorGUIUtility.TextContent("Symlink Unity libraries");
             public GUIContent explicitNullChecks = EditorGUIUtility.TextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TextContent("Divide By Zero Checks");
+            public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TextContent("Array Bounds Checks");
             public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
@@ -133,7 +133,7 @@ namespace UnityEditor
             {
                 levelStringCounter.alignment = TextAnchor.MiddleRight;
 
-                if (Unsupported.IsDeveloperBuild() && (
+                if (Unsupported.IsSourceBuild() && (
                         buildTargetNotInstalled.GetLength(0) != notLicensedMessages.GetLength(0) ||
                         buildTargetNotInstalled.GetLength(0) != BuildPlatforms.instance.buildPlatforms.Length))
                     Debug.LogErrorFormat("Build platforms and messages are desynced in BuildPlayerWindow! ({0} vs. {1} vs. {2}) DON'T SHIP THIS!", buildTargetNotInstalled.GetLength(0), notLicensedMessages.GetLength(0), BuildPlatforms.instance.buildPlatforms.Length);
@@ -680,6 +680,7 @@ namespace UnityEditor
             bool shouldDrawDebuggingToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawScriptDebuggingCheckbox() : true;
             bool shouldDrawExplicitNullChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitNullCheckbox() : false;
             bool shouldDrawDivideByZeroChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitDivideByZeroCheckbox() : false;
+            bool shouldDrawArrayBoundsChecksToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawExplicitArrayBoundsCheckbox() : false;
             bool shouldDrawDevelopmentPlayerToggle = buildWindowExtension != null ? buildWindowExtension.ShouldDrawDevelopmentPlayerCheckbox() : true;
             bool enableHeadlessModeToggle = (buildTarget == BuildTarget.StandaloneLinux || buildTarget == BuildTarget.StandaloneLinux64 || buildTarget == BuildTarget.StandaloneLinuxUniversal);
 
@@ -718,7 +719,7 @@ namespace UnityEditor
 
                     // Not all platforms have native dialog implemented in Runtime\Misc\GiveDebuggerChanceToAttachIfRequired.cpp
                     // Display this option only for developer builds
-                    if (EditorUserBuildSettings.allowDebugging && Unsupported.IsDeveloperBuild())
+                    if (EditorUserBuildSettings.allowDebugging && Unsupported.IsSourceBuild())
                     {
                         var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
 
@@ -754,6 +755,19 @@ namespace UnityEditor
                     GUI.enabled = developmentBuild;
                 }
 
+                if (shouldDrawArrayBoundsChecksToggle)
+                {
+                    // Force 'explicitArrayBoundsChecks' to true if it's a development build.
+                    GUI.enabled = !developmentBuild;
+                    if (GUI.enabled == false)
+                    {
+                        EditorUserBuildSettings.explicitArrayBoundsChecks = true;
+                    }
+                    EditorUserBuildSettings.explicitArrayBoundsChecks = EditorGUILayout.Toggle(styles.explicitArrayBoundsChecks, EditorUserBuildSettings.explicitArrayBoundsChecks);
+                    // Undo force from above
+                    GUI.enabled = developmentBuild;
+                }
+
                 if (enableBuildScriptsOnly)
                     EditorUserBuildSettings.buildScriptsOnly = EditorGUILayout.Toggle(styles.buildScriptsOnly, EditorUserBuildSettings.buildScriptsOnly);
 
@@ -774,7 +788,7 @@ namespace UnityEditor
                     EditorUserBuildSettings.SetCompressionType(buildTargetGroup, styles.compressionTypes[cmpIdx]);
                 }
 
-                canInstallInBuildFolder = Unsupported.IsDeveloperBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget);
+                canInstallInBuildFolder = Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget);
 
                 if (enableBuildButton)
                 {
@@ -828,7 +842,7 @@ namespace UnityEditor
             else
                 EditorUserBuildSettings.installInBuildFolder = false;
 
-            if ((buildWindowExtension != null) && Unsupported.IsDeveloperBuild())
+            if ((buildWindowExtension != null) && Unsupported.IsSourceBuild())
                 buildWindowExtension.ShowInternalPlatformBuildOptions();
 
 
@@ -857,10 +871,13 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            GUIContent buildButton = styles.build;
-            if (platform.targetGroup == BuildTargetGroup.Android
-                && EditorUserBuildSettings.exportAsGoogleAndroidProject)
-                buildButton = styles.export;
+            GUIContent buildButton = null;
+            GUIContent buildAndRunButton = null;
+            if (buildWindowExtension != null)
+                buildWindowExtension.GetBuildButtonTitles(out buildButton, out buildAndRunButton);
+
+            buildButton = buildButton ?? styles.build;
+            buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
 
             // Build Button
             GUI.enabled = enableBuildButton;
@@ -871,7 +888,7 @@ namespace UnityEditor
             }
             // Build and Run button
             GUI.enabled = enableBuildAndRunButton;
-            if (GUILayout.Button(styles.buildAndRun, GUILayout.Width(Styles.kButtonWidth)))
+            if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
                 BuildPlayerAndRun(true);
                 GUIUtility.ExitGUI();

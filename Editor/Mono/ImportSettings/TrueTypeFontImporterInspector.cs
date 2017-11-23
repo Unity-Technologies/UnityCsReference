@@ -22,6 +22,7 @@ namespace UnityEditor
         SerializedProperty m_FontRenderingMode;
         SerializedProperty m_AscentCalculationMode;
         SerializedProperty m_UseLegacyBoundsCalculation;
+        SerializedProperty m_ShouldRoundAdvanceValue;
         SerializedProperty m_FallbackFontReferencesArraySize;
 
         string m_FontNamesString = "";
@@ -41,6 +42,7 @@ namespace UnityEditor
             m_FontRenderingMode = serializedObject.FindProperty("m_FontRenderingMode");
             m_AscentCalculationMode = serializedObject.FindProperty("m_AscentCalculationMode");
             m_UseLegacyBoundsCalculation = serializedObject.FindProperty("m_UseLegacyBoundsCalculation");
+            m_ShouldRoundAdvanceValue = serializedObject.FindProperty("m_ShouldRoundAdvanceValue");
             m_FallbackFontReferencesArraySize = serializedObject.FindProperty("m_FallbackFontReferences.Array.size");
 
             // We don't want to expose GUI for setting included fonts when selecting multiple fonts
@@ -229,6 +231,7 @@ namespace UnityEditor
             EditorGUILayout.IntPopup(m_TextureCase, kCharacterStrings, kCharacterValues, new GUIContent("Character"));
             EditorGUILayout.IntPopup(m_AscentCalculationMode, kAscentCalculationModeStrings, kAscentCalculationModeValues, new GUIContent("Ascent Calculation Mode"));
             EditorGUILayout.PropertyField(m_UseLegacyBoundsCalculation, new GUIContent("Use Legacy Bounds"));
+            EditorGUILayout.PropertyField(m_ShouldRoundAdvanceValue, new GUIContent("Should Round Advance Value"));
 
             if (!m_TextureCase.hasMultipleDifferentValues)
             {

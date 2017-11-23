@@ -734,7 +734,7 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open", EditorStyles.miniButton))
             {
-                AssetDatabase.OpenAsset(assetEditor.targets);
+                AssetDatabase.OpenAsset(assetTargets);
                 GUIUtility.ExitGUI();
             }
         }

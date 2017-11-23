@@ -2,13 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Runtime.InteropServices;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
-using System;
 
 namespace UnityEngine
 {
     // A standard 4x4 transformation matrix.
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct Matrix4x4
     {
         // memory layout:

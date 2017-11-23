@@ -38,6 +38,12 @@ public enum ScriptingImplementation
     WinRTDotNET = 2,
 }
 
+public enum Il2CppCompilerConfiguration
+{
+    Debug       = 0,
+    Release     = 1,
+}
+
 public enum AspectRatio
 {
     
@@ -771,19 +777,6 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         }
     
     
-    public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform, IconKind kind)
-        {
-            Texture2D[] icons = GetIconsForPlatform(GetPlatformName(platform), kind);
-            return icons;
-        }
-    
-    
-    public static Texture2D[] GetIconsForTargetGroup(BuildTargetGroup platform)
-        {
-            return GetIconsForTargetGroup(platform, IconKind.Any);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  Texture2D[] GetIconsForPlatform (string platform, IconKind kind) ;
@@ -792,18 +785,6 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  Texture2D[] GetAllIconsForPlatform (string platform) ;
 
-    public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons, IconKind kind)
-        {
-            SetIconsForPlatform(GetPlatformName(platform), icons, kind);
-        }
-    
-    
-    public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons)
-        {
-            SetIconsForTargetGroup(platform, icons, IconKind.Any);
-        }
-    
-    
     internal static void SetIconsForPlatform(string platform, Texture2D[] icons)
         {
             SetIconsForPlatform(platform, icons, IconKind.Any);
@@ -829,18 +810,6 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetIconsForPlatform (string platform, Texture2D[] icons, IconKind kind) ;
 
-    public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform, IconKind kind)
-        {
-            return GetIconWidthsForPlatform(GetPlatformName(platform), kind);
-        }
-    
-    
-    public static int[] GetIconSizesForTargetGroup(BuildTargetGroup platform)
-        {
-            return GetIconSizesForTargetGroup(platform, IconKind.Any);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  int[] GetIconWidthsForPlatform (string platform, IconKind kind) ;
@@ -1025,6 +994,14 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  ScriptingImplementation GetDefaultScriptingBackend (BuildTargetGroup targetGroup) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetIl2CppCompilerConfiguration (BuildTargetGroup targetGroup, Il2CppCompilerConfiguration configuration) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  Il2CppCompilerConfiguration GetIl2CppCompilerConfiguration (BuildTargetGroup targetGroup) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -1583,10 +1560,6 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
-    }
-
-public sealed partial class PSM    
-    {
     }
 
 }

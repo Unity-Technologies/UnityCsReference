@@ -42,7 +42,10 @@ namespace UnityEditor
             NoScaleOffset = (1 << 2),
             Normal = (1 << 3),
             HDR = (1 << 4),
+            Gamma = (1 << 5),
+            NonModifiableTextureData = (1 << 6),
         }
+
         public delegate bool ApplyPropertyCallback(MaterialProperty prop, int changeMask, object previousValue);
 
         private Object[] m_Targets;

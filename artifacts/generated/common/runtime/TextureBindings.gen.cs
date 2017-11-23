@@ -35,6 +35,17 @@ public partial class Texture : Object
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private  void INTERNAL_set_imageContentsHash (ref Hash128 value) ;
 
+    public extern  uint updateCount
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public void IncrementUpdateCount () ;
+
 }
 
 [UsedByNativeCode]
@@ -200,6 +211,7 @@ public Color[] GetPixels( [uei.DefaultValue("0")] int miplevel )
 
 }
 
+[ExcludeFromPreset]
 public sealed partial class Cubemap : Texture
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -224,6 +236,7 @@ public sealed partial class Cubemap : Texture
 
 }
 
+[ExcludeFromPreset]
 public sealed partial class Texture3D : Texture
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

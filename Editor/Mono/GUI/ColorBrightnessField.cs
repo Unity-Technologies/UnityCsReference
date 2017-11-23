@@ -8,31 +8,31 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUILayout
     {
-        internal static Color ColorBrightnessField(GUIContent label, Color value, float minBrightness, float maxBrightness, params GUILayoutOption[] options)
+        internal static Color ColorBrightnessField(GUIContent label, Color value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.numberField, options);
-            return EditorGUI.ColorBrightnessField(r, label, value, minBrightness, maxBrightness);
+            return EditorGUI.ColorBrightnessField(r, label, value);
         }
     }
 
     public sealed partial class EditorGUI
     {
-        internal static Color ColorBrightnessField(Rect r, GUIContent label, Color value, float minBrightness, float maxBrightness)
+        internal static Color ColorBrightnessField(Rect r, GUIContent label, Color value)
         {
-            return ColorBrightnessFieldInternal(r, label, value, minBrightness, maxBrightness, EditorStyles.numberField);
+            return ColorBrightnessFieldInternal(r, label, value, EditorStyles.numberField);
         }
 
-        internal static Color ColorBrightnessFieldInternal(Rect position, GUIContent label, Color value, float minBrightness, float maxBrightness, GUIStyle style)
+        internal static Color ColorBrightnessFieldInternal(Rect position, GUIContent label, Color value, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_FloatFieldHash, FocusType.Keyboard, position);
             Rect position2 = PrefixLabel(position, id, label);
             position.xMax = position2.x;
-            return DoColorBrightnessField(position2, position, value, minBrightness, maxBrightness, style);
+            return DoColorBrightnessField(position2, position, value, style);
         }
 
         // This method handles changing the brightness of a color without destroying the color state while dragging:
         // You can drag to black and drag up again while preserving hue and saturation.
-        internal static Color DoColorBrightnessField(Rect rect, Rect dragRect, Color col, float minBrightness, float maxBrightness, GUIStyle style)
+        internal static Color DoColorBrightnessField(Rect rect, Rect dragRect, Color col, GUIStyle style)
         {
             float alpha = col.a;
             int dragID = GUIUtility.GetControlID(18975602, FocusType.Keyboard);
@@ -78,9 +78,9 @@ namespace UnityEditor
                         const float minStep = 0.004f; // 1/255f rounded (so we can adjust brightness by 1/255 steps)
                         float dragSensitity = Mathf.Clamp01(Mathf.Max(1f, Mathf.Pow(Mathf.Abs(maxColorComponent), 0.5f)) * minStep);
                         float deltaValue = HandleUtility.niceMouseDelta * dragSensitity;
-                        float brightness = Mathf.Clamp(stateObject.m_Brightness + deltaValue, minBrightness, maxBrightness);
+                        float brightness = Mathf.Max(stateObject.m_Brightness + deltaValue, 0f);
                         stateObject.m_Brightness = (float)System.Math.Round(brightness, 3); // We do not need more than 3 decimals for color channel values: 1/255 = 0.004
-                        Color c = Color.HSVToRGB(stateObject.m_Hue, stateObject.m_Saturation, stateObject.m_Brightness, maxBrightness > 1f);
+                        Color c = Color.HSVToRGB(stateObject.m_Hue, stateObject.m_Saturation, stateObject.m_Brightness, true);
                         col = new Color(c.r, c.g, c.b, col.a);
 
                         GUIUtility.keyboardControl = 0; // remove keyboard focus when dragging
@@ -106,8 +106,8 @@ namespace UnityEditor
             {
                 float hue, saturation, dummy;
                 Color.RGBToHSV(col, out hue, out saturation, out dummy);
-                float brightness = Mathf.Clamp(newValue, minBrightness, maxBrightness);
-                Color c = Color.HSVToRGB(hue, saturation, brightness, maxBrightness > 1f);
+                float brightness = Mathf.Max(newValue, 0f);
+                Color c = Color.HSVToRGB(hue, saturation, brightness, true);
                 col = new Color(c.r, c.g, c.b, col.a);
             }
 

@@ -127,9 +127,6 @@
 <Compile Include="..\..\Editor\Mono\EditorApplication.deprecated.cs" >
 <Link>Editor\Mono\EditorApplication.deprecated.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\SupportedRenderingFeatures.cs" >
-<Link>Editor\Mono\SupportedRenderingFeatures.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\EditorBuildSettings.bindings.cs" >
 <Link>Editor\Mono\EditorBuildSettings.bindings.cs</Link>
 </Compile>
@@ -256,6 +253,9 @@
 <Compile Include="..\..\Editor\Mono\DataWatchService.cs" >
 <Link>Editor\Mono\DataWatchService.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\ShaderUtil.bindings.cs" >
+<Link>Editor\Mono\ShaderUtil.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ExportPackageOptions.cs" >
 <Link>Editor\Mono\ExportPackageOptions.cs</Link>
 </Compile>
@@ -366,6 +366,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\ScriptableSingleton.cs" >
 <Link>Editor\Mono\ScriptableSingleton.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\VisualStudioUtil.bindings.cs" >
+<Link>Editor\Mono\VisualStudioUtil.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\NumericFieldDraggerUtility.cs" >
 <Link>Editor\Mono\NumericFieldDraggerUtility.cs</Link>
@@ -685,9 +688,6 @@
 <Compile Include="..\..\Editor\Mono\SceneView\RectSelection.cs" >
 <Link>Editor\Mono\SceneView\RectSelection.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\SceneView\SceneViewGridManager.cs" >
-<Link>Editor\Mono\SceneView\SceneViewGridManager.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\SceneView\SceneView.cs" >
 <Link>Editor\Mono\SceneView\SceneView.cs</Link>
 </Compile>
@@ -801,9 +801,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs" >
 <Link>Editor\Mono\Grid\GridSnapping.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Grid\GridEditorUtility.cs" >
-<Link>Editor\Mono\Grid\GridEditorUtility.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs" >
 <Link>Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs</Link>
@@ -1138,6 +1135,9 @@
 <Compile Include="..\..\Editor\Mono\AssemblyInfo\AssemblyInfo.cs" >
 <Link>Editor\Mono\AssemblyInfo\AssemblyInfo.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\TypeSystem\UnityType.bindings.cs" >
+<Link>Editor\Mono\TypeSystem\UnityType.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\TypeSystem\UnityType.cs" >
 <Link>Editor\Mono\TypeSystem\UnityType.cs</Link>
 </Compile>
@@ -1168,11 +1168,17 @@
 <Compile Include="..\..\Editor\Mono\GUI\Toolbar.cs" >
 <Link>Editor\Mono\GUI\Toolbar.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\GUI\AngularDial.cs" >
+<Link>Editor\Mono\GUI\AngularDial.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\GUI\WindowLayout.cs" >
 <Link>Editor\Mono\GUI\WindowLayout.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\EditorApplicationLayout.cs" >
 <Link>Editor\Mono\GUI\EditorApplicationLayout.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUI\ColorPicker.deprecated.cs" >
+<Link>Editor\Mono\GUI\ColorPicker.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\TextFieldDropDown.cs" >
 <Link>Editor\Mono\GUI\TextFieldDropDown.cs</Link>
@@ -1203,6 +1209,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\Splitter.cs" >
 <Link>Editor\Mono\GUI\Splitter.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUI\ColorMutator.cs" >
+<Link>Editor\Mono\GUI\ColorMutator.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\AssetPopupBackend.cs" >
 <Link>Editor\Mono\GUI\AssetPopupBackend.cs</Link>
@@ -1251,6 +1260,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\VUMeter.cs" >
 <Link>Editor\Mono\GUI\VUMeter.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUI\SliderWithTexture.cs" >
+<Link>Editor\Mono\GUI\SliderWithTexture.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\PragmaFixingWindow.cs" >
 <Link>Editor\Mono\GUI\PragmaFixingWindow.cs</Link>
@@ -1344,6 +1356,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\AssetSaveDialog.cs" >
 <Link>Editor\Mono\GUI\AssetSaveDialog.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\GUI\ScalableGUIContent.cs" >
+<Link>Editor\Mono\GUI\ScalableGUIContent.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\GUI\PackageImport.cs" >
 <Link>Editor\Mono\GUI\PackageImport.cs</Link>
@@ -1567,6 +1582,12 @@
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\IntegerField.cs" >
 <Link>Editor\Mono\UIElements\Controls\IntegerField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\UXMLEditorFactories.cs" >
+<Link>Editor\Mono\UIElements\Controls\UXMLEditorFactories.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\CompoundFields.cs" >
+<Link>Editor\Mono\UIElements\Controls\CompoundFields.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\ObjectField.cs" >
 <Link>Editor\Mono\UIElements\Controls\ObjectField.cs</Link>
 </Compile>
@@ -1576,11 +1597,20 @@
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\ColorField.cs" >
 <Link>Editor\Mono\UIElements\Controls\ColorField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\BoundsField.cs" >
+<Link>Editor\Mono\UIElements\Controls\BoundsField.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\TextValueField.cs" >
 <Link>Editor\Mono\UIElements\Controls\TextValueField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\BaseValueField.cs" >
+<Link>Editor\Mono\UIElements\Controls\BaseValueField.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\EnumField.cs" >
 <Link>Editor\Mono\UIElements\Controls\EnumField.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\BaseCompositeField.cs" >
+<Link>Editor\Mono\UIElements\Controls\BaseCompositeField.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Events\TooltipEvent.cs" >
 <Link>Editor\Mono\UIElements\Events\TooltipEvent.cs</Link>
@@ -1617,6 +1647,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilers.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilers.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptUpdatingManager.bindings.cs" >
+<Link>Editor\Mono\Scripting\ScriptUpdatingManager.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\APIUpdaterHelper.cs" >
 <Link>Editor\Mono\Scripting\APIUpdaterHelper.cs</Link>
@@ -1717,6 +1750,9 @@
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\CustomScriptAssembly.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\OptionalUnityReferences.cs" >
+<Link>Editor\Mono\Scripting\ScriptCompilation\OptionalUnityReferences.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs</Link>
 </Compile>
@@ -1795,6 +1831,9 @@
 <Compile Include="..\..\Editor\Mono\UnityConnect\Services\ErrorHubAccess.cs" >
 <Link>Editor\Mono\UnityConnect\Services\ErrorHubAccess.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Commands\GOCreationCommands.cs" >
+<Link>Editor\Mono\Commands\GOCreationCommands.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\LookDevView\LookDevConfig.cs" >
 <Link>Editor\Mono\LookDevView\LookDevConfig.cs</Link>
 </Compile>
@@ -1836,6 +1875,15 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Internal\MonoScripts.cs" >
 <Link>Editor\Mono\Internal\MonoScripts.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\PlatformSupport\PlatformIconField.cs" >
+<Link>Editor\Mono\PlatformSupport\PlatformIconField.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\PlatformSupport\ReorderableTextureList.cs" >
+<Link>Editor\Mono\PlatformSupport\ReorderableTextureList.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs" >
+<Link>Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\SettingsWindow\LightingEditor.cs" >
 <Link>Editor\Mono\SettingsWindow\LightingEditor.cs</Link>
@@ -2034,6 +2082,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Localization\LocalizationDatabase.bindings.cs" >
 <Link>Editor\Mono\Localization\LocalizationDatabase.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Playables\Playables.bindings.cs" >
+<Link>Editor\Mono\Playables\Playables.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs" >
 <Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
@@ -2374,6 +2425,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\AssetBundleNameGUI.cs" >
 <Link>Editor\Mono\Inspector\AssetBundleNameGUI.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AimConstraintEditor.cs" >
+<Link>Editor\Mono\Inspector\AimConstraintEditor.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioHighPassFIlterInspector.cs" >
 <Link>Editor\Mono\Inspector\AudioHighPassFIlterInspector.cs</Link>
 </Compile>
@@ -2412,9 +2466,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\SphereColliderEditor.cs" >
 <Link>Editor\Mono\Inspector\SphereColliderEditor.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\AddComponentWindow.cs" >
-<Link>Editor\Mono\Inspector\AddComponentWindow.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AssetStoreAssetInspector.cs" >
 <Link>Editor\Mono\Inspector\AssetStoreAssetInspector.cs</Link>
@@ -2512,6 +2563,9 @@
 <Compile Include="..\..\Editor\Mono\Inspector\MeshColliderEditor.cs" >
 <Link>Editor\Mono\Inspector\MeshColliderEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\ShadowCascadeSplitGUI.cs" >
+<Link>Editor\Mono\Inspector\ShadowCascadeSplitGUI.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\JointEditor.cs" >
 <Link>Editor\Mono\Inspector\JointEditor.cs</Link>
 </Compile>
@@ -2583,9 +2637,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\ColorPresetLibraryInspector.cs" >
 <Link>Editor\Mono\Inspector\ColorPresetLibraryInspector.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\ShadowCascasdeSplitGUI.cs" >
-<Link>Editor\Mono\Inspector\ShadowCascasdeSplitGUI.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioMixerControllerInspector.cs" >
 <Link>Editor\Mono\Inspector\AudioMixerControllerInspector.cs</Link>
@@ -2679,6 +2730,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\SkyboxPanoramicShaderGUI.cs" >
 <Link>Editor\Mono\Inspector\SkyboxPanoramicShaderGUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\ShaderIncludePathAttribute.cs" >
+<Link>Editor\Mono\Inspector\ShaderIncludePathAttribute.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AudioChorusFilterEditor.cs" >
 <Link>Editor\Mono\Inspector\AudioChorusFilterEditor.cs</Link>
@@ -2797,8 +2851,32 @@
 <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs" >
 <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\Grid\GridEditor.cs" >
-<Link>Editor\Mono\Inspector\Grid\GridEditor.cs</Link>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\ComponentDropdownElement.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\ComponentDropdownElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\NewScriptDropdownElement.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\NewScriptDropdownElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\DropdownElement.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\DropdownElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\StatefulAdvancedDropdown.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\StatefulAdvancedDropdown.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdown.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdown.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\GroupDropdownElement.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\GroupDropdownElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\StatelessAdvancedDropdown.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\StatelessAdvancedDropdown.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdownWindow.cs" >
+<Link>Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdownWindow.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Enlighten\LightmapParameters.cs" >
 <Link>Editor\Mono\Inspector\Enlighten\LightmapParameters.cs</Link>
@@ -3267,9 +3345,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\ScriptableWizardBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\ScriptableWizardBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\ScriptUpdatingManagerBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\ScriptUpdatingManagerBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\SerializedPropertyBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\SerializedPropertyBindings.gen.cs</Link>
 </Compile>
@@ -3327,9 +3402,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\HighlighterBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\HighlighterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\UnityTypeBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\UnityTypeBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\UndoBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\UndoBindings.gen.cs</Link>
 </Compile>
@@ -3363,9 +3435,6 @@
 <Compile Include="..\..\artifacts\generated\common\editor\VertexChannelCompressionFlagsBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\VertexChannelCompressionFlagsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\editor\VisualStudioUtilBindings.gen.cs" >
-<Link>artifacts\generated\common\editor\VisualStudioUtilBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\WebViewBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\WebViewBindings.gen.cs</Link>
 </Compile>
@@ -3392,50 +3461,14 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\editor\LightmapParametersBindings.gen.cs" >
 <Link>artifacts\generated\common\editor\LightmapParametersBindings.gen.cs</Link>
-</Compile><Compile Include="..\..\Editor\Src\RestService\Managed\AssetRestHandler.cs" >
-<Link>Editor\Src\RestService\Managed\AssetRestHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\PairingRestHandler.cs" >
-<Link>Editor\Src\RestService\Managed\PairingRestHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\PlayModeRestHandler.cs" >
-<Link>Editor\Src\RestService\Managed\PlayModeRestHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\ProjectStateRestHandler.cs" >
-<Link>Editor\Src\RestService\Managed\ProjectStateRestHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\RestRequest.cs" >
-<Link>Editor\Src\RestService\Managed\RestRequest.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\ScriptEditorSettings.cs" >
-<Link>Editor\Src\RestService\Managed\ScriptEditorSettings.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\RestServiceExtension.cs" >
-<Link>Editor\Src\RestService\Managed\RestServiceExtension.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\OpenDocumentsRestHandler.cs" >
-<Link>Editor\Src\RestService\Managed\OpenDocumentsRestHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\Handler.cs" >
-<Link>Editor\Src\RestService\Managed\Handler.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\HttpStatusCode.cs" >
-<Link>Editor\Src\RestService\Managed\HttpStatusCode.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\Logger.cs" >
-<Link>Editor\Src\RestService\Managed\Logger.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Src\RestService\Managed\RestRequestException.cs" >
-<Link>Editor\Src\RestService\Managed\RestRequestException.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\RestService\RestServiceRequestBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\RestService\RestServiceRequestBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\PhysicsEditor\ColliderUtilBindings.gen.cs" >
+</Compile><Compile Include="..\..\artifacts\generated\common\modules\PhysicsEditor\ColliderUtilBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\PhysicsEditor\ColliderUtilBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\PhysicsEditor\PhysicsDebugBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\PhysicsEditor\PhysicsDebugBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Src\TextRendering\TextRenderingCommands.cs" >
+<Link>Editor\Src\TextRendering\TextRenderingCommands.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs</Link>
@@ -3494,6 +3527,9 @@
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsage.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\BuildUsage.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageTagSet.bindings.cs" >
+<Link>Modules\BuildPipeline\Editor\Managed\BuildUsageTagSet.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs" >
 <Link>Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs</Link>
 </Compile>
@@ -3538,6 +3574,9 @@
 </Compile>
 <Compile Include="..\..\Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs" >
 <Link>Modules\BuildReportingEditor\Managed\CommonRoles.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs" >
+<Link>Modules\BuildReportingEditor\Managed\ScopedBuildStep.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\BuildReportingEditor\Managed\StrippingInfo.cs" >
 <Link>Modules\BuildReportingEditor\Managed\StrippingInfo.cs</Link>
@@ -3599,6 +3638,9 @@
 <Compile Include="..\..\Modules\GraphViewEditor\ISelection.cs" >
 <Link>Modules\GraphViewEditor\ISelection.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\IconBadge.cs" >
+<Link>Modules\GraphViewEditor\IconBadge.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\NodeAdapter.cs" >
 <Link>Modules\GraphViewEditor\NodeAdapter.cs</Link>
 </Compile>
@@ -3617,14 +3659,17 @@
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElement.cs" >
 <Link>Modules\GraphViewEditor\Elements\GraphElement.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\GroupNode.cs" >
+<Link>Modules\GraphViewEditor\Elements\GroupNode.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\MiniMap.cs" >
 <Link>Modules\GraphViewEditor\Elements\MiniMap.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\Node.cs" >
 <Link>Modules\GraphViewEditor\Elements\Node.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\GraphViewEditor\Elements\NodeAnchor.cs" >
-<Link>Modules\GraphViewEditor\Elements\NodeAnchor.cs</Link>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Port.cs" >
+<Link>Modules\GraphViewEditor\Elements\Port.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\SimpleElement.cs" >
 <Link>Modules\GraphViewEditor\Elements\SimpleElement.cs</Link>
@@ -3635,20 +3680,20 @@
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs" >
 <Link>Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\InputNodeAnchorPresenter.cs" >
-<Link>Modules\GraphViewEditor\Elements\Presenters\InputNodeAnchorPresenter.cs</Link>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\InputPortPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\InputPortPresenter.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs" >
 <Link>Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\NodeAnchorPresenter.cs" >
-<Link>Modules\GraphViewEditor\Elements\Presenters\NodeAnchorPresenter.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs" >
 <Link>Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\OutputNodeAnchorPresenter.cs" >
-<Link>Modules\GraphViewEditor\Elements\Presenters\OutputNodeAnchorPresenter.cs</Link>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\OutputPortPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\OutputPortPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\PortPresenter.cs" >
+<Link>Modules\GraphViewEditor\Elements\Presenters\PortPresenter.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs" >
 <Link>Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs</Link>
@@ -3670,6 +3715,9 @@
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\EdgeManipulator.cs" >
 <Link>Modules\GraphViewEditor\Manipulators\EdgeManipulator.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GraphViewEditor\Manipulators\FreehandSelector.cs" >
+<Link>Modules\GraphViewEditor\Manipulators\FreehandSelector.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\RectangleSelector.cs" >
 <Link>Modules\GraphViewEditor\Manipulators\RectangleSelector.cs</Link>
@@ -3700,6 +3748,15 @@
 </Compile>
 <Compile Include="..\..\Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs" >
 <Link>Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs" >
+<Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\GridEditorUtility.cs" >
+<Link>Modules\GridEditor\Managed\GridEditorUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\SceneViewGridManager.cs" >
+<Link>Modules\GridEditor\Managed\SceneViewGridManager.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\BuildUtilities.cs" >
 <Link>Modules\PackageManager\Editor\Managed\BuildUtilities.cs</Link>
@@ -3773,11 +3830,62 @@
 <Compile Include="..\..\Modules\PresetsEditor\PresetEditor.cs" >
 <Link>Modules\PresetsEditor\PresetEditor.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\PresetsEditor\PresetManager.bindings.cs" >
+<Link>Modules\PresetsEditor\PresetManager.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PresetsEditor\PresetManagerEditor.cs" >
+<Link>Modules\PresetsEditor\PresetManagerEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PresetsEditor\PresetManagerPostProcessor.cs" >
+<Link>Modules\PresetsEditor\PresetManagerPostProcessor.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\PresetsEditor\PresetSelector.cs" >
 <Link>Modules\PresetsEditor\PresetSelector.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\RestService\AssetRestHandler.cs" >
+<Link>Modules\RestService\AssetRestHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\Handler.cs" >
+<Link>Modules\RestService\Handler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\HttpStatusCode.cs" >
+<Link>Modules\RestService\HttpStatusCode.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\Logger.cs" >
+<Link>Modules\RestService\Logger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\OpenDocumentsRestHandler.cs" >
+<Link>Modules\RestService\OpenDocumentsRestHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\PairingRestHandler.cs" >
+<Link>Modules\RestService\PairingRestHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\PlayModeRestHandler.cs" >
+<Link>Modules\RestService\PlayModeRestHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\ProjectStateRestHandler.cs" >
+<Link>Modules\RestService\ProjectStateRestHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\RestRequest.cs" >
+<Link>Modules\RestService\RestRequest.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\RestRequestException.cs" >
+<Link>Modules\RestService\RestRequestException.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\RestServiceExtension.cs" >
+<Link>Modules\RestService\RestServiceExtension.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\RestService\ScriptEditorSettings.cs" >
+<Link>Modules\RestService\ScriptEditorSettings.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\RestService\RestServiceRequestBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\RestService\RestServiceRequestBindings.gen.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs" >
 <Link>Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs" >
+<Link>Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs" >
 <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>
@@ -3887,6 +3995,9 @@
 <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs" >
 <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\Public\ProfilerFrameDataView.bindings.cs" >
+<Link>Modules\Profiler\Editor\Public\ProfilerFrameDataView.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\AttachProfilerUI.cs</Link>
 </Compile>
@@ -3902,6 +4013,12 @@
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerColors.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameViewBase.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameViewBase.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameDataTreeView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameDataTreeView.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerDetailedObjectsView.cs</Link>
 </Compile>
@@ -3911,14 +4028,8 @@
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\MemoryTreeList.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerSearchResults.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerChart.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs" >
-<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerHierarchyGUI.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerTimelineGUI.cs</Link>
@@ -3931,6 +4042,9 @@
 </Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameHierarchyView.cs" >
+<Link>Modules\Profiler\Editor\ProfilerWindow\ProfilerFrameHierarchyView.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Profiler\Editor\ProfilerWindow\Chart.cs" >
 <Link>Modules\Profiler\Editor\ProfilerWindow\Chart.cs</Link>

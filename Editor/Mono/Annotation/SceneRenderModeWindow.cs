@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -11,6 +13,7 @@ namespace UnityEditor
     // Match EditorDrawingMode order in C++ code!
     public enum DrawCameraMode
     {
+        UserDefined = int.MinValue,
         Normal = -1,
         Textured = 0,
         Wireframe = 1,
@@ -64,121 +67,107 @@ namespace UnityEditor
         BakedIndices = 29,
         BakedCharting = 30,
         SpriteMask = 31,
+        BakedUVOverlap = 32,
     }
 
     internal class SceneRenderModeWindow : PopupWindowContent
     {
         class Styles
         {
-            public static readonly GUIStyle sMenuItem = "MenuItem";
-            public static readonly GUIStyle sSeparator = "sv_iconselector_sep";
+            public static GUIStyle s_MenuItem;
+            public static GUIStyle s_Separator;
 
-            public static readonly GUIContent sShadedHeader                 = EditorGUIUtility.TextContent("Shading Mode");
-            public static readonly GUIContent sMiscellaneous                = EditorGUIUtility.TextContent("Miscellaneous");
-            public static readonly GUIContent sDeferredHeader               = EditorGUIUtility.TextContent("Deferred");
-            public static readonly GUIContent sGlobalIlluminationHeader     = EditorGUIUtility.TextContent("Global Illumination");
-            public static readonly GUIContent sRealtimeGIHeader             = EditorGUIUtility.TextContent("Realtime Global Illumination");
-            public static readonly GUIContent sBakedGIHeader                = EditorGUIUtility.TextContent("Baked Global Illumination");
-            public static readonly GUIContent sMaterialValidationHeader     = EditorGUIUtility.TextContent("Material Validation");
-            public static readonly GUIContent sResolutionToggle             = EditorGUIUtility.TextContent("Show Lightmap Resolution");
-
-            // Map all DrawCameraMode entries
-            // This array defines the order in which the entries appear in the dropdown menu!
-            public static DrawCameraMode[] sRenderModeUIOrder =
+            public static GUIStyle sMenuItem
             {
-                // Shading Mode
-                DrawCameraMode.Textured,
-                DrawCameraMode.Wireframe,
-                DrawCameraMode.TexturedWire,
+                get
+                {
+                    if (s_MenuItem == null)
+                        s_MenuItem = "MenuItem";
+                    return s_MenuItem;
+                }
+            }
 
-                // Miscellaneous
-                DrawCameraMode.ShadowCascades,
-                DrawCameraMode.RenderPaths,
-                DrawCameraMode.AlphaChannel,
-                DrawCameraMode.Overdraw,
-                DrawCameraMode.Mipmaps,
-                DrawCameraMode.SpriteMask,
-
-                // Deferred
-                DrawCameraMode.DeferredDiffuse,
-                DrawCameraMode.DeferredSpecular,
-                DrawCameraMode.DeferredSmoothness,
-                DrawCameraMode.DeferredNormal,
-
-                // Enlighten Global Illumination
-                DrawCameraMode.Systems,
-                DrawCameraMode.Clustering,
-                DrawCameraMode.LitClustering,
-                DrawCameraMode.RealtimeCharting,
-
-                // Realtime GI
-                DrawCameraMode.RealtimeAlbedo,
-                DrawCameraMode.RealtimeEmissive,
-                DrawCameraMode.RealtimeIndirect,
-                DrawCameraMode.RealtimeDirectionality,
-
-                // Baked GI
-                DrawCameraMode.BakedLightmap,
-                DrawCameraMode.BakedDirectionality,
-                DrawCameraMode.ShadowMasks,
-                DrawCameraMode.BakedAlbedo,
-                DrawCameraMode.BakedEmissive,
-                DrawCameraMode.BakedCharting,
-                DrawCameraMode.BakedTexelValidity,
-                DrawCameraMode.BakedIndices,
-                DrawCameraMode.LightOverlap,
-
-                // Material Validation
-                DrawCameraMode.ValidateAlbedo,
-                DrawCameraMode.ValidateMetalSpecular,
-            };
-
-
-            // Match DrawCameraMode order!
-            public static readonly GUIContent[] sRenderModeOptions =
+            public static GUIStyle sSeparator
             {
-                EditorGUIUtility.TextContent("Shaded"),
-                EditorGUIUtility.TextContent("Wireframe"),
-                EditorGUIUtility.TextContent("Shaded Wireframe"),
-                EditorGUIUtility.TextContent("Shadow Cascades"),
-                EditorGUIUtility.TextContent("Render Paths"),
-                EditorGUIUtility.TextContent("Alpha Channel"),
-                EditorGUIUtility.TextContent("Overdraw"),
-                EditorGUIUtility.TextContent("Mipmaps"),
-                EditorGUIUtility.TextContent("Albedo"),
-                EditorGUIUtility.TextContent("Specular"),
-                EditorGUIUtility.TextContent("Smoothness"),
-                EditorGUIUtility.TextContent("Normal"),
-                EditorGUIUtility.TextContent("UV Charts"),
-                EditorGUIUtility.TextContent("Systems"),
-                EditorGUIUtility.TextContent("Albedo"),
-                EditorGUIUtility.TextContent("Emissive"),
-                EditorGUIUtility.TextContent("Indirect"),
-                EditorGUIUtility.TextContent("Directionality"),
-                EditorGUIUtility.TextContent("Baked Lightmap"),
-                EditorGUIUtility.TextContent("Clustering"),
-                EditorGUIUtility.TextContent("Lit Clustering"),
-                EditorGUIUtility.TextContent("Validate Albedo"),
-                EditorGUIUtility.TextContent("Validate Metal Specular"),
-                EditorGUIUtility.TextContent("Shadowmask"),
-                EditorGUIUtility.TextContent("Light Overlap"),
-                EditorGUIUtility.TextContent("Albedo"),
-                EditorGUIUtility.TextContent("Emissive"),
-                EditorGUIUtility.TextContent("Directionality"),
-                EditorGUIUtility.TextContent("Texel Validity"),
-                EditorGUIUtility.TextContent("Lightmap Indices"),
-                EditorGUIUtility.TextContent("UV Charts"),
-                EditorGUIUtility.TextContent("Sprite Mask"),
+                get
+                {
+                    if (s_Separator == null)
+                        s_Separator = "sv_iconselector_sep";
+                    return s_Separator;
+                }
+            }
+
+            public static readonly string kShadingMode = "Shading Mode";
+            public static readonly string kMiscellaneous = "Miscellaneous";
+            public static readonly string kDeferred = "Deferred";
+            public static readonly string kGlobalIllumination = "Global Illumination";
+            public static readonly string kRealtimeGI = "Realtime Global Illumination";
+            public static readonly string kBakedGI = "Baked Global Illumination";
+            public static readonly string kMaterialValidation = "Material Validation";
+
+            public static readonly GUIContent sResolutionToggle =
+                EditorGUIUtility.TextContent("Show Lightmap Resolution");
+
+            // Map all builtin DrawCameraMode entries
+            // This defines the order in which the entries appear in the dropdown menu!
+            public static readonly SceneView.CameraMode[] sBuiltinCameraModes =
+            {
+                new SceneView.CameraMode(DrawCameraMode.Textured, "Shaded", kShadingMode),
+                new SceneView.CameraMode(DrawCameraMode.Wireframe, "Wireframe", kShadingMode),
+                new SceneView.CameraMode(DrawCameraMode.TexturedWire, "Shaded Wireframe", kShadingMode),
+
+                new SceneView.CameraMode(DrawCameraMode.ShadowCascades, "Shadow Cascades", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.RenderPaths, "Render Paths", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
+
+                new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredNormal, "Normal", kDeferred),
+
+                new SceneView.CameraMode(DrawCameraMode.Systems, "Systems", kGlobalIllumination),
+                new SceneView.CameraMode(DrawCameraMode.Clustering, "Clustering", kGlobalIllumination),
+                new SceneView.CameraMode(DrawCameraMode.LitClustering, "Lit Clustering", kGlobalIllumination),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeCharting, "UV Charts", kGlobalIllumination),
+
+                new SceneView.CameraMode(DrawCameraMode.RealtimeAlbedo, "Albedo", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeEmissive, "Emissive", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeIndirect, "Indirect", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeDirectionality, "Directionality", kRealtimeGI),
+
+                new SceneView.CameraMode(DrawCameraMode.BakedLightmap, "Baked Lightmap", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedDirectionality, "Directionality", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.ShadowMasks, "Shadowmask", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedAlbedo, "Albedo", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedEmissive, "Emissive", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedCharting, "UV Charts", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedTexelValidity, "Texel Validity", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedUVOverlap, "UV Overlap", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedIndices, "Lightmap Indices", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.LightOverlap, "Light Overlap", kBakedGI),
+
+                new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMaterialValidation),
+                new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMaterialValidation),
             };
         }
 
-        readonly float m_WindowHeight = (sMenuRowCount * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * 5) + kShowLightmapResolutionHeight;
-        const float m_WindowWidth = 205;
+        private float windowHeight
+        {
+            get
+            {
+                int headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count() +
+                    SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
+                int modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
+                int separators = headers - 2;
+                return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators) + kShowLightmapResolutionHeight;
+            }
+        }
 
-        static readonly int sRenderModeCount = Styles.sRenderModeOptions.Length;
-        static readonly int sMenuRowCount = sRenderModeCount + kMenuHeaderCount;
+        float windowWidth { get { return 205; } }
 
-        const int kMenuHeaderCount = 7;
         const float kSeparatorHeight = 3;
         const float kFrameWidth = 1f;
         const float kHeaderHorizontalPadding = 5f;
@@ -195,7 +184,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(m_WindowWidth, m_WindowHeight);
+            return new Vector2(windowWidth, windowHeight);
         }
 
         public override void OnGUI(Rect rect)
@@ -247,66 +236,46 @@ namespace UnityEditor
         private void Draw(EditorWindow caller, float listElementWidth)
         {
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
-            DrawHeader(ref drawPos, Styles.sShadedHeader);
+            bool usingScriptableRenderPipeline = (GraphicsSettings.renderPipelineAsset != null);
+            string lastSection = null;
 
-            // Render modes
-            for (var i = 0; i < sRenderModeCount; ++i)
+            foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section).Concat(Styles.sBuiltinCameraModes))
             {
                 // Draw separators and headers
-                var mode = Styles.sRenderModeUIOrder[i];
+                if (usingScriptableRenderPipeline && mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeEnabled(mode))
+                    // When using SRP, we completely hide disabled builtin modes, including headers
+                    continue;
 
-                switch (mode)
+                if (lastSection != mode.section)
                 {
-                    case DrawCameraMode.ShadowCascades:
+                    // Draw header for new section
+                    if (lastSection != null)
+                        // Don't draw separator before first section
                         DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sMiscellaneous);
-                        break;
-
-                    case DrawCameraMode.DeferredDiffuse:
-                        DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sDeferredHeader);
-                        break;
-
-                    case DrawCameraMode.Systems:
-                        DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sGlobalIlluminationHeader);
-                        break;
-
-                    case DrawCameraMode.RealtimeAlbedo:
-                        DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sRealtimeGIHeader);
-                        break;
-
-                    case DrawCameraMode.BakedLightmap:
-                        DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sBakedGIHeader);
-                        break;
-
-                    case DrawCameraMode.ValidateAlbedo:
-                        DrawSeparator(ref drawPos);
-                        DrawHeader(ref drawPos, Styles.sMaterialValidationHeader);
-                        break;
+                    DrawHeader(ref drawPos, EditorGUIUtility.TextContent(mode.section));
+                    lastSection = mode.section;
                 }
 
-                using (new EditorGUI.DisabledScope(!IsModeEnabled(mode)))
+                using (new EditorGUI.DisabledScope(!m_SceneView.IsCameraDrawModeEnabled(mode)))
                 {
-                    DoOneMode(caller, ref drawPos, mode);
+                    DoBuiltinMode(caller, ref drawPos, mode);
                 }
             }
 
-            bool disabled = (m_SceneView.renderMode < DrawCameraMode.RealtimeCharting) || !IsModeEnabled(m_SceneView.renderMode);
+            bool disabled = (m_SceneView.cameraMode.drawMode < DrawCameraMode.RealtimeCharting) ||
+                !IsModeEnabled(m_SceneView.cameraMode.drawMode);
             DoResolutionToggle(drawPos, disabled);
         }
 
         bool IsModeEnabled(DrawCameraMode mode)
         {
-            return m_SceneView.IsCameraDrawModeEnabled(mode);
+            return m_SceneView.IsCameraDrawModeEnabled(GetBuiltinCameraMode(mode));
         }
 
         void DoResolutionToggle(Rect rect, bool disabled)
         {
             // Bg
-            GUI.Label(new Rect(kFrameWidth, rect.y, m_WindowWidth - kFrameWidth * 2, kShowLightmapResolutionHeight), "", EditorStyles.inspectorBig);
+            GUI.Label(new Rect(kFrameWidth, rect.y, windowWidth - kFrameWidth * 2, kShowLightmapResolutionHeight), "", EditorStyles.inspectorBig);
 
             rect.y += kSeparatorHeight;
             rect.x += kTogglePadding;
@@ -323,16 +292,16 @@ namespace UnityEditor
             }
         }
 
-        void DoOneMode(EditorWindow caller, ref Rect rect, DrawCameraMode drawCameraMode)
+        void DoBuiltinMode(EditorWindow caller, ref Rect rect, SceneView.CameraMode mode)
         {
-            using (new EditorGUI.DisabledScope(!m_SceneView.CheckDrawModeForRenderingPath(drawCameraMode)))
+            using (new EditorGUI.DisabledScope(!m_SceneView.CheckDrawModeForRenderingPath(mode.drawMode)))
             {
                 EditorGUI.BeginChangeCheck();
 
-                GUI.Toggle(rect, m_SceneView.renderMode == drawCameraMode, GetGUIContent(drawCameraMode), Styles.sMenuItem);
+                GUI.Toggle(rect, m_SceneView.cameraMode == mode, EditorGUIUtility.TextContent(mode.name), Styles.sMenuItem);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    m_SceneView.renderMode = drawCameraMode;
+                    m_SceneView.cameraMode = mode;
                     m_SceneView.Repaint();
                     GUIUtility.ExitGUI();
                 }
@@ -343,7 +312,14 @@ namespace UnityEditor
 
         public static GUIContent GetGUIContent(DrawCameraMode drawCameraMode)
         {
-            return Styles.sRenderModeOptions[(int)drawCameraMode];
+            if (drawCameraMode == DrawCameraMode.UserDefined)
+                return GUIContent.none;
+            return EditorGUIUtility.TextContent(Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawCameraMode).name);
+        }
+
+        internal static SceneView.CameraMode GetBuiltinCameraMode(DrawCameraMode drawMode)
+        {
+            return Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawMode);
         }
     }
 }

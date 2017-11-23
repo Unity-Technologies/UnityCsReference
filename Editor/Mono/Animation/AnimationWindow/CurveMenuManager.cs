@@ -87,9 +87,11 @@ namespace UnityEditor
             bool allFreeSmooth = anyKeys;
             bool allFlat = anyKeys;
             bool allBroken = anyKeys;
+            bool allLeftWeighted = anyKeys;
             bool allLeftFree = anyKeys;
             bool allLeftLinear = anyKeys;
             bool allLeftConstant = anyKeys;
+            bool allRightWeighted = anyKeys;
             bool allRightFree = anyKeys;
             bool allRightLinear = anyKeys;
             bool allRightConstant = anyKeys;
@@ -110,6 +112,10 @@ namespace UnityEditor
                 if (!broken || rightMode != TangentMode.Free) allRightFree = false;
                 if (!broken || rightMode != TangentMode.Linear) allRightLinear = false;
                 if (!broken || rightMode != TangentMode.Constant) allRightConstant = false;
+
+
+                if ((key.weightedMode & WeightedMode.In) == WeightedMode.None) allLeftWeighted = false;
+                if ((key.weightedMode & WeightedMode.Out) == WeightedMode.None) allRightWeighted = false;
             }
             if (anyKeys)
             {
@@ -122,15 +128,19 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TextContent("Left Tangent/Free"),      allLeftFree, SetLeftEditable, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Left Tangent/Linear"),    allLeftLinear, SetLeftLinear, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Left Tangent/Constant"),  allLeftConstant, SetLeftConstant, keyList);
+                menu.AddItem(EditorGUIUtility.TextContent("Left Tangent/Weighted"),  allLeftWeighted, ToggleLeftWeighted, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Right Tangent/Free"),     allRightFree, SetRightEditable, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Right Tangent/Linear"),   allRightLinear, SetRightLinear, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Right Tangent/Constant"), allRightConstant, SetRightConstant, keyList);
+                menu.AddItem(EditorGUIUtility.TextContent("Right Tangent/Weighted"),  allRightWeighted, ToggleRightWeighted, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Both Tangents/Free"),     allRightFree && allLeftFree, SetBothEditable, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Both Tangents/Linear"),   allRightLinear && allLeftLinear, SetBothLinear, keyList);
                 menu.AddItem(EditorGUIUtility.TextContent("Both Tangents/Constant"), allRightConstant && allLeftConstant, SetBothConstant, keyList);
+                menu.AddItem(EditorGUIUtility.TextContent("Both Tangents/Weighted"), allRightWeighted && allLeftWeighted, ToggleBothWeighted, keyList);
             }
             else
             {
+                menu.AddDisabledItem(EditorGUIUtility.TextContent("Weighted"));
                 menu.AddDisabledItem(EditorGUIUtility.TextContent("Clamped Auto"));
                 menu.AddDisabledItem(EditorGUIUtility.TextContent("Auto"));
                 menu.AddDisabledItem(EditorGUIUtility.TextContent("Free Smooth"));
@@ -149,7 +159,59 @@ namespace UnityEditor
             }
         }
 
-        // Popup menu callbacks for tangents
+        public void ToggleLeftWeighted(object keysToSet) { ToggleWeighted(WeightedMode.In, (List<KeyIdentifier>)keysToSet); }
+        public void ToggleRightWeighted(object keysToSet) { ToggleWeighted(WeightedMode.Out, (List<KeyIdentifier>)keysToSet); }
+        public void ToggleBothWeighted(object keysToSet) { ToggleWeighted(WeightedMode.Both, (List<KeyIdentifier>)keysToSet); }
+        public void ToggleWeighted(WeightedMode weightedMode, List<KeyIdentifier> keysToSet)
+        {
+            bool allWeighted = keysToSet.TrueForAll(key => (key.keyframe.weightedMode & weightedMode) == weightedMode);
+
+            List<ChangedCurve> changedCurves = new List<ChangedCurve>();
+            foreach (KeyIdentifier keyToSet in keysToSet)
+            {
+                AnimationCurve animationCurve = keyToSet.curve;
+                Keyframe key = keyToSet.keyframe;
+
+                bool weighted = (key.weightedMode & weightedMode) == weightedMode;
+                if (weighted == allWeighted)
+                {
+                    WeightedMode lastWeightedMode = key.weightedMode;
+                    key.weightedMode = weighted ? key.weightedMode & ~weightedMode : key.weightedMode | weightedMode;
+
+                    if (key.weightedMode != WeightedMode.None)
+                    {
+                        TangentMode rightTangentMode = AnimationUtility.GetKeyRightTangentMode(key);
+                        TangentMode leftTangentMode = AnimationUtility.GetKeyLeftTangentMode(key);
+
+                        if ((lastWeightedMode & WeightedMode.Out) == WeightedMode.None && (key.weightedMode & WeightedMode.Out) == WeightedMode.Out)
+                        {
+                            if (rightTangentMode == TangentMode.Linear || rightTangentMode == TangentMode.Constant)
+                                AnimationUtility.SetKeyRightTangentMode(ref key, TangentMode.Free);
+                            if (keyToSet.key < (animationCurve.length - 1))
+                                key.outWeight = 1 / 3.0f;
+                        }
+
+                        if ((lastWeightedMode & WeightedMode.In) == WeightedMode.None && (key.weightedMode & WeightedMode.In) == WeightedMode.In)
+                        {
+                            if (leftTangentMode == TangentMode.Linear || leftTangentMode == TangentMode.Constant)
+                                AnimationUtility.SetKeyLeftTangentMode(ref key, TangentMode.Free);
+                            if (keyToSet.key > 0)
+                                key.inWeight = 1 / 3.0f;
+                        }
+                    }
+
+                    animationCurve.MoveKey(keyToSet.key, key);
+                    AnimationUtility.UpdateTangentsFromModeSurrounding(animationCurve, keyToSet.key);
+
+                    ChangedCurve changedCurve = new ChangedCurve(animationCurve, keyToSet.curveId, keyToSet.binding);
+                    if (!changedCurves.Contains(changedCurve))
+                        changedCurves.Add(changedCurve);
+                }
+            }
+
+            updater.UpdateCurves(changedCurves, "Toggle Weighted");
+        }
+
         public void SetClampedAuto(object keysToSet) { SetBoth(TangentMode.ClampedAuto, (List<KeyIdentifier>)keysToSet); }
         public void SetAuto(object keysToSet) { SetBoth(TangentMode.Auto, (List<KeyIdentifier>)keysToSet); }
         public void SetEditable(object keysToSet) { SetBoth(TangentMode.Free, (List<KeyIdentifier>)keysToSet); }

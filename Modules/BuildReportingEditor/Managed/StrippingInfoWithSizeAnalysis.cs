@@ -79,7 +79,7 @@ namespace UnityEditor.BuildReporting
 
         public void Analyze()
         {
-            var doSourceCodeAnalysis = Unsupported.IsDeveloperBuild();
+            var doSourceCodeAnalysis = Unsupported.IsDeveloperMode();
 
             var symbolArtifacts = GetSymbolArtifacts();
             var moduleArtifacts = GetModuleArtifacts();

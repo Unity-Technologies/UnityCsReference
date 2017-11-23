@@ -36,7 +36,7 @@ namespace UnityEditor
         void OnInspectorUpdate()
         {
             string miniOverview = UnityEditorInternal.ProfilerDriver.miniMemoryOverview;
-            if (Unsupported.IsDeveloperBuild() && m_LastMiniMemoryOverview != miniOverview)
+            if (Unsupported.IsDeveloperMode() && m_LastMiniMemoryOverview != miniOverview)
             {
                 m_LastMiniMemoryOverview = miniOverview;
                 Repaint();
@@ -121,7 +121,7 @@ namespace UnityEditor
                     GUI.Label(new Rect(progressBarHorizontalPosition - 310, 0, 310, 19), "THIS IS AN UNTESTED BLEEDINGEDGE UNITY BUILD");
                     GUI.color = backup;
                 }
-                else if (Unsupported.IsDeveloperBuild())
+                else if (Unsupported.IsDeveloperMode())
                 {
                     GUI.Label(new Rect(progressBarHorizontalPosition - 200, 0, 200, 19), m_LastMiniMemoryOverview, EditorStyles.progressBarText);
                     EditorGUIUtility.CleanCache(m_LastMiniMemoryOverview);

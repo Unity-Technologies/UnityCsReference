@@ -105,6 +105,7 @@ namespace UnityEngine
         // In the player on PS4
         PS4 = 25,
         // In the player on PSM
+        [System.Obsolete("PSM export is no longer supported in Unity >= 5.3")]
         PSM = 26,
         // In the player on XboxOne
         XboxOne = 27,

@@ -1417,7 +1417,7 @@ namespace UnityEditor
 
         public void ShowDeveloperOverlays(Rect rect, Event evt, bool show)
         {
-            if (show && Unsupported.IsDeveloperBuild() && evt.type == EventType.Repaint)
+            if (show && Unsupported.IsDeveloperMode() && evt.type == EventType.Repaint)
             {
                 AudioMixerDrawUtils.ReadOnlyLabel(new Rect(rect.x + 5, rect.y + 5, rect.width - 10, 20), "Current snapshot: " + m_Controller.TargetSnapshot.name, developerInfoStyle);
                 AudioMixerDrawUtils.ReadOnlyLabel(new Rect(rect.x + 5, rect.y + 25, rect.width - 10, 20), "Frame count: " + FrameCounter++, developerInfoStyle);

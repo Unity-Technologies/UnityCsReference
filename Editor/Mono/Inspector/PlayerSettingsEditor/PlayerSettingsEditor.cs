@@ -6,6 +6,7 @@ using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
+using UnityEditor.PlatformSupport;
 using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System;
@@ -151,6 +152,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TextContent("Stable (.NET 3.5 Equivalent)");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TextContent("Experimental (.NET 4.6 Equivalent)");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TextContent("Scripting Backend");
+            public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TextContent("Mono");
             public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TextContent("IL2CPP");
@@ -165,6 +167,7 @@ namespace UnityEditor
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TextContent("Virtual Reality moved to XR Settings");
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TextContent("Lightmap Encoding|Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { new GUIContent("Normal Quality"), new GUIContent("High Quality")};
+            public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TextContent("Mono is not supported on iOS11 and above.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -528,8 +531,9 @@ namespace UnityEditor
             BuildTargetGroup targetGroup = platform.targetGroup;
 
             int sectionIndex = 0;
-            ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+
             IconSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
+            ResolutionSectionGUI(targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             DebugAndCrashReportingGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
             OtherSectionGUI(platform, targetGroup, m_SettingsExtensions[selectedPlatform], sectionIndex++);
@@ -1608,7 +1612,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.Android ||
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
-                targetGroup == BuildTargetGroup.PSM ||
                 targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA ||
                 targetGroup == BuildTargetGroup.Switch)
@@ -1730,6 +1733,70 @@ namespace UnityEditor
             }
         }
 
+        internal static void ShowPlatformIconsByKind(PlatformIconFieldGroup iconFieldGroup, bool foldByKind = true, bool foldBySubkind = true)
+        {
+            int labelHeight = 20;
+
+            if (iconFieldGroup.m_IconsFields.Count == 0)
+            {
+                foreach (var kind in PlayerSettings.GetSupportedIconKindsForPlatform(iconFieldGroup.targetGroup))
+                {
+                    iconFieldGroup.AddPlatformIcons(PlayerSettings.GetPlatformIcons(
+                            iconFieldGroup.targetGroup, kind), kind
+                        );
+                }
+            }
+            foreach (var kindGroup in iconFieldGroup.m_IconsFields)
+            {
+                EditorGUI.BeginChangeCheck();
+
+                var key = kindGroup.Key;
+
+                if (foldByKind)
+                {
+                    string kindName = string.Format("{0} icons ({1}/{2})", key.m_Label, kindGroup.Key.m_SetIconSlots, kindGroup.Key.m_IconSlotCount);
+                    Rect rectKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
+                    rectKindLabel.x += 2;
+                    key.m_State = EditorGUI.Foldout(rectKindLabel, key.m_State, kindName, EditorStyles.foldout);
+                }
+                else
+                    key.m_State = true;
+
+                if (key.m_State)
+                {
+                    kindGroup.Key.m_SetIconSlots = 0;
+                    foreach (var subKindGroup in kindGroup.Value)
+                    {
+                        subKindGroup.Key.m_SetIconSlots =
+                            PlayerSettings.GetNonEmptyPlatformIconCount(subKindGroup.Value.Select(x => x.platformIcon)
+                                .ToArray());
+                        kindGroup.Key.m_SetIconSlots += subKindGroup.Key.m_SetIconSlots;
+
+                        if (foldBySubkind)
+                        {
+                            string subKindName = string.Format("{0} icons ({1}/{2})", subKindGroup.Key.m_Label, subKindGroup.Key.m_SetIconSlots , subKindGroup.Value.Length);
+                            Rect rectSubKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
+                            rectSubKindLabel.x += 8;
+
+                            subKindGroup.Key.m_State = EditorGUI.Foldout(rectSubKindLabel, subKindGroup.Key.m_State, subKindName, EditorStyles.foldout);
+                        }
+                        else
+                            subKindGroup.Key.m_State = true;
+
+                        if (subKindGroup.Key.m_State || !foldBySubkind)
+                        {
+                            foreach (var iconField in subKindGroup.Value)
+                            {
+                                iconField.DrawAt();
+                            }
+                        }
+                    }
+                }
+                if (EditorGUI.EndChangeCheck())
+                    PlayerSettings.SetPlatformIcons(iconFieldGroup.targetGroup, key.m_Kind , iconFieldGroup.m_PlatformIconsByKind[key.m_Kind]);
+            }
+        }
+
         internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
         {
             EditorGUI.BeginChangeCheck();
@@ -1788,6 +1855,8 @@ namespace UnityEditor
 
             // Scripting back-end
             IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
+            bool targetGroupSupportsIl2Cpp = false;
+            bool currentBackendIsIl2Cpp = false;
 
             if (scripting == null)
             {
@@ -1797,7 +1866,17 @@ namespace UnityEditor
             {
                 var backends = scripting.Enabled();
 
+                foreach (var backend in backends)
+                {
+                    if (backend == ScriptingImplementation.IL2CPP)
+                    {
+                        targetGroupSupportsIl2Cpp = true;
+                        break;
+                    }
+                }
+
                 ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
+                currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
                 ScriptingImplementation newBackend;
 
                 if (targetGroup == BuildTargetGroup.tvOS)
@@ -1809,6 +1888,12 @@ namespace UnityEditor
                 {
                     newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                 }
+
+                if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
+                {
+                    EditorGUILayout.HelpBox(Styles.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
+                }
+
                 if (newBackend != currBackend)
                     PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
             }
@@ -1827,6 +1912,21 @@ namespace UnityEditor
 
                 if (currentCompatibilityLevel != newCompatibilityLevel)
                     PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
+            }
+
+            if (targetGroupSupportsIl2Cpp)
+            {
+                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp))
+                {
+                    var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
+                    var configurations = GetIl2CppCompilerConfigurations();
+                    var configurationNames = GetIl2CppCompilerConfigurationNames();
+
+                    var newConfiguration = BuildEnumPopup(Styles.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+
+                    if (currentConfiguration != newConfiguration)
+                        PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
+                }
             }
 
             bool showMobileSection =
@@ -1978,12 +2078,9 @@ namespace UnityEditor
             vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(Styles.vertexChannelCompressionMask, vertexFlags);
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
-            // PSM doesn't support stripping of mesh components, as we don't know the SourceMap of the shader
-            if (targetGroup != BuildTargetGroup.PSM)
-                EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, Styles.stripUnusedMeshComponents);
+            EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, Styles.stripUnusedMeshComponents);
 
-            if (targetGroup == BuildTargetGroup.PSP2 ||
-                targetGroup == BuildTargetGroup.PSM)
+            if (targetGroup == BuildTargetGroup.PSP2)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_VideoMemoryForVertexBuffers, Styles.videoMemoryForVertexBuffers);
@@ -2018,6 +2115,37 @@ namespace UnityEditor
                 return allProfiles;
 
             return only_2_0_profiles;
+        }
+
+        static Il2CppCompilerConfiguration[] m_Il2cppCompilerConfigurations;
+        static GUIContent[] m_Il2cppCompilerConfigurationNames;
+
+        private Il2CppCompilerConfiguration[] GetIl2CppCompilerConfigurations()
+        {
+            if (m_Il2cppCompilerConfigurations == null)
+            {
+                m_Il2cppCompilerConfigurations = new Il2CppCompilerConfiguration[]
+                {
+                    Il2CppCompilerConfiguration.Debug,
+                    Il2CppCompilerConfiguration.Release,
+                };
+            }
+
+            return m_Il2cppCompilerConfigurations;
+        }
+
+        private GUIContent[] GetIl2CppCompilerConfigurationNames()
+        {
+            if (m_Il2cppCompilerConfigurationNames == null)
+            {
+                var configurations = GetIl2CppCompilerConfigurations();
+                m_Il2cppCompilerConfigurationNames = new GUIContent[configurations.Length];
+
+                for (int i = 0; i < configurations.Length; i++)
+                    m_Il2cppCompilerConfigurationNames[i] = EditorGUIUtility.TextContent(configurations[i].ToString());
+            }
+
+            return m_Il2cppCompilerConfigurationNames;
         }
 
         private void OtherSectionLoggingGUI()
@@ -2268,11 +2396,6 @@ namespace UnityEditor
                 if (settingsExtension != null)
                 {
                     settingsExtension.PublishSectionGUI(h, kLabelFloatMinW, kLabelFloatMaxW);
-                }
-
-                if (targetGroup == BuildTargetGroup.PSM)
-                {
-                    // key creation?
                 }
             }
             EndSettingsBox();

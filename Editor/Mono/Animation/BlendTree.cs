@@ -10,6 +10,7 @@ using System.Linq;
 
 namespace UnityEditor.Animations
 {
+    [ExcludeFromPreset]
     public partial class BlendTree : Motion
     {
         public void AddChild(Motion motion)

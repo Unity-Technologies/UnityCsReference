@@ -2,8 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using Boo.Lang.Compiler.TypeSystem;
+using ICSharpCode.NRefactory.Ast;
 using UnityEditor.Scripting.Compilers;
+using UnityEditor.Utils;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -16,6 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Defines { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
+        public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public string FilenameSuffix { get; set; }
 
         public ScriptAssemblySettings()
@@ -45,6 +51,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string OutputDirectory { get; set; }
         public ScriptAssembly[] ScriptAssemblyReferences { get; set; } // References to dependencies that will be built.
         public string[] References { get; set; } // References to dependencies that that will *not* be built.
+        public string[] AdditionalReferences { get; set; }
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
         public bool RunUpdater { get; set; }
@@ -62,6 +69,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             bool developmentBuild = (options & EditorScriptCompilationOptions.BuildingDevelopmentBuild) == EditorScriptCompilationOptions.BuildingDevelopmentBuild;
 
             var references = ScriptAssemblyReferences.Select(a => AssetPath.Combine(a.OutputDirectory, a.Filename));
+
             var referencesArray = references.Concat(References).ToArray();
 
             var outputPath = AssetPath.Combine(buildOutputDirectory, Filename);

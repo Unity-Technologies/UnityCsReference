@@ -11,6 +11,7 @@ using System;
 
 namespace UnityEditor.Audio
 {
+    [ExcludeFromPreset]
     internal partial class AudioMixerGroupController
     {
         public void InsertEffect(AudioMixerEffectController effect, int index)

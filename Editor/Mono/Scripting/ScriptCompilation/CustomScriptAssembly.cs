@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
+using UnityEditor.Compilation;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -12,6 +14,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 #pragma warning disable 649
         public string name;
         public string[] references;
+        public string[] optionalUnityReferences;
         public string[] includePlatforms;
         public string[] excludePlatforms;
 
@@ -35,6 +38,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static string ToJson(CustomScriptAssemblyData data)
         {
             return UnityEngine.JsonUtility.ToJson(data, true);
+        }
+    }
+
+    struct CustomScriptOptinalUnityAssembly
+    {
+        public string DisplayName { get; private set; }
+        public OptionalUnityReferences OptionalUnityReferences { get; private set; }
+        public string AdditinalInformationWhenEnabled { get; private set; }
+
+        public CustomScriptOptinalUnityAssembly(string displayName, OptionalUnityReferences optionalUnityReferences, string additinalInformationWhenEnabled = "")
+            : this()
+        {
+            DisplayName = displayName;
+            OptionalUnityReferences = optionalUnityReferences;
+            AdditinalInformationWhenEnabled = additinalInformationWhenEnabled;
         }
     }
 
@@ -62,6 +80,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string PathPrefix { get; set; }
         public string Name { get; set; }
         public string[] References { get; set; }
+        public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public CustomScriptAssemblyPlatform[] IncludePlatforms { get; set;  }
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
@@ -77,6 +96,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public static CustomScriptAssemblyPlatform[] Platforms { get; private set; }
+        public static CustomScriptOptinalUnityAssembly[] OptinalUnityAssemblies { get; private set; }
 
         static CustomScriptAssembly()
         {
@@ -97,7 +117,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Platforms[i++] = new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2);
             Platforms[i++] = new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM);
             Platforms[i++] = new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne);
             Platforms[i++] = new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS);
             Platforms[i++] = new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU);
@@ -105,6 +124,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Platforms[i++] = new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch);
 
             System.Diagnostics.Debug.Assert(Platforms.Length == i - 1);
+
+            OptinalUnityAssemblies = new[]
+            {
+                new CustomScriptOptinalUnityAssembly("Test Assemblies", OptionalUnityReferences.TestAssemblies, "Predefined Assemblies (Assembly-CSharp.dll etc) will not reference this assembly.\nThis assembly will only be used for tests and will not be included in player builds."),
+            };
         }
 
         public bool IsCompatibleWithEditor()
@@ -168,6 +192,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.References = customScriptAssemblyData.references;
             customScriptAssembly.FilePath = path;
             customScriptAssembly.PathPrefix = pathPrefix;
+
+            customScriptAssemblyData.optionalUnityReferences = customScriptAssemblyData.optionalUnityReferences ?? new string[0];
+            foreach (var optionalUnityReferenceString in customScriptAssemblyData.optionalUnityReferences)
+            {
+                var optionalUnityReference = (OptionalUnityReferences)Enum.Parse(typeof(OptionalUnityReferences), optionalUnityReferenceString);
+                customScriptAssembly.OptionalUnityReferences |= optionalUnityReference;
+            }
 
             if (customScriptAssemblyData.includePlatforms != null && customScriptAssemblyData.includePlatforms.Length > 0)
                 customScriptAssembly.IncludePlatforms = customScriptAssemblyData.includePlatforms.Select(name => GetPlatformFromName(name)).ToArray();

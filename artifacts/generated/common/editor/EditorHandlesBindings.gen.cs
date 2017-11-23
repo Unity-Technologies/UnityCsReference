@@ -826,25 +826,7 @@ public static void DrawCone(int controlID, Vector3 position, Quaternion rotation
                             break;
                     }
                 }
-                if (Application.platform == RuntimePlatform.WindowsEditor)
-                {
-                     
-                    ReplaceFontForWindows((Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande.ttf"));
-                    ReplaceFontForWindows((Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Bold.ttf"));
-                    ReplaceFontForWindows((Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small.ttf"));
-                    ReplaceFontForWindows((Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small Bold.ttf"));
-                    ReplaceFontForWindows((Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Big.ttf"));
-                }
             }
-        }
-    
-    static void ReplaceFontForWindows(Font font)
-        {
-            if (font.name.Contains("Bold"))
-                font.fontNames = new string[] { "Verdana Bold", "Tahoma Bold" };
-            else
-                font.fontNames = new string[] { "Verdana", "Tahoma" };
-            font.hideFlags = HideFlags.HideAndDontSave;
         }
     
     

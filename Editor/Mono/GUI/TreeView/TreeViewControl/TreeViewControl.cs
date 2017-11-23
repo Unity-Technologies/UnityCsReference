@@ -55,6 +55,7 @@ namespace UnityEditor.IMGUI.Controls
 
             m_TreeView.searchChanged += SearchChanged;
             m_TreeView.selectionChangedCallback += SelectionChanged;
+            m_TreeView.itemSingleClickedCallback += SingleClickedItem;
             m_TreeView.itemDoubleClickedCallback += DoubleClickedItem;
             m_TreeView.contextClickItemCallback += ContextClickedItem;
             m_TreeView.contextClickOutsideItemsCallback += ContextClicked;
@@ -478,6 +479,10 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         protected virtual void SelectionChanged(IList<int> selectedIds)
+        {
+        }
+
+        protected virtual void SingleClickedItem(int id)
         {
         }
 

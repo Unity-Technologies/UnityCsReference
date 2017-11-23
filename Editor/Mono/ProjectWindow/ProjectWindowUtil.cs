@@ -80,6 +80,31 @@ namespace UnityEditor
             }
         }
 
+        internal class DoCreateFolderWithTemplates : EndNameEditAction
+        {
+            private const string kResourcesTemplatePath = "Resources/ScriptTemplates";
+
+            public IList<string> templates { get; set; }
+
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                var fileName = Path.GetFileName(pathName);
+                string guid = AssetDatabase.CreateFolder(Path.GetDirectoryName(pathName), fileName);
+                string basePath = Path.Combine(EditorApplication.applicationContentsPath, kResourcesTemplatePath);
+
+                foreach (var template in templates ?? Enumerable.Empty<string>())
+                {
+                    var templateNameWithoutTxt = template.Replace(".txt", string.Empty);
+                    var templateExtension = Path.GetExtension(templateNameWithoutTxt);
+
+                    ProjectWindowUtil.CreateScriptAssetFromTemplate(Path.Combine(pathName, fileName + templateExtension), Path.Combine(basePath, template));
+                }
+
+                UnityEngine.Object o = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), typeof(UnityEngine.Object));
+                ProjectWindowUtil.ShowCreatedAsset(o);
+            }
+        }
+
         internal class DoCreatePrefab : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -208,9 +233,16 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateFolder>(), "New Folder", EditorGUIUtility.IconContent(EditorResourcesUtility.emptyFolderIconName).image as Texture2D, null);
         }
 
+        internal static void CreateFolderWithTemplates(string defaultName, params string[] templates)
+        {
+            var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
+            endNameEditAction.templates = templates;
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResourcesUtility.emptyFolderIconName).image as Texture2D, null);
+        }
+
         public static void CreateScene()
         {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture("SceneAsset Icon"), null);
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
         }
 
         // Create a prefab

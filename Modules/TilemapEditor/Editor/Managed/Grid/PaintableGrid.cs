@@ -48,6 +48,7 @@ namespace UnityEditor
         protected Vector2Int? m_MarqueeStart = null;
         private MarqueeType m_MarqueeType = MarqueeType.None;
         private bool m_IsExecuting;
+        private EditMode.SceneViewEditMode m_ModeBeforePicking;
 
         public Vector2Int mouseGridPosition { get { return m_MouseGridPosition; } }
         public bool isPicking { get { return m_MarqueeType == MarqueeType.Pick; } }
@@ -149,8 +150,12 @@ namespace UnityEditor
 
             if (evt.type == EventType.MouseDown && IsPickingEvent(evt) && !isHotControl)
             {
+                m_ModeBeforePicking = EditMode.SceneViewEditMode.GridPainting;
                 if (inEditMode && EditMode.editMode != EditMode.SceneViewEditMode.GridPicking)
+                {
+                    m_ModeBeforePicking = EditMode.editMode;
                     EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPicking, GridPaintingState.instance);
+                }
 
                 m_MarqueeStart = mouseGridPosition;
                 m_MarqueeType = MarqueeType.Pick;
@@ -175,8 +180,10 @@ namespace UnityEditor
                     Vector2Int pivot = GetMarqueePivot(m_MarqueeStart.Value, mouseGridPosition);
                     PickBrush(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)), new Vector3Int(pivot.x, pivot.y, 0));
 
-                    if (inEditMode && EditMode.editMode != EditMode.SceneViewEditMode.GridPainting)
-                        EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, GridPaintingState.instance);
+                    if (inEditMode && EditMode.editMode != m_ModeBeforePicking)
+                    {
+                        EditMode.ChangeEditMode(m_ModeBeforePicking, GridPaintingState.instance);
+                    }
 
                     GridPaletteBrushes.ActiveGridBrushAssetChanged();
                     s_LastActivePaintableGrid = this;
@@ -249,14 +256,14 @@ namespace UnityEditor
                 Vector3Int mouse3D = new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, GridSelection.position.zMin);
                 if (GridSelection.active && GridSelection.position.Contains(mouse3D))
                 {
+                    GUIUtility.hotControl = m_PermanentControlID;
                     executing = true;
                     m_MarqueeStart = null;
                     m_MarqueeType = MarqueeType.None;
                     m_PreviousMove = mouseGridPosition;
                     MoveStart(GridSelection.position);
+                    s_LastActivePaintableGrid = this;
                 }
-                s_LastActivePaintableGrid = this;
-                GUIUtility.hotControl = m_PermanentControlID;
                 Event.current.Use();
             }
             if (evt.type == EventType.MouseDrag && evt.button == 0 && EditMode.editMode == EditMode.SceneViewEditMode.GridMove && GUIUtility.hotControl == m_PermanentControlID)

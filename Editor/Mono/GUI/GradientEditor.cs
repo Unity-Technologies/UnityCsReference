@@ -204,7 +204,7 @@ namespace UnityEditor
                 else
                 {
                     EditorGUI.BeginChangeCheck();
-                    m_SelectedSwatch.m_Value = EditorGUI.ColorField(rect, s_Styles.colorText, m_SelectedSwatch.m_Value, true, false, m_HDR, ColorPicker.defaultHDRConfig);
+                    m_SelectedSwatch.m_Value = EditorGUI.ColorField(rect, s_Styles.colorText, m_SelectedSwatch.m_Value, true, false, m_HDR);
                     if (EditorGUI.EndChangeCheck())
                     {
                         AssignBack();
@@ -281,7 +281,7 @@ namespace UnityEditor
                             if (evt.clickCount == 2)
                             {
                                 GUIUtility.keyboardControl = id;
-                                ColorPicker.Show(GUIView.current, m_SelectedSwatch.m_Value, false, m_HDR, ColorPicker.defaultHDRConfig);
+                                ColorPicker.Show(GUIView.current, m_SelectedSwatch.m_Value, false, m_HDR);
                                 GUIUtility.ExitGUI();
                             }
                             break;

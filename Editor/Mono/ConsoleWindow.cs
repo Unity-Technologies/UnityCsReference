@@ -179,8 +179,8 @@ namespace UnityEditor
                 {
                     additionalMenuItems = new List<string>();
                     additionalMenuItems.Add("Player Logging");
-                    if (Unsupported.IsDeveloperBuild())
-                        additionalMenuItems.Add("Full Log (Development Editor only)");
+                    if (Unsupported.IsDeveloperMode())
+                        additionalMenuItems.Add("Full Log (Developer Mode Only)");
                     additionalMenuItems.Add("");
                 }
 
@@ -197,7 +197,7 @@ namespace UnityEditor
                 if (connected)
                 {
                     selected.Add((int)MenuItemIndex.PlayerLogging);
-                    if (Unsupported.IsDeveloperBuild())
+                    if (Unsupported.IsDeveloperMode())
                     {
                         if (PlayerConnectionLogReceiver.instance.State == PlayerConnectionLogReceiver.ConnectionState.FullLog)
                             selected.Add((int)MenuItemIndex.FullLog);
@@ -336,7 +336,7 @@ namespace UnityEditor
         {
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
-            m_DevBuild = Unsupported.IsDeveloperBuild();
+            m_DevBuild = Unsupported.IsDeveloperMode();
 
             Constants.LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
         }

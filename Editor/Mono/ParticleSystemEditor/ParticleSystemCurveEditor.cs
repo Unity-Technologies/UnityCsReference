@@ -629,30 +629,56 @@ internal class ParticleSystemCurveEditor
     // Since we don't enforce the layout, we have a button that enforces the curve layout instead.
     void DoOptimizeCurveButton(Rect rect)
     {
-        if (m_CurveEditor.IsDraggingCurveOrRegion())
-            return;
-
+        bool optimizeButtonShown = false;
         Vector2 buttonSize = new Vector2(64, 14);
         Rect buttonRect = new Rect(rect.xMax - 80 - buttonSize.x, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
 
-        int numValidPolynomialCurve = 0;
-        List<CurveSelection> selection = m_CurveEditor.selectedCurves;
-        if (selection.Count > 0)
+        if (!m_CurveEditor.IsDraggingCurveOrRegion())
         {
-            for (int j = 0; j < selection.Count; ++j)
+            int numValidPolynomialCurve = 0;
+            List<CurveSelection> selection = m_CurveEditor.selectedCurves;
+            if (selection.Count > 0)
             {
-                CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromSelection(selection[j]);
-                numValidPolynomialCurve += AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve) ? 1 : 0;
-            }
-
-            if (selection.Count != numValidPolynomialCurve)
-            {
-                if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
+                for (int j = 0; j < selection.Count; ++j)
                 {
-                    for (int j = 0; j < selection.Count; ++j)
+                    CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromSelection(selection[j]);
+                    numValidPolynomialCurve += AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve) ? 1 : 0;
+                }
+
+                if (selection.Count != numValidPolynomialCurve)
+                {
+                    optimizeButtonShown = true;
+                    if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
                     {
-                        CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromSelection(selection[j]);
-                        if (!AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve))
+                        for (int j = 0; j < selection.Count; ++j)
+                        {
+                            CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromSelection(selection[j]);
+                            if (!AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve))
+                            {
+                                // Reset wrap mode
+                                cw.curve.preWrapMode = WrapMode.Clamp;
+                                cw.curve.postWrapMode = WrapMode.Clamp;
+                                cw.renderer.SetWrap(WrapMode.Clamp, WrapMode.Clamp);
+
+                                AnimationUtility.ConstrainToPolynomialCurve(cw.curve);
+                                cw.changed = true; // Used in SaveChangedCurves () later in OnGUI
+                            }
+                        }
+                        m_CurveEditor.SelectNone();
+                    }
+                }
+            }
+            else
+            {
+                // Check if top most curve can be optimized
+                int topMostCurveID;
+                if (m_CurveEditor.GetTopMostCurveID(out topMostCurveID))
+                {
+                    CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromID(topMostCurveID);
+                    if (!AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve))
+                    {
+                        optimizeButtonShown = true;
+                        if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
                         {
                             // Reset wrap mode
                             cw.curve.preWrapMode = WrapMode.Clamp;
@@ -663,47 +689,32 @@ internal class ParticleSystemCurveEditor
                             cw.changed = true; // Used in SaveChangedCurves () later in OnGUI
                         }
                     }
-                    m_CurveEditor.SelectNone();
                 }
             }
         }
-        else
-        {
-            // Check if top most curve can be optimized
-            int topMostCurveID;
-            if (m_CurveEditor.GetTopMostCurveID(out topMostCurveID))
-            {
-                CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromID(topMostCurveID);
-                if (!AnimationUtility.IsValidOptimizedPolynomialCurve(cw.curve))
-                {
-                    if (GUI.Button(buttonRect, s_Styles.optimizeCurveText))
-                    {
-                        // Reset wrap mode
-                        cw.curve.preWrapMode = WrapMode.Clamp;
-                        cw.curve.postWrapMode = WrapMode.Clamp;
-                        cw.renderer.SetWrap(WrapMode.Clamp, WrapMode.Clamp);
 
-                        AnimationUtility.ConstrainToPolynomialCurve(cw.curve);
-                        cw.changed = true; // Used in SaveChangedCurves () later in OnGUI
-                    }
-                }
+        if (!optimizeButtonShown)
+        {
+            using (new EditorGUI.DisabledScope(true))
+            {
+                GUI.Button(buttonRect, s_Styles.optimizeCurveText);
             }
         }
     }
 
     void DoRemoveSelectedButton(Rect rect)
     {
-        if (m_CurveEditor.animationCurves.Length == 0)
-            return;
-
-        Vector2 buttonSize = new Vector2(64, 14);
-        Rect clearCurvesRect = new Rect(rect.x + rect.width - buttonSize.x - 10, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
-        if (GUI.Button(clearCurvesRect, s_Styles.removeCurveText))
+        using (new EditorGUI.DisabledScope(m_CurveEditor.animationCurves.Length == 0))
         {
-            if (m_CurveEditor.selectedCurves.Count > 0)
-                RemoveSelected();
-            else
-                RemoveTopMost();
+            Vector2 buttonSize = new Vector2(64, 14);
+            Rect clearCurvesRect = new Rect(rect.x + rect.width - buttonSize.x - 10, rect.y + (rect.height - buttonSize.y) * 0.5f, buttonSize.x, buttonSize.y);
+            if (GUI.Button(clearCurvesRect, s_Styles.removeCurveText))
+            {
+                if (m_CurveEditor.selectedCurves.Count > 0)
+                    RemoveSelected();
+                else
+                    RemoveTopMost();
+            }
         }
     }
 

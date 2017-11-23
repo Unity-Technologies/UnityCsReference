@@ -52,14 +52,23 @@
 <Compile Include="..\..\Runtime\Export\Mesh.bindings.cs" >
 <Link>Runtime\Export\Mesh.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Math.bindings.cs" >
+<Link>Runtime\Export\Math.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Component.deprecated.cs" >
 <Link>Runtime\Export\Component.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\UnityEventQueueSystem.bindings.cs" >
+<Link>Runtime\Export\UnityEventQueueSystem.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\BaseClass.cs" >
 <Link>Runtime\Export\BaseClass.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\RectInt.cs" >
 <Link>Runtime\Export\RectInt.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Debug.bindings.cs" >
+<Link>Runtime\Export\Debug.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Bounds.cs" >
 <Link>Runtime\Export\Bounds.cs</Link>
@@ -175,6 +184,9 @@
 <Compile Include="..\..\Runtime\Export\ExcludeFromObjectFactoryAttribute.cs" >
 <Link>Runtime\Export\ExcludeFromObjectFactoryAttribute.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\UnityLogWriter.bindings.cs" >
+<Link>Runtime\Export\UnityLogWriter.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\AsyncGPUReadback.bindings.cs" >
 <Link>Runtime\Export\AsyncGPUReadback.bindings.cs</Link>
 </Compile>
@@ -262,6 +274,9 @@
 <Compile Include="..\..\Runtime\Export\Vector4.cs" >
 <Link>Runtime\Export\Vector4.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\AudioType.cs" >
+<Link>Runtime\Export\AudioType.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Vector3.cs" >
 <Link>Runtime\Export\Vector3.cs</Link>
 </Compile>
@@ -340,6 +355,12 @@
 <Compile Include="..\..\Runtime\Export\Shader.cs" >
 <Link>Runtime\Export\Shader.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Hash128.bindings.cs" >
+<Link>Runtime\Export\Hash128.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\PlayerLoop.bindings.cs" >
+<Link>Runtime\Export\PlayerLoop.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Ray.cs" >
 <Link>Runtime\Export\Ray.cs</Link>
 </Compile>
@@ -369,6 +390,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Coroutine.bindings.cs" >
 <Link>Runtime\Export\Coroutine.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Ping.bindings.cs" >
+<Link>Runtime\Export\Ping.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs" >
 <Link>Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs</Link>
@@ -436,6 +460,9 @@
 <Compile Include="..\..\Runtime\Export\Serialization\IUnitySerializable.cs" >
 <Link>Runtime\Export\Serialization\IUnitySerializable.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Serialization\SerializedStateReader.cs" >
+<Link>Runtime\Export\Serialization\SerializedStateReader.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Serialization\ISerializedNamedStateReader.cs" >
 <Link>Runtime\Export\Serialization\ISerializedNamedStateReader.cs</Link>
 </Compile>
@@ -453,6 +480,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Serialization\ISerializedStateWriter.cs" >
 <Link>Runtime\Export\Serialization\ISerializedStateWriter.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Serialization\SerializedStateWriter.cs" >
+<Link>Runtime\Export\Serialization\SerializedStateWriter.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Director\ScriptPlayable.cs" >
 <Link>Runtime\Export\Director\ScriptPlayable.cs</Link>
@@ -525,6 +555,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\RenderPipeline\CullingParameters.cs" >
 <Link>Runtime\Export\RenderPipeline\CullingParameters.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs" >
+<Link>Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineAsset.cs" >
 <Link>Runtime\Export\RenderPipeline\RenderPipelineAsset.cs</Link>
@@ -691,9 +724,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\GameObjectBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\GameObjectBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\UtilsBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\UtilsBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\SplashScreenBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SplashScreenBindings.gen.cs</Link>
 </Compile>
@@ -781,12 +811,6 @@
 <Compile Include="..\..\artifacts\generated\common\runtime\PPtrRemapperBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\PPtrRemapperBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SerializedStateReaderBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SerializedStateReaderBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SerializedStateWriterBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SerializedStateWriterBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\PlayableOutputBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\PlayableOutputBindings.gen.cs</Link>
 </Compile>
@@ -807,9 +831,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\ApplicationBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\ApplicationBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\DebugBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\DebugBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\LightProbeProxyVolumeBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\LightProbeProxyVolumeBindings.gen.cs</Link>
@@ -834,9 +855,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\ExposedPropertyTableBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\ExposedPropertyTableBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PingBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PingBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\MonoBehaviourBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\MonoBehaviourBindings.gen.cs</Link>
@@ -945,14 +963,17 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\runtime\SpriteAtlasBindings.gen.cs" >
 <Link>artifacts\generated\common\runtime\SpriteAtlasBindings.gen.cs</Link>
-</Compile><Compile Include="..\..\Runtime\Accessibility\Managed\VisionUtility.cs" >
-<Link>Runtime\Accessibility\Managed\VisionUtility.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs" >
+</Compile><Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs" >
 <Link>Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystemRenderer.deprecated.cs" >
+<Link>Runtime\ParticleSystem\Managed\ParticleSystemRenderer.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystemEnums.cs" >
 <Link>Runtime\ParticleSystem\Managed\ParticleSystemEnums.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs" >
+<Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\ParticleSystem\ParticleSystemBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
@@ -1034,6 +1055,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\Animator.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\Animator.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AimConstraint.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AimConstraint.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationOffsetPlayable.bindings.cs</Link>
@@ -1128,6 +1152,9 @@
 <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs" >
 <Link>Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\VR\ScriptBindings\XR.bindings.cs" >
+<Link>Runtime\VR\ScriptBindings\XR.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WebCam.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\WebCam.cs</Link>
 </Compile>
@@ -1182,300 +1209,6 @@
 <Compile Include="..\..\artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Button.cs" >
-<Link>Runtime\UIElements\Managed\Button.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\ClampedDragger.cs" >
-<Link>Runtime\UIElements\Managed\ClampedDragger.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Clickable.cs" >
-<Link>Runtime\UIElements\Managed\Clickable.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Cursor.cs" >
-<Link>Runtime\UIElements\Managed\Cursor.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\EventArgs.cs" >
-<Link>Runtime\UIElements\Managed\EventArgs.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\EventDispatcher.cs" >
-<Link>Runtime\UIElements\Managed\EventDispatcher.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\FocusController.cs" >
-<Link>Runtime\UIElements\Managed\FocusController.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\HierarchyTraversal.cs" >
-<Link>Runtime\UIElements\Managed\HierarchyTraversal.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IDataWatchService.cs" >
-<Link>Runtime\UIElements\Managed\IDataWatchService.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Image.cs" >
-<Link>Runtime\UIElements\Managed\Image.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IMGUIContainer.cs" >
-<Link>Runtime\UIElements\Managed\IMGUIContainer.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\INotifyValueChanged.cs" >
-<Link>Runtime\UIElements\Managed\INotifyValueChanged.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\ISerializableJsonDictionary.cs" >
-<Link>Runtime\UIElements\Managed\ISerializableJsonDictionary.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\IStyle.cs" >
-<Link>Runtime\UIElements\Managed\IStyle.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\ITransform.cs" >
-<Link>Runtime\UIElements\Managed\ITransform.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\KeyboardTextEditor.cs" >
-<Link>Runtime\UIElements\Managed\KeyboardTextEditor.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Label.cs" >
-<Link>Runtime\UIElements\Managed\Label.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\ManipulatorActivationFilter.cs" >
-<Link>Runtime\UIElements\Managed\ManipulatorActivationFilter.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Manipulators.cs" >
-<Link>Runtime\UIElements\Managed\Manipulators.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\MouseButton.cs" >
-<Link>Runtime\UIElements\Managed\MouseButton.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\MouseCaptureController.cs" >
-<Link>Runtime\UIElements\Managed\MouseCaptureController.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\MouseManipulator.cs" >
-<Link>Runtime\UIElements\Managed\MouseManipulator.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Panel.cs" >
-<Link>Runtime\UIElements\Managed\Panel.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\RepeatButton.cs" >
-<Link>Runtime\UIElements\Managed\RepeatButton.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Scheduler.cs" >
-<Link>Runtime\UIElements\Managed\Scheduler.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Scroller.cs" >
-<Link>Runtime\UIElements\Managed\Scroller.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\ScrollView.cs" >
-<Link>Runtime\UIElements\Managed\ScrollView.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Slider.cs" >
-<Link>Runtime\UIElements\Managed\Slider.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Spacing.cs" >
-<Link>Runtime\UIElements\Managed\Spacing.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleEnums.cs" >
-<Link>Runtime\UIElements\Managed\StyleEnums.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TemplateContainer.cs" >
-<Link>Runtime\UIElements\Managed\TemplateContainer.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TextEditor.cs" >
-<Link>Runtime\UIElements\Managed\TextEditor.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TextEditorEngine.cs" >
-<Link>Runtime\UIElements\Managed\TextEditorEngine.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TextField.cs" >
-<Link>Runtime\UIElements\Managed\TextField.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TextInputFieldBase.cs" >
-<Link>Runtime\UIElements\Managed\TextInputFieldBase.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Toggle.cs" >
-<Link>Runtime\UIElements\Managed\Toggle.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\TouchScreenTextEditor.cs" >
-<Link>Runtime\UIElements\Managed\TouchScreenTextEditor.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UIElementsUtility.cs" >
-<Link>Runtime\UIElements\Managed\UIElementsUtility.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UQuery.cs" >
-<Link>Runtime\UIElements\Managed\UQuery.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualContainer.cs" >
-<Link>Runtime\UIElements\Managed\VisualContainer.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElement.cs" >
-<Link>Runtime\UIElements\Managed\VisualElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementDataWatch.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementDataWatch.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementFocusRing.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementFocusRing.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementHierarchy.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementHierarchy.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementScheduler.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementScheduler.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementStyleAccess.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementStyleAccess.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\VisualElementUtils.cs" >
-<Link>Runtime\UIElements\Managed\VisualElementUtils.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UXML\VisualTreeAsset.cs" >
-<Link>Runtime\UIElements\Managed\UXML\VisualTreeAsset.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UXML\IUxmlAttributes.cs" >
-<Link>Runtime\UIElements\Managed\UXML\IUxmlAttributes.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UXML\VisualElementFactory.cs" >
-<Link>Runtime\UIElements\Managed\UXML\VisualElementFactory.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UXML\VisualElementAsset.cs" >
-<Link>Runtime\UIElements\Managed\UXML\VisualElementAsset.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\UXML\TemplateAsset.cs" >
-<Link>Runtime\UIElements\Managed\UXML\TemplateAsset.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\CaptureEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\CaptureEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventBase.cs" >
-<Link>Runtime\UIElements\Managed\Events\EventBase.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventCallback.cs" >
-<Link>Runtime\UIElements\Managed\Events\EventCallback.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventCallbackRegistry.cs" >
-<Link>Runtime\UIElements\Managed\Events\EventCallbackRegistry.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventHandler.cs" >
-<Link>Runtime\UIElements\Managed\Events\EventHandler.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\EventPool.cs" >
-<Link>Runtime\UIElements\Managed\Events\EventPool.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\FocusEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\FocusEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\InputEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\InputEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\KeyboardEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\KeyboardEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\LayoutEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\LayoutEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\MouseEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\MouseEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\PanelEvents.cs" >
-<Link>Runtime\UIElements\Managed\Events\PanelEvents.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\UIEvent.cs" >
-<Link>Runtime\UIElements\Managed\Events\UIEvent.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\Events\ChangeEvent.cs" >
-<Link>Runtime\UIElements\Managed\Events\ChangeEvent.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleComplexSelectorExtensions.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleContext.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleContext.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetApplicator.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetApplicator.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetCache.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleSheetExtensions.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleSheetExtensions.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\StyleValue.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\StyleValue.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\UIElements\Managed\StyleSheets\VisualElementStylesData.cs" >
-<Link>Runtime\UIElements\Managed\StyleSheets\VisualElementStylesData.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSConstants.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSConstants.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogger.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogger.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureMode.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureMode.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\MeasureFunction.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\MeasureFunction.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSJustify.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSJustify.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSFlexDirection.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSFlexDirection.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSDIrection.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSDIrection.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSAlign.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSAlign.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSPositionType.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSPositionType.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSExperimentalFeature.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSExperimentalFeature.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSDimension.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSDimension.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSPrintOptions.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSPrintOptions.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\Native.bindings.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\Native.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSWrap.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSWrap.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.Create.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.Create.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSOverflow.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSOverflow.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureFunc.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureFunc.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSEdge.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSEdge.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSSize.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSSize.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs</Link>
-</Compile>
-<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\ConcurrentDictionary.cs" >
-<Link>External\CSSLayout\csharp\Facebook.CSSLayout\ConcurrentDictionary.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\StyleSheets\Managed\FriendAttributes.cs" >
 <Link>Runtime\StyleSheets\Managed\FriendAttributes.cs</Link>
 </Compile>
@@ -1515,14 +1248,14 @@
 <Compile Include="..\..\Modules\AI\NavMesh\NavMesh.cs" >
 <Link>Modules\AI\NavMesh\NavMesh.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\AI\RuntimeNavMeshBuilderBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\AI\RuntimeNavMeshBuilderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshObstacleBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\AI\NavMeshObstacleBindings.gen.cs</Link>
@@ -1530,8 +1263,11 @@
 <Compile Include="..\..\artifacts\generated\common\modules\AI\OffMeshLinkBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\AI\OffMeshLinkBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\Accessibility\VisionUtility.cs" >
+<Link>Modules\Accessibility\VisionUtility.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\AssetBundle\Managed\AssemblyInfo.cs" >
 <Link>Modules\AssetBundle\Managed\AssemblyInfo.cs</Link>
@@ -1728,8 +1464,8 @@
 <Compile Include="..\..\artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\ParticlesLegacy\ParticlesLegacyBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs" >
+<Link>Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs</Link>
@@ -1739,9 +1475,6 @@
 </Compile>
 <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs" >
 <Link>Modules\Physics2D\ScriptBindings\Physics2D.deprecated.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Physics2D\Physics2DBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs" >
 <Link>Modules\ScreenCapture\ScriptBindings\ScreenCapture.bindings.cs</Link>
@@ -1793,6 +1526,300 @@
 </Compile>
 <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs" >
 <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Button.cs" >
+<Link>Modules\UIElements\Button.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\ClampedDragger.cs" >
+<Link>Modules\UIElements\ClampedDragger.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Clickable.cs" >
+<Link>Modules\UIElements\Clickable.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Cursor.cs" >
+<Link>Modules\UIElements\Cursor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\EventArgs.cs" >
+<Link>Modules\UIElements\EventArgs.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\EventDispatcher.cs" >
+<Link>Modules\UIElements\EventDispatcher.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\FocusController.cs" >
+<Link>Modules\UIElements\FocusController.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\HierarchyTraversal.cs" >
+<Link>Modules\UIElements\HierarchyTraversal.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\IDataWatchService.cs" >
+<Link>Modules\UIElements\IDataWatchService.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\IMGUIContainer.cs" >
+<Link>Modules\UIElements\IMGUIContainer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\INotifyValueChanged.cs" >
+<Link>Modules\UIElements\INotifyValueChanged.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\ISerializableJsonDictionary.cs" >
+<Link>Modules\UIElements\ISerializableJsonDictionary.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\IStyle.cs" >
+<Link>Modules\UIElements\IStyle.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\ITransform.cs" >
+<Link>Modules\UIElements\ITransform.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Image.cs" >
+<Link>Modules\UIElements\Image.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\KeyboardTextEditor.cs" >
+<Link>Modules\UIElements\KeyboardTextEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Label.cs" >
+<Link>Modules\UIElements\Label.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\ManipulatorActivationFilter.cs" >
+<Link>Modules\UIElements\ManipulatorActivationFilter.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Manipulators.cs" >
+<Link>Modules\UIElements\Manipulators.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\MouseButton.cs" >
+<Link>Modules\UIElements\MouseButton.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\MouseCaptureController.cs" >
+<Link>Modules\UIElements\MouseCaptureController.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\MouseManipulator.cs" >
+<Link>Modules\UIElements\MouseManipulator.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Panel.cs" >
+<Link>Modules\UIElements\Panel.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\RepeatButton.cs" >
+<Link>Modules\UIElements\RepeatButton.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Scheduler.cs" >
+<Link>Modules\UIElements\Scheduler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\ScrollView.cs" >
+<Link>Modules\UIElements\ScrollView.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Scroller.cs" >
+<Link>Modules\UIElements\Scroller.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Slider.cs" >
+<Link>Modules\UIElements\Slider.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Spacing.cs" >
+<Link>Modules\UIElements\Spacing.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleEnums.cs" >
+<Link>Modules\UIElements\StyleEnums.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TemplateContainer.cs" >
+<Link>Modules\UIElements\TemplateContainer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TextEditor.cs" >
+<Link>Modules\UIElements\TextEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TextEditorEngine.cs" >
+<Link>Modules\UIElements\TextEditorEngine.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TextField.cs" >
+<Link>Modules\UIElements\TextField.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TextInputFieldBase.cs" >
+<Link>Modules\UIElements\TextInputFieldBase.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Toggle.cs" >
+<Link>Modules\UIElements\Toggle.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\TouchScreenTextEditor.cs" >
+<Link>Modules\UIElements\TouchScreenTextEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs" >
+<Link>Modules\UIElements\UIElementsUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UQuery.cs" >
+<Link>Modules\UIElements\UQuery.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualContainer.cs" >
+<Link>Modules\UIElements\VisualContainer.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElement.cs" >
+<Link>Modules\UIElements\VisualElement.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementDataWatch.cs" >
+<Link>Modules\UIElements\VisualElementDataWatch.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementFocusRing.cs" >
+<Link>Modules\UIElements\VisualElementFocusRing.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementHierarchy.cs" >
+<Link>Modules\UIElements\VisualElementHierarchy.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementScheduler.cs" >
+<Link>Modules\UIElements\VisualElementScheduler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementStyleAccess.cs" >
+<Link>Modules\UIElements\VisualElementStyleAccess.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\VisualElementUtils.cs" >
+<Link>Modules\UIElements\VisualElementUtils.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\CaptureEvents.cs" >
+<Link>Modules\UIElements\Events\CaptureEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\ChangeEvent.cs" >
+<Link>Modules\UIElements\Events\ChangeEvent.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\EventBase.cs" >
+<Link>Modules\UIElements\Events\EventBase.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\EventCallback.cs" >
+<Link>Modules\UIElements\Events\EventCallback.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\EventCallbackRegistry.cs" >
+<Link>Modules\UIElements\Events\EventCallbackRegistry.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\EventHandler.cs" >
+<Link>Modules\UIElements\Events\EventHandler.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\EventPool.cs" >
+<Link>Modules\UIElements\Events\EventPool.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\FocusEvents.cs" >
+<Link>Modules\UIElements\Events\FocusEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\InputEvents.cs" >
+<Link>Modules\UIElements\Events\InputEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\KeyboardEvents.cs" >
+<Link>Modules\UIElements\Events\KeyboardEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\LayoutEvents.cs" >
+<Link>Modules\UIElements\Events\LayoutEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\MouseEvents.cs" >
+<Link>Modules\UIElements\Events\MouseEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\PanelEvents.cs" >
+<Link>Modules\UIElements\Events\PanelEvents.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\Events\UIEvent.cs" >
+<Link>Modules\UIElements\Events\UIEvent.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleContext.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleContext.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetApplicator.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleSheetApplicator.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetCache.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleSheetCache.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleSheetExtensions.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleSheetExtensions.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\StyleValue.cs" >
+<Link>Modules\UIElements\StyleSheets\StyleValue.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\StyleSheets\VisualElementStylesData.cs" >
+<Link>Modules\UIElements\StyleSheets\VisualElementStylesData.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UXML\IUxmlAttributes.cs" >
+<Link>Modules\UIElements\UXML\IUxmlAttributes.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UXML\TemplateAsset.cs" >
+<Link>Modules\UIElements\UXML\TemplateAsset.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UXML\VisualElementAsset.cs" >
+<Link>Modules\UIElements\UXML\VisualElementAsset.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UXML\VisualElementFactory.cs" >
+<Link>Modules\UIElements\UXML\VisualElementFactory.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UIElements\UXML\VisualTreeAsset.cs" >
+<Link>Modules\UIElements\UXML\VisualTreeAsset.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSAlign.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSAlign.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSConstants.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSConstants.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSDIrection.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSDIrection.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSDimension.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSDimension.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSEdge.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSEdge.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSExperimentalFeature.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSExperimentalFeature.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSFlexDirection.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSFlexDirection.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSJustify.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSJustify.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogLevel.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogger.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSLogger.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureFunc.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureFunc.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureMode.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSMeasureMode.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.Create.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.Create.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSNode.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSOverflow.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSOverflow.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSPositionType.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSPositionType.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSPrintOptions.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSPrintOptions.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSSize.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSSize.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\CSSWrap.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\CSSWrap.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\ConcurrentDictionary.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\ConcurrentDictionary.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\MeasureFunction.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\MeasureFunction.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\MeasureOutput.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\Native.bindings.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\Native.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs" >
+<Link>External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs" >
+<Link>artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityAnalytics\UnityAnalytics.cs" >
 <Link>Modules\UnityAnalytics\UnityAnalytics.cs</Link>

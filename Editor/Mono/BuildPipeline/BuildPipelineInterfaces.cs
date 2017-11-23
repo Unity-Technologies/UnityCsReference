@@ -109,7 +109,7 @@ namespace UnityEditor.Build
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
-            foreach (var t in EditorAssemblies.GetAllTypesWithInterface(typeof(IOrderedCallback), true))
+            foreach (var t in EditorAssemblies.GetAllTypesWithInterface<IOrderedCallback>())
             {
                 if (t.IsAbstract || t.IsInterface)
                     continue;
@@ -132,14 +132,14 @@ namespace UnityEditor.Build
 
             if (findBuildProcessors)
             {
-                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute(typeof(Callbacks.PostProcessBuildAttribute), true, true, true))
+                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessBuildAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
                         AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
             }
 
             if (findSceneProcessors)
             {
-                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute(typeof(Callbacks.PostProcessSceneAttribute), true, true, true))
+                foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessSceneAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
                         AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
             }

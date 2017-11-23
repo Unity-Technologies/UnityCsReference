@@ -52,8 +52,11 @@ namespace UnityEngine
         [Obsolete("Physics2D.raycastsStartInColliders is deprecated. Use Physics2D.queriesStartInColliders instead. (UnityUpgradable) -> queriesStartInColliders", true)]
         public static bool raycastsStartInColliders { get { return false; } set {} }
 
-        [Obsolete("Physics2D.deleteStopsCallbacks is deprecated. Use Physics2D.changeStopsCallbacks instead. (UnityUpgradable) -> changeStopsCallbacks", true)]
+        [Obsolete("Physics2D.deleteStopsCallbacks is deprecated.(UnityUpgradable) -> changeStopsCallbacks", true)]
         public static bool deleteStopsCallbacks { get { return false; } set {} }
+
+        [Obsolete("Physics2D.changeStopsCallbacks is deprecated and will always return false.", false)]
+        public static bool changeStopsCallbacks { get { return false; } set {} }
 
         [Obsolete("Physics2D.minPenetrationForPenalty is deprecated. Use Physics2D.defaultContactOffset instead. (UnityUpgradable) -> defaultContactOffset", false)]
         public static float minPenetrationForPenalty { get { return defaultContactOffset; } set { defaultContactOffset = value; } }

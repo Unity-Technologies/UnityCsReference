@@ -18,5 +18,8 @@ namespace UnityEngine.Experimental.Rendering
         PerObjectMotionVectors = (1 << 5),
         PerObjectLightIndices8 = (1 << 6),
         ProvideReflectionProbeIndices = (1 << 7),
+        PerObjectOcclusionProbe = (1 << 8),
+        PerObjectOcclusionProbeProxyVolume = (1 << 9),
+        PerObjectShadowMask = (1 << 10),
     }
 }

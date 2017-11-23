@@ -2,15 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine;
 using System.Linq;
-using UnityEngineInternal;
-using UnityEditor.AnimatedValues;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -82,6 +75,8 @@ namespace UnityEditor
             serializedObject.Update();
 
             LightingFieldsGUI();
+
+            RenderRenderingLayer();
 
             // Evaluate displayMaterialWarning before drawing properties to avoid mismatched layout group
             bool displayMaterialWarning = false;

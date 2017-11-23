@@ -132,6 +132,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
                 ce.UpdatePresenterPosition();
 
+                GraphView graphView = ce.GetFirstAncestorOfType<GraphView>();
+                if (graphView != null && graphView.elementResized != null)
+                {
+                    graphView.elementResized(ce);
+                }
+
                 m_LabelText.text = String.Format("{0:0}", parent.layout.width) + "x" + String.Format("{0:0}", parent.layout.height);
 
                 e.StopPropagation();

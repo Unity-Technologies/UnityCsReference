@@ -38,7 +38,6 @@ namespace UnityEditor
             public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TextContent("Collision Geometry");
             public static readonly GUIContent enableMouseSelect     = EditorGUIUtility.TextContent("Mouse Select");
             public static readonly GUIContent useSceneCam           = EditorGUIUtility.TextContent("Use Scene Cam");
-            public static readonly ColorPickerHDRConfig pickerConfig = new ColorPickerHDRConfig(0f, 99f, 1 / 99f, 3f);
         }
 
         //---------------------------------------------------------------------
@@ -232,23 +231,23 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
-                PhysicsVisualizationSettings.staticColor = EditorGUILayout.ColorField(Contents.staticColor
-                        , PhysicsVisualizationSettings.staticColor, false, true, false, Contents.pickerConfig);
+                PhysicsVisualizationSettings.staticColor =
+                    EditorGUILayout.ColorField(Contents.staticColor, PhysicsVisualizationSettings.staticColor);
 
-                PhysicsVisualizationSettings.triggerColor = EditorGUILayout.ColorField(Contents.triggerColor
-                        , PhysicsVisualizationSettings.triggerColor, false, true, false, Contents.pickerConfig);
+                PhysicsVisualizationSettings.triggerColor =
+                    EditorGUILayout.ColorField(Contents.triggerColor, PhysicsVisualizationSettings.triggerColor);
 
-                PhysicsVisualizationSettings.rigidbodyColor = EditorGUILayout.ColorField(Contents.rigidbodyColor
-                        , PhysicsVisualizationSettings.rigidbodyColor, false, true, false, Contents.pickerConfig);
+                PhysicsVisualizationSettings.rigidbodyColor =
+                    EditorGUILayout.ColorField(Contents.rigidbodyColor, PhysicsVisualizationSettings.rigidbodyColor);
 
-                PhysicsVisualizationSettings.kinematicColor = EditorGUILayout.ColorField(Contents.kinematicColor
-                        , PhysicsVisualizationSettings.kinematicColor, false, true, false, Contents.pickerConfig);
+                PhysicsVisualizationSettings.kinematicColor =
+                    EditorGUILayout.ColorField(Contents.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
 
-                PhysicsVisualizationSettings.sleepingBodyColor = EditorGUILayout.ColorField(Contents.sleepingBodyColor
-                        , PhysicsVisualizationSettings.sleepingBodyColor, false, true, false, Contents.pickerConfig);
+                PhysicsVisualizationSettings.sleepingBodyColor =
+                    EditorGUILayout.ColorField(Contents.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
 
-                PhysicsVisualizationSettings.colorVariance = EditorGUILayout.Slider("Variation"
-                        , PhysicsVisualizationSettings.colorVariance, 0f, 1f);
+                PhysicsVisualizationSettings.colorVariance =
+                    EditorGUILayout.Slider("Variation", PhysicsVisualizationSettings.colorVariance, 0f, 1f);
 
                 EditorGUI.indentLevel--;
             }
@@ -273,7 +272,7 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
 
-            if (Unsupported.IsDeveloperBuild() || PhysicsVisualizationSettings.devOptions)
+            if (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions)
             {
                 PhysicsVisualizationSettings.devOptions = EditorGUILayout.Toggle(Contents.devOptions
                         , PhysicsVisualizationSettings.devOptions);

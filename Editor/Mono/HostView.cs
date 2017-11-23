@@ -233,7 +233,7 @@ namespace UnityEditor
         public void InvokeOnGUI(Rect onGUIPosition)
         {
             // Handle window reloading.
-            if (Unsupported.IsDeveloperBuild() &&
+            if (Unsupported.IsDeveloperMode() &&
                 actualView != null &&
                 Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.F5)
             {
@@ -450,7 +450,7 @@ namespace UnityEditor
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
 
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(EditorGUIUtility.TextContent("Inspect Window"), false, Inspect, window);
                 menu.AddItem(EditorGUIUtility.TextContent("Inspect View"), false, Inspect, window.m_Parent);

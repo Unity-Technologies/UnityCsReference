@@ -11,6 +11,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     interface ISelectable
     {
         bool IsSelectable();
+        bool HitTest(Vector2 localPoint);
         bool Overlaps(Rect rectangle);
         void Select(VisualElement selectionContainer, bool additive);
         void Unselect(VisualElement selectionContainer);

@@ -88,13 +88,8 @@ namespace UnityEngine.Animations
         [FreeFunction("ConstraintBindings::GetSourceCount")]
         private static extern int GetSourceCountInternal(PositionConstraint self);
 
-        public void GetSources(List<ConstraintSource> sources)
-        {
-            if (sources == null)
-                throw new ArgumentNullException("sources");
-
-            GetSourcesInternal(this, sources);
-        }
+        [FreeFunction(Name = "ConstraintBindings::GetSources", HasExplicitThis = true)]
+        public extern void GetSources([NotNull] List<ConstraintSource> sources);
 
         public void SetSources(List<ConstraintSource> sources)
         {
@@ -103,9 +98,6 @@ namespace UnityEngine.Animations
 
             SetSourcesInternal(this, sources);
         }
-
-        [FreeFunction("ConstraintBindings::GetSources")]
-        private static extern void GetSourcesInternal(PositionConstraint self, List<ConstraintSource> sources);
 
         [FreeFunction("ConstraintBindings::SetSources")]
         private static extern void SetSourcesInternal(PositionConstraint self, List<ConstraintSource> sources);
@@ -213,13 +205,8 @@ namespace UnityEngine.Animations
         [FreeFunction("ConstraintBindings::GetSourceCount")]
         private static extern int GetSourceCountInternal(RotationConstraint self);
 
-        public void GetSources(List<ConstraintSource> sources)
-        {
-            if (sources == null)
-                throw new ArgumentNullException("sources");
-
-            GetSourcesInternal(this, sources);
-        }
+        [FreeFunction(Name = "ConstraintBindings::GetSources", HasExplicitThis = true)]
+        public extern void GetSources([NotNull] List<ConstraintSource> sources);
 
         public void SetSources(List<ConstraintSource> sources)
         {
@@ -229,8 +216,6 @@ namespace UnityEngine.Animations
             SetSourcesInternal(this, sources);
         }
 
-        [FreeFunction("ConstraintBindings::GetSources")]
-        private static extern void GetSourcesInternal(RotationConstraint self, List<ConstraintSource> sources);
         [FreeFunction("ConstraintBindings::SetSources")]
         private static extern void SetSourcesInternal(RotationConstraint self, List<ConstraintSource> sources);
 
@@ -337,13 +322,8 @@ namespace UnityEngine.Animations
         [FreeFunction("ConstraintBindings::GetSourceCount")]
         private static extern int GetSourceCountInternal(ScaleConstraint self);
 
-        public void GetSources(List<ConstraintSource> sources)
-        {
-            if (sources == null)
-                throw new ArgumentNullException("sources");
-
-            GetSourcesInternal(this, sources);
-        }
+        [FreeFunction(Name = "ConstraintBindings::GetSources", HasExplicitThis = true)]
+        public extern void GetSources([NotNull] List<ConstraintSource> sources);
 
         public void SetSources(List<ConstraintSource> sources)
         {
@@ -353,8 +333,6 @@ namespace UnityEngine.Animations
             SetSourcesInternal(this, sources);
         }
 
-        [FreeFunction("ConstraintBindings::GetSources")]
-        private static extern void GetSourcesInternal(ScaleConstraint self, List<ConstraintSource> sources);
         [FreeFunction("ConstraintBindings::SetSources")]
         private static extern void SetSourcesInternal(ScaleConstraint self, List<ConstraintSource> sources);
 

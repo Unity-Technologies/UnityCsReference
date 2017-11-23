@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace UnityEngine.Experimental.Rendering
@@ -11,6 +12,7 @@ namespace UnityEngine.Experimental.Rendering
     {
         RenderQueueRange m_RenderQueueRange;
         int m_LayerMask;
+        UInt32 m_RenderingLayerMask;
 
         public FilterRenderersSettings(bool initializeValues = false) : this()
         {
@@ -18,6 +20,7 @@ namespace UnityEngine.Experimental.Rendering
             {
                 m_RenderQueueRange = RenderQueueRange.all;
                 m_LayerMask = ~0;
+                m_RenderingLayerMask = UInt32.MaxValue;
             }
         }
 
@@ -31,6 +34,12 @@ namespace UnityEngine.Experimental.Rendering
         {
             get { return m_LayerMask; }
             set { m_LayerMask = value; }
+        }
+
+        public UInt32 renderingLayerMask
+        {
+            get { return m_RenderingLayerMask; }
+            set { m_RenderingLayerMask = value; }
         }
     }
 }

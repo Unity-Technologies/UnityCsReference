@@ -1273,7 +1273,7 @@ namespace UnityEditor
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             m_LockTracker.AddItemsToMenu(menu);
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
             {
                 menu.AddItem(new GUIContent("DEVELOPER/Toggle DebugMode"), false, ToggleDebugMode);
             }

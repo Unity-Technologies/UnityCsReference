@@ -84,6 +84,7 @@ namespace UnityEditor.Experimental.UIElements
                 }
 
                 Vector2 mousePos = evt.imguiEvent.mousePosition + new Vector2(0, DockArea.kTabHeight);
+
                 menuMousePosition = mousePos;
 
                 var menu = new GenericMenu();
@@ -106,7 +107,6 @@ namespace UnityEditor.Experimental.UIElements
                             break;
                     }
                 }
-
                 menuMousePosition = Vector2.negativeInfinity;
                 menu.ShowAsContext();
             }

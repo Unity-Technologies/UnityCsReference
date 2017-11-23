@@ -2,13 +2,30 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Bindings;
+using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [NativeHeader("Editor/Src/Utility/EditorGUIUtility.h")]
     public partial class EditorGUIUtility : GUIUtility
     {
+        // Get a texture from its source filename
+        public static Texture2D FindTexture(string name)
+        {
+            return FindTextureByName(name);
+        }
+
+        // Get texture from managed type
+        internal static Texture2D FindTexture(Type type)
+        {
+            return FindTextureByType(type);
+        }
+
+        extern static Texture2D FindTextureByName(string name);
+        extern static Texture2D FindTextureByType([NotNull] Type type);
+
         internal static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
         {
             string text_k = text != null ? text : "";
@@ -91,9 +108,10 @@ namespace UnityEditor
             return TrTextContentWithIcon(text, null, messageType);
         }
 
-        internal static GUIContent TrIconContent(string name, string tooltip = null)
+        internal static GUIContent TrIconContent(string iconName, string tooltip = null)
         {
-            GUIContent gc = (GUIContent)s_IconGUIContents[name];
+            string key = (tooltip == null ? iconName : iconName + tooltip);
+            GUIContent gc = (GUIContent)s_IconGUIContents[key];
             if (gc != null)
             {
                 return gc;
@@ -104,26 +122,26 @@ namespace UnityEditor
             {
                 gc.tooltip = L10n.Tr(tooltip);
             }
-            gc.image = LoadIconRequired(name);
-            s_IconGUIContents[name] = gc;
+            gc.image = LoadIconRequired(iconName);
+            s_IconGUIContents[key] = gc;
             return gc;
         }
 
         internal static GUIContent TrIconContent(Texture icon, string tooltip = null)
         {
-            GUIContent gc = (GUIContent)s_IconGUIContents[tooltip];
+            GUIContent gc = (tooltip != null) ? (GUIContent)s_IconGUIContents[tooltip] : null;
             if (gc != null)
             {
                 return gc;
             }
             gc = new GUIContent();
-
+            gc.image = icon;
             if (tooltip != null)
             {
                 gc.tooltip = L10n.Tr(tooltip);
+                s_IconGUIContents[tooltip] = gc;
             }
-            gc.image = icon;
-            s_IconGUIContents[tooltip] = gc;
+
             return gc;
         }
 

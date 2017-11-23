@@ -391,7 +391,7 @@ namespace UnityEditor
 
         private void DoInternalSettings()
         {
-            if (!EditorPrefs.GetBool("InternalMode", false))
+            if (!EditorPrefs.GetBool("DeveloperMode", false))
                 return;
 
             GUILayout.Space(10);

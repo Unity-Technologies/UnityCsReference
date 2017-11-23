@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
-using System;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -23,6 +23,7 @@ namespace UnityEditor
         SerializedProperty m_TrailMaterial;
         SerializedProperty m_SortingOrder;
         SerializedProperty m_SortingLayerID;
+        SerializedProperty m_RenderingLayerMask;
 
         // From ParticleSystemRenderer
         SerializedProperty m_RenderMode;
@@ -45,6 +46,7 @@ namespace UnityEditor
         SerializedProperty m_VertexStreams;
         SerializedProperty m_MaskInteraction;
         SerializedProperty m_EnableGPUInstancing;
+
 
         ReorderableList m_VertexStreamsList;
         int m_NumTexCoords;
@@ -177,6 +179,7 @@ namespace UnityEditor
             m_Material = GetProperty0("m_Materials.Array.data[0]");
             m_TrailMaterial = GetProperty0("m_Materials.Array.data[1]");
             m_SortingOrder = GetProperty0("m_SortingOrder");
+            m_RenderingLayerMask = GetProperty0("m_RenderingLayerMask");
             m_SortingLayerID = GetProperty0("m_SortingLayerID");
 
             m_RenderMode = GetProperty0("m_RenderMode");
@@ -321,13 +324,17 @@ namespace UnityEditor
 
                     GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
 
-                    // Disable ReceiveShadows options for Deferred rendering path
-                    using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
+                    if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
                     {
-                        GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
+                        // Disable ReceiveShadows options for Deferred rendering path
+                        using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
+                        {
+                            GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
+                        }
                     }
 
-                    GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
+                    if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+                        GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
 
                     EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
                     GUIInt(s_Texts.sortingOrder, m_SortingOrder);
@@ -339,7 +346,10 @@ namespace UnityEditor
             {
                 renderers.Add(ps.GetComponent<ParticleSystemRenderer>());
             }
-            m_Probes.OnGUI(renderers.ToArray(), renderers.FirstOrDefault(), true);
+            var renderersArray = renderers.ToArray();
+            m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
+
+            RendererEditorBase.RenderRenderingLayer(m_RenderingLayerMask, serializedObject.targetObject as Renderer, renderersArray, true);
         }
 
         private void DoListOfMeshesGUI()

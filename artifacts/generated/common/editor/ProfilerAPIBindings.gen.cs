@@ -14,17 +14,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditorInternal.Profiling;
 
 namespace UnityEditorInternal
 {
 
-
-public enum ProfilerViewType
-{
-    Hierarchy = 0,
-    Timeline = 1,
-    RawHierarchy = 2
-}
 
 public enum ProfilerMemoryView
 {
@@ -40,25 +34,6 @@ public enum ProfilerAudioView
     ChannelsAndGroups = 3,
     DSPGraph = 4,
     Clips = 5
-}
-
-public enum ProfilerColumn
-{
-    DontSort = -1,
-    FunctionName = 0,
-    TotalPercent,
-    SelfPercent,
-    Calls,
-    GCMemory,
-    TotalTime,
-    SelfTime,
-    DrawCalls,
-    TotalGPUTime,
-    SelfGPUTime,
-    TotalGPUPercent,
-    SelfGPUPercent,
-    WarningCount,
-    ObjectName
 }
 
 public enum ProfilerMemoryRecordMode

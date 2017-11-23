@@ -7,19 +7,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using UnityEditorInternal.Profiling;
 using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
     [Serializable]
-    internal class ProfilerTimelineGUI
+    internal class ProfilerTimelineGUI : ProfilerFrameDataViewBase
     {
-        //static int s_TimelineHash = "ProfilerTimeline".GetHashCode();
-
-        const float kSmallWidth = 7.0f;
         const float kTextFadeStartWidth = 50.0f;
         const float kTextFadeOutWidth = 20.0f;
-        const float kTextLongWidth = 200.0f;
         const float kLineHeight = 16.0f;
         const float kGroupHeight = kLineHeight + 4.0f;
 
@@ -161,6 +158,7 @@ namespace UnityEditorInternal
         RangeSelectionInfo m_RangeSelection = new RangeSelectionInfo();
 
         public ProfilerTimelineGUI(IProfilerWindowController window)
+            : base(false)
         {
             m_Window = window;
             // Configure default groups
@@ -570,77 +568,34 @@ namespace UnityEditorInternal
         void DoSelectionTooltip(int frameIndex, Rect fullRect)
         {
             // Draw selected tooltip
-            if (m_SelectedEntry.IsValid() && m_SelectedEntry.frameId == frameIndex)
+            if (!m_SelectedEntry.IsValid() || m_SelectedEntry.frameId != frameIndex)
+                return;
+
+            string durationString = string.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
+
+            System.Text.StringBuilder text = new System.Text.StringBuilder();
+            text.Append(string.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
+
+            // Show total duration if more than one instance
+            if (m_SelectedEntry.instanceCount > 1)
             {
-                string durationString = string.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
-
-                System.Text.StringBuilder text = new System.Text.StringBuilder();
-                text.Append(string.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
-
-                // Show total duration if more than one instance
-                if (m_SelectedEntry.instanceCount > 1)
-                {
-                    string totalDurationString = string.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
-                    text.Append(string.Format("\n{0}: {1} ({2} {3})", m_LocalizedString_Total, totalDurationString, m_SelectedEntry.instanceCount, m_LocalizedString_Instances));
-                }
-
-                if (m_SelectedEntry.metaData.Length > 0)
-                {
-                    text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
-                }
-
-                if (m_SelectedEntry.callstackInfo.Length > 0)
-                {
-                    text.Append(string.Format("\n{0}", m_SelectedEntry.callstackInfo));
-                }
-
-                float selectedY = fullRect.y + m_SelectedThreadY + m_SelectedEntry.relativeYPos;
-
-                GUIContent textC = new GUIContent(text.ToString());
-                GUIStyle style = styles.tooltip;
-                Vector2 size = style.CalcSize(textC);
-
-                float x = m_TimeArea.TimeToPixel(m_SelectedEntry.time + m_SelectedEntry.duration * 0.5f, fullRect);
-
-                // Arrow of tooltip
-                Rect arrowRect = new Rect(x - 32, selectedY, 64, 6);
-
-                // Label box
-                Rect rect = new Rect(x, selectedY + 6, size.x, size.y);
-
-                // Ensure it doesn't go too far right
-                if (rect.xMax > fullRect.xMax + 16)
-                    rect.x = fullRect.xMax - rect.width + 16;
-                if (arrowRect.xMax > fullRect.xMax + 20)
-                    arrowRect.x = fullRect.xMax - arrowRect.width + 20;
-
-                // Adjust left to we can always see giant (STL) names.
-                if (rect.xMin < fullRect.xMin + 30)
-                    rect.x = fullRect.xMin + 30;
-                if (arrowRect.xMin < fullRect.xMin - 20)
-                    arrowRect.x = fullRect.xMin - 20;
-
-                // Flip tooltip if too close to bottom (but do not flip if flipping would mean the tooltip is too high up)
-                float flipRectAdjust = (kLineHeight + rect.height + 2 * arrowRect.height);
-                bool flipped = (selectedY + size.y + 6 > fullRect.yMax) && (rect.y - flipRectAdjust > 0);
-                if (flipped)
-                {
-                    rect.y -= flipRectAdjust;
-                    arrowRect.y -= (kLineHeight + 2 * arrowRect.height);
-                }
-
-                // Draw small arrow
-                GUI.BeginClip(arrowRect);
-                Matrix4x4 oldMatrix = GUI.matrix;
-                if (flipped)
-                    GUIUtility.ScaleAroundPivot(new Vector2(1.0f, -1.0f), new Vector2(arrowRect.width * 0.5f, arrowRect.height));
-                GUI.Label(new Rect(0, 0, arrowRect.width, arrowRect.height), GUIContent.none, styles.tooltipArrow);
-                GUI.matrix = oldMatrix;
-                GUI.EndClip();
-
-                // Draw tooltip
-                GUI.Label(rect, textC, style);
+                string totalDurationString = string.Format(m_SelectedEntry.totalDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDuration);
+                text.Append(string.Format("\n{0}: {1} ({2} {3})", m_LocalizedString_Total, totalDurationString, m_SelectedEntry.instanceCount, m_LocalizedString_Instances));
             }
+
+            if (m_SelectedEntry.metaData.Length > 0)
+            {
+                text.Append(string.Format("\n{0}", m_SelectedEntry.metaData));
+            }
+
+            if (m_SelectedEntry.callstackInfo.Length > 0)
+            {
+                text.Append(string.Format("\n{0}", m_SelectedEntry.callstackInfo));
+            }
+
+            float selectedY = fullRect.y + m_SelectedThreadY + m_SelectedEntry.relativeYPos;
+            float x = m_TimeArea.TimeToPixel(m_SelectedEntry.time + m_SelectedEntry.duration * 0.5f, fullRect);
+            ShowLargeTooltip(new Vector2(x, selectedY), fullRect, text.ToString());
         }
 
         public void MarkDeadOrClearThread()
@@ -823,8 +778,14 @@ namespace UnityEditorInternal
             Chart.DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
         }
 
-        public void DoGUI(int frameIndex, float width, float ypos, float height)
+        public void DoGUI(FrameDataView frameDataView, float width, float ypos, float height)
         {
+            if (frameDataView == null || !frameDataView.IsValid())
+            {
+                GUILayout.Label(BaseStyles.noData, BaseStyles.label);
+                return;
+            }
+
             Rect fullRect = new Rect(0, ypos - 1, width, height + 1);
             float sideWidth = Chart.kSideWidth - 1;
 
@@ -867,8 +828,8 @@ namespace UnityEditorInternal
             }
 
             var iter = new ProfilerFrameDataIterator();
-            int threadCount = iter.GetThreadCount(frameIndex);
-            iter.SetRoot(frameIndex, 0);
+            int threadCount = iter.GetThreadCount(frameDataView.frameIndex);
+            iter.SetRoot(frameDataView.frameIndex, 0);
             m_TimeArea.hBaseRangeMin = 0;
             m_TimeArea.hBaseRangeMax = iter.frameTimeMS;
             if (initializing)
@@ -883,8 +844,8 @@ namespace UnityEditorInternal
             DrawGrid(fullRect, iter.frameTimeMS);
 
             MarkDeadOrClearThread();
-            CalculateBars(ref iter, fullRect, frameIndex, animationTime);
-            DrawBars(fullRect, frameIndex);
+            CalculateBars(ref iter, fullRect, frameDataView.frameIndex, animationTime);
+            DrawBars(fullRect, frameDataView.frameIndex);
 
             DoRangeSelection(m_TimeArea.drawRect);
 
@@ -897,7 +858,7 @@ namespace UnityEditorInternal
             // Walk backwards to find how many previous frames we need to show.
             int maxContextFramesToShow = m_Window.IsRecording() ? 1 : 3;
             int numContextFramesToShow = maxContextFramesToShow;
-            int currentFrame = frameIndex;
+            int currentFrame = frameDataView.frameIndex;
             float currentTime = 0;
             do
             {
@@ -912,7 +873,7 @@ namespace UnityEditorInternal
             while (currentTime > m_TimeArea.shownArea.x && numContextFramesToShow > 0);
 
             // Draw previous frames
-            while (currentFrame != frameIndex)
+            while (currentFrame != -1 && currentFrame != frameDataView.frameIndex)
             {
                 iter.SetRoot(currentFrame, 0);
                 DoProfilerFrame(currentFrame, fullRect, true, threadCount, currentTime);
@@ -922,11 +883,11 @@ namespace UnityEditorInternal
 
             // Draw next frames
             numContextFramesToShow = maxContextFramesToShow;
-            currentFrame = frameIndex;
+            currentFrame = frameDataView.frameIndex;
             currentTime = 0;
             while (currentTime < m_TimeArea.shownArea.x + m_TimeArea.shownArea.width && numContextFramesToShow >= 0)
             {
-                if (frameIndex != currentFrame)
+                if (frameDataView.frameIndex != currentFrame)
                     DoProfilerFrame(currentFrame, fullRect, true, threadCount, currentTime);
                 iter.SetRoot(currentFrame, 0);
                 currentFrame = ProfilerDriver.GetNextFrameIndex(currentFrame);
@@ -940,12 +901,12 @@ namespace UnityEditorInternal
 
             // Draw center frame last to get on top
             threadCount = 0;
-            DoProfilerFrame(frameIndex, fullRect, false, threadCount, 0);
+            DoProfilerFrame(frameDataView.frameIndex, fullRect, false, threadCount, 0);
 
             GUI.EndClip();
 
             // Draw tooltips on top of clip to be able to extend outside of timeline area
-            DoSelectionTooltip(frameIndex, m_TimeArea.drawRect);
+            DoSelectionTooltip(frameDataView.frameIndex, m_TimeArea.drawRect);
         }
 
         void DoRangeSelection(Rect rect)
@@ -1018,6 +979,21 @@ namespace UnityEditorInternal
                     }
                     break;
             }
+        }
+
+        internal void DrawToolbar(FrameDataView frameDataView)
+        {
+            const float sidebarWidth = Chart.kSideWidth - 1;
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.Width(sidebarWidth));
+            DrawViewTypePopup(ProfilerViewType.Timeline);
+            EditorGUILayout.EndHorizontal();
+
+            var height = EditorStyles.toolbar.CalcHeight(GUIContent.none, 0f);
+            var timeRulerRect = EditorGUILayout.GetControlRect(false, height, GUIStyle.none, GUILayout.ExpandWidth(true));
+            var iter = new ProfilerFrameDataIterator();
+            iter.SetRoot(frameDataView.frameIndex, 0);
+            var frameTime = iter.frameTimeMS;
+            DoTimeRulerGUI(timeRulerRect, frameTime);
         }
     }
 }

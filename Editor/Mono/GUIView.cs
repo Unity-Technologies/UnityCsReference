@@ -42,10 +42,12 @@ namespace UnityEditor
             {
                 if (m_Panel == null)
                 {
+                    UXMLEditorFactories.RegisterAll();
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
                     m_Panel.cursorManager = m_CursorManager;
                     AddDefaultEditorStyleSheets(m_Panel.visualTree);
                 }
+
                 return m_Panel;
             }
         }

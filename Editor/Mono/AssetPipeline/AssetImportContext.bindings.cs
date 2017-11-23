@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental.AssetImporters
         private AssetImportContext() {}
 
         public extern string assetPath { get; internal set; }
-        public extern BuildTarget selectedBuildTarget { get; internal set;  }
+        public extern BuildTarget selectedBuildTarget { get; }
 
         [NativeThrows]
         public extern void SetMainObject(Object obj);

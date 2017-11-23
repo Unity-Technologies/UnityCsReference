@@ -499,8 +499,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             get;
         }
 
-        [Obsolete("isAllowsScreenshot has been deprecated. Use isScreenshotEnabled instead (UnityUpgradable) -> isScreenshotEnabled", true)]
-        public extern static bool isAllowsScreenshot
+        public extern static bool isScreenshotEnabled
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -510,7 +509,8 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        public extern static bool isScreenshotEnabled
+        [System.Obsolete ("isAllowsScreenshot was renamed to isScreenshotEnabled.")]
+        public extern static bool isAllowsScreenshot
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -540,8 +540,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        [Obsolete("isDataLossConfirmation has been deprecated. Use isDataLossConfirmationEnabled instead (UnityUpgradable) -> isDataLossConfirmationEnabled", true)]
-        public extern static bool isDataLossConfirmation
+        public extern static bool isDataLossConfirmationEnabled
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -551,7 +550,8 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        public extern static bool isDataLossConfirmationEnabled
+        [System.Obsolete ("isDataLossConfirmation was renamed to isDataLossConfirmationEnabled.")]
+        public extern static bool isDataLossConfirmation
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

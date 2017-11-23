@@ -31,24 +31,24 @@ namespace UnityEditorInternal
                 case "js": return EditorGUIUtility.FindTexture("Js Script Icon");
                 case "dll": return EditorGUIUtility.FindTexture("Assembly Icon");
                 case "asmdef": return EditorGUIUtility.FindTexture("AssemblyDefinitionAsset Icon");
-                case "mat": return EditorGUIUtility.FindTexture("Material Icon");
-                case "physicmaterial": return EditorGUIUtility.FindTexture("PhysicMaterial Icon");
+                case "mat": return EditorGUIUtility.FindTexture(typeof(Material));
+                case "physicmaterial": return EditorGUIUtility.FindTexture(typeof(PhysicMaterial));
                 case "prefab": return EditorGUIUtility.FindTexture("PrefabNormal Icon");
-                case "shader": return EditorGUIUtility.FindTexture("Shader Icon");
-                case "txt": return EditorGUIUtility.FindTexture("TextAsset Icon");
-                case "unity": return EditorGUIUtility.FindTexture("SceneAsset Icon");
-                case "asset": case "prefs": return EditorGUIUtility.FindTexture("GameManager Icon");
-                case "anim": return EditorGUIUtility.FindTexture("Animation Icon");
+                case "shader": return EditorGUIUtility.FindTexture(typeof(Shader));
+                case "txt": return EditorGUIUtility.FindTexture(typeof(TextAsset));
+                case "unity": return EditorGUIUtility.FindTexture(typeof(SceneAsset));
+                case "asset": case "prefs": return EditorGUIUtility.FindTexture(typeof(EditorSettings));
+                case "anim": return EditorGUIUtility.FindTexture(typeof(Animation));
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
-                case "mixer": return EditorGUIUtility.FindTexture("AudioMixerController Icon");
+                case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
                 case "uxml": return EditorGUIUtility.FindTexture("UxmlScript Icon");
                 case "uss": return EditorGUIUtility.FindTexture("UssScript Icon");
 
-                case "ttf": case "otf": case "fon": case "fnt":  return EditorGUIUtility.FindTexture("Font Icon");
+                case "ttf": case "otf": case "fon": case "fnt":  return EditorGUIUtility.FindTexture(typeof(Font));
 
                 case "aac": case "aif": case "aiff": case "au": case "mid": case "midi": case "mp3": case "mpa":
                 case "ra": case "ram": case "wma": case "wav": case "wave": case "ogg":
-                    return EditorGUIUtility.FindTexture("AudioClip Icon");
+                    return EditorGUIUtility.FindTexture(typeof(AudioClip));
 
                 case "ai": case "apng": case "png": case "bmp": case "cdr": case "dib": case "eps": case "exif":
                 case "gif": case "ico": case "icon": case "j": case "j2c": case "j2k": case "jas":
@@ -56,22 +56,22 @@ namespace UnityEditorInternal
                 case "jpw": case "jpx": case "jtf": case "mac": case "omf": case "qif": case "qti": case "qtif":
                 case "tex": case "tfw": case "tga": case "tif": case "tiff": case "wmf": case "psd": case "exr":
                 case "hdr":
-                    return EditorGUIUtility.FindTexture("Texture Icon");
+                    return EditorGUIUtility.FindTexture(typeof(Texture));
 
                 case "3df": case "3dm": case "3dmf": case "3ds": case "3dv": case "3dx": case "blend": case "c4d":
                 case "lwo": case "lws": case "ma": case "max": case "mb": case "mesh": case "obj": case "vrl":
                 case "wrl": case "wrz": case "fbx":
-                    return EditorGUIUtility.FindTexture("Mesh Icon");
+                    return EditorGUIUtility.FindTexture(typeof(Mesh));
 
                 case "asf": case "asx": case "avi": case "dat": case "divx": case "dvx": case "mlv": case "m2l":
                 case "m2t": case "m2ts": case "m2v": case "m4e": case "m4v": case "mjp": case "mov": case "movie":
                 case "mp21": case "mp4": case "mpe": case "mpeg": case "mpg": case "mpv2": case "ogm": case "qt":
                 case "rm": case "rmvb": case "wmw": case "xvid":
-                    return EditorGUIUtility.FindTexture("MovieTexture Icon");
+                    return EditorGUIUtility.FindTexture(typeof(MovieTexture));
 
                 case "colors": case "gradients":
                 case "curves": case "curvesnormalized": case "particlecurves": case "particlecurvessigned": case "particledoublecurves": case "particledoublecurvessigned":
-                    return EditorGUIUtility.FindTexture("ScriptableObject Icon");
+                    return EditorGUIUtility.FindTexture(typeof(ScriptableObject));
 
                 default: return null;
             }
@@ -79,7 +79,7 @@ namespace UnityEditorInternal
 
         public static Texture2D GetIconForFile(string fileName)
         {
-            return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture("DefaultAsset Icon");
+            return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture(typeof(DefaultAsset));
         }
 
         public static string[] GetEditorSettingsList(string prefix, int count)
@@ -387,9 +387,9 @@ namespace UnityEditorInternal
             var target = EditorUserBuildSettings.activeBuildTarget;
 
             PrecompiledAssembly[] unityAssemblies = GetUnityAssemblies(false, group, target);
-            PrecompiledAssembly[] precompiledAssemblies = GetPrecompiledAssemblies(false, group, target);
 
-            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, precompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty);
+            PrecompiledAssembly[] allPrecompiledAssemblies = GetPrecompiledAssemblies(false, @group, target);
+            return EditorCompilationInterface.Instance.GetAllMonoIslands(unityAssemblies, allPrecompiledAssemblies, EditorScriptCompilationOptions.BuildingEmpty | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
         }
 
         // Do not remove. Called through reflection by Visual Studio Tools for Unity.

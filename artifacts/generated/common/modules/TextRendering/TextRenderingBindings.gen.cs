@@ -349,7 +349,7 @@ public partial struct CharacterInfo
         #pragma warning disable 0618
             public int advance
         {
-            get { return (int)width; }
+            get { return (int)Math.Round(width, MidpointRounding.AwayFromZero); }
             set { width = value; }
         }
     
@@ -524,6 +524,10 @@ public sealed partial class Font : Object
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  Font GetDefault () ;
+
     public Font() { Internal_CreateFont(this, null); }
     
     
@@ -691,12 +695,12 @@ public partial struct UIVertex
 {
     public Vector3 position;
     public Vector3 normal;
+    public Vector4 tangent;
     public Color32 color;
     public Vector2 uv0;
     public Vector2 uv1;
     public Vector2 uv2;
     public Vector2 uv3;
-    public Vector4 tangent;
     
             private static readonly Color32 s_DefaultColor = new Color32(255, 255, 255, 255);
             private static readonly Vector4 s_DefaultTangent = new Vector4(1.0f, 0.0f, 0.0f, -1.0f);

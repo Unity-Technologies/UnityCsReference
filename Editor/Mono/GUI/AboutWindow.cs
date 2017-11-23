@@ -215,9 +215,9 @@ namespace UnityEditor
 
             if (SecretCodeHasBeenTyped("internal", ref m_InternalCodeProgress))
             {
-                bool enabled = !EditorPrefs.GetBool("InternalMode", false);
-                EditorPrefs.SetBool("InternalMode", enabled);
-                ShowNotification(new GUIContent("Internal Mode " + (enabled ? "On" : "Off")));
+                bool enabled = !EditorPrefs.GetBool("DeveloperMode", false);
+                EditorPrefs.SetBool("DeveloperMode", enabled);
+                ShowNotification(new GUIContent("Developer Mode " + (enabled ? "On" : "Off")));
                 InternalEditorUtility.RequestScriptReload();
             }
         }

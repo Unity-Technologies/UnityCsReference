@@ -607,6 +607,7 @@ internal sealed partial class Physics2DSettings : ProjectSettingsBase
 }
 
 [NativeClass(null)]
+[ExcludeFromPreset]
 internal sealed partial class MonoManager : ProjectSettingsBase
 {
     private MonoManager() {}
@@ -633,6 +634,7 @@ internal sealed partial class TimeManager : ProjectSettingsBase
 [NativeClass(null)]
 internal sealed partial class UnityConnectSettings : ProjectSettingsBase
 {
+    private UnityConnectSettings() {}
 }
 
 [System.Obsolete("DDSImporter is obsolete. Use IHVImageFormatImporter instead (UnityUpgradable) -> IHVImageFormatImporter", true)]

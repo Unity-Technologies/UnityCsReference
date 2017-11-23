@@ -1987,7 +1987,7 @@ namespace UnityEditor
 
                 m_LockTracker.AddItemsToMenu(menu);
 
-                if (Unsupported.IsDeveloperBuild())
+                if (Unsupported.IsDeveloperMode())
                 {
                     menu.AddItem(new GUIContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
                     menu.AddItem(new GUIContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
@@ -2278,7 +2278,7 @@ namespace UnityEditor
                 string path = m_SearchFilter.folders[0];
 
                 string[] folderNames = path.Split('/');
-                var packagesRoot = AssetDatabase.GetPackagesRootPath();
+                var packagesRoot = AssetDatabase.GetPackagesMountPoint();
                 if (path.StartsWith(packagesRoot))
                 {
                     // Translate the packages root mount point

@@ -314,7 +314,7 @@ namespace UnityEditor
 
         public void DeveloperBuildSettingsGUI()
         {
-            if (!Unsupported.IsDeveloperBuild())
+            if (!Unsupported.IsDeveloperMode())
                 return;
 
             Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.ConcurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.ConcurrentJobsTypeStrings, Styles.ConcurrentJobsTypeValues);

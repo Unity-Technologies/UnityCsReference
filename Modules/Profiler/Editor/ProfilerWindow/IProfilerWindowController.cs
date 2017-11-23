@@ -2,8 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEditor;
+using UnityEditorInternal.Profiling;
 
 namespace UnityEditorInternal
 {
@@ -17,10 +16,8 @@ namespace UnityEditorInternal
 
 
         ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType);
+        FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, bool sortAscending);
         int GetActiveVisibleFrameIndex();
-        void SetSearch(string searchString);
-        string GetSearch();
-        bool IsSearching();
         bool IsRecording();
         void Repaint();
     }

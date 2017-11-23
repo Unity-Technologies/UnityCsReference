@@ -51,9 +51,9 @@ namespace UnityEditor.BuildReporting
 
         internal extern void AddMessage(LogType messageType, string message);
 
-        internal extern void BeginBuildStepNoTiming(string stepName);
-
-        internal extern void BeginBuildStep(string stepName);
+        internal extern int BeginBuildStep(string stepName);
+        internal extern void ResumeBuildStep(int depth);
+        internal extern void EndBuildStep(int depth);
 
         internal extern void AddAppendix([NotNull] Object obj);
 

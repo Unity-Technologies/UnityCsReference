@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -27,6 +28,38 @@ namespace UnityEngine
             {
                 BeforeRenderHelper.UnregisterCallback(value);
             }
+        }
+
+        public static event Func<bool> wantsToQuit;
+
+        public static event Action quitting;
+
+        [RequiredByNativeCode]
+        static bool Internal_ApplicationWantsToQuit()
+        {
+            if (wantsToQuit != null)
+            {
+                foreach (Func<bool> continueQuit in wantsToQuit.GetInvocationList())
+                {
+                    try
+                    {
+                        if (!continueQuit())
+                            return false;
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+            }
+            return true;
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_ApplicationQuit()
+        {
+            if (quitting != null)
+                quitting();
         }
 
         [RequiredByNativeCode]

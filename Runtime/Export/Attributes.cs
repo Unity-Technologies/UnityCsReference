@@ -130,4 +130,8 @@ namespace UnityEngine
     public class AssemblyIsEditorAssembly : Attribute
     {
     }
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    [UsedByNativeCode]
+    public class ExcludeFromPresetAttribute : Attribute {}
 }

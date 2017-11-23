@@ -479,10 +479,6 @@ public static GUIContent IconContent(string name, [uei.DefaultValue("null")]  st
         }
     
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  Texture2D FindTexture (string name) ;
-
     public static GUISkin GetBuiltinSkin(EditorSkin skin)
         {
             return GUIUtility.GetBuiltinSkin((int)skin);

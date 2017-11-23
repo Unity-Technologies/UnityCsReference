@@ -34,9 +34,6 @@ namespace UnityEditor
             public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
         }
 
-        private const float kMaxfp16 = 65536f; // Clamp to a value that fits into fp16.
-        static ColorPickerHDRConfig s_ColorPickerHDRConfig = new ColorPickerHDRConfig(0f, kMaxfp16, 1 / kMaxfp16, 3f);
-
         private static SerializedPropertyTreeView.Column[] FinalizeColumns(SerializedPropertyTreeView.Column[] columns, out string[] propNames)
         {
             propNames = new string[columns.Length];
@@ -489,10 +486,8 @@ namespace UnityEditor
 
                                 Color color = material.GetColor("_EmissionColor");
 
-                                ColorPickerHDRConfig hdrConfiguration = s_ColorPickerHDRConfig ?? ColorPicker.defaultHDRConfig;
-
                                 EditorGUI.BeginChangeCheck();
-                                Color newValue = EditorGUI.ColorBrightnessField(r, GUIContent.Temp(""), color, hdrConfiguration.minBrightness, hdrConfiguration.maxBrightness);
+                                Color newValue = EditorGUI.ColorBrightnessField(r, GUIContent.Temp(""), color);
 
                                 if (EditorGUI.EndChangeCheck())
                                 {

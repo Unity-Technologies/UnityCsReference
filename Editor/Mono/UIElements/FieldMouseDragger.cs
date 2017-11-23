@@ -90,6 +90,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 dragging = false;
                 MouseCaptureController.ReleaseMouseCapture();
+                EditorGUIUtility.SetWantsMouseJumping(0);
             }
         }
 
@@ -100,6 +101,7 @@ namespace UnityEditor.Experimental.UIElements
                 dragging = false;
                 m_DrivenField.value = startValue;
                 MouseCaptureController.ReleaseMouseCapture();
+                EditorGUIUtility.SetWantsMouseJumping(0);
             }
         }
     }

@@ -25,7 +25,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public ContentZoomer()
         {
-            zoomStep = 0.01f;
+            zoomStep = 0.05f;
             minScale = DefaultMinScale;
             maxScale = DefaultMaxScale;
             keepPixelCacheOnZoom = false;
@@ -33,7 +33,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public ContentZoomer(Vector3 minScale, Vector3 maxScale)
         {
-            zoomStep = 0.01f;
+            zoomStep = 0.05f;
             this.minScale = minScale;
             this.maxScale = maxScale;
             keepPixelCacheOnZoom = false;
@@ -56,6 +56,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private IVisualElementScheduledItem m_OnTimerTicker;
+
         private void OnTimer(TimerState timerState)
         {
             var graphView = target as GraphView;

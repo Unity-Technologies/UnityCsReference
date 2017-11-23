@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -39,6 +39,10 @@ namespace UnityEditor
             List<string> excludedProperties = new List<string>();
             excludedProperties.Add("m_Parameters");
             excludedProperties.AddRange(Probes.GetFieldsStringArray());
+            if (!SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+                excludedProperties.Add("m_MotionVectors");
+            if (!SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+                excludedProperties.Add("m_ReceiveShadows");
             m_ExcludedProperties = excludedProperties.ToArray();
 
             m_CurveEditor.OnEnable(serializedObject);
@@ -60,7 +64,6 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
             DrawPropertiesExcluding(m_SerializedObject, m_ExcludedProperties);
 
             m_CurveEditor.CheckCurveChangedExternally();
@@ -78,6 +81,8 @@ namespace UnityEditor
             RenderSortingLayerFields();
 
             m_Probes.OnGUI(targets, (Renderer)target, false);
+
+            RenderRenderingLayer();
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -22,8 +22,6 @@ namespace UnityEditor
 
         GUIContent Weight { get; }
 
-        GUIContent FreezeAxes { get; }
-
         GUIContent IsActive { get; }
         GUIContent IsLocked { get; }
 
@@ -46,8 +44,9 @@ namespace UnityEditor
         private ReorderableList m_SourceList;
 
         private int m_SelectedSourceIdx = -1;
+        protected int selectedSourceIndex { get { return m_SelectedSourceIdx; } set { m_SelectedSourceIdx = value; } }
 
-        private const int kSourceWeightWidth = 60;
+        protected const int kSourceWeightWidth = 60;
 
         public void OnEnable(IConstraintStyle style)
         {
@@ -59,6 +58,7 @@ namespace UnityEditor
             m_SourceList.drawHeaderCallback += rect => EditorGUI.LabelField(rect, style.Sources);
             m_SourceList.onRemoveCallback += OnRemoveCallback;
             m_SourceList.onSelectCallback += OnSelectedCallback;
+            m_SourceList.elementHeightCallback += OnElementHeightCallback;
 
             if (sources.arraySize > 0 && m_SelectedSourceIdx == -1)
             {
@@ -78,7 +78,7 @@ namespace UnityEditor
                 (t as IConstraintInternal).UserUpdateOffset();
         }
 
-        private void SelectSource(int index)
+        protected void SelectSource(int index)
         {
             m_SelectedSourceIdx = index;
 
@@ -93,7 +93,7 @@ namespace UnityEditor
             SelectSource(list.index);
         }
 
-        void OnRemoveCallback(ReorderableList list)
+        protected virtual void OnRemoveCallback(ReorderableList list)
         {
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             if (m_SelectedSourceIdx >= list.serializedProperty.arraySize)
@@ -102,7 +102,7 @@ namespace UnityEditor
             }
         }
 
-        void OnAddCallback(ReorderableList list)
+        protected virtual void OnAddCallback(ReorderableList list)
         {
             var index = list.serializedProperty.arraySize;
             ReorderableList.defaultBehaviours.DoAddButton(list);
@@ -114,7 +114,7 @@ namespace UnityEditor
             SelectSource(index);
         }
 
-        void DrawElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        protected virtual void DrawElementCallback(Rect rect, int index, bool isActive, bool isFocused)
         {
             rect.height = EditorGUIUtility.singleLineHeight;
             rect.y += 1;
@@ -127,8 +127,16 @@ namespace UnityEditor
             EditorGUI.PropertyField(new Rect(rect.x + rect.width - kSourceWeightWidth, rect.y, kSourceWeightWidth, EditorGUIUtility.singleLineHeight), weight, GUIContent.none);
         }
 
+        protected virtual float OnElementHeightCallback(int index)
+        {
+            return EditorGUIUtility.singleLineHeight;
+        }
+
         internal abstract void OnValueAtRestChanged();
         internal abstract void ShowFreezeAxesControl();
+
+        /// Show the custom constraint properties that are not included in the foldout
+        internal virtual void ShowCustomProperties() {}
 
         internal void ShowConstraintEditor<T>(IConstraintStyle style) where T : class, IConstraintInternal
         {
@@ -169,6 +177,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(isContraintActive, style.IsActive);
             EditorGUILayout.Slider(weight, 0.0f, 1.0f, style.Weight);
+            ShowCustomProperties();
 
             m_ShowConstraintSettings = EditorGUILayout.Foldout(m_ShowConstraintSettings, style.ConstraintSettings, true);
             if (m_ShowConstraintSettings)
@@ -180,25 +189,35 @@ namespace UnityEditor
                 }
                 using (new EditorGUI.DisabledGroupScope(isLocked.boolValue))
                 {
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(atRest, style.AtRest);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        OnValueAtRestChanged();
-                    }
+                    ShowValueAtRest(style);
 
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(offset, style.Offset);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        foreach (var t in targets)
-                            (t as T).UserUpdateOffset();
-                    }
+                    ShowOffset<T>(style);
                 }
                 ShowFreezeAxesControl();
                 EditorGUI.indentLevel--;
             }
             m_SourceList.DoLayoutList();
+        }
+
+        internal virtual void ShowValueAtRest(IConstraintStyle style)
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(atRest, style.AtRest);
+            if (EditorGUI.EndChangeCheck())
+            {
+                OnValueAtRestChanged();
+            }
+        }
+
+        internal virtual void ShowOffset<T>(IConstraintStyle style) where T : class, IConstraintInternal
+        {
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(offset, style.Offset);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (var t in targets)
+                    (t as T).UserUpdateOffset();
+            }
         }
     }
 }

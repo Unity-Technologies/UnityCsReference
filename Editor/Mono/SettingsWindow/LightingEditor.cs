@@ -137,9 +137,9 @@ namespace UnityEditor
                     case AmbientMode.Trilight:
                     {
                         EditorGUI.BeginChangeCheck();
-                        Color newValueUp = EditorGUILayout.ColorField(Styles.ambientUp, m_AmbientSkyColor.colorValue, true, false, true, ColorPicker.defaultHDRConfig);
-                        Color newValueMid = EditorGUILayout.ColorField(Styles.ambientMid, m_AmbientEquatorColor.colorValue, true, false, true, ColorPicker.defaultHDRConfig);
-                        Color newValueDown = EditorGUILayout.ColorField(Styles.ambientDown, m_AmbientGroundColor.colorValue, true, false, true, ColorPicker.defaultHDRConfig);
+                        Color newValueUp = EditorGUILayout.ColorField(Styles.ambientUp, m_AmbientSkyColor.colorValue, true, false, true);
+                        Color newValueMid = EditorGUILayout.ColorField(Styles.ambientMid, m_AmbientEquatorColor.colorValue, true, false, true);
+                        Color newValueDown = EditorGUILayout.ColorField(Styles.ambientDown, m_AmbientGroundColor.colorValue, true, false, true);
                         if (EditorGUI.EndChangeCheck())
                         {
                             m_AmbientSkyColor.colorValue = newValueUp;
@@ -152,7 +152,7 @@ namespace UnityEditor
                     case AmbientMode.Flat:
                     {
                         EditorGUI.BeginChangeCheck();
-                        Color newValue = EditorGUILayout.ColorField(Styles.ambient, m_AmbientSkyColor.colorValue, true, false, true, ColorPicker.defaultHDRConfig);
+                        Color newValue = EditorGUILayout.ColorField(Styles.ambient, m_AmbientSkyColor.colorValue, true, false, true);
                         if (EditorGUI.EndChangeCheck())
                             m_AmbientSkyColor.colorValue = newValue;
                     }
@@ -162,7 +162,7 @@ namespace UnityEditor
                         if (skyboxMaterial == null)
                         {
                             EditorGUI.BeginChangeCheck();
-                            Color newValue = EditorGUILayout.ColorField(Styles.ambient, m_AmbientSkyColor.colorValue, true, false, true, ColorPicker.defaultHDRConfig);
+                            Color newValue = EditorGUILayout.ColorField(Styles.ambient, m_AmbientSkyColor.colorValue, true, false, true);
                             if (EditorGUI.EndChangeCheck())
                                 m_AmbientSkyColor.colorValue = newValue;
                         }

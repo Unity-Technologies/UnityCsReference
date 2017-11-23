@@ -38,7 +38,7 @@ namespace UnityEditor
                 m_Tracker = m_ParentInspectorWindow.tracker;
         }
 
-        public override Editor GetLastInteractedEditor()
+        internal override Editor GetLastInteractedEditor()
         {
             return m_ParentInspectorWindow.GetLastInteractedEditor();
         }

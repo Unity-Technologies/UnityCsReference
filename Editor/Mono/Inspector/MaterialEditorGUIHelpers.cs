@@ -227,7 +227,15 @@ namespace UnityEditor
             return r;
         }
 
-        public Rect TexturePropertyWithHDRColor(GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, ColorPickerHDRConfig hdrConfig, bool showAlpha)
+        [Obsolete("Use TexturePropertyWithHDRColor(GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, bool showAlpha)")]
+        public Rect TexturePropertyWithHDRColor(
+            GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, ColorPickerHDRConfig hdrConfig, bool showAlpha
+            )
+        {
+            return TexturePropertyWithHDRColor(label, textureProp, colorProperty, showAlpha);
+        }
+
+        public Rect TexturePropertyWithHDRColor(GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, bool showAlpha)
         {
             Rect r = GetControlRectForSingleLine();
             TexturePropertyMiniThumbnail(r, textureProp, label.text, label.tooltip);
@@ -240,12 +248,10 @@ namespace UnityEditor
 
             BeginAnimatedCheck(r, colorProperty);
 
-            ColorPickerHDRConfig hdrConfiguration = hdrConfig ?? ColorPicker.defaultHDRConfig;
-
             Rect leftRect = GetLeftAlignedFieldRect(r);
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = colorProperty.hasMixedValue;
-            Color newValue = EditorGUI.ColorField(leftRect, GUIContent.none, colorProperty.colorValue, true, showAlpha, true, hdrConfiguration);
+            Color newValue = EditorGUI.ColorField(leftRect, GUIContent.none, colorProperty.colorValue, true, showAlpha, true);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 colorProperty.colorValue = newValue;
@@ -257,7 +263,7 @@ namespace UnityEditor
                 EditorGUIUtility.labelWidth = brightnessRect.width - EditorGUIUtility.fieldWidth;
 
                 EditorGUI.BeginChangeCheck();
-                newValue = EditorGUI.ColorBrightnessField(brightnessRect, GUIContent.Temp(" "), colorProperty.colorValue, hdrConfiguration.minBrightness, hdrConfiguration.maxBrightness);
+                newValue = EditorGUI.ColorBrightnessField(brightnessRect, GUIContent.Temp(" "), colorProperty.colorValue);
                 if (EditorGUI.EndChangeCheck())
                     colorProperty.colorValue = newValue;
 

@@ -579,6 +579,10 @@ public enum CurveModifiedType
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  bool GetKeyBrokenInternal (AnimationCurve curve, int index) ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  int AddInbetweenKey (AnimationCurve curve, float time) ;
+
     [System.Obsolete ("GetAllCurves is deprecated. Use GetCurveBindings and GetObjectReferenceCurveBindings instead.")]
 [uei.ExcludeFromDocs]
 public static AnimationClipCurveData[] GetAllCurves (AnimationClip clip) {

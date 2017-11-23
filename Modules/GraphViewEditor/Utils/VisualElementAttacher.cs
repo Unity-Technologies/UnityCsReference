@@ -9,8 +9,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class Attacher
+    public class Attacher
     {
         public VisualElement target { get; private set; }
         public VisualElement element { get; private set; }

@@ -22,8 +22,8 @@ namespace UnityEditor
         internal enum MixedBool : int
         {
             Mixed = -1,
-            True = 0,
-            False = 1
+            False = 0,
+            True = 1
         }
 
         internal class AssemblyDefinitionReference
@@ -46,6 +46,7 @@ namespace UnityEditor
             public AssemblyDefinitionAsset asset;
             public string name;
             public List<AssemblyDefinitionReference> references;
+            public MixedBool[] optionalUnityReferences;
             public MixedBool compatibleWithAnyPlatform;
             public MixedBool[] platformCompatibility;
             public bool modified;
@@ -69,12 +70,14 @@ namespace UnityEditor
                 }
                 catch (Exception e)
                 {
+                    m_State = null;
                     ShowLoadErrorExceptionGUI(e);
                     return;
                 }
             }
 
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+            var optionalUnityReferences = CustomScriptAssembly.OptinalUnityAssemblies;
 
             using (new EditorGUI.DisabledScope(false))
             {
@@ -96,9 +99,23 @@ namespace UnityEditor
                 GUILayout.Label("References", EditorStyles.boldLabel);
                 m_ReferencesList.DoLayoutList();
 
+                GUILayout.Label("Unity References", EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(GUI.skin.box);
+                for (int i = 0; i < optionalUnityReferences.Length; ++i)
+                {
+                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(optionalUnityReferences[i].DisplayName, m_State.optionalUnityReferences[i]);
+
+                    if (m_State.optionalUnityReferences[i] == MixedBool.True)
+                    {
+                        EditorGUILayout.HelpBox(optionalUnityReferences[i].AdditinalInformationWhenEnabled, MessageType.Info);
+                    }
+                }
+                EditorGUILayout.EndVertical();
+                GUILayout.Space(10f);
+
+
                 GUILayout.Label("Platforms", EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
-
                 var compatibleWithAnyPlatform = m_State.compatibleWithAnyPlatform;
                 m_State.compatibleWithAnyPlatform = ToggleWithMixedValue("Any Platform", m_State.compatibleWithAnyPlatform);
 
@@ -120,7 +137,7 @@ namespace UnityEditor
 
                 if (m_State.compatibleWithAnyPlatform != MixedBool.Mixed)
                 {
-                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.False ? "Exclude Platforms" : "Include Platforms", EditorStyles.boldLabel);
+                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.True ? "Exclude Platforms" : "Include Platforms", EditorStyles.boldLabel);
 
                     for (int i = 0; i < platforms.Length; ++i)
                     {
@@ -133,12 +150,12 @@ namespace UnityEditor
 
                     if (GUILayout.Button("Select all"))
                     {
-                        SetPlatformCompatibility(m_State, MixedBool.False);
+                        SetPlatformCompatibility(m_State, MixedBool.True);
                     }
 
                     if (GUILayout.Button("Deselect all"))
                     {
-                        SetPlatformCompatibility(m_State, MixedBool.True);
+                        SetPlatformCompatibility(m_State, MixedBool.False);
                     }
 
                     GUILayout.FlexibleSpace();
@@ -214,9 +231,9 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
 
-            bool newBoolValue = EditorGUILayout.Toggle(title, value == MixedBool.False);
+            bool newBoolValue = EditorGUILayout.Toggle(title, value == MixedBool.True);
             if (EditorGUI.EndChangeCheck())
-                return newBoolValue ? MixedBool.False : MixedBool.True;
+                return newBoolValue ? MixedBool.True : MixedBool.False;
 
             EditorGUI.showMixedValue = false;
             return value;
@@ -240,11 +257,11 @@ namespace UnityEditor
 
         static MixedBool InverseCompability(MixedBool compatibility)
         {
-            if (compatibility == MixedBool.False)
-                return MixedBool.True;
-
             if (compatibility == MixedBool.True)
                 return MixedBool.False;
+
+            if (compatibility == MixedBool.False)
+                return MixedBool.True;
 
             return MixedBool.Mixed;
         }
@@ -322,7 +339,11 @@ namespace UnityEditor
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
             m_State.platformCompatibility = new MixedBool[platforms.Length];
 
+            var optionalUnityReferences = CustomScriptAssembly.OptinalUnityAssemblies;
+            m_State.optionalUnityReferences = new MixedBool[optionalUnityReferences.Length];
+
             Array.Copy(m_TargetStates[0].platformCompatibility, m_State.platformCompatibility, platforms.Length);
+            Array.Copy(m_TargetStates[0].optionalUnityReferences, m_State.optionalUnityReferences, optionalUnityReferences.Length);
 
             for (int i = 1; i < m_TargetStates.Length; ++i)
             {
@@ -332,6 +353,15 @@ namespace UnityEditor
                 {
                     if (m_State.compatibleWithAnyPlatform != targetState.compatibleWithAnyPlatform)
                         m_State.compatibleWithAnyPlatform = MixedBool.Mixed;
+                }
+
+                for (int j = 0; j < m_State.optionalUnityReferences.Length; ++j)
+                {
+                    if (m_State.optionalUnityReferences[j] != MixedBool.Mixed)
+                    {
+                        if (m_State.optionalUnityReferences[j] != targetState.optionalUnityReferences[j])
+                            m_State.optionalUnityReferences[j] = MixedBool.Mixed;
+                    }
                 }
 
                 for (int p = 0; p < platforms.Length; ++p)
@@ -383,7 +413,7 @@ namespace UnityEditor
                             throw new AssemblyDefinitionException(string.Format("Reference assembly definition file '{0}' not found", referencePath), path);
 
                         assemblyDefinitionFile.data = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
-                        assemblyDefinitionFile.displayValue = MixedBool.True;
+                        assemblyDefinitionFile.displayValue = MixedBool.False;
                         state.references.Add(assemblyDefinitionFile);
                     }
                     catch (AssemblyDefinitionException e)
@@ -395,20 +425,36 @@ namespace UnityEditor
                 }
             }
 
-            var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+            var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
             state.platformCompatibility = new MixedBool[platforms.Length];
 
-            state.compatibleWithAnyPlatform = MixedBool.False;
+            var OptinalUnityAssemblies =  CustomScriptAssembly.OptinalUnityAssemblies;
+            state.optionalUnityReferences = new MixedBool[OptinalUnityAssemblies.Length];
+
+            if (data.optionalUnityReferences != null)
+            {
+                for (int i = 0; i < OptinalUnityAssemblies.Length; i++)
+                {
+                    var optionalUnityReferences = OptinalUnityAssemblies[i].OptionalUnityReferences.ToString();
+                    var any = data.optionalUnityReferences.Any(x => x == optionalUnityReferences);
+                    if (any)
+                    {
+                        state.optionalUnityReferences[i] = MixedBool.True;
+                    }
+                }
+            }
+
+            state.compatibleWithAnyPlatform = MixedBool.True;
             string[] dataPlatforms = null;
 
             if (data.includePlatforms != null && data.includePlatforms.Length > 0)
             {
-                state.compatibleWithAnyPlatform = MixedBool.True;
+                state.compatibleWithAnyPlatform = MixedBool.False;
                 dataPlatforms = data.includePlatforms;
             }
             else if (data.excludePlatforms != null && data.excludePlatforms.Length > 0)
             {
-                state.compatibleWithAnyPlatform = MixedBool.False;
+                state.compatibleWithAnyPlatform = MixedBool.True;
                 dataPlatforms = data.excludePlatforms;
             }
 
@@ -416,7 +462,7 @@ namespace UnityEditor
                 foreach (var platform in dataPlatforms)
                 {
                     var platformIndex = GetPlatformIndex(platforms, platform);
-                    state.platformCompatibility[platformIndex] = MixedBool.False;
+                    state.platformCompatibility[platformIndex] = MixedBool.True;
                 }
 
             return state;
@@ -465,6 +511,12 @@ namespace UnityEditor
                         state.platformCompatibility[i] = combinedState.platformCompatibility[i];
                 }
 
+                for (int i = 0; i < combinedState.optionalUnityReferences.Length; ++i)
+                {
+                    if (combinedState.platformCompatibility[i] != MixedBool.Mixed)
+                        state.optionalUnityReferences[i] = combinedState.optionalUnityReferences[i];
+                }
+
                 SaveAssemblyDefinitionState(state);
             }
 
@@ -475,6 +527,7 @@ namespace UnityEditor
         {
             var references = state.references.Where(r => r.asset != null);
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
+            var OptinalUnityAssemblies = CustomScriptAssembly.OptinalUnityAssemblies;
 
             CustomScriptAssemblyData data = new CustomScriptAssemblyData();
 
@@ -482,17 +535,26 @@ namespace UnityEditor
 
             data.references = references.Select(r => r.data.name).ToArray();
 
+            List<string> optionalUnityReferences = new List<string>();
+
+            for (int i = 0; i < OptinalUnityAssemblies.Length; i++)
+            {
+                if (state.optionalUnityReferences[i] == MixedBool.True)
+                    optionalUnityReferences.Add(OptinalUnityAssemblies[i].OptionalUnityReferences.ToString());
+            }
+            data.optionalUnityReferences = optionalUnityReferences.ToArray();
+
             List<string> dataPlatforms = new List<string>();
 
             for (int i = 0; i < platforms.Length; ++i)
             {
-                if (state.platformCompatibility[i] == MixedBool.False)
+                if (state.platformCompatibility[i] == MixedBool.True)
                     dataPlatforms.Add(platforms[i].Name);
             }
 
             if (dataPlatforms.Any())
             {
-                if (state.compatibleWithAnyPlatform == MixedBool.False)
+                if (state.compatibleWithAnyPlatform == MixedBool.True)
                     data.excludePlatforms = dataPlatforms.ToArray();
                 else
                     data.includePlatforms = dataPlatforms.ToArray();

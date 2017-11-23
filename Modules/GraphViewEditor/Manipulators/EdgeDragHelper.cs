@@ -13,13 +13,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     abstract class EdgeDragHelper
     {
         public abstract Edge edgeCandidate { get; set; }
-        public abstract NodeAnchor draggedNodeAnchor { get; set; }
+        public abstract Port draggedPort { get; set; }
         public abstract bool HandleMouseDown(MouseDownEvent evt);
         public abstract void HandleMouseMove(MouseMoveEvent evt);
         public abstract void HandleMouseUp(MouseUpEvent evt);
         public abstract void Reset(bool didConnect = false);
 
-        internal const int k_PanAreaWidth = 20;
+        internal const int k_PanAreaWidth = 100;
         internal const int k_PanSpeed = 4;
         internal const int k_PanInterval = 10;
     }
@@ -27,7 +27,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     internal
     class EdgeDragHelper<TEdge> : EdgeDragHelper where TEdge : Edge, new()
     {
-        protected List<NodeAnchor> m_CompatibleAnchors;
+        protected List<Port> m_CompatiblePorts;
         private Edge m_GhostEdge;
         protected GraphView m_GraphView;
         protected static NodeAdapter s_nodeAdapter = new NodeAdapter();
@@ -48,16 +48,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override Edge edgeCandidate { get; set; }
 
-        public override NodeAnchor draggedNodeAnchor { get; set; }
+        public override Port draggedPort { get; set; }
 
         public override void Reset(bool didConnect = false)
         {
-            if (m_CompatibleAnchors != null)
+            if (m_CompatiblePorts != null)
             {
                 // Remove highlights.
-                foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
+                foreach (Port compatiblePort in m_CompatiblePorts)
                 {
-                    compatibleAnchor.highlight = false;
+                    compatiblePort.highlight = false;
                 }
             }
 
@@ -80,10 +80,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_PanSchedule != null)
                 m_PanSchedule.Pause();
 
+            if (m_GhostEdge != null)
+            {
+                m_GhostEdge.input = null;
+                m_GhostEdge.output = null;
+            }
+
             m_GhostEdge = null;
             edgeCandidate = null;
-            draggedNodeAnchor = null;
-            m_CompatibleAnchors = null;
+            draggedPort = null;
+            m_CompatiblePorts = null;
             m_GraphView = null;
         }
 
@@ -91,29 +97,29 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             Vector2 mousePosition = evt.mousePosition;
 
-            if ((draggedNodeAnchor == null) || (edgeCandidate == null))
+            if ((draggedPort == null) || (edgeCandidate == null))
             {
                 return false;
             }
 
-            m_GraphView = draggedNodeAnchor.GetFirstAncestorOfType<GraphView>();
+            m_GraphView = draggedPort.GetFirstAncestorOfType<GraphView>();
 
             if (m_GraphView == null)
             {
                 return false;
             }
 
-            bool startFromOutput = (draggedNodeAnchor.direction == Direction.Output);
+            bool startFromOutput = (draggedPort.direction == Direction.Output);
 
             if (startFromOutput)
             {
-                edgeCandidate.output = draggedNodeAnchor;
+                edgeCandidate.output = draggedPort;
                 edgeCandidate.input = null;
             }
             else
             {
                 edgeCandidate.output = null;
-                edgeCandidate.input = draggedNodeAnchor;
+                edgeCandidate.input = draggedPort;
             }
 
             if (edgeCandidate.parent == null)
@@ -122,11 +128,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
             edgeCandidate.candidatePosition = mousePosition;
 
-            m_CompatibleAnchors = m_GraphView.GetCompatibleAnchors(draggedNodeAnchor, s_nodeAdapter);
+            m_CompatiblePorts = m_GraphView.GetCompatiblePorts(draggedPort, s_nodeAdapter);
 
-            foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
+            foreach (Port compatiblePort in m_CompatiblePorts)
             {
-                compatibleAnchor.highlight = true;
+                compatiblePort.highlight = true;
             }
 
             edgeCandidate.UpdateEdgeControl();
@@ -170,10 +176,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             edgeCandidate.candidatePosition = mousePosition;
 
-            // Draw ghost edge if possible anchor exists.
-            NodeAnchor endAnchor = GetEndAnchor(mousePosition);
+            // Draw ghost edge if possible port exists.
+            Port endPort = GetEndPort(mousePosition);
 
-            if (endAnchor != null)
+            if (endPort != null)
             {
                 if (m_GhostEdge == null)
                 {
@@ -185,17 +191,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (edgeCandidate.output == null)
                 {
                     m_GhostEdge.input = edgeCandidate.input;
-                    m_GhostEdge.output = endAnchor;
+                    m_GhostEdge.output = endPort;
                 }
                 else
                 {
-                    m_GhostEdge.input = endAnchor;
+                    m_GhostEdge.input = endPort;
                     m_GhostEdge.output = edgeCandidate.output;
                 }
             }
             else if (m_GhostEdge != null)
             {
                 m_GraphView.RemoveElement(m_GhostEdge);
+                m_GhostEdge.input = null;
+                m_GhostEdge.output = null;
                 m_GhostEdge = null;
             }
         }
@@ -213,33 +221,35 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Vector2 mousePosition = evt.mousePosition;
 
             // Remove highlights.
-            foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
+            foreach (Port compatiblePort in m_CompatiblePorts)
             {
-                compatibleAnchor.highlight = false;
+                compatiblePort.highlight = false;
             }
 
             // Clean up ghost edges.
             if (m_GhostEdge != null)
             {
                 m_GraphView.RemoveElement(m_GhostEdge);
+                m_GhostEdge.input = null;
+                m_GhostEdge.output = null;
                 m_GhostEdge = null;
             }
 
-            NodeAnchor endAnchor = GetEndAnchor(mousePosition);
+            Port endPort = GetEndPort(mousePosition);
 
-            if (endAnchor == null && m_Listener != null)
+            if (endPort == null && m_Listener != null)
             {
-                m_Listener.OnDropOutsideAnchor(edgeCandidate, mousePosition);
+                m_Listener.OnDropOutsidePort(edgeCandidate, mousePosition);
             }
 
             m_GraphView.RemoveElement(edgeCandidate);
 
-            if (endAnchor != null)
+            if (endPort != null)
             {
                 if (edgeCandidate.output == null)
-                    edgeCandidate.output = endAnchor;
+                    edgeCandidate.output = endPort;
                 else
-                    edgeCandidate.input = endAnchor;
+                    edgeCandidate.input = endPort;
 
                 m_Listener.OnDrop(m_GraphView, edgeCandidate);
                 didConnect = true;
@@ -251,45 +261,45 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             edgeCandidate = null;
-            m_CompatibleAnchors = null;
+            m_CompatiblePorts = null;
             Reset(didConnect);
         }
 
-        private NodeAnchor GetEndAnchor(Vector2 mousePosition)
+        private Port GetEndPort(Vector2 mousePosition)
         {
             if (m_GraphView == null)
                 return null;
 
-            NodeAnchor endAnchor = null;
+            Port endPort = null;
 
-            foreach (NodeAnchor compatibleAnchor in m_CompatibleAnchors)
+            foreach (Port compatiblePort in m_CompatiblePorts)
             {
-                Rect bounds = compatibleAnchor.worldBound;
+                Rect bounds = compatiblePort.worldBound;
                 float hitboxExtraPadding = bounds.height;
 
-                // Add extra padding for mouse check to the left of input anchor or right of output anchor.
-                if (compatibleAnchor.direction == Direction.Input)
+                // Add extra padding for mouse check to the left of input port or right of output port.
+                if (compatiblePort.direction == Direction.Input)
                 {
                     // Move bounds to the left by hitboxExtraPadding and increase width
                     // by hitboxExtraPadding.
                     bounds.x -= hitboxExtraPadding;
                     bounds.width += hitboxExtraPadding;
                 }
-                else if (compatibleAnchor.direction == Direction.Output)
+                else if (compatiblePort.direction == Direction.Output)
                 {
                     // Just add hitboxExtraPadding to the width.
                     bounds.width += hitboxExtraPadding;
                 }
 
-                // Check if mouse is over anchor.
+                // Check if mouse is over port.
                 if (bounds.Contains(mousePosition))
                 {
-                    endAnchor = compatibleAnchor;
+                    endPort = compatiblePort;
                     break;
                 }
             }
 
-            return endAnchor;
+            return endPort;
         }
     }
 }

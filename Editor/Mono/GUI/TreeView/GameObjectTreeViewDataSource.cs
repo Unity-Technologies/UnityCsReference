@@ -498,7 +498,7 @@ namespace UnityEditor
             item.shouldDisplay = true;
             item.isSceneHeader = isSceneHeader;
             item.scene = scene;
-            item.icon = isSceneHeader ? EditorGUIUtility.FindTexture("SceneAsset Icon") : null;
+            item.icon = isSceneHeader ? EditorGUIUtility.FindTexture(typeof(SceneAsset)) : null;
 
             if (hasChildren)
             {

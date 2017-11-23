@@ -38,8 +38,15 @@ namespace UnityEngine
         [FreeFunction(Name = "RendererScripting::GetSharedMaterialArray", HasExplicitThis = true)] extern private Material[] GetSharedMaterialArray();
         [FreeFunction(Name = "RendererScripting::SetMaterialArray", HasExplicitThis = true)] extern private void SetMaterialArray([NotNull] Material[] m);
 
-        [FreeFunction(Name = "RendererScripting::SetPropertyBlock", HasExplicitThis = true)] extern public void SetPropertyBlock(MaterialPropertyBlock properties);
-        [FreeFunction(Name = "RendererScripting::GetPropertyBlock", HasExplicitThis = true)] extern public void GetPropertyBlock([NotNull] MaterialPropertyBlock dest);
+        [FreeFunction(Name = "RendererScripting::SetPropertyBlock", HasExplicitThis = true)] extern internal void Internal_SetPropertyBlock(MaterialPropertyBlock properties);
+        [FreeFunction(Name = "RendererScripting::GetPropertyBlock", HasExplicitThis = true)] extern internal void Internal_GetPropertyBlock([NotNull] MaterialPropertyBlock dest);
+        [FreeFunction(Name = "RendererScripting::SetPropertyBlockMaterialIndex", HasExplicitThis = true)] extern internal void Internal_SetPropertyBlockMaterialIndex(MaterialPropertyBlock properties, int materialIndex);
+        [FreeFunction(Name = "RendererScripting::GetPropertyBlockMaterialIndex", HasExplicitThis = true)] extern internal void Internal_GetPropertyBlockMaterialIndex([NotNull] MaterialPropertyBlock dest, int materialIndex);
+
+        public void SetPropertyBlock(MaterialPropertyBlock properties) { Internal_SetPropertyBlock(properties); }
+        public void SetPropertyBlock(MaterialPropertyBlock properties, int materialIndex) { Internal_SetPropertyBlockMaterialIndex(properties, materialIndex); }
+        public void GetPropertyBlock(MaterialPropertyBlock properties) { Internal_GetPropertyBlock(properties); }
+        public void GetPropertyBlock(MaterialPropertyBlock properties, int materialIndex) { Internal_GetPropertyBlockMaterialIndex(properties, materialIndex); }
 
         [FreeFunction(Name = "RendererScripting::GetClosestReflectionProbes", HasExplicitThis = true)] extern private void GetClosestReflectionProbesInternal(object result);
     }
@@ -56,6 +63,7 @@ namespace UnityEngine
         extern public MotionVectorGenerationMode motionVectorGenerationMode { get; set; }
         extern public LightProbeUsage            lightProbeUsage { get; set; }
         extern public ReflectionProbeUsage       reflectionProbeUsage { get; set; }
+        extern public UInt32                     renderingLayerMask { get; set; }
 
         extern public   string sortingLayerName  { get; set; }
         extern public   int    sortingLayerID    { get; set; }

@@ -304,7 +304,6 @@ namespace UnityEditorInternal
             // NoOps...
             onStartLiveEdit += () => {};
             onEndLiveEdit += () => {};
-            onFrameRateChange += (float frameRate) => {};
 
             if (m_ControlInterface == null)
                 m_ControlInterface = CreateInstance(typeof(AnimationWindowControl)) as AnimationWindowControl;
@@ -331,7 +330,8 @@ namespace UnityEditorInternal
 
         public void OnSelectionChanged()
         {
-            onFrameRateChange(frameRate);
+            if (onFrameRateChange != null)
+                onFrameRateChange(frameRate);
 
             // reset back time at 0 upon selection change.
             controlInterface.OnSelectionChanged();
@@ -1508,7 +1508,8 @@ namespace UnityEditorInternal
                 if (m_FrameRate != value)
                 {
                     m_FrameRate = value;
-                    onFrameRateChange(m_FrameRate);
+                    if (onFrameRateChange != null)
+                        onFrameRateChange(m_FrameRate);
                 }
             }
         }

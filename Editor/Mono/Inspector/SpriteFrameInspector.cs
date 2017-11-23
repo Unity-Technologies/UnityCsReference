@@ -258,9 +258,12 @@ namespace UnityEditor
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
-            copy.filterMode = texture.filterMode;
-            copy.anisoLevel = texture.anisoLevel;
-            copy.wrapMode = texture.wrapMode;
+            if (texture != null)
+            {
+                copy.filterMode = texture.filterMode;
+                copy.anisoLevel = texture.anisoLevel;
+                copy.wrapMode = texture.wrapMode;
+            }
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             copy.Apply();
             RenderTexture.ReleaseTemporary(tmp);

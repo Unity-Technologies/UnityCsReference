@@ -56,6 +56,7 @@ public sealed partial class AssetBundleRequest : AsyncOperation
 
 }
 
+[ExcludeFromPreset]
 public sealed partial class AssetBundle : Object
 {
     private AssetBundle() {}

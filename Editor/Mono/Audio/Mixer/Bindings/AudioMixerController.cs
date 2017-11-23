@@ -99,6 +99,7 @@ namespace UnityEditor.Audio
 
     internal delegate void ChangedExposedParameterHandler();
 
+    [ExcludeFromPreset]
     internal sealed partial class AudioMixerController : AudioMixer
     {
         public static float kMinVolume = -80.0f; // The minimum volume is the level at which sends and effects can be bypassed

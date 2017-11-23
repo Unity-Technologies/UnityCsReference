@@ -62,7 +62,7 @@ namespace UnityEditor
             m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
             m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioSource)));
             m_VideoContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(RenderTexture)));
-            m_ScriptContent = new GUIContent(EditorGUIUtility.LoadIcon("ScriptableObject Icon"));
+            m_ScriptContent = new GUIContent(EditorGUIUtility.FindTexture(typeof(ScriptableObject)));
             m_DefaultScriptContentTexture = m_ScriptContent.image;
         }
 

@@ -141,6 +141,7 @@ namespace UnityEditor
         private ControlPointRenderer m_SelectedPointRenderer;
         private ControlPointRenderer m_SelectedPointOverlayRenderer;
         private ControlPointRenderer m_SemiSelectedPointOverlayRenderer;
+        private ControlPointRenderer m_WeightedPointRenderer;
 
         public CurveControlPointRenderer()
         {
@@ -148,6 +149,7 @@ namespace UnityEditor
             m_SelectedPointRenderer = new ControlPointRenderer(CurveEditor.Styles.pointIconSelected);
             m_SelectedPointOverlayRenderer = new ControlPointRenderer(CurveEditor.Styles.pointIconSelectedOverlay);
             m_SemiSelectedPointOverlayRenderer = new ControlPointRenderer(CurveEditor.Styles.pointIconSemiSelectedOverlay);
+            m_WeightedPointRenderer = new ControlPointRenderer(CurveEditor.Styles.pointIconWeighted);
         }
 
         public void FlushCache()
@@ -156,6 +158,7 @@ namespace UnityEditor
             m_SelectedPointRenderer.FlushCache();
             m_SelectedPointOverlayRenderer.FlushCache();
             m_SemiSelectedPointOverlayRenderer.FlushCache();
+            m_WeightedPointRenderer.FlushCache();
         }
 
         public void Clear()
@@ -164,6 +167,7 @@ namespace UnityEditor
             m_SelectedPointRenderer.Clear();
             m_SelectedPointOverlayRenderer.Clear();
             m_SemiSelectedPointOverlayRenderer.Clear();
+            m_WeightedPointRenderer.Clear();
         }
 
         public void Render()
@@ -172,6 +176,7 @@ namespace UnityEditor
             m_SelectedPointRenderer.Render();
             m_SelectedPointOverlayRenderer.Render();
             m_SemiSelectedPointOverlayRenderer.Render();
+            m_WeightedPointRenderer.Render();
         }
 
         public void AddPoint(Rect rect, Color color)
@@ -189,6 +194,11 @@ namespace UnityEditor
         {
             m_SelectedPointRenderer.AddPoint(rect, color);
             m_SemiSelectedPointOverlayRenderer.AddPoint(rect, Color.white);
+        }
+
+        public void AddWeightedPoint(Rect rect, Color color)
+        {
+            m_WeightedPointRenderer.AddPoint(rect, color);
         }
     }
 
@@ -339,7 +349,7 @@ namespace UnityEditor
 
         // Other style settings
         private Color m_TangentColor = new Color(1, 1, 1, 0.5f);
-        public Color tangentColor { get { return m_TangentColor; } set { m_TangentColor = value; } }
+        private Color m_WeightedTangentColor = new Color(1, 1, 1, 1f);
 
         /// 1/time to snap all keyframes to while dragging. Set to 0 for no snap (default)
         public float invSnap = 0;
@@ -541,9 +551,6 @@ namespace UnityEditor
         CurveWrapper m_DraggingKey = null;
         Vector2 m_DraggedCoord;
         Vector2 m_MoveCoord;
-
-        // Used to avoid drawing points too close to each other.
-        private Vector2 m_PreviousDrawPointCenter;
 
         private enum AxisLock { None, X, Y }
         private AxisLock m_AxisLock;
@@ -1192,15 +1199,24 @@ namespace UnityEditor
                         if ((curveWrapper != null) && curveWrapper.animationIsEditable)
                         {
                             Vector2 newPosition = mousePositionInDrawing;
-                            Keyframe key = GetKeyframeFromSelection(dragged);
+                            Keyframe key = curveWrapper.curve[dragged.key];
 
                             if (dragged.type == CurveSelection.SelectionType.InTangent)
                             {
+                                Keyframe prevKey = curveWrapper.curve[dragged.key - 1];
+                                float dx = key.time - prevKey.time;
+
                                 Vector2 tangentDirection = newPosition - new Vector2(key.time, key.value);
                                 if (tangentDirection.x < -0.0001F)
+                                {
                                     key.inTangent = tangentDirection.y / tangentDirection.x;
+                                    key.inWeight = Mathf.Clamp(Mathf.Abs(tangentDirection.x / dx), 0f, 1f);
+                                }
                                 else
+                                {
                                     key.inTangent = Mathf.Infinity;
+                                    key.inWeight = 0f;
+                                }
                                 AnimationUtility.SetKeyLeftTangentMode(ref key, TangentMode.Free);
 
                                 if (!AnimationUtility.GetKeyBroken(key))
@@ -1211,11 +1227,20 @@ namespace UnityEditor
                             }
                             else if (dragged.type == CurveSelection.SelectionType.OutTangent)
                             {
+                                Keyframe nextKey = curveWrapper.curve[dragged.key + 1];
+                                float dx = nextKey.time - key.time;
+
                                 Vector2 tangentDirection = newPosition - new Vector2(key.time, key.value);
                                 if (tangentDirection.x > 0.0001F)
+                                {
                                     key.outTangent = tangentDirection.y / tangentDirection.x;
+                                    key.outWeight = Mathf.Clamp(Mathf.Abs(tangentDirection.x / dx), 0f, 1f);
+                                }
                                 else
+                                {
                                     key.outTangent = Mathf.Infinity;
+                                    key.outWeight = 0f;
+                                }
                                 AnimationUtility.SetKeyRightTangentMode(ref key, TangentMode.Free);
 
                                 if (!AnimationUtility.GetKeyBroken(key))
@@ -1647,6 +1672,7 @@ namespace UnityEditor
         new internal static class Styles
         {
             public static Texture2D pointIcon = EditorGUIUtility.LoadIcon("curvekeyframe");
+            public static Texture2D pointIconWeighted = EditorGUIUtility.LoadIcon("curvekeyframeweighted");
             public static Texture2D pointIconSelected = EditorGUIUtility.LoadIcon("curvekeyframeselected");
             public static Texture2D pointIconSelectedOverlay = EditorGUIUtility.LoadIcon("curvekeyframeselectedoverlay");
             public static Texture2D pointIconSemiSelectedOverlay = EditorGUIUtility.LoadIcon("curvekeyframesemiselectedoverlay");
@@ -1934,10 +1960,18 @@ namespace UnityEditor
                 return null;
 
             // Add the key
-            float slope = cw.renderer.EvaluateCurveDeltaSlow(time);
-            float value = ClampVerticalValue(SnapValue(cw.renderer.EvaluateCurveSlow(time)), cw.id);
-            Keyframe key = new Keyframe(time, value, slope, slope);
-            return AddKeyframeAndSelect(key, cw);
+            int keyIndex = AnimationUtility.AddInbetweenKey(cw.curve, time);
+            if (keyIndex >= 0)
+            {
+                // Select the key
+                CurveSelection selectedPoint = new CurveSelection(cw.id, keyIndex);
+                cw.selected = CurveWrapper.SelectionMode.Selected;
+                cw.changed = true;
+
+                return selectedPoint;
+            }
+
+            return null;
         }
 
         // Add a key to cw at time.
@@ -2931,25 +2965,58 @@ namespace UnityEditor
         // Get the position of a CurveSelection. This will correctly offset tangent handles
         Vector2 GetPosition(CurveSelection selection)
         {
-            //AnimationCurve curve = selection.curve;
-            Keyframe key = GetKeyframeFromSelection(selection);
+            AnimationCurve curve = GetCurveFromSelection(selection);
+            Keyframe key = curve[selection.key];
+
             Vector2 position = new Vector2(key.time, key.value);
 
             float tangentLength = 50F;
 
             if (selection.type == CurveSelection.SelectionType.InTangent)
             {
+                Keyframe prevKey = curve[selection.key - 1];
+                float dx = key.time - prevKey.time;
+
                 Vector2 dir = new Vector2(1.0F, key.inTangent);
                 if (key.inTangent == Mathf.Infinity) dir = new Vector2(0, -1);
-                dir = NormalizeInViewSpace(dir);
-                return position - dir * tangentLength;
+
+                Vector2 viewDir = NormalizeInViewSpace(dir);
+
+                if ((key.weightedMode & WeightedMode.In) == WeightedMode.In)
+                {
+                    Vector2 bezierDir = dir * dx * key.inWeight;
+                    if (viewDir.magnitude * 10F < bezierDir.magnitude)
+                        return position - bezierDir;
+                    else
+                        return position - viewDir * 10F;
+                }
+                else
+                {
+                    return position - viewDir * tangentLength;
+                }
             }
             else if (selection.type == CurveSelection.SelectionType.OutTangent)
             {
+                Keyframe nextKey = curve[selection.key + 1];
+                float dx = nextKey.time - key.time;
+
                 Vector2 dir = new Vector2(1.0F, key.outTangent);
                 if (key.outTangent == Mathf.Infinity) dir = new Vector2(0, -1);
-                dir = NormalizeInViewSpace(dir);
-                return position + dir * tangentLength;
+
+                Vector2 viewDir = NormalizeInViewSpace(dir);
+
+                if ((key.weightedMode & WeightedMode.Out) == WeightedMode.Out)
+                {
+                    Vector2 bezierDir = dir * dx * key.outWeight;
+                    if (viewDir.magnitude * 10F < bezierDir.magnitude)
+                        return position + bezierDir;
+                    else
+                        return position + viewDir * 10F;
+                }
+                else
+                {
+                    return position + viewDir * tangentLength;
+                }
             }
             else
                 return position;
@@ -3038,7 +3105,11 @@ namespace UnityEditor
 
         bool IsLeftTangentEditable(CurveSelection selection)
         {
-            Keyframe keyframe = GetKeyframeFromSelection(selection);
+            AnimationCurve curve = GetCurveFromSelection(selection);
+            if (curve == null || selection.key < 1)
+                return false;
+
+            Keyframe keyframe = curve[selection.key];
             TangentMode mode = AnimationUtility.GetKeyLeftTangentMode(keyframe);
 
             // Tangent is already set to Free.
@@ -3054,7 +3125,11 @@ namespace UnityEditor
 
         bool IsRightTangentEditable(CurveSelection selection)
         {
-            Keyframe keyframe = GetKeyframeFromSelection(selection);
+            AnimationCurve curve = GetCurveFromSelection(selection);
+            if (curve == null || selection.key >= (curve.length - 1))
+                return false;
+
+            Keyframe keyframe = curve[selection.key];
             TangentMode mode = AnimationUtility.GetKeyRightTangentMode(keyframe);
 
             // Tangent is already set to Free.
@@ -3177,7 +3252,6 @@ namespace UnityEditor
             m_PointRenderer.Clear();
 
             // Draw left and right tangents handles
-            GUI.color = m_TangentColor;
             for (int i = 0; i < selectedCurves.Count; ++i)
             {
                 CurveSelection sel = selectedCurves[i];
@@ -3199,13 +3273,13 @@ namespace UnityEditor
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {
                     Vector2 leftTangent = DrawingToViewTransformPoint(GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.InTangent)));
-                    DrawPoint(leftTangent, CurveWrapper.SelectionMode.None);
+                    DrawTangentPoint(leftTangent, (GetKeyframeFromSelection(sel).weightedMode & WeightedMode.In) == WeightedMode.In);
                 }
 
                 if (IsRightTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[curve.keys.Length - 1].time)
                 {
                     Vector2 rightTangent = DrawingToViewTransformPoint(GetPosition(new CurveSelection(sel.curveID, sel.key, CurveSelection.SelectionType.OutTangent)));
-                    DrawPoint(rightTangent, CurveWrapper.SelectionMode.None);
+                    DrawTangentPoint(rightTangent, (GetKeyframeFromSelection(sel).weightedMode & WeightedMode.Out) == WeightedMode.Out);
                 }
             }
 
@@ -3415,8 +3489,6 @@ namespace UnityEditor
 
         void DrawPointsOnCurve(CurveWrapper cw, List<CurveSelection> selected, bool hasFocus)
         {
-            m_PreviousDrawPointCenter = new Vector2(float.MinValue, float.MinValue);
-
             if (selected == null)
             {
                 Color color = cw.color;
@@ -3473,29 +3545,39 @@ namespace UnityEditor
             // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
             var rect = new Rect(Mathf.Floor(viewPos.x) - 4, Mathf.Floor(viewPos.y) - 4, Styles.pointIcon.width, Styles.pointIcon.height);
 
-            Vector2 center = rect.center;
-            if ((center - m_PreviousDrawPointCenter).magnitude > 8)
+            if (selected == CurveWrapper.SelectionMode.None)
             {
-                if (selected == CurveWrapper.SelectionMode.None)
-                {
-                    m_PointRenderer.AddPoint(rect, GUI.color);
-                }
+                m_PointRenderer.AddPoint(rect, GUI.color);
+            }
+            else
+            {
+                if (selected == CurveWrapper.SelectionMode.Selected)
+                    m_PointRenderer.AddSelectedPoint(rect, GUI.color);
                 else
-                {
-                    if (selected == CurveWrapper.SelectionMode.Selected)
-                        m_PointRenderer.AddSelectedPoint(rect, GUI.color);
-                    else
-                        m_PointRenderer.AddSemiSelectedPoint(rect, GUI.color);
-                }
+                    m_PointRenderer.AddSemiSelectedPoint(rect, GUI.color);
+            }
 
-                // Changing the cursor for every point in the selection can be awfully costly.
-                if (mouseCursor != MouseCursor.Arrow)
-                {
-                    if (GUIUtility.hotControl == 0)
-                        EditorGUIUtility.AddCursorRect(rect, mouseCursor);
-                }
+            // Changing the cursor for every point in the selection can be awfully costly.
+            if (mouseCursor != MouseCursor.Arrow)
+            {
+                if (GUIUtility.hotControl == 0)
+                    EditorGUIUtility.AddCursorRect(rect, mouseCursor);
+            }
+        }
 
-                m_PreviousDrawPointCenter = center;
+        void DrawTangentPoint(Vector2 viewPos, bool weighted)
+        {
+            // Important to take floor of positions of GUI stuff to get pixel correct alignment of
+            // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
+            var rect = new Rect(Mathf.Floor(viewPos.x) - 4, Mathf.Floor(viewPos.y) - 4, Styles.pointIcon.width, Styles.pointIcon.height);
+
+            if (weighted)
+            {
+                m_PointRenderer.AddWeightedPoint(rect, m_WeightedTangentColor);
+            }
+            else
+            {
+                m_PointRenderer.AddPoint(rect, m_TangentColor);
             }
         }
 
@@ -3522,6 +3604,7 @@ namespace UnityEditor
 
             if (curve != null && curve.length >= 2 && curve.preWrapMode != WrapMode.Default)
             {
+                GUI.BeginGroup(drawRect);
                 Color oldText = GUI.contentColor;
 
                 var preKey = curve.keys[0];
@@ -3550,6 +3633,7 @@ namespace UnityEditor
                 }
 
                 GUI.contentColor = oldText;
+                GUI.EndGroup();
             }
         }
 

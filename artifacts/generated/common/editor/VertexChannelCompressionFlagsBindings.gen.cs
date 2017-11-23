@@ -15,14 +15,31 @@ namespace UnityEditor
 [Flags]
 public enum VertexChannelCompressionFlags
 {
-    kPosition   = 1 << 0,
-    kNormal     = 1 << 1,
-    kColor      = 1 << 2,
-    kUV0        = 1 << 3,
-    kUV1        = 1 << 4,
-    kUV2        = 1 << 5,
-    kUV3        = 1 << 6,
-    kTangent    = 1 << 7
+    None        = 0,
+    Position    = 1 << 0,
+    Normal      = 1 << 1,
+    Tangent     = 1 << 2,
+    Color       = 1 << 3,
+    TexCoord0   = 1 << 4,
+    TexCoord1   = 1 << 5,
+    TexCoord2   = 1 << 6,
+    TexCoord3   = 1 << 7,
+    [System.Obsolete ("Use Position instead (UnityUpgradable) -> Position")]
+    kPosition       = 1 << 0,
+    [System.Obsolete ("Use Normal instead (UnityUpgradable) -> Normal")]
+    kNormal         = 1 << 1,
+    [System.Obsolete ("Use Color instead (UnityUpgradable) -> Color")]
+    kColor          = 1 << 2,
+    [System.Obsolete ("Use TexCoord0 instead (UnityUpgradable) -> TexCoord0")]
+    kUV0            = 1 << 3,
+    [System.Obsolete ("Use TexCoord1 instead (UnityUpgradable) -> TexCoord1")]
+    kUV1            = 1 << 4,
+    [System.Obsolete ("Use TexCoord2 instead (UnityUpgradable) -> TexCoord2")]
+    kUV2            = 1 << 5,
+    [System.Obsolete ("Use TexCoord3 instead (UnityUpgradable) -> TexCoord3")]
+    kUV3            = 1 << 6,
+    [System.Obsolete ("Use Tangent instead (UnityUpgradable) -> Tangent")]
+    kTangent        = 1 << 7
 }
 
 }

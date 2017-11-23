@@ -73,7 +73,8 @@ public enum BuildOptions
     
     ComputeCRC = 1 << 20,
     
-    StrictMode = 1 << 21
+    StrictMode = 1 << 21,
+    IncludeTestAssemblies = 1 << 22
 }
 
 [System.Flags]
@@ -477,7 +478,7 @@ public static bool BuildAssetBundleExplicitAssetNames(Object[] assets, string[] 
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  bool IsBuildTargetSupported (BuildTargetGroup buildTargetGroup, BuildTarget target) ;
+    extern public static  bool IsBuildTargetSupported (BuildTargetGroup buildTargetGroup, BuildTarget target) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

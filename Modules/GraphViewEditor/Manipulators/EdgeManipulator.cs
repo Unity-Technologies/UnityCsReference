@@ -16,10 +16,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Edge m_Edge;
         private EdgePresenter m_EdgePresenter;
         private Vector2 m_PressPos;
-        private NodeAnchor m_ConnectedAnchor;
+        private Port m_ConnectedPort;
         private EdgeDragHelper m_ConnectedEdgeDragHelper;
-        private NodeAnchor m_DetachedAnchor;
-        private bool m_DetachedFromInputAnchor;
+        private Port m_DetachedPort;
+        private bool m_DetachedFromInputPort;
         private static int s_StartDragDistance = 10;
         private MouseDownEvent m_LastMouseDownEvent;
 
@@ -51,10 +51,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             m_Active = false;
             m_Edge = null;
-            m_ConnectedAnchor = null;
+            m_ConnectedPort = null;
             m_ConnectedEdgeDragHelper = null;
-            m_DetachedAnchor = null;
-            m_DetachedFromInputAnchor = false;
+            m_DetachedPort = null;
+            m_DetachedFromInputPort = false;
         }
 
         protected void OnMouseDown(MouseDownEvent evt)
@@ -93,7 +93,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             evt.StopPropagation();
 
-            bool alreadyDetached = (m_DetachedAnchor != null);
+            bool alreadyDetached = (m_DetachedPort != null);
 
             // If one end of the edge is not already detached then
             if (!alreadyDetached)
@@ -118,12 +118,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 float distanceFromOutput = (m_PressPos - outputPos).magnitude;
                 float distanceFromInput = (m_PressPos - inputPos).magnitude;
 
-                m_DetachedFromInputAnchor = distanceFromInput < distanceFromOutput;
+                m_DetachedFromInputPort = distanceFromInput < distanceFromOutput;
 
-                if (m_DetachedFromInputAnchor)
+                if (m_DetachedFromInputPort)
                 {
-                    m_ConnectedAnchor = m_Edge.output;
-                    m_DetachedAnchor = m_Edge.input;
+                    m_ConnectedPort = m_Edge.output;
+                    m_DetachedPort = m_Edge.input;
                     m_Edge.input = null;
                     if (m_EdgePresenter != null)
                     {
@@ -132,9 +132,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
                 else
                 {
-                    m_ConnectedAnchor = m_Edge.input;
-                    m_DetachedAnchor = m_Edge.output;
-                    m_DetachedAnchor.Disconnect(m_Edge);
+                    m_ConnectedPort = m_Edge.input;
+                    m_DetachedPort = m_Edge.output;
+                    m_DetachedPort.Disconnect(m_Edge);
 
                     m_Edge.output = null;
                     if (m_EdgePresenter != null)
@@ -143,9 +143,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     }
                 }
 
-                // Use the edge drag helper of the still connected anchor
-                m_ConnectedEdgeDragHelper = m_ConnectedAnchor.edgeConnector.edgeDragHelper;
-                m_ConnectedEdgeDragHelper.draggedNodeAnchor = m_ConnectedAnchor;
+                // Use the edge drag helper of the still connected port
+                m_ConnectedEdgeDragHelper = m_ConnectedPort.edgeConnector.edgeDragHelper;
+                m_ConnectedEdgeDragHelper.draggedPort = m_ConnectedPort;
                 m_ConnectedEdgeDragHelper.edgeCandidate = m_Edge;
                 m_Edge.candidatePosition = evt.mousePosition;
 
@@ -204,22 +204,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (evt.keyCode == KeyCode.Escape)
                 {
-                    if (m_DetachedFromInputAnchor)
+                    if (m_DetachedFromInputPort)
                     {
-                        m_Edge.input = m_DetachedAnchor;
+                        m_Edge.input = m_DetachedPort;
 
                         if (m_EdgePresenter)
                         {
-                            m_EdgePresenter.input = m_DetachedAnchor.GetPresenter<NodeAnchorPresenter>();
+                            m_EdgePresenter.input = m_DetachedPort.GetPresenter<PortPresenter>();
                         }
                     }
                     else
                     {
-                        m_Edge.output = m_DetachedAnchor;
+                        m_Edge.output = m_DetachedPort;
 
                         if (m_EdgePresenter)
                         {
-                            m_EdgePresenter.output = m_DetachedAnchor.GetPresenter<NodeAnchorPresenter>();
+                            m_EdgePresenter.output = m_DetachedPort.GetPresenter<PortPresenter>();
                         }
                     }
 

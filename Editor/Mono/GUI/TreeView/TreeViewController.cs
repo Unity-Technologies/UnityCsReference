@@ -62,6 +62,7 @@ namespace UnityEditor.IMGUI.Controls
     internal class TreeViewController
     {
         public System.Action<int[]> selectionChangedCallback { get; set; } // ids
+        public System.Action<int> itemSingleClickedCallback { get; set; } // id
         public System.Action<int> itemDoubleClickedCallback { get; set; } // id
         public System.Action<int[], bool> dragEndedCallback { get; set; } // dragged ids, if null then drag was not allowed, bool == true if dragging tree view items from own treeview, false if drag was started outside
         public System.Action<int> contextClickItemCallback { get; set; } // clicked item id
@@ -326,7 +327,12 @@ namespace UnityEditor.IMGUI.Controls
                                     m_DragSelection.Clear();
                                     if (m_AllowRenameOnMouseUp)
                                         m_AllowRenameOnMouseUp = (state.selectedIDs.Count == 1 && state.selectedIDs[0] == item.id); // If first time selection then prevent starting a rename on the following mouse up after this mouse down
+
                                     SelectionClick(item, false);
+
+                                    // Notify about single click
+                                    if (itemSingleClickedCallback != null)
+                                        itemSingleClickedCallback(item.id);
                                 }
 
                                 GUIUtility.hotControl = itemControlID;
@@ -379,6 +385,10 @@ namespace UnityEditor.IMGUI.Controls
                             else if (useMouseUpSelection)
                             {
                                 SelectionClick(item, false);
+
+                                // Notify about single click
+                                if (itemSingleClickedCallback != null)
+                                    itemSingleClickedCallback(item.id);
                             }
                         }
                     }

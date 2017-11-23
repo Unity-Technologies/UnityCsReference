@@ -83,8 +83,6 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Color, Contents.colorLabel, true);
 
             FlipToggles();
-            if (m_Material.arraySize == 0)
-                m_Material.InsertArrayElementAtIndex(0);
 
             Rect r = GUILayoutUtility.GetRect(
                     EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
@@ -139,6 +137,8 @@ namespace UnityEditor
             RenderSortingLayerFields();
 
             EditorGUILayout.PropertyField(m_MaskInteraction);
+
+            RenderRenderingLayer();
 
             CheckForErrors();
 

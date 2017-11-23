@@ -185,11 +185,6 @@ namespace UnityEditorInternal
             }
             else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
-                keyframe = new AnimationWindowKeyframe();
-
-                // Create temporary curve for getting proper tangents
-                AnimationCurve animationCurve = curve.ToAnimationCurve();
-
                 Keyframe tempKey = new Keyframe(time.time, (float)value);
                 if (type == typeof(bool) || type == typeof(int))
                 {
@@ -205,10 +200,12 @@ namespace UnityEditorInternal
                     }
 
                     AnimationUtility.SetKeyBroken(ref tempKey, true);
-                    keyframe.m_TangentMode = tempKey.tangentMode;
                 }
                 else
                 {
+                    // Create temporary curve for getting proper tangents
+                    AnimationCurve animationCurve = curve.ToAnimationCurve();
+
                     int keyIndex = animationCurve.AddKey(tempKey);
                     if (keyIndex != -1)
                     {
@@ -218,15 +215,12 @@ namespace UnityEditorInternal
                         AnimationUtility.UpdateTangentsFromModeSurrounding(animationCurve, keyIndex);
 
                         CurveUtility.SetKeyModeFromContext(animationCurve, keyIndex);
-                        keyframe.m_TangentMode = animationCurve[keyIndex].tangentMode;
-                        keyframe.m_InTangent = animationCurve[keyIndex].inTangent;
-                        keyframe.m_OutTangent = animationCurve[keyIndex].outTangent;
+
+                        tempKey = animationCurve[keyIndex];
                     }
                 }
 
-                keyframe.time = time.time;
-                keyframe.value = value;
-                keyframe.curve = curve;
+                keyframe = new AnimationWindowKeyframe(curve, tempKey);
                 curve.AddKeyframe(keyframe, time);
             }
 

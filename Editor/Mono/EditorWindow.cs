@@ -32,7 +32,6 @@ namespace UnityEditor
         [HideInInspector]
         internal GUIContent m_TitleContent;
 
-        [SerializeField]
         [HideInInspector]
         int m_DepthBufferBits = 0;
 

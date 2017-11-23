@@ -54,7 +54,7 @@ namespace UnityEditor.Connect
 
         public static int GetServiceEnv(string serviceName)
         {
-            if (Unsupported.IsDeveloperBuild() || UnityConnect.preferencesEnabled)
+            if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
                 return EditorPrefs.GetInt(ServicePrefKey(kSvcEnvPref, serviceName));
 
             for (var i = 0; i < kEnvironmentFamilies.Length; i++)
@@ -163,7 +163,7 @@ namespace UnityEditor.Connect
 
         public static void StorePanelPrefs()
         {
-            if (!Unsupported.IsDeveloperBuild() && !UnityConnect.preferencesEnabled)
+            if (!Unsupported.IsDeveloperMode() && !UnityConnect.preferencesEnabled)
                 return;
 
             foreach (KeyValuePair<string, CloudPanelPref> kvp in m_CloudPanelPref)

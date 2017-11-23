@@ -843,6 +843,7 @@ namespace UnityEngine.Rendering
         PlayStationVita = 12,
         PlayStation4 = 13,
         XboxOne = 14,
+        [System.Obsolete("PlayStationMobile is no longer supported in Unity 5.3+")]
         PlayStationMobile = 15,
         Metal = 16,
         OpenGLCore = 17,
@@ -1208,6 +1209,14 @@ namespace UnityEngine.Rendering
         Medium = 50,
         High = 75,
         Unlimited = 100
+    }
+
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
+    public enum ComputeQueueType
+    {
+        Default = 0,
+        Background = 1,
+        Urgent = 2
     }
 } // namespace UnityEngine.Rendering
 

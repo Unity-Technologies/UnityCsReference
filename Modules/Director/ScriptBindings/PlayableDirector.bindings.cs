@@ -97,5 +97,31 @@ namespace UnityEngine.Playables
         extern private PlayableGraph GetGraphHandle();
         extern private void SetPlayOnAwake(bool on);
         extern private bool GetPlayOnAwake();
+
+        //Delegates
+        public event Action<PlayableDirector> played;
+        public event Action<PlayableDirector> paused;
+        public event Action<PlayableDirector> stopped;
+
+        [RequiredByNativeCode]
+        void SendOnPlayableDirectorPlay()
+        {
+            if (played != null)
+                played(this);
+        }
+
+        [RequiredByNativeCode]
+        void SendOnPlayableDirectorPause()
+        {
+            if (paused != null)
+                paused(this);
+        }
+
+        [RequiredByNativeCode]
+        void SendOnPlayableDirectorStop()
+        {
+            if (stopped != null)
+                stopped(this);
+        }
     }
 }

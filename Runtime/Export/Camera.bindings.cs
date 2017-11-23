@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 using OpaqueSortMode = UnityEngine.Rendering.OpaqueSortMode;
 using CameraEvent = UnityEngine.Rendering.CameraEvent;
 using CommandBuffer = UnityEngine.Rendering.CommandBuffer;
+using ComputeQueueType = UnityEngine.Rendering.ComputeQueueType;
 
 namespace UnityEngine
 {
@@ -156,12 +157,19 @@ namespace UnityEngine
         // extern public void AddCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
         // extern public void RemoveCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
         [NativeName("AddCommandBuffer")]    extern private void AddCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
+        [NativeName("AddCommandBufferAsync")]    extern private void AddCommandBufferAsyncImpl(CameraEvent evt, [NotNull] CommandBuffer buffer, ComputeQueueType queueType);
         [NativeName("RemoveCommandBuffer")] extern private void RemoveCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
 
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferImpl(evt, buffer);
+        }
+
+        public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
+        {
+            if (buffer == null) throw new NullReferenceException("buffer is null");
+            AddCommandBufferAsyncImpl(evt, buffer, queueType);
         }
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)

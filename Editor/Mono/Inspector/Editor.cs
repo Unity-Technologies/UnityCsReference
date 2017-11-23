@@ -465,7 +465,7 @@ namespace UnityEditor
                 if (GUILayout.Button("Open", EditorStyles.miniButton))
                 {
                     if (this is AssetImporterEditor)
-                        AssetDatabase.OpenAsset((this as AssetImporterEditor).assetEditor.targets);
+                        AssetDatabase.OpenAsset((this as AssetImporterEditor).assetTargets);
                     else
                         AssetDatabase.OpenAsset(targets);
                     GUIUtility.ExitGUI();

@@ -42,24 +42,19 @@ namespace UnityEditor
             }
         }
 
-        public static System.Type GetDefaultBrushType()
+        public static Type GetDefaultBrushType()
         {
-            System.Type defaultType = typeof(GridBrush);
-            var editorAssemblies = EditorAssemblies.loadedAssemblies;
+            Type defaultType = typeof(GridBrush);
             int count = 0;
-            for (int i = editorAssemblies.Length - 1; i >= 0; i--)
+            foreach (var type in EditorAssemblies.GetAllTypesWithAttribute<CustomGridBrushAttribute>())
             {
-                Type[] types = AssemblyHelper.GetTypesFromAssembly(editorAssemblies[i]);
-                foreach (var type in types)
+                var attrs = type.GetCustomAttributes(typeof(CustomGridBrushAttribute), false) as CustomGridBrushAttribute[];
+                if (attrs != null && attrs.Length > 0)
                 {
-                    CustomGridBrushAttribute[] attrs = type.GetCustomAttributes(typeof(CustomGridBrushAttribute), false) as CustomGridBrushAttribute[];
-                    if (attrs != null && attrs.Length > 0)
+                    if (attrs[0].defaultBrush)
                     {
-                        if (attrs[0].defaultBrush)
-                        {
-                            defaultType = type;
-                            count++;
-                        }
+                        defaultType = type;
+                        count++;
                     }
                 }
             }

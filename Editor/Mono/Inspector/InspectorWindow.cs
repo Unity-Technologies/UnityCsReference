@@ -20,10 +20,10 @@ using UnityEngine.SceneManagement;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
-    internal class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
+    public class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
     {
-        public Vector2 m_ScrollPosition;
-        public InspectorMode   m_InspectorMode = InspectorMode.Normal;
+        internal Vector2 m_ScrollPosition;
+        internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
 
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
@@ -70,6 +70,7 @@ namespace UnityEditor
         private IPreviewable m_SelectedPreview;
 
         private EditorDragging editorDragging;
+        static public Action<Editor> OnPostHeaderGUI = null;
 
         internal class Styles
         {
@@ -100,7 +101,7 @@ namespace UnityEditor
             }
         }
 
-        public InspectorWindow()
+        internal InspectorWindow()
         {
             editorDragging = new EditorDragging(this);
         }
@@ -206,7 +207,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        static public InspectorWindow[] GetAllInspectorWindows()
+        static internal InspectorWindow[] GetAllInspectorWindows()
         {
             return m_AllInspectors.ToArray();
         }
@@ -226,7 +227,7 @@ namespace UnityEditor
         {
             menu.AddItem(new GUIContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
             menu.AddItem(new GUIContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
-            if (Unsupported.IsDeveloperBuild())
+            if (Unsupported.IsDeveloperMode())
                 menu.AddItem(new GUIContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
 
             menu.AddSeparator(string.Empty);
@@ -265,6 +266,11 @@ namespace UnityEditor
             SetMode(InspectorMode.DebugInternal);
         }
 
+        void FlipLocked()
+        {
+            isLocked = !isLocked;
+        }
+
         public bool isLocked
         {
             get
@@ -297,7 +303,7 @@ namespace UnityEditor
             return (Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && rect.Contains(Event.current.mousePosition);
         }
 
-        public ActiveEditorTracker tracker
+        internal ActiveEditorTracker tracker
         {
             get
             {
@@ -349,27 +355,21 @@ namespace UnityEditor
             //TODO: cache this in a map. probably in another utility class
             List<IPreviewable> previews = new List<IPreviewable>();
 
-            foreach (var assembly in EditorAssemblies.loadedAssemblies)
+            foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPreviewable>())
             {
-                Type[] types = AssemblyHelper.GetTypesFromAssembly(assembly);
-                foreach (var type in types)
+                if (typeof(Editor).IsAssignableFrom(type)) //we don't want Editor classes with preview here.
+                    continue;
+
+                var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false);
+                foreach (var attr in attrs)
                 {
-                    if (!typeof(IPreviewable).IsAssignableFrom(type))
+                    var previewAttr = (CustomPreviewAttribute)attr;
+                    if (editor.target == null || previewAttr.m_Type != editor.target.GetType())
                         continue;
 
-                    if (typeof(Editor).IsAssignableFrom(type))   //we don't want Editor classes with preview here.
-                        continue;
-
-                    object[] attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false);
-                    foreach (CustomPreviewAttribute previewAttr in attrs)
-                    {
-                        if (editor.target == null || previewAttr.m_Type != editor.target.GetType())
-                            continue;
-
-                        IPreviewable preview = Activator.CreateInstance(type) as IPreviewable;
-                        preview.Initialize(editor.targets);
-                        previews.Add(preview);
-                    }
+                    var preview = Activator.CreateInstance(type) as IPreviewable;
+                    preview.Initialize(editor.targets);
+                    previews.Add(preview);
                 }
             }
             return previews;
@@ -386,7 +386,7 @@ namespace UnityEditor
         }
 
 
-        static public InspectorWindow s_CurrentInspectorWindow;
+        static internal InspectorWindow s_CurrentInspectorWindow;
 
 
         protected virtual void OnGUI()
@@ -455,12 +455,12 @@ namespace UnityEditor
             Profiler.EndSample();
         }
 
-        public virtual Editor GetLastInteractedEditor()
+        internal virtual Editor GetLastInteractedEditor()
         {
             return m_LastInteractedEditor;
         }
 
-        public IPreviewable GetEditorThatControlsPreview(IPreviewable[] editors)
+        internal IPreviewable GetEditorThatControlsPreview(IPreviewable[] editors)
         {
             if (editors.Length == 0)
                 return null;
@@ -518,7 +518,7 @@ namespace UnityEditor
             return null;
         }
 
-        public IPreviewable[] GetEditorsWithPreviews(Editor[] editors)
+        internal IPreviewable[] GetEditorsWithPreviews(Editor[] editors)
         {
             IList<IPreviewable> editorsWithPreview = new List<IPreviewable>();
 
@@ -562,7 +562,7 @@ namespace UnityEditor
             return editorsWithPreview.ToArray();
         }
 
-        public Object GetInspectedObject()
+        internal Object GetInspectedObject()
         {
             Editor editor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
             if (editor == null)
@@ -816,7 +816,7 @@ namespace UnityEditor
             } GUILayout.EndVertical();
         }
 
-        protected Object[] GetTargetsForPreview(IPreviewable previewEditor)
+        internal Object[] GetTargetsForPreview(IPreviewable previewEditor)
         {
             Editor editorForType = null;
             foreach (var editor in tracker.activeEditors)
@@ -1221,6 +1221,8 @@ namespace UnityEditor
             }
 
             DisplayDeprecationMessageIfNecessary(editor);
+            if (OnPostHeaderGUI != null)
+                OnPostHeaderGUI(editor);
 
             // We need to reset again after drawing the header.
             EditorGUIUtility.ResetGUIState();
@@ -1335,7 +1337,7 @@ namespace UnityEditor
             RepaintImmediately();
         }
 
-        public bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
+        internal bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
         {
             var target = trackerActiveEditors[editorIndex].target;
             return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target) || editorIndex == 0 || target is Material;
@@ -1366,7 +1368,7 @@ namespace UnityEditor
             }
         }
 
-        public bool ShouldCullEditor(Editor[] editors, int editorIndex)
+        internal bool ShouldCullEditor(Editor[] editors, int editorIndex)
         {
             if (editors[editorIndex].hideInspector)
                 return true;

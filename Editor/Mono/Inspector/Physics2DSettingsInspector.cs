@@ -12,6 +12,13 @@ namespace UnityEditor
     [CustomEditor(typeof(Physics2DSettings))]
     internal class Physics2DSettingsInspector : ProjectSettingsBaseEditor
     {
+        private static class Styles
+        {
+            public static readonly GUIContent kJobOptionsLabel = EditorGUIUtility.TextContent("Job Options (Experimental)|Allows the configuration of multi-threaded physics using the job system.");
+        }
+
+        SerializedProperty m_JobOptions;
+
         Vector2 m_LayerCollisionMatrixScrollPos;
         bool m_ShowLayerCollisionMatrix = true;
 
@@ -29,6 +36,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            m_JobOptions = serializedObject.FindProperty("m_JobOptions");
             m_AlwaysShowColliders = serializedObject.FindProperty("m_AlwaysShowColliders");
             m_ShowColliderSleep = serializedObject.FindProperty("m_ShowColliderSleep");
             m_ShowColliderContacts = serializedObject.FindProperty("m_ShowColliderContacts");
@@ -50,14 +58,14 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector();
+            serializedObject.Update();
+            DrawPropertiesExcluding(serializedObject, "m_JobOptions");
+            EditorGUILayout.PropertyField(m_JobOptions, Styles.kJobOptionsLabel, true);
 
             s_ShowGizmoSettings = EditorGUILayout.Foldout(s_ShowGizmoSettings, "Gizmos", true);
             m_GizmoSettingsFade.target = s_ShowGizmoSettings;
             if (m_GizmoSettingsFade.value)
             {
-                serializedObject.Update();
-
                 if (EditorGUILayout.BeginFadeGroup(m_GizmoSettingsFade.faded))
                 {
                     EditorGUI.indentLevel++;
@@ -73,9 +81,8 @@ namespace UnityEditor
                     EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFadeGroup();
-
-                serializedObject.ApplyModifiedProperties();
             }
+            serializedObject.ApplyModifiedProperties();
 
             LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref m_ShowLayerCollisionMatrix, ref m_LayerCollisionMatrixScrollPos, GetValue, SetValue);
         }

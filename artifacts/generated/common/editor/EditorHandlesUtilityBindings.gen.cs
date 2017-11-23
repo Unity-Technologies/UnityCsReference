@@ -641,7 +641,7 @@ public sealed partial class HandleUtility
                 if (tr == prefabBase)
                     return tr.gameObject;
 
-                if (AttributeHelper.GameObjectContainsAttribute(tr.gameObject, typeof(SelectionBaseAttribute)))
+                if (AttributeHelper.GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))
                     return tr.gameObject;
 
                 tr = tr.parent;

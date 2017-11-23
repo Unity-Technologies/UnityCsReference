@@ -125,6 +125,12 @@ namespace UnityEditorInternal.VR
             if (!TargetGroupSupportsVirtualReality(targetGroup) && !TargetGroupSupportsAugmentedReality(targetGroup))
                 return;
 
+            if (VREditor.IsDeviceListDirty(targetGroup))
+            {
+                VREditor.ClearDeviceListDirty(targetGroup);
+                m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
+            }
+
             // Check to see if any devices require an install and need their GUI hidden
             CheckDevicesRequireInstall(targetGroup);
 
@@ -225,6 +231,7 @@ namespace UnityEditorInternal.VR
                 case BuildTargetGroup.Standalone:
                 case BuildTargetGroup.PS4:
                 case BuildTargetGroup.Android:
+                case BuildTargetGroup.WSA:
                     return true;
                 default:
                     return false;

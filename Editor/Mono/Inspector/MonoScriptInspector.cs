@@ -21,34 +21,44 @@ namespace UnityEditor
 
         internal override void OnHeaderControlsGUI()
         {
-            TextAsset textAsset = assetEditor.target as TextAsset;
+            TextAsset textAsset = assetTarget as TextAsset;
 
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("Open...", EditorStyles.miniButton))
+            using (new EditorGUI.DisabledScope(textAsset == null))
             {
-                AssetDatabase.OpenAsset(textAsset);
-                GUIUtility.ExitGUI();
-            }
-
-            if (textAsset as MonoScript)
-            {
-                if (GUILayout.Button("Execution Order...", EditorStyles.miniButton))//GUILayout.Width(150)))
+                if (GUILayout.Button("Open...", EditorStyles.miniButton))
                 {
-                    EditorApplication.ExecuteMenuItem("Edit/Project Settings/Script Execution Order");
+                    AssetDatabase.OpenAsset(textAsset);
                     GUIUtility.ExitGUI();
+                }
+
+                if (textAsset as MonoScript)
+                {
+                    if (GUILayout.Button("Execution Order...", EditorStyles.miniButton))//GUILayout.Width(150)))
+                    {
+                        EditorApplication.ExecuteMenuItem("Edit/Project Settings/Script Execution Order");
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
         }
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
-            if (m_Icon == null)
+            if (assetTargets != null)
             {
-                m_TargetObject = new SerializedObject(assetEditor.targets);
-                m_Icon = m_TargetObject.FindProperty("m_Icon");
+                if (m_Icon == null)
+                {
+                    m_TargetObject = new SerializedObject(assetTargets);
+                    m_Icon = m_TargetObject.FindProperty("m_Icon");
+                }
+                EditorGUI.ObjectIconDropDown(iconRect, assetTargets, true, null, m_Icon);
             }
-            EditorGUI.ObjectIconDropDown(iconRect, assetEditor.targets, true, null, m_Icon);
+            else
+            {
+                base.OnHeaderIconGUI(iconRect);
+            }
         }
 
         // Clear default references
@@ -189,25 +199,28 @@ namespace UnityEditor
         {
             if (targets.Length == 1)
             {
-                GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
-
                 var assetPath = AssetDatabase.GetAssetPath(target);
-                var assembly = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
-                EditorGUILayout.LabelField("Filename", assembly);
-
-                var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
-
-                if (assemblyDefinitionFile != null)
+                if (!string.IsNullOrEmpty(assetPath))
                 {
-                    var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
+                    GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
 
-                    using (new EditorGUI.DisabledScope(true))
+                    var assembly = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
+                    EditorGUILayout.LabelField("Filename", assembly);
+
+                    var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
+
+                    if (assemblyDefinitionFile != null)
                     {
-                        EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
-                    }
-                }
+                        var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
 
-                EditorGUILayout.Space();
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
+                        }
+                    }
+
+                    EditorGUILayout.Space();
+                }
             }
 
             base.OnInspectorGUI();

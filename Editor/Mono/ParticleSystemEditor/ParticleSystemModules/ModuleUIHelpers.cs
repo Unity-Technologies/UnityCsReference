@@ -48,7 +48,7 @@ namespace UnityEditor
             return new Rect(totalPosition.x + EditorGUIUtility.labelWidth, totalPosition.y, totalPosition.width - EditorGUIUtility.labelWidth, totalPosition.height);
         }
 
-        protected static Rect PrefixLabel(Rect totalPosition, GUIContent label)
+        internal static Rect PrefixLabel(Rect totalPosition, GUIContent label)
         {
             if (!EditorGUI.LabelHasContent(label))
                 return EditorGUI.IndentedRect(totalPosition);
@@ -865,7 +865,7 @@ namespace UnityEditor
         private static void GUIColor(Rect rect, SerializedProperty colorProp, bool hdr)
         {
             EditorGUI.BeginChangeCheck();
-            Color newValue = EditorGUI.ColorField(rect, GUIContent.none, colorProp.colorValue, false, true, hdr, ColorPicker.defaultHDRConfig);
+            Color newValue = EditorGUI.ColorField(rect, GUIContent.none, colorProp.colorValue, false, true, hdr);
             if (EditorGUI.EndChangeCheck())
                 colorProp.colorValue = newValue;
         }
