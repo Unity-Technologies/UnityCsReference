@@ -299,7 +299,7 @@ namespace UnityEditorInternal.VR
 
         private bool IsWindowsMixedRealityCurrentTarget()
         {
-            if (!PlayerSettings.virtualRealitySupported)
+            if (!VREditor.GetVREnabledOnTargetGroup(BuildTargetGroup.WSA))
                 return false;
 
             if (Array.IndexOf(XRSettings.supportedDevices, "WindowsMR") < 0)

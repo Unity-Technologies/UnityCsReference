@@ -47,7 +47,8 @@ namespace UnityEditor
                 "m_Materials",
                 "m_BlendShapeWeights",
                 "m_AABB",
-                "m_LightmapParameters"
+                "m_LightmapParameters",
+                "m_DynamicOccludee"
             });
             excludedProperties.AddRange(Probes.GetFieldsStringArray());
             m_ExcludedProperties = excludedProperties.ToArray();
@@ -83,6 +84,8 @@ namespace UnityEditor
             LightingFieldsGUI();
 
             EditorGUILayout.PropertyField(m_Materials, true);
+
+            CullDynamicFieldGUI();
 
             serializedObject.ApplyModifiedProperties();
         }

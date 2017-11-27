@@ -103,10 +103,10 @@ namespace UnityEngine
                 if (!WaitUntilDoneIfPossible())
                     return new byte[] {};
                 if (_uwr.isNetworkError)
-                    return null;
+                    return new byte[] {};
                 var dh = _uwr.downloadHandler;
                 if (dh == null)
-                    return null;
+                    return new byte[] {};
                 return dh.data;
             }
         }
@@ -151,12 +151,15 @@ namespace UnityEngine
         {
             get
             {
-                if (!isDone || _uwr.isNetworkError)
+                if (!isDone)
                     return new Dictionary<string, string>();
                 if (_responseHeaders == null)
                 {
                     _responseHeaders = _uwr.GetResponseHeaders();
-                    _responseHeaders["STATUS"] = string.Format("HTTP/1.1 {0} {1}", _uwr.responseCode, GetStatusCodeName(_uwr.responseCode));
+                    if (_responseHeaders != null)
+                        _responseHeaders["STATUS"] = string.Format("HTTP/1.1 {0} {1}", _uwr.responseCode, GetStatusCodeName(_uwr.responseCode));
+                    else
+                        _responseHeaders = new Dictionary<string, string>();
                 }
                 return _responseHeaders;
             }

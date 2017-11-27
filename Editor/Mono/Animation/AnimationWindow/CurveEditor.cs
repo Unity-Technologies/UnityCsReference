@@ -3526,6 +3526,7 @@ namespace UnityEditor
 
             if (curve != null && curve.length >= 2 && curve.preWrapMode != WrapMode.Default)
             {
+                GUI.BeginGroup(drawRect);
                 Color oldText = GUI.contentColor;
 
                 var preKey = curve.keys[0];
@@ -3554,6 +3555,7 @@ namespace UnityEditor
                 }
 
                 GUI.contentColor = oldText;
+                GUI.EndGroup();
             }
         }
 
