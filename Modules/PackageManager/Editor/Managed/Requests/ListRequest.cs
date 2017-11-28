@@ -4,6 +4,7 @@
 
 
 using System;
+using System.Linq;
 
 namespace UnityEditor.PackageManager.Requests
 {
@@ -26,7 +27,8 @@ namespace UnityEditor.PackageManager.Requests
         protected override PackageCollection GetResult()
         {
             var operationStatus = NativeClient.GetListOperationData(Id);
-            return new PackageCollection(operationStatus.packageList);
+            var packageList = operationStatus.packageList.Select(p => (PackageInfo)p);
+            return new PackageCollection(packageList);
         }
     }
 }

@@ -89,6 +89,7 @@ namespace UnityEditor
                         m_Owner.Repaint();
                     }
                     Close();
+                    GUIUtility.ExitGUI();
                 }
             }
 

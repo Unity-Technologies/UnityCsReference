@@ -441,6 +441,9 @@ namespace UnityEditor
             {
                 SceneModeUtility.SetStaticFlags(targets, changedFlags, changedToValue);
                 serializedObject.SetIsDifferentCacheDirty();
+
+                // Displaying the dialog to ask the user whether to update children nukes the gui state (case 962453)
+                EditorGUIUtility.ExitGUI();
             }
         }
 
@@ -465,6 +468,9 @@ namespace UnityEditor
             {
                 SceneModeUtility.SetStaticFlags(targets, ~0, toggled);
                 serializedObject.SetIsDifferentCacheDirty();
+
+                // Displaying the dialog to ask the user whether to update children nukes the gui state (case 962453)
+                EditorGUIUtility.ExitGUI();
             }
             EditorGUI.EndProperty();
         }

@@ -10,6 +10,8 @@ using UnityEditorInternal;
 using System.Collections;
 using System.Collections.Generic;
 
+#pragma warning disable CS0618  // Due to Obsolete attribute on Predural classes
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(SubstanceArchive))]
@@ -530,3 +532,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618  // Due to Obsolete attribute on Predural classes

@@ -17,6 +17,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
+
+
+#pragma warning disable CS0618  
+
+
 namespace UnityEditor
 {
 
@@ -115,3 +120,7 @@ public sealed partial class SubstanceArchive : Object
 
 
 } 
+
+
+
+#pragma warning restore CS0618  

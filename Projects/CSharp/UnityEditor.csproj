@@ -589,9 +589,6 @@
 <Compile Include="..\..\Editor\Mono\SceneView\RectSelection.cs" >
 <Link>Editor\Mono\SceneView\RectSelection.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\SceneView\SceneViewGridManager.cs" >
-<Link>Editor\Mono\SceneView\SceneViewGridManager.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\SceneView\SceneView.cs" >
 <Link>Editor\Mono\SceneView\SceneView.cs</Link>
 </Compile>
@@ -705,9 +702,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs" >
 <Link>Editor\Mono\Grid\GridSnapping.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Grid\GridEditorUtility.cs" >
-<Link>Editor\Mono\Grid\GridEditorUtility.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs" >
 <Link>Editor\Mono\ParticleSystemEditor\SerializedMinMaxCurve.cs</Link>
@@ -2647,9 +2641,6 @@
 <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs" >
 <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\Grid\GridEditor.cs" >
-<Link>Editor\Mono\Inspector\Grid\GridEditor.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Enlighten\LightmapParameters.cs" >
 <Link>Editor\Mono\Inspector\Enlighten\LightmapParameters.cs</Link>
 </Compile>
@@ -3431,6 +3422,9 @@
 <Compile Include="..\..\Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs" >
 <Link>Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Src\VR\Mono\Oculus\VRCustomOptionsOculus.cs" >
+<Link>Editor\Src\VR\Mono\Oculus\VRCustomOptionsOculus.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\common\modules\VREditor\HolographicEmulationBindings.gen.cs" >
 <Link>artifacts\generated\common\modules\VREditor\HolographicEmulationBindings.gen.cs</Link>
 </Compile>
@@ -3599,6 +3593,15 @@
 <Compile Include="..\..\Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs" >
 <Link>Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs" >
+<Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\GridEditorUtility.cs" >
+<Link>Modules\GridEditor\Managed\GridEditorUtility.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\GridEditor\Managed\SceneViewGridManager.cs" >
+<Link>Modules\GridEditor\Managed\SceneViewGridManager.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs" >
 <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
 </Compile>
@@ -3614,17 +3617,14 @@
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\OperationStatus.cs" >
 <Link>Modules\PackageManager\Editor\Managed\OperationStatus.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\PackageManager\Editor\Managed\OriginType.cs" >
-<Link>Modules\PackageManager\Editor\Managed\OriginType.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\OutdatedPackage.cs" >
 <Link>Modules\PackageManager\Editor\Managed\OutdatedPackage.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCollection.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageCollection.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\PackageManager\Editor\Managed\RelationType.cs" >
-<Link>Modules\PackageManager\Editor\Managed\RelationType.cs</Link>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageInfo.cs" >
+<Link>Modules\PackageManager\Editor\Managed\PackageInfo.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\StatusCode.cs" >
 <Link>Modules\PackageManager\Editor\Managed\StatusCode.cs</Link>

@@ -23,6 +23,8 @@ namespace UnityEditor
 
         private UISystemPreviewWindow m_DetachedPreview;
 
+        private int currentFrame = 0;
+
         internal void DrawUIPane(ProfilerWindow win, ProfilerArea profilerArea, UISystemProfilerChart detailsChart)
         {
             InitIfNeeded(win);
@@ -54,6 +56,8 @@ namespace UnityEditor
                 var newVisibleFrame = win.GetActiveVisibleFrameIndex();
                 if (m_UGUIProfilerTreeViewState != null && m_UGUIProfilerTreeViewState.lastFrame != newVisibleFrame)
                 {
+                    currentFrame = ProfilerDriver.lastFrameIndex - newVisibleFrame;
+
                     m_TreeViewControl.Reload();
                 }
                 m_TreeViewControl.OnGUI(treeRect);
@@ -134,14 +138,15 @@ namespace UnityEditor
                         var previewRenderMode = PreviewRenderMode;
                         if (m_RenderService == null)
                             m_RenderService = new UISystemProfilerRenderService();
+
                         if (batch != null)
                         {
-                            image = m_RenderService.GetThumbnail(batch.renderDataIndex, 1, previewRenderMode != Styles.RenderMode.Standard);
+                            image = m_RenderService.GetThumbnail(currentFrame, batch.renderDataIndex, 1, previewRenderMode != Styles.RenderMode.Standard);
                         }
                         var canvas = row as UISystemProfilerTreeView.CanvasTreeViewItem;
                         if (canvas != null)
                         {
-                            image = m_RenderService.GetThumbnail(canvas.info.renderDataIndex, canvas.info.renderDataCount,
+                            image = m_RenderService.GetThumbnail(currentFrame, canvas.info.renderDataIndex, canvas.info.renderDataCount,
                                     previewRenderMode != Styles.RenderMode.Standard);
                         }
 

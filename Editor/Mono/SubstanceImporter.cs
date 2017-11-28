@@ -15,6 +15,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
+#pragma warning disable CS0618  // Due to Obsolete attribute on Predural classes
+
 namespace UnityEditor
 {
     // Material informations for Procedural Material textures generation
@@ -158,3 +160,5 @@ namespace UnityEditor
         }
     }
 } // namespace UnityEditor
+
+#pragma warning restore CS0618  // Due to Obsolete attribute on Predural classes

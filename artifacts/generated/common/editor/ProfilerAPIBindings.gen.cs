@@ -666,8 +666,15 @@ public sealed partial class ProfilerProperty
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  Texture2D UISystemProfilerRender (int renderDataIndex, int renderDataCount, bool renderOverdraw) ;
+    extern public static  Texture2D UISystemProfilerRender (int frameIndex, int renderDataIndex, int renderDataCount, bool renderOverdraw) ;
 
+    [System.Obsolete ("Deprecated API, it will always return the first frameIndex")]
+static Texture2D UISystemProfilerRender(int renderDataIndex, int renderDataCount, bool renderOverdraw)
+        {
+            return UISystemProfilerRender(0, renderDataIndex, renderDataCount, renderOverdraw);
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ReleaseUISystemProfilerRender (Texture2D t) ;

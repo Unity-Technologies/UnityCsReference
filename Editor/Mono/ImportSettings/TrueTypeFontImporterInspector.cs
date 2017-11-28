@@ -21,6 +21,7 @@ namespace UnityEditor
         SerializedProperty m_CustomCharacters;
         SerializedProperty m_FontRenderingMode;
         SerializedProperty m_AscentCalculationMode;
+        SerializedProperty m_UseLegacyBoundsCalculation;
         SerializedProperty m_FallbackFontReferencesArraySize;
 
         string m_FontNamesString = "";
@@ -39,6 +40,7 @@ namespace UnityEditor
             m_CustomCharacters = serializedObject.FindProperty("m_CustomCharacters");
             m_FontRenderingMode = serializedObject.FindProperty("m_FontRenderingMode");
             m_AscentCalculationMode = serializedObject.FindProperty("m_AscentCalculationMode");
+            m_UseLegacyBoundsCalculation = serializedObject.FindProperty("m_UseLegacyBoundsCalculation");
             m_FallbackFontReferencesArraySize = serializedObject.FindProperty("m_FallbackFontReferences.Array.size");
 
             // We don't want to expose GUI for setting included fonts when selecting multiple fonts
@@ -226,6 +228,7 @@ namespace UnityEditor
             EditorGUILayout.IntPopup(m_FontRenderingMode, kRenderingModeStrings, kRenderingModeValues, new GUIContent("Rendering Mode"));
             EditorGUILayout.IntPopup(m_TextureCase, kCharacterStrings, kCharacterValues, new GUIContent("Character"));
             EditorGUILayout.IntPopup(m_AscentCalculationMode, kAscentCalculationModeStrings, kAscentCalculationModeValues, new GUIContent("Ascent Calculation Mode"));
+            EditorGUILayout.PropertyField(m_UseLegacyBoundsCalculation, new GUIContent("Use Legacy Bounds"));
 
             if (!m_TextureCase.hasMultipleDifferentValues)
             {

@@ -156,6 +156,7 @@ namespace UnityEngine.Playables
         extern internal void SetDelay(double delay);
         extern internal double GetDelay();
         extern internal bool IsDelayed();
+        extern internal double GetPreviousTime();
 
         extern private object GetScriptInstance();
         extern private PlayableHandle GetInputHandle(int index);

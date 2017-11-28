@@ -99,6 +99,12 @@ namespace UnityEngine.Playables
             return playable.GetHandle().GetTime();
         }
 
+        public static double GetPreviousTime<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetPreviousTime();
+        }
+
         public static void SetDone<U>(this U playable, bool value)
             where U : struct, IPlayable
         {

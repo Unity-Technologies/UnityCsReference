@@ -114,24 +114,25 @@ namespace UnityEditor
             m_Cache.Clear();
         }
 
-        private Texture2D Generate(int renderDataIndex, int renderDataCount, bool overdraw)
+        private Texture2D Generate(int frameIndex, int renderDataIndex, int renderDataCount, bool overdraw)
         {
-            return m_Disposed ? null : ProfilerProperty.UISystemProfilerRender(renderDataIndex, renderDataCount, overdraw);
+            return m_Disposed ? null : ProfilerProperty.UISystemProfilerRender(frameIndex, renderDataIndex, renderDataCount, overdraw);
         }
 
-        public Texture2D GetThumbnail(int renderDataIndex, int infoRenderDataCount, bool overdraw)
+        public Texture2D GetThumbnail(int frameIndex, int renderDataIndex, int infoRenderDataCount, bool overdraw)
         {
             if (m_Disposed)
                 return null;
-            long key = ((long)(ushort)renderDataIndex << 32) | (ushort)(((ushort)infoRenderDataCount) & 0x7FFF) | (ushort)(overdraw ? 0x8000 : 0);
-            Texture2D tex = m_Cache.Get(key);
+
+            //long key = ((long)(ushort)renderDataIndex << 32) | (ushort)(((ushort)infoRenderDataCount) & 0x7FFF) | (ushort)(overdraw ? 0x8000 : 0);
+            Texture2D tex = null; //m_Cache.Get(key);
             if (tex == null)
             {
-                tex = Generate(renderDataIndex, infoRenderDataCount, overdraw);
-                if (tex != null)
-                {
-                    m_Cache.Add(key, tex);
-                }
+                tex = Generate(frameIndex, renderDataIndex, infoRenderDataCount, overdraw);
+                //if (tex != null)
+                //{
+                //    m_Cache.Add(key, tex);
+                //}
             }
 
             return tex;
