@@ -378,11 +378,13 @@ namespace UnityEditor
             bool hasAlpha = true;
             int mipCount = 1;
 
+#pragma warning disable CS0618  // Due to Obsolete attribute on Predural classes
             if (target is Texture2D || target is ProceduralTexture)
             {
                 alphaOnly = true;
                 hasAlpha = false;
             }
+#pragma warning restore CS0618  // Due to Obsolete attribute on Predural classes
 
             foreach (Texture t in targets)
             {
@@ -395,11 +397,13 @@ namespace UnityEditor
                     format = (t as Texture2D).format;
                     checkFormat = true;
                 }
+#pragma warning disable CS0618  // Due to Obsolete attribute on Predural classes
                 else if (t is ProceduralTexture)
                 {
                     format = (t as ProceduralTexture).format;
                     checkFormat = true;
                 }
+#pragma warning restore CS0618  // Due to Obsolete attribute on Predural classes
 
                 if (checkFormat)
                 {

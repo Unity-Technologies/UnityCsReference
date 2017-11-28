@@ -231,6 +231,7 @@ namespace UnityEditorInternal.VR
                 case BuildTargetGroup.Standalone:
                 case BuildTargetGroup.PS4:
                 case BuildTargetGroup.Android:
+                case BuildTargetGroup.WSA:
                     return true;
                 default:
                     return false;
@@ -510,7 +511,7 @@ namespace UnityEditorInternal.VR
 
                 if ((int)PlayerSettings.Android.minSdkVersion < 24)
                 {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 7.0");
+                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("ARCore requires 'Minimum API Level' to be at least Android 7.0");
                     EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
                 }
                 EditorGUI.indentLevel--;

@@ -80,6 +80,7 @@ namespace UnityEditor
             public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TextContent("Active Tilemap|Specifies the currently active Tilemap used for painting in the Scene View.");
 
             public static readonly GUIContent edit = EditorGUIUtility.TextContent("Edit");
+            public static readonly GUIContent editModified = EditorGUIUtility.TextContent("Edit*");
             public static readonly GUIStyle ToolbarStyle = "preToolbar";
             public static readonly GUIStyle ToolbarTitleStyle = "preToolbar";
             public static float toolbarWidth;
@@ -297,6 +298,10 @@ namespace UnityEditor
             if (palette != null)
             {
                 m_PaletteInstance = previewUtility.InstantiatePrefabInScene(palette);
+
+                // Prevent palette from overriding the prefab while it is active, unless user saves the palette
+                PrefabUtility.DisconnectPrefabInstance(m_PaletteInstance);
+
                 EditorUtility.InitInstantiatedPreviewRecursive(m_PaletteInstance);
                 m_PaletteInstance.transform.position = new Vector3(0, 0, 0);
                 m_PaletteInstance.transform.rotation = Quaternion.identity;
@@ -490,11 +495,11 @@ namespace UnityEditor
             EditorApplication.globalEventHandler += HotkeyHandler;
             EditMode.editModeStarted += OnEditModeStart;
             EditMode.editModeEnded += OnEditModeEnd;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             GridSelection.gridSelectionChanged += OnGridSelectionChanged;
+            GridPaintingState.RegisterPainterInterest(this);
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             GridPaintingState.brushChanged += OnBrushChanged;
+            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             PrefabUtility.prefabInstanceUpdated += PrefabInstanceUpdated;
 
             AssetPreview.SetPreviewTextureCacheSize(256, GetInstanceID());
@@ -517,12 +522,13 @@ namespace UnityEditor
             Tools.onToolChanged += ToolChanged;
         }
 
-        private void PrefabInstanceUpdated(GameObject instance)
+        private void PrefabInstanceUpdated(GameObject updatedPrefab)
         {
             // case 947462: Reset the palette instance after its prefab has been updated as it could have been changed
-            if (m_PaletteInstance != null && instance == m_PaletteInstance && !GridPaintingState.savingPalette)
+            if (m_PaletteInstance != null && PrefabUtility.GetPrefabParent(updatedPrefab) == m_Palette && !GridPaintingState.savingPalette)
             {
                 ResetPreviewInstance();
+                Repaint();
             }
         }
 
@@ -555,12 +561,12 @@ namespace UnityEditor
             EditorApplication.globalEventHandler -= HotkeyHandler;
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             Tools.onToolChanged -= ToolChanged;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
-            GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
             GridPaintingState.brushChanged -= OnBrushChanged;
+            GridPaintingState.UnregisterPainterInterest(this);
             PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
         }
 
@@ -735,11 +741,6 @@ namespace UnityEditor
             }
         }
 
-        public void OnUndoRedoPerformed()
-        {
-            Repaint();
-        }
-
         private void OnBrushInspectorGUI()
         {
             var brush = GridPaintingState.gridBrush;
@@ -796,7 +797,9 @@ namespace UnityEditor
             DoPalettesDropdown();
             using (new EditorGUI.DisabledScope(palette == null))
             {
-                clipboardView.unlocked = GUILayout.Toggle(clipboardView.unlocked, Styles.edit, EditorStyles.toolbarButton);
+                clipboardView.unlocked = GUILayout.Toggle(clipboardView.unlocked,
+                        clipboardView.isModified ? Styles.editModified : Styles.edit,
+                        EditorStyles.toolbarButton);
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
@@ -981,6 +984,25 @@ namespace UnityEditor
                         window.ResetPreviewInstance();
                     }
                 }
+            }
+        }
+
+        public class PaletteAssetModificationProcessor : AssetModificationProcessor
+        {
+            static string[] OnWillSaveAssets(string[] paths)
+            {
+                if (!GridPaintingState.savingPalette)
+                {
+                    foreach (var window in GridPaintPaletteWindow.instances)
+                    {
+                        if (window.clipboardView.isModified)
+                        {
+                            window.clipboardView.SavePaletteIfNecessary();
+                            window.Repaint();
+                        }
+                    }
+                }
+                return paths;
             }
         }
     }

@@ -12,20 +12,12 @@ namespace UnityEditor.PackageManager
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
-    public class UpmPackageInfo
+    class UpmPackageInfo
     {
         [SerializeField]
         private string m_PackageId;
         [SerializeField]
-        private string m_Tag;
-        [SerializeField]
         private string m_Version;
-        [SerializeField]
-        private OriginType m_OriginType;
-        [SerializeField]
-        private string m_OriginLocation;
-        [SerializeField]
-        private RelationType m_RelationType;
         [SerializeField]
         private string m_ResolvedPath;
         [SerializeField]
@@ -47,11 +39,6 @@ namespace UnityEditor.PackageManager
             string resolvedPath = "",
             string tag = "")
         {
-            // Set the default values
-            m_OriginType = OriginType.Unknown;
-            m_RelationType = RelationType.Unknown;
-            m_Tag = tag;
-            m_OriginLocation = "not implemented";
             m_PackageId = packageId;
             m_DisplayName = displayName;
             m_Category = category;
@@ -64,12 +51,13 @@ namespace UnityEditor.PackageManager
             m_Version = nameAndVersion[1];
         }
 
+        public static implicit operator PackageInfo(UpmPackageInfo source)
+        {
+            return new PackageInfo(source);
+        }
+
         public string packageId { get { return m_PackageId;  } }
-        public string tag { get { return m_Tag;  } }
         public string version { get { return m_Version;  } }
-        public OriginType originType { get { return m_OriginType;  } }
-        public string originLocation { get { return m_OriginLocation;  } }
-        public RelationType relationType { get { return m_RelationType;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }

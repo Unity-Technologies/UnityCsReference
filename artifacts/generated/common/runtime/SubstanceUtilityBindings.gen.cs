@@ -14,6 +14,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public enum ProceduralProcessorUsage
 {
     
@@ -26,6 +27,7 @@ public enum ProceduralProcessorUsage
     All         = 3
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public enum ProceduralCacheSize
 {
     
@@ -40,6 +42,7 @@ public enum ProceduralCacheSize
     None    = 4
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public enum ProceduralLoadingBehavior
 {
     
@@ -56,6 +59,7 @@ public enum ProceduralLoadingBehavior
     DoNothingAndCache = 5
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public enum ProceduralPropertyType
 {
     
@@ -80,6 +84,7 @@ public enum ProceduralPropertyType
     String      = 9
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public enum ProceduralOutputType
 {
     
@@ -109,6 +114,7 @@ public enum ProceduralOutputType
 }
 
 [StructLayout(LayoutKind.Sequential)]
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 [UsedByNativeCode]
 public sealed partial class ProceduralPropertyDescription
 {
@@ -142,6 +148,7 @@ public sealed partial class ProceduralPropertyDescription
     public string[] componentLabels;
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public sealed partial class ProceduralMaterial : Material
 {
     internal ProceduralMaterial() : base((Material)null) {}
@@ -364,6 +371,7 @@ public sealed partial class ProceduralMaterial : Material
 
 }
 
+[Obsolete("Support for Procedural Materials will not be part of the next Unity release!", false)]
 public sealed partial class ProceduralTexture : Texture
 {
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

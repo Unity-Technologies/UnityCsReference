@@ -11,21 +11,21 @@ using UnityEngine;
 namespace UnityEditor.PackageManager
 {
     [Serializable]
-    public class PackageCollection : IEnumerable<UpmPackageInfo>
+    public class PackageCollection : IEnumerable<PackageInfo>
     {
         [SerializeField]
-        private UpmPackageInfo[] m_PackageList;
+        private PackageInfo[] m_PackageList;
 
         private PackageCollection() {}
 
-        internal PackageCollection(IEnumerable<UpmPackageInfo> packages)
+        internal PackageCollection(IEnumerable<PackageInfo> packages)
         {
-            m_PackageList = (packages ?? new UpmPackageInfo[] {}).ToArray();
+            m_PackageList = (packages ?? new PackageInfo[] {}).ToArray();
         }
 
-        IEnumerator<UpmPackageInfo> IEnumerable<UpmPackageInfo>.GetEnumerator()
+        IEnumerator<PackageInfo> IEnumerable<PackageInfo>.GetEnumerator()
         {
-            return ((IEnumerable<UpmPackageInfo>)m_PackageList).GetEnumerator();
+            return ((IEnumerable<PackageInfo>)m_PackageList).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

@@ -171,6 +171,7 @@ namespace UnityEditor
                 if (value == false && m_Unlocked && tilemap != null)
                 {
                     tilemap.ClearAllEditorPreviewTiles();
+                    SavePaletteIfNecessary();
                 }
                 m_Unlocked = value;
             }
@@ -210,6 +211,8 @@ namespace UnityEditor
                 return true;
             }
         }
+
+        public bool isModified { get { return m_PaletteNeedsSave; } }
 
         public GridPaintPaletteWindow owner
         {
@@ -324,6 +327,7 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
+            EditorApplication.editorApplicationQuit += EditorApplicationQuit;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             m_KeyboardPanningID = GUIUtility.GetPermanentControlID();
             m_MousePanningID = GUIUtility.GetPermanentControlID();
@@ -337,6 +341,7 @@ namespace UnityEditor
             SavePaletteIfNecessary();
             DestroyPreviewInstance();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
+            EditorApplication.editorApplicationQuit -= EditorApplicationQuit;
             base.OnDisable();
         }
 
@@ -349,8 +354,6 @@ namespace UnityEditor
         {
             if (guiRect.width == 0f || guiRect.height == 0f)
                 return;
-
-            bool mouseUp = Event.current.type == EventType.MouseUp;
 
             UpdateMouseGridPosition();
 
@@ -400,9 +403,6 @@ namespace UnityEditor
             else
                 DoBrush();
 
-            if (mouseUp)
-                SavePaletteIfNecessary();
-
             m_PreviousMousePosition = Event.current.mousePosition;
         }
 
@@ -422,11 +422,19 @@ namespace UnityEditor
             ClampZoomAndPan();
         }
 
+        private void EditorApplicationQuit()
+        {
+            SavePaletteIfNecessary();
+        }
+
         private void UndoRedoPerformed()
         {
-            m_PaletteNeedsSave = true;
-            SavePaletteIfNecessary();
-            RefreshAllTiles();
+            if (unlocked)
+            {
+                m_PaletteNeedsSave = true;
+                RefreshAllTiles();
+                Repaint();
+            }
         }
 
         private void HandlePanAndZoom()
@@ -990,17 +998,19 @@ namespace UnityEditor
         protected override void RegisterUndo()
         {
             if (!invalidClipboard)
+            {
                 Undo.RegisterFullObjectHierarchyUndo(paletteInstance, "Edit Palette");
+            }
         }
 
         private void OnPaletteChanged()
         {
             m_PaletteUsed = true;
             m_PaletteNeedsSave = true;
-            RegisterUndo();
+            Undo.FlushUndoRecordObjects();
         }
 
-        private void SavePaletteIfNecessary()
+        public void SavePaletteIfNecessary()
         {
             if (m_PaletteNeedsSave)
             {

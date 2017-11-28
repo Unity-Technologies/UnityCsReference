@@ -669,9 +669,9 @@ namespace UnityEditor.Animations
             // first element is always Root statemachine 'this'
             AnimatorStateMachine currentSM = this;
             // last element is state name, we don't care
-            var childStateMachines = AnimatorStateMachine.StateMachineCache.GetChildStateMachines(currentSM);
             for (int i = 1; i < smNames.Length - 1 && currentSM != null; ++i)
             {
+                var childStateMachines = AnimatorStateMachine.StateMachineCache.GetChildStateMachines(currentSM);
                 int index = System.Array.FindIndex(childStateMachines, t => t.stateMachine.name == smNames[i]);
                 currentSM = index >= 0 ? childStateMachines[index].stateMachine : null;
             }

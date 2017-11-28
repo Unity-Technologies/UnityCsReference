@@ -1456,6 +1456,9 @@ namespace UnityEditor
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
                 ProfilerDriver.SaveProfile(selected);
             }
+
+            // Opened a save pop-up, MacOS will redraw the window so bail out now
+            EditorGUIUtility.ExitGUI();
         }
 
         void LoadProfilingData(bool keepExistingData)
@@ -1474,6 +1477,9 @@ namespace UnityEditor
                     NetworkDetailStats.m_NetworkOperations.Clear();
                 }
             }
+
+            // Opened a load pop-up, MacOS will redraw the window so bail out now
+            EditorGUIUtility.ExitGUI();
         }
 
         private void DrawMainToolbar()

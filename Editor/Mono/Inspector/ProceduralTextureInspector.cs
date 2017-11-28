@@ -9,6 +9,9 @@ using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
 
+
+#pragma warning disable CS0618  // Due to Obsolete attribute on Predural classes
+
 namespace UnityEditor
 {
     [CustomEditor(typeof(ProceduralTexture))]
@@ -91,3 +94,5 @@ namespace UnityEditor
         }
     }
 }
+
+#pragma warning restore CS0618  // Due to Obsolete attribute on Predural classes

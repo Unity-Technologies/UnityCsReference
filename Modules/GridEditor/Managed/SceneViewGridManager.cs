@@ -2,14 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEditorInternal;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    // This class is in charge of rendering Grid component based grid in the scene view
+    // This class is in charge of handling Grid component based grid in the scene view (rendering, snapping)
     // It will hide global scene view grid when it has something to render
     internal class SceneViewGridManager : ScriptableSingleton<SceneViewGridManager>
     {
@@ -48,6 +46,7 @@ namespace UnityEditor
             EditMode.editModeEnded += OnEditModeEnd;
             GridPaintingState.brushChanged += OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
+            GridSnapping.snapPosition += OnSnapPosition;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
             m_RegisteredEventHandlers = true;
@@ -88,6 +87,7 @@ namespace UnityEditor
             EditMode.editModeEnded -= OnEditModeEnd;
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
+            GridSnapping.snapPosition -= OnSnapPosition;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             m_RegisteredEventHandlers = false;
         }
@@ -130,6 +130,24 @@ namespace UnityEditor
             {
                 sceneView.showGlobalGrid = value;
             }
+        }
+
+        private Vector3 OnSnapPosition(Vector3 position)
+        {
+            Vector3 result = position;
+            if (active && !EditorGUI.actionKey)
+            {
+                Vector3 local = activeGridProxy.WorldToLocal(position);
+                Vector3 interpolatedCell = activeGridProxy.LocalToCellInterpolated(local);
+                Vector3 roundedCell = new Vector3(
+                        Mathf.Round(2.0f * interpolatedCell.x) / 2,
+                        Mathf.Round(2.0f * interpolatedCell.y) / 2,
+                        Mathf.Round(2.0f * interpolatedCell.z) / 2
+                        );
+                local = activeGridProxy.CellToLocalInterpolated(roundedCell);
+                result = activeGridProxy.LocalToWorld(local);
+            }
+            return result;
         }
 
         internal static void FlushCachedGridProxy()
