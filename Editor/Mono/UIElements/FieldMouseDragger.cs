@@ -7,7 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    internal class FieldMouseDragger<T>
+    public class FieldMouseDragger<T>
     {
         public FieldMouseDragger(IValueField<T> drivenField)
         {

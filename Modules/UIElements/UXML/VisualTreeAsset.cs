@@ -199,42 +199,42 @@ namespace UnityEngine.Experimental.UIElements
 
             var templateAsset = root as TemplateAsset;
             List<VisualElementAsset> children;
-            if (!idToChildren.TryGetValue(root.id, out children))
-                return ve;
-
-            foreach (VisualElementAsset childVea in children)
+            if (idToChildren.TryGetValue(root.id, out children))
             {
-                // this will fill the slotInsertionPoints mapping
-                VisualElement childVe = CloneSetupRecursively(childVea, idToChildren, context);
-                if (childVe == null)
-                    continue;
-
-                // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
-                // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place
-                if (templateAsset == null)
+                foreach (VisualElementAsset childVea in children)
                 {
-                    ve.Add(childVe);
-                    continue;
-                }
+                    // this will fill the slotInsertionPoints mapping
+                    VisualElement childVe = CloneSetupRecursively(childVea, idToChildren, context);
+                    if (childVe == null)
+                        continue;
 
-                int index = templateAsset.slotUsages == null ? -1 : templateAsset.slotUsages.FindIndex(u => u.assetId == childVea.id);
-                if (index != -1)
-                {
-                    VisualElement parentSlot;
-                    string key = templateAsset.slotUsages[index].slotName;
-                    Assert.IsFalse(String.IsNullOrEmpty(key), "a lost name should not be null or empty, this probably points to an importer or serialization bug");
-                    if (context.slotInsertionPoints == null || !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
+                    // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
+                    // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place
+                    if (templateAsset == null)
                     {
-                        Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key, context.slotInsertionPoints == null
-                            ? String.Empty
-                            : String.Join(", ", System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
                         ve.Add(childVe);
+                        continue;
+                    }
+
+                    int index = templateAsset.slotUsages == null ? -1 : templateAsset.slotUsages.FindIndex(u => u.assetId == childVea.id);
+                    if (index != -1)
+                    {
+                        VisualElement parentSlot;
+                        string key = templateAsset.slotUsages[index].slotName;
+                        Assert.IsFalse(String.IsNullOrEmpty(key), "a lost name should not be null or empty, this probably points to an importer or serialization bug");
+                        if (context.slotInsertionPoints == null || !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
+                        {
+                            Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key, context.slotInsertionPoints == null
+                                ? String.Empty
+                                : String.Join(", ", System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
+                            ve.Add(childVe);
+                        }
+                        else
+                            parentSlot.Add(childVe);
                     }
                     else
-                        parentSlot.Add(childVe);
+                        ve.Add(childVe);
                 }
-                else
-                    ve.Add(childVe);
             }
 
             if (templateAsset != null && context.slotInsertionPoints != null)

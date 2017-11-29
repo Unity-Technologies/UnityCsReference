@@ -654,7 +654,7 @@ namespace UnityEngine
                         if (maxLength >= 0 && content.text.Length > maxLength)
                             content.text = content.text.Substring(0, maxLength);
 
-                        if (editor.keyboardOnScreen.done)
+                        if (editor.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
                         {
                             editor.keyboardOnScreen = null;
                             changed = true;

@@ -174,6 +174,5 @@ namespace UnityEditor
                     guiView.Repaint();
             }
         }
-
     }
 }

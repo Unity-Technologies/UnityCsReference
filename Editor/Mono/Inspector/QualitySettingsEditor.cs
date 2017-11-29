@@ -20,11 +20,11 @@ namespace UnityEditor
             public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
 
             public static readonly GUIContent kPlatformTooltip = new GUIContent("", "Allow quality setting on platform");
-            public static readonly GUIContent kAddQualityLevel = new GUIContent("Add Quality Level");
+            public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
 
-            public static readonly GUIContent kIconTrash = EditorGUIUtility.IconContent("TreeEditor.Trash", "|Delete Level");
-            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
-            public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TextContent("Billboards Face Camera Position|Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
+            public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
+            public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
+            public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
 
             public static readonly GUIStyle kListEvenBg = "ObjectPickerResultsOdd";
             public static readonly GUIStyle kListOddBg = "ObjectPickerResultsEven";

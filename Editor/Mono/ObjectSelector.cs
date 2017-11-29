@@ -333,7 +333,7 @@ namespace UnityEditor
             ContainerWindow.SetFreezeDisplay(true);
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = new GUIContent("Select " + (requiredType == null ? m_RequiredType : requiredType.Name));
+            titleContent = EditorGUIUtility.TrTextContent("Select " + (requiredType == null ? m_RequiredType : requiredType.Name));
 
             // Deal with window size
             Rect p = m_Parent.window.position;

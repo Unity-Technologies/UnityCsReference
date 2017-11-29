@@ -20,27 +20,27 @@ namespace UnityEditorInternal.VR
     {
         static class Styles
         {
-            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
-            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
-            public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
+            public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TrTextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
+            public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TrTextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
+            public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TrTextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
-                new GUIContent("Multi Pass"),
-                new GUIContent("Single Pass"),
-                new GUIContent("Single Pass Instanced (Preview)")
+                EditorGUIUtility.TrTextContent("Multi Pass"),
+                EditorGUIUtility.TrTextContent("Single Pass"),
+                EditorGUIUtility.TrTextContent("Single Pass Instanced (Preview)")
             };
 
             public static readonly GUIContent[] kAndroidStereoRenderingPaths =
             {
-                new GUIContent("Multi Pass"),
-                new GUIContent("Single Pass (Preview)"),
+                EditorGUIUtility.TrTextContent("Multi Pass"),
+                EditorGUIUtility.TrTextContent("Single Pass (Preview)"),
             };
 
-            public static readonly GUIContent xrSettingsTitle = EditorGUIUtility.TextContent("XR Settings");
+            public static readonly GUIContent xrSettingsTitle = EditorGUIUtility.TrTextContent("XR Settings");
 
-            public static readonly GUIContent supportedCheckbox = EditorGUIUtility.TextContent("Virtual Reality Supported");
-            public static readonly GUIContent listHeader = EditorGUIUtility.TextContent("Virtual Reality SDKs");
+            public static readonly GUIContent supportedCheckbox = EditorGUIUtility.TrTextContent("Virtual Reality Supported");
+            public static readonly GUIContent listHeader = EditorGUIUtility.TrTextContent("Virtual Reality SDKs");
         }
 
         private PlayerSettingsEditor m_Settings;
@@ -144,6 +144,8 @@ namespace UnityEditorInternal.VR
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
                     DevicesGUI(targetGroup);
+
+                    ErrorOnVRDeviceIncompatibility(targetGroup);
 
                     SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
 
@@ -294,7 +296,7 @@ namespace UnityEditorInternal.VR
             if (!supportsSinglePass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass))
                 stereoRenderingPath.intValue = (int)StereoRenderingPath.MultiPass;
 
-            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TextContent("Stereo Rendering Method*"));
+            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TrTextContent("Stereo Rendering Method*"));
 
             if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass) && (targetGroup == BuildTargetGroup.Android))
             {
@@ -467,16 +469,25 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        private void ErrorOnVRDeviceIncompatibility(BuildTargetGroup targetGroup)
         {
+            if (!PlayerSettings.GetVirtualRealitySupported(targetGroup))
+                return;
+
             if (targetGroup == BuildTargetGroup.Android)
             {
                 List<string> enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup).ToList();
                 if (enabledDevices.Contains("Oculus") && enabledDevices.Contains("daydream"))
                 {
-                    EditorGUILayout.HelpBox("It is recommended to use unique product IDs and build separate APKs when targeting both Oculus and Daydream SDKs to avoid initialization conflicts on some devices.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("To avoid initialization conflicts on devices which support both Daydream and Oculus based VR, build separate APKs with different package names, targeting only the Daydream or Oculus VR SDK in the respective APK.", MessageType.Warning);
                 }
+            }
+        }
 
+        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+            {
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
@@ -503,7 +514,7 @@ namespace UnityEditorInternal.VR
                 return;
 
             // Google Tango settings
-            EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TextContent("ARCore Supported"));
+            EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
 
             if (PlayerSettings.Android.androidTangoEnabled)
             {
@@ -511,7 +522,7 @@ namespace UnityEditorInternal.VR
 
                 if ((int)PlayerSettings.Android.minSdkVersion < 24)
                 {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TextContent("Tango requires 'Minimum API Level' to be at least Android 7.0");
+                    GUIContent tangoAndroidWarning = EditorGUIUtility.TrTextContent("ARCore requires 'Minimum API Level' to be at least Android 7.0");
                     EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
                 }
                 EditorGUI.indentLevel--;
@@ -534,7 +545,7 @@ namespace UnityEditorInternal.VR
                 vuforiaEnabled = PlayerSettings.GetPlatformVuforiaEnabled(targetGroup);
 
                 EditorGUI.BeginChangeCheck();
-                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Vuforia Augmented Reality Supported"), vuforiaEnabled);
+                vuforiaEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Vuforia Augmented Reality Supported"), vuforiaEnabled);
                 if (EditorGUI.EndChangeCheck())
                 {
                     PlayerSettings.SetPlatformVuforiaEnabled(targetGroup, vuforiaEnabled);

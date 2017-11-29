@@ -51,18 +51,18 @@ namespace UnityEditor
             public GUIContent smallZoom, largeZoom, alphaIcon, RGBIcon;
             public GUIStyle previewButton, previewSlider, previewSliderThumb, previewLabel;
 
-            public readonly GUIContent wrapModeLabel = EditorGUIUtility.TextContent("Wrap Mode");
-            public readonly GUIContent wrapU = EditorGUIUtility.TextContent("U axis");
-            public readonly GUIContent wrapV = EditorGUIUtility.TextContent("V axis");
-            public readonly GUIContent wrapW = EditorGUIUtility.TextContent("W axis");
+            public readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
+            public readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
+            public readonly GUIContent wrapV = EditorGUIUtility.TrTextContent("V axis");
+            public readonly GUIContent wrapW = EditorGUIUtility.TrTextContent("W axis");
 
             public readonly GUIContent[] wrapModeContents =
             {
-                EditorGUIUtility.TextContent("Repeat"),
-                EditorGUIUtility.TextContent("Clamp"),
-                EditorGUIUtility.TextContent("Mirror"),
-                EditorGUIUtility.TextContent("Mirror Once"),
-                EditorGUIUtility.TextContent("Per-axis")
+                EditorGUIUtility.TrTextContent("Repeat"),
+                EditorGUIUtility.TrTextContent("Clamp"),
+                EditorGUIUtility.TrTextContent("Mirror"),
+                EditorGUIUtility.TrTextContent("Mirror Once"),
+                EditorGUIUtility.TrTextContent("Per-axis")
             };
             public readonly int[] wrapModeValues =
             {
@@ -478,28 +478,16 @@ namespace UnityEditor
             float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
             Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
             PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
-            float oldBias = t.mipMapBias;
-            // with multi-select wantedRect can get negative width/height - not sure if that's intentional, but let's avoid NaNs
-            TextureUtil.SetMipMapBiasNoDirty(t, mipLevel - Log2(Mathf.Abs(texWidth / wantedRect.width)));
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
 
+            Texture2D t2d = t as Texture2D;
             if (m_ShowAlpha)
-            {
-                EditorGUI.DrawTextureAlpha(wantedRect, t);
-            }
+                EditorGUI.DrawTextureAlpha(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel);
+            else if (t2d != null && t2d.alphaIsTransparency)
+                EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel);
             else
-            {
-                Texture2D t2d = t as Texture2D;
-                if (t2d != null && t2d.alphaIsTransparency)
-                {
-                    EditorGUI.DrawTextureTransparent(wantedRect, t);
-                }
-                else
-                {
-                    EditorGUI.DrawPreviewTexture(wantedRect, t);
-                }
-            }
+                EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel);
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
             if (wantedRect.width > 32 && wantedRect.height > 32)
@@ -539,7 +527,6 @@ namespace UnityEditor
                 }
             }
 
-            TextureUtil.SetMipMapBiasNoDirty(t, oldBias);
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 
             m_Pos = PreviewGUI.EndScrollView();
@@ -600,18 +587,12 @@ namespace UnityEditor
                     RenderTextureReadWrite.Linear);
 
 
-            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
-            if (mat)
-            {
-                // We don't want Materials in Editor Resources Project to be modified in the end, so we use an duplicate.
-                if (Unsupported.IsSourceBuild())
-                    mat = new Material(mat);
-                Graphics.Blit(texture, tmp, mat);
-            }
-            else
-            {
-                Graphics.Blit(texture, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
-            }
+            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+            // We don't want Materials in Editor Resources Project to be modified in the end, so we use an duplicate.
+            // TODO: we should move away from "materials are in editor resources" to keeping just shaders there and creating materials in code
+            if (Unsupported.IsSourceBuild())
+                mat = new Material(mat);
+            Graphics.Blit(texture, tmp, mat);
 
             RenderTexture.active = tmp;
             Texture2D copy;

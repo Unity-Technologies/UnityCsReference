@@ -42,7 +42,6 @@ namespace UnityEditor.StyleSheets
                     Debug.LogError(importError);
                 }
             }
-
         }
     }
 }

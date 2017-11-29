@@ -160,15 +160,15 @@ namespace UnityEditor
         {
             public GUIContent[] tabs =
             {
-                EditorGUIUtility.TextContent("Mapping"),
-                EditorGUIUtility.TextContent("Muscles & Settings"),
-                //EditorGUIUtility.TextContent ("Handle"),
-                //EditorGUIUtility.TextContent ("Collider")
+                EditorGUIUtility.TrTextContent("Mapping"),
+                EditorGUIUtility.TrTextContent("Muscles & Settings"),
+                //EditorGUIUtility.TrTextContent ("Handle"),
+                //EditorGUIUtility.TrTextContent ("Collider")
             };
 
-            public GUIContent editCharacter = EditorGUIUtility.TextContent("Configure Avatar");
+            public GUIContent editCharacter = EditorGUIUtility.TrTextContent("Configure Avatar");
 
-            public GUIContent reset = EditorGUIUtility.TextContent("Reset");
+            public GUIContent reset = EditorGUIUtility.TrTextContent("Reset");
         }
 
         static Styles styles { get { if (s_Styles == null) s_Styles = new Styles(); return s_Styles; } }

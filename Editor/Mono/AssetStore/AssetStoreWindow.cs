@@ -46,7 +46,7 @@ namespace UnityEditor
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Reload"), false, Reload);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Reload"), false, Reload);
         }
 
         // Forces user logout

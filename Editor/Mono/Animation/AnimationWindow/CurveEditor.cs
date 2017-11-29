@@ -2182,9 +2182,9 @@ namespace UnityEditor
                         {
                             GenericMenu menu = new GenericMenu();
                             if (m_AnimationCurves[curveIndex].animationIsEditable)
-                                menu.AddItem(new GUIContent("Add Key"), false, CreateKeyFromClick, Event.current.mousePosition);
+                                menu.AddItem(EditorGUIUtility.TrTextContent("Add Key"), false, CreateKeyFromClick, Event.current.mousePosition);
                             else
-                                menu.AddDisabledItem(new GUIContent("Add Key"));
+                                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Add Key"));
 
                             menu.ShowAsContext();
                             Event.current.Use();
@@ -3642,7 +3642,7 @@ namespace UnityEditor
             float buttonSize = Styles.wrapModeMenuIcon.image.width;
             var keyPosition = new Vector3(key.time, key.value);
             keyPosition = DrawingToViewTransformPoint(keyPosition);
-            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y + drawRect.y, buttonSize, buttonSize);
+            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y, buttonSize, buttonSize);
 
             var selectedValue = (WrapModeFixedCurve)oldWrap;
 

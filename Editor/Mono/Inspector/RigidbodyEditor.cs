@@ -13,8 +13,8 @@ namespace UnityEditor
     internal class RigidbodyEditor : Editor
     {
         SerializedProperty m_Constraints;
-        static GUIContent m_FreezePositionLabel = new GUIContent("Freeze Position");
-        static GUIContent m_FreezeRotationLabel = new GUIContent("Freeze Rotation");
+        static GUIContent m_FreezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
+        static GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
 
         public void OnEnable()
         {

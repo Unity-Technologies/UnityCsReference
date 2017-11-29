@@ -11,11 +11,11 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent HaloStrength = EditorGUIUtility.TextContent("Halo Strength|Controls the visibility of the halo effect around lights in the Scene.");
-            public static readonly GUIContent HaloTexture = EditorGUIUtility.TextContent("Halo Texture|Specifies the Texture used when drawing the halo effect around lights in the Scene");
-            public static readonly GUIContent FlareStrength = EditorGUIUtility.TextContent("Flare Strength|Controls the visibility of lens flares from lights in the Scene.");
-            public static readonly GUIContent FlareFadeSpeed = EditorGUIUtility.TextContent("Flare Fade Speed|Controls the time over which lens flares fade from view after initially appearing.");
-            public static readonly GUIContent SpotCookie = EditorGUIUtility.TextContent("Spot Cookie|Specifies the Texture mask used to cast shadows, create silhouettes, or patterned illumination when using spot lights.");
+            public static readonly GUIContent HaloStrength = EditorGUIUtility.TrTextContent("Halo Strength", "Controls the visibility of the halo effect around lights in the Scene.");
+            public static readonly GUIContent HaloTexture = EditorGUIUtility.TrTextContent("Halo Texture", "Specifies the Texture used when drawing the halo effect around lights in the Scene");
+            public static readonly GUIContent FlareStrength = EditorGUIUtility.TrTextContent("Flare Strength", "Controls the visibility of lens flares from lights in the Scene.");
+            public static readonly GUIContent FlareFadeSpeed = EditorGUIUtility.TrTextContent("Flare Fade Speed", "Controls the time over which lens flares fade from view after initially appearing.");
+            public static readonly GUIContent SpotCookie = EditorGUIUtility.TrTextContent("Spot Cookie", "Specifies the Texture mask used to cast shadows, create silhouettes, or patterned illumination when using spot lights.");
         }
 
         protected SerializedProperty m_HaloStrength;

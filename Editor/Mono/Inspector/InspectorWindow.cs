@@ -80,9 +80,9 @@ namespace UnityEditor
             public readonly GUIStyle dragHandle = "RL DragHandle";
             public readonly GUIStyle lockButton = "IN LockButton";
             public readonly GUIStyle insertionMarker = "InsertionMarker";
-            public readonly GUIContent preTitle = EditorGUIUtility.TextContent("Preview");
-            public readonly GUIContent labelTitle = EditorGUIUtility.TextContent("Asset Labels");
-            public readonly GUIContent addComponentLabel = EditorGUIUtility.TextContent("Add Component");
+            public readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
+            public readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
+            public readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
             public GUIStyle preBackground = "preBackground";
             public GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
             public GUIStyle addComponentButtonStyle = "AC Button";
@@ -93,7 +93,7 @@ namespace UnityEditor
             public GUIStyle stickyNoteArrow = new GUIStyle("VCS_StickyNoteArrow");
             public GUIStyle stickyNotePerforce = new GUIStyle("VCS_StickyNoteP4");
             public GUIStyle stickyNoteLabel = new GUIStyle("VCS_StickyNoteLabel");
-            public readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TextContent("VCS Plugin {0} is enabled but not connected");
+            public readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS Plugin {0} is enabled but not connected");
 
             public Styles()
             {
@@ -225,10 +225,10 @@ namespace UnityEditor
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
-            menu.AddItem(new GUIContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Normal"), m_InspectorMode == InspectorMode.Normal, SetNormal);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Debug"), m_InspectorMode == InspectorMode.Debug, SetDebug);
             if (Unsupported.IsDeveloperMode())
-                menu.AddItem(new GUIContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
 
             menu.AddSeparator(string.Empty);
             m_LockTracker.AddItemsToMenu(menu);
@@ -238,9 +238,9 @@ namespace UnityEditor
         {
             string iconName = "UnityEditor.InspectorWindow";
             if (m_InspectorMode == InspectorMode.Normal)
-                titleContent = EditorGUIUtility.TextContentWithIcon("Inspector", iconName);
+                titleContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", iconName);
             else
-                titleContent = EditorGUIUtility.TextContentWithIcon("Debug", iconName);
+                titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
         }
 
         void SetMode(InspectorMode mode)
@@ -868,7 +868,7 @@ namespace UnityEditor
                     }
 
                     Rect textRect = new Rect(rect.x + iconRect.width, rect.y, rect.width - iconRect.width, rect.height);
-                    GUI.Label(textRect, new GUIContent("<b>Under Version Control</b>\nCheck out this asset in order to make changes."), styles.stickyNoteLabel);
+                    GUI.Label(textRect, EditorGUIUtility.TrTextContent("<b>Under Version Control</b>\nCheck out this asset in order to make changes."), styles.stickyNoteLabel);
 
                     Rect arrowRect = new Rect(rect.x + rect.width / 2, rect.y + 80, 19, 14);
                     styles.stickyNoteArrow.Draw(arrowRect, false, false, false, false);

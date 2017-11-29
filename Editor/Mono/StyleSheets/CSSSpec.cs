@@ -3,9 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEngine;
 using UnityEngine.StyleSheets;
 
 namespace UnityEditor.StyleSheets

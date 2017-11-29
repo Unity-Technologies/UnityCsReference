@@ -15,8 +15,8 @@ namespace UnityEditor
         SerializedProperty m_Size;
         private readonly BoxBoundsHandle m_BoundsHandle = new BoxBoundsHandle();
 
-        protected GUIContent centerContent = EditorGUIUtility.TextContent("Center|The position of the Collider in the object’s local space.");
-        protected GUIContent sizeContent = EditorGUIUtility.TextContent("Size|The size of the Collider in the X, Y, Z directions.");
+        protected GUIContent centerContent = EditorGUIUtility.TrTextContent("Center", "The position of the Collider in the object’s local space.");
+        protected GUIContent sizeContent = EditorGUIUtility.TrTextContent("Size", "The size of the Collider in the X, Y, Z directions.");
 
 
         public override void OnEnable()

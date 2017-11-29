@@ -642,14 +642,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!allDirtyScripts.Any() && runScriptUpdaterAssemblies.Count == 0)
                 return false;
 
-            var customTargetAssembliesToBuild = FilterCustomTargetAssemblies(scriptAssemblySettings.OptionalUnityReferences, customTargetAssemblies);
-
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
                 UnityAssemblies = unityAssemblies,
                 PrecompiledAssemblies = precompiledAssemblies,
-                CustomTargetAssemblies = customTargetAssembliesToBuild,
-                PredefinedAssembliesCustomTargetReferences = GetCustomAssembliesNotContainingTests(customTargetAssembliesToBuild),
+                CustomTargetAssemblies = customTargetAssemblies,
+                PredefinedAssembliesCustomTargetReferences = GetCustomAssembliesNotContainingTests(customTargetAssemblies),
                 EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
             };
 
@@ -715,16 +713,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.Poll();
             return true;
-        }
-
-        private static EditorBuildRules.TargetAssembly[] FilterCustomTargetAssemblies(OptionalUnityReferences optionalUnityReferences, EditorBuildRules.TargetAssembly[] targetAssemblies)
-        {
-            EditorBuildRules.TargetAssembly[] customTargetAssembliesToBuild = targetAssemblies;
-            if ((optionalUnityReferences & OptionalUnityReferences.TestAssemblies) != OptionalUnityReferences.TestAssemblies)
-            {
-                customTargetAssembliesToBuild = GetCustomAssembliesNotContainingTests(targetAssemblies);
-            }
-            return customTargetAssembliesToBuild;
         }
 
         public void InvokeAssemblyCompilationStarted(string assemblyOutputPath)
@@ -976,17 +964,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
 
-            EditorBuildRules.TargetAssembly[] customTargetAssembliesToBuild = customTargetAssemblies;
-            if ((settings.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) != OptionalUnityReferences.TestAssemblies)
-            {
-                customTargetAssembliesToBuild = GetCustomAssembliesNotContainingTests(customTargetAssemblies);
-            }
-
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
                 UnityAssemblies = unityAssembliesArg,
                 PrecompiledAssemblies = precompiledAssembliesArg,
-                CustomTargetAssemblies = customTargetAssembliesToBuild,
+                CustomTargetAssemblies = customTargetAssemblies,
                 PredefinedAssembliesCustomTargetReferences = GetCustomAssembliesNotContainingTests(customTargetAssemblies),
                 EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
             };

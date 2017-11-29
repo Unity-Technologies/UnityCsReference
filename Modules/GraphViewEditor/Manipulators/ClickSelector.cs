@@ -7,8 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class ClickSelector : MouseManipulator
+    public class ClickSelector : MouseManipulator
     {
         public ClickSelector()
         {

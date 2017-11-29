@@ -9,8 +9,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class EdgeControl : VisualElement
+    public class EdgeControl : VisualElement
     {
         private struct EdgeCornerSweepValues
         {
@@ -52,13 +51,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         Mesh m_Mesh;
         public const float k_MinEdgeWidth = 1.75f;
 
-        public const float k_EdgeLengthFromPort = 12.0f;
-        public const float k_EdgeTurnDiameter = 16.0f;
-        public const float k_EdgeSweepResampleRatio = 4.0f;
-        public const int k_EdgeStraightLineSegmentDivisor = 5;
-
-        Color m_InputColor = Color.grey;
-        Color m_OutputColor = Color.grey;
+        private const float k_EdgeLengthFromPort = 12.0f;
+        private const float k_EdgeTurnDiameter = 16.0f;
+        private const float k_EdgeSweepResampleRatio = 4.0f;
+        private const int k_EdgeStraightLineSegmentDivisor = 5;
 
         private Orientation m_Orientation;
         public Orientation orientation
@@ -73,6 +69,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        [Obsolete("Use inputEdgeColor and/or outputEdgeColor")]
         public Color edgeColor
         {
             get { return m_InputColor; }
@@ -86,28 +83,58 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private Color m_StartCapColor;
-        public Color startCapColor
+        Color m_InputColor = Color.grey;
+        public Color inputColor
         {
-            get { return m_StartCapColor; }
+            get { return m_InputColor; }
             set
             {
-                if (m_StartCapColor == value)
+                if (m_InputColor != value)
+                {
+                    m_InputColor = value;
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        Color m_OutputColor = Color.grey;
+        public Color outputColor
+        {
+            get { return m_OutputColor; }
+            set
+            {
+                if (m_OutputColor != value)
+                {
+                    m_OutputColor = value;
+                    Dirty(ChangeType.Repaint);
+                }
+            }
+        }
+
+        private Color m_FromCapColor;
+        public Color fromCapColor
+        {
+            get { return m_FromCapColor; }
+            set
+            {
+                if (m_FromCapColor == value)
                     return;
-                m_StartCapColor = value;
+                m_FromCapColor = value;
+                m_FromCap.style.backgroundColor = m_FromCapColor;
                 Dirty(ChangeType.Repaint);
             }
         }
 
-        private Color m_EndCapColor;
-        public Color endCapColor
+        private Color m_ToCapColor;
+        public Color toCapColor
         {
-            get { return m_EndCapColor; }
+            get { return m_ToCapColor; }
             set
             {
-                if (m_EndCapColor == value)
+                if (m_ToCapColor == value)
                     return;
-                m_EndCapColor = value;
+                m_ToCapColor = value;
+                m_ToCap.style.backgroundColor = m_ToCapColor;
                 Dirty(ChangeType.Repaint);
             }
         }
@@ -531,6 +558,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             float offset = k_EdgeLengthFromPort + k_EdgeTurnDiameter;
 
+            // This is to ensure we don't have the edge extending
+            // left and right by the offset right when the `from`
+            // and `to` are on top of each other.
+            float fromToDistance = (to - from).magnitude;
+            offset = Mathf.Min(offset, fromToDistance * 2);
+            offset = Mathf.Max(offset, k_EdgeTurnDiameter);
+
             if (m_ControlPoints == null || m_ControlPoints.Length != 4)
                 m_ControlPoints = new Vector2[4];
 
@@ -587,38 +621,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 layout = rect;
                 m_RenderPointsDirty = true;
-            }
-        }
-
-        public Color inputColor
-        {
-            get
-            {
-                return m_InputColor;
-            }
-            set
-            {
-                if (m_InputColor != value)
-                {
-                    m_InputColor = value;
-                    Dirty(ChangeType.Repaint);
-                }
-            }
-        }
-
-        public Color outputColor
-        {
-            get
-            {
-                return m_OutputColor;
-            }
-            set
-            {
-                if (m_OutputColor != value)
-                {
-                    m_OutputColor = value;
-                    Dirty(ChangeType.Repaint);
-                }
             }
         }
 

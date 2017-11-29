@@ -98,8 +98,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
             public override void OnBeginElementTest(VisualElement element, List<RuleMatcher> ruleMatchers)
             {
-                element.triggerPseudoMask = 0;
-                element.dependencyPseudoMask = 0;
+                if (element.IsDirty(ChangeType.Styles))
+                {
+                    element.triggerPseudoMask = 0;
+                    element.dependencyPseudoMask = 0;
+                }
 
                 if (element != null && element.styleSheets != null)
                 {

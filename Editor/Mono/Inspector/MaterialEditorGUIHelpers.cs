@@ -15,6 +15,18 @@ namespace UnityEditor
         const float kQueuePopupWidth = 100f;
         const float kCustomQueuePopupWidth = kQueuePopupWidth + 15f;
 
+        private bool isPrefabAsset
+        {
+            get
+            {
+                if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
+                    return false;
+
+                PrefabType type = PrefabUtility.GetPrefabType(m_SerializedObject.targetObject);
+                return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+            }
+        }
+
         // Do currently edited materials have different render queue values?
         private bool HasMultipleMixedQueueValues()
         {
@@ -139,7 +151,7 @@ namespace UnityEditor
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            if (isPrefabAsset || LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
             {
                 EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
                 serializedObject.ApplyModifiedProperties();
@@ -255,20 +267,6 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 colorProperty.colorValue = newValue;
-
-            // Extra brightness control for color (for usability)
-            {
-                Rect brightnessRect = GetFlexibleRectBetweenFieldAndRightEdge(r);
-                float oldLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = brightnessRect.width - EditorGUIUtility.fieldWidth;
-
-                EditorGUI.BeginChangeCheck();
-                newValue = EditorGUI.ColorBrightnessField(brightnessRect, GUIContent.Temp(" "), colorProperty.colorValue);
-                if (EditorGUI.EndChangeCheck())
-                    colorProperty.colorValue = newValue;
-
-                EditorGUIUtility.labelWidth = oldLabelWidth;
-            }
 
             EndAnimatedCheck();
 

@@ -298,7 +298,7 @@ namespace UnityEditor
                             int selectedEventsCount = selectedEvents.Count(selected => selected);
 
                             menu.AddItem(
-                            new GUIContent("Add Animation Event"),
+                            EditorGUIUtility.TrTextContent("Add Animation Event"),
                             false,
                             EventLineContextMenuAdd,
                             contextData);
@@ -329,7 +329,7 @@ namespace UnityEditor
                     int selectedEventsCount = selectedEvents.Count(selected => selected);
 
                     menu.AddItem(
-                        new GUIContent("Add Animation Event"),
+                        EditorGUIUtility.TrTextContent("Add Animation Event"),
                         false,
                         EventLineContextMenuAdd,
                         contextData);

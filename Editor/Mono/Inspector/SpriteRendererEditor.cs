@@ -19,23 +19,24 @@ namespace UnityEditor
 
         private static class Contents
         {
-            public static readonly GUIContent flipLabel = EditorGUIUtility.TextContent("Flip|Sprite flipping");
-            public static readonly GUIContent flipXLabel = EditorGUIUtility.TextContent("X|Sprite horizontal flipping");
-            public static readonly GUIContent flipYLabel = EditorGUIUtility.TextContent("Y|Sprite vertical flipping");
+            public static readonly GUIContent flipLabel = EditorGUIUtility.TrTextContent("Flip", "Sprite flipping");
+            public static readonly GUIContent flipXLabel = EditorGUIUtility.TrTextContent("X", "Sprite horizontal flipping");
+            public static readonly GUIContent flipYLabel = EditorGUIUtility.TrTextContent("Y", "Sprite vertical flipping");
             public static readonly int flipToggleHash = "FlipToggleHash".GetHashCode();
 
-            public static readonly GUIContent fullTileLabel = EditorGUIUtility.TextContent("Tile Mode|Specify the 9 slice tiling behaviour");
-            public static readonly GUIContent fullTileThresholdLabel = EditorGUIUtility.TextContent("Stretch Value|This value defines how much the center portion will stretch before it tiles.");
-            public static readonly GUIContent drawModeLabel = EditorGUIUtility.TextContent("Draw Mode|Specify the draw mode for the sprite");
-            public static readonly GUIContent widthLabel = EditorGUIUtility.TextContent("Width|The width dimension value for the sprite");
-            public static readonly GUIContent heightLabel = EditorGUIUtility.TextContent("Height|The height dimension value for the sprite");
-            public static readonly GUIContent sizeLabel = EditorGUIUtility.TextContent("Size|The rendering dimension for the sprite");
-            public static readonly GUIContent notFullRectWarningLabel = EditorGUIUtility.TextContent("Sprite Tiling might not appear correctly because the Sprite used is not generated with Full Rect or Sprite Mode is set to Polygon mode. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect and Sprite Mode is either Single or Multiple");
-            public static readonly GUIContent notFullRectMultiEditWarningLabel = EditorGUIUtility.TextContent("Sprite Tiling might not appear correctly because some of the Sprites used are not generated with Full Rect. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect");
+            public static readonly GUIContent fullTileLabel = EditorGUIUtility.TrTextContent("Tile Mode", "Specify the 9 slice tiling behaviour");
+            public static readonly GUIContent fullTileThresholdLabel = EditorGUIUtility.TrTextContent("Stretch Value", "This value defines how much the center portion will stretch before it tiles.");
+            public static readonly GUIContent drawModeLabel = EditorGUIUtility.TrTextContent("Draw Mode", "Specify the draw mode for the sprite");
+            public static readonly GUIContent widthLabel = EditorGUIUtility.TrTextContent("Width", "The width dimension value for the sprite");
+            public static readonly GUIContent heightLabel = EditorGUIUtility.TrTextContent("Height", "The height dimension value for the sprite");
+            public static readonly GUIContent sizeLabel = EditorGUIUtility.TrTextContent("Size", "The rendering dimension for the sprite");
+            public static readonly GUIContent notFullRectWarningLabel = EditorGUIUtility.TrTextContent("Sprite Tiling might not appear correctly because the Sprite used is not generated with Full Rect or Sprite Mode is set to Polygon mode. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect and Sprite Mode is either Single or Multiple");
+            public static readonly GUIContent notFullRectMultiEditWarningLabel = EditorGUIUtility.TrTextContent("Sprite Tiling might not appear correctly because some of the Sprites used are not generated with Full Rect. To fix this, change the Mesh Type in the Sprite's import setting to Full Rect");
             public static readonly int sizeFieldHash = "SpriteRendererSizeField".GetHashCode();
-            public static readonly GUIContent materialLabel = EditorGUIUtility.TextContent("Material|Material to be used by SpriteRenderer");
-            public static readonly GUIContent spriteLabel = EditorGUIUtility.TextContent("Sprite|The Sprite to render");
-            public static readonly GUIContent colorLabel = EditorGUIUtility.TextContent("Color|Rendering color for the Sprite graphic");
+            public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by SpriteRenderer");
+            public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "The Sprite to render");
+            public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
+            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TextContent("Mask Interaction|SpriteRenderer's interaction with a Sprite Mask");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
         }
 
@@ -136,7 +137,7 @@ namespace UnityEditor
 
             RenderSortingLayerFields();
 
-            EditorGUILayout.PropertyField(m_MaskInteraction);
+            EditorGUILayout.PropertyField(m_MaskInteraction, Contents.maskInteractionLabel);
 
             RenderRenderingLayer();
 

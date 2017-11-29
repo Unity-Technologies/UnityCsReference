@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.U2D;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
@@ -31,36 +32,36 @@ namespace UnityEditor
 
             public readonly GUIContent[] spriteAlignmentOptions =
             {
-                EditorGUIUtility.TextContent("Center"),
-                EditorGUIUtility.TextContent("Top Left"),
-                EditorGUIUtility.TextContent("Top"),
-                EditorGUIUtility.TextContent("Top Right"),
-                EditorGUIUtility.TextContent("Left"),
-                EditorGUIUtility.TextContent("Right"),
-                EditorGUIUtility.TextContent("Bottom Left"),
-                EditorGUIUtility.TextContent("Bottom"),
-                EditorGUIUtility.TextContent("Bottom Right"),
-                EditorGUIUtility.TextContent("Custom"),
+                EditorGUIUtility.TrTextContent("Center"),
+                EditorGUIUtility.TrTextContent("Top Left"),
+                EditorGUIUtility.TrTextContent("Top"),
+                EditorGUIUtility.TrTextContent("Top Right"),
+                EditorGUIUtility.TrTextContent("Left"),
+                EditorGUIUtility.TrTextContent("Right"),
+                EditorGUIUtility.TrTextContent("Bottom Left"),
+                EditorGUIUtility.TrTextContent("Bottom"),
+                EditorGUIUtility.TrTextContent("Bottom Right"),
+                EditorGUIUtility.TrTextContent("Custom"),
             };
 
-            public readonly GUIContent pivotLabel = EditorGUIUtility.TextContent("Pivot");
+            public readonly GUIContent pivotLabel = EditorGUIUtility.TrTextContent("Pivot");
 
-            public readonly GUIContent spriteLabel = EditorGUIUtility.TextContent("Sprite");
-            public readonly GUIContent customPivotLabel = EditorGUIUtility.TextContent("Custom Pivot");
+            public readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite");
+            public readonly GUIContent customPivotLabel = EditorGUIUtility.TrTextContent("Custom Pivot");
 
-            public readonly GUIContent borderLabel = EditorGUIUtility.TextContent("Border");
+            public readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border");
             public readonly GUIContent lLabel = EditorGUIUtility.TextContent("L");
             public readonly GUIContent tLabel = EditorGUIUtility.TextContent("T");
             public readonly GUIContent rLabel = EditorGUIUtility.TextContent("R");
             public readonly GUIContent bLabel = EditorGUIUtility.TextContent("B");
 
-            public readonly GUIContent positionLabel = EditorGUIUtility.TextContent("Position");
+            public readonly GUIContent positionLabel = EditorGUIUtility.TrTextContent("Position");
             public readonly GUIContent xLabel = EditorGUIUtility.TextContent("X");
             public readonly GUIContent yLabel = EditorGUIUtility.TextContent("Y");
             public readonly GUIContent wLabel = EditorGUIUtility.TextContent("W");
             public readonly GUIContent hLabel = EditorGUIUtility.TextContent("H");
 
-            public readonly GUIContent nameLabel = EditorGUIUtility.TextContent("Name");
+            public readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name");
 
             public Styles()
             {
@@ -189,8 +190,8 @@ namespace UnityEditor
             {
                 Rect position = spriteEditor.windowDimension;
                 return new Rect(
-                    position.width - kInspectorWidth - kInspectorWindowMargin - kScrollbarMargin,
-                    position.height - kInspectorHeight - kInspectorWindowMargin - kScrollbarMargin,
+                    position.width - kInspectorWidth - kInspectorWindowMargin,
+                    position.height - kInspectorHeight - kInspectorWindowMargin,
                     kInspectorWidth,
                     kInspectorHeight);
             }
@@ -508,16 +509,16 @@ namespace UnityEditor
 
         // implements ISpriteEditorModule
 
-        public virtual void DoTextureGUI()
+        public virtual void DoMainGUI()
         {
             m_Zoom = Handles.matrix.GetColumn(0).magnitude;
         }
 
-        public virtual void OnPostGUI()
+        public virtual void DoPostGUI()
         {
             DoSelectedFrameInspector();
         }
 
-        public abstract void DrawToolbarGUI(Rect drawArea);
+        public abstract void DoToolbarGUI(Rect drawArea);
     }
 }

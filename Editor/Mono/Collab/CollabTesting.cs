@@ -37,7 +37,7 @@ namespace UnityEditor.Collaboration
             get { return _enumerator != null; }
         }
 
-        public static void OnCompleteJob()
+        public static void OnJobsCompleted()
         {
             OnAsyncSignalReceived(AsyncState.WaitForJobComplete);
         }

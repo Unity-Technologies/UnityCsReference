@@ -26,7 +26,7 @@ namespace UnityEditor
             Rect rect = EditorGUILayout.GetControlRect(true, k_EditColliderbuttonHeight);
             Rect buttonRect = new Rect(rect.xMin + EditorGUIUtility.labelWidth, rect.yMin, k_EditColliderbuttonWidth, k_EditColliderbuttonHeight);
 
-            GUIContent labelContent = new GUIContent("Edit Collider");
+            GUIContent labelContent = EditorGUIUtility.TrTextContent("Edit Collider");
             Vector2 labelSize = GUI.skin.label.CalcSize(labelContent);
 
             Rect labelRect = new Rect(

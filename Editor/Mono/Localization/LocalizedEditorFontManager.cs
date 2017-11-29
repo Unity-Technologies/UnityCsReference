@@ -133,6 +133,9 @@ namespace UnityEditor
             ReadFontSettings();
 
             var dict = GetFontDictionary(LocalizationDatabase.currentEditorLanguage);
+            if (dict == null)
+                return;
+
             /*
             We have the Lucida Grande ttf asset which was always the font we used in the editor.
             But on windows we call ReplaceFontForWindows to override the font used for that asset.

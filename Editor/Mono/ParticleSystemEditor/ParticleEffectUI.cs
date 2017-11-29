@@ -48,21 +48,21 @@ namespace UnityEditor
 
         internal class Texts
         {
-            public GUIContent previewSpeed = EditorGUIUtility.TextContent("Playback Speed|Playback Speed is also affected by the Time Scale setting in the Time Manager.");
-            public GUIContent previewSpeedDisabled = EditorGUIUtility.TextContent("Playback Speed|Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent previewTime = EditorGUIUtility.TextContent("Playback Time");
-            public GUIContent particleCount = EditorGUIUtility.TextContent("Particles");
-            public GUIContent subEmitterParticleCount = EditorGUIUtility.TextContent("Sub Emitter Particles");
-            public GUIContent particleSpeeds = EditorGUIUtility.TextContent("Speed Range");
-            public GUIContent play = EditorGUIUtility.TextContent("Play");
-            public GUIContent playDisabled = EditorGUIUtility.TextContent("Play|Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent stop = EditorGUIUtility.TextContent("Stop");
-            public GUIContent pause = EditorGUIUtility.TextContent("Pause");
-            public GUIContent restart = EditorGUIUtility.TextContent("Restart");
-            public GUIContent addParticleSystem = EditorGUIUtility.TextContent("|Create Particle System");
-            public GUIContent showBounds = EditorGUIUtility.TextContent("Show Bounds|Show world space bounding boxes.");
-            public GUIContent resimulation = EditorGUIUtility.TextContent("Resimulate|If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).");
-            public GUIContent previewLayers = EditorGUIUtility.TextContent("Simulate Layers|Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
+            public GUIContent previewSpeed = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is also affected by the Time Scale setting in the Time Manager.");
+            public GUIContent previewSpeedDisabled = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
+            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time");
+            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles");
+            public GUIContent subEmitterParticleCount = EditorGUIUtility.TrTextContent("Sub Emitter Particles");
+            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range");
+            public GUIContent play = EditorGUIUtility.TrTextContent("Play");
+            public GUIContent playDisabled = EditorGUIUtility.TrTextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
+            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop");
+            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause");
+            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart");
+            public GUIContent addParticleSystem = EditorGUIUtility.TrTextContent("", "Create Particle System");
+            public GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
+            public GUIContent resimulation = EditorGUIUtility.TrTextContent("Resimulate", "If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).");
+            public GUIContent previewLayers = EditorGUIUtility.TrTextContent("Simulate Layers", "Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
             public string secondsFloatFieldFormatString = "f2";
             public string speedFloatFieldFormatString = "f1";
         }
@@ -343,7 +343,7 @@ namespace UnityEditor
             string nextName = "";
             for (int i = 2; i < 50; ++i)
             {
-                nextName = "Particle System " + i;
+                nextName = L10n.Tr("Particle System ") + i;
                 bool found = false;
                 foreach (ParticleSystemUI e in m_Emitters)
                 {
@@ -356,7 +356,7 @@ namespace UnityEditor
                 if (!found)
                     return nextName;
             }
-            return "Particle System";
+            return L10n.Tr("Particle System");
         }
 
         public bool IsParticleSystemUIVisible(ParticleSystemUI psUI)

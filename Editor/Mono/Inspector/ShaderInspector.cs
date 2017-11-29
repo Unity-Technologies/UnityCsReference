@@ -38,15 +38,15 @@ namespace UnityEditor
             public static Texture2D errorIcon = EditorGUIUtility.LoadIcon("console.erroricon.sml");
             public static Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon.sml");
 
-            public static GUIContent showSurface = EditorGUIUtility.TextContent("Show generated code|Show generated code of a surface shader");
-            public static GUIContent showFF = EditorGUIUtility.TextContent("Show generated code|Show generated code of a fixed function shader");
-            public static GUIContent showCurrent = new GUIContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
+            public static GUIContent showSurface = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a surface shader");
+            public static GUIContent showFF = EditorGUIUtility.TrTextContent("Show generated code", "Show generated code of a fixed function shader");
+            public static GUIContent showCurrent = EditorGUIUtility.TrTextContent("Compile and show code \u007C \u25BE");  // vertical bar & dropdow arrow - due to lacking editor style of "mini button with a dropdown"
 
             public static GUIStyle messageStyle = "CN StatusInfo";
             public static GUIStyle evenBackground = "CN EntryBackEven";
 
-            public static GUIContent no = EditorGUIUtility.TextContent("no");
-            public static GUIContent builtinShader = EditorGUIUtility.TextContent("Built-in shader");
+            public static GUIContent no = EditorGUIUtility.TrTextContent("no");
+            public static GUIContent builtinShader = EditorGUIUtility.TrTextContent("Built-in shader");
         }
         static readonly int kErrorViewHash = "ShaderErrorView".GetHashCode();
 
@@ -182,7 +182,7 @@ namespace UnityEditor
                     // need to copy current value to be used in delegate
                     // (C# closures close over variables, not their values)
                     var errorIndex = i;
-                    menu.AddItem(new GUIContent("Copy error text"), false, delegate {
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy error text"), false, delegate {
                             string errMsg = errors[errorIndex].message;
                             if (!string.IsNullOrEmpty(errors[errorIndex].messageDetails))
                             {

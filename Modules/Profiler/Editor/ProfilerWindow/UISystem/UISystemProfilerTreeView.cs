@@ -151,7 +151,7 @@ namespace UnityEditor
         {
             GenericMenu pm = new GenericMenu();
 
-            pm.AddItem(new GUIContent("Find matching objects in scene"), false, () => DoubleClickedItem(id));
+            pm.AddItem(EditorGUIUtility.TrTextContent("Find matching objects in scene"), false, () => DoubleClickedItem(id));
 
             pm.ShowAsContext();
         }

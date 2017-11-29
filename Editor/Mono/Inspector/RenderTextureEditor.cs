@@ -14,28 +14,28 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public readonly GUIContent size = EditorGUIUtility.TextContent("Size|Size of the render texture in pixels.");
+            public readonly GUIContent size = EditorGUIUtility.TrTextContent("Size", "Size of the render texture in pixels.");
             public readonly GUIContent cross = EditorGUIUtility.TextContent("x");
-            public readonly GUIContent antiAliasing = EditorGUIUtility.TextContent("Anti-Aliasing|Number of anti-aliasing samples.");
-            public readonly GUIContent colorFormat = EditorGUIUtility.TextContent("Color Format|Format of the color buffer.");
-            public readonly GUIContent depthBuffer = EditorGUIUtility.TextContent("Depth Buffer|Format of the depth buffer.");
-            public readonly GUIContent dimension = EditorGUIUtility.TextContent("Dimension|Is the texture 2D, Cube or 3D?");
-            public readonly GUIContent enableMipmaps = EditorGUIUtility.TextContent("Enable Mip Maps|This render texture will have Mip Maps.");
-            public readonly GUIContent bindMS = EditorGUIUtility.TextContent("Bind multisampled|If enabled, the texture will not go through an AA resolve if bound to a shader.");
-            public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TextContent("Auto generate Mip Maps|This render texture automatically generate its Mip Maps.");
-            public readonly GUIContent sRGBTexture = EditorGUIUtility.TextContent("sRGB (Color RenderTexture)|RenderTexture content is stored in gamma space. Non-HDR color textures should enable this flag.");
-            public readonly GUIContent useDynamicScale = EditorGUIUtility.TextContent("Dynamic Scaling|Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
+            public readonly GUIContent antiAliasing = EditorGUIUtility.TrTextContent("Anti-Aliasing", "Number of anti-aliasing samples.");
+            public readonly GUIContent colorFormat = EditorGUIUtility.TrTextContent("Color Format", "Format of the color buffer.");
+            public readonly GUIContent depthBuffer = EditorGUIUtility.TrTextContent("Depth Buffer", "Format of the depth buffer.");
+            public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
+            public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
+            public readonly GUIContent bindMS = EditorGUIUtility.TrTextContent("Bind multisampled", "If enabled, the texture will not go through an AA resolve if bound to a shader.");
+            public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto generate Mip Maps", "This render texture automatically generate its Mip Maps.");
+            public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color RenderTexture)", "RenderTexture content is stored in gamma space. Non-HDR color textures should enable this flag.");
+            public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
 
             public readonly GUIContent[] renderTextureAntiAliasing =
             {
-                new GUIContent("None"),
-                new GUIContent("2 samples"),
-                new GUIContent("4 samples"),
-                new GUIContent("8 samples")
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("2 samples"),
+                EditorGUIUtility.TrTextContent("4 samples"),
+                EditorGUIUtility.TrTextContent("8 samples")
             };
             public readonly int[] renderTextureAntiAliasingValues = { 1, 2, 4, 8 };
 
-            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("Cube"), EditorGUIUtility.TextContent("3D") };
+            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
             public readonly int[] dimensionValues = { (int)UnityEngine.Rendering.TextureDimension.Tex2D, (int)UnityEngine.Rendering.TextureDimension.Cube, (int)UnityEngine.Rendering.TextureDimension.Tex3D };
         }
 

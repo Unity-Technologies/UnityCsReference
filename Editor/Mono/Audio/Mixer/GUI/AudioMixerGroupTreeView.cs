@@ -289,8 +289,8 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent header = new GUIContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.");
-            public GUIContent addText = new GUIContent("+", "Add child group");
+            public GUIContent header = EditorGUIUtility.TrTextContent("Groups", "An Audio Mixer Group is used by e.g Audio Sources to modify the audio output before it reaches the Audio Listener. An Audio Mixer Group will route its output to another Audio Mixer Group if it is made a child of that group. The Master Group will route its output to the Audio Listener if it doesn't route its output into another Mixer.");
+            public GUIContent addText = EditorGUIUtility.TrTextContent("+", "Add child group");
             public Texture2D audioMixerGroupIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerGroup));
         }
         static Styles s_Styles;
@@ -457,12 +457,12 @@ namespace UnityEditor
 
                     if (!EditorApplication.isPlaying)
                     {
-                        pm.AddItem(new GUIContent("Add child group"), false, AddChildGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
+                        pm.AddItem(EditorGUIUtility.TrTextContent("Add child group"), false, AddChildGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
                         if (mixerNode.group != m_Controller.masterGroup)
                         {
-                            pm.AddItem(new GUIContent("Add sibling group"), false, AddSiblingGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Add sibling group"), false, AddSiblingGroupPopupCallback, new AudioMixerGroupPopupContext(m_Controller, mixerNode.group));
                             pm.AddSeparator("");
-                            pm.AddItem(new GUIContent("Rename"), false, RenameGroupCallback, node);
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGroupCallback, node);
 
                             // Mastergroup cannot be deleted nor duplicated
                             var selection = GetGroupSelectionWithoutMasterGroup().ToArray();
@@ -472,7 +472,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        pm.AddDisabledItem(new GUIContent("Modifying group topology in play mode is not allowed"));
+                        pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Modifying group topology in play mode is not allowed"));
                     }
 
                     pm.ShowAsContext();

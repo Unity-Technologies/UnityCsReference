@@ -43,12 +43,12 @@ namespace UnityEditor
 
             m_bAutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
 
-            s_AutoPlayIcons[0] = EditorGUIUtility.IconContent("preAudioAutoPlayOff", "|Turn Auto Play on");
-            s_AutoPlayIcons[1] = EditorGUIUtility.IconContent("preAudioAutoPlayOn", "|Turn Auto Play off");
-            s_PlayIcons[0] = EditorGUIUtility.IconContent("preAudioPlayOff", "|Play");
-            s_PlayIcons[1] = EditorGUIUtility.IconContent("preAudioPlayOn", "|Stop");
-            s_LoopIcons[0] = EditorGUIUtility.IconContent("preAudioLoopOff", "|Loop on");
-            s_LoopIcons[1] = EditorGUIUtility.IconContent("preAudioLoopOn", "|Loop off");
+            s_AutoPlayIcons[0] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOff", "Turn Auto Play on");
+            s_AutoPlayIcons[1] = EditorGUIUtility.TrIconContent("preAudioAutoPlayOn", "Turn Auto Play off");
+            s_PlayIcons[0] = EditorGUIUtility.TrIconContent("preAudioPlayOff", "Play");
+            s_PlayIcons[1] = EditorGUIUtility.TrIconContent("preAudioPlayOn", "Stop");
+            s_LoopIcons[0] = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Loop on");
+            s_LoopIcons[1] = EditorGUIUtility.TrIconContent("preAudioLoopOn", "Loop off");
 
             s_DefaultIcon = EditorGUIUtility.LoadIcon("Profiler.Audio");
         }

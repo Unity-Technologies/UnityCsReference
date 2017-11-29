@@ -6,8 +6,7 @@ using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    interface ISelection
+    public interface ISelection
     {
         List<ISelectable> selection { get; }
 

@@ -12,19 +12,19 @@ namespace UnityEditor
     {
         private static class SpriteFrameModuleStyles
         {
-            public static readonly GUIContent sliceButtonLabel = EditorGUIUtility.TextContent("Slice");
-            public static readonly GUIContent trimButtonLabel = EditorGUIUtility.TextContent("Trim|Trims selected rectangle (T)");
-            public static readonly GUIContent okButtonLabel = EditorGUIUtility.TextContent("Ok");
-            public static readonly GUIContent cancelButtonLabel = EditorGUIUtility.TextContent("Cancel");
+            public static readonly GUIContent sliceButtonLabel = EditorGUIUtility.TrTextContent("Slice");
+            public static readonly GUIContent trimButtonLabel = EditorGUIUtility.TrTextContent("Trim", "Trims selected rectangle (T)");
+            public static readonly GUIContent okButtonLabel = EditorGUIUtility.TrTextContent("Ok");
+            public static readonly GUIContent cancelButtonLabel = EditorGUIUtility.TrTextContent("Cancel");
         }
 
         internal static PrefKey k_SpriteEditorTrim = new PrefKey("Sprite Editor/Trim", "#t");
 
 
         // overrides for SpriteFrameModuleBase
-        public override void DoTextureGUI()
+        public override void DoMainGUI()
         {
-            base.DoTextureGUI();
+            base.DoMainGUI();
             DrawSpriteRectGizmos();
 
             HandleGizmoMode();
@@ -53,9 +53,10 @@ namespace UnityEditor
                 HandleDelete();
                 HandleDuplicate();
             }
+            spriteEditor.spriteRects = m_RectsCache.spriteRects;
         }
 
-        public override void DrawToolbarGUI(Rect toolbarRect)
+        public override void DoToolbarGUI(Rect toolbarRect)
         {
             using (new EditorGUI.DisabledScope(!containsMultipleSprites || spriteEditor.editingDisabled))
             {
@@ -68,7 +69,7 @@ namespace UnityEditor
                     {
                         if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.sliceButtonLabel, skin))
                         {
-                            if (SpriteEditorMenu.ShowAtPosition(adjustedDrawArea, this, spriteEditor.previewTexture, spriteEditor.selectedTexture))
+                            if (SpriteEditorMenu.ShowAtPosition(adjustedDrawArea, this, m_TextureDataProvider))
                                 GUIUtility.ExitGUI();
                         }
                     });
@@ -164,7 +165,7 @@ namespace UnityEditor
         {
             if (hasSelected && !MouseOnTopOfInspector())
             {
-                Rect textureBounds = new Rect(0, 0, previewTexture.width, previewTexture.height);
+                Rect textureBounds = new Rect(0, 0, textureActualWidth, textureActualHeight);
                 EditorGUI.BeginChangeCheck();
 
                 Rect oldRect = selectedSpriteRect;
@@ -181,7 +182,7 @@ namespace UnityEditor
             {
                 // Create new rects via dragging in empty space
                 EditorGUI.BeginChangeCheck();
-                Rect newRect = SpriteEditorHandles.RectCreator(previewTexture.width, previewTexture.height, styles.createRect);
+                Rect newRect = SpriteEditorHandles.RectCreator(textureActualWidth, textureActualHeight, styles.createRect);
                 if (EditorGUI.EndChangeCheck() && newRect.width > 0f && newRect.height > 0f)
                 {
                     CreateSprite(newRect);

@@ -8,11 +8,9 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    delegate EventPropagation ShortcutDelegate();
+    public delegate EventPropagation ShortcutDelegate();
 
-    internal
-    class ShortcutHandler : Manipulator
+    public class ShortcutHandler : Manipulator
     {
         readonly Dictionary<Event, ShortcutDelegate> m_Dictionary;
 

@@ -25,7 +25,7 @@ namespace UnityEditor
             serializedObject.Update();
 
             AudioSourceInspector.AnimProp(
-                new GUIContent("Cutoff Frequency"),
+                EditorGUIUtility.TrTextContent("Cutoff Frequency"),
                 m_LowpassLevelCustomCurve,
                 0.0f, AudioSourceInspector.kMaxCutoffFrequency, true);
 

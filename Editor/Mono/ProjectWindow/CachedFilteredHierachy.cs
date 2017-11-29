@@ -35,10 +35,10 @@ namespace UnityEditor
                         {
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
-                            // at the samwe time so dont keep a reference in m_Icon here
+                            // at the same time so don't keep a reference in m_Icon here
                             string path = AssetDatabase.GetAssetPath(instanceID);
                             if (path != null)
-                                return InternalEditorUtility.FindIconForFile(path) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
+                                return AssetDatabase.GetCachedIcon(path) as Texture2D;
                         }
                         else if (type == HierarchyType.GameObjects)
                         {

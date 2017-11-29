@@ -41,85 +41,96 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static GUIContent StartFrame = EditorGUIUtility.TextContent("Start|Start frame of the clip.");
-            public static GUIContent EndFrame = EditorGUIUtility.TextContent("End|End frame of the clip.");
+            public static GUIContent StartFrame = EditorGUIUtility.TrTextContent("Start", "Start frame of the clip.");
+            public static GUIContent EndFrame = EditorGUIUtility.TrTextContent("End", "End frame of the clip.");
+            public static string AverageVelocity = L10n.Tr("Average Velocity: {0}\nAverage Angular Y Speed: {1} deg/s");
 
-            public static GUIContent HasAdditiveReferencePose = EditorGUIUtility.TextContent("Additive Reference Pose|Enable to define the additive reference pose frame.");
-            public static GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TextContent("Pose Frame|Pose Frame.");
-            public static GUIContent LoopTime = EditorGUIUtility.TextContent("Loop Time|Enable to make the animation plays through and then restarts when the end is reached.");
-            public static GUIContent LoopPose = EditorGUIUtility.TextContent("Loop Pose|Enable to make the animation loop seamlessly.");
-            public static GUIContent LoopCycleOffset = EditorGUIUtility.TextContent("Cycle Offset|Offset to the cycle of a looping animation, if we want to start it at a different time.");
+            public static GUIContent HasAdditiveReferencePose = EditorGUIUtility.TrTextContent("Additive Reference Pose", "Enable to define the additive reference pose frame.");
+            public static GUIContent AdditiveReferencePoseFrame = EditorGUIUtility.TrTextContent("Pose Frame", "Pose Frame.");
+            public static GUIContent LoopTime = EditorGUIUtility.TrTextContent("Loop Time", "Enable to make the animation plays through and then restarts when the end is reached.");
+            public static GUIContent LoopPose = EditorGUIUtility.TrTextContent("Loop Pose", "Enable to make the animation loop seamlessly.");
+            public static GUIContent LoopCycleOffset = EditorGUIUtility.TrTextContent("Cycle Offset", "Offset to the cycle of a looping animation, if we want to start it at a different time.");
+            public static GUIContent RootTransformRotation = EditorGUIUtility.TrTextContent("Root Transform Rotation");
+            public static GUIContent RootTransformRotationY = EditorGUIUtility.TrTextContent("Root Transform Position (Y)");
+            public static GUIContent RootTransformPositionXZ = EditorGUIUtility.TrTextContent("Root Transform Position (XZ)");
 
-            public static GUIContent MotionCurves = EditorGUIUtility.TextContent("Root Motion is driven by curves");
-            public static GUIContent BakeIntoPoseOrientation = EditorGUIUtility.TextContent("Bake Into Pose|Enable to make root rotation be baked into the movement of the bones. Disable to make root rotation be stored as root motion.");
-            public static GUIContent OrientationOffsetY = EditorGUIUtility.TextContent("Offset|Offset to the root rotation (in degrees).");
+            public static GUIContent MotionCurves = EditorGUIUtility.TrTextContent("Root Motion is driven by curves");
+            public static GUIContent RemoveRootMotionCurves = EditorGUIUtility.TrTextContent("Remove Root Motion Curves");
+            public static GUIContent GenerateRootMotionCurves = EditorGUIUtility.TrTextContent("Generate Root Motion Curves");
+            public static GUIContent BakeIntoPoseOrientation = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make root rotation be baked into the movement of the bones. Disable to make root rotation be stored as root motion.");
+            public static GUIContent OrientationOffsetY = EditorGUIUtility.TrTextContent("Offset", "Offset to the root rotation (in degrees).");
 
-            public static GUIContent BasedUponOrientation = EditorGUIUtility.TextContent("Based Upon|What the root rotation is based upon.");
-            public static GUIContent BasedUponStartOrientation = EditorGUIUtility.TextContent("Based Upon (at Start)|What the root rotation is based upon.");
+            public static GUIContent BasedUponOrientation = EditorGUIUtility.TrTextContent("Based Upon", "What the root rotation is based upon.");
+            public static GUIContent BasedUponStartOrientation = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the root rotation is based upon.");
 
             public static GUIContent[] BasedUponRotationHumanOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the rotation as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Body Orientation|Keeps the upper body pointing forward.")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the rotation as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Body Orientation", "Keeps the upper body pointing forward.")
             };
 
             public static GUIContent[] BasedUponRotationOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the rotation as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Root Node Rotation|Keeps the upper body pointing forward.")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the rotation as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Root Node Rotation", "Keeps the upper body pointing forward.")
             };
 
-            public static GUIContent BakeIntoPosePositionY = EditorGUIUtility.TextContent("Bake Into Pose|Enable to make vertical root motion be baked into the movement of the bones. Disable to make vertical root motion be stored as root motion.");
-            public static GUIContent PositionOffsetY = EditorGUIUtility.TextContent("Offset|Offset to the vertical root position.");
+            public static GUIContent BakeIntoPosePositionY = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make vertical root motion be baked into the movement of the bones. Disable to make vertical root motion be stored as root motion.");
+            public static GUIContent PositionOffsetY = EditorGUIUtility.TrTextContent("Offset", "Offset to the vertical root position.");
 
-            public static GUIContent BasedUponPositionY = EditorGUIUtility.TextContent("Based Upon|What the vertical root position is based upon.");
-            public static GUIContent BasedUponStartPositionY = EditorGUIUtility.TextContent("Based Upon (at Start)|What the vertical root position is based upon.");
+            public static GUIContent BasedUponPositionY = EditorGUIUtility.TrTextContent("Based Upon", "What the vertical root position is based upon.");
+            public static GUIContent BasedUponStartPositionY = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the vertical root position is based upon.");
 
 
             public static GUIContent[] BasedUponPositionYHumanOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the vertical position as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Center of Mass|Keeps the center of mass aligned with root transform position."),
-                EditorGUIUtility.TextContent("Feet|Keeps the feet aligned with the root transform position.")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the vertical position as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Center of Mass", "Keeps the center of mass aligned with root transform position."),
+                EditorGUIUtility.TrTextContent("Feet", "Keeps the feet aligned with the root transform position.")
             };
 
             public static GUIContent[] BasedUponPositionYOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the vertical position as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Root Node Position")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the vertical position as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Root Node Position")
             };
 
-            public static GUIContent BakeIntoPosePositionXZ = EditorGUIUtility.TextContent("Bake Into Pose|Enable to make horizontal root motion be baked into the movement of the bones. Disable to make horizontal root motion be stored as root motion.");
+            public static GUIContent BakeIntoPosePositionXZ = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make horizontal root motion be baked into the movement of the bones. Disable to make horizontal root motion be stored as root motion.");
 
-            public static GUIContent BasedUponPositionXZ = EditorGUIUtility.TextContent("Based Upon|What the horizontal root position is based upon.");
-            public static GUIContent BasedUponStartPositionXZ = EditorGUIUtility.TextContent("Based Upon (at Start)|What the horizontal root position is based upon.");
+            public static GUIContent BasedUponPositionXZ = EditorGUIUtility.TrTextContent("Based Upon", "What the horizontal root position is based upon.");
+            public static GUIContent BasedUponStartPositionXZ = EditorGUIUtility.TrTextContent("Based Upon (at Start)", "What the horizontal root position is based upon.");
 
             public static GUIContent[] BasedUponPositionXZHumanOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the horizontal position as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Center of Mass|Keeps the center of mass aligned with root transform position.")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the horizontal position as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Center of Mass", "Keeps the center of mass aligned with root transform position.")
             };
 
             public static GUIContent[] BasedUponPositionXZOpt =
             {
-                EditorGUIUtility.TextContent("Original|Keeps the horizontal position as it is authored in the source file."),
-                EditorGUIUtility.TextContent("Root Node Position")
+                EditorGUIUtility.TrTextContent("Original", "Keeps the horizontal position as it is authored in the source file."),
+                EditorGUIUtility.TrTextContent("Root Node Position")
             };
 
-            public static GUIContent Mirror = EditorGUIUtility.TextContent("Mirror|Mirror left and right in this clip.");
+            public static GUIContent Mirror = EditorGUIUtility.TrTextContent("Mirror", "Mirror left and right in this clip.");
 
-            public static GUIContent Curves = EditorGUIUtility.TextContent("Curves|Parameter-related curves.");
+            public static GUIContent Curves = EditorGUIUtility.TrTextContent("Curves", "Parameter-related curves.");
+            public static GUIContent Length = EditorGUIUtility.TrTextContent("Length");
+            public static GUIContent AddLoopFrame = EditorGUIUtility.TrTextContent("Add Loop Frame");
+            public static GUIContent WrapMode = EditorGUIUtility.TrTextContent("Wrap Mode");
+            public static GUIContent Events = EditorGUIUtility.TrTextContent("Events");
+            public static GUIContent LoopMatch = EditorGUIUtility.TrTextContent("loop match");
 
-            public static GUIContent AddEventContent = EditorGUIUtility.IconContent("Animation.AddEvent", "|Add Event.");
+            public static GUIContent AddEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add Event.");
 
             public static GUIContent GreenLightIcon = EditorGUIUtility.IconContent("lightMeter/greenLight");
             public static GUIContent LightRimIcon = EditorGUIUtility.IconContent("lightMeter/lightRim");
             public static GUIContent OrangeLightIcon = EditorGUIUtility.IconContent("lightMeter/orangeLight");
             public static GUIContent RedLightIcon = EditorGUIUtility.IconContent("lightMeter/redLight");
 
-            public static GUIContent PrevKeyContent = EditorGUIUtility.IconContent("Animation.PrevKey", "|Go to previous key frame.");
-            public static GUIContent NextKeyContent = EditorGUIUtility.IconContent("Animation.NextKey", "|Go to next key frame.");
-            public static GUIContent AddKeyframeContent = EditorGUIUtility.IconContent("Animation.AddKeyframe", "|Add Keyframe.");
+            public static GUIContent PrevKeyContent = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go to previous key frame.");
+            public static GUIContent NextKeyContent = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go to next key frame.");
+            public static GUIContent AddKeyframeContent = EditorGUIUtility.TrIconContent("Animation.AddKeyframe", "Add Keyframe.");
         }
 
         static string s_LoopMeterStr = "LoopMeter";
@@ -662,11 +673,7 @@ namespace UnityEditor
             // Muscle clip info is currently only available for humanoid
             if (IsHumanClip)
             {
-                statsText += "Average Velocity: ";
-                statsText += m_Clip.averageSpeed.ToString("0.000");
-                statsText += "\nAverage Angular Y Speed: ";
-                statsText += (m_Clip.averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0");
-                statsText += " deg/s";
+                statsText = string.Format(Styles.AverageVelocity, m_Clip.averageSpeed.ToString("0.000"), (m_Clip.averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0"));
             }
 
             // Only show stats in final clip not for the preview clip
@@ -725,7 +732,7 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    GUILayout.Label("Length", EditorStyles.miniLabel, GUILayout.Width(50 - 4));
+                    GUILayout.Label(Styles.Length, EditorStyles.miniLabel, GUILayout.Width(50 - 4));
                     GUILayout.Label(GetClipLength().ToString("0.000"), EditorStyles.miniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.Label(m_Clip.frameRate + " FPS", EditorStyles.miniLabel);
@@ -768,11 +775,11 @@ namespace UnityEditor
             EditorGUIUtility.fieldWidth = 0;
 
             if (m_ClipInfo != null)
-                m_ClipInfo.loop = EditorGUILayout.Toggle("Add Loop Frame", m_ClipInfo.loop);
+                m_ClipInfo.loop = EditorGUILayout.Toggle(Styles.AddLoopFrame, m_ClipInfo.loop);
 
             EditorGUI.BeginChangeCheck();
             int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clip.wrapMode;
-            wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup("Wrap Mode", (WrapModeFixed)wrap);
+            wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixed)wrap);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_ClipInfo != null)
@@ -1060,7 +1067,7 @@ namespace UnityEditor
             if (hasRootCurves && !hasMotionCurves)
             {
                 // Rotation
-                GUILayout.Label("Root Transform Rotation", EditorStyles.label);
+                GUILayout.Label(Styles.RootTransformRotation, EditorStyles.label);
                 EditorGUI.indentLevel++;
                 // Toggle
                 Rect toggleRotRect = EditorGUILayout.GetControlRect();
@@ -1088,7 +1095,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 // Position Y
-                GUILayout.Label("Root Transform Position (Y)", EditorStyles.label);
+                GUILayout.Label(Styles.RootTransformRotationY, EditorStyles.label);
                 EditorGUI.indentLevel++;
                 // Toggle
                 Rect toggleYRect = EditorGUILayout.GetControlRect();
@@ -1149,7 +1156,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 // Position XZ
-                GUILayout.Label("Root Transform Position (XZ)", EditorStyles.label);
+                GUILayout.Label(Styles.RootTransformPositionXZ, EditorStyles.label);
                 EditorGUI.indentLevel++;
                 // Toggle
                 Rect toggleXZRect = EditorGUILayout.GetControlRect();
@@ -1229,14 +1236,14 @@ namespace UnityEditor
 
                 if (hasMotionCurves)
                 {
-                    if (GUILayout.Button("Remove Root Motion Curves"))
+                    if (GUILayout.Button(Styles.RemoveRootMotionCurves))
                     {
                         AnimationUtility.SetGenerateMotionCurves(m_Clip, false);
                     }
                 }
                 else
                 {
-                    if (GUILayout.Button("Generate Root Motion Curves"))
+                    if (GUILayout.Button(Styles.GenerateRootMotionCurves))
                     {
                         AnimationUtility.SetGenerateMotionCurves(m_Clip, true);
                     }
@@ -1268,7 +1275,7 @@ namespace UnityEditor
             if (m_ClipInfo != null)
             {
                 wasChanged = GUI.changed;
-                m_ShowEvents = EditorGUILayout.Foldout(m_ShowEvents, "Events", true);
+                m_ShowEvents = EditorGUILayout.Foldout(m_ShowEvents, Styles.Events, true);
                 GUI.changed = wasChanged;
                 if (m_ShowEvents)
                     EventsGUI();
@@ -1347,7 +1354,7 @@ namespace UnityEditor
             Rect labelPosition = position;
             labelPosition.xMax -= 20;
             labelPosition.xMin += EditorGUIUtility.labelWidth;
-            GUI.Label(labelPosition, "loop match", style);
+            GUI.Label(labelPosition, Styles.LoopMatch, style);
 
             Event evt = Event.current;
             int id = GUIUtility.GetControlID(lightMeterHint, FocusType.Passive, position);
@@ -1453,8 +1460,8 @@ namespace UnityEditor
 
         private string m_InstantTooltipText = null;
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
-        private readonly GUIContent m_DeleteAnimationEventText = new GUIContent("Delete Animation Event");
-        private readonly GUIContent m_DeleteAnimationEventsText = new GUIContent("Delete Animation Events");
+        private readonly GUIContent m_DeleteAnimationEventText = EditorGUIUtility.TrTextContent("Delete Animation Event");
+        private readonly GUIContent m_DeleteAnimationEventsText = EditorGUIUtility.TrTextContent("Delete Animation Events");
 
         private bool[] m_EventsSelected;
         private AnimationWindowEvent[] m_Events;
@@ -1599,7 +1606,7 @@ namespace UnityEditor
 
                         GenericMenu menu = new GenericMenu();
                         menu.AddItem(
-                        new GUIContent("Add Animation Event"),
+                        EditorGUIUtility.TrTextContent("Add Animation Event"),
                         false,
                         EventLineContextMenuAdd,
                         new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
@@ -1625,7 +1632,7 @@ namespace UnityEditor
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(
-                    new GUIContent("Add Animation Event"),
+                    EditorGUIUtility.TrTextContent("Add Animation Event"),
                     false,
                     EventLineContextMenuAdd,
                     new EventModificationContextMenuObject(clipInfo, mousePosTime, -1, m_EventsSelected));

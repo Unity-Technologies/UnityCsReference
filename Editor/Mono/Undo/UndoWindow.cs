@@ -28,7 +28,7 @@ namespace UnityEditor
         internal static void Init()
         {
             EditorWindow wnd = GetWindow(typeof(UndoWindow));
-            wnd.titleContent =  new GUIContent("Undo");
+            wnd.titleContent =  EditorGUIUtility.TrTextContent("Undo");
         }
 
         private void Update()

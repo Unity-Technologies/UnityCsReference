@@ -393,13 +393,28 @@ namespace UnityEditor
             }
 
             [NativeProperty("AppleEnableAutomaticSigning")]
-            public extern static bool appleEnableAutomaticSigning
+            private extern static int appleEnableAutomaticSigningInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            public static bool appleEnableAutomaticSigning
+            {
+                get
+                {
+                    return appleEnableAutomaticSigningInternal == (int)iOSAutomaticallySignValue.AutomaticallySignValueTrue;
+                }
+                set
+                {
+                    appleEnableAutomaticSigningInternal = value ?
+                        (int)iOSAutomaticallySignValue.AutomaticallySignValueTrue :
+                        (int)iOSAutomaticallySignValue.AutomaticallySignValueFalse;
+                }
+            }
+
 
             [NativeProperty("CameraUsageDescription")]
             public extern static string cameraUsageDescription { get; set; }

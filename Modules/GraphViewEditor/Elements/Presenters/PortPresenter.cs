@@ -9,8 +9,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    abstract class PortPresenter : GraphElementPresenter
+    public abstract class PortPresenter : GraphElementPresenter
     {
         protected object m_Source;
         public object source
@@ -42,7 +41,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         [SerializeField]
-        private bool m_Highlight;
+        private bool m_Highlight = true;
         public virtual bool highlight
         {
             get { return m_Highlight; }

@@ -768,10 +768,10 @@ namespace UnityEditor
         public void AddItemsToMenu(GenericMenu menu)
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
-                menu.AddItem(new GUIContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
-            menu.AddItem(new GUIContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Open Player Log"), false, UnityEditorInternal.InternalEditorUtility.OpenPlayerConsole);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Open Editor Log"), false, UnityEditorInternal.InternalEditorUtility.OpenEditorConsole);
 
-            menu.AddItem(new GUIContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Show Timestamp"), HasFlag(ConsoleFlags.ShowTimestamp), SetTimestamp);
 
             for (int i = 1; i <= 10; ++i)
             {
@@ -807,7 +807,7 @@ namespace UnityEditor
                     data.logType = logType;
                     data.stackTraceLogType = stackTraceLogType;
 
-                    menu.AddItem(new GUIContent("Stack Trace Logging/" + logType + "/" + stackTraceLogType), PlayerSettings.GetStackTraceLogType(logType) == stackTraceLogType,
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Stack Trace Logging/" + logType + "/" + stackTraceLogType), PlayerSettings.GetStackTraceLogType(logType) == stackTraceLogType,
                         ToggleLogStackTraces, data);
                 }
             }
@@ -824,7 +824,7 @@ namespace UnityEditor
 
             foreach (StackTraceLogType stackTraceLogType in Enum.GetValues(typeof(StackTraceLogType)))
             {
-                menu.AddItem(new GUIContent("Stack Trace Logging/All/" + stackTraceLogType), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
+                menu.AddItem(EditorGUIUtility.TrTextContent("Stack Trace Logging/All/" + stackTraceLogType), (StackTraceLogType)stackTraceLogTypeForAll == stackTraceLogType,
                     ToggleLogStackTracesForAll, stackTraceLogType);
             }
         }

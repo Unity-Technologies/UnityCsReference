@@ -13,10 +13,10 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
     private static GUIStyle kDropDownStyle = null;
     private static Color kMissingOverrideColor = new Color(1.0f, 0.11f, 0.11f, 1.0f);
 
-    protected readonly GUIContent ExposePropertyContent = EditorGUIUtility.TextContent("Expose Property");
-    protected readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TextContent("Unexpose Property");
-    protected readonly GUIContent NotFoundOn = EditorGUIUtility.TextContent("not found on");
-    protected readonly GUIContent OverridenByContent = EditorGUIUtility.TextContent("Overriden by ");
+    protected readonly GUIContent ExposePropertyContent = EditorGUIUtility.TrTextContent("Expose Property");
+    protected readonly GUIContent UnexposePropertyContent = EditorGUIUtility.TrTextContent("Unexpose Property");
+    protected readonly GUIContent NotFoundOn = EditorGUIUtility.TrTextContent("not found on");
+    protected readonly GUIContent OverridenByContent = EditorGUIUtility.TrTextContent("Overriden by ");
 
     private GUIContent m_ModifiedLabel = new GUIContent();
 

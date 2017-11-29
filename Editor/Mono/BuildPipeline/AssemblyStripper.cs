@@ -170,7 +170,7 @@ namespace UnityEditorInternal
                 });
             }
 
-            if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
+            if (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)))
             {
                 var il2cppFolder = Path.Combine(platformProvider.il2CppFolder, "LinkerDescriptors");
                 blacklists = blacklists.Concat(Directory.GetFiles(il2cppFolder, "*45.xml"));

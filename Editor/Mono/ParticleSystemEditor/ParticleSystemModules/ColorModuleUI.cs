@@ -11,7 +11,7 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent color = EditorGUIUtility.TextContent("Color|Controls the color of each particle during its lifetime.");
+            public GUIContent color = EditorGUIUtility.TrTextContent("Color", "Controls the color of each particle during its lifetime.");
         }
         static Texts s_Texts;
         SerializedMinMaxGradient m_Gradient;

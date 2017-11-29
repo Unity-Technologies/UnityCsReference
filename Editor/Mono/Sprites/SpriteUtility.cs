@@ -19,12 +19,12 @@ namespace UnityEditor
     {
         static class SpriteUtilityStrings
         {
-            public static readonly GUIContent saveAnimDialogMessage = EditorGUIUtility.TextContent("Create a new animation for the game object '{0}':");
-            public static readonly GUIContent saveAnimDialogTitle = EditorGUIUtility.TextContent("Create New Animation");
-            public static readonly GUIContent saveAnimDialogName = EditorGUIUtility.TextContent("New Animation");
-            public static readonly GUIContent unableToFindSpriteRendererWarning = EditorGUIUtility.TextContent("There should be a SpriteRenderer in dragged object");
-            public static readonly GUIContent unableToAddSpriteRendererWarning = EditorGUIUtility.TextContent("Unable to add SpriteRenderer into Gameobject.");
-            public static readonly GUIContent failedToCreateAnimationError = EditorGUIUtility.TextContent("Failed to create animation for dragged object");
+            public static readonly GUIContent saveAnimDialogMessage = EditorGUIUtility.TrTextContent("Create a new animation for the game object '{0}':");
+            public static readonly GUIContent saveAnimDialogTitle = EditorGUIUtility.TrTextContent("Create New Animation");
+            public static readonly GUIContent saveAnimDialogName = EditorGUIUtility.TrTextContent("New Animation");
+            public static readonly GUIContent unableToFindSpriteRendererWarning = EditorGUIUtility.TrTextContent("There should be a SpriteRenderer in dragged object");
+            public static readonly GUIContent unableToAddSpriteRendererWarning = EditorGUIUtility.TrTextContent("Unable to add SpriteRenderer into Gameobject.");
+            public static readonly GUIContent failedToCreateAnimationError = EditorGUIUtility.TrTextContent("Failed to create animation for dragged object");
         }
 
         private static Material s_PreviewSpriteDefaultMaterial;

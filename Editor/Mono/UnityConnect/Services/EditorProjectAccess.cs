@@ -135,7 +135,7 @@ namespace UnityEditor.Web
 
         public void GoToHistory()
         {
-            CollabHistoryWindow.ShowHistoryWindow().Focus();
+            CollabHistoryWindow.ShowHistoryWindow();
         }
 
         public static void ShowToolbarDropdown()

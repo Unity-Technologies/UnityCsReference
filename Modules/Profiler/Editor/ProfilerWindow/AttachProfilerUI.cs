@@ -66,7 +66,7 @@ namespace UnityEditor
         {
             // Profiler.DirectIPConnect is a blocking call, so a notification message and the console are used to show progress
             ConsoleWindow.ShowConsoleWindow(true);
-            ms_NotificationMessage = new GUIContent("Connecting to player...(this can take a while)");
+            ms_NotificationMessage = EditorGUIUtility.TrTextContent("Connecting to player...(this can take a while)");
             ProfilerDriver.DirectIPConnect(ip);
             ms_NotificationMessage = null;
         }
@@ -75,7 +75,7 @@ namespace UnityEditor
         {
             // Profiler.DirectURLConnect is a blocking call, so a notification message and the console are used to show progress
             ConsoleWindow.ShowConsoleWindow(true);
-            ms_NotificationMessage = new GUIContent("Connecting to player...(this can take a while)");
+            ms_NotificationMessage = EditorGUIUtility.TrTextContent("Connecting to player...(this can take a while)");
             ProfilerDriver.DirectURLConnect(url);
             ms_NotificationMessage = null;
         }

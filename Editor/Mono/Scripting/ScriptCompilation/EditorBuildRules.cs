@@ -513,17 +513,40 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var monoAssemblyDirectory = MonoInstallationFinder.GetProfileDirectory(profile,
                     MonoInstallationFinder.MonoBleedingEdgeInstallation);
 
-            additionalReferences.AddRange(GetAdditionalReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
-
-            // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
-            // used later by the language compilers.
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
             {
-                var facadesDirectory = Path.Combine(monoAssemblyDirectory, "Facades");
-                additionalReferences.AddRange(Directory.GetFiles(facadesDirectory, "*.dll"));
+                additionalReferences.AddRange(GetNetStandardClassLibraries());
+            }
+            else
+            {
+                additionalReferences.AddRange(GetAdditionalReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
+
+                // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
+                // used later by the language compilers.
+                if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+                {
+                    var facadesDirectory = Path.Combine(monoAssemblyDirectory, "Facades");
+                    additionalReferences.AddRange(Directory.GetFiles(facadesDirectory, "*.dll"));
+                }
             }
 
             return additionalReferences;
+        }
+
+        internal static string[] GetNetStandardClassLibraries()
+        {
+            var classLibraries = new List<string>();
+
+            // Add the .NET Standard 2.0 reference assembly
+            classLibraries.Add(Path.Combine(NetStandardFinder.GetReferenceDirectory(), "netstandard.dll"));
+
+            // Add the .NET Standard 2.0 compat shims
+            classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetNetStandardCompatShimsDirectory(), "*.dll"));
+
+            // Add the .NET Framework compat shims
+            classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory(), "*.dll"));
+
+            return classLibraries.ToArray();
         }
 
         internal static string[] GetAdditionalReferences()

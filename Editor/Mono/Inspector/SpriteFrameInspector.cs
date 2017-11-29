@@ -15,19 +15,19 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] spriteAlignmentOptions =
             {
-                EditorGUIUtility.TextContent("Center"),
-                EditorGUIUtility.TextContent("Top Left"),
-                EditorGUIUtility.TextContent("Top"),
-                EditorGUIUtility.TextContent("Top Right"),
-                EditorGUIUtility.TextContent("Left"),
-                EditorGUIUtility.TextContent("Right"),
-                EditorGUIUtility.TextContent("Bottom Left"),
-                EditorGUIUtility.TextContent("Bottom"),
-                EditorGUIUtility.TextContent("Bottom Right"),
-                EditorGUIUtility.TextContent("Custom"),
+                EditorGUIUtility.TrTextContent("Center"),
+                EditorGUIUtility.TrTextContent("Top Left"),
+                EditorGUIUtility.TrTextContent("Top"),
+                EditorGUIUtility.TrTextContent("Top Right"),
+                EditorGUIUtility.TrTextContent("Left"),
+                EditorGUIUtility.TrTextContent("Right"),
+                EditorGUIUtility.TrTextContent("Bottom Left"),
+                EditorGUIUtility.TrTextContent("Bottom"),
+                EditorGUIUtility.TrTextContent("Bottom Right"),
+                EditorGUIUtility.TrTextContent("Custom"),
             };
 
-            public static readonly GUIContent spriteAlignment = EditorGUIUtility.TextContent("Pivot|Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
+            public static readonly GUIContent spriteAlignment = EditorGUIUtility.TrTextContent("Pivot", "Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
         }
 
         private Sprite sprite
@@ -212,12 +212,14 @@ namespace UnityEditor
             }
             else
             {
-                copyMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
-
-                copyMaterial.mainTexture = texture;
-                copyMaterial.mainTextureScale = Vector2.one;
-                copyMaterial.mainTextureOffset = Vector2.zero;
-                copyMaterial.SetPass(0);
+                if (texture != null)
+                {
+                    copyMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
+                    copyMaterial.mainTexture = texture;
+                    copyMaterial.mainTextureScale = Vector2.one;
+                    copyMaterial.mainTextureOffset = Vector2.zero;
+                    copyMaterial.SetPass(0);
+                }
             }
 
 
@@ -258,12 +260,9 @@ namespace UnityEditor
 
             Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
             copy.hideFlags = HideFlags.HideAndDontSave;
-            if (texture != null)
-            {
-                copy.filterMode = texture.filterMode;
-                copy.anisoLevel = texture.anisoLevel;
-                copy.wrapMode = texture.wrapMode;
-            }
+            copy.filterMode = texture != null ? texture.filterMode : FilterMode.Point;
+            copy.anisoLevel = texture != null ? texture.anisoLevel : 0;
+            copy.wrapMode = texture != null ? texture.wrapMode : TextureWrapMode.Clamp;
             copy.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             copy.Apply();
             RenderTexture.ReleaseTemporary(tmp);
@@ -292,7 +291,8 @@ namespace UnityEditor
 
         public override bool HasPreviewGUI()
         {
-            return (target != null);
+            var sprite = target as Sprite;
+            return (sprite != null) && UnityEditor.Sprites.SpriteUtility.GetSpriteTexture(sprite, false) != null;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)

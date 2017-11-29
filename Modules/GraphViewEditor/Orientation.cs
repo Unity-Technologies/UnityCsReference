@@ -4,8 +4,7 @@
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    enum Orientation
+    public enum Orientation
     {
         Horizontal,
         Vertical

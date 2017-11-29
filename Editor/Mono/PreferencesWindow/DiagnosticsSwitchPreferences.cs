@@ -20,7 +20,7 @@ namespace UnityEditor
             public GUIStyle title = "OL Title";
             public GUIStyle scrollArea = "OL Box";
             public Texture2D smallWarningIcon;
-            public GUIContent restartNeededWarning = new GUIContent("Some settings will not take effect until you restart Unity.");
+            public GUIContent restartNeededWarning = EditorGUIUtility.TrTextContent("Some settings will not take effect until you restart Unity.");
 
             public Resources()
             {
@@ -147,7 +147,7 @@ namespace UnityEditor
                 {
                     var redStyle = new GUIStyle();
                     redStyle.normal.textColor = Color.red;
-                    EditorGUI.LabelField(rowRect, labelText, new GUIContent("Unsupported type: " + diagnosticSwitch.value.GetType().Name), redStyle);
+                    EditorGUI.LabelField(rowRect, labelText, EditorGUIUtility.TrTextContent("Unsupported type: " + diagnosticSwitch.value.GetType().Name), redStyle);
                 }
             }
 

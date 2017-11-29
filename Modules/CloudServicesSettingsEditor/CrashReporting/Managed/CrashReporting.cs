@@ -61,9 +61,9 @@ namespace UnityEditor.CrashReporting
         {
             get
             {
-                if (!string.IsNullOrEmpty(ServiceBaseUrl) && !string.IsNullOrEmpty(PlayerSettings.cloudProjectId))
+                if (!string.IsNullOrEmpty(ServiceBaseUrl) && !string.IsNullOrEmpty(CloudProjectSettings.projectId))
                 {
-                    return new Uri(new Uri(ServiceBaseUrl), string.Format("token/{0}", PlayerSettings.cloudProjectId)).ToString();
+                    return new Uri(new Uri(ServiceBaseUrl), string.Format("token/{0}", CloudProjectSettings.projectId)).ToString();
                 }
 
                 return string.Empty;
@@ -88,8 +88,6 @@ namespace UnityEditor.CrashReporting
                 {
                     return string.Empty;
                 }
-
-                string cloudProjectId = PlayerSettings.cloudProjectId;
 
                 // Only OSX supports SSL certificate validation, disable checking on other platforms.
                 // Fix when a Unity Web framework supports SSL.

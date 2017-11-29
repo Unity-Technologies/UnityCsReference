@@ -566,6 +566,13 @@ namespace UnityEditor
             return EditorGUI.Popup(rect, intValue, options, ParticleSystemStyles.Get().popup);
         }
 
+        public static Enum GUIEnumPop(GUIContent label, Enum selected, params GUILayoutOption[] layoutOptions)
+        {
+            Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
+            rect = PrefixLabel(rect, label);
+            return EditorGUI.EnumPopup(rect, selected, ParticleSystemStyles.Get().popup);
+        }
+
         private static Color GetColor(SerializedMinMaxCurve mmCurve)
         {
             return mmCurve.m_Module.m_ParticleSystemUI.m_ParticleEffectUI.GetParticleSystemCurveEditor().GetCurveColor(mmCurve.maxCurve);
@@ -884,7 +891,15 @@ namespace UnityEditor
             rect = SubtractPopupWidth(rect);
             Rect r = rect;
 
-            float elementWidth = (rect.width - 2 * kSpacingSubLabel) / 3f;
+            float labelBorder = 2;
+            float[] labelWidth = new float[3]
+            {
+                ParticleSystemStyles.Get().label.CalcSize(GUIContent.Temp(x.text)).x + labelBorder,
+                ParticleSystemStyles.Get().label.CalcSize(GUIContent.Temp(y.text)).x + labelBorder,
+                ParticleSystemStyles.Get().label.CalcSize(GUIContent.Temp(z.text)).x + labelBorder
+            };
+
+            float fieldWidth = (rect.width - labelWidth[0] - labelWidth[1] - labelWidth[2]) / 3.0f;
 
             if (numLines > 1)
             {
@@ -895,7 +910,6 @@ namespace UnityEditor
                 PrefixLabel(rect, label);
                 r.y += r.height;
             }
-            r.width = elementWidth;
 
             // Scalar fields
             GUIContent[] labels = { x, y, z };
@@ -903,6 +917,7 @@ namespace UnityEditor
 
             if (mixedState)
             {
+                r.width = fieldWidth + labelWidth[0];
                 Label(r, GUIContent.Temp("-"));
             }
             else
@@ -911,26 +926,30 @@ namespace UnityEditor
                 {
                     for (int i = 0; i < curves.Length; ++i)
                     {
+                        r.width = fieldWidth + labelWidth[i] - labelBorder * 2;
+
                         Label(r, labels[i]);
                         EditorGUI.BeginChangeCheck();
-                        float newValue = FloatDraggable(r, curves[i].scalar, curves[i].m_RemapValue, kSubLabelWidth);
+                        float newValue = FloatDraggable(r, curves[i].scalar, curves[i].m_RemapValue, labelWidth[i]);
                         if (EditorGUI.EndChangeCheck() && !curves[i].signedRange)
                             curves[i].scalar.floatValue = Mathf.Max(newValue, 0f);
 
-                        r.x += elementWidth + kSpacingSubLabel;
+                        r.x += fieldWidth + labelWidth[i] + labelBorder;
                     }
                 }
                 else if (state == MinMaxCurveState.k_TwoScalars)
                 {
                     for (int i = 0; i < curves.Length; ++i)
                     {
+                        r.width = fieldWidth + labelWidth[i] - labelBorder * 2;
+
                         Label(r, labels[i]);
 
                         float minConstant = curves[i].minConstant;
                         float maxConstant = curves[i].maxConstant;
 
                         EditorGUI.BeginChangeCheck();
-                        maxConstant = FloatDraggable(r, maxConstant, curves[i].m_RemapValue, kSubLabelWidth, "g5");
+                        maxConstant = FloatDraggable(r, maxConstant, curves[i].m_RemapValue, labelWidth[i], "g5");
                         if (EditorGUI.EndChangeCheck())
                         {
                             curves[i].maxConstant = maxConstant;
@@ -939,28 +958,29 @@ namespace UnityEditor
                         r.y += kSingleLineHeight;
 
                         EditorGUI.BeginChangeCheck();
-                        minConstant = FloatDraggable(r, minConstant, curves[i].m_RemapValue, kSubLabelWidth, "g5");
+                        minConstant = FloatDraggable(r, minConstant, curves[i].m_RemapValue, labelWidth[i], "g5");
                         if (EditorGUI.EndChangeCheck())
                         {
                             curves[i].minConstant = minConstant;
                         }
 
-                        r.x += elementWidth + kSpacingSubLabel;
+                        r.x += fieldWidth + labelWidth[i] + labelBorder;
                         r.y -= kSingleLineHeight;
                     }
                 }
                 else
                 {
-                    r.width = elementWidth;
                     Rect previewRange = xCurve.signedRange ? kSignedRange : kUnsignedRange;
                     for (int i = 0; i < curves.Length; ++i)
                     {
+                        r.width = fieldWidth + labelWidth[i] - labelBorder * 2;
+
                         Label(r, labels[i]);
                         Rect r2 = r;
-                        r2.xMin += kSubLabelWidth;
+                        r2.xMin += labelWidth[i];
                         SerializedProperty minCurve = (state == MinMaxCurveState.k_TwoCurves) ? curves[i].minCurve : null;
                         GUICurveField(r2, curves[i].maxCurve, minCurve, GetColor(curves[i]), previewRange, curves[i].OnCurveAreaMouseDown);
-                        r.x += elementWidth + kSpacingSubLabel;
+                        r.x += fieldWidth + labelWidth[i] + labelBorder;
                     }
                 }
             }
@@ -1003,10 +1023,10 @@ namespace UnityEditor
                 if (minMaxCurves.Length == 0)
                     return;
 
-                GUIContent[] texts =        {   new GUIContent("Constant"),
-                                                new GUIContent("Curve"),
-                                                new GUIContent("Random Between Two Constants"),
-                                                new GUIContent("Random Between Two Curves") };
+                GUIContent[] texts =        {   EditorGUIUtility.TrTextContent("Constant"),
+                                                EditorGUIUtility.TrTextContent("Curve"),
+                                                EditorGUIUtility.TrTextContent("Random Between Two Constants"),
+                                                EditorGUIUtility.TrTextContent("Random Between Two Curves") };
                 MinMaxCurveState[] states = {   MinMaxCurveState.k_Scalar,
                                                 MinMaxCurveState.k_Curve,
                                                 MinMaxCurveState.k_TwoScalars,
@@ -1050,11 +1070,11 @@ namespace UnityEditor
         {
             if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
             {
-                GUIContent[] texts = {  new GUIContent("Color"),
-                                        new GUIContent("Gradient"),
-                                        new GUIContent("Random Between Two Colors"),
-                                        new GUIContent("Random Between Two Gradients"),
-                                        new GUIContent("Random Color")};
+                GUIContent[] texts = {  EditorGUIUtility.TrTextContent("Color"),
+                                        EditorGUIUtility.TrTextContent("Gradient"),
+                                        EditorGUIUtility.TrTextContent("Random Between Two Colors"),
+                                        EditorGUIUtility.TrTextContent("Random Between Two Gradients"),
+                                        EditorGUIUtility.TrTextContent("Random Color")};
                 MinMaxGradientState[] states = {    MinMaxGradientState.k_Color,
                                                     MinMaxGradientState.k_Gradient,
                                                     MinMaxGradientState.k_RandomBetweenTwoColors,
@@ -1101,7 +1121,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
             {
                 GenericMenu menu = new GenericMenu();
-                GUIContent[] texts = { new GUIContent("Constant Color"), new GUIContent("Random Between Two Colors") };
+                GUIContent[] texts = { EditorGUIUtility.TrTextContent("Constant Color"), EditorGUIUtility.TrTextContent("Random Between Two Colors") };
                 bool[] states = { false, true };
 
                 for (int i = 0; i < texts.Length; ++i)

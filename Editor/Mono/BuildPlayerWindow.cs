@@ -25,7 +25,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public static readonly GUIContent invalidColorSpaceMessage = EditorGUIUtility.TextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.");
+            public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle title = EditorStyles.boldLabel;
@@ -37,12 +37,21 @@ namespace UnityEditor
             public GUIStyle levelStringCounter = new GUIStyle("Label");
             public Vector2 toggleSize;
 
-            public GUIContent noSessionDialogText = EditorGUIUtility.TextContent("In order to publish your build to UDN, you need to sign in via the AssetStore and tick the 'Stay signed in' checkbox.");
-            public GUIContent platformTitle = EditorGUIUtility.TextContent("Platform|Which platform to build for");
-            public GUIContent switchPlatform = EditorGUIUtility.TextContent("Switch Platform");
-            public GUIContent build = EditorGUIUtility.TextContent("Build");
-            public GUIContent buildAndRun = EditorGUIUtility.TextContent("Build And Run");
-            public GUIContent scenesInBuild = EditorGUIUtility.TextContent("Scenes In Build|Which scenes to include in the build");
+            public GUIContent becauseYouAreNot = EditorGUIUtility.TrTextContent("Because you are not a member of this project this build will not access Unity services.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent noSessionDialogText = EditorGUIUtility.TrTextContent("In order to publish your build to UDN, you need to sign in via the AssetStore and tick the 'Stay signed in' checkbox.");
+            public GUIContent platformTitle = EditorGUIUtility.TrTextContent("Platform", "Which platform to build for");
+            public GUIContent switchPlatform = EditorGUIUtility.TrTextContent("Switch Platform");
+            public GUIContent build = EditorGUIUtility.TrTextContent("Build");
+            public GUIContent buildAndRun = EditorGUIUtility.TrTextContent("Build And Run");
+            public GUIContent scenesInBuild = EditorGUIUtility.TrTextContent("Scenes In Build", "Which scenes to include in the build");
+            public GUIContent checkOut = EditorGUIUtility.TrTextContent("Check out");
+            public GUIContent addOpenSource = EditorGUIUtility.TrTextContent("Add Open Scenes");
+            public string noModuleLoaded = L10n.Tr("No {0} module loaded.");
+            public GUIContent openDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
+            public string infoText = L10n.Tr("{0} is not included in your Unity Pro license. Your {0} build will include a Unity Personal Edition splash screen.\n\nYou must be eligible to use Unity Personal Edition to use this build option. Please refer to our EULA for further information.");
+            public GUIContent eula = EditorGUIUtility.TrTextContent("Eula");
+            public string addToYourPro = L10n.Tr("Add {0} to your Unity Pro license");
+            public GUIContent useNativeCompilation = EditorGUIUtility.TrTextContent("Use native compilation (no Mono runtime)");
 
             public Texture2D activePlatformIcon = EditorGUIUtility.IconContent("BuildSettings.SelectedIcon").image as Texture2D;
 
@@ -57,38 +66,38 @@ namespace UnityEditor
             public GUIContent[,] notLicensedMessages =
             {
                 { EditorGUIUtility.TextContent("Your license does not cover Standalone Publishing."), new GUIContent(""), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover iOS Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Tizen Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Xbox One Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Wii U Publishing."), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover iOS Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Tizen Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Xbox One Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Wii U Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
             };
 
             // ADD_NEW_PLATFORM_HERE
             private GUIContent[,] buildTargetNotInstalled =
             {
-                { EditorGUIUtility.TextContent("Standalone Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("iOS Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Apple TV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Android Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Tizen is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Wii U Player is not supported in this build.\nDownload a build that supports it."),  null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Standalone Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("iOS Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Apple TV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Android Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Tizen is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Wii U Player is not supported in this build.\nDownload a build that supports it."),  null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
             };
             public GUIContent GetTargetNotInstalled(int index, int item)
             {
@@ -102,18 +111,18 @@ namespace UnityEditor
             }
 
             // string and matching enum values for standalone subtarget dropdowm
-            public GUIContent debugBuild = EditorGUIUtility.TextContent("Development Build");
-            public GUIContent profileBuild = EditorGUIUtility.TextContent("Autoconnect Profiler");
-            public GUIContent allowDebugging = EditorGUIUtility.TextContent("Script Debugging");
-            public GUIContent waitForManagedDebugger = EditorGUIUtility.TextContent("Wait For Managed Debugger|Show a dialog where you can attach a managed debugger before any script execution.");
-            public GUIContent symlinkiOSLibraries = EditorGUIUtility.TextContent("Symlink Unity libraries");
-            public GUIContent explicitNullChecks = EditorGUIUtility.TextContent("Explicit Null Checks");
-            public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TextContent("Divide By Zero Checks");
-            public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TextContent("Array Bounds Checks");
-            public GUIContent enableHeadlessMode = EditorGUIUtility.TextContent("Headless Mode");
-            public GUIContent buildScriptsOnly = EditorGUIUtility.TextContent("Scripts Only Build");
-            public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TextContent("Learn about Unity Cloud Build");
-            public GUIContent compressionMethod = EditorGUIUtility.TextContent("Compression Method|Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
+            public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
+            public GUIContent profileBuild = EditorGUIUtility.TrTextContent("Autoconnect Profiler");
+            public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
+            public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
+            public GUIContent symlinkiOSLibraries = EditorGUIUtility.TrTextContent("Symlink Unity libraries");
+            public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
+            public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
+            public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
+            public GUIContent enableHeadlessMode = EditorGUIUtility.TrTextContent("Headless Mode");
+            public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build");
+            public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TrTextContent("Learn about Unity Cloud Build");
+            public GUIContent compressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
 
             public Compression[] compressionTypes =
             {
@@ -124,9 +133,9 @@ namespace UnityEditor
 
             public GUIContent[] compressionStrings =
             {
-                EditorGUIUtility.TextContent("Default"),
-                EditorGUIUtility.TextContent("LZ4"),
-                EditorGUIUtility.TextContent("LZ4HC"),
+                EditorGUIUtility.TrTextContent("Default"),
+                EditorGUIUtility.TrTextContent("LZ4"),
+                EditorGUIUtility.TrTextContent("LZ4HC"),
             };
 
             public Styles()
@@ -179,7 +188,7 @@ namespace UnityEditor
         {
             position = new Rect(50, 50, 540, 530);
             minSize = new Vector2(630, 580);
-            titleContent = new GUIContent("Build Settings");
+            titleContent = EditorGUIUtility.TrTextContent("Build Settings");
         }
 
         BuildPlayerSceneTreeView m_TreeView = null;
@@ -307,7 +316,7 @@ namespace UnityEditor
             }
 
             GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget);
-            if (GUILayout.Button(new GUIContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
             {
                 Selection.activeObject = Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings");
                 EditorWindow.GetWindow<InspectorWindow>();
@@ -325,7 +334,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             GUILayout.BeginVertical();
-            EditorGUILayout.HelpBox(EditorGUIUtility.TextContent("Unable to access Unity services. Please log in, or request membership to this project to use these services.").text, MessageType.Warning);
+            EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("Unable to access Unity services. Please log in, or request membership to this project to use these services.").text, MessageType.Warning);
             GUILayout.EndVertical();
             GUILayout.Space(5);
             GUILayout.EndHorizontal();
@@ -397,7 +406,7 @@ namespace UnityEditor
                 {
                     GUI.enabled = true;
 
-                    if (Provider.enabled && GUILayout.Button("Check out"))
+                    if (Provider.enabled && GUILayout.Button(styles.checkOut))
                     {
                         Asset asset = Provider.GetAssetByPath(kEditorBuildSettingsPath);
                         var assetList = new AssetList();
@@ -408,7 +417,7 @@ namespace UnityEditor
                     GUI.enabled = false;
                 }
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Add Open Scenes"))
+                if (GUILayout.Button(styles.addOpenSource))
                     AddOpenScenes();
                 GUILayout.EndHorizontal();
             }
@@ -595,8 +604,8 @@ namespace UnityEditor
 
             if (IsModuleInstalled(buildTargetGroup, buildTarget))
             {
-                GUILayout.Label("No " + BuildPlatforms.instance.GetModuleDisplayName(buildTargetGroup, buildTarget) + " module loaded.");
-                if (GUILayout.Button("Open Download Page", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(buildTargetGroup, buildTarget))));
+                if (GUILayout.Button(styles.openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {
                     string url = GetPlaybackEngineDownloadURL(moduleName);
                     Help.BrowseURL(url);
@@ -607,18 +616,15 @@ namespace UnityEditor
             else if (Application.HasProLicense() && !InternalEditorUtility.HasAdvancedLicenseOnBuildTarget(buildTarget))
             {
                 // Show copy for using personal edition build targets with pro edition editor
-                string infoText = string.Format("{0} is not included in your Unity Pro license. " +
-                        "Your {0} build will include a Unity Personal Edition splash screen." +
-                        "\n\nYou must be eligible to use Unity Personal Edition to use this build option. " +
-                        "Please refer to our EULA for further information.",
+                string infoText = string.Format(styles.infoText,
                         BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(infoText, EditorStyles.wordWrappedMiniLabel);
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("EULA", EditorStyles.miniButton))
+                if (GUILayout.Button(styles.eula, EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/legal/eula");
-                if (GUILayout.Button(string.Format("Add {0} to your Unity Pro license", BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget)), EditorStyles.miniButton))
+                if (GUILayout.Button(string.Format(styles.addToYourPro, BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget)), EditorStyles.miniButton))
                     Application.OpenURL("http://unity3d.com/get-unity");
                 GUILayout.EndHorizontal();
                 GUILayout.EndVertical();
@@ -854,7 +860,7 @@ namespace UnityEditor
             {
                 enableBuildAndRunButton = false;
                 enableBuildButton = false;
-                EditorGUILayout.HelpBox(Styles.invalidColorSpaceMessage.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(styles.invalidColorSpaceMessage);
             }
 
             GUILayout.BeginHorizontal();
@@ -862,7 +868,7 @@ namespace UnityEditor
             if (EditorGUILayout.LinkLabel(styles.learnAboutUnityCloudBuild))
             {
                 Application.OpenURL(string.Format("{0}/from/editor/buildsettings?upid={1}&pid={2}&currentplatform={3}&selectedplatform={4}&unityversion={5}",
-                        UnityEditorInternal.WebURLs.cloudBuildPage, PlayerSettings.cloudProjectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, CalculateSelectedBuildTarget(), Application.unityVersion));
+                        UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, CalculateSelectedBuildTarget(), Application.unityVersion));
             }
             GUILayout.EndHorizontal();
             // Space 6 for alignment with platform column and to reduce missclicks with Build And Run button

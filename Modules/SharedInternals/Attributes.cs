@@ -56,6 +56,16 @@ namespace UnityEngine.Scripting
     [VisibleToOtherModules]
     internal class GenerateManagedProxyAttribute : Attribute
     {
+        public GenerateManagedProxyAttribute()
+        {
+        }
+
+        public GenerateManagedProxyAttribute(string nativeType)
+        {
+            NativeType = nativeType;
+        }
+
+        public string NativeType { get; set; }
     }
 
     // NOTE(rb): This is a temporary attribute that UnityBindingsParser will

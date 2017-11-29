@@ -200,12 +200,13 @@ namespace UnityEditor
             if (targets.Length == 1)
             {
                 var assetPath = AssetDatabase.GetAssetPath(target);
-                if (!string.IsNullOrEmpty(assetPath))
+                var assemblyName = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
+                // assemblyName is null for MonoScript's inside assemblies.
+                if (assemblyName != null)
                 {
                     GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
 
-                    var assembly = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
-                    EditorGUILayout.LabelField("Filename", assembly);
+                    EditorGUILayout.LabelField("Filename", assemblyName);
 
                     var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
 

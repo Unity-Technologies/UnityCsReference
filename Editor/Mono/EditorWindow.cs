@@ -7,7 +7,6 @@ using System.Linq;
 using System;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.CSSLayout;
 
 namespace UnityEditor
 {
@@ -41,8 +40,7 @@ namespace UnityEditor
 
         VisualElement m_RootVisualContainer;
 
-        internal
-        VisualElement rootVisualContainer
+        internal VisualElement rootVisualContainer
         {
             get
             {
@@ -107,16 +105,13 @@ namespace UnityEditor
             m_PersistentViewDataDictionary = null;
         }
 
-
-
         // The GameView rect is in GUI space of the view
         Rect m_GameViewRect;
         Rect m_GameViewClippedRect;
         Vector2 m_GameViewTargetSize;
 
         bool m_DontClearBackground;
-#pragma warning disable 649
-        EventInterests m_EventInterests;
+        EventInterests m_EventInterests = new EventInterests();
 
         // Dockarea we're inside.
         [NonSerialized]

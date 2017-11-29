@@ -161,8 +161,15 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyNameFromScriptPath(EditorCompilation editorCompilation, string sourceFilePath)
         {
-            var targetAssembly = editorCompilation.GetTargetAssembly(sourceFilePath);
-            return targetAssembly.Name;
+            try
+            {
+                var targetAssembly = editorCompilation.GetTargetAssembly(sourceFilePath);
+                return targetAssembly.Name;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)

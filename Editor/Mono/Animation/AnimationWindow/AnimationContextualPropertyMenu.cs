@@ -17,14 +17,14 @@ namespace UnityEditorInternal
 
         IAnimationContextualResponder m_Responder;
 
-        private static GUIContent addKeyContent = EditorGUIUtility.TextContent("Add Key");
-        private static GUIContent updateKeyContent = EditorGUIUtility.TextContent("Update Key");
-        private static GUIContent removeKeyContent = EditorGUIUtility.TextContent("Remove Key");
-        private static GUIContent removeCurveContent = EditorGUIUtility.TextContent("Remove All Keys");
-        private static GUIContent goToPreviousKeyContent = EditorGUIUtility.TextContent("Go to Previous Key");
-        private static GUIContent goToNextKeyContent = EditorGUIUtility.TextContent("Go to Next Key");
-        private static GUIContent addCandidatesContent = EditorGUIUtility.TextContent("Key All Modified");
-        private static GUIContent addAnimatedContent = EditorGUIUtility.TextContent("Key All Animated");
+        private static GUIContent addKeyContent = EditorGUIUtility.TrTextContent("Add Key");
+        private static GUIContent updateKeyContent = EditorGUIUtility.TrTextContent("Update Key");
+        private static GUIContent removeKeyContent = EditorGUIUtility.TrTextContent("Remove Key");
+        private static GUIContent removeCurveContent = EditorGUIUtility.TrTextContent("Remove All Keys");
+        private static GUIContent goToPreviousKeyContent = EditorGUIUtility.TrTextContent("Go to Previous Key");
+        private static GUIContent goToNextKeyContent = EditorGUIUtility.TrTextContent("Go to Next Key");
+        private static GUIContent addCandidatesContent = EditorGUIUtility.TrTextContent("Key All Modified");
+        private static GUIContent addAnimatedContent = EditorGUIUtility.TrTextContent("Key All Animated");
 
         public AnimationPropertyContextualMenu()
         {

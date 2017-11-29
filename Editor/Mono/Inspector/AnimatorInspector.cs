@@ -29,9 +29,9 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent applyRootMotion = new GUIContent(EditorGUIUtility.TextContent("Apply Root Motion"));
-            public GUIContent updateMode = new GUIContent(EditorGUIUtility.TextContent("Update Mode"));
-            public GUIContent cullingMode = new GUIContent(EditorGUIUtility.TextContent("Culling Mode"));
+            public GUIContent applyRootMotion = new GUIContent(EditorGUIUtility.TrTextContent("Apply Root Motion"));
+            public GUIContent updateMode = new GUIContent(EditorGUIUtility.TrTextContent("Update Mode"));
+            public GUIContent cullingMode = new GUIContent(EditorGUIUtility.TrTextContent("Culling Mode"));
 
             public Styles()
             {

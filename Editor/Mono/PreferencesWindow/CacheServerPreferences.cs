@@ -17,13 +17,13 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent browse = EditorGUIUtility.TextContent("Browse...");
-            public static readonly GUIContent maxCacheSize = EditorGUIUtility.TextContent("Maximum Cache Size (GB)|The size of the local asset cache server folder will be kept below this maximum value.");
-            public static readonly GUIContent customCacheLocation = EditorGUIUtility.TextContent("Custom cache location|Specify the local asset cache server folder location.");
-            public static readonly GUIContent cacheFolderLocation = EditorGUIUtility.TextContent("Cache Folder Location|The local asset cache server folder is shared between all projects.");
-            public static readonly GUIContent cleanCache = EditorGUIUtility.TextContent("Clean Cache");
-            public static readonly GUIContent enumerateCache = EditorGUIUtility.TextContent("Check Cache Size|Check the size of the local asset cache server - can take a while");
-            public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TextContent("Browse for local asset cache server location");
+            public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
+            public static readonly GUIContent maxCacheSize = EditorGUIUtility.TrTextContent("Maximum Cache Size (GB)", "The size of the local asset cache server folder will be kept below this maximum value.");
+            public static readonly GUIContent customCacheLocation = EditorGUIUtility.TrTextContent("Custom cache location", "Specify the local asset cache server folder location.");
+            public static readonly GUIContent cacheFolderLocation = EditorGUIUtility.TrTextContent("Cache Folder Location", "The local asset cache server folder is shared between all projects.");
+            public static readonly GUIContent cleanCache = EditorGUIUtility.TrTextContent("Clean Cache");
+            public static readonly GUIContent enumerateCache = EditorGUIUtility.TrTextContent("Check Cache Size", "Check the size of the local asset cache server - can take a while");
+            public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TrTextContent("Browse for local asset cache server location");
         }
 
         internal class Constants
@@ -243,7 +243,7 @@ namespace UnityEditor
                     bool locationExists = LocalCacheServer.CheckCacheLocationExists();
                     if (locationExists == true)
                     {
-                        GUIContent cacheSizeIs = EditorGUIUtility.TextContent("Cache size is unknown");
+                        GUIContent cacheSizeIs = EditorGUIUtility.TrTextContent("Cache size is unknown");
                         if (s_LocalCacheServerUsedSize != -1)
                         {
                             cacheSizeIs = EditorGUIUtility.TextContent("Cache size is " + EditorUtility.FormatBytes(s_LocalCacheServerUsedSize));

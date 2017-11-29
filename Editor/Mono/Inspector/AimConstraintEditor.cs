@@ -31,57 +31,29 @@ namespace UnityEditor
         internal override SerializedProperty isLocked { get { return m_IsLocked; } }
         internal override SerializedProperty sources { get { return m_Sources; } }
 
-        private class Styles : IConstraintStyle
+        private class Styles : ConstraintStyleBase
         {
-            GUIContent m_Activate = EditorGUIUtility.TextContent("Activate|Activate the constraint at the current offset from the sources.");
-            GUIContent m_Zero = EditorGUIUtility.TextContent("Zero|Activate the constraint at zero offset from the sources.");
+            GUIContent m_RotationAtRest = EditorGUIUtility.TrTextContent("Rotation At Rest", "The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.");
+            GUIContent m_RotationOffset = EditorGUIUtility.TrTextContent("Rotation Offset", "The offset from the constrained orientation.");
 
-            GUIContent m_RotationAtRest = EditorGUIUtility.TextContent("Rotation At Rest|The orientation of the constrained object when the weights of the sources add up to zero or when all the rotation axes are disabled.");
-            GUIContent m_RotationOffset = EditorGUIUtility.TextContent("Rotation Offset|The offset from the constrained orientation.");
+            GUIContent m_RotationAxes = EditorGUIUtility.TrTextContent("Freeze Rotation Axes", "The axes along which the constraint is applied.");
 
-            GUIContent m_Sources = EditorGUIUtility.TextContent("Sources");
-
-            GUIContent m_Weight = EditorGUIUtility.TextContent("Weight");
-
-            GUIContent m_RotationAxes = EditorGUIUtility.TextContent("Freeze Rotation Axes|The axes along which the constraint is applied.");
-
-            GUIContent m_IsActive = EditorGUIUtility.TextContent("Is Active");
-            GUIContent m_IsLocked = EditorGUIUtility.TextContent("Lock|When set, evaluate with the current offset. When not set, update the offset based on the current transform.");
-
-            GUIContent[] m_Axes =
-            {
-                EditorGUIUtility.TextContent("X"),
-                EditorGUIUtility.TextContent("Y"),
-                EditorGUIUtility.TextContent("Z")
-            };
-
-            GUIContent m_ConstraintSettings = EditorGUIUtility.TextContent("Constraint Settings");
-
-            GUIContent m_AimVector = EditorGUIUtility.TextContent("Aim Vector|Specifies which axis of the constrained object should aim at the target.");
-            GUIContent m_UpVector = EditorGUIUtility.TextContent("Up Vector|Specifies the direction of the up vector in local space.");
-            GUIContent m_WorldUpVector = EditorGUIUtility.TextContent("World Up Vector|Specifies the direction of the global up vector.");
-            GUIContent m_WorldUpObject = EditorGUIUtility.TextContent("World Up Object|The reference object when the World Up Type is either Object Up or Object Rotation Up.");
-            GUIContent m_WorldUpType = EditorGUIUtility.TextContent("World Up Type|Specifies how the world up vector should be computed.");
+            GUIContent m_AimVector = EditorGUIUtility.TrTextContent("Aim Vector", "Specifies which axis of the constrained object should aim at the target.");
+            GUIContent m_UpVector = EditorGUIUtility.TrTextContent("Up Vector", "Specifies the direction of the up vector in local space.");
+            GUIContent m_WorldUpVector = EditorGUIUtility.TrTextContent("World Up Vector", "Specifies the direction of the global up vector.");
+            GUIContent m_WorldUpObject = EditorGUIUtility.TrTextContent("World Up Object", "The reference object when the World Up Type is either Object Up or Object Rotation Up.");
+            GUIContent m_WorldUpType = EditorGUIUtility.TrTextContent("World Up Type", "Specifies how the world up vector should be computed.");
             GUIContent[] m_WorldUpTypes =
             {
-                EditorGUIUtility.TextContent("Scene Up|Use the Y axis as the world up vector."),
-                EditorGUIUtility.TextContent("Object Up|Use a vector that points to the reference object as the world up vector."),
-                EditorGUIUtility.TextContent("Object Rotation Up|Use a vector defined in the reference object's local space as the world up vector."),
-                EditorGUIUtility.TextContent("Vector|The world up vector is user defined."),
-                EditorGUIUtility.TextContent("None|The world up vector is ignored.")
+                EditorGUIUtility.TrTextContent("Scene Up", "Use the Y axis as the world up vector."),
+                EditorGUIUtility.TrTextContent("Object Up", "Use a vector that points to the reference object as the world up vector."),
+                EditorGUIUtility.TrTextContent("Object Rotation Up", "Use a vector defined in the reference object's local space as the world up vector."),
+                EditorGUIUtility.TrTextContent("Vector", "The world up vector is user defined."),
+                EditorGUIUtility.TrTextContent("None", "The world up vector is ignored.")
             };
-
-            public GUIContent Activate { get { return m_Activate; } }
-            public GUIContent Zero { get { return m_Zero; } }
-            public GUIContent AtRest { get { return m_RotationAtRest; } }
-            public GUIContent Offset { get { return m_RotationOffset; } }
-            public GUIContent Sources { get { return m_Sources; } }
-            public GUIContent Weight { get { return m_Weight; } }
+            public override GUIContent AtRest { get { return m_RotationAtRest; } }
+            public override GUIContent Offset { get { return m_RotationOffset; } }
             public GUIContent FreezeAxes { get { return m_RotationAxes; } }
-            public GUIContent IsActive { get { return m_IsActive; } }
-            public GUIContent IsLocked { get { return m_IsLocked; } }
-            public GUIContent[] Axes { get { return m_Axes; } }
-            public GUIContent ConstraintSettings { get { return m_ConstraintSettings; } }
             public GUIContent AimVector { get { return m_AimVector; } }
             public GUIContent UpVector { get { return m_UpVector; } }
             public GUIContent WorldUpVector { get { return m_WorldUpVector; } }
@@ -120,7 +92,7 @@ namespace UnityEditor
                 (t as AimConstraint).transform.SetLocalEulerAngles(atRest.vector3Value, RotationOrder.OrderZXY);
         }
 
-        internal override void ShowOffset<T>(IConstraintStyle style)
+        internal override void ShowOffset<T>(ConstraintStyleBase style)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(offset, style.Offset);

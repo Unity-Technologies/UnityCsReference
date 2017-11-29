@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEditor;
+using System.Linq;
 
 namespace UnityEditor.Modules
 {
@@ -93,10 +94,13 @@ namespace UnityEditor.Modules
 
         public string FixTargetOSVersion(string version)
         {
-            var decimalIndex = version.IndexOf('.');
-            if (decimalIndex < 0)
+            var decimalIndexes = Enumerable.Range(0, version.Length).Where(i => version[i] == '.').ToArray();
+
+            if (decimalIndexes.Length <= 0)
                 return (version + ".0").Trim();
-            else if (decimalIndex == version.Length - 1)
+            else if (decimalIndexes.Length > 1)
+                return (version.Substring(0, decimalIndexes[1])).Trim();
+            else if (decimalIndexes.Length == 1 && decimalIndexes[0] == version.Length - 1)
                 return (version + "0").Trim();
             return version.Trim();
         }
@@ -107,7 +111,7 @@ namespace UnityEditor.Modules
         }
 
         protected SerializedProperty m_MTRendering;
-        private static readonly GUIContent m_MTRenderingTooltip = EditorGUIUtility.TextContent("Multithreaded Rendering*");
+        private static readonly GUIContent m_MTRenderingTooltip = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
 
         protected virtual GUIContent MultithreadedRenderingGUITooltip()
         {

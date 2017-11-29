@@ -18,7 +18,8 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent materialLabel = EditorGUIUtility.TextContent("Material");
+            public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by TilemapRenderer");
+            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "TilemapRenderer's interaction with a Sprite Mask");
         }
 
         public override void OnEnable()
@@ -39,7 +40,7 @@ namespace UnityEditor
             RenderSortingLayerFields();
 
             EditorGUILayout.Space();
-            EditorGUILayout.PropertyField(m_MaskInteraction);
+            EditorGUILayout.PropertyField(m_MaskInteraction, Styles.maskInteractionLabel);
             RenderRenderingLayer();
             serializedObject.ApplyModifiedProperties();
         }

@@ -21,8 +21,8 @@ namespace UnityEditor
     {
         protected static class Styles
         {
-            public static readonly GUIContent instructionsLabel = new GUIContent("Instructions");
-            public static readonly GUIContent emptyViewLabel = new GUIContent("Select an Instruction on the left to see details");
+            public static readonly GUIContent instructionsLabel = EditorGUIUtility.TrTextContent("Instructions");
+            public static readonly GUIContent emptyViewLabel = EditorGUIUtility.TrTextContent("Select an Instruction on the left to see details");
 
             public static readonly GUIStyle centeredLabel = new GUIStyle("PR Label");
 

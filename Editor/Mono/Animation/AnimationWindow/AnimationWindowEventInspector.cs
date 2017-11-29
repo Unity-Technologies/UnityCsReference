@@ -123,7 +123,7 @@ namespace UnityEditor
             {
                 EditorGUI.showMixedValue = !singleFunctionName;
                 string oldFunctionName = singleFunctionName ? firstEvent.functionName : "";
-                string functionName = EditorGUILayout.TextField(new GUIContent("Function"), oldFunctionName);
+                string functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), oldFunctionName);
                 if (functionName != oldFunctionName)
                 {
                     foreach (var evt in data.selectedEvents)
@@ -158,7 +158,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(true))
             {
-                dummyEvent.functionName = EditorGUILayout.TextField(new GUIContent("Function"), dummyEvent.functionName);
+                dummyEvent.functionName = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent("Function"), dummyEvent.functionName);
                 DoEditRegularParameters(new AnimationEvent[] {dummyEvent}, typeof(AnimationEvent));
             }
         }

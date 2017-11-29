@@ -64,47 +64,47 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent AnimationType = EditorGUIUtility.TextContent("Animation Type|The type of animation to support / import.");
+            public GUIContent AnimationType = EditorGUIUtility.TrTextContent("Animation Type", "The type of animation to support / import.");
             public GUIContent[] AnimationTypeOpt =
             {
-                EditorGUIUtility.TextContent("None|No animation present."),
-                EditorGUIUtility.TextContent("Legacy|Legacy animation system."),
-                EditorGUIUtility.TextContent("Generic|Generic Mecanim animation."),
-                EditorGUIUtility.TextContent("Humanoid|Humanoid Mecanim animation system.")
+                EditorGUIUtility.TrTextContent("None", "No animation present."),
+                EditorGUIUtility.TrTextContent("Legacy", "Legacy animation system."),
+                EditorGUIUtility.TrTextContent("Generic", "Generic Mecanim animation."),
+                EditorGUIUtility.TrTextContent("Humanoid", "Humanoid Mecanim animation system.")
             };
 
-            public GUIContent AnimLabel = EditorGUIUtility.TextContent("Generation|Controls how animations are imported.");
+            public GUIContent AnimLabel = EditorGUIUtility.TrTextContent("Generation", "Controls how animations are imported.");
             public GUIContent[] AnimationsOpt =
             {
-                EditorGUIUtility.TextContent("Don't Import|No animation or skinning is imported."),
-                EditorGUIUtility.TextContent("Store in Original Roots (Deprecated)|Animations are stored in the root objects of your animation package (these might be different from the root objects in Unity)."),
-                EditorGUIUtility.TextContent("Store in Nodes (Deprecated)|Animations are stored together with the objects they animate. Use this when you have a complex animation setup and want full scripting control."),
-                EditorGUIUtility.TextContent("Store in Root (Deprecated)|Animations are stored in the scene's transform root objects. Use this when animating anything that has a hierarchy."),
-                EditorGUIUtility.TextContent("Store in Root (New)")
+                EditorGUIUtility.TrTextContent("Don't Import", "No animation or skinning is imported."),
+                EditorGUIUtility.TrTextContent("Store in Original Roots (Deprecated)", "Animations are stored in the root objects of your animation package (these might be different from the root objects in Unity)."),
+                EditorGUIUtility.TrTextContent("Store in Nodes (Deprecated)", "Animations are stored together with the objects they animate. Use this when you have a complex animation setup and want full scripting control."),
+                EditorGUIUtility.TrTextContent("Store in Root (Deprecated)", "Animations are stored in the scene's transform root objects. Use this when animating anything that has a hierarchy."),
+                EditorGUIUtility.TrTextContent("Store in Root (New)")
             };
             public GUIStyle helpText = new GUIStyle(EditorStyles.helpBox);
 
-            public GUIContent avatar = new GUIContent("Animator");
-            public GUIContent configureAvatar = EditorGUIUtility.TextContent("Configure...");
-            public GUIContent avatarValid = EditorGUIUtility.TextContent("\u2713");
-            public GUIContent avatarInvalid = EditorGUIUtility.TextContent("\u2715");
-            public GUIContent avatarPending = EditorGUIUtility.TextContent("...");
+            public GUIContent avatar = EditorGUIUtility.TrTextContent("Animator");
+            public GUIContent configureAvatar = EditorGUIUtility.TrTextContent("Configure...");
+            public GUIContent avatarValid = EditorGUIUtility.TrTextContent("\u2713");
+            public GUIContent avatarInvalid = EditorGUIUtility.TrTextContent("\u2715");
+            public GUIContent avatarPending = EditorGUIUtility.TrTextContent("...");
 
 
-            public GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TextContent("Update|Update the copy of the muscle definition from the source.");
-            public GUIContent RootNode = EditorGUIUtility.TextContent("Root node|Specify the root node used to extract the animation translation.");
+            public GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
+            public GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
 
-            public GUIContent AvatarDefinition = EditorGUIUtility.TextContent("Avatar Definition|Choose between Create From This Model or Copy From Other Avatar. The first one create an Avatar for this file and the second one use an Avatar from another file to import animation.");
+            public GUIContent AvatarDefinition = EditorGUIUtility.TrTextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one create an Avatar for this file and the second one use an Avatar from another file to import animation.");
 
             public GUIContent[] AvatarDefinitionOpt =
             {
-                EditorGUIUtility.TextContent("Create From This Model|Create an Avatar based on the model from this file."),
-                EditorGUIUtility.TextContent("Copy From Other Avatar|Copy an Avatar from another file to import muscle clip. No avatar will be created.")
+                EditorGUIUtility.TrTextContent("Create From This Model", "Create an Avatar based on the model from this file."),
+                EditorGUIUtility.TrTextContent("Copy From Other Avatar", "Copy an Avatar from another file to import muscle clip. No avatar will be created.")
             };
 
-            public GUIContent UpdateReferenceClips = EditorGUIUtility.TextContent("Update reference clips|Click on this button to update all the @convention file referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
+            public GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention file referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
 
-            public GUIContent ImportMessages = EditorGUIUtility.TextContent("Import Messages");
+            public GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
 
             public Styles()
             {
@@ -137,7 +137,7 @@ namespace UnityEditor
                 m_RootMotionBoneList[i] = new GUIContent(transformPaths[i]);
 
             if (m_RootMotionBoneList.Length > 0)
-                m_RootMotionBoneList[0] = new GUIContent("None");
+                m_RootMotionBoneList[0] = EditorGUIUtility.TrTextContent("None");
 
             rootIndex = ArrayUtility.FindIndex(m_RootMotionBoneList, delegate(GUIContent content) { return FileUtil.GetLastPathNameComponent(content.text) == m_RootMotionBoneName.stringValue; });
             rootIndex = rootIndex < 1 ? 0 : rootIndex;

@@ -27,7 +27,7 @@ namespace UnityEditor
         {
             public static readonly string defaultWindowPopupText = "<Please Select>";
 
-            public static readonly GUIContent inspectedWindowLabel = new GUIContent("Inspected View: ");
+            public static readonly GUIContent inspectedWindowLabel = EditorGUIUtility.TrTextContent("Inspected View: ");
 
             public static readonly GUIStyle listItem = new GUIStyle("PR Label");
             public static readonly GUIStyle listItemBackground = new GUIStyle("CN EntryBackOdd");
@@ -216,7 +216,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent =  new GUIContent("GUI Inspector");
+            titleContent =  EditorGUIUtility.TrTextContent("GUI Inspector");
             GUIViewDebuggerHelper.onViewInstructionsChanged += OnInspectedViewChanged;
             GUIView serializedInspected = m_Inspected;
             inspected = null;
@@ -294,7 +294,7 @@ namespace UnityEditor
 
                 List<GUIContent> options = new List<GUIContent>(views.Count + 1);
 
-                options.Add(new GUIContent("None"));
+                options.Add(EditorGUIUtility.TrTextContent("None"));
 
                 int selectedIndex = 0;
                 List<GUIView> selectableViews = new List<GUIView>(views.Count + 1);

@@ -15,7 +15,7 @@ namespace UnityEditorInternal
     {
         public AnimationWindowState state { get; set; }
 
-        readonly GUIContent k_AnimatePropertyLabel = new GUIContent("Add Property");
+        readonly GUIContent k_AnimatePropertyLabel = EditorGUIUtility.TrTextContent("Add Property");
 
         private GUIStyle m_AnimationRowEvenStyle;
         private GUIStyle m_AnimationRowOddStyle;
@@ -578,9 +578,9 @@ namespace UnityEditorInternal
             {
                 string legacyWarning = state.activeAnimationClip.legacy ? " (Not fully supported in Legacy)" : "";
                 GenericMenu.MenuFunction2 nullMenuFunction2 = null;
-                menu.AddItem(new GUIContent("Interpolation/Euler Angles" + legacyWarning), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
-                menu.AddItem(new GUIContent("Interpolation/Euler Angles (Quaternion)"), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
-                menu.AddItem(new GUIContent("Interpolation/Quaternion"), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles" + legacyWarning), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles (Quaternion)"), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Quaternion"), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
             }
 
             // Menu items that are only applicaple when in animation mode:

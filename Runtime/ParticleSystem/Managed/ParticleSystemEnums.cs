@@ -89,7 +89,8 @@ namespace UnityEngine
         SkinnedMeshRenderer = 14,   // Emit from a skinned mesh renderer.
         BoxShell = 15,              // Emit from the surface of a box.
         BoxEdge = 16,               // Emit from the edges of a box.
-        Donut = 17                  // Emit in a donut volume.
+        Donut = 17,                 // Emit in a donut volume.
+        Rectangle = 18              // Emit from a rectangle.
     }
 
     // The mesh emission type
@@ -98,6 +99,15 @@ namespace UnityEngine
         Vertex = 0,                 // Emit from the vertices of the mesh.
         Edge = 1,                   // Emit from the edges of the mesh.
         Triangle = 2                // Emit from the surface of the mesh.
+    }
+
+    // The texture channel used for discarding particles
+    public enum ParticleSystemShapeTextureChannel
+    {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+        Alpha = 3
     }
 
     // The animation mode

@@ -5,13 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
-using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.Debugger
 {
@@ -98,17 +95,18 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             foreach (var attr in attrs)
                 elt.SetAttributeValue(attr.Key, attr.Value);
 
+            var elementText = ve is BaseTextElement ? (ve as BaseTextElement).text : "";
+
             if (!String.IsNullOrEmpty(ve.name) && ve.name[0] != '_')
                 elt.SetAttributeValue("name", ve.name);
             else if ((options & ExportOptions.AutoNameElements) == ExportOptions.AutoNameElements)
             {
-                var genName = ve.GetType().Name + (ve.text != null ? ve.text.Replace(" ", "") : "");
+                var genName = ve.GetType().Name + elementText.Replace(" ", "");
                 elt.SetAttributeValue("name", genName);
             }
 
-
-            if (!String.IsNullOrEmpty(ve.text))
-                elt.SetAttributeValue("text", ve.text);
+            if (!String.IsNullOrEmpty(elementText))
+                elt.SetAttributeValue("text", elementText);
 
             var classes = ve.GetClasses();
             if (classes.Any())

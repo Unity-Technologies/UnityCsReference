@@ -29,14 +29,14 @@ namespace UnityEditor
             public readonly GUIStyle sBigTitleInnerStyle    = "IN BigTitle inner";
             public readonly GUIStyle sToolBarButton         = "toolbarbutton";
 
-            public readonly GUIContent sSingleMode1         = EditorGUIUtility.IconContent("LookDevSingle1", "Single1|Single1 object view");
-            public readonly GUIContent sSingleMode2         = EditorGUIUtility.IconContent("LookDevSingle2", "Single2|Single2 object view");
-            public readonly GUIContent sSideBySideMode      = EditorGUIUtility.IconContent("LookDevSideBySide", "Side|Side by side comparison view");
-            public readonly GUIContent sSplitMode           = EditorGUIUtility.IconContent("LookDevSplit", "Split|Single object split comparison view");
-            public readonly GUIContent sZoneMode            = EditorGUIUtility.IconContent("LookDevZone", "Zone|Single object zone comparison view");
-            public readonly GUIContent sLinkActive          = EditorGUIUtility.IconContent("LookDevMirrorViewsActive", "Link|Links the property between the different views");
-            public readonly GUIContent sLinkInactive        = EditorGUIUtility.IconContent("LookDevMirrorViewsInactive", "Link|Links the property between the different views");
-            public readonly GUIContent sDragAndDropObjsText = EditorGUIUtility.TextContent("Drag and drop Prefabs here.");
+            public readonly GUIContent sSingleMode1         = EditorGUIUtility.TrIconContent("LookDevSingle1", "Single1 object view");
+            public readonly GUIContent sSingleMode2         = EditorGUIUtility.TrIconContent("LookDevSingle2", "Single2 object view");
+            public readonly GUIContent sSideBySideMode      = EditorGUIUtility.TrIconContent("LookDevSideBySide", "Side by side comparison view");
+            public readonly GUIContent sSplitMode           = EditorGUIUtility.TrIconContent("LookDevSplit", "Single object split comparison view");
+            public readonly GUIContent sZoneMode            = EditorGUIUtility.TrIconContent("LookDevZone", "Single object zone comparison view");
+            public readonly GUIContent sLinkActive          = EditorGUIUtility.TrIconContent("LookDevMirrorViewsActive", "Links the property between the different views");
+            public readonly GUIContent sLinkInactive        = EditorGUIUtility.TrIconContent("LookDevMirrorViewsInactive", "Links the property between the different views");
+            public readonly GUIContent sDragAndDropObjsText = EditorGUIUtility.TrTextContent("Drag and drop Prefabs here.");
 
 
             public readonly GUIStyle[] sPropertyLabelStyle =
@@ -1061,7 +1061,7 @@ namespace UnityEditor
         {
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(new GUIContent("Load RenderDoc"), false, LoadRenderDoc);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Load RenderDoc"), false, LoadRenderDoc);
             }
         }
 
@@ -1155,9 +1155,9 @@ namespace UnityEditor
             autoRepaintOnSceneChange = true;
 
             titleContent = GetLocalizedTitleContent();
-            m_RenderdocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc");
-            m_SyncLightVertical = EditorGUIUtility.IconContent("LookDevCenterLight", "Sync|Sync all light vertically with current light position in current selected HDRI");
-            m_ResetEnvironment = EditorGUIUtility.IconContent("LookDevResetEnv", "Reset|Reset all environment");
+            m_RenderdocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc");
+            m_SyncLightVertical = EditorGUIUtility.TrIconContent("LookDevCenterLight", "Sync all light vertically with current light position in current selected HDRI");
+            m_ResetEnvironment = EditorGUIUtility.TrIconContent("LookDevResetEnv", "Reset all environment");
 
             UpdateLookDevModeToggle(m_LookDevConfig.lookDevMode, true);
 

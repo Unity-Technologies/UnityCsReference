@@ -96,55 +96,72 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent ImportAnimations = EditorGUIUtility.TextContent("Import Animation|Controls if animations are imported.");
+            public GUIContent ErrorsFoundWhileImportingThisAnimation = EditorGUIUtility.TrTextContentWithIcon("Error(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Error);
+            public GUIContent WarningsFoundWhileImportingRig = EditorGUIUtility.TrTextContentWithIcon("Warning(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Warning);
+            public GUIContent WarningsFoundWhileImportingThisAnimation = EditorGUIUtility.TrTextContentWithIcon("Warning(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Warning);
+            public GUIContent ImportAnimations = EditorGUIUtility.TrTextContent("Import Animation", "Controls if animations are imported.");
 
             public GUIStyle numberStyle = new GUIStyle(EditorStyles.label);
 
-            public GUIContent AnimWrapModeLabel = EditorGUIUtility.TextContent("Wrap Mode|The default Wrap Mode for the animation in the mesh being imported.");
+            public GUIContent AnimWrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode", "The default Wrap Mode for the animation in the mesh being imported.");
 
             public GUIContent[] AnimWrapModeOpt =
             {
-                EditorGUIUtility.TextContent("Default|The animation plays as specified in the animation splitting options below."),
-                EditorGUIUtility.TextContent("Once|The animation plays through to the end once and then stops."),
-                EditorGUIUtility.TextContent("Loop|The animation plays through and then restarts when the end is reached."),
-                EditorGUIUtility.TextContent("PingPong|The animation plays through and then plays in reverse from the end to the start, and so on."),
-                EditorGUIUtility.TextContent("ClampForever|The animation plays through but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).")
+                EditorGUIUtility.TrTextContent("Default", "The animation plays as specified in the animation splitting options below."),
+                EditorGUIUtility.TrTextContent("Once", "The animation plays through to the end once and then stops."),
+                EditorGUIUtility.TrTextContent("Loop", "The animation plays through and then restarts when the end is reached."),
+                EditorGUIUtility.TrTextContent("PingPong", "The animation plays through and then plays in reverse from the end to the start, and so on."),
+                EditorGUIUtility.TrTextContent("ClampForever", "The animation plays through but the last frame is repeated indefinitely. This is not the same as Once mode because playback does not technically stop at the last frame (which is useful when blending animations).")
             };
 
-            public GUIContent BakeIK = EditorGUIUtility.TextContent("Bake Animations|Enable this when using IK or simulation in your animation package. Unity will convert to forward kinematics on import. This option is available only for Maya, 3dsMax and Cinema4D files.");
-            public GUIContent ResampleCurves = EditorGUIUtility.TextContent("Resample Curves | Curves will be resampled on every frame. Use this if you're having issues with the interpolation between keys in your original animation. Disable this to keep curves as close as possible to how they were originally authored.");
-            public GUIContent AnimCompressionLabel = EditorGUIUtility.TextContent("Anim. Compression|The type of compression that will be applied to this mesh's animation(s).");
+            public GUIContent BakeIK = EditorGUIUtility.TrTextContent("Bake Animations", "Enable this when using IK or simulation in your animation package. Unity will convert to forward kinematics on import. This option is available only for Maya, 3dsMax and Cinema4D files.");
+            public GUIContent ResampleCurves = EditorGUIUtility.TrTextContent("Resample Curves ", " Curves will be resampled on every frame. Use this if you're having issues with the interpolation between keys in your original animation. Disable this to keep curves as close as possible to how they were originally authored.");
+            public GUIContent AnimCompressionLabel = EditorGUIUtility.TrTextContent("Anim. Compression", "The type of compression that will be applied to this mesh's animation(s).");
             public GUIContent[] AnimCompressionOptLegacy =
             {
-                EditorGUIUtility.TextContent("Off|Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
-                EditorGUIUtility.TextContent("Keyframe Reduction|Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
-                EditorGUIUtility.TextContent("Keyframe Reduction and Compression|Reduces keyframes on import and compresses keyframes when storing animations in files. This affects only file size - the runtime memory size is the same as Keyframe Reduction. If selected, the Animation Compression Errors options are displayed.")
+                EditorGUIUtility.TrTextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
+                EditorGUIUtility.TrTextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
+                EditorGUIUtility.TrTextContent("Keyframe Reduction and Compression", "Reduces keyframes on import and compresses keyframes when storing animations in files. This affects only file size - the runtime memory size is the same as Keyframe Reduction. If selected, the Animation Compression Errors options are displayed.")
             };
             public GUIContent[] AnimCompressionOpt =
             {
-                EditorGUIUtility.TextContent("Off|Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
-                EditorGUIUtility.TextContent("Keyframe Reduction|Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
-                EditorGUIUtility.TextContent("Optimal|Reduces keyframes on import and choose between different curve representations to reduce memory usage at runtime. This affects the runtime memory size and how curves are evaluated.")
+                EditorGUIUtility.TrTextContent("Off", "Disables animation compression. This means that Unity doesn't reduce keyframe count on import, which leads to the highest precision animations, but slower performance and bigger file and runtime memory size. It is generally not advisable to use this option - if you need higher precision animation, you should enable keyframe reduction and lower allowed Animation Compression Error values instead."),
+                EditorGUIUtility.TrTextContent("Keyframe Reduction", "Reduces keyframes on import. If selected, the Animation Compression Errors options are displayed."),
+                EditorGUIUtility.TrTextContent("Optimal", "Reduces keyframes on import and choose between different curve representations to reduce memory usage at runtime. This affects the runtime memory size and how curves are evaluated.")
             };
 
-            public GUIContent AnimRotationErrorLabel = EditorGUIUtility.TextContent("Rotation Error|Defines how much rotation curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimPositionErrorLabel = EditorGUIUtility.TextContent("Position Error|Defines how much position curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimScaleErrorLabel = EditorGUIUtility.TextContent("Scale Error|Defines how much scale curves should be reduced. The smaller value you use - the higher precision you get.");
-            public GUIContent AnimationCompressionHelp = EditorGUIUtility.TextContent("Rotation error is defined as maximum angle deviation allowed in degrees, for others it is defined as maximum distance/delta deviation allowed in percents");
-            public GUIContent clipMultiEditInfo = new GUIContent("Multi-object editing of clips not supported.");
+            public GUIContent AnimRotationErrorLabel = EditorGUIUtility.TrTextContent("Rotation Error", "Defines how much rotation curves should be reduced. The smaller value you use - the higher precision you get.");
+            public GUIContent AnimPositionErrorLabel = EditorGUIUtility.TrTextContent("Position Error", "Defines how much position curves should be reduced. The smaller value you use - the higher precision you get.");
+            public GUIContent AnimScaleErrorLabel = EditorGUIUtility.TrTextContent("Scale Error", "Defines how much scale curves should be reduced. The smaller value you use - the higher precision you get.");
+            public GUIContent AnimationCompressionHelp = EditorGUIUtility.TrTextContent("Rotation error is defined as maximum angle deviation allowed in degrees, for others it is defined as maximum distance/delta deviation allowed in percents");
+            public GUIContent clipMultiEditInfo = EditorGUIUtility.TrTextContent("Multi-object editing of clips not supported.");
 
-            public GUIContent updateMuscleDefinitionFromSource = EditorGUIUtility.TextContent("Update|Update the copy of the muscle definition from the source.");
+            public GUIContent updateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
 
-            public GUIContent MotionSetting = EditorGUIUtility.TextContent("Motion|Advanced setting for root motion and blending pivot");
-            public GUIContent MotionNode = EditorGUIUtility.TextContent("Root Motion Node|Define a transform node that will be used to create root motion curves");
-            public GUIContent ImportMessages = EditorGUIUtility.TextContent("Import Messages");
+            public GUIContent MotionSetting = EditorGUIUtility.TrTextContent("Motion", "Advanced setting for root motion and blending pivot");
+            public GUIContent MotionNode = EditorGUIUtility.TrTextContent("Root Motion Node", "Define a transform node that will be used to create root motion curves");
+            public GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
 
-            public GUIContent GenerateRetargetingWarnings = EditorGUIUtility.TextContent("Generate Retargeting Quality Report");
+            public GUIContent GenerateRetargetingWarnings = EditorGUIUtility.TrTextContent("Generate Retargeting Quality Report");
+            public GUIContent RetargetingQualityCompares = EditorGUIUtility.TrTextContentWithIcon("Retargeting Quality compares retargeted with original animation. It reports average and maximum position/orientation difference for body parts. It may slow down import time of this file.", MessageType.Info);
+            public GUIContent AnimationDataWas = EditorGUIUtility.TrTextContentWithIcon("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info);
+            public GUIContent TheAnimationsSettingsCanBe = EditorGUIUtility.TrTextContentWithIcon("The animations settings can be edited after clicking Apply.", MessageType.Info);
+            public GUIContent ErrorsFoundWhileImporting = EditorGUIUtility.TrTextContentWithIcon("Error(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Error);
+            public GUIContent NoAnimationDataAvailable = EditorGUIUtility.TrTextContentWithIcon("No animation data available in this model.", MessageType.Info);
+            public GUIContent TheRigsOfTheSelectedModelsHave = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models have different Animation Types.", MessageType.Info);
+            public GUIContent TheRigsOfTheSelectedModelsAre = EditorGUIUtility.TrTextContentWithIcon("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
+            public GUIContent Clips = EditorGUIUtility.TrTextContent("Clips");
+            public GUIContent Start = EditorGUIUtility.TrTextContent("Start");
+            public GUIContent End = EditorGUIUtility.TrTextContent("End");
+            public GUIContent MaskHasAPath = EditorGUIUtility.TrTextContent("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.");
+            public GUIContent UpdateMask = EditorGUIUtility.TrTextContent("Update Mask");
+            public GUIContent SourceMaskHasChanged = EditorGUIUtility.TrTextContent("Source Mask has changed since last import and must be updated.");
+            public GUIContent SourceMaskHasAPath = EditorGUIUtility.TrTextContent("Source Mask has a path that does not match the transform hierarchy. Animation may not import correctly.");
 
-            public GUIContent Mask = EditorGUIUtility.TextContent("Mask|Configure the mask for this clip to remove unnecessary curves.");
+            public GUIContent Mask = EditorGUIUtility.TrTextContent("Mask", "Configure the mask for this clip to remove unnecessary curves.");
 
-            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TextContent("Animated Custom Properties|Controls if animated custom properties are imported.");
-            public GUIContent ImportConstraints = EditorGUIUtility.TextContent("Import Constraints|Controls if the constraints are imported.");
+            public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Animated Custom Properties", "Controls if animated custom properties are imported.");
+            public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
 
             public Styles()
             {
@@ -204,13 +221,13 @@ namespace UnityEditor
             string[] transformPaths = singleImporter.transformPaths;
             m_MotionNodeList = new GUIContent[transformPaths.Length + 1];
 
-            m_MotionNodeList[0] = new GUIContent("<None>");
+            m_MotionNodeList[0] = EditorGUIUtility.TrTextContent("<None>");
 
             for (int i = 0; i < transformPaths.Length; i++)
             {
                 if (i == 0)
                 {
-                    m_MotionNodeList[1] = new GUIContent("<Root Transform>");
+                    m_MotionNodeList[1] = EditorGUIUtility.TrTextContent("<Root Transform>");
                 }
                 else
                 {
@@ -329,18 +346,18 @@ namespace UnityEditor
 
             if (errors.Length > 0)
             {
-                EditorGUILayout.HelpBox("Error(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Error);
+                EditorGUILayout.HelpBox(styles.ErrorsFoundWhileImportingThisAnimation);
             }
             else
             {
                 if (rigWarnings.Length > 0)
                 {
-                    EditorGUILayout.HelpBox("Warning(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Warning);
+                    EditorGUILayout.HelpBox(styles.WarningsFoundWhileImportingRig);
                 }
 
                 if (warnings.Length > 0)
                 {
-                    EditorGUILayout.HelpBox("Warning(s) found while importing this animation file. Open \"Import Messages\" foldout below for more details.", MessageType.Warning);
+                    EditorGUILayout.HelpBox(styles.WarningsFoundWhileImportingThisAnimation);
                 }
             }
 
@@ -369,9 +386,9 @@ namespace UnityEditor
             if (importMessageFoldout)
             {
                 if (errors.Length > 0)
-                    EditorGUILayout.HelpBox(errors, MessageType.Error);
+                    EditorGUILayout.HelpBox(L10n.Tr(errors), MessageType.Error);
                 if (warnings.Length > 0)
-                    EditorGUILayout.HelpBox(warnings, MessageType.Warning);
+                    EditorGUILayout.HelpBox(L10n.Tr(warnings), MessageType.Warning);
                 if (animationType == ModelImporterAnimationType.Human)
                 {
                     EditorGUILayout.PropertyField(m_AnimationDoRetargetingWarnings, styles.GenerateRetargetingWarnings);
@@ -380,12 +397,12 @@ namespace UnityEditor
                     {
                         if (retargetWarnings.Length > 0)
                         {
-                            EditorGUILayout.HelpBox(retargetWarnings, MessageType.Info);
+                            EditorGUILayout.HelpBox(L10n.Tr(retargetWarnings), MessageType.Info);
                         }
                     }
                     else
                     {
-                        EditorGUILayout.HelpBox("Retargeting Quality compares retargeted with original animation. It reports average and maximum position/orientation difference for body parts. It may slow down import time of this file.", MessageType.Info);
+                        EditorGUILayout.HelpBox(styles.RetargetingQualityCompares);
                     }
                 }
             }
@@ -404,12 +421,12 @@ namespace UnityEditor
                 bool hasNoValidAnimationData = targets.Length == 1 && singleImporter.importedTakeInfos.Length == 0 && singleImporter.animationType != ModelImporterAnimationType.None;
 
                 if (IsDeprecatedMultiAnimationRootImport())
-                    EditorGUILayout.HelpBox("Animation data was imported using a deprecated Generation option in the Rig tab. Please switch to a non-deprecated import mode in the Rig tab to be able to edit the animation import settings.", MessageType.Info);
+                    EditorGUILayout.HelpBox(styles.AnimationDataWas);
                 else if (hasNoValidAnimationData)
                 {
                     if (serializedObject.hasModifiedProperties)
                     {
-                        EditorGUILayout.HelpBox("The animations settings can be edited after clicking Apply.", MessageType.Info);
+                        EditorGUILayout.HelpBox(styles.TheAnimationsSettingsCanBe);
                     }
                     else
                     {
@@ -417,18 +434,18 @@ namespace UnityEditor
 
                         if (errors.Length > 0)
                         {
-                            EditorGUILayout.HelpBox("Error(s) found while importing rig in this animation file. Open \"Rig\" tab for more details.", MessageType.Error);
+                            EditorGUILayout.HelpBox(styles.ErrorsFoundWhileImporting);
                         }
                         else
                         {
-                            EditorGUILayout.HelpBox("No animation data available in this model.", MessageType.Info);
+                            EditorGUILayout.HelpBox(styles.NoAnimationDataAvailable);
                         }
                     }
                 }
                 else if (m_AnimationType.hasMultipleDifferentValues)
-                    EditorGUILayout.HelpBox("The rigs of the selected models have different Animation Types.", MessageType.Info);
+                    EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsHave);
                 else if (animationType == ModelImporterAnimationType.None)
-                    EditorGUILayout.HelpBox("The rigs of the selected models are not setup to handle animation. Change the Animation Type in the Rig tab and click Apply.", MessageType.Info);
+                    EditorGUILayout.HelpBox(styles.TheRigsOfTheSelectedModelsAre);
                 else
                 {
                     if (m_ImportAnimation.boolValue && !m_ImportAnimation.hasMultipleDifferentValues)
@@ -630,12 +647,12 @@ namespace UnityEditor
         private void DrawClipHeader(Rect rect)
         {
             rect.xMax -= kFrameColumnWidth * 2;
-            GUI.Label(rect, "Clips", EditorStyles.label);
+            GUI.Label(rect, styles.Clips, EditorStyles.label);
             rect.x = rect.xMax;
             rect.width = kFrameColumnWidth;
-            GUI.Label(rect, "Start", styles.numberStyle);
+            GUI.Label(rect, styles.Start, styles.numberStyle);
             rect.x = rect.xMax;
-            GUI.Label(rect, "End", styles.numberStyle);
+            GUI.Label(rect, styles.End, styles.numberStyle);
         }
 
         void AnimationSplitTable()
@@ -912,12 +929,12 @@ namespace UnityEditor
                 if (clipInfo.maskType == ClipAnimationMaskType.CreateFromThisModel && !m_MaskInspector.IsMaskUpToDate() && !m_MaskInspector.IsMaskEmpty())
                 {
                     GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    GUILayout.Label("Mask has a path that does not match the transform hierarchy. Animation may not import correctly.",
+                    GUILayout.Label(styles.MaskHasAPath,
                         EditorStyles.wordWrappedMiniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.BeginVertical();
                     GUILayout.Space(5);
-                    if (GUILayout.Button("Update Mask"))
+                    if (GUILayout.Button(styles.UpdateMask))
                     {
                         SetTransformMaskFromReference(clipInfo);
                         m_MaskInspector.FillNodeInfos();
@@ -929,12 +946,12 @@ namespace UnityEditor
                 else if (clipInfo.maskType == ClipAnimationMaskType.CopyFromOther && clipInfo.MaskNeedsUpdating())
                 {
                     GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    GUILayout.Label("Source Mask has changed since last import and must be updated.",
+                    GUILayout.Label(styles.SourceMaskHasChanged,
                         EditorStyles.wordWrappedMiniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.BeginVertical();
                     GUILayout.Space(5);
-                    if (GUILayout.Button("Update Mask"))
+                    if (GUILayout.Button(styles.UpdateMask))
                     {
                         clipInfo.MaskToClip(clipInfo.maskSource);
                     }
@@ -944,7 +961,7 @@ namespace UnityEditor
                 else if (clipInfo.maskType == ClipAnimationMaskType.CopyFromOther && !m_MaskInspector.IsMaskUpToDate())
                 {
                     GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                    GUILayout.Label("Source Mask has a path that does not match the transform hierarchy. Animation may not import correctly.",
+                    GUILayout.Label(styles.SourceMaskHasAPath,
                         EditorStyles.wordWrappedMiniLabel);
                     GUILayout.FlexibleSpace();
                     GUILayout.BeginVertical();

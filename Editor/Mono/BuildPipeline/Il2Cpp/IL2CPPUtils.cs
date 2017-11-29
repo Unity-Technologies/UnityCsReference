@@ -106,6 +106,9 @@ namespace UnityEditorInternal
                 case ApiCompatibilityLevel.NET_4_6:
                     return "net45";
 
+                case ApiCompatibilityLevel.NET_Standard_2_0:
+                    return "unityaot";
+
                 default:
                     throw new NotSupportedException(string.Format("ApiCompatibilityLevel.{0} is not supported by IL2CPP!", compatibilityLevel));
             }
@@ -193,6 +196,8 @@ namespace UnityEditorInternal
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
                     arguments.Add("--dotnetprofile=\"net45\"");
+                if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
+                    arguments.Add("--dotnetprofile=\"unityaot\"");
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
                 var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
@@ -276,9 +281,16 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
+            //Currently In Development, Not yet ready to enable
+            //if (m_PlatformProvider.enableDebugger)
+            //    arguments.Add("--enable-debugger");
+
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
                 arguments.Add("--dotnetprofile=\"net45\"");
+
+            if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
+                arguments.Add("--dotnetprofile=\"unityaot\"");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
@@ -397,6 +409,7 @@ namespace UnityEditorInternal
         bool developmentMode { get; }
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
+        bool enableDebugger { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -445,6 +458,11 @@ namespace UnityEditorInternal
         }
 
         public virtual bool supportsEngineStripping
+        {
+            get { return false; }
+        }
+
+        public virtual bool enableDebugger
         {
             get { return false; }
         }

@@ -11,12 +11,12 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent nameLabel = EditorGUIUtility.TextContent("Name");
-            public static readonly GUIContent ok = EditorGUIUtility.TextContent("Create");
-            public static readonly GUIContent cancel = EditorGUIUtility.TextContent("Cancel");
-            public static readonly GUIContent header = EditorGUIUtility.TextContent("Create New Palette");
-            public static readonly GUIContent gridLabel = EditorGUIUtility.TextContent("Grid");
-            public static readonly GUIContent sizeLabel = EditorGUIUtility.TextContent("Cell Size");
+            public static readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent ok = EditorGUIUtility.TrTextContent("Create");
+            public static readonly GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
+            public static readonly GUIContent header = EditorGUIUtility.TrTextContent("Create New Palette");
+            public static readonly GUIContent gridLabel = EditorGUIUtility.TrTextContent("Grid");
+            public static readonly GUIContent sizeLabel = EditorGUIUtility.TrTextContent("Cell Size");
         }
 
 #pragma warning disable 649

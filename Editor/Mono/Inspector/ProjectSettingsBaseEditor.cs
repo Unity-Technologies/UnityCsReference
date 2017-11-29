@@ -14,5 +14,17 @@ namespace UnityEditorInternal
         {
             return true;
         }
+
+        private string m_LocalizedTargetName;
+
+        internal override string targetTitle
+        {
+            get
+            {
+                if (m_LocalizedTargetName == null)
+                    m_LocalizedTargetName = L10n.Tr(target.name);
+                return m_LocalizedTargetName;
+            }
+        }
     }
 }

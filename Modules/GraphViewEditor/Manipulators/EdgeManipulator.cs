@@ -9,8 +9,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class EdgeManipulator : MouseManipulator
+    public class EdgeManipulator : MouseManipulator
     {
         private bool m_Active;
         private Edge m_Edge;

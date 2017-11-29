@@ -83,7 +83,7 @@ namespace UnityEditor
             window.publisher = publisher;
             window.password = string.Empty;
             window.confirm = window.password;
-            window.message = (File.Exists(window.path) ? EditorGUIUtility.TextContent("Current file will be overwritten.") : GUIContent.none);
+            window.message = (File.Exists(window.path) ? EditorGUIUtility.TrTextContent("Current file will be overwritten.") : GUIContent.none);
 
             window.messageStyle = new GUIStyle(GUI.skin.label);
             window.messageStyle.fontStyle = FontStyle.Italic;
@@ -96,7 +96,7 @@ namespace UnityEditor
             }
             else
             {
-                window.titleContent = EditorGUIUtility.TextContent("Create Test Certificate for Windows Store");
+                window.titleContent = EditorGUIUtility.TrTextContent("Create Test Certificate for Windows Store");
 
                 window.position = new Rect(100, 100, 350, 140);
                 window.minSize = new Vector2(window.position.width, window.position.height);
@@ -128,7 +128,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TextContent("Publisher|Publisher of the package."), kLabelWidth);
+                        GUILayout.Label(EditorGUIUtility.TrTextContent("Publisher", "Publisher of the package."), kLabelWidth);
                         GUI.SetNextControlName(kPublisherId);
                         publisher = GUILayout.TextField(publisher);
                     }
@@ -137,7 +137,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TextContent("Password|Certificate password."), kLabelWidth);
+                        GUILayout.Label(EditorGUIUtility.TrTextContent("Password", "Certificate password."), kLabelWidth);
                         GUI.SetNextControlName(kPasswordId);
                         password = GUILayout.PasswordField(password, kPasswordChar);
                     }
@@ -146,7 +146,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TextContent("Confirm password|Re-enter certificate password."), kLabelWidth);
+                        GUILayout.Label(EditorGUIUtility.TrTextContent("Confirm password", "Re-enter certificate password."), kLabelWidth);
                         GUI.SetNextControlName(kConfirmId);
                         confirm = GUILayout.PasswordField(confirm, kPasswordChar);
                     }
@@ -159,30 +159,30 @@ namespace UnityEditor
 
                         GUILayout.FlexibleSpace();
 
-                        if (GUILayout.Button(EditorGUIUtility.TextContent("Create"), kButtonWidth) || enter)
+                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("Create"), kButtonWidth) || enter)
                         {
                             message = GUIContent.none;
 
                             if (string.IsNullOrEmpty(publisher))
                             {
-                                message = EditorGUIUtility.TextContent("Publisher must be specified.");
+                                message = EditorGUIUtility.TrTextContent("Publisher must be specified.");
                                 focus = kPublisherId;
                             }
                             /*else if (!IsValidPublisher(publisher))
                             {
-                                message = EditorGUIUtility.TextContent("Invalid publisher.");
+                                message = EditorGUIUtility.TrTextContent("Invalid publisher.");
                                 focus = kPublisherId;
                             }*/
                             else if (password != confirm)
                             {
                                 if (string.IsNullOrEmpty(confirm))
                                 {
-                                    message = EditorGUIUtility.TextContent("Confirm the password.");
+                                    message = EditorGUIUtility.TrTextContent("Confirm the password.");
                                     focus = kConfirmId;
                                 }
                                 else
                                 {
-                                    message = EditorGUIUtility.TextContent("Passwords do not match.");
+                                    message = EditorGUIUtility.TrTextContent("Passwords do not match.");
                                     password = string.Empty;
                                     confirm = password;
                                     focus = kPasswordId;
@@ -198,7 +198,7 @@ namespace UnityEditor
 
                                     if (!PlayerSettings.WSA.SetCertificate(FileUtil.GetProjectRelativePath(path), password))
                                     {
-                                        message = EditorGUIUtility.TextContent("Invalid password.");
+                                        message = EditorGUIUtility.TrTextContent("Invalid password.");
                                     }
 
                                     close = true;

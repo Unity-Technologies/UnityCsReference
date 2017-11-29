@@ -18,10 +18,10 @@ namespace UnityEditor
 
         static class Texts
         {
-            public static GUIContent isTriggerText = new GUIContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
-            public static GUIContent convextText = new GUIContent("Convex", "Is this collider convex?");
-            public static GUIContent skinWidthText = new GUIContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
-            public static GUIContent cookingOptionsText = new GUIContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
+            public static GUIContent isTriggerText = EditorGUIUtility.TrTextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
+            public static GUIContent convextText = EditorGUIUtility.TrTextContent("Convex", "Is this collider convex?");
+            public static GUIContent skinWidthText = EditorGUIUtility.TrTextContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
+            public static GUIContent cookingOptionsText = EditorGUIUtility.TrTextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
         }
 
         public override void OnEnable()

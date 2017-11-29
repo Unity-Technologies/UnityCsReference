@@ -61,20 +61,20 @@ namespace UnityEditor
             public readonly GUIStyle m_LODRenderersText = "LODRenderersText";
             public readonly GUIStyle m_LODLevelNotifyText = "LODLevelNotifyText";
 
-            public readonly GUIContent m_IconRendererPlus                   = EditorGUIUtility.IconContent("Toolbar Plus", "|Add New Renderers");
-            public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.IconContent("Toolbar Minus", "|Remove Renderer");
+            public readonly GUIContent m_IconRendererPlus                   = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add New Renderers");
+            public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove Renderer");
             public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent("Camera Icon");
 
-            public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TextContent("Upload to Importer|Upload the modified screen percentages to the model importer.");
-            public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TextContent("Upload to Importer|Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");
-            public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TextContent("Recalculate Bounds|Recalculate bounds to encapsulate all child renderers.");
-            public readonly GUIContent m_RecalculateBoundsDisabled          = EditorGUIUtility.TextContent("Recalculate Bounds|Bounds are already up-to-date.");
-            public readonly GUIContent m_LightmapScale                      = EditorGUIUtility.TextContent("Recalculate Lightmap Scale|Set the lightmap scale to match the LOD percentages.");
-            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TextContent("Renderers:");
+            public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TrTextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.");
+            public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TrTextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");
+            public readonly GUIContent m_RecalculateBounds                  = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Recalculate bounds to encapsulate all child renderers.");
+            public readonly GUIContent m_RecalculateBoundsDisabled          = EditorGUIUtility.TrTextContent("Recalculate Bounds", "Bounds are already up-to-date.");
+            public readonly GUIContent m_LightmapScale                      = EditorGUIUtility.TrTextContent("Recalculate Lightmap Scale", "Set the lightmap scale to match the LOD percentages.");
+            public readonly GUIContent m_RendersTitle                       = EditorGUIUtility.TrTextContent("Renderers:");
 
-            public readonly GUIContent m_AnimatedCrossFadeInvalidText       = EditorGUIUtility.TextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.");
-            public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = EditorGUIUtility.TextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.");
-            public readonly GUIContent m_AnimateBetweenPreviousLOD          = EditorGUIUtility.TextContent("Animate Between Previous LOD|Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.");
+            public readonly GUIContent m_AnimatedCrossFadeInvalidText       = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. Please enable \"Animate Between Next LOD\" on either the current or the previous LOD.");
+            public readonly GUIContent m_AnimatedCrossFadeInconsistentText  = EditorGUIUtility.TrTextContent("Animated cross-fading is currently disabled. \"Animate Between Next LOD\" is enabled but the next LOD is not in Animated Cross Fade mode.");
+            public readonly GUIContent m_AnimateBetweenPreviousLOD          = EditorGUIUtility.TrTextContent("Animate Between Previous LOD", "Cross-fade animation plays when transits between this LOD and the previous (lower) LOD.");
         }
 
         private static GUIStyles s_Styles;

@@ -111,9 +111,9 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent interCollisionPropertiesLabel = EditorGUIUtility.TextContent("Cloth Inter-Collision");
-            public static readonly GUIContent interCollisionDistanceLabel = EditorGUIUtility.TextContent("Distance");
-            public static readonly GUIContent interCollisionStiffnessLabel = EditorGUIUtility.TextContent("Stiffness");
+            public static readonly GUIContent interCollisionPropertiesLabel = EditorGUIUtility.TrTextContent("Cloth Inter-Collision");
+            public static readonly GUIContent interCollisionDistanceLabel = EditorGUIUtility.TrTextContent("Distance");
+            public static readonly GUIContent interCollisionStiffnessLabel = EditorGUIUtility.TrTextContent("Stiffness");
         }
 
         public override void OnInspectorGUI()
@@ -129,7 +129,7 @@ namespace UnityEditor
             bool settingsChanged = EditorGUI.EndChangeCheck();
             if (settingsChanged)
             {
-                Undo.RecordObject(this, "Change inter collision settings");
+                Undo.RecordObject(target, "Change inter collision settings");
                 Physics.interCollisionSettingsToggle = collisionSettings;
             }
 
@@ -141,7 +141,7 @@ namespace UnityEditor
                 bool distanceChanged = EditorGUI.EndChangeCheck();
                 if (distanceChanged)
                 {
-                    Undo.RecordObject(this, "Change inter collision distance");
+                    Undo.RecordObject(target, "Change inter collision distance");
                     if (distance < 0.0f)
                         distance = 0.0f;
                     Physics.interCollisionDistance = distance;
@@ -152,7 +152,7 @@ namespace UnityEditor
                 bool stiffnessChanged = EditorGUI.EndChangeCheck();
                 if (stiffnessChanged)
                 {
-                    Undo.RecordObject(this, "Change inter collision stiffness");
+                    Undo.RecordObject(target, "Change inter collision stiffness");
                     if (stiffness < 0.0f)
                         stiffness = 0.0f;
                     Physics.interCollisionStiffness = stiffness;

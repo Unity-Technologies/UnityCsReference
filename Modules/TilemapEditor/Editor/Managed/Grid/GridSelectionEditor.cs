@@ -14,7 +14,7 @@ namespace UnityEditor
         static class Styles
         {
             public static readonly GUIStyle header = new GUIStyle("IN GameObjectHeader");
-            public static readonly GUIContent gridSelectionLabel = EditorGUIUtility.TextContent("Grid Selection");
+            public static readonly GUIContent gridSelectionLabel = EditorGUIUtility.TrTextContent("Grid Selection");
         }
 
         public override void OnInspectorGUI()

@@ -62,7 +62,10 @@ namespace UnityEditor.Scripting.Compilers
                 var profile = _island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0  ? "2.0-api"
                     : BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
 
-                arguments.Add("-lib:" + PrepareFileName(MonoInstallationFinder.GetProfileDirectory(profile, MonoInstallationFinder.MonoBleedingEdgeInstallation)));
+                if (_island._api_compatibility_level != ApiCompatibilityLevel.NET_Standard_2_0)
+                {
+                    arguments.Add("-lib:" + PrepareFileName(MonoInstallationFinder.GetProfileDirectory(profile, MonoInstallationFinder.MonoBleedingEdgeInstallation)));
+                }
                 return compilerPath;
             }
 

@@ -25,8 +25,8 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public static GUIContent showCompiled = EditorGUIUtility.TextContent("Show compiled code");
-            public static GUIContent kernelsHeading = EditorGUIUtility.TextContent("Kernels:");
+            public static GUIContent showCompiled = EditorGUIUtility.TrTextContent("Show compiled code");
+            public static GUIContent kernelsHeading = EditorGUIUtility.TrTextContent("Kernels:");
         }
 
         static List<KernelInfo> GetKernelDisplayInfo(ComputeShader cs)

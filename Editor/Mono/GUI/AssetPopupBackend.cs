@@ -94,7 +94,7 @@ namespace UnityEditor
 
             // Create item
             gm.AddSeparator("");
-            gm.AddItem(new GUIContent("Create New..."), false, delegate
+            gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
                 {
                     var newAsset = Activator.CreateInstance<T>();
                     ProjectWindowUtil.CreateAsset(newAsset, "New " + typeName + "." + fileExtension);

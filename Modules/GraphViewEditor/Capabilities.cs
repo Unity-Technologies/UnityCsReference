@@ -7,10 +7,9 @@ using System;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Flags]
-    internal
-    enum Capabilities
+    public enum Capabilities
     {
-        Normal = 1 << 0,
+        Normal = 1 << 0, // TODO: Remove!
         Selectable = 1 << 1,
         DoesNotCollapse = 1 << 2,
         Floating = 1 << 3,

@@ -68,32 +68,32 @@ namespace UnityEditor
 
         private class Styles
         {
-            public readonly GUIContent m_AgentRadiusContent = EditorGUIUtility.TextContent("Agent Radius|How close to the walls navigation mesh exist.");
-            public readonly GUIContent m_AgentHeightContent = EditorGUIUtility.TextContent("Agent Height|How much vertical clearance space must exist.");
-            public readonly GUIContent m_AgentSlopeContent = EditorGUIUtility.TextContent("Max Slope|Maximum slope the agent can walk up.");
-            public readonly GUIContent m_AgentDropContent = EditorGUIUtility.TextContent("Drop Height|Maximum agent drop height.");
-            public readonly GUIContent m_AgentClimbContent = EditorGUIUtility.TextContent("Step Height|The height of discontinuities in the level the agent can climb over (i.e. steps and stairs).");
-            public readonly GUIContent m_AgentJumpContent = EditorGUIUtility.TextContent("Jump Distance|Maximum agent jump distance.");
-            public readonly GUIContent m_AgentPlacementContent = EditorGUIUtility.TextContent("Height Mesh|Generate an accurate height mesh for precise agent placement (slower).");
-            public readonly GUIContent m_MinRegionAreaContent = EditorGUIUtility.TextContent("Min Region Area|Minimum area that a navmesh region can be.");
-            public readonly GUIContent m_ManualCellSizeContent = EditorGUIUtility.TextContent("Manual Voxel Size|Enable to set voxel size manually.");
-            public readonly GUIContent m_CellSizeContent = EditorGUIUtility.TextContent("Voxel Size|Specifies at the voxelization resolution at which the NavMesh is build.");
-            public readonly GUIContent m_LearnAboutComponent = EditorGUIUtility.TextContent("Learn instead about the component workflow.|Components available for building and using navmesh data for different agent types.");
+            public readonly GUIContent m_AgentRadiusContent = EditorGUIUtility.TrTextContent("Agent Radius", "How close to the walls navigation mesh exist.");
+            public readonly GUIContent m_AgentHeightContent = EditorGUIUtility.TrTextContent("Agent Height", "How much vertical clearance space must exist.");
+            public readonly GUIContent m_AgentSlopeContent = EditorGUIUtility.TrTextContent("Max Slope", "Maximum slope the agent can walk up.");
+            public readonly GUIContent m_AgentDropContent = EditorGUIUtility.TrTextContent("Drop Height", "Maximum agent drop height.");
+            public readonly GUIContent m_AgentClimbContent = EditorGUIUtility.TrTextContent("Step Height", "The height of discontinuities in the level the agent can climb over (i.e. steps and stairs).");
+            public readonly GUIContent m_AgentJumpContent = EditorGUIUtility.TrTextContent("Jump Distance", "Maximum agent jump distance.");
+            public readonly GUIContent m_AgentPlacementContent = EditorGUIUtility.TrTextContent("Height Mesh", "Generate an accurate height mesh for precise agent placement (slower).");
+            public readonly GUIContent m_MinRegionAreaContent = EditorGUIUtility.TrTextContent("Min Region Area", "Minimum area that a navmesh region can be.");
+            public readonly GUIContent m_ManualCellSizeContent = EditorGUIUtility.TrTextContent("Manual Voxel Size", "Enable to set voxel size manually.");
+            public readonly GUIContent m_CellSizeContent = EditorGUIUtility.TrTextContent("Voxel Size", "Specifies at the voxelization resolution at which the NavMesh is build.");
+            public readonly GUIContent m_LearnAboutComponent = EditorGUIUtility.TrTextContent("Learn instead about the component workflow.", "Components available for building and using navmesh data for different agent types.");
 
-            public readonly GUIContent m_AgentSizeHeader = new GUIContent("Baked Agent Size");
-            public readonly GUIContent m_OffmeshHeader = new GUIContent("Generated Off Mesh Links");
-            public readonly GUIContent m_AdvancedHeader = new GUIContent("Advanced");
-            public readonly GUIContent m_AgentTypesHeader = new GUIContent("Agent Types");
+            public readonly GUIContent m_AgentSizeHeader = EditorGUIUtility.TrTextContent("Baked Agent Size");
+            public readonly GUIContent m_OffmeshHeader = EditorGUIUtility.TrTextContent("Generated Off Mesh Links");
+            public readonly GUIContent m_AdvancedHeader = EditorGUIUtility.TrTextContent("Advanced");
+            public readonly GUIContent m_AgentTypesHeader = EditorGUIUtility.TrTextContent("Agent Types");
 
-            public readonly GUIContent m_NameLabel = new GUIContent("Name");
-            public readonly GUIContent m_CostLabel = new GUIContent("Cost");
+            public readonly GUIContent m_NameLabel = EditorGUIUtility.TrTextContent("Name");
+            public readonly GUIContent m_CostLabel = EditorGUIUtility.TrTextContent("Cost");
 
             public readonly GUIContent[] m_ModeToggles =
             {
-                EditorGUIUtility.TextContent("Agents|Navmesh agent settings."),
-                EditorGUIUtility.TextContent("Areas|Navmesh area settings."),
-                EditorGUIUtility.TextContent("Bake|Navmesh bake settings."),
-                EditorGUIUtility.TextContent("Object|Bake settings for the currently selected object."),
+                EditorGUIUtility.TrTextContent("Agents", "Navmesh agent settings."),
+                EditorGUIUtility.TrTextContent("Areas", "Navmesh area settings."),
+                EditorGUIUtility.TrTextContent("Bake", "Navmesh bake settings."),
+                EditorGUIUtility.TrTextContent("Object", "Bake settings for the currently selected object."),
             };
         };
 
@@ -463,18 +463,18 @@ namespace UnityEditor
             if (NavMeshVisualizationSettings.showNavigation == 0)
                 return;
 
-            SceneViewOverlay.Window(new GUIContent("Navmesh Display"), DisplayControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Navmesh Display"), DisplayControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
             // Display Agent display only if there are selected NavMeshAgents.
             if (m_SelectedNavMeshAgentCount > 0)
             {
-                SceneViewOverlay.Window(new GUIContent("Agent Display"), DisplayAgentControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Agent Display"), DisplayAgentControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
 
             // Display Obstacle display only if there are selected NavMeshObstacles.
             if (m_SelectedNavMeshObstacleCount > 0)
             {
-                SceneViewOverlay.Window(new GUIContent("Obstacle Display"), DisplayObstacleControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Obstacle Display"), DisplayObstacleControls, (int)SceneViewOverlay.Ordering.NavMesh, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
         }
 
@@ -483,7 +483,7 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 150;
             var bRepaint = false;
             var showNavMesh = NavMeshVisualizationSettings.showNavMesh;
-            if (showNavMesh != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show NavMesh"), showNavMesh))
+            if (showNavMesh != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh"), showNavMesh))
             {
                 NavMeshVisualizationSettings.showNavMesh = !showNavMesh;
                 bRepaint = true;
@@ -492,7 +492,7 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!NavMeshVisualizationSettings.hasHeightMesh))
             {
                 bool showHeightMesh = NavMeshVisualizationSettings.showHeightMesh;
-                if (showHeightMesh != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show HeightMesh"), showHeightMesh))
+                if (showHeightMesh != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMesh"), showHeightMesh))
                 {
                     NavMeshVisualizationSettings.showHeightMesh = !showHeightMesh;
                     bRepaint = true;
@@ -504,28 +504,28 @@ namespace UnityEditor
                 GUILayout.Label("Internal");
 
                 var showNavMeshPortals = NavMeshVisualizationSettings.showNavMeshPortals;
-                if (showNavMeshPortals != EditorGUILayout.Toggle(new GUIContent("Show NavMesh Portals"), showNavMeshPortals))
+                if (showNavMeshPortals != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh Portals"), showNavMeshPortals))
                 {
                     NavMeshVisualizationSettings.showNavMeshPortals = !showNavMeshPortals;
                     bRepaint = true;
                 }
 
                 var showNavMeshLinks = NavMeshVisualizationSettings.showNavMeshLinks;
-                if (showNavMeshLinks != EditorGUILayout.Toggle(new GUIContent("Show NavMesh Links"), showNavMeshLinks))
+                if (showNavMeshLinks != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show NavMesh Links"), showNavMeshLinks))
                 {
                     NavMeshVisualizationSettings.showNavMeshLinks = !showNavMeshLinks;
                     bRepaint = true;
                 }
 
                 var showProximityGrid = NavMeshVisualizationSettings.showProximityGrid;
-                if (showProximityGrid != EditorGUILayout.Toggle(new GUIContent("Show Proximity Grid"), showProximityGrid))
+                if (showProximityGrid != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Proximity Grid"), showProximityGrid))
                 {
                     NavMeshVisualizationSettings.showProximityGrid = !showProximityGrid;
                     bRepaint = true;
                 }
 
                 var showHeightMeshBVTree = NavMeshVisualizationSettings.showHeightMeshBVTree;
-                if (showHeightMeshBVTree != EditorGUILayout.Toggle(new GUIContent("Show HeightMesh BV-Tree"), showHeightMeshBVTree))
+                if (showHeightMeshBVTree != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show HeightMesh BV-Tree"), showHeightMeshBVTree))
                 {
                     NavMeshVisualizationSettings.showHeightMeshBVTree = !showHeightMeshBVTree;
                     bRepaint = true;
@@ -573,35 +573,35 @@ namespace UnityEditor
             }
 
             var showAgentPath = NavMeshVisualizationSettings.showAgentPath;
-            if (showAgentPath != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Path Polygons|Shows the polygons leading to goal."), showAgentPath))
+            if (showAgentPath != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Path Polygons", "Shows the polygons leading to goal."), showAgentPath))
             {
                 NavMeshVisualizationSettings.showAgentPath = !showAgentPath;
                 bRepaint = true;
             }
 
             var showAgentPathInfo = NavMeshVisualizationSettings.showAgentPathInfo;
-            if (showAgentPathInfo != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Path Query Nodes|Shows the nodes expanded during last path query."), showAgentPathInfo))
+            if (showAgentPathInfo != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Path Query Nodes", "Shows the nodes expanded during last path query."), showAgentPathInfo))
             {
                 NavMeshVisualizationSettings.showAgentPathInfo = !showAgentPathInfo;
                 bRepaint = true;
             }
 
             var showAgentNeighbours = NavMeshVisualizationSettings.showAgentNeighbours;
-            if (showAgentNeighbours != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Neighbours|Show the agent neighbours cosidered during simulation."), showAgentNeighbours))
+            if (showAgentNeighbours != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Neighbours", "Show the agent neighbours cosidered during simulation."), showAgentNeighbours))
             {
                 NavMeshVisualizationSettings.showAgentNeighbours = !showAgentNeighbours;
                 bRepaint = true;
             }
 
             var showAgentWalls = NavMeshVisualizationSettings.showAgentWalls;
-            if (showAgentWalls != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Walls|Shows the wall segments handled during simulation."), showAgentWalls))
+            if (showAgentWalls != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Walls", "Shows the wall segments handled during simulation."), showAgentWalls))
             {
                 NavMeshVisualizationSettings.showAgentWalls = !showAgentWalls;
                 bRepaint = true;
             }
 
             var showAgentAvoidance = NavMeshVisualizationSettings.showAgentAvoidance;
-            if (showAgentAvoidance != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Avoidance|Shows the processed avoidance geometry from simulation."), showAgentAvoidance))
+            if (showAgentAvoidance != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Avoidance", "Shows the processed avoidance geometry from simulation."), showAgentAvoidance))
             {
                 NavMeshVisualizationSettings.showAgentAvoidance = !showAgentAvoidance;
                 bRepaint = true;
@@ -635,7 +635,7 @@ namespace UnityEditor
             var bRepaint = false;
 
             var showObstacleCarveHull = NavMeshVisualizationSettings.showObstacleCarveHull;
-            if (showObstacleCarveHull != EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Show Carve Hull|Shows the hull used to carve the obstacle from navmesh."), showObstacleCarveHull))
+            if (showObstacleCarveHull != EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Show Carve Hull", "Shows the hull used to carve the obstacle from navmesh."), showObstacleCarveHull))
             {
                 NavMeshVisualizationSettings.showObstacleCarveHull = !showObstacleCarveHull;
                 bRepaint = true;
@@ -647,7 +647,7 @@ namespace UnityEditor
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Reset Legacy Bake Settings"), false, ResetBakeSettings);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Reset Legacy Bake Settings"), false, ResetBakeSettings);
         }
 
         void ResetBakeSettings()

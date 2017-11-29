@@ -18,7 +18,7 @@ namespace UnityEditor
 
         internal override string targetTitle
         {
-            get { return "Script Execution Order"; }
+            get { return L10n.Tr("Script Execution Order"); }
         }
 
         public class SortMonoScriptNameOrder : IComparer<MonoScript>
@@ -88,10 +88,10 @@ namespace UnityEditor
 
         public class Styles
         {
-            public GUIContent helpText = EditorGUIUtility.TextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)");
-            public GUIContent iconToolbarPlus = EditorGUIUtility.IconContent("Toolbar Plus", "|Add script to custom order");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.IconContent("Toolbar Minus", "|Remove script from custom order");
-            public GUIContent defaultTimeContent = EditorGUIUtility.TextContent("Default Time|All scripts not in the custom order are executed at the default time.");
+            public GUIContent helpText = EditorGUIUtility.TrTextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)");
+            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add script to custom order");
+            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove script from custom order");
+            public GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
             public GUIStyle boxBackground = "TE NodeBackground";

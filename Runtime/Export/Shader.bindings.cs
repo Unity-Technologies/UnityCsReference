@@ -3,12 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using PassType = UnityEngine.Rendering.PassType;
+using SphericalHarmonicsL2 = UnityEngine.Rendering.SphericalHarmonicsL2;
 
 //
 // Shader
@@ -193,6 +190,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/ShaderPropertySheet.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
+    [NativeHeader("Runtime/Math/SphericalHarmonicsL2.h")]
     public sealed partial class MaterialPropertyBlock
     {
         // TODO: set int is missing
@@ -226,6 +224,12 @@ namespace UnityEngine
         [NativeName("ExtractFloatArrayFromScript")]  extern private void ExtractFloatArrayImpl(int name, [Out] float[] val);
         [NativeName("ExtractVectorArrayFromScript")] extern private void ExtractVectorArrayImpl(int name, [Out] Vector4[] val);
         [NativeName("ExtractMatrixArrayFromScript")] extern private void ExtractMatrixArrayImpl(int name, [Out] Matrix4x4[] val);
+
+        [FreeFunction("ConvertAndCopySHCoefficientArraysToPropertySheetFromScript")]
+        extern internal static void Internal_CopySHCoefficientArraysFrom(MaterialPropertyBlock properties, SphericalHarmonicsL2[] lightProbes, int sourceStart, int destStart, int count);
+
+        [FreeFunction("CopyProbeOcclusionArrayToPropertySheetFromScript")]
+        extern internal static void Internal_CopyProbeOcclusionArrayFrom(MaterialPropertyBlock properties, Vector4[] occlusionProbes, int sourceStart, int destStart, int count);
     }
 
     public sealed partial class MaterialPropertyBlock

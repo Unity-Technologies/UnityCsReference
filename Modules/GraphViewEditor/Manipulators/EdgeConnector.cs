@@ -2,27 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    interface IEdgeConnectorListener
+    public interface IEdgeConnectorListener
     {
         void OnDropOutsidePort(Edge edge, Vector2 position);
         void OnDrop(GraphView graphView, Edge edge);
     }
 
-    internal
-    abstract class EdgeConnector : MouseManipulator
+    public abstract class EdgeConnector : MouseManipulator
     {
         public abstract EdgeDragHelper edgeDragHelper { get; }
     }
 
-    internal
-    class EdgeConnector<TEdge> : EdgeConnector where TEdge : Edge, new()
+    public class EdgeConnector<TEdge> : EdgeConnector where TEdge : Edge, new()
     {
         EdgeDragHelper m_EdgeDragHelper;
         Edge m_EdgeCandidate;

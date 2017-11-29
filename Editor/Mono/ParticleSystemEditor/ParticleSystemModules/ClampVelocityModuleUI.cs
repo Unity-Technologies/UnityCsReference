@@ -25,14 +25,14 @@ namespace UnityEditor
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
-            public GUIContent dampen = EditorGUIUtility.TextContent("Dampen|Controls how much the velocity that exceeds the velocity limit should be dampened. A value of 0.5 will dampen the exceeding velocity by 50%.");
-            public GUIContent magnitude = EditorGUIUtility.TextContent("Speed|The speed limit of particles over the particle lifetime.");
-            public GUIContent separateAxes = EditorGUIUtility.TextContent("Separate Axes|If enabled, you can control the velocity limit separately for each axis.");
-            public GUIContent space = EditorGUIUtility.TextContent("Space|Specifies if the velocity values are in local space (rotated with the transform) or world space.");
+            public GUIContent dampen = EditorGUIUtility.TrTextContent("Dampen", "Controls how much the velocity that exceeds the velocity limit should be dampened. A value of 0.5 will dampen the exceeding velocity by 50%.");
+            public GUIContent magnitude = EditorGUIUtility.TrTextContent("Speed", "The speed limit of particles over the particle lifetime.");
+            public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the velocity limit separately for each axis.");
+            public GUIContent space = EditorGUIUtility.TrTextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.");
             public string[] spaces = { "Local", "World" };
-            public GUIContent drag = EditorGUIUtility.TextContent("Drag|Control the amount of drag applied to each particle during its lifetime.");
-            public GUIContent multiplyDragByParticleSize = EditorGUIUtility.TextContent("Multiply by Size|Adjust the drag based on the size of the particles.");
-            public GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TextContent("Multiply by Velocity|Adjust the drag based on the velocity of the particles.");
+            public GUIContent drag = EditorGUIUtility.TrTextContent("Drag", "Control the amount of drag applied to each particle during its lifetime.");
+            public GUIContent multiplyDragByParticleSize = EditorGUIUtility.TrTextContent("Multiply by Size", "Adjust the drag based on the size of the particles.");
+            public GUIContent multiplyDragByParticleVelocity = EditorGUIUtility.TrTextContent("Multiply by Velocity", "Adjust the drag based on the velocity of the particles.");
         }
         static Texts s_Texts;
 

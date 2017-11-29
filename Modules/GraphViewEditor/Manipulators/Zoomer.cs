@@ -8,8 +8,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class ContentZoomer : Manipulator
+    public class ContentZoomer : Manipulator
     {
         public static readonly Vector3 DefaultMinScale = new Vector3(0.1f, 0.1f, 1.0f);
         public static readonly Vector3 DefaultMaxScale = new Vector3(3.0f, 3.0f, 1.0f);

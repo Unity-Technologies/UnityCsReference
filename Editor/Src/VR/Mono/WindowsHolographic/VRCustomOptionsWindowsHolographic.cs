@@ -14,11 +14,11 @@ namespace UnityEditorInternal.VR
     {
         static GUIContent[] s_DepthOptions =
         {
-            new GUIContent("16-bit depth"),
-            new GUIContent("24-bit depth")
+            EditorGUIUtility.TrTextContent("16-bit depth"),
+            EditorGUIUtility.TrTextContent("24-bit depth")
         };
 
-        static GUIContent s_DepthFormatLabel = new GUIContent("Depth Format");
+        static GUIContent s_DepthFormatLabel = EditorGUIUtility.TrTextContent("Depth Format");
 
         SerializedProperty m_DepthFormat;
 

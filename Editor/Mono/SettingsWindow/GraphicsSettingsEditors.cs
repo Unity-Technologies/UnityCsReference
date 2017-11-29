@@ -237,29 +237,29 @@ namespace UnityEditor
 
             internal partial class Styles
             {
-                public static readonly GUIContent shaderSettings = EditorGUIUtility.TextContent("Platform shader settings");
-                public static readonly GUIContent builtinSettings = EditorGUIUtility.TextContent("Built-in shader settings");
-                public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TextContent("Shader preloading");
+                public static readonly GUIContent shaderSettings = EditorGUIUtility.TrTextContent("Platform shader settings");
+                public static readonly GUIContent builtinSettings = EditorGUIUtility.TrTextContent("Built-in shader settings");
+                public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader preloading");
 
-                public static readonly GUIContent lightmapModes = EditorGUIUtility.TextContent("Lightmap Modes");
-                public static readonly GUIContent lightmapPlain = EditorGUIUtility.TextContent("Baked Non-Directional|Include support for baked non-directional lightmaps.");
-                public static readonly GUIContent lightmapDirCombined = EditorGUIUtility.TextContent("Baked Directional|Include support for baked directional lightmaps.");
-                public static readonly GUIContent lightmapKeepShadowMask = EditorGUIUtility.TextContent("Baked Shadowmask|Include support for baked shadow occlusion.");
-                public static readonly GUIContent lightmapKeepSubtractive = EditorGUIUtility.TextContent("Baked Subtractive|Include support for baked substractive lightmaps.");
-                public static readonly GUIContent lightmapDynamicPlain = EditorGUIUtility.TextContent("Realtime Non-Directional|Include support for realtime non-directional lightmaps.");
-                public static readonly GUIContent lightmapDynamicDirCombined = EditorGUIUtility.TextContent("Realtime Directional|Include support for realtime directional lightmaps.");
-                public static readonly GUIContent lightmapFromScene = EditorGUIUtility.TextContent("Import From Current Scene|Calculate lightmap modes used by the current scene.");
+                public static readonly GUIContent lightmapModes = EditorGUIUtility.TrTextContent("Lightmap Modes");
+                public static readonly GUIContent lightmapPlain = EditorGUIUtility.TrTextContent("Baked Non-Directional", "Include support for baked non-directional lightmaps.");
+                public static readonly GUIContent lightmapDirCombined = EditorGUIUtility.TrTextContent("Baked Directional", "Include support for baked directional lightmaps.");
+                public static readonly GUIContent lightmapKeepShadowMask = EditorGUIUtility.TrTextContent("Baked Shadowmask", "Include support for baked shadow occlusion.");
+                public static readonly GUIContent lightmapKeepSubtractive = EditorGUIUtility.TrTextContent("Baked Subtractive", "Include support for baked substractive lightmaps.");
+                public static readonly GUIContent lightmapDynamicPlain = EditorGUIUtility.TrTextContent("Realtime Non-Directional", "Include support for realtime non-directional lightmaps.");
+                public static readonly GUIContent lightmapDynamicDirCombined = EditorGUIUtility.TrTextContent("Realtime Directional", "Include support for realtime directional lightmaps.");
+                public static readonly GUIContent lightmapFromScene = EditorGUIUtility.TrTextContent("Import From Current Scene", "Calculate lightmap modes used by the current scene.");
 
-                public static readonly GUIContent fogModes = EditorGUIUtility.TextContent("Fog Modes");
-                public static readonly GUIContent fogLinear = EditorGUIUtility.TextContent("Linear|Include support for Linear fog.");
-                public static readonly GUIContent fogExp = EditorGUIUtility.TextContent("Exponential|Include support for Exponential fog.");
-                public static readonly GUIContent fogExp2 = EditorGUIUtility.TextContent("Exponential Squared|Include support for Exponential Squared fog.");
-                public static readonly GUIContent fogFromScene = EditorGUIUtility.TextContent("Import From Current Scene|Calculate fog modes used by the current scene.");
+                public static readonly GUIContent fogModes = EditorGUIUtility.TrTextContent("Fog Modes");
+                public static readonly GUIContent fogLinear = EditorGUIUtility.TrTextContent("Linear", "Include support for Linear fog.");
+                public static readonly GUIContent fogExp = EditorGUIUtility.TrTextContent("Exponential", "Include support for Exponential fog.");
+                public static readonly GUIContent fogExp2 = EditorGUIUtility.TrTextContent("Exponential Squared", "Include support for Exponential Squared fog.");
+                public static readonly GUIContent fogFromScene = EditorGUIUtility.TrTextContent("Import From Current Scene", "Calculate fog modes used by the current scene.");
 
-                public static readonly GUIContent instancingVariants = EditorGUIUtility.TextContent("Instancing Variants");
+                public static readonly GUIContent instancingVariants = EditorGUIUtility.TrTextContent("Instancing Variants");
 
-                public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TextContent("Save to asset...|Save currently tracked shaders into a Shader Variant Manifest asset.");
-                public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TextContent("Clear|Clear currently tracked shader variant information.");
+                public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TrTextContent("Save to asset...", "Save currently tracked shaders into a Shader Variant Manifest asset.");
+                public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TrTextContent("Clear", "Clear currently tracked shader variant information.");
             }
         }
     }
@@ -316,8 +316,8 @@ namespace UnityEditor
 
             internal partial class Styles
             {
-                public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TextContent("Save to asset...|Save currently tracked shaders into a Shader Variant Manifest asset.");
-                public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TextContent("Clear|Clear currently tracked shader variant information.");
+                public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TrTextContent("Save to asset...", "Save currently tracked shaders into a Shader Variant Manifest asset.");
+                public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TrTextContent("Clear", "Clear currently tracked shader variant information.");
             }
         }
     }
@@ -371,22 +371,22 @@ namespace UnityEditor
             internal partial class Styles
             {
                 public static readonly GUIContent[] shaderQualityName =
-                { new GUIContent("Low"), new GUIContent("Medium"), new GUIContent("High") };
+                { EditorGUIUtility.TrTextContent("Low"), EditorGUIUtility.TrTextContent("Medium"), EditorGUIUtility.TrTextContent("High") };
                 public static readonly int[] shaderQualityValue =
                 { (int)ShaderQuality.Low, (int)ShaderQuality.Medium, (int)ShaderQuality.High };
 
                 public static readonly GUIContent[] renderingPathName =
-                { new GUIContent("Forward"), new GUIContent("Deferred"), new GUIContent("Legacy Vertex Lit"), new GUIContent("Legacy Deferred (light prepass)") };
+                { EditorGUIUtility.TrTextContent("Forward"), EditorGUIUtility.TrTextContent("Deferred"), EditorGUIUtility.TrTextContent("Legacy Vertex Lit"), EditorGUIUtility.TrTextContent("Legacy Deferred (light prepass)") };
                 public static readonly int[] renderingPathValue =
                 { (int)RenderingPath.Forward, (int)RenderingPath.DeferredShading, (int)RenderingPath.VertexLit, (int)RenderingPath.DeferredLighting };
 
                 public static readonly GUIContent[] hdrModeName =
-                { new GUIContent("FP16"), new GUIContent("R11G11B10") };
+                { EditorGUIUtility.TrTextContent("FP16"), EditorGUIUtility.TrTextContent("R11G11B10") };
                 public static readonly int[] hdrModeValue =
                 { (int)CameraHDRMode.FP16, (int)CameraHDRMode.R11G11B10};
 
                 public static readonly GUIContent[] realtimeGICPUUsageName =
-                { new GUIContent("Low"), new GUIContent("Medium"), new GUIContent("High"), new GUIContent("Unlimited")};
+                { EditorGUIUtility.TrTextContent("Low"), EditorGUIUtility.TrTextContent("Medium"), EditorGUIUtility.TrTextContent("High"), EditorGUIUtility.TrTextContent("Unlimited")};
                 public static readonly int[] realtimeGICPUUsageValue =
                 { (int)RealtimeGICPUUsage.Low, (int)RealtimeGICPUUsage.Medium, (int)RealtimeGICPUUsage.High, (int)RealtimeGICPUUsage.Unlimited };
             }
@@ -552,26 +552,26 @@ namespace UnityEditor
             internal partial class Styles
             {
                 public static readonly GUIContent[] tierName =
-                { new GUIContent("Low (Tier1)"), new GUIContent("Medium (Tier 2)"), new GUIContent("High (Tier 3)") };
+                { EditorGUIUtility.TrTextContent("Low (Tier1)"), EditorGUIUtility.TrTextContent("Medium (Tier 2)"), EditorGUIUtility.TrTextContent("High (Tier 3)") };
 
                 public static readonly GUIContent empty = EditorGUIUtility.TextContent("");
-                public static readonly GUIContent autoSettings = EditorGUIUtility.TextContent("Use Defaults");
+                public static readonly GUIContent autoSettings = EditorGUIUtility.TrTextContent("Use Defaults");
 
-                public static readonly GUIContent standardShaderSettings = EditorGUIUtility.TextContent("Standard Shader");
-                public static readonly GUIContent renderingSettings = EditorGUIUtility.TextContent("Rendering");
+                public static readonly GUIContent standardShaderSettings = EditorGUIUtility.TrTextContent("Standard Shader");
+                public static readonly GUIContent renderingSettings = EditorGUIUtility.TrTextContent("Rendering");
 
-                public static readonly GUIContent standardShaderQuality = EditorGUIUtility.TextContent("Standard Shader Quality");
-                public static readonly GUIContent reflectionProbeBoxProjection = EditorGUIUtility.TextContent("Reflection Probes Box Projection");
-                public static readonly GUIContent reflectionProbeBlending = EditorGUIUtility.TextContent("Reflection Probes Blending");
-                public static readonly GUIContent detailNormalMap = EditorGUIUtility.TextContent("Detail Normal Map");
-                public static readonly GUIContent cascadedShadowMaps = EditorGUIUtility.TextContent("Cascaded Shadows");
-                public static readonly GUIContent prefer32BitShadowMaps = EditorGUIUtility.TextContent("Prefer 32 bit shadow maps");
-                public static readonly GUIContent semitransparentShadows = EditorGUIUtility.TextContent("Enable Semitransparent Shadows");
-                public static readonly GUIContent enableLPPV = EditorGUIUtility.TextContent("Enable Light Probe Proxy Volume");
-                public static readonly GUIContent renderingPath = EditorGUIUtility.TextContent("Rendering Path");
-                public static readonly GUIContent useHDR = EditorGUIUtility.TextContent("Use HDR");
-                public static readonly GUIContent hdrMode = EditorGUIUtility.TextContent("HDR Mode");
-                public static readonly GUIContent realtimeGICPUUsage = EditorGUIUtility.TextContent("Realtime Global Illumination CPU Usage|How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
+                public static readonly GUIContent standardShaderQuality = EditorGUIUtility.TrTextContent("Standard Shader Quality");
+                public static readonly GUIContent reflectionProbeBoxProjection = EditorGUIUtility.TrTextContent("Reflection Probes Box Projection");
+                public static readonly GUIContent reflectionProbeBlending = EditorGUIUtility.TrTextContent("Reflection Probes Blending");
+                public static readonly GUIContent detailNormalMap = EditorGUIUtility.TrTextContent("Detail Normal Map");
+                public static readonly GUIContent cascadedShadowMaps = EditorGUIUtility.TrTextContent("Cascaded Shadows");
+                public static readonly GUIContent prefer32BitShadowMaps = EditorGUIUtility.TrTextContent("Prefer 32 bit shadow maps");
+                public static readonly GUIContent semitransparentShadows = EditorGUIUtility.TrTextContent("Enable Semitransparent Shadows");
+                public static readonly GUIContent enableLPPV = EditorGUIUtility.TrTextContent("Enable Light Probe Proxy Volume");
+                public static readonly GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path");
+                public static readonly GUIContent useHDR = EditorGUIUtility.TrTextContent("Use HDR");
+                public static readonly GUIContent hdrMode = EditorGUIUtility.TrTextContent("HDR Mode");
+                public static readonly GUIContent realtimeGICPUUsage = EditorGUIUtility.TrTextContent("Realtime Global Illumination CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
             }
         }
     }

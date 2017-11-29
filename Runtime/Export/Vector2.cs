@@ -12,6 +12,7 @@ namespace UnityEngine
     // Representation of 2D vectors and points.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [GenerateManagedProxy("Vector2f")]
     public struct Vector2
     {
         // X component of the vector.

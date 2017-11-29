@@ -364,8 +364,12 @@ namespace UnityEditor
             index = Mathf.Clamp((int)EditorSettings.spritePackerMode, 0, spritePackerPopupList.Length - 1);
             CreatePopupMenu("Mode", spritePackerPopupList, index, SetSpritePackerMode);
 
-            index = Mathf.Clamp((int)(EditorSettings.spritePackerPaddingPower - 1), 0, 2);
-            CreatePopupMenu("Padding Power (Legacy Sprite Packer)", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
+            if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn
+                || EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
+            {
+                index = Mathf.Clamp((int)(EditorSettings.spritePackerPaddingPower - 1), 0, 2);
+                CreatePopupMenu("Padding Power (Legacy Sprite Packer)", spritePackerPaddingPowerPopupList, index, SetSpritePackerPaddingPower);
+            }
 
             DoProjectGenerationSettings();
             DoEtcTextureCompressionSettings();
@@ -476,28 +480,28 @@ namespace UnityEditor
 
             var content = new GUIContent(remoteDevicePopupList[index].content);
             var popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, new GUIContent("Device"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Device"));
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteDevicePopupList, index, SetUnityRemoteDevice);
 
             int compression = GetIndexById(remoteCompressionList, EditorSettings.unityRemoteCompression, 0);
             content = new GUIContent(remoteCompressionList[compression].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, new GUIContent("Compression"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Compression"));
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteCompressionList, compression, SetUnityRemoteCompression);
 
             int resolution = GetIndexById(remoteResolutionList, EditorSettings.unityRemoteResolution, 0);
             content = new GUIContent(remoteResolutionList[resolution].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, new GUIContent("Resolution"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Resolution"));
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteResolutionList, resolution, SetUnityRemoteResolution);
 
             int joystickSource = GetIndexById(remoteJoystickSourceList, EditorSettings.unityRemoteJoystickSource, 0);
             content = new GUIContent(remoteJoystickSourceList[joystickSource].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, new GUIContent("Joystick Source"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Joystick Source"));
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteJoystickSourceList, joystickSource, SetUnityRemoteJoystickSource);
         }

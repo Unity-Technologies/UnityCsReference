@@ -524,12 +524,12 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent showWireframe = new GUIContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
-            public static readonly GUIContent selectedProbePosition = new GUIContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
-            public static readonly GUIContent addProbe = new GUIContent("Add Probe");
-            public static readonly GUIContent deleteSelected = new GUIContent("Delete Selected");
-            public static readonly GUIContent selectAll = new GUIContent("Select All");
-            public static readonly GUIContent duplicateSelected = new GUIContent("Duplicate Selected");
+            public static readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
+            public static readonly GUIContent selectedProbePosition = EditorGUIUtility.TrTextContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
+            public static readonly GUIContent addProbe = EditorGUIUtility.TrTextContent("Add Probe");
+            public static readonly GUIContent deleteSelected = EditorGUIUtility.TrTextContent("Delete Selected");
+            public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select All");
+            public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected");
             public static readonly GUIContent editModeButton;
 
             static Styles()

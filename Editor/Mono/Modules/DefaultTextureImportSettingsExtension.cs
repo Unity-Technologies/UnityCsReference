@@ -19,19 +19,19 @@ namespace UnityEditor.Modules
     {
         static readonly string[] kMaxTextureSizeStrings = { "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192" };
         static readonly int[] kMaxTextureSizeValues = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
-        static readonly GUIContent maxSize = EditorGUIUtility.TextContent("Max Size|Textures larger than this will be scaled down.");
+        static readonly GUIContent maxSize = EditorGUIUtility.TrTextContent("Max Size", "Textures larger than this will be scaled down.");
 
         static readonly string[] kResizeAlgorithmStrings = { "Mitchell", "Bilinear" };
         static readonly int[] kResizeAlgorithmValues = { (int)TextureResizeAlgorithm.Mitchell, (int)TextureResizeAlgorithm.Bilinear };
-        static readonly GUIContent resizeAlgorithm = EditorGUIUtility.TextContent("Resize Algorithm|Select algorithm to apply for textures when scaled down.");
+        static readonly GUIContent resizeAlgorithm = EditorGUIUtility.TrTextContent("Resize Algorithm", "Select algorithm to apply for textures when scaled down.");
 
-        static readonly GUIContent kTextureCompression = EditorGUIUtility.TextContent("Compression|How will this texture be compressed?");
+        static readonly GUIContent kTextureCompression = EditorGUIUtility.TrTextContent("Compression", "How will this texture be compressed?");
         static readonly GUIContent[] kTextureCompressionOptions =
         {
-            EditorGUIUtility.TextContent("None|Texture is not compressed."),
-            EditorGUIUtility.TextContent("Low Quality|Texture compressed with low quality but high performance, high compression format."),
-            EditorGUIUtility.TextContent("Normal Quality|Texture is compressed with a standard format."),
-            EditorGUIUtility.TextContent("High Quality|Texture compressed with a high quality format."),
+            EditorGUIUtility.TrTextContent("None", "Texture is not compressed."),
+            EditorGUIUtility.TrTextContent("Low Quality", "Texture compressed with low quality but high performance, high compression format."),
+            EditorGUIUtility.TrTextContent("Normal Quality", "Texture is compressed with a standard format."),
+            EditorGUIUtility.TrTextContent("High Quality", "Texture compressed with a high quality format."),
         };
         static readonly int[] kTextureCompressionValues =
         {

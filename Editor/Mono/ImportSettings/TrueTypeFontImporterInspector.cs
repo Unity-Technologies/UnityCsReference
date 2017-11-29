@@ -130,12 +130,12 @@ namespace UnityEditor
 
         static GUIContent[] kCharacterStrings =
         {
-            new GUIContent("Dynamic"),
-            new GUIContent("Unicode"),
-            new GUIContent("ASCII default set"),
-            new GUIContent("ASCII upper case"),
-            new GUIContent("ASCII lower case"),
-            new GUIContent("Custom set")
+            EditorGUIUtility.TrTextContent("Dynamic"),
+            EditorGUIUtility.TrTextContent("Unicode"),
+            EditorGUIUtility.TrTextContent("ASCII default set"),
+            EditorGUIUtility.TrTextContent("ASCII upper case"),
+            EditorGUIUtility.TrTextContent("ASCII lower case"),
+            EditorGUIUtility.TrTextContent("Custom set")
         };
         static int[] kCharacterValues =
         {
@@ -149,10 +149,10 @@ namespace UnityEditor
 
         static GUIContent[] kRenderingModeStrings =
         {
-            new GUIContent("Smooth"),
-            new GUIContent("Hinted Smooth"),
-            new GUIContent("Hinted Raster"),
-            new GUIContent("OS Default"),
+            EditorGUIUtility.TrTextContent("Smooth"),
+            EditorGUIUtility.TrTextContent("Hinted Smooth"),
+            EditorGUIUtility.TrTextContent("Hinted Raster"),
+            EditorGUIUtility.TrTextContent("OS Default"),
         };
         static int[] kRenderingModeValues =
         {
@@ -164,9 +164,9 @@ namespace UnityEditor
 
         static GUIContent[] kAscentCalculationModeStrings =
         {
-            new GUIContent("Legacy version 2 mode (glyph bounding boxes)"),
-            new GUIContent("Face ascender metric"),
-            new GUIContent("Face bounding box metric"),
+            EditorGUIUtility.TrTextContent("Legacy version 2 mode (glyph bounding boxes)"),
+            EditorGUIUtility.TrTextContent("Face ascender metric"),
+            EditorGUIUtility.TrTextContent("Face bounding box metric"),
         };
         static int[] kAscentCalculationModeValues =
         {
@@ -227,10 +227,10 @@ namespace UnityEditor
             if (m_FontSize.intValue > 500)
                 m_FontSize.intValue = 500;
 
-            EditorGUILayout.IntPopup(m_FontRenderingMode, kRenderingModeStrings, kRenderingModeValues, new GUIContent("Rendering Mode"));
-            EditorGUILayout.IntPopup(m_TextureCase, kCharacterStrings, kCharacterValues, new GUIContent("Character"));
-            EditorGUILayout.IntPopup(m_AscentCalculationMode, kAscentCalculationModeStrings, kAscentCalculationModeValues, new GUIContent("Ascent Calculation Mode"));
-            EditorGUILayout.PropertyField(m_UseLegacyBoundsCalculation, new GUIContent("Use Legacy Bounds"));
+            EditorGUILayout.IntPopup(m_FontRenderingMode, kRenderingModeStrings, kRenderingModeValues, EditorGUIUtility.TrTextContent("Rendering Mode"));
+            EditorGUILayout.IntPopup(m_TextureCase, kCharacterStrings, kCharacterValues, EditorGUIUtility.TrTextContent("Character"));
+            EditorGUILayout.IntPopup(m_AscentCalculationMode, kAscentCalculationModeStrings, kAscentCalculationModeValues, EditorGUIUtility.TrTextContent("Ascent Calculation Mode"));
+            EditorGUILayout.PropertyField(m_UseLegacyBoundsCalculation, EditorGUIUtility.TrTextContent("Use Legacy Bounds"));
             EditorGUILayout.PropertyField(m_ShouldRoundAdvanceValue, new GUIContent("Should Round Advance Value"));
 
             if (!m_TextureCase.hasMultipleDifferentValues)
@@ -253,7 +253,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    EditorGUILayout.PropertyField(m_IncludeFontData, new GUIContent("Incl. Font Data"));
+                    EditorGUILayout.PropertyField(m_IncludeFontData, EditorGUIUtility.TrTextContent("Incl. Font Data"));
                     // The default font names are different based on font so it'll be a mess if we show
                     // this GUI when multiple fonts are selected.
                     if (targets.Length == 1)

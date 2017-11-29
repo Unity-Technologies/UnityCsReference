@@ -343,6 +343,7 @@ namespace UnityEditor
                 panel.getViewDataDictionary = null;
                 panel.savePersistentViewData = null;
             }
+
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update -= SendUpdate;
 
@@ -452,9 +453,9 @@ namespace UnityEditor
 
             if (Unsupported.IsDeveloperMode())
             {
-                menu.AddItem(EditorGUIUtility.TextContent("Inspect Window"), false, Inspect, window);
-                menu.AddItem(EditorGUIUtility.TextContent("Inspect View"), false, Inspect, window.m_Parent);
-                menu.AddItem(EditorGUIUtility.TextContent("Reload Window _f5"), false, Reload, window);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Window"), false, Inspect, window);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Inspect View"), false, Inspect, window.m_Parent);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
 
                 menu.AddSeparator("");
             }

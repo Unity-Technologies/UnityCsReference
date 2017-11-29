@@ -261,8 +261,6 @@ namespace UnityEditor
             m_Sections.Add(new Section("Keys", ShowKeys));
             m_Sections.Add(new Section("GI Cache", ShowGICache));
             m_Sections.Add(new Section("2D", Show2D));
-            //m_Sections.Add(new Section("Language", ShowLanguage));
-
             SystemLanguage[] editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
             if (m_EditorLanguageNames == null || m_EditorLanguageNames.Length != editorLanguages.Length)
             {
@@ -283,6 +281,10 @@ namespace UnityEditor
                 ArrayUtility.Insert(ref m_EditorLanguageNames, 0, EditorGUIUtility.TextContent(""));
                 GUIContent defaultLanguage = EditorGUIUtility.TextContent(string.Format("Default ( {0} )", LocalizationDatabase.GetDefaultEditorLanguage().ToString()));
                 ArrayUtility.Insert(ref m_EditorLanguageNames, 0, defaultLanguage);
+            }
+            if (editorLanguages.Length > 1)
+            {
+                m_Sections.Add(new Section("Language", ShowLanguage));
             }
 
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)

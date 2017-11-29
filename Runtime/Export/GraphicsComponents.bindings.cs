@@ -85,6 +85,8 @@ namespace UnityEngine
 
         extern public LightBakingOutput bakingOutput { get; set; }
         extern public int  cullingMask        { get; set; }
+        extern public float shadowRadius { get; set; }
+        extern public float shadowAngle { get; set; }
     }
 
     [NativeHeader("Runtime/Camera/Skybox.h")]

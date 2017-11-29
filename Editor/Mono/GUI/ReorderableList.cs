@@ -22,6 +22,7 @@ namespace UnityEditorInternal
         public delegate float ElementHeightCallbackDelegate(int index);
         public delegate void DrawNoneElementCallback(Rect rect);
 
+        public delegate void ReorderCallbackDelegateWithDetails(ReorderableList list, int oldIndex, int newIndex);
         public delegate void ReorderCallbackDelegate(ReorderableList list);
         public delegate void SelectCallbackDelegate(ReorderableList list);
         public delegate void AddCallbackDelegate(ReorderableList list);
@@ -44,6 +45,7 @@ namespace UnityEditorInternal
         public ElementHeightCallbackDelegate elementHeightCallback;
 
         // interaction callbacks
+        public ReorderCallbackDelegateWithDetails onReorderCallbackWithDetails;
         public ReorderCallbackDelegate onReorderCallback;
         public SelectCallbackDelegate onSelectCallback;
         public AddCallbackDelegate onAddCallback;
@@ -75,9 +77,9 @@ namespace UnityEditorInternal
         // class for default rendering and behavior of reorderable list - stores styles and is statically available as s_Defaults
         public class Defaults
         {
-            public GUIContent iconToolbarPlus = EditorGUIUtility.IconContent("Toolbar Plus", "|Add to list");
-            public GUIContent iconToolbarPlusMore = EditorGUIUtility.IconContent("Toolbar Plus More", "|Choose to add to list");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.IconContent("Toolbar Minus", "|Remove selection from list");
+            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add to list");
+            public GUIContent iconToolbarPlusMore = EditorGUIUtility.TrIconContent("Toolbar Plus More", "Choose to add to list");
+            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove selection from list");
             public readonly GUIStyle draggingHandle = "RL DragHandle";
             public readonly GUIStyle headerBackground = "RL Header";
             public readonly GUIStyle footerBackground = "RL Footer";
@@ -755,10 +757,16 @@ namespace UnityEditorInternal
                                 }
                                 m_ElementList[targetIndex] = tempObject;
                             }
+
+                            var oldActiveElement = m_ActiveElement;
+                            var newActiveElement = targetIndex;
+
                             // update the active element, now that we've moved it
                             m_ActiveElement = targetIndex;
                             // give the user a callback
-                            if (onReorderCallback != null)
+                            if (onReorderCallbackWithDetails != null)
+                                onReorderCallbackWithDetails(this, oldActiveElement, newActiveElement);
+                            else if (onReorderCallback != null)
                                 onReorderCallback(this);
 
                             if (onChangedCallback != null)

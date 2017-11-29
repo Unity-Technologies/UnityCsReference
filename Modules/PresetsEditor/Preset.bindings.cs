@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     [NativeType(Header = "Modules/PresetsEditor/Preset.h")]
     [NativeHeader("Modules/PresetsEditor/PresetManager.h")]

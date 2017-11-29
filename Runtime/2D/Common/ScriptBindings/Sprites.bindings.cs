@@ -9,6 +9,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/2D/Common/ScriptBindings/SpritesMarshalling.h")]
+    [NativeHeader("Runtime/Graphics/SpriteUtility.h")]
     [NativeType("Runtime/Graphics/SpriteFrame.h")]
     public sealed partial class Sprite
     {
@@ -66,6 +67,9 @@ namespace UnityEngine
             for (int idx = 0; idx < physicsShapes.Count; ++idx)
                 OverridePhysicsShape(this, physicsShapes[idx], idx);
         }
+
+        [FreeFunction("CreateSpriteWithoutTextureScripting")]
+        internal extern static Sprite Create(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture = null);
 
         [FreeFunction("SpritesBindings::OverridePhysicsShapeCount")]
         private extern static void OverridePhysicsShapeCount(Sprite sprite, int physicsShapeCount);

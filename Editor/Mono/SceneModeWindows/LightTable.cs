@@ -11,26 +11,26 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TextContent("Infinite"), EditorGUIUtility.TextContent("Box") };
-            public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TextContent("Baked") };
-            public static readonly GUIContent Name = EditorGUIUtility.TextContent("Name");
-            public static readonly GUIContent On = EditorGUIUtility.TextContent("On");
-            public static readonly GUIContent Type = EditorGUIUtility.TextContent("Type");
-            public static readonly GUIContent Mode = EditorGUIUtility.TextContent("Mode");
-            public static readonly GUIContent Color = EditorGUIUtility.TextContent("Color");
-            public static readonly GUIContent Intensity = EditorGUIUtility.TextContent("Intensity");
-            public static readonly GUIContent IndirectMultiplier = EditorGUIUtility.TextContent("Indirect Multiplier");
-            public static readonly GUIContent ShadowType = EditorGUIUtility.TextContent("Shadow Type");
-            public static readonly GUIContent Projection = EditorGUIUtility.TextContent("Projection");
-            public static readonly GUIContent HDR = EditorGUIUtility.TextContent("HDR");
-            public static readonly GUIContent ShadowDistance = EditorGUIUtility.TextContent("Shadow Distance");
-            public static readonly GUIContent NearPlane = EditorGUIUtility.TextContent("Near Plane");
-            public static readonly GUIContent FarPlane = EditorGUIUtility.TextContent("Far Plane");
-            public static readonly GUIContent GlobalIllumination = EditorGUIUtility.TextContent("Global Illumination");
+            public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
+            public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked") };
+            public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent On = EditorGUIUtility.TrTextContent("On");
+            public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");
+            public static readonly GUIContent Mode = EditorGUIUtility.TrTextContent("Mode");
+            public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color");
+            public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity");
+            public static readonly GUIContent IndirectMultiplier = EditorGUIUtility.TrTextContent("Indirect Multiplier");
+            public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type");
+            public static readonly GUIContent Projection = EditorGUIUtility.TrTextContent("Projection");
+            public static readonly GUIContent HDR = EditorGUIUtility.TrTextContent("HDR");
+            public static readonly GUIContent ShadowDistance = EditorGUIUtility.TrTextContent("Shadow Distance");
+            public static readonly GUIContent NearPlane = EditorGUIUtility.TrTextContent("Near Plane");
+            public static readonly GUIContent FarPlane = EditorGUIUtility.TrTextContent("Far Plane");
+            public static readonly GUIContent GlobalIllumination = EditorGUIUtility.TrTextContent("Global Illumination");
             public static readonly GUIContent SelectObjects = EditorGUIUtility.TextContent("");
-            public static readonly GUIContent SelectObjectsButton = EditorGUIUtility.TextContentWithIcon("|Find References in Scene", "UnityEditor.FindDependencies");
+            public static readonly GUIContent SelectObjectsButton = EditorGUIUtility.TrTextContentWithIcon("", "Find References in Scene", "UnityEditor.FindDependencies");
 
-            public static readonly GUIContent[] LightmapBakeTypeTitles = { new GUIContent("Realtime"), new GUIContent("Mixed"), new GUIContent("Baked") };
+            public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
             public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
         }
 
@@ -456,9 +456,9 @@ namespace UnityEditor
                             }
                         }
                 },
-                new SerializedPropertyTreeView.Column // 3: Intensity
+                new SerializedPropertyTreeView.Column // 3: Color
                 {
-                    headerContent           = Styles.Intensity,
+                    headerContent           = Styles.Color,
                     headerTextAlignment     = TextAlignment.Left,
                     sortedAscending         = true,
                     sortingArrowAlignment   = TextAlignment.Center,
@@ -487,11 +487,11 @@ namespace UnityEditor
                                 Color color = material.GetColor("_EmissionColor");
 
                                 EditorGUI.BeginChangeCheck();
-                                Color newValue = EditorGUI.ColorBrightnessField(r, GUIContent.Temp(""), color);
+                                Color newValue = EditorGUI.ColorField(r, GUIContent.Temp(""), color, true, false, true);
 
                                 if (EditorGUI.EndChangeCheck())
                                 {
-                                    Undo.RecordObjects(new Material[] { material }, "Modify Color of " + material.name);
+                                    Undo.RecordObjects(new Material[] { material }, "Modify Emission Color of " + material.name);
                                     material.SetColor("_EmissionColor", newValue);
                                 }
                             }

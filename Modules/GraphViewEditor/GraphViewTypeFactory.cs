@@ -4,8 +4,7 @@
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class GraphViewTypeFactory : BaseTypeFactory<GraphElementPresenter, GraphElement>
+    public class GraphViewTypeFactory : BaseTypeFactory<GraphElementPresenter, GraphElement>
     {
         public GraphViewTypeFactory() : base(typeof(FallbackGraphElement))
         {

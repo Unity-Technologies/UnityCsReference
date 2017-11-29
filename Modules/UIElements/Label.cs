@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Label : VisualElement
+    public class Label : BaseTextElement
     {
         public Label() : this(String.Empty) {}
         public Label(string text)

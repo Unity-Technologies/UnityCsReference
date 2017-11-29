@@ -22,7 +22,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent starIcon = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Start snapshot");
-            public GUIContent header = new GUIContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.");
+            public GUIContent header = EditorGUIUtility.TrTextContent("Snapshots", "A snapshot is a set of values for all parameters in the mixer. When using the mixer you modify parameters in the selected snapshot. Blend between multiple snapshots at runtime.");
             public GUIContent addButton = new GUIContent("+");
             public Texture2D snapshotsIcon = EditorGUIUtility.FindTexture(typeof(UnityEngine.Audio.AudioMixerSnapshot));
         }
@@ -257,11 +257,11 @@ namespace UnityEditor
             {
                 var menu = new GenericMenu();
                 data input = new data() { snapshot = snapshot, list = list };
-                menu.AddItem(new GUIContent("Set as start Snapshot"), false, SetAsStartupSnapshot, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Set as start Snapshot"), false, SetAsStartupSnapshot, input);
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Rename"), false, Rename, input);
-                menu.AddItem(new GUIContent("Duplicate"), false, Duplicate, input);
-                menu.AddItem(new GUIContent("Delete"), false, Delete, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, Rename, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, Duplicate, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete, input);
 
                 menu.DropDown(buttonRect);
             }

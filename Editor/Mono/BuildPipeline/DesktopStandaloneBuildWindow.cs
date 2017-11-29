@@ -10,8 +10,8 @@ using UnityEngine;
 
 internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWindowExtension
 {
-    private GUIContent m_StandaloneTarget = EditorGUIUtility.TextContent("Target Platform|Destination platform for standalone build");
-    private GUIContent m_Architecture = EditorGUIUtility.TextContent("Architecture|Build m_Architecture for standalone");
+    private GUIContent m_StandaloneTarget = EditorGUIUtility.TrTextContent("Target Platform", "Destination platform for standalone build");
+    private GUIContent m_Architecture = EditorGUIUtility.TrTextContent("Architecture", "Build m_Architecture for standalone");
 
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
@@ -35,17 +35,17 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneWindows)))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneWindows);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TextContent("Windows"));
+            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Windows"));
         }
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneOSX)))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneOSX);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TextContent("Mac OS X"));
+            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Mac OS X"));
         }
         if (ModuleManager.IsPlatformSupportLoaded(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget.StandaloneLinux)))
         {
             standaloneSubtargetsList.Add(BuildTarget.StandaloneLinux);
-            standaloneSubtargetStringsList.Add(EditorGUIUtility.TextContent("Linux"));
+            standaloneSubtargetStringsList.Add(EditorGUIUtility.TrTextContent("Linux"));
         }
 
         m_StandaloneSubtargets = standaloneSubtargetsList.ToArray();
@@ -74,16 +74,16 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
                 return new Dictionary<GUIContent, BuildTarget>() {
-                    { EditorGUIUtility.TextContent("x86"), BuildTarget.StandaloneWindows },
-                    { EditorGUIUtility.TextContent("x86_64"), BuildTarget.StandaloneWindows64 },
+                    { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneWindows },
+                    { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneWindows64 },
                 };
             case BuildTarget.StandaloneLinux:
             case BuildTarget.StandaloneLinux64:
             case BuildTarget.StandaloneLinuxUniversal:
                 return new Dictionary<GUIContent, BuildTarget>() {
-                    { EditorGUIUtility.TextContent("x86"), BuildTarget.StandaloneLinux },
-                    { EditorGUIUtility.TextContent("x86_64"), BuildTarget.StandaloneLinux64 },
-                    { EditorGUIUtility.TextContent("x86 + x86_64 (Universal)"), BuildTarget.StandaloneLinuxUniversal },
+                    { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneLinux },
+                    { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneLinux64 },
+                    { EditorGUIUtility.TrTextContent("x86 + x86_64 (Universal)"), BuildTarget.StandaloneLinuxUniversal },
                 };
             default:
                 return null;

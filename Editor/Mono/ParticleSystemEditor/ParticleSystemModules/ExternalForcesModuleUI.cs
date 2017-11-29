@@ -13,7 +13,7 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent multiplier = EditorGUIUtility.TextContent("Multiplier|Used to scale the force applied to this particle system.");
+            public GUIContent multiplier = EditorGUIUtility.TrTextContent("Multiplier", "Used to scale the force applied to this particle system.");
         }
         static Texts s_Texts;
 

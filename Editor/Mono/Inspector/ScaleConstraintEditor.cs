@@ -25,43 +25,16 @@ namespace UnityEditor
         internal override SerializedProperty isLocked { get { return m_IsLocked; } }
         internal override SerializedProperty sources { get { return m_Sources; } }
 
-        private class Styles : IConstraintStyle
+        private class Styles : ConstraintStyleBase
         {
-            GUIContent m_Activate = EditorGUIUtility.TextContent("Activate|Activate the constraint at the current offset from the sources.");
-            GUIContent m_Zero = EditorGUIUtility.TextContent("Zero|Activate the constraint at zero offset from the sources.");
+            GUIContent m_ScaleAtRest = EditorGUIUtility.TrTextContent("Scale At Rest");
+            GUIContent m_ScaleOffset = EditorGUIUtility.TrTextContent("Scale Offset");
 
-            GUIContent m_ScaleAtRest = EditorGUIUtility.TextContent("Scale At Rest");
-            GUIContent m_ScaleOffset = EditorGUIUtility.TextContent("Scale Offset");
+            GUIContent m_ScalingAxes = EditorGUIUtility.TrTextContent("Freeze Scaling Axes");
 
-            GUIContent m_Sources = EditorGUIUtility.TextContent("Sources");
-
-            GUIContent m_Weight = EditorGUIUtility.TextContent("Weight");
-
-            GUIContent m_ScalingAxes = EditorGUIUtility.TextContent("Freeze Scaling Axes");
-
-            GUIContent m_IsActive = EditorGUIUtility.TextContent("Is Active");
-            GUIContent m_IsLocked = EditorGUIUtility.TextContent("Lock|When set, evaluate with the current offset. When not set, update the offset based on the current transform.");
-
-            GUIContent[] m_Axes =
-            {
-                EditorGUIUtility.TextContent("X"),
-                EditorGUIUtility.TextContent("Y"),
-                EditorGUIUtility.TextContent("Z")
-            };
-
-            GUIContent m_ConstraintSettings = EditorGUIUtility.TextContent("Constraint Settings");
-
-            public GUIContent Activate { get { return m_Activate; } }
-            public GUIContent Zero { get { return m_Zero; } }
-            public GUIContent AtRest { get { return m_ScaleAtRest; } }
-            public GUIContent Offset { get { return m_ScaleOffset; } }
-            public GUIContent Sources { get { return m_Sources; } }
-            public GUIContent Weight { get { return m_Weight; } }
+            public override GUIContent AtRest { get { return m_ScaleAtRest; } }
+            public override GUIContent Offset { get { return m_ScaleOffset; } }
             public GUIContent FreezeAxes { get { return m_ScalingAxes; } }
-            public GUIContent IsActive { get { return m_IsActive; } }
-            public GUIContent IsLocked { get { return m_IsLocked; } }
-            public GUIContent[] Axes { get { return m_Axes; } }
-            public GUIContent ConstraintSettings { get { return m_ConstraintSettings; } }
         }
 
         private static Styles s_Style;

@@ -58,10 +58,10 @@ namespace UnityEditor
 
             public GUIContent m_FilterByLabel = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Search by Label");
             public GUIContent m_FilterByType = new GUIContent(EditorGUIUtility.FindTexture("FilterByType"), "Search by Type");
-            public GUIContent m_CreateDropdownContent = new GUIContent("Create");
+            public GUIContent m_CreateDropdownContent = EditorGUIUtility.TrTextContent("Create");
             public GUIContent m_SaveFilterContent = new GUIContent(EditorGUIUtility.FindTexture("Favorite"), "Save search");
-            public GUIContent m_EmptyFolderText = new GUIContent("This folder is empty");
-            public GUIContent m_SearchIn = new GUIContent("Search:");
+            public GUIContent m_EmptyFolderText = EditorGUIUtility.TrTextContent("This folder is empty");
+            public GUIContent m_SearchIn = EditorGUIUtility.TrTextContent("Search:");
 
             static GUIStyle GetStyle(string styleName)
             {
@@ -170,11 +170,11 @@ namespace UnityEditor
 
         // Used by search menu bar
         [System.NonSerialized]
-        public GUIContent m_SearchAllAssets = new GUIContent("Assets"); // do not localize this: Assets=folder name
+        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("Assets"); // do not localize this: Assets=folder name
         [System.NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
         [System.NonSerialized]
-        public GUIContent m_SearchAssetStore = new GUIContent("Asset Store"); // updated when needed
+        public GUIContent m_SearchAssetStore = EditorGUIUtility.TrTextContent("Asset Store"); // updated when needed
 
         ProjectBrowser()
         {
@@ -1976,8 +1976,8 @@ namespace UnityEditor
         {
             if (m_EnableOldAssetTree)
             {
-                GUIContent assetTreeText =      new GUIContent("One Column Layout");
-                GUIContent assetBrowserText =   new GUIContent("Two Column Layout");
+                GUIContent assetTreeText =      EditorGUIUtility.TrTextContent("One Column Layout");
+                GUIContent assetBrowserText =   EditorGUIUtility.TrTextContent("Two Column Layout");
 
                 menu.AddItem(assetTreeText, m_ViewMode == ViewMode.OneColumn, SetOneColumn);
                 if (position.width >= k_MinWidthTwoColumns)
@@ -1989,9 +1989,9 @@ namespace UnityEditor
 
                 if (Unsupported.IsDeveloperMode())
                 {
-                    menu.AddItem(new GUIContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
-                    menu.AddItem(new GUIContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
-                    menu.AddItem(new GUIContent("DEVELOPER/Use TreeView Expansion Animation"), EditorPrefs.GetBool(TreeViewController.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Use TreeView Expansion Animation"), EditorPrefs.GetBool(TreeViewController.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
                 }
             }
         }
@@ -2626,7 +2626,7 @@ namespace UnityEditor
             static internal void Show(int savedFilterInstanceID)
             {
                 // Curve context menu
-                GUIContent delete = new GUIContent("Delete");
+                GUIContent delete = EditorGUIUtility.TrTextContent("Delete");
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(delete, false, new SavedFiltersContextMenu(savedFilterInstanceID).Delete);
@@ -2669,7 +2669,7 @@ namespace UnityEditor
                 }
                 else
                 {
-                    menu.AddDisabledItem(new GUIContent("No sub folders..."));
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("No sub folders..."));
                 }
 
                 menu.DropDown(activatorRect);
@@ -2694,7 +2694,7 @@ namespace UnityEditor
             {
                 GenericMenu menu = new GenericMenu();
 
-                GUIContent assetStoreWindow = new GUIContent("Show in Asset Store window");
+                GUIContent assetStoreWindow = EditorGUIUtility.TrTextContent("Show in Asset Store window");
                 AssetStoreAsset activeAsset = AssetStoreAssetSelection.GetFirstAsset();
                 if (activeAsset != null && activeAsset.id != 0)
                     menu.AddItem(assetStoreWindow, false, new AssetStoreItemContextMenu().OpenAssetStoreWindow);

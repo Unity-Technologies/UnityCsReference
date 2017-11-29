@@ -24,11 +24,11 @@ namespace UnityEditor
 
             s_ToolIcons = new GUIContent[]
             {
-                EditorGUIUtility.IconContent("MoveTool", "|Move Tool"),
-                EditorGUIUtility.IconContent("RotateTool", "|Rotate Tool"),
-                EditorGUIUtility.IconContent("ScaleTool", "|Scale Tool"),
-                EditorGUIUtility.IconContent("RectTool", "|Rect Tool"),
-                EditorGUIUtility.IconContent("TransformTool", "|Move, Rotate or Scale selected objects."),
+                EditorGUIUtility.TrIconContent("MoveTool", "Move Tool"),
+                EditorGUIUtility.TrIconContent("RotateTool", "Rotate Tool"),
+                EditorGUIUtility.TrIconContent("ScaleTool", "Scale Tool"),
+                EditorGUIUtility.TrIconContent("RectTool", "Rect Tool"),
+                EditorGUIUtility.TrIconContent("TransformTool", "Move, Rotate or Scale selected objects."),
                 EditorGUIUtility.IconContent("MoveTool On"),
                 EditorGUIUtility.IconContent("RotateTool On"),
                 EditorGUIUtility.IconContent("ScaleTool On"),
@@ -36,42 +36,42 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("TransformTool On"),
             };
 
-            string viewToolsTooltipText = "|Hand Tool";
+            string viewToolsTooltipText = "Hand Tool";
 
             s_ViewToolIcons = new GUIContent[]
             {
-                EditorGUIUtility.IconContent("ViewToolOrbit", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolMove", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolZoom", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolOrbit", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolOrbit", "|Orbit the Scene view."),
-                EditorGUIUtility.IconContent("ViewToolOrbit On", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolMove On", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolZoom On", viewToolsTooltipText),
-                EditorGUIUtility.IconContent("ViewToolOrbit On"),
-                EditorGUIUtility.IconContent("ViewToolOrbit On", viewToolsTooltipText)
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolMove", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolZoom", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit", "Orbit the Scene view."),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolMove On", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolZoom On", viewToolsTooltipText),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On"),
+                EditorGUIUtility.TrIconContent("ViewToolOrbit On", viewToolsTooltipText)
             };
 
             s_PivotIcons = new GUIContent[]
             {
-                EditorGUIUtility.TextContentWithIcon("Center|Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
-                EditorGUIUtility.TextContentWithIcon("Pivot|Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
+                EditorGUIUtility.TrTextContentWithIcon("Center", "Toggle Tool Handle Position\n\nThe tool handle is placed at the center of the selection.", "ToolHandleCenter"),
+                EditorGUIUtility.TrTextContentWithIcon("Pivot", "Toggle Tool Handle Position\n\nThe tool handle is placed at the active object's pivot point.", "ToolHandlePivot"),
             };
 
             s_PivotRotation = new GUIContent[]
             {
-                EditorGUIUtility.TextContentWithIcon("Local|Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
-                EditorGUIUtility.TextContentWithIcon("Global|Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
+                EditorGUIUtility.TrTextContentWithIcon("Local", "Toggle Tool Handle Rotation\n\nTool handles are in the active object's rotation.", "ToolHandleLocal"),
+                EditorGUIUtility.TrTextContentWithIcon("Global", "Toggle Tool Handle Rotation\n\nTool handles are in global rotation.", "ToolHandleGlobal")
             };
 
-            s_LayerContent = EditorGUIUtility.TextContent("Layers|Which layers are visible in the Scene views.");
+            s_LayerContent = EditorGUIUtility.TrTextContent("Layers", "Which layers are visible in the Scene views.");
 
             s_PlayIcons = new GUIContent[]
             {
-                EditorGUIUtility.IconContent("PlayButton", "|Play"),
-                EditorGUIUtility.IconContent("PauseButton", "|Pause"),
-                EditorGUIUtility.IconContent("StepButton", "|Step"),
-                EditorGUIUtility.IconContent("PlayButtonProfile", "|Profiler Play"),
+                EditorGUIUtility.TrIconContent("PlayButton", "Play"),
+                EditorGUIUtility.TrIconContent("PauseButton", "Pause"),
+                EditorGUIUtility.TrIconContent("StepButton", "Step"),
+                EditorGUIUtility.TrIconContent("PlayButtonProfile", "Profiler Play"),
                 EditorGUIUtility.IconContent("PlayButton On"),
                 EditorGUIUtility.IconContent("PauseButton On"),
                 EditorGUIUtility.IconContent("StepButton On"),
@@ -79,21 +79,21 @@ namespace UnityEditor
             };
 
             s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");
-            s_AccountContent = new GUIContent("Account");
+            s_AccountContent = EditorGUIUtility.TrTextContent("Account");
 
 
             // Must match enum CollabToolbarState
             s_CollabIcons = new GUIContent[]
             {
-                EditorGUIUtility.TextContentWithIcon("Collab| You need to enable collab.", "CollabNew"),
-                EditorGUIUtility.TextContentWithIcon("Collab| You are up to date.", "Collab"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Please fix your conflicts prior to publishing.", "CollabConflict"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Last operation failed. Please retry later.", "CollabError"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Please update, there are server changes.", "CollabPull"),
-                EditorGUIUtility.TextContentWithIcon("Collab| You have files to publish.", "CollabPush"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Operation in progress.", "CollabProgress"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Collab is disabled.", "CollabNew"),
-                EditorGUIUtility.TextContentWithIcon("Collab| Please check your network connection.", "CollabNew")
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " You need to enable collab.", "CollabNew"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " You are up to date.", "Collab"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please fix your conflicts prior to publishing.", "CollabConflict"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Last operation failed. Please retry later.", "CollabError"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please update, there are server changes.", "CollabPull"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " You have files to publish.", "CollabPush"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Operation in progress.", "CollabProgress"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Collab is disabled.", "CollabNew"),
+                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please check your network connection.", "CollabNew")
             };
         }
 
@@ -365,22 +365,22 @@ namespace UnityEditor
             var menu = new GenericMenu();
             if (!UnityConnect.instance.online)
             {
-                menu.AddDisabledItem(new GUIContent("Go to account"));
-                menu.AddDisabledItem(new GUIContent("Sign in..."));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Go to account"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Sign in..."));
 
                 if (!Application.HasProLicense())
                 {
                     menu.AddSeparator("");
-                    menu.AddDisabledItem(new GUIContent("Upgrade to Pro"));
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Upgrade to Pro"));
                 }
             }
             else
             {
                 string accountUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudPortal);
                 if (UnityConnect.instance.loggedIn)
-                    menu.AddItem(new GUIContent("Go to account"), false, () => UnityConnect.instance.OpenAuthorizedURLInWebBrowser(accountUrl));
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Go to account"), false, () => UnityConnect.instance.OpenAuthorizedURLInWebBrowser(accountUrl));
                 else
-                    menu.AddDisabledItem(new GUIContent("Go to account"));
+                    menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Go to account"));
 
                 if (UnityConnect.instance.loggedIn)
                 {
@@ -388,12 +388,12 @@ namespace UnityEditor
                     menu.AddItem(new GUIContent(name), false, () => {UnityConnect.instance.Logout(); });
                 }
                 else
-                    menu.AddItem(new GUIContent("Sign in..."), false, () => {UnityConnect.instance.ShowLogin(); });
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Sign in..."), false, () => {UnityConnect.instance.ShowLogin(); });
 
                 if (!Application.HasProLicense())
                 {
                     menu.AddSeparator("");
-                    menu.AddItem(new GUIContent("Upgrade to Pro"), false, () => Application.OpenURL("https://store.unity3d.com/"));
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Upgrade to Pro"), false, () => Application.OpenURL("https://store.unity3d.com/"));
                 }
             }
 

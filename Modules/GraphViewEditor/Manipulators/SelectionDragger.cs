@@ -9,8 +9,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class SelectionDragger : Dragger
+    public class SelectionDragger : Dragger
     {
         IDropTarget m_PrevDropTarget;
 
@@ -376,4 +375,3 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
     }
 }
-

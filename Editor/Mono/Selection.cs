@@ -11,6 +11,14 @@ namespace UnityEditor
 {
     public sealed partial class Selection
     {
+        public static System.Action selectionChanged;
+
+        private static void Internal_CallSelectionChanged()
+        {
+            if (selectionChanged != null)
+                selectionChanged();
+        }
+
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
 
         internal static void Add(int instanceID)

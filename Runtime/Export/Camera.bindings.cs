@@ -148,6 +148,12 @@ namespace UnityEngine
         extern public void RemoveCommandBuffers(CameraEvent evt);
         extern public void RemoveAllCommandBuffers();
 
+        [NativeName("RenderToCubemap")] extern private bool RenderToCubemapImpl(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye);
+
+        public bool RenderToCubemap(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye)
+        {
+            return RenderToCubemapImpl(cubemap, faceMask, stereoEye);
+        }
 
         // in old bindings these functions code like this:
         //   self->AddCommandBuffer(evt, &*buffer);

@@ -8,8 +8,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class Edge : GraphElement
+    public class Edge : GraphElement
     {
         private const float k_EndPointRadius = 4.0f;
         private const float k_InterceptWidth = 6.0f;
@@ -34,7 +33,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_OutputPort != null && value != m_OutputPort)
                 {
-                    m_OutputPort.ResetCapColor();
+                    m_OutputPort.UpdateCapColor();
                 }
                 m_OutputPort = value;
                 OnPortChanged(false);
@@ -48,7 +47,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_InputPort != null && value != m_InputPort)
                 {
-                    m_InputPort.ResetCapColor();
+                    m_InputPort.UpdateCapColor();
                 }
                 m_InputPort = value;
                 OnPortChanged(true);
@@ -262,22 +261,55 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!UpdateEdgeControl())
                 return;
 
-            Color edgeColor = isGhostEdge ? ghostColor : (selected ? selectedColor : defaultColor);
-            edgeControl.edgeColor = edgeColor;
-            edgeControl.startCapColor = edgeColor;
-            edgeControl.edgeWidth = edgeWidth;
+            if (selected)
+            {
+                if (isGhostEdge)
+                    Debug.Log("Selected Ghost Edge: this should never be");
 
-            var edgePresenter = GetPresenter<EdgePresenter>();
-            if (edgePresenter == null)
-                edgeControl.endCapColor = m_InputPort == null ? edgeControl.startCapColor : edgeColor;
+                edgeControl.inputColor = selectedColor;
+                edgeControl.outputColor = selectedColor;
+                edgeControl.edgeWidth = edgeWidth;
+
+                if (m_InputPort == null)
+                    Debug.Log("Selected Edge without input port: this should never be");
+                else
+                    m_InputPort.capColor = selectedColor;
+
+                if (m_OutputPort == null)
+                    Debug.Log("Selected Edge without output port: this should never be");
+                else
+                    m_OutputPort.capColor = selectedColor;
+            }
             else
-                edgeControl.endCapColor = edgePresenter.input == null ? edgeControl.startCapColor : edgeColor;
+            {
+                if (m_InputPort != null)
+                    m_InputPort.UpdateCapColor();
 
-            if (m_InputPort != null)
-                m_InputPort.capColor = edgeControl.endCapColor;
+                if (m_OutputPort != null)
+                    m_OutputPort.UpdateCapColor();
 
-            if (m_OutputPort != null)
-                m_OutputPort.capColor = edgeControl.startCapColor;
+                edgeControl.inputColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
+                edgeControl.outputColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
+                edgeControl.edgeWidth = edgeWidth;
+
+                var edgePresenter = GetPresenter<EdgePresenter>();
+                if (edgePresenter == null)
+                {
+                    edgeControl.toCapColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
+                    edgeControl.fromCapColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
+                }
+                else
+                {
+                    edgeControl.toCapColor = edgePresenter.input == null ?  m_OutputPort.portColor : m_InputPort.portColor;
+                    edgeControl.fromCapColor = edgePresenter.output == null ? m_InputPort.portColor : m_OutputPort.portColor;
+                }
+
+                if (isGhostEdge)
+                {
+                    edgeControl.inputColor = new Color(edgeControl.inputColor.r, edgeControl.inputColor.g, edgeControl.inputColor.b, 0.5f);
+                    edgeControl.outputColor = new Color(edgeControl.outputColor.r, edgeControl.outputColor.g, edgeControl.outputColor.b, 0.5f);
+                }
+            }
         }
 
         protected virtual EdgeControl CreateEdgeControl()

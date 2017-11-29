@@ -13,6 +13,17 @@ namespace UnityEngine
 {
     internal sealed partial class NoAllocHelpers
     {
+        public static void ResizeList<T>(List<T> list, int size)
+        {
+            if (list == null)
+                throw new ArgumentNullException("list");
+            if (size < 0 || size > list.Capacity)
+                throw new ArgumentException("list", "invalid size to resize.");
+            if (size != list.Count)
+                Internal_ResizeList(list, size);
+        }
+
+
         public static T[] ExtractArrayFromListT<T>(List<T> list) { return (T[])ExtractArrayFromList(list); }
 
         public static void EnsureListElemCount<T>(List<T> list, int count)
@@ -350,15 +361,6 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
-    internal struct Internal_DrawMeshMatrixArguments
-    {
-        public int layer, submeshIndex;
-        public Matrix4x4 matrix;
-        public int castShadows, receiveShadows;
-        public int reflectionProbeAnchorInstanceID;
-        public bool useLightProbes;
-    }
-
     [VisibleToOtherModules("UnityEngine.IMGUIModule")]
     internal struct Internal_DrawTextureArguments
     {
@@ -375,22 +377,6 @@ namespace UnityEngine
 
     public partial class Graphics
     {
-        // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
-        // when we start to accept default params we can move the rest of DrawMesh out of bindings to c#
-        private static void DrawMeshImpl(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, Rendering.ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, bool useLightProbes)
-        {
-            Internal_DrawMeshMatrixArguments args = new Internal_DrawMeshMatrixArguments();
-            args.layer = layer;
-            args.submeshIndex = submeshIndex;
-            args.matrix = matrix;
-            args.castShadows = (int)castShadows;
-            args.receiveShadows = receiveShadows ? 1 : 0;
-            args.reflectionProbeAnchorInstanceID = probeAnchor != null ? probeAnchor.GetInstanceID() : 0;
-            args.useLightProbes = useLightProbes;
-
-            Internal_DrawMeshMatrix(ref args, properties, material, mesh, camera);
-        }
-
         // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
         // when we start to accept default params we can move the rest of DrawMesh out of bindings to c#
         private static void DrawTextureImpl(Rect screenRect, Texture texture, Rect sourceRect, int leftBorder, int rightBorder, int topBorder, int bottomBorder, Color color, Material mat, int pass)
@@ -428,57 +414,6 @@ namespace UnityEngine
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
             Internal_DrawMeshNow2(mesh, materialIndex, matrix);
-        }
-
-        // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
-        // when we start to accept default params we can move the rest of DrawMesh out of bindings to c#
-        private static void DrawMeshInstancedImpl(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, Rendering.ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            if (!SystemInfo.supportsInstancing)
-                throw new InvalidOperationException("Instancing is not supported.");
-            if (mesh == null)
-                throw new ArgumentNullException("mesh");
-            if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
-                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
-            if (material == null)
-                throw new ArgumentNullException("material");
-            if (!material.enableInstancing)
-                throw new InvalidOperationException("Material needs to enable instancing for use with DrawMeshInstanced.");
-            if (matrices == null)
-                throw new ArgumentNullException("matrices");
-            if (count < 0 || count > Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length))
-                throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length)));
-
-            if (count > 0)
-                Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera);
-        }
-
-        private static void DrawMeshInstancedImpl(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties, Rendering.ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            if (matrices == null)
-                throw new ArgumentNullException("matrices");
-            if (matrices.Count > kMaxDrawMeshInstanceCount)
-                throw new ArgumentOutOfRangeException("matrices", String.Format("Matrix list count must be in the range of 0 to {0}.", kMaxDrawMeshInstanceCount));
-
-            DrawMeshInstancedImpl(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromListT(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera);
-        }
-
-        // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
-        // when we start to accept default params we can move the rest of DrawMesh out of bindings to c#
-        private static void DrawMeshInstancedIndirectImpl(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, Rendering.ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            if (!SystemInfo.supportsInstancing)
-                throw new InvalidOperationException("Instancing is not supported.");
-            if (mesh == null)
-                throw new ArgumentNullException("mesh");
-            if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
-                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
-            if (material == null)
-                throw new ArgumentNullException("material");
-            if (bufferWithArgs == null)
-                throw new ArgumentNullException("bufferWithArgs");
-
-            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera);
         }
     }
 }

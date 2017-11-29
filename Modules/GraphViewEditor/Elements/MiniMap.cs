@@ -7,8 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class MiniMap : GraphElement
+    public class MiniMap : GraphElement
     {
         public float maxHeight { get; set; }
         public float maxWidth { get; set; }
@@ -88,7 +87,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected void ShowContextualMenu(MouseUpEvent e)
+        private void ShowContextualMenu(MouseUpEvent e)
         {
             if (e.button == (int)MouseButton.RightMouse)
             {
@@ -390,7 +389,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Handles.color = currentColor;
         }
 
-        protected void OnMouseDown(MouseDownEvent e)
+        private void OnMouseDown(MouseDownEvent e)
         {
             var gView = graphView;
 

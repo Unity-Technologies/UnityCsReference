@@ -7,6 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using UnityEngine;
+using UnityEngine.Collections;
 
 namespace UnityEngine.Collections
 {
@@ -36,14 +38,13 @@ namespace UnityEngine.Collections
     [DebuggerTypeProxy(typeof(NativeSliceDebugView < >))]
     public struct NativeSlice<T> : IEnumerable<T> where T : struct
     {
-        IntPtr                                           m_Buffer;
-        int                                              m_Stride;
-        int                                              m_Length;
+        internal IntPtr                                  m_Buffer;
+        internal int                                     m_Stride;
+        internal int                                     m_Length;
 
 
         public NativeSlice(NativeArray<T> array) : this(array, 0, array.Length) {}
         public NativeSlice(NativeArray<T> array, int start) : this(array, start, array.Length - start) {}
-
 
         public unsafe NativeSlice(NativeArray<T> array, int start, int length)
         {
@@ -264,6 +265,31 @@ namespace UnityEngine.Collections
         public T[] Items
         {
             get { return array.ToArray(); }
+        }
+    }
+}
+
+namespace Unity.Collections.LowLevel.Unsafe
+{
+    internal static class NativeSliceUnsafeUtility
+    {
+        public unsafe static NativeSlice<T> ConvertExistingDataToNativeSlice<T>(IntPtr dataPointer, int start, int length, int stride, AtomicSafetyHandle safety) where T : struct
+        {
+            NativeSlice<T> slice = new NativeSlice<T>();
+
+            if (length < 0)
+                throw new System.ArgumentException(String.Format("Invalid length of '{0}'. It must be greater than 0.", length));
+            if (start < 0)
+                throw new System.ArgumentException(String.Format("Invalid start index of '{0}'. It must be greater than 0.", start));
+            if (stride < 0)
+                throw new System.ArgumentException(String.Format("Invalid stride '{0}'. It must be greater than 0.", stride));
+
+            slice.m_Stride = stride;
+            byte* ptr = (byte*)dataPointer + start;
+            slice.m_Buffer = (IntPtr)ptr;
+            slice.m_Length = length;
+
+            return slice;
         }
     }
 }

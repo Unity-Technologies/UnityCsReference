@@ -499,7 +499,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(new GUIContent("Show All Modules"), ParticleEffectUI.GetAllModulesVisible(), AddModuleCallback, 10000);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Show All Modules"), ParticleEffectUI.GetAllModulesVisible(), AddModuleCallback, 10000);
             menu.ShowAsContext();
             Event.current.Use();
         }
@@ -549,9 +549,9 @@ namespace UnityEditor
             GenericMenu menu = new GenericMenu();
 
             if (!ParticleEffectUI.GetAllModulesVisible())
-                menu.AddItem(new GUIContent("Remove"), false, ModuleMenuCallback, moduleIndex);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, ModuleMenuCallback, moduleIndex);
             else
-                menu.AddDisabledItem(new GUIContent("Remove")); // Do not allow remove module when always show modules is enabled
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Remove")); // Do not allow remove module when always show modules is enabled
             menu.ShowAsContext();
             Event.current.Use();
         }
@@ -584,14 +584,14 @@ namespace UnityEditor
             // Now create the menu, add items and show it
             GenericMenu menu = new GenericMenu();
 
-            menu.AddItem(new GUIContent("Show Location"), false, EmitterMenuCallback, 2);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Show Location"), false, EmitterMenuCallback, 2);
             menu.AddSeparator("");
             if (m_ParticleSystems[0].gameObject.activeInHierarchy)
-                menu.AddItem(new GUIContent("Create Particle System"), false, EmitterMenuCallback, 0);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Create Particle System"), false, EmitterMenuCallback, 0);
             else
-                menu.AddDisabledItem(new GUIContent("Create new Particle System"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Create new Particle System"));
 
-            menu.AddItem(new GUIContent("Reset"), false, EmitterMenuCallback, 1);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Reset"), false, EmitterMenuCallback, 1);
             menu.ShowAsContext();
             Event.current.Use();
         }
@@ -633,28 +633,28 @@ namespace UnityEditor
             // Order should match GetUIModules
             return new string[] {
                 "",
-                "Emission",
-                "Shape",
-                "Velocity over Lifetime",
-                "Limit Velocity over Lifetime",
-                "Inherit Velocity",
-                "Force over Lifetime",
-                "Color over Lifetime",
-                "Color by Speed",
-                "Size over Lifetime",
-                "Size by Speed",
-                "Rotation over Lifetime",
-                "Rotation by Speed",
-                "External Forces",
-                "Noise",
-                "Collision",
-                "Triggers",
-                "Sub Emitters",
-                "Texture Sheet Animation",
-                "Lights",
-                "Trails",
-                "Custom Data",
-                "Renderer"
+                L10n.Tr("Emission"),
+                L10n.Tr("Shape"),
+                L10n.Tr("Velocity over Lifetime"),
+                L10n.Tr("Limit Velocity over Lifetime"),
+                L10n.Tr("Inherit Velocity"),
+                L10n.Tr("Force over Lifetime"),
+                L10n.Tr("Color over Lifetime"),
+                L10n.Tr("Color by Speed"),
+                L10n.Tr("Size over Lifetime"),
+                L10n.Tr("Size by Speed"),
+                L10n.Tr("Rotation over Lifetime"),
+                L10n.Tr("Rotation by Speed"),
+                L10n.Tr("External Forces"),
+                L10n.Tr("Noise"),
+                L10n.Tr("Collision"),
+                L10n.Tr("Triggers"),
+                L10n.Tr("Sub Emitters"),
+                L10n.Tr("Texture Sheet Animation"),
+                L10n.Tr("Lights"),
+                L10n.Tr("Trails"),
+                L10n.Tr("Custom Data"),
+                L10n.Tr("Renderer")
             };
         }
     } // class ParticleSystemUI

@@ -614,8 +614,8 @@ namespace UnityEditor
             {
                 viewLabelStyleLeftAligned = new GUIStyle("SC ViewLabel");
                 viewLabelStyleCentered = new GUIStyle("SC ViewLabel");
-                unlockedRotationIcon = EditorGUIUtility.IconContent("LockIcon", "Lock Rotation|Click to lock the rotation in the current direction.");
-                lockedRotationIcon = EditorGUIUtility.IconContent("LockIcon-On", "Lock Rotation|Click to unlock the rotation.");
+                unlockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon", "Click to lock the rotation in the current direction.");
+                lockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon-On", "Click to unlock the rotation.");
                 lockStyle = new GUIStyle("label");
                 lockStyle.alignment = TextAnchor.MiddleCenter;
                 viewLabelStyleLeftAligned.alignment = TextAnchor.MiddleLeft;

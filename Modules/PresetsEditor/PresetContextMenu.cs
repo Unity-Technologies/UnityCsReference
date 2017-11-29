@@ -6,7 +6,7 @@ using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     internal class PresetContextMenu : PresetSelectorReceiver
     {

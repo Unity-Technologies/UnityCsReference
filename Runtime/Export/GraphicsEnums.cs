@@ -1114,7 +1114,9 @@ namespace UnityEngine.Rendering
     {
         Off = 0,
         BlendProbes = 1,
-        UseProxyVolume = 2
+        UseProxyVolume = 2,
+        //ExplicitIndex = 3, // This is internal only so we don't expose it to C#
+        CustomProvided = 4,
     }
 
     // Match GraphicsSettings::BuiltinShaderType on C++ side

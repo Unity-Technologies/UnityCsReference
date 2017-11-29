@@ -142,11 +142,11 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent speedScale = EditorGUIUtility.IconContent("SpeedScale", "|Changes animation preview speed");
-            public GUIContent pivot = EditorGUIUtility.IconContent("AvatarPivot", "|Displays avatar's pivot and mass center");
-            public GUIContent ik = new GUIContent("IK", "Toggles feet IK preview");
-            public GUIContent is2D = new GUIContent("2D", "Toggles 2D preview mode");
-            public GUIContent avatarIcon = EditorGUIUtility.IconContent("Avatar Icon", "|Changes the model to use for previewing.");
+            public GUIContent speedScale = EditorGUIUtility.TrIconContent("SpeedScale", "Changes animation preview speed");
+            public GUIContent pivot = EditorGUIUtility.TrIconContent("AvatarPivot", "Displays avatar's pivot and mass center");
+            public GUIContent ik = EditorGUIUtility.TrTextContent("IK", "Toggles feet IK preview");
+            public GUIContent is2D = EditorGUIUtility.TrTextContent("2D", "Toggles 2D preview mode");
+            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent("Avatar Icon", "Changes the model to use for previewing.");
 
             public GUIStyle preButton = "preButton";
             public GUIStyle preSlider = "preSlider";
@@ -985,9 +985,9 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(choserRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Auto"), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
-                menu.AddItem(new GUIContent("Unity Model"), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
-                menu.AddItem(new GUIContent("Other..."), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Auto"), false, SetPreviewAvatarOption, PreviewPopupOptions.Auto);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Unity Model"), false, SetPreviewAvatarOption, PreviewPopupOptions.DefaultModel);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Other..."), false, SetPreviewAvatarOption, PreviewPopupOptions.Other);
                 menu.ShowAsContext();
             }
 

@@ -2,7 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Experimental.U2D;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.U2D.Interface;
@@ -10,10 +13,19 @@ using UnityEngine.U2D.Interface;
 
 namespace UnityEditor
 {
+    internal class SpriteRectModel : ScriptableObject
+    {
+        public List<SpriteRect> spriteRects;
+
+        private SpriteRectModel()
+        {}
+    }
+
     internal abstract partial class SpriteFrameModuleBase : ISpriteEditorModule
     {
-        protected ISpriteRectCache m_RectsCache;
-
+        protected SpriteRectModel m_RectsCache;
+        protected ITextureDataProvider m_TextureDataProvider;
+        protected ISpriteEditorDataProvider m_SpriteDataProvider;
         protected SpriteFrameModuleBase(string name, ISpriteEditor sw, IEventSystem es, IUndoSystem us, IAssetDatabase ad)
         {
             spriteEditor = sw;
@@ -28,10 +40,64 @@ namespace UnityEditor
 
         public virtual void OnModuleActivate()
         {
-            spriteImportMode = SpriteUtility.GetSpriteImportMode(spriteEditor.spriteEditorDataProvider);
+            spriteImportMode = SpriteUtility.GetSpriteImportMode(spriteEditor.GetDataProvider<ISpriteEditorDataProvider>());
+            m_TextureDataProvider = spriteEditor.GetDataProvider<ITextureDataProvider>();
+            m_SpriteDataProvider = spriteEditor.GetDataProvider<ISpriteEditorDataProvider>();
+            int width, height;
+            m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
+            textureActualWidth = width;
+            textureActualHeight = height;
+            m_RectsCache = ScriptableObject.CreateInstance<SpriteRectModel>();
+            m_RectsCache.spriteRects = m_SpriteDataProvider.GetSpriteRects().ToList();
         }
 
-        public abstract void OnModuleDeactivate();
+        public virtual void OnModuleDeactivate()
+        {
+            if (m_RectsCache != null)
+            {
+                undoSystem.ClearUndo(m_RectsCache);
+                ScriptableObject.DestroyImmediate(m_RectsCache);
+                m_RectsCache = null;
+            }
+        }
+
+        public bool ApplyRevert(bool apply)
+        {
+            if (apply)
+            {
+                if (containsMultipleSprites)
+                {
+                    var oldNames = new List<string>();
+                    var newNames = new List<string>();
+
+                    for (int i = 0; i < m_RectsCache.spriteRects.Count; i++)
+                    {
+                        SpriteRect spriteRect = (SpriteRect)m_RectsCache.spriteRects[i];
+
+                        if (string.IsNullOrEmpty(spriteRect.name))
+                            spriteRect.name = "Empty";
+
+                        if (!string.IsNullOrEmpty(spriteRect.originalName))
+                        {
+                            oldNames.Add(spriteRect.originalName);
+                            newNames.Add(spriteRect.name);
+                        }
+                    }
+                    var so = new SerializedObject(m_SpriteDataProvider.targetObject);
+                    if (oldNames.Count > 0)
+                        PatchImportSettingRecycleID.PatchMultiple(so, 213, oldNames.ToArray(), newNames.ToArray());
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                }
+                m_SpriteDataProvider.SetSpriteRects(m_RectsCache?.spriteRects.ToArray());
+                if (m_RectsCache != null)
+                {
+                    undoSystem.ClearUndo(m_RectsCache);
+                    ScriptableObject.DestroyImmediate(m_RectsCache);
+                }
+            }
+
+            return true;
+        }
 
         public string moduleName
         {
@@ -77,12 +143,7 @@ namespace UnityEditor
 
         protected string spriteAssetPath
         {
-            get { return assetDatabase.GetAssetPath(spriteEditor.selectedTexture); }
-        }
-
-        protected ITexture2D previewTexture
-        {
-            get { return spriteEditor.previewTexture; }
+            get { return assetDatabase.GetAssetPath(m_TextureDataProvider.texture); }
         }
 
         public bool hasSelected
@@ -102,11 +163,8 @@ namespace UnityEditor
 
         public int CurrentSelectedSpriteIndex()
         {
-            for (int i = 0; i < m_RectsCache.Count; ++i)
-            {
-                if (m_RectsCache.RectAt(i) == selected)
-                    return i;
-            }
+            if (m_RectsCache != null)
+                return m_RectsCache.spriteRects.IndexOf(selected);
             return -1;
         }
 
@@ -128,7 +186,7 @@ namespace UnityEditor
             {
                 undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Change Sprite rect");
                 spriteEditor.SetDataModified();
-                selected.rect = ClampSpriteRect(value, previewTexture.width, previewTexture.height);
+                selected.rect = ClampSpriteRect(value, textureActualWidth, textureActualHeight);
             }
         }
 
@@ -152,9 +210,9 @@ namespace UnityEditor
                     newName = oldName;
 
                 // newName have to be unique. Multiple sprite assets sharing the same name will create problems with animations etc.
-                for (int i = 0; i < m_RectsCache.Count; ++i)
+                for (int i = 0; i < m_RectsCache.spriteRects.Count; ++i)
                 {
-                    if (m_RectsCache.RectAt(i).name == newName)
+                    if (m_RectsCache.spriteRects[i].name == newName)
                     {
                         newName = selected.originalName;
                         break;
@@ -166,23 +224,21 @@ namespace UnityEditor
 
         public int spriteCount
         {
-            get { return m_RectsCache.Count; }
+            get { return m_RectsCache.spriteRects.Count; }
         }
 
         public Vector4 GetSpriteBorderAt(int i)
         {
-            return m_RectsCache.RectAt(i).border;
+            return m_RectsCache.spriteRects[i].border;
         }
 
         public Rect GetSpriteRectAt(int i)
         {
-            return m_RectsCache.RectAt(i).rect;
+            return m_RectsCache.spriteRects[i].rect;
         }
 
-        public List<SpriteOutline> GetSpriteOutlineAt(int i)
-        {
-            return m_RectsCache.RectAt(i).outline;
-        }
+        public int textureActualWidth { get; private set; }
+        public int textureActualHeight { get; private set; }
 
         public void SetSpritePivotAndAlignment(Vector2 pivot, SpriteAlignment alignment)
         {

@@ -378,17 +378,17 @@ namespace UnityEditor
 
         internal class Styles
         {
-            public readonly GUIContent textureTypeTitle = EditorGUIUtility.TextContent("Texture Type|What will this texture be used for?");
+            public readonly GUIContent textureTypeTitle = EditorGUIUtility.TrTextContent("Texture Type", "What will this texture be used for?");
             public readonly GUIContent[] textureTypeOptions =
             {
-                EditorGUIUtility.TextContent("Default|Texture is a normal image such as a diffuse texture or other."),
-                EditorGUIUtility.TextContent("Normal map|Texture is a bump or normal map."),
-                EditorGUIUtility.TextContent("Editor GUI and Legacy GUI|Texture is used for a GUI element."),
-                EditorGUIUtility.TextContent("Sprite (2D and UI)|Texture is used for a sprite."),
-                EditorGUIUtility.TextContent("Cursor|Texture is used for a cursor."),
-                EditorGUIUtility.TextContent("Cookie|Texture is a cookie you put on a light."),
-                EditorGUIUtility.TextContent("Lightmap|Texture is a lightmap."),
-                EditorGUIUtility.TextContent("Single Channel|Texture is a one component texture."),
+                EditorGUIUtility.TrTextContent("Default", "Texture is a normal image such as a diffuse texture or other."),
+                EditorGUIUtility.TrTextContent("Normal map", "Texture is a bump or normal map."),
+                EditorGUIUtility.TrTextContent("Editor GUI and Legacy GUI", "Texture is used for a GUI element."),
+                EditorGUIUtility.TrTextContent("Sprite (2D and UI)", "Texture is used for a sprite."),
+                EditorGUIUtility.TrTextContent("Cursor", "Texture is used for a cursor."),
+                EditorGUIUtility.TrTextContent("Cookie", "Texture is a cookie you put on a light."),
+                EditorGUIUtility.TrTextContent("Lightmap", "Texture is a lightmap."),
+                EditorGUIUtility.TrTextContent("Single Channel", "Texture is a one component texture."),
             };
             public readonly int[] textureTypeValues =
             {
@@ -402,43 +402,43 @@ namespace UnityEditor
                 (int)TextureImporterType.SingleChannel
             };
 
-            public readonly GUIContent textureShape = EditorGUIUtility.TextContent("Texture Shape|What shape is this texture?");
-            private readonly GUIContent textureShape2D = EditorGUIUtility.TextContent("2D|Texture is 2D.");
-            private readonly  GUIContent textureShapeCube = EditorGUIUtility.TextContent("Cube|Texture is a Cubemap.");
+            public readonly GUIContent textureShape = EditorGUIUtility.TrTextContent("Texture Shape", "What shape is this texture?");
+            private readonly GUIContent textureShape2D = EditorGUIUtility.TrTextContent("2D", "Texture is 2D.");
+            private readonly  GUIContent textureShapeCube = EditorGUIUtility.TrTextContent("Cube", "Texture is a Cubemap.");
             public readonly Dictionary<TextureImporterShape, GUIContent[]> textureShapeOptionsDictionnary = new Dictionary<TextureImporterShape, GUIContent[]>();
             public readonly Dictionary<TextureImporterShape, int[]> textureShapeValuesDictionnary = new Dictionary<TextureImporterShape, int[]>();
 
 
-            public readonly GUIContent filterMode = EditorGUIUtility.TextContent("Filter Mode");
+            public readonly GUIContent filterMode = EditorGUIUtility.TrTextContent("Filter Mode");
             public readonly GUIContent[] filterModeOptions =
             {
-                EditorGUIUtility.TextContent("Point (no filter)"),
-                EditorGUIUtility.TextContent("Bilinear"),
-                EditorGUIUtility.TextContent("Trilinear")
+                EditorGUIUtility.TrTextContent("Point (no filter)"),
+                EditorGUIUtility.TrTextContent("Bilinear"),
+                EditorGUIUtility.TrTextContent("Trilinear")
             };
 
-            public readonly GUIContent cookieType = EditorGUIUtility.TextContent("Light Type");
+            public readonly GUIContent cookieType = EditorGUIUtility.TrTextContent("Light Type");
             public readonly GUIContent[] cookieOptions =
             {
-                EditorGUIUtility.TextContent("Spotlight"),
-                EditorGUIUtility.TextContent("Directional"),
-                EditorGUIUtility.TextContent("Point"),
+                EditorGUIUtility.TrTextContent("Spotlight"),
+                EditorGUIUtility.TrTextContent("Directional"),
+                EditorGUIUtility.TrTextContent("Point"),
             };
-            public readonly GUIContent generateFromBump = EditorGUIUtility.TextContent("Create from Grayscale|The grayscale of the image is used as a heightmap for generating the normal map.");
-            public readonly GUIContent bumpiness = EditorGUIUtility.TextContent("Bumpiness");
-            public readonly GUIContent bumpFiltering = EditorGUIUtility.TextContent("Filtering");
+            public readonly GUIContent generateFromBump = EditorGUIUtility.TrTextContent("Create from Grayscale", "The grayscale of the image is used as a heightmap for generating the normal map.");
+            public readonly GUIContent bumpiness = EditorGUIUtility.TrTextContent("Bumpiness");
+            public readonly GUIContent bumpFiltering = EditorGUIUtility.TrTextContent("Filtering");
             public readonly GUIContent[] bumpFilteringOptions =
             {
-                EditorGUIUtility.TextContent("Sharp"),
-                EditorGUIUtility.TextContent("Smooth"),
+                EditorGUIUtility.TrTextContent("Sharp"),
+                EditorGUIUtility.TrTextContent("Smooth"),
             };
-            public readonly GUIContent cubemap = EditorGUIUtility.TextContent("Mapping");
+            public readonly GUIContent cubemap = EditorGUIUtility.TrTextContent("Mapping");
             public readonly GUIContent[] cubemapOptions =
             {
-                EditorGUIUtility.TextContent("Auto"),
-                EditorGUIUtility.TextContent("6 Frames Layout (Cubic Environment)|Texture contains 6 images arranged in one of the standard cubemap layouts - cross or sequence (+x,-x, +y, -y, +z, -z). Texture can be in vertical or horizontal orientation."),
-                EditorGUIUtility.TextContent("Latitude-Longitude Layout (Cylindrical)|Texture contains an image of a ball unwrapped such that latitude and longitude are mapped to horizontal and vertical dimensions (as on a globe)."),
-                EditorGUIUtility.TextContent("Mirrored Ball (Spheremap)|Texture contains an image of a mirrored ball.")
+                EditorGUIUtility.TrTextContent("Auto"),
+                EditorGUIUtility.TrTextContent("6 Frames Layout (Cubic Environment)", "Texture contains 6 images arranged in one of the standard cubemap layouts - cross or sequence (+x,-x, +y, -y, +z, -z). Texture can be in vertical or horizontal orientation."),
+                EditorGUIUtility.TrTextContent("Latitude-Longitude Layout (Cylindrical)", "Texture contains an image of a ball unwrapped such that latitude and longitude are mapped to horizontal and vertical dimensions (as on a globe)."),
+                EditorGUIUtility.TrTextContent("Mirrored Ball (Spheremap)", "Texture contains an image of a mirrored ball.")
             };
             public readonly int[] cubemapValues2 =
             {
@@ -448,12 +448,12 @@ namespace UnityEditor
                 (int)TextureImporterGenerateCubemap.Spheremap
             };
 
-            public readonly GUIContent cubemapConvolution = EditorGUIUtility.TextContent("Convolution Type");
+            public readonly GUIContent cubemapConvolution = EditorGUIUtility.TrTextContent("Convolution Type");
             public readonly GUIContent[] cubemapConvolutionOptions =
             {
-                EditorGUIUtility.TextContent("None"),
-                EditorGUIUtility.TextContent("Specular (Glossy Reflection)|Convolve cubemap for specular reflections with varying smoothness (Glossy Reflections)."),
-                EditorGUIUtility.TextContent("Diffuse (Irradiance)|Convolve cubemap for diffuse-only reflection (Irradiance Cubemap).")
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("Specular (Glossy Reflection)", "Convolve cubemap for specular reflections with varying smoothness (Glossy Reflections)."),
+                EditorGUIUtility.TrTextContent("Diffuse (Irradiance)", "Convolve cubemap for diffuse-only reflection (Irradiance Cubemap).")
             };
             public readonly int[] cubemapConvolutionValues =
             {
@@ -462,20 +462,20 @@ namespace UnityEditor
                 (int)TextureImporterCubemapConvolution.Diffuse
             };
 
-            public readonly GUIContent seamlessCubemap = EditorGUIUtility.TextContent("Fixup Edge Seams|Enable if this texture is used for glossy reflections.");
-            public readonly GUIContent textureFormat = EditorGUIUtility.TextContent("Format");
+            public readonly GUIContent seamlessCubemap = EditorGUIUtility.TrTextContent("Fixup Edge Seams", "Enable if this texture is used for glossy reflections.");
+            public readonly GUIContent textureFormat = EditorGUIUtility.TrTextContent("Format");
 
-            public readonly GUIContent defaultPlatform = EditorGUIUtility.TextContent("Default");
-            public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TextContent("Fadeout Mip Maps");
-            public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TextContent("Fade Range");
-            public readonly GUIContent readWrite = EditorGUIUtility.TextContent("Read/Write Enabled|Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent defaultPlatform = EditorGUIUtility.TrTextContent("Default");
+            public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
+            public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
+            public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
 
-            public readonly GUIContent alphaSource = EditorGUIUtility.TextContent("Alpha Source|How is the alpha generated for the imported texture.");
+            public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
             public readonly GUIContent[] alphaSourceOptions =
             {
-                EditorGUIUtility.TextContent("None|No Alpha will be used."),
-                EditorGUIUtility.TextContent("Input Texture Alpha|Use Alpha from the input texture if one is provided."),
-                EditorGUIUtility.TextContent("From Gray Scale|Generate Alpha from image gray scale."),
+                EditorGUIUtility.TrTextContent("None", "No Alpha will be used."),
+                EditorGUIUtility.TrTextContent("Input Texture Alpha", "Use Alpha from the input texture if one is provided."),
+                EditorGUIUtility.TrTextContent("From Gray Scale", "Generate Alpha from image gray scale."),
             };
             public readonly int[] alphaSourceValues =
             {
@@ -484,11 +484,11 @@ namespace UnityEditor
                 (int)TextureImporterAlphaSource.FromGrayScale,
             };
 
-            public readonly GUIContent singleChannelComponent = EditorGUIUtility.TextContent("Channel|As which color/alpha component the single channel texture is treated.");
+            public readonly GUIContent singleChannelComponent = EditorGUIUtility.TrTextContent("Channel", "As which color/alpha component the single channel texture is treated.");
             public readonly GUIContent[] singleChannelComponentOptions =
             {
-                EditorGUIUtility.TextContent("Alpha|Use the alpha channel (compression not supported)."),
-                EditorGUIUtility.TextContent("Red|Use the red color component."),
+                EditorGUIUtility.TrTextContent("Alpha", "Use the alpha channel (compression not supported)."),
+                EditorGUIUtility.TrTextContent("Red", "Use the red color component."),
             };
             public readonly int[] singleChannelComponentValues =
             {
@@ -496,67 +496,67 @@ namespace UnityEditor
                 (int)TextureImporterSingleChannelComponent.Red,
             };
 
-            public readonly GUIContent generateMipMaps = EditorGUIUtility.TextContent("Generate Mip Maps");
-            public readonly GUIContent sRGBTexture = EditorGUIUtility.TextContent("sRGB (Color Texture)|Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
-            public readonly GUIContent borderMipMaps = EditorGUIUtility.TextContent("Border Mip Maps");
-            public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TextContent("Mip Maps Preserve Coverage|The alpha channel of generated Mip Maps will preserve coverage during the alpha test.");
-            public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TextContent("Alpha Cutoff Value|The reference value used during the alpha test. Controls Mip Map coverage.");
-            public readonly GUIContent mipMapFilter = EditorGUIUtility.TextContent("Mip Map Filtering");
+            public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mip Maps");
+            public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
+            public readonly GUIContent borderMipMaps = EditorGUIUtility.TrTextContent("Border Mip Maps");
+            public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TrTextContent("Mip Maps Preserve Coverage", "The alpha channel of generated Mip Maps will preserve coverage during the alpha test.");
+            public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TrTextContent("Alpha Cutoff Value", "The reference value used during the alpha test. Controls Mip Map coverage.");
+            public readonly GUIContent mipMapFilter = EditorGUIUtility.TrTextContent("Mip Map Filtering");
             public readonly GUIContent[] mipMapFilterOptions =
             {
-                EditorGUIUtility.TextContent("Box"),
-                EditorGUIUtility.TextContent("Kaiser"),
+                EditorGUIUtility.TrTextContent("Box"),
+                EditorGUIUtility.TrTextContent("Kaiser"),
             };
-            public readonly GUIContent npot = EditorGUIUtility.TextContent("Non Power of 2|How non-power-of-two textures are scaled on import.");
-            public readonly GUIContent generateCubemap = EditorGUIUtility.TextContent("Generate Cubemap");
+            public readonly GUIContent npot = EditorGUIUtility.TrTextContent("Non Power of 2", "How non-power-of-two textures are scaled on import.");
+            public readonly GUIContent generateCubemap = EditorGUIUtility.TrTextContent("Generate Cubemap");
 
-            public readonly GUIContent compressionQuality = EditorGUIUtility.TextContent("Compressor Quality");
-            public readonly GUIContent compressionQualitySlider = EditorGUIUtility.TextContent("Compressor Quality|Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
+            public readonly GUIContent compressionQuality = EditorGUIUtility.TrTextContent("Compressor Quality");
+            public readonly GUIContent compressionQualitySlider = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
             public readonly GUIContent[] mobileCompressionQualityOptions =
             {
-                EditorGUIUtility.TextContent("Fast"),
-                EditorGUIUtility.TextContent("Normal"),
-                EditorGUIUtility.TextContent("Best")
+                EditorGUIUtility.TrTextContent("Fast"),
+                EditorGUIUtility.TrTextContent("Normal"),
+                EditorGUIUtility.TrTextContent("Best")
             };
 
-            public readonly GUIContent spriteMode = EditorGUIUtility.TextContent("Sprite Mode");
+            public readonly GUIContent spriteMode = EditorGUIUtility.TrTextContent("Sprite Mode");
             public readonly GUIContent[] spriteModeOptions =
             {
-                EditorGUIUtility.TextContent("Single"),
-                EditorGUIUtility.TextContent("Multiple"),
-                EditorGUIUtility.TextContent("Polygon"),
+                EditorGUIUtility.TrTextContent("Single"),
+                EditorGUIUtility.TrTextContent("Multiple"),
+                EditorGUIUtility.TrTextContent("Polygon"),
             };
             public readonly GUIContent[] spriteMeshTypeOptions =
             {
-                EditorGUIUtility.TextContent("Full Rect"),
-                EditorGUIUtility.TextContent("Tight"),
+                EditorGUIUtility.TrTextContent("Full Rect"),
+                EditorGUIUtility.TrTextContent("Tight"),
             };
 
-            public readonly GUIContent spritePackingTag = EditorGUIUtility.TextContent("Packing Tag|Tag for the Sprite Packing system.");
-            public readonly GUIContent spritePixelsPerUnit = EditorGUIUtility.TextContent("Pixels Per Unit|How many pixels in the sprite correspond to one unit in the world.");
-            public readonly GUIContent spriteExtrude = EditorGUIUtility.TextContent("Extrude Edges|How much empty area to leave around the sprite in the generated mesh.");
-            public readonly GUIContent spriteMeshType = EditorGUIUtility.TextContent("Mesh Type|Type of sprite mesh to generate.");
-            public readonly GUIContent spriteAlignment = EditorGUIUtility.TextContent("Pivot|Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
+            public readonly GUIContent spritePackingTag = EditorGUIUtility.TrTextContent("Packing Tag", "Tag for the Sprite Packing system.");
+            public readonly GUIContent spritePixelsPerUnit = EditorGUIUtility.TrTextContent("Pixels Per Unit", "How many pixels in the sprite correspond to one unit in the world.");
+            public readonly GUIContent spriteExtrude = EditorGUIUtility.TrTextContent("Extrude Edges", "How much empty area to leave around the sprite in the generated mesh.");
+            public readonly GUIContent spriteMeshType = EditorGUIUtility.TrTextContent("Mesh Type", "Type of sprite mesh to generate.");
+            public readonly GUIContent spriteAlignment = EditorGUIUtility.TrTextContent("Pivot", "Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
             public readonly GUIContent[] spriteAlignmentOptions =
             {
-                EditorGUIUtility.TextContent("Center"),
-                EditorGUIUtility.TextContent("Top Left"),
-                EditorGUIUtility.TextContent("Top"),
-                EditorGUIUtility.TextContent("Top Right"),
-                EditorGUIUtility.TextContent("Left"),
-                EditorGUIUtility.TextContent("Right"),
-                EditorGUIUtility.TextContent("Bottom Left"),
-                EditorGUIUtility.TextContent("Bottom"),
-                EditorGUIUtility.TextContent("Bottom Right"),
-                EditorGUIUtility.TextContent("Custom"),
+                EditorGUIUtility.TrTextContent("Center"),
+                EditorGUIUtility.TrTextContent("Top Left"),
+                EditorGUIUtility.TrTextContent("Top"),
+                EditorGUIUtility.TrTextContent("Top Right"),
+                EditorGUIUtility.TrTextContent("Left"),
+                EditorGUIUtility.TrTextContent("Right"),
+                EditorGUIUtility.TrTextContent("Bottom Left"),
+                EditorGUIUtility.TrTextContent("Bottom"),
+                EditorGUIUtility.TrTextContent("Bottom Right"),
+                EditorGUIUtility.TrTextContent("Custom"),
             };
 
-            public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TextContent("Alpha Is Transparency|If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
-            public readonly GUIContent etc1Compression = EditorGUIUtility.TextContent("Compress using ETC1 (split alpha channel)|Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
+            public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
+            public readonly GUIContent etc1Compression = EditorGUIUtility.TrTextContent("Compress using ETC1 (split alpha channel)", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
 
-            public readonly GUIContent crunchedCompression = EditorGUIUtility.TextContent("Use Crunch Compression|Texture is crunch-compressed to save space on disk when applicable.");
+            public readonly GUIContent crunchedCompression = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
 
-            public readonly GUIContent showAdvanced = EditorGUIUtility.TextContent("Advanced|Show advanced settings.");
+            public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
             public Styles()
             {
@@ -1239,7 +1239,7 @@ namespace UnityEditor
 
                 if (displayWarning)
                 {
-                    GUIContent c = EditorGUIUtility.TextContent("Graphics device doesn't support Repeat wrap mode on NPOT textures. Falling back to Clamp.");
+                    GUIContent c = EditorGUIUtility.TrTextContent("Graphics device doesn't support Repeat wrap mode on NPOT textures. Falling back to Clamp.");
                     EditorGUILayout.HelpBox(c.text, MessageType.Warning, true);
                 }
             }
@@ -1619,8 +1619,6 @@ namespace UnityEditor
 
         protected override void Apply()
         {
-            // Get SpriteEditorWindow to apply changed property
-            SpriteEditorWindow.TextureImporterApply(serializedObject);
             base.Apply();
             SyncPlatformSettings();
             foreach (TextureImportPlatformSettings ps in m_PlatformSettings)

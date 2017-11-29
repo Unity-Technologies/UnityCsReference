@@ -20,7 +20,7 @@ namespace UnityEditorInternal
             GUILayout.Label(titleWithToolTip, EditorStyles.label);
 
             Rect controlRect = EditorGUILayout.GetControlRect(false, 0);
-            GUIContent label = EditorGUIUtility.TextContent("Profile ID:");
+            GUIContent label = EditorGUIUtility.TrTextContent("Profile ID:");
             EditorGUI.BeginProperty(controlRect, label, prop);
 
             if (GUILayout.Button("Browse", EditorStyles.miniButton))
@@ -43,7 +43,7 @@ namespace UnityEditorInternal
             EditorGUI.indentLevel++;
 
             controlRect = EditorGUILayout.GetControlRect(true, 0);
-            label = EditorGUIUtility.TextContent("Profile ID:");
+            label = EditorGUIUtility.TrTextContent("Profile ID:");
 
             EditorGUI.BeginProperty(controlRect, label, prop);
             profile.UUID = EditorGUILayout.TextField(label, profile.UUID);
@@ -78,7 +78,7 @@ namespace UnityEditorInternal
             EditorGUI.BeginChangeCheck();
             EditorGUI.indentLevel++;
 
-            GUIContent label = EditorGUIUtility.TextContent("Profile ID:");
+            GUIContent label = EditorGUIUtility.TrTextContent("Profile ID:");
             profile.UUID = EditorGUILayout.TextField(label, profile.UUID);
             EditorGUI.indentLevel--;
             if (EditorGUI.EndChangeCheck())
@@ -121,12 +121,25 @@ namespace UnityEditorInternal
 
         internal static void ShowUIWithDefaults(string provisioningPrefKey, SerializedProperty enableAutomaticSigningProp, GUIContent automaticSigningGUI, SerializedProperty manualSigningIDProp, GUIContent manualSigningProfileGUI, SerializedProperty appleDevIDProp, GUIContent teamIDGUIContent)
         {
+            string oldTeamID = GetDefaultStringValue(appleDevIDProp, iOSEditorPrefKeys.kDefaultiOSAutomaticSignTeamId);
+            string newTeamID = null;
+            Rect controlRect = EditorGUILayout.GetControlRect(true, 0);
+            EditorGUI.BeginProperty(controlRect, teamIDGUIContent, appleDevIDProp);
+            EditorGUI.BeginChangeCheck();
+            newTeamID = EditorGUILayout.TextField(teamIDGUIContent, oldTeamID);
+            if (EditorGUI.EndChangeCheck())
+            {
+                appleDevIDProp.stringValue = newTeamID;
+            }
+            EditorGUI.EndProperty();
+
             int signingValue = GetDefaultAutomaticSigningValue(enableAutomaticSigningProp, iOSEditorPrefKeys.kDefaultiOSAutomaticallySignBuild);
             bool oldValue = GetBoolForAutomaticSigningValue(signingValue);
             Rect toggleRect = EditorGUILayout.GetControlRect(true, 0);
             EditorGUI.BeginProperty(toggleRect, automaticSigningGUI, enableAutomaticSigningProp);
             bool newValue = EditorGUILayout.Toggle(automaticSigningGUI, oldValue);
-            if (newValue != oldValue)
+            bool signingValueNotSet = enableAutomaticSigningProp.intValue == (int)iOSAutomaticallySignValue.AutomaticallySignValueNotSet;
+            if (newValue != oldValue || signingValueNotSet)
             {
                 enableAutomaticSigningProp.intValue = GetIntValueForAutomaticSigningBool(newValue);
             }
@@ -135,20 +148,6 @@ namespace UnityEditorInternal
             if (!newValue)
             {
                 ShowProvisioningProfileUIWithDefaults(provisioningPrefKey, manualSigningIDProp, manualSigningProfileGUI);
-            }
-            else
-            {
-                string oldTeamID = GetDefaultStringValue(appleDevIDProp, iOSEditorPrefKeys.kDefaultiOSAutomaticSignTeamId);
-                string newTeamID = null;
-                Rect controlRect = EditorGUILayout.GetControlRect(true, 0);
-                EditorGUI.BeginProperty(controlRect, teamIDGUIContent, appleDevIDProp);
-                EditorGUI.BeginChangeCheck();
-                newTeamID = EditorGUILayout.TextField(teamIDGUIContent, oldTeamID);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    appleDevIDProp.stringValue = newTeamID;
-                }
-                EditorGUI.EndProperty();
             }
         }
 

@@ -23,13 +23,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_RMGUI;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_STYLE_SHEETS;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_WIIU_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
@@ -121,9 +121,6 @@
 <Compile Include="..\..\Runtime\Export\Vector2.cs" >
 <Link>Runtime\Export\Vector2.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\UnityEngineObject.cs" >
-<Link>Runtime\Export\UnityEngineObject.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_1.cs" >
 <Link>Runtime\Export\UnityEvent_1.cs</Link>
 </Compile>
@@ -144,6 +141,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\Handheld.cs" >
 <Link>Runtime\Export\Handheld.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Random.bindings.cs" >
+<Link>Runtime\Export\Random.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\Graphics.bindings.cs" >
 <Link>Runtime\Export\Graphics.bindings.cs</Link>
@@ -289,6 +289,9 @@
 <Compile Include="..\..\Runtime\Export\GraphicsRenderers.bindings.cs" >
 <Link>Runtime\Export\GraphicsRenderers.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\MonoBehaviour.bindings.cs" >
+<Link>Runtime\Export\MonoBehaviour.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\WaitForFixedUpdate.cs" >
 <Link>Runtime\Export\WaitForFixedUpdate.cs</Link>
 </Compile>
@@ -313,6 +316,9 @@
 <Compile Include="..\..\Runtime\Export\Resources.deprecated.cs" >
 <Link>Runtime\Export\Resources.deprecated.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\UnityEngineObject.bindings.cs" >
+<Link>Runtime\Export\UnityEngineObject.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\ColorUtility.cs" >
 <Link>Runtime\Export\ColorUtility.cs</Link>
 </Compile>
@@ -333,6 +339,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Export\DiagnosticSwitch.cs" >
 <Link>Runtime\Export\DiagnosticSwitch.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Component.bindings.cs" >
+<Link>Runtime\Export\Component.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\KeyCode.cs" >
 <Link>Runtime\Export\KeyCode.cs</Link>
@@ -550,6 +559,9 @@
 <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs" >
 <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Tizen\Tizen.bindings.cs" >
+<Link>Runtime\Export\Tizen\Tizen.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\RenderPipeline\StencilState.cs" >
 <Link>Runtime\Export\RenderPipeline\StencilState.cs</Link>
 </Compile>
@@ -634,6 +646,12 @@
 <Compile Include="..\..\Runtime\Export\RenderPipeline\ReflectionProbeSortOptions.cs" >
 <Link>Runtime\Export\RenderPipeline\ReflectionProbeSortOptions.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs" >
+<Link>Runtime\Export\GI\Lightmapping.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\GI\ScriptBindings\Lights.bindings.cs" >
+<Link>Runtime\Export\GI\ScriptBindings\Lights.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs" >
 <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
 </Compile>
@@ -716,253 +734,241 @@
 <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs" >
 <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs" >
+<Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs" >
 <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
-</Compile><Compile Include="..\..\artifacts\generated\common\runtime\AndroidInputBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\AndroidInputBindings.gen.cs</Link>
+</Compile><Compile Include="..\..\artifacts\generated\bindings_old\common\Core\AndroidInputBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\AndroidInputBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GameObjectBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GameObjectBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GameObjectBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GameObjectBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SplashScreenBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SplashScreenBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SplashScreenBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SplashScreenBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RandomBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RandomBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\BehaviourBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\BehaviourBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\BehaviourBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\BehaviourBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GradientBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GradientBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GradientBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GradientBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RuntimeUndoBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\RuntimeUndoBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RuntimeUndoBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RuntimeUndoBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ShaderBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ShaderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ShaderBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ShaderBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ReflectionProbeBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ReflectionProbeBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ReflectionProbeBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ReflectionProbeBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CullingGroupBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\CullingGroupBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\CullingGroupBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\CullingGroupBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RenderingCommandBufferBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\RenderingCommandBufferBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RenderingCommandBufferBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RenderingCommandBufferBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\EventProviderBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\EventProviderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\EventProviderBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\EventProviderBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RenderingClassesBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\RenderingClassesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RenderingClassesBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RenderingClassesBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ScriptableRenderLoopBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ScriptableRenderLoopBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ScriptableRenderLoopBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ScriptableRenderLoopBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CrashReporterBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\CrashReporterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\CrashReporterBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\CrashReporterBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayerConnectionBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\PlayerConnectionBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PlayerConnectionBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PlayerConnectionBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\HandheldBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\HandheldBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\HandheldBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\HandheldBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TextAssetBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TextAssetBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\BillboardRendererBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\BillboardRendererBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\BillboardRendererBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\BillboardRendererBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ResourcesBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ResourcesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ResourcesBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ResourcesBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\AppTrialBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\AppTrialBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\AppTrialBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\AppTrialBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CursorBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\CursorBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\CursorBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\CursorBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ColorUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ColorUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ColorUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ColorUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GradientUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GradientUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GradientUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GradientUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CameraBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\CameraBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\CameraBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\CameraBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WindowsCryptoBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WindowsCryptoBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WindowsCryptoBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WindowsCrashReportingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WindowsCrashReportingBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WindowsCrashReportingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpeechBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SpeechBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SpeechBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SpeechBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WindowsFileBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WindowsFileBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WindowsFileBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WindowsFileBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WindowsDirectoryBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WindowsDirectoryBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WindowsDirectoryBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WindowsDirectoryBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PPtrRemapperBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\PPtrRemapperBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PPtrRemapperBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PPtrRemapperBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayableOutputBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\PlayableOutputBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PlayableOutputBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PlayableOutputBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LightProbeBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LightProbeBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LightProbeBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LightProbeBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LayerMaskBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LayerMaskBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LayerMaskBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LayerMaskBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CachingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\CachingBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\CachingBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\CachingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LODBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LODBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LODBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LODBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ApplicationBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ApplicationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TizenBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TizenBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LightProbeProxyVolumeBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LightProbeProxyVolumeBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ApplicationBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ApplicationBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GIDebugVisualisationBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GIDebugVisualisationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LightProbeProxyVolumeBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LightProbeProxyVolumeBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\DynamicGIBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\DynamicGIBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GIDebugVisualisationBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GIDebugVisualisationBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SceneBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SceneBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\DynamicGIBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\DynamicGIBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SceneManagerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SceneManagerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SceneBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SceneBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SceneUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SceneUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SceneManagerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SceneManagerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LineUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LineUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SceneUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SceneUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ExposedPropertyTableBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ExposedPropertyTableBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LineUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LineUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\DrivenPropertyManagerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\DrivenPropertyManagerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ExposedPropertyTableBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ExposedPropertyTableBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SubstanceUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SubstanceUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\MonoBehaviourBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\MonoBehaviourBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TextureBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\TextureBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\DrivenPropertyManagerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\DrivenPropertyManagerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GUIElementBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GUIElementBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SubstanceUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SubstanceUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WSACursorBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WSACursorBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TextureBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TextureBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WSATilesBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WSATilesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GUIElementBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GUIElementBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WSALauncherBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WSALauncherBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WSACursorBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WSACursorBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WSAApplicationBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\WSAApplicationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WSATilesBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WSATilesBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WSALauncherBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WSALauncherBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayerConnectionInternalBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\PlayerConnectionInternalBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\WSAApplicationBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\NetworkingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\NetworkingBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\InputBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\InputBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SortingLayerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SortingLayerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PlayerConnectionInternalBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PlayerConnectionInternalBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\FlareLayerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\FlareLayerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\NetworkingBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\NetworkingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\AndroidJNIBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\AndroidJNIBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SortingLayerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SortingLayerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GPUFenceBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GPUFenceBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\FlareLayerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\FlareLayerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\UnityEngineObjectBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\UnityEngineObjectBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayerPrefsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\PlayerPrefsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\AndroidJNIBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\AndroidJNIBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SphericalHarmonicsL2Bindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SphericalHarmonicsL2Bindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GPUFenceBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GPUFenceBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\MathBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\MathBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GraphicsBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GraphicsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\AsyncOperationBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\AsyncOperationBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\PlayerPrefsBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\PlayerPrefsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GizmoBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\GizmoBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SphericalHarmonicsL2Bindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SphericalHarmonicsL2Bindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpritesBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SpritesBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\MathBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\MathBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LightBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\LightBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\AsyncOperationBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\AsyncOperationBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ComputeShaderBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ComputeShaderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ComponentBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ComponentBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\DisplayBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\DisplayBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\GizmoBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\GizmoBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\AndroidJavaBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\AndroidJavaBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SpritesBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SpritesBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SecurityPublicBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SecurityPublicBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\LightBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\LightBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ComputeShaderBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ComputeShaderBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ProfilerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\ProfilerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\DisplayBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\DisplayBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RecorderBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\RecorderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\AndroidJavaBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\AndroidJavaBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TransformBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\TransformBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SecurityPublicBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SecurityPublicBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RectTransformBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\RectTransformBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SamplerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SamplerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\ProfilerBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\ProfilerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RecorderBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RecorderBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\TransformBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\TransformBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\RectTransformBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\RectTransformBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\runtime\SpriteAtlasBindings.gen.cs" >
-<Link>artifacts\generated\common\runtime\SpriteAtlasBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs</Link>
 </Compile><Compile Include="..\..\Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs" >
 <Link>Runtime\ParticleSystem\Managed\ParticleSystem.deprecated.cs</Link>
 </Compile>
@@ -975,14 +981,14 @@
 <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs" >
 <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\ParticleSystem\ParticleSystemBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Dynamics\Managed\Dynamics.cs" >
 <Link>Runtime\Dynamics\Managed\Dynamics.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Physics\DynamicsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Physics\DynamicsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Vehicles\Vehicles.bindings.cs" >
 <Link>Runtime\Vehicles\Vehicles.bindings.cs</Link>
@@ -993,8 +999,8 @@
 <Compile Include="..\..\Runtime\Cloth\Cloth.cs" >
 <Link>Runtime\Cloth\Cloth.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Cloth\ClothBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Cloth\ClothBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\Managed\AnimationPlayableUtilities.cs" >
 <Link>Runtime\Animation\Managed\AnimationPlayableUtilities.cs</Link>
@@ -1032,6 +1038,9 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\ParentConstraint.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\ParentConstraint.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMotionXToDeltaPlayable.bindings.cs</Link>
 </Compile>
@@ -1046,6 +1055,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationPlayableExtensions.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Animation\ScriptBindings\AvatarBuilder.bindings.cs" >
+<Link>Runtime\Animation\ScriptBindings\AvatarBuilder.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationMixerPlayable.bindings.cs</Link>
@@ -1071,29 +1083,62 @@
 <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs" >
 <Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AvatarBuilderBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AvatarBuilderBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Animation\AnimationsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtility.cs" >
 <Link>Runtime\UI\ScriptBindings\RectTransformUtility.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UI\UICanvasBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UI\UICanvasBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UI\UICanvasBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UI\UICanvasBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UI\CanvasGroupBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UI\CanvasGroupBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UI\CanvasGroupBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UI\CanvasGroupBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UI\CanvasRendererBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UI\CanvasRendererBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UI\RectTransformUtilBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UI\RectTransformUtilBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UI\RectTransformUtilBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UI\RectTransformUtilBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\TerrainPhysics\TerrainPhysics.bindings.cs" >
 <Link>Runtime\TerrainPhysics\TerrainPhysics.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\FriendAttributes.cs" >
+<Link>Runtime\StyleSheets\Managed\FriendAttributes.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleProperty.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleProperty.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleRule.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleRule.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelector.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleSelector.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorPart.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleSelectorPart.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorType.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleSelectorType.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSheet.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleSheet.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueHandle.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleValueHandle.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueKeyword.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleValueKeyword.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs" >
+<Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Networking\Managed\UNETInterface.cs" >
 <Link>Runtime\Networking\Managed\UNETInterface.cs</Link>
@@ -1113,8 +1158,8 @@
 <Compile Include="..\..\Runtime\Networking\Managed\UNETWebSocketLib.cs" >
 <Link>Runtime\Networking\Managed\UNETWebSocketLib.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UNET\UNETworkingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs" >
 <Link>Runtime\AR\Tango\ScriptBindings\Tango.bindings.cs</Link>
@@ -1182,89 +1227,53 @@
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\VRBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\VRBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\VRTestBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\VRTestBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\GestureSourceBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\GestureSourceBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\GestureSourceBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\GestureSourceBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\SpatialMappingBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\SpatialMappingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\SpatialMappingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\SpatialMappingBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\GestureBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\GestureBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\GestureBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\GestureBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\HolographicSettingsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\HolographicSettingsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\HolographicSettingsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\HolographicSettingsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\WebCamBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\WebCamBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\WebCamBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\WebCamBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\WorldManagerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\WorldManagerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\WorldManagerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\WorldManagerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\VR\TransformLockBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\FriendAttributes.cs" >
-<Link>Runtime\StyleSheets\Managed\FriendAttributes.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleProperty.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleProperty.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleRule.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleRule.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelector.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleSelector.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorPart.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleSelectorPart.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorType.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleSelectorType.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSheet.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleSheet.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueHandle.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleValueHandle.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueKeyword.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleValueKeyword.cs</Link>
-</Compile>
-<Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs" >
-<Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\AI\NavMesh\NavMesh.cs" >
 <Link>Modules\AI\NavMesh\NavMesh.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshPathBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshPathBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\NavMeshPathBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\RuntimeNavMeshBuilderBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\RuntimeNavMeshBuilderBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\RuntimeNavMeshBuilderBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\RuntimeNavMeshBuilderBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshAgentBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshAgentBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\NavMeshAgentBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshObstacleBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshObstacleBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshObstacleBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\NavMeshObstacleBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\OffMeshLinkBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\OffMeshLinkBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\OffMeshLinkBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\OffMeshLinkBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AI\NavMeshBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AI\NavMeshBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AI\NavMeshBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs" >
 <Link>Modules\Accessibility\VisionUtility.cs</Link>
@@ -1278,11 +1287,11 @@
 <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs" >
 <Link>Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AssetBundle\AssetBundleManifestBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AssetBundle\AssetBundleManifestBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AssetBundle\AssetBundleManifestBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AssetBundle\AssetBundleManifestBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\AssetBundle\AssetBundleBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\AssetBundle\AssetBundleBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\AssetBundle\AssetBundleBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\AssetBundle\AssetBundleBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Audio\Public\Managed\Audio.deprecated.cs" >
 <Link>Modules\Audio\Public\Managed\Audio.deprecated.cs</Link>
@@ -1305,23 +1314,26 @@
 <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioRenderer.bindings.cs" >
 <Link>Modules\Audio\Public\ScriptBindings\AudioRenderer.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs" >
+<Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\AudioBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\AudioMixerGroupBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\AudioMixerSnapshotBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\MovieTextureBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerGroupBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\AudioMixerGroupBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\MovieTextureBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\MovieTextureBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Audio\UnityEngineWebCamTextureBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\CrashReporting\CrashReportHandler.bindings.cs" >
 <Link>Modules\CrashReporting\CrashReportHandler.bindings.cs</Link>
@@ -1329,8 +1341,8 @@
 <Compile Include="..\..\Modules\Director\ScriptBindings\PlayableDirector.bindings.cs" >
 <Link>Modules\Director\ScriptBindings\PlayableDirector.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Director\PlayableDirectorBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Director\PlayableDirectorBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Director\PlayableDirectorBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Director\PlayableDirectorBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\GameCenter\Managed\GameCenterServices.cs" >
 <Link>Modules\GameCenter\Managed\GameCenterServices.cs</Link>
@@ -1341,8 +1353,8 @@
 <Compile Include="..\..\Modules\GameCenter\Managed\LocalService.cs" >
 <Link>Modules\GameCenter\Managed\LocalService.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\GameCenter\GameCenterServicesBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\GameCenter\GameCenterServicesBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\GameCenter\GameCenterServicesBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Grid\Managed\Grid.cs" >
 <Link>Modules\Grid\Managed\Grid.cs</Link>
@@ -1428,32 +1440,32 @@
 <Compile Include="..\..\Modules\IMGUI\TextEditor.cs" >
 <Link>Modules\IMGUI\TextEditor.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\EventBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\EventBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\EventBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\EventBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUIBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUIBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUIBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUIBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUIDebuggerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUIDebuggerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUIDebuggerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUIDebuggerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUILayoutUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUILayoutUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUILayoutUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUILayoutUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUISkinBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUISkinBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUISkinBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUISkinBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUIStyleBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUIStyleBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUIStyleBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUIStyleBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\GUIUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\GUIUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\GUIUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\GUIUtilityBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\IMGUI\StylePainterBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\IMGUI\StylePainterBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\IMGUI\StylePainterBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\IMGUI\StylePainterBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\ImageConversion\ImageConversionBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\ImageConversion\ImageConversionBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\ImageConversion\ImageConversionBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Input\Private\Input.cs" >
 <Link>Modules\Input\Private\Input.cs</Link>
@@ -1461,14 +1473,14 @@
 <Compile Include="..\..\Modules\Input\Private\InputModule.bindings.cs" >
 <Link>Modules\Input\Private\InputModule.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\JSONSerialize\JsonUtilityBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\JSONSerialize\JsonUtilityBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs" >
 <Link>Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\PerformanceReporting\PerformanceReportingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\PerformanceReporting\PerformanceReportingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\PerformanceReporting\PerformanceReportingBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs" >
 <Link>Modules\Physics2D\ScriptBindings\Physics2D.bindings.cs</Link>
@@ -1506,8 +1518,8 @@
 <Compile Include="..\..\Modules\TextRendering\TextGenerator.cs" >
 <Link>Modules\TextRendering\TextGenerator.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\TextRendering\TextRenderingBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\TextRendering\TextRenderingBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\TextRendering\TextRenderingBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\TextRendering\TextRenderingBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Tilemap\Managed\CustomGridBrushAttribute.cs" >
 <Link>Modules\Tilemap\Managed\CustomGridBrushAttribute.cs</Link>
@@ -1710,6 +1722,9 @@
 <Compile Include="..\..\Modules\UIElements\Events\UIEvent.cs" >
 <Link>Modules\UIElements\Events\UIEvent.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\UIElements\Managed\TextElement.cs" >
+<Link>Modules\UIElements\Managed\TextElement.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs" >
 <Link>Modules\UIElements\StyleSheets\StyleComplexSelectorExtensions.cs</Link>
 </Compile>
@@ -1818,8 +1833,8 @@
 <Compile Include="..\..\External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs" >
 <Link>External\CSSLayout\csharp\Facebook.CSSLayout\Spacing.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UIElements\CSSLayoutCallbacksBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UIElements\CSSLayoutCallbacksBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UIElements\CSSLayoutCallbacksBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityAnalytics\UnityAnalytics.cs" >
 <Link>Modules\UnityAnalytics\UnityAnalytics.cs</Link>
@@ -1827,23 +1842,23 @@
 <Compile Include="..\..\Modules\UnityAnalytics\Events\CustomEventData.cs" >
 <Link>Modules\UnityAnalytics\Events\CustomEventData.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityAnalytics\CustomEventDataBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityAnalytics\CustomEventDataBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityAnalytics\CustomEventDataBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UnityAnalytics\CustomEventDataBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityConnect\AnalyticsSessionInfo.bindings.cs" >
 <Link>Modules\UnityConnect\AnalyticsSessionInfo.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityConnect\RemoteSettingsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityConnect\RemoteSettingsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityConnect\RemoteSettingsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UnityConnect\RemoteSettingsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityConnect\UnityConnectSettingsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityConnect\UnityConnectSettingsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityConnect\UnityConnectSettingsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UnityConnect\UnityConnectSettingsBindings.gen.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\UnityConnect\UnityAdsSettingsBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\UnityConnect\UnityAdsSettingsBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityConnect\UnityAdsSettingsBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\UnityConnect\UnityAdsSettingsBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityWebRequest\Public\MultipartFormHelper.cs" >
 <Link>Modules\UnityWebRequest\Public\MultipartFormHelper.cs</Link>
@@ -1893,11 +1908,14 @@
 <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs" >
 <Link>Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Video\VideoPlayerBindings.gen.cs</Link>
+<Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs" >
+<Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Video\VideoClipBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Video\VideoPlayerBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Video\VideoPlayerBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\Web\FriendAttributes.cs" >
 <Link>Modules\Web\FriendAttributes.cs</Link>
@@ -1905,8 +1923,8 @@
 <Compile Include="..\..\External\JsonParsers\SimpleJson\SimpleJson.cs" >
 <Link>External\JsonParsers\SimpleJson\SimpleJson.cs</Link>
 </Compile>
-<Compile Include="..\..\artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs" >
-<Link>artifacts\generated\common\modules\Wind\WindZoneBindings.gen.cs</Link>
+<Compile Include="..\..\artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs" >
+<Link>artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs</Link>
 </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

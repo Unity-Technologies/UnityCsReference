@@ -133,9 +133,9 @@ namespace UnityEditor
             public static readonly string serializeTreeViewState    = "_TreeViewState";
             public static readonly string serializeColumnHeaderState = "_ColumnHeaderState";
             public static readonly string serializeFilter = "_Filter_";
-            public static readonly GUIContent filterSelection = EditorGUIUtility.TextContent("Lock Selection|Limits the table contents to the active selection.");
-            public static readonly GUIContent filterDisable   = EditorGUIUtility.TextContent("Disable All|Disables all filters.");
-            public static readonly GUIContent filterInvert    = EditorGUIUtility.TextContent("Invert Result|Inverts the filtered results.");
+            public static readonly GUIContent filterSelection = EditorGUIUtility.TrTextContent("Lock Selection", "Limits the table contents to the active selection.");
+            public static readonly GUIContent filterDisable   = EditorGUIUtility.TrTextContent("Disable All", "Disables all filters.");
+            public static readonly GUIContent filterInvert    = EditorGUIUtility.TrTextContent("Invert Result", "Inverts the filtered results.");
         }
 
         // this gets stuffed into the view and displayed on screen. It is a visible subset of the actual data

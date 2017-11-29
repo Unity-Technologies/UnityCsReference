@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Toggle : VisualElement
+    public class Toggle : BaseTextElement
     {
         Action clickEvent;
 

@@ -18,10 +18,10 @@ namespace UnityEditor
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle button = "LargeButton";
-            public GUIContent saveSelected = EditorGUIUtility.TextContent("Save Selected");
-            public GUIContent saveAll = EditorGUIUtility.TextContent("Save All");
-            public GUIContent dontSave = EditorGUIUtility.TextContent("Don't Save");
-            public GUIContent close = EditorGUIUtility.TextContent("Close");
+            public GUIContent saveSelected = EditorGUIUtility.TrTextContent("Save Selected");
+            public GUIContent saveAll = EditorGUIUtility.TrTextContent("Save All");
+            public GUIContent dontSave = EditorGUIUtility.TrTextContent("Don't Save");
+            public GUIContent close = EditorGUIUtility.TrTextContent("Close");
             public float buttonWidth;
             public Styles()
             {
@@ -75,7 +75,7 @@ namespace UnityEditor
             }
 
             AssetSaveDialog win = EditorWindow.GetWindowDontShow<AssetSaveDialog>();
-            win.titleContent = EditorGUIUtility.TextContent("Save Assets");
+            win.titleContent = EditorGUIUtility.TrTextContent("Save Assets");
             win.SetAssets(assets);
             win.ShowUtility();
             win.ShowModal();

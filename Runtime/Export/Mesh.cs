@@ -567,10 +567,13 @@ namespace UnityEngine
         }
     }
 
+    [Serializable]
     [UsedByNativeCode]
     public struct BoneWeight
     {
+        [SerializeField]
         private float   m_Weight0, m_Weight1, m_Weight2, m_Weight3;
+        [SerializeField]
         private int     m_BoneIndex0, m_BoneIndex1, m_BoneIndex2, m_BoneIndex3;
 
         public float weight0 { get { return m_Weight0; } set { m_Weight0 = value; } }

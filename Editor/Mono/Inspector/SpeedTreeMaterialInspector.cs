@@ -163,6 +163,7 @@ namespace UnityEditor
 
             RenderQueueField();
             EnableInstancingField();
+            DoubleSidedGIField();
         }
 
         private bool? ToggleShaderProperty(MaterialProperty prop, bool enable, bool hasMixedEnable)

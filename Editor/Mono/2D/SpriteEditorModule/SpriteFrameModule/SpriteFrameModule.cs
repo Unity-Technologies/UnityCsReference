@@ -9,9 +9,11 @@ using System.Collections.Generic;
 using UnityEditor.U2D.Interface;
 using UnityEngine.U2D.Interface;
 using UnityTexture2D = UnityEngine.Texture2D;
+using UnityEditor.Experimental.U2D;
 
 namespace UnityEditor
 {
+    [RequireSpriteDataProvider(typeof(ITextureDataProvider))]
     internal partial class SpriteFrameModule : SpriteFrameModuleBase
     {
         public enum AutoSlicingMethod
@@ -32,18 +34,12 @@ namespace UnityEditor
         public override void OnModuleActivate()
         {
             base.OnModuleActivate();
-            m_RectsCache = spriteEditor.spriteRects;
             spriteEditor.enableMouseMoveEvent = true;
-        }
-
-        public override void OnModuleDeactivate()
-        {
-            m_RectsCache = null;
         }
 
         public override bool CanBeActivated()
         {
-            return SpriteUtility.GetSpriteImportMode(spriteEditor.spriteEditorDataProvider) != SpriteImportMode.Polygon;
+            return SpriteUtility.GetSpriteImportMode(spriteEditor.GetDataProvider<ISpriteEditorDataProvider>()) != SpriteImportMode.Polygon;
         }
 
         private string GetUniqueName(string prefix, int startIndex)
@@ -53,9 +49,9 @@ namespace UnityEditor
                 var name = prefix + "_" + startIndex++;
 
                 var nameUsed = false;
-                for (int i = 0; i < m_RectsCache.Count; ++i)
+                for (int i = 0; i < m_RectsCache.spriteRects.Count; ++i)
                 {
-                    if (m_RectsCache.RectAt(i).name == name)
+                    if (m_RectsCache.spriteRects[i].name == name)
                     {
                         nameUsed = true;
                         break;
@@ -81,7 +77,7 @@ namespace UnityEditor
             {
                 // Because the slicing algorithm works from bottom-up, the topmost rect is the last one in the array
                 Rect r = rects[rects.Count - 1];
-                Rect sweepRect = new Rect(0, r.yMin, previewTexture.width, r.height);
+                Rect sweepRect = new Rect(0, r.yMin, textureActualWidth, r.height);
 
                 List<Rect> rowRects = RectSweep(rects, sweepRect);
 
@@ -146,16 +142,16 @@ namespace UnityEditor
 
         private SpriteRect GetExistingOverlappingSprite(Rect rect)
         {
-            for (int i = 0; i < m_RectsCache.Count; i++)
+            for (int i = 0; i < m_RectsCache.spriteRects.Count; i++)
             {
-                Rect existingRect = m_RectsCache.RectAt(i).rect;
+                Rect existingRect = m_RectsCache.spriteRects[i].rect;
                 if (existingRect.Overlaps(rect))
-                    return m_RectsCache.RectAt(i);
+                    return m_RectsCache.spriteRects[i];
             }
             return null;
         }
 
-        private bool PixelHasAlpha(int x, int y, ITexture2D texture)
+        private bool PixelHasAlpha(int x, int y, UnityTexture2D texture)
         {
             if (m_AlphaPixelCache == null)
             {
@@ -182,7 +178,7 @@ namespace UnityEditor
             spriteRect.border = Vector4.zero;
             spriteEditor.SetDataModified();
 
-            m_RectsCache.AddRect(spriteRect);
+            m_RectsCache.spriteRects.Add(spriteRect);
             spriteEditor.SetDataModified();
 
             return spriteRect;
@@ -204,9 +200,9 @@ namespace UnityEditor
             undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Automatic Slicing");
 
             if (slicingMethod == AutoSlicingMethod.DeleteAll)
-                m_RectsCache.ClearAll();
+                m_RectsCache.spriteRects.Clear();
 
-            var textureToUse = spriteEditor.GetReadableTexture2D();
+            var textureToUse = m_TextureDataProvider.GetReadableTexture2D();
             List<Rect> frames = new List<Rect>(InternalSpriteUtility.GenerateAutomaticSpriteRectangles((UnityTexture2D)textureToUse, minimumSpriteSize, 0));
             frames = SortRects(frames);
             int index = 0;
@@ -221,12 +217,12 @@ namespace UnityEditor
 
         public void DoGridSlicing(Vector2 size, Vector2 offset, Vector2 padding, int alignment, Vector2 pivot)
         {
-            var textureToUse = spriteEditor.GetReadableTexture2D();
+            var textureToUse = m_TextureDataProvider.GetReadableTexture2D();
             Rect[] frames = InternalSpriteUtility.GenerateGridSpriteRectangles((UnityTexture2D)textureToUse, offset, size, padding);
 
             int index = 0;
             undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Grid Slicing");
-            m_RectsCache.ClearAll();
+            m_RectsCache.spriteRects.Clear();
 
             foreach (Rect frame in frames)
                 AddSprite(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, GetSpriteNamePrefix() + "_" + index++);
@@ -241,7 +237,7 @@ namespace UnityEditor
             if (selected != null)
             {
                 undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Scale sprite");
-                selected.rect = ClampSpriteRect(r, previewTexture.width, previewTexture.height);
+                selected.rect = ClampSpriteRect(r, textureActualWidth, textureActualHeight);
                 selected.border = ClampSpriteBorderToRect(selected.border, selected.rect);
                 spriteEditor.SetDataModified();
             }
@@ -249,7 +245,7 @@ namespace UnityEditor
 
         public void TrimAlpha()
         {
-            var texture = spriteEditor.GetReadableTexture2D();
+            var texture = m_TextureDataProvider.GetReadableTexture2D();
             if (texture == null)
                 return;
 
@@ -281,7 +277,7 @@ namespace UnityEditor
 
             if (rect.width <= 0 && rect.height <= 0)
             {
-                m_RectsCache.RemoveRect(selected);
+                m_RectsCache.spriteRects.Remove(selected);
                 spriteEditor.SetDataModified();
                 selected = null;
             }
@@ -306,7 +302,7 @@ namespace UnityEditor
 
         public void CreateSprite(Rect rect)
         {
-            rect = ClampSpriteRect(rect, previewTexture.width, previewTexture.height);
+            rect = ClampSpriteRect(rect, textureActualWidth, textureActualHeight);
             undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Create sprite");
             selected = AddSpriteWithUniqueName(rect, 0, Vector2.zero, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, 0);
         }
@@ -316,7 +312,7 @@ namespace UnityEditor
             if (selected != null)
             {
                 undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Delete sprite");
-                m_RectsCache.RemoveRect(selected);
+                m_RectsCache.spriteRects.Remove(selected);
                 selected = null;
                 spriteEditor.SetDataModified();
             }

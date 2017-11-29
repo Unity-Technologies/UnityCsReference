@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     internal class RendererEditorBase : Editor
     {
-        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TextContent("Dynamic Occluded|Controls if dynamic occlusion culling should be performed for this renderer.");
+        private GUIContent m_DynamicOccludeeLabel = EditorGUIUtility.TrTextContent("Dynamic Occluded", "Controls if dynamic occlusion culling should be performed for this renderer.");
 
 
         internal class Probes
@@ -25,16 +25,16 @@ namespace UnityEditor
             private SerializedProperty m_ProbeAnchor;
             private SerializedProperty m_ReceiveShadows;
 
-            private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TextContent("Light Probes|Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to Lightmap Static.");
-            private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TextContent("Proxy Volume Override|If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
-            private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TextContent("Reflection Probes|Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
-            private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TextContent("Anchor Override|Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
-            private GUIContent m_DeferredNote = EditorGUIUtility.TextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.");
-            private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TextContent("A valid Light Probe Proxy Volume component could not be found.");
-            private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
-            private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
+            private GUIContent m_LightProbeUsageStyle = EditorGUIUtility.TrTextContent("Light Probes", "Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to Lightmap Static.");
+            private GUIContent m_LightProbeVolumeOverrideStyle = EditorGUIUtility.TrTextContent("Proxy Volume Override", "If set, the Renderer will use the Light Probe Proxy Volume component from another GameObject.");
+            private GUIContent m_ReflectionProbeUsageStyle = EditorGUIUtility.TrTextContent("Reflection Probes", "Specifies if or how the object is affected by reflections in the Scene.  This property cannot be disabled in deferred rendering modes.");
+            private GUIContent m_ProbeAnchorStyle = EditorGUIUtility.TrTextContent("Anchor Override", "Specifies the Transform position that will be used for sampling the light probes and reflection probes.");
+            private GUIContent m_DeferredNote = EditorGUIUtility.TrTextContent("In Deferred Shading, all objects receive shadows and get per-pixel reflection probes.");
+            private GUIContent m_LightProbeVolumeNote = EditorGUIUtility.TrTextContent("A valid Light Probe Proxy Volume component could not be found.");
+            private GUIContent m_LightProbeVolumeUnsupportedNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is unsupported by the current graphics hardware or API configuration. Simple 'Blend Probes' mode will be used instead.");
+            private GUIContent m_LightProbeVolumeUnsupportedOnTreesNote = EditorGUIUtility.TrTextContent("The Light Probe Proxy Volume feature is not supported on tree rendering. Simple 'Blend Probes' mode will be used instead.");
+            private GUIContent m_LightProbeCustomNote = EditorGUIUtility.TrTextContent("The Custom Provided mode requires SH properties to be sent via MaterialPropertyBlock.");
             private GUIContent[] m_ReflectionProbeUsageOptions = (Enum.GetNames(typeof(ReflectionProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-            private GUIContent[] m_LightProbeBlendModeOptions = (Enum.GetNames(typeof(LightProbeUsage)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
 
             private List<ReflectionProbeBlendInfo> m_BlendInfo = new List<ReflectionProbeBlendInfo>();
 
@@ -123,41 +123,58 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(!lightProbeAllowed))
                 {
-                    if (!useMiniStyle)
+                    if (lightProbeAllowed)
                     {
-                        if (lightProbeAllowed)
+                        // LightProbeUsage has non-sequential enum values. Extra care is to be taken.
+                        if (useMiniStyle)
                         {
-                            EditorGUILayout.Popup(m_LightProbeUsage, m_LightProbeBlendModeOptions, m_LightProbeUsageStyle);
+                            EditorGUI.showMixedValue = m_LightProbeUsage.hasMultipleDifferentValues;
+                            EditorGUI.BeginChangeCheck();
+                            var newValue = ModuleUI.GUIEnumPop(m_LightProbeUsageStyle, (LightProbeUsage)m_LightProbeUsage.intValue);
+                            if (EditorGUI.EndChangeCheck())
+                                m_LightProbeUsage.intValue = (int)(LightProbeUsage)newValue;
+                            EditorGUI.showMixedValue = false;
+                        }
+                        else
+                        {
+                            Rect r = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                            EditorGUI.BeginProperty(r, m_LightProbeUsageStyle, m_LightProbeUsage);
+                            EditorGUI.BeginChangeCheck();
+                            var newValue = EditorGUI.EnumPopup(r, m_LightProbeUsageStyle, (LightProbeUsage)m_LightProbeUsage.intValue);
+                            if (EditorGUI.EndChangeCheck())
+                                m_LightProbeUsage.intValue = (int)(LightProbeUsage)newValue;
+                            EditorGUI.EndProperty();
+                        }
 
-                            if (!m_LightProbeUsage.hasMultipleDifferentValues
-                                && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
+                        if (!m_LightProbeUsage.hasMultipleDifferentValues)
+                        {
+                            if (m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
                                 && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
                             {
                                 EditorGUI.indentLevel++;
-                                EditorGUILayout.PropertyField(m_LightProbeVolumeOverride, m_LightProbeVolumeOverrideStyle);
+                                if (useMiniStyle)
+                                    ModuleUI.GUIObject(m_LightProbeVolumeOverrideStyle, m_LightProbeVolumeOverride);
+                                else
+                                    EditorGUILayout.PropertyField(m_LightProbeVolumeOverride, m_LightProbeVolumeOverrideStyle);
+                                EditorGUI.indentLevel--;
+                            }
+                            else if (m_LightProbeUsage.intValue == (int)LightProbeUsage.CustomProvided)
+                            {
+                                EditorGUI.indentLevel++;
+                                if (!Application.isPlaying)
+                                    EditorGUILayout.HelpBox(m_LightProbeCustomNote.text, MessageType.Info);
+                                else if (!renderer.HasPropertyBlock())
+                                    EditorGUILayout.HelpBox(m_LightProbeCustomNote.text, MessageType.Error);
                                 EditorGUI.indentLevel--;
                             }
                         }
-                        else
-                            EditorGUILayout.EnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off);
                     }
                     else
                     {
-                        if (lightProbeAllowed)
-                        {
-                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, m_LightProbeUsage, m_LightProbeBlendModeOptions);
-
-                            if (!m_LightProbeUsage.hasMultipleDifferentValues
-                                && m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
-                                && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
-                            {
-                                EditorGUI.indentLevel++;
-                                ModuleUI.GUIObject(m_LightProbeVolumeOverrideStyle, m_LightProbeVolumeOverride);
-                                EditorGUI.indentLevel--;
-                            }
-                        }
+                        if (useMiniStyle)
+                            ModuleUI.GUIEnumPop(m_LightProbeUsageStyle, LightProbeUsage.Off);
                         else
-                            ModuleUI.GUIPopup(m_LightProbeUsageStyle, (int)LightProbeUsage.Off, m_LightProbeBlendModeOptions);
+                            EditorGUILayout.EnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off);
                     }
                 }
 
@@ -310,7 +327,7 @@ namespace UnityEditor
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
         private SerializedProperty m_RenderingLayerMask;
-        static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TextContent("Rendering Layer Mask|Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+        static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
 
         protected Probes m_Probes;
 

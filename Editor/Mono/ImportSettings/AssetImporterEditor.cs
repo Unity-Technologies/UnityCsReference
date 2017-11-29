@@ -40,7 +40,7 @@ namespace UnityEditor.Experimental.AssetImporters
                     }
                 }
 
-                return string.Format("{0} Import Settings", title);
+                return string.Format(L10n.Tr("{0} Import Settings"), title);
             }
         }
 
@@ -108,12 +108,12 @@ namespace UnityEditor.Experimental.AssetImporters
             AssetImporter importer = target as AssetImporter;
             if (Unsupported.IsDestroyScriptableObject(this) && m_MightHaveModified && importer != null && !InternalEditorUtility.ignoreInspectorChanges && HasModified() && !AssetWasUpdated())
             {
-                string dialogText = "Unapplied import settings for \'" + importer.assetPath + "\'";
+                string dialogText = string.Format(L10n.Tr("Unapplied import settings for \'{0}\'"), importer.assetPath);
 
                 if (targets.Length > 1)
-                    dialogText = "Unapplied import settings for \'" + targets.Length + "\' files";
+                    dialogText = string.Format(L10n.Tr("Unapplied import settings for \'{0}\' files"), targets.Length);
 
-                if (EditorUtility.DisplayDialog("Unapplied import settings", dialogText, "Apply", "Revert"))
+                if (EditorUtility.DisplayDialog(L10n.Tr("Unapplied import settings"), dialogText, L10n.Tr("Apply"), L10n.Tr("Revert")))
                 {
                     Apply();
                     m_MightHaveModified = false;
@@ -216,7 +216,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected void RevertButton()
         {
-            RevertButton("Revert");
+            RevertButton(L10n.Tr("Revert"));
         }
 
         protected void RevertButton(string buttonText)
@@ -233,7 +233,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected bool ApplyButton()
         {
-            return ApplyButton("Apply");
+            return ApplyButton(L10n.Tr("Apply"));
         }
 
         protected bool ApplyButton(string buttonText)

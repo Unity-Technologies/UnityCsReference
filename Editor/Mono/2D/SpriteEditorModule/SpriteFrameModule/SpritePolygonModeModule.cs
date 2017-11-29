@@ -2,13 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D.Interface;
 using UnityEngine.U2D.Interface;
+using UnityEngine;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
+    [RequireSpriteDataProvider(typeof(ISpriteOutlineDataProvider), typeof(ITextureDataProvider))]
     internal partial class SpritePolygonModeModule : SpriteFrameModuleBase, ISpriteEditorModule
     {
+        List<List<Vector2[]>> m_Outline;
+
         public SpritePolygonModeModule(ISpriteEditor sw, IEventSystem es, IUndoSystem us, IAssetDatabase ad) :
             base("Sprite Polygon Mode Editor", sw, es, us, ad)
         {}
@@ -17,20 +23,22 @@ namespace UnityEditor
         public override void OnModuleActivate()
         {
             base.OnModuleActivate();
-            m_RectsCache = spriteEditor.spriteRects;
+            m_Outline = new List<List<Vector2[]>>();
+
+            for (int i = 0; i < m_RectsCache.spriteRects.Count; ++i)
+            {
+                var rect = m_RectsCache.spriteRects[i];
+                m_Outline.Add(spriteEditor.GetDataProvider<ISpriteOutlineDataProvider>().GetOutlines(rect.spriteID));
+            }
+
             showChangeShapeWindow = polygonSprite;
             if (polygonSprite)
                 DeterminePolygonSides();
         }
 
-        public override void OnModuleDeactivate()
-        {
-            m_RectsCache = null;
-        }
-
         public override bool CanBeActivated()
         {
-            return SpriteUtility.GetSpriteImportMode(spriteEditor.spriteEditorDataProvider) == SpriteImportMode.Polygon;
+            return SpriteUtility.GetSpriteImportMode(spriteEditor.GetDataProvider<ISpriteEditorDataProvider>()) == SpriteImportMode.Polygon;
         }
 
         private bool polygonSprite
@@ -40,11 +48,9 @@ namespace UnityEditor
 
         private void DeterminePolygonSides()
         {
-            if (polygonSprite && m_RectsCache.Count == 1)
+            if (polygonSprite && m_RectsCache.spriteRects.Count == 1 && m_Outline.Count == 1 && m_Outline[0].Count == 1)
             {
-                SpriteRect sr = m_RectsCache.RectAt(0);
-                if (sr.outline.Count == 1)
-                    polygonSides = sr.outline[0].Count;
+                polygonSides = m_Outline[0][0].Length;
             }
             else
                 // If for reasons we cannot determine the sides of the polygon, fall back to 0 (Square)
@@ -63,17 +69,23 @@ namespace UnityEditor
             set;
         }
 
+        public List<Vector2[]> GetSpriteOutlineAt(int i)
+        {
+            return m_Outline[i];
+        }
+
         public void GeneratePolygonOutline()
         {
-            for (int i = 0; i < m_RectsCache.Count; i++)
+            for (int i = 0; i < m_RectsCache.spriteRects.Count; i++)
             {
-                SpriteRect currentRect = m_RectsCache.RectAt(i);
+                SpriteRect currentRect = m_RectsCache.spriteRects[i];
 
-                SpriteOutline newOutline = new SpriteOutline();
-                newOutline.AddRange(UnityEditor.Sprites.SpriteUtility.GeneratePolygonOutlineVerticesOfSize(polygonSides, (int)currentRect.rect.width, (int)currentRect.rect.height));
+                var result = UnityEditor.Sprites.SpriteUtility.GeneratePolygonOutlineVerticesOfSize(polygonSides, (int)currentRect.rect.width, (int)currentRect.rect.height);
 
-                currentRect.outline.Clear();
-                currentRect.outline.Add(newOutline);
+                m_Outline.Clear();
+                var newOutlineList = new List<Vector2[]>();
+                newOutlineList.Add(result);
+                m_Outline.Add(newOutlineList);
 
                 spriteEditor.SetDataModified();
             }

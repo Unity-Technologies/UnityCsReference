@@ -9,7 +9,6 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor
 {
@@ -129,7 +128,6 @@ namespace UnityEditor
             style.positionRight = margins.right;
             style.positionType = PositionType.Absolute;
         }
-
 
         public void AddTab(EditorWindow pane)
         {
@@ -253,6 +251,10 @@ namespace UnityEditor
             ClearBackground();
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
+
+            // Exit if the window was destroyed after entering play mode or on domain-reload.
+            if (window == null)
+                return;
 
             // Add CursorRects
             SplitView sp = parent as SplitView;
@@ -445,19 +447,19 @@ namespace UnityEditor
             base.AddDefaultItemsToMenu(menu, view);
 
             if (parent.window.showMode == ShowMode.MainWindow)
-                menu.AddItem(EditorGUIUtility.TextContent("Maximize"), !(parent is SplitView), Maximize, view);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Maximize, view);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TextContent("Maximize"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Maximize"));
 
             bool closeAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());
             if (closeAllowed)
-                menu.AddItem(EditorGUIUtility.TextContent("Close Tab"), false, Close, view);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Close Tab"), false, Close, view);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TextContent("Close Tab"));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
 
             System.Type[] types = GetPaneTypes();
-            GUIContent baseContent = EditorGUIUtility.TextContent("Add Tab");
+            GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
             foreach (System.Type t in types)
             {
                 if (t == null)
@@ -817,12 +819,12 @@ namespace UnityEditor
         {
             base.AddDefaultItemsToMenu(menu, window);
 
-            menu.AddItem(EditorGUIUtility.TextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
-            menu.AddDisabledItem(EditorGUIUtility.TextContent("Close Tab"));
+            menu.AddItem(EditorGUIUtility.TrTextContent("Maximize"), !(parent is SplitView), Unmaximize, window);
+            menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Close Tab"));
             menu.AddSeparator("");
             System.Type[] types = GetPaneTypes();
 
-            GUIContent baseContent = EditorGUIUtility.TextContent("Add Tab");
+            GUIContent baseContent = EditorGUIUtility.TrTextContent("Add Tab");
             foreach (System.Type t in types)
             {
                 if (t == null)

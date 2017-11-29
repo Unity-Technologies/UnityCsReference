@@ -32,9 +32,9 @@ namespace UnityEditor
             public GUIContent prefabIcon = EditorGUIUtility.IconContent("PrefabNormal Icon");
             public GUIContent modelIcon = EditorGUIUtility.IconContent("PrefabModel Icon");
 
-            public GUIContent staticContent = EditorGUIUtility.TextContent("Static|Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
-            public GUIContent layerContent = EditorGUIUtility.TextContent("Layer|The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
-            public GUIContent tagContent = EditorGUIUtility.TextContent("Tag|The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
+            public GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
+            public GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
+            public GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
             public float tagFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Tag")).x;
             public float layerFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Layer")).x;
@@ -45,18 +45,18 @@ namespace UnityEditor
 
             public GUIStyle instanceManagementInfo = new GUIStyle(EditorStyles.helpBox);
 
-            public GUIContent goTypeLabelMultiple = new GUIContent("Multiple");
+            public GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
 
             public GUIContent[] goTypeLabel =
             {
                 null,//             None = 0,
-                EditorGUIUtility.TextContent("Prefab"),           // Prefab = 1
-                EditorGUIUtility.TextContent("Model"),            // ModelPrefab = 2
-                EditorGUIUtility.TextContent("Prefab"),           // PrefabInstance = 3
-                EditorGUIUtility.TextContent("Model"),            // ModelPrefabInstance = 4
-                EditorGUIUtility.TextContent("Missing|The source Prefab or Model has been deleted."),          // MissingPrefabInstance
-                EditorGUIUtility.TextContent("Prefab|You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert."), // DisconnectedPrefabInstance
-                EditorGUIUtility.TextContent("Model|You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert."), // DisconnectedModelPrefabInstance
+                EditorGUIUtility.TrTextContent("Prefab"),           // Prefab = 1
+                EditorGUIUtility.TrTextContent("Model"),            // ModelPrefab = 2
+                EditorGUIUtility.TrTextContent("Prefab"),           // PrefabInstance = 3
+                EditorGUIUtility.TrTextContent("Model"),            // ModelPrefabInstance = 4
+                EditorGUIUtility.TrTextContent("Missing", "The source Prefab or Model has been deleted."),          // MissingPrefabInstance
+                EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert."), // DisconnectedPrefabInstance
+                EditorGUIUtility.TrTextContent("Model", "You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert."), // DisconnectedModelPrefabInstance
             };
 
             public Styles()

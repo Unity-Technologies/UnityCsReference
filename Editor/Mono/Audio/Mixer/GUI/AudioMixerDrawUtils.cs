@@ -81,7 +81,7 @@ namespace UnityEditor
             public GUIContent duckingFaderGUIContent = new GUIContent("", "Ducking Fader");
             public GUIContent attenuationFader = new GUIContent("", "Attenuation fader");
             public GUIContent vuMeterGUIContent = new GUIContent("", "The VU meter shows the current level of the mix of all sounds and subgroups.");
-            public GUIContent referencedGroups = new GUIContent("Referenced groups", "Mixer groups that are hidden but are referenced by the visible mixer groups are shown here for convenience");
+            public GUIContent referencedGroups = EditorGUIUtility.TrTextContent("Referenced groups", "Mixer groups that are hidden but are referenced by the visible mixer groups are shown here for convenience");
             public GUIContent sendString = new GUIContent("s");
 
 

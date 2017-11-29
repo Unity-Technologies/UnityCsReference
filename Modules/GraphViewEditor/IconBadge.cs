@@ -16,7 +16,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         private VisualElement m_TipElement;
         private VisualElement m_IconElement;
-        private VisualElement m_TextElement;
+        private Label m_TextElement;
 
         protected SpriteAlignment alignment { get;  set; }
         protected VisualElement target { get;  set; }
@@ -79,7 +79,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_IconElement = this.Q<Image>("icon");
             m_TipElement = this.Q<Image>("tip");
-            m_TextElement = this.Q<VisualElement>("text");
+            m_TextElement = this.Q<Label>("text");
 
             if (m_IconElement == null)
             {
@@ -207,7 +207,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_TextElement != null)
             {
-                Vector2 newSize = m_TextElement.MeasureTextSize(badgeText, m_TextElement.style.maxWidth, MeasureMode.AtMost,
+                Vector2 newSize = m_TextElement.DoMeasure(m_TextElement.style.maxWidth, MeasureMode.AtMost,
                         0, MeasureMode.Undefined);
 
                 m_TextElement.style.width = newSize.x +

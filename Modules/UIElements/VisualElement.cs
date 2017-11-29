@@ -605,24 +605,6 @@ namespace UnityEngine.Experimental.UIElements
             changesNeeded &= ~type;
         }
 
-        [SerializeField]
-        private string m_Text;
-        public string text
-        {
-            get { return m_Text ?? String.Empty; }
-            set
-            {
-                if (m_Text == value)
-                    return;
-
-                m_Text = value;
-                Dirty(ChangeType.Layout);
-
-                if (!string.IsNullOrEmpty(persistenceKey))
-                    SavePersistentData();
-            }
-        }
-
         [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.", true)]
         public virtual bool enabled
         {
@@ -701,7 +683,6 @@ namespace UnityEngine.Experimental.UIElements
             var painter = elementPanel.stylePainter;
             painter.DrawBackground(this);
             painter.DrawBorder(this);
-            painter.DrawText(this);
         }
 
         internal virtual void DoRepaint(IStylePainter painter)
@@ -856,63 +837,9 @@ namespace UnityEngine.Experimental.UIElements
             AtMost = CSSMeasureMode.AtMost
         }
 
-        public Vector2 MeasureTextSize(string testStr, float width, MeasureMode widthMode, float height, MeasureMode heightMode)
-        {
-            var stylePainter = elementPanel.stylePainter;
-
-            float measuredWidth = float.NaN;
-            float measuredHeight = float.NaN;
-
-            Font usedFont = style.font;
-            if (m_Text == null || usedFont == null)
-                return new Vector2(measuredWidth, measuredHeight);
-
-            if (widthMode == MeasureMode.Exactly)
-            {
-                measuredWidth = width;
-            }
-            else
-            {
-                var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = testStr;
-                textParams.font = usedFont;
-                textParams.wordWrapWidth = 0.0f;
-                textParams.wordWrap = false;
-                textParams.richText = true;
-
-                measuredWidth = stylePainter.ComputeTextWidth(textParams);
-
-                if (widthMode == MeasureMode.AtMost)
-                {
-                    measuredWidth = Mathf.Min(measuredWidth, width);
-                }
-            }
-
-            if (heightMode == MeasureMode.Exactly)
-            {
-                measuredHeight = height;
-            }
-            else
-            {
-                var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = testStr;
-                textParams.font = usedFont;
-                textParams.wordWrapWidth = measuredWidth;
-                textParams.richText = true;
-
-                measuredHeight = stylePainter.ComputeTextHeight(textParams);
-
-                if (heightMode == MeasureMode.AtMost)
-                {
-                    measuredHeight = Mathf.Min(measuredHeight, height);
-                }
-            }
-            return new Vector2(measuredWidth, measuredHeight);
-        }
-
         protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
-            return MeasureTextSize(text, width, widthMode, height, heightMode);
+            return new Vector2(float.NaN, float.NaN);
         }
 
         internal long Measure(CSSNode node, float width, CSSMeasureMode widthMode, float height, CSSMeasureMode heightMode)
@@ -1183,6 +1110,14 @@ namespace UnityEngine.Experimental.UIElements
             styleAccess.positionBottom = 0.0f;
         }
 
+        public static void StretchToParentWidth(this VisualElement elem)
+        {
+            IStyle styleAccess = elem.style;
+            styleAccess.positionType = PositionType.Absolute;
+            styleAccess.positionLeft = 0.0f;
+            styleAccess.positionRight = 0.0f;
+        }
+
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
         {
             manipulator.target = ele;
@@ -1226,37 +1161,37 @@ namespace UnityEngine.Experimental.UIElements
             return painterParams;
         }
 
-        internal static TextStylePainterParameters GetDefaultTextParameters(this IStylePainter painter, VisualElement ve)
+        internal static TextStylePainterParameters GetDefaultTextParameters(this IStylePainter painter, BaseTextElement te)
         {
-            IStyle style = ve.style;
+            IStyle style = te.style;
             var painterParams = new TextStylePainterParameters
             {
-                rect = ve.contentRect,
-                text = ve.text,
+                rect = te.contentRect,
+                text = te.text,
                 font = style.font,
                 fontSize = style.fontSize,
                 fontStyle = style.fontStyle,
                 fontColor = style.textColor.GetSpecifiedValueOrDefault(Color.black),
                 anchor = style.textAlignment,
                 wordWrap = style.wordWrap,
-                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                wordWrapWidth = style.wordWrap ? te.contentRect.width : 0.0f,
                 richText = false,
                 clipping = style.textClipping
             };
             return painterParams;
         }
 
-        internal static CursorPositionStylePainterParameters GetDefaultCursorPositionParameters(this IStylePainter painter, VisualElement ve)
+        internal static CursorPositionStylePainterParameters GetDefaultCursorPositionParameters(this IStylePainter painter, BaseTextElement te)
         {
-            IStyle style = ve.style;
+            IStyle style = te.style;
             var painterParams = new CursorPositionStylePainterParameters() {
-                rect = ve.contentRect,
-                text = ve.text,
+                rect = te.contentRect,
+                text = te.text,
                 font = style.font,
                 fontSize = style.fontSize,
                 fontStyle = style.fontStyle,
                 anchor = style.textAlignment,
-                wordWrapWidth = style.wordWrap ? ve.contentRect.width : 0.0f,
+                wordWrapWidth = style.wordWrap ? te.contentRect.width : 0.0f,
                 richText = false,
                 cursorIndex = 0
             };
@@ -1292,11 +1227,11 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal static void DrawText(this IStylePainter painter, VisualElement ve)
+        internal static void DrawText(this IStylePainter painter, BaseTextElement te)
         {
-            if (!string.IsNullOrEmpty(ve.text) && ve.contentRect.width > 0.0f && ve.contentRect.height > 0.0f)
+            if (!string.IsNullOrEmpty(te.text) && te.contentRect.width > 0.0f && te.contentRect.height > 0.0f)
             {
-                painter.DrawText(painter.GetDefaultTextParameters(ve));
+                painter.DrawText(painter.GetDefaultTextParameters(te));
             }
         }
 

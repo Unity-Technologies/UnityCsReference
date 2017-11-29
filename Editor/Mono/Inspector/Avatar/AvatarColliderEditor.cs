@@ -16,8 +16,8 @@ namespace UnityEditor
         // It will have to be updated and cleaned up when we start to implement support for these editors.
         /*class Styles
         {
-            public GUIContent CreateCollider = EditorGUIUtility.TextContent ("Create Collider");
-            public GUIContent UserLayer = EditorGUIUtility.TextContent ("Colliders physics layer");
+            public GUIContent CreateCollider = EditorGUIUtility.TrTextContent ("Create Collider");
+            public GUIContent UserLayer = EditorGUIUtility.TrTextContent ("Colliders physics layer");
 
             public GUILayoutOption[] CreateColliderSize = new GUILayoutOption[] { GUILayout.MaxWidth (60) };
         }

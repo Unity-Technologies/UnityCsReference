@@ -27,14 +27,14 @@ namespace UnityEditor
 
         static class Texts
         {
-            public static GUIContent editInPlaymode = new GUIContent("Edit in Playmode");
-            public static GUIContent pitch = new GUIContent("Pitch");
-            public static GUIContent addEffect = new GUIContent("Add Effect");
-            public static GUIContent volume = new GUIContent("Volume");
-            public static GUIContent sendLevel = new GUIContent("Send level");
-            public static GUIContent bus = new GUIContent("Receive");
-            public static GUIContent none = new GUIContent("None");
-            public static GUIContent wet = new GUIContent("Wet", "Enables/disables wet/dry ratio on this effect. Note that this makes the DSP graph more complex and requires additional CPU and memory, so use it only when necessary.");
+            public static GUIContent editInPlaymode = EditorGUIUtility.TrTextContent("Edit in Playmode");
+            public static GUIContent pitch = EditorGUIUtility.TrTextContent("Pitch");
+            public static GUIContent addEffect = EditorGUIUtility.TrTextContent("Add Effect");
+            public static GUIContent volume = EditorGUIUtility.TrTextContent("Volume");
+            public static GUIContent sendLevel = EditorGUIUtility.TrTextContent("Send level");
+            public static GUIContent bus = EditorGUIUtility.TrTextContent("Receive");
+            public static GUIContent none = EditorGUIUtility.TrTextContent("None");
+            public static GUIContent wet = EditorGUIUtility.TrTextContent("Wet", "Enables/disables wet/dry ratio on this effect. Note that this makes the DSP graph more complex and requires additional CPU and memory, so use it only when necessary.");
             public static string dB = "dB";
             public static string percentage = "%";
             public static string cpuFormatString = " - CPU: {0:#0.00}%";
@@ -311,7 +311,7 @@ namespace UnityEditor
                     }
                     if (!anyTargetsFound)
                     {
-                        GUILayout.Label(new GUIContent("No Send sources connected.", EditorGUIUtility.warningIcon));
+                        GUILayout.Label(EditorGUIUtility.TrTextContent("No Send sources connected.", EditorGUIUtility.warningIcon));
                     }
                 }
 
@@ -369,12 +369,12 @@ namespace UnityEditor
             {
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume())
                 {
-                    menu.AddItem(new GUIContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate()
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate()
                         {
                             Undo.RecordObject(effect, "Enable Wet Mixing");
                             effect.enableWetMix = !effect.enableWetMix;
                         });
-                    menu.AddItem(new GUIContent("Bypass"), effect.bypass, delegate()
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate()
                         {
                             Undo.RecordObject(effect, "Bypass Effect");
                             effect.bypass = !effect.bypass;
@@ -385,7 +385,7 @@ namespace UnityEditor
                     menu.AddSeparator("");
                 }
 
-                menu.AddItem(new GUIContent("Copy effect settings to all snapshots"), false, delegate()
+                menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots"), false, delegate()
                     {
                         Undo.RecordObject(controller, "Copy effect settings to all snapshots");
                         if (effect.IsAttenuation())
@@ -415,7 +415,7 @@ namespace UnityEditor
             if (!effect.IsAttenuation())
             {
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Remove this effect"), false, delegate()
+                menu.AddItem(EditorGUIUtility.TrTextContent("Remove this effect"), false, delegate()
                     {
                         controller.ClearSendConnectionsTo(effect);
                         controller.RemoveEffect(effect, group);
@@ -429,13 +429,13 @@ namespace UnityEditor
         private static void ShowBusPopupMenu(int effectIndex, AudioMixerGroupController group, List<AudioMixerGroupController> allGroups, Dictionary<AudioMixerEffectController, AudioMixerGroupController> effectMap, AudioMixerEffectController effect, Rect buttonRect)
         {
             GenericMenu pm = new GenericMenu();
-            pm.AddItem(new GUIContent("None"), false, AudioMixerChannelStripView.ConnectSendPopupCallback, new AudioMixerChannelStripView.ConnectSendContext(effect, null));
+            pm.AddItem(EditorGUIUtility.TrTextContent("None"), false, AudioMixerChannelStripView.ConnectSendPopupCallback, new AudioMixerChannelStripView.ConnectSendContext(effect, null));
             pm.AddSeparator("");
             AudioMixerChannelStripView.AddMenuItemsForReturns(pm, string.Empty, effectIndex, group, allGroups, effectMap, effect, true);
 
             if (pm.GetItemCount() == 2)
             {
-                pm.AddDisabledItem(new GUIContent("No valid Receive targets found"));
+                pm.AddDisabledItem(EditorGUIUtility.TrTextContent("No valid Receive targets found"));
             }
 
             pm.DropDown(buttonRect);

@@ -19,31 +19,31 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static GUIContent LODHeader          = EditorGUIUtility.TextContent("LODs");
-            public static GUIContent ResetLOD           = EditorGUIUtility.TextContent("Reset LOD to...|Unify the LOD settings for all selected assets.");
-            public static GUIContent SmoothLOD          = EditorGUIUtility.TextContent("Smooth LOD|Toggles smooth LOD transitions.");
-            public static GUIContent AnimateCrossFading = EditorGUIUtility.TextContent("Animate Cross-fading|Cross-fading is animated instead of being calculated by distance.");
-            public static GUIContent CrossFadeWidth     = EditorGUIUtility.TextContent("Crossfade Width|Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree.");
-            public static GUIContent FadeOutWidth       = EditorGUIUtility.TextContent("Fade Out Width|Proportion of the billboard LOD region width which is used for fading out the billboard.");
+            public static GUIContent LODHeader          = EditorGUIUtility.TrTextContent("LODs");
+            public static GUIContent ResetLOD           = EditorGUIUtility.TrTextContent("Reset LOD to...", "Unify the LOD settings for all selected assets.");
+            public static GUIContent SmoothLOD          = EditorGUIUtility.TrTextContent("Smooth LOD", "Toggles smooth LOD transitions.");
+            public static GUIContent AnimateCrossFading = EditorGUIUtility.TrTextContent("Animate Cross-fading", "Cross-fading is animated instead of being calculated by distance.");
+            public static GUIContent CrossFadeWidth     = EditorGUIUtility.TrTextContent("Crossfade Width", "Proportion of the last 3D mesh LOD region width which is used for cross-fading to billboard tree.");
+            public static GUIContent FadeOutWidth       = EditorGUIUtility.TrTextContent("Fade Out Width", "Proportion of the billboard LOD region width which is used for fading out the billboard.");
 
-            public static GUIContent MeshesHeader       = EditorGUIUtility.TextContent("Meshes");
-            public static GUIContent ScaleFactor        = EditorGUIUtility.TextContent("Scale Factor|How much to scale the tree model compared to what is in the .spm file.");
-            public static GUIContent ScaleFactorHelp    = EditorGUIUtility.TextContent("The default value of Scale Factor is 0.3048, the conversion ratio from feet to meters, as these are the most conventional measurements used in SpeedTree and Unity, respectively.");
+            public static GUIContent MeshesHeader       = EditorGUIUtility.TrTextContent("Meshes");
+            public static GUIContent ScaleFactor        = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model compared to what is in the .spm file.");
+            public static GUIContent ScaleFactorHelp    = EditorGUIUtility.TrTextContent("The default value of Scale Factor is 0.3048, the conversion ratio from feet to meters, as these are the most conventional measurements used in SpeedTree and Unity, respectively.");
 
-            public static GUIContent MaterialsHeader    = EditorGUIUtility.TextContent("Materials");
-            public static GUIContent MainColor          = EditorGUIUtility.TextContent("Main Color|The color modulating the diffuse lighting component.");
-            public static GUIContent HueVariation       = EditorGUIUtility.TextContent("Hue Color|Apply to LODs that have Hue Variation effect enabled.");
-            public static GUIContent AlphaTestRef       = EditorGUIUtility.TextContent("Alpha Cutoff|The alpha-test reference value.");
-            public static GUIContent CastShadows        = EditorGUIUtility.TextContent("Cast Shadows|The tree casts shadow.");
-            public static GUIContent ReceiveShadows     = EditorGUIUtility.TextContent("Receive Shadows|The tree receives shadow.");
-            public static GUIContent UseLightProbes     = EditorGUIUtility.TextContent("Use Light Probes|The tree uses light probe for lighting.");
-            public static GUIContent UseReflectionProbes = EditorGUIUtility.TextContent("Use Reflection Probes|The tree uses reflection probe for rendering.");
-            public static GUIContent EnableBump         = EditorGUIUtility.TextContent("Normal Map|Enable normal mapping (aka Bump mapping).");
-            public static GUIContent EnableHue          = EditorGUIUtility.TextContent("Enable Hue Variation|Enable Hue variation color (color is adjusted between Main Color and Hue Color).");
-            public static GUIContent WindQuality        = EditorGUIUtility.TextContent("Wind Quality|Controls the wind quality.");
+            public static GUIContent MaterialsHeader    = EditorGUIUtility.TrTextContent("Materials");
+            public static GUIContent MainColor          = EditorGUIUtility.TrTextContent("Main Color", "The color modulating the diffuse lighting component.");
+            public static GUIContent HueVariation       = EditorGUIUtility.TrTextContent("Hue Color", "Apply to LODs that have Hue Variation effect enabled.");
+            public static GUIContent AlphaTestRef       = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The alpha-test reference value.");
+            public static GUIContent CastShadows        = EditorGUIUtility.TrTextContent("Cast Shadows", "The tree casts shadow.");
+            public static GUIContent ReceiveShadows     = EditorGUIUtility.TrTextContent("Receive Shadows", "The tree receives shadow.");
+            public static GUIContent UseLightProbes     = EditorGUIUtility.TrTextContent("Use Light Probes", "The tree uses light probe for lighting.");
+            public static GUIContent UseReflectionProbes = EditorGUIUtility.TrTextContent("Use Reflection Probes", "The tree uses reflection probe for rendering.");
+            public static GUIContent EnableBump         = EditorGUIUtility.TrTextContent("Normal Map", "Enable normal mapping (aka Bump mapping).");
+            public static GUIContent EnableHue          = EditorGUIUtility.TrTextContent("Enable Hue Variation", "Enable Hue variation color (color is adjusted between Main Color and Hue Color).");
+            public static GUIContent WindQuality        = EditorGUIUtility.TrTextContent("Wind Quality", "Controls the wind quality.");
 
-            public static GUIContent ApplyAndGenerate   = EditorGUIUtility.TextContent("Apply & Generate Materials|Apply current importer settings and generate materials with new settings.");
-            public static GUIContent Regenerate         = EditorGUIUtility.TextContent("Regenerate Materials|Regenerate materials from the current importer settings.");
+            public static GUIContent ApplyAndGenerate   = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.");
+            public static GUIContent Regenerate         = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials from the current importer settings.");
         };
 
         private SerializedProperty m_LODSettings;

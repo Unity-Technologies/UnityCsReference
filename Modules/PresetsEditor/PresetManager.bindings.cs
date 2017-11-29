@@ -5,7 +5,7 @@
 using UnityEditorInternal;
 using UnityEngine.Bindings;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     [NativeType(Header = "Modules/PresetsEditor/PresetManager.h")]
     internal class PresetManager : ProjectSettingsBase

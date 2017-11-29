@@ -6,7 +6,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Scripting;
 using UnityEditorInternal;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Experimental.AssetImporters;
@@ -19,6 +18,24 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class AssemblyDefinitionImporterInspector : AssetImporterEditor
     {
+        internal class Styles
+        {
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
+            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("References");
+            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
+            public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
+            public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
+            public static readonly GUIContent excludePlatforms = EditorGUIUtility.TrTextContent("Exclude Platforms");
+            public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select all");
+            public static readonly GUIContent deselectAll = EditorGUIUtility.TrTextContent("Deselect all");
+            public static readonly GUIContent apply = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent revert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
+        }
+
+        GUIStyle m_TextStyle;
+
         internal enum MixedBool : int
         {
             Mixed = -1,
@@ -56,7 +73,6 @@ namespace UnityEditor
 
         AssemblyDefintionState m_State;
         ReorderableList m_ReferencesList;
-        GUIStyle m_TextStyle;
 
         public override bool showImportedObject { get { return false; } }
 
@@ -88,22 +104,22 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(true))
                     {
                         var value = string.Join(", ", m_TargetStates.Select(t => t.name).ToArray());
-                        EditorGUILayout.TextField("Name", value, EditorStyles.textField);
+                        EditorGUILayout.TextField(Styles.name, value, EditorStyles.textField);
                     }
                 }
                 else
                 {
-                    m_State.name = EditorGUILayout.TextField("Name", m_State.name, EditorStyles.textField);
+                    m_State.name = EditorGUILayout.TextField(Styles.name, m_State.name, EditorStyles.textField);
                 }
 
-                GUILayout.Label("References", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.references, EditorStyles.boldLabel);
                 m_ReferencesList.DoLayoutList();
 
-                GUILayout.Label("Unity References", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.unityReferences, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 for (int i = 0; i < optionalUnityReferences.Length; ++i)
                 {
-                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(optionalUnityReferences[i].DisplayName, m_State.optionalUnityReferences[i]);
+                    m_State.optionalUnityReferences[i] = ToggleWithMixedValue(new GUIContent(optionalUnityReferences[i].DisplayName), m_State.optionalUnityReferences[i]);
 
                     if (m_State.optionalUnityReferences[i] == MixedBool.True)
                     {
@@ -113,11 +129,10 @@ namespace UnityEditor
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
 
-
-                GUILayout.Label("Platforms", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.platforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 var compatibleWithAnyPlatform = m_State.compatibleWithAnyPlatform;
-                m_State.compatibleWithAnyPlatform = ToggleWithMixedValue("Any Platform", m_State.compatibleWithAnyPlatform);
+                m_State.compatibleWithAnyPlatform = ToggleWithMixedValue(Styles.anyPlatform, m_State.compatibleWithAnyPlatform);
 
                 if (compatibleWithAnyPlatform == MixedBool.Mixed && m_State.compatibleWithAnyPlatform != MixedBool.Mixed)
                 {
@@ -137,23 +152,23 @@ namespace UnityEditor
 
                 if (m_State.compatibleWithAnyPlatform != MixedBool.Mixed)
                 {
-                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.True ? "Exclude Platforms" : "Include Platforms", EditorStyles.boldLabel);
+                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.True ? Styles.excludePlatforms : Styles.includePlatforms, EditorStyles.boldLabel);
 
                     for (int i = 0; i < platforms.Length; ++i)
                     {
-                        m_State.platformCompatibility[i] = ToggleWithMixedValue(platforms[i].DisplayName, m_State.platformCompatibility[i]);
+                        m_State.platformCompatibility[i] = ToggleWithMixedValue(new GUIContent(platforms[i].DisplayName), m_State.platformCompatibility[i]);
                     }
 
                     EditorGUILayout.Space();
 
                     GUILayout.BeginHorizontal();
 
-                    if (GUILayout.Button("Select all"))
+                    if (GUILayout.Button(Styles.selectAll))
                     {
                         SetPlatformCompatibility(m_State, MixedBool.True);
                     }
 
-                    if (GUILayout.Button("Deselect all"))
+                    if (GUILayout.Button(Styles.deselectAll))
                     {
                         SetPlatformCompatibility(m_State, MixedBool.False);
                     }
@@ -176,12 +191,12 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!m_State.modified))
             {
-                if (GUILayout.Button("Revert"))
+                if (GUILayout.Button(Styles.revert))
                 {
                     LoadAssemblyDefinitionFiles();
                 }
 
-                if (GUILayout.Button("Apply"))
+                if (GUILayout.Button(Styles.apply))
                 {
                     SaveAndUpdateAssemblyDefinitionStates(m_State, m_TargetStates);
                 }
@@ -225,7 +240,7 @@ namespace UnityEditor
             }
         }
 
-        static MixedBool ToggleWithMixedValue(string title, MixedBool value)
+        static MixedBool ToggleWithMixedValue(GUIContent title, MixedBool value)
         {
             EditorGUI.showMixedValue = value == MixedBool.Mixed;
 
@@ -271,7 +286,7 @@ namespace UnityEditor
             if (m_TextStyle == null)
                 m_TextStyle = "ScriptText";
 
-            GUILayout.Label("Load Error", EditorStyles.boldLabel);
+            GUILayout.Label(Styles.loadError, EditorStyles.boldLabel);
             Rect rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(e.Message), m_TextStyle);
             EditorGUI.HelpBox(rect, e.Message, MessageType.Error);
         }

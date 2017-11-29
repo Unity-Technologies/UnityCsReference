@@ -22,7 +22,7 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent lockParticleSystem = new GUIContent("", "Lock the current selected Particle System");
-            public GUIContent previewAll = new GUIContent("Simulate All", "Simulate all particle systems that have Play On Awake set");
+            public GUIContent previewAll = EditorGUIUtility.TrTextContent("Simulate All", "Simulate all particle systems that have Play On Awake set");
         }
         static Texts s_Texts;
 
@@ -31,7 +31,7 @@ namespace UnityEditor
         static public void CreateWindow()
         {
             s_Instance = EditorWindow.GetWindow<ParticleSystemWindow>();
-            s_Instance.titleContent = EditorGUIUtility.TextContent("Particle Effect");
+            s_Instance.titleContent = EditorGUIUtility.TrTextContent("Particle Effect");
             s_Instance.minSize = ParticleEffectUI.GetMinSize();
         }
 
