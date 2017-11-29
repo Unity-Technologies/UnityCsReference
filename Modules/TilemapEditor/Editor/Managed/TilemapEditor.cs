@@ -26,10 +26,10 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent animationFrameRateLabel = EditorGUIUtility.TextContent("Animation Frame Rate|Frame rate for playing animated tiles in the tilemap");
-            public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TextContent("Color|Color tinting all Sprites from tiles in the tilemap");
-            public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TextContent("Tile Anchor|Anchoring position for Sprites from tiles in the tilemap");
-            public static readonly GUIContent orientationLabel = EditorGUIUtility.TextContent("Orientation|Orientation for tiles in the tilemap");
+            public static readonly GUIContent animationFrameRateLabel = EditorGUIUtility.TrTextContent("Animation Frame Rate", "Frame rate for playing animated tiles in the tilemap");
+            public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TrTextContent("Color", "Color tinting all Sprites from tiles in the tilemap");
+            public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TrTextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap");
+            public static readonly GUIContent orientationLabel = EditorGUIUtility.TrTextContent("Orientation", "Orientation for tiles in the tilemap");
         }
 
         private void OnEnable()

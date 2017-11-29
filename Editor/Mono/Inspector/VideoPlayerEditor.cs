@@ -24,37 +24,37 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent dataSourceContent =
-                EditorGUIUtility.TextContent("Source|Type of source the movie will be read from.");
+                EditorGUIUtility.TrTextContent("Source", "Type of source the movie will be read from.");
             public GUIContent videoClipContent =
-                EditorGUIUtility.TextContent("Video Clip|VideoClips can be imported using the asset pipeline.");
+                EditorGUIUtility.TrTextContent("Video Clip", "VideoClips can be imported using the asset pipeline.");
             public GUIContent urlContent =
-                EditorGUIUtility.TextContent("URL|URLs can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
-            public GUIContent browseContent = EditorGUIUtility.TextContent("Browse...|Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.");
+                EditorGUIUtility.TrTextContent("URL", "URLs can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
+            public GUIContent browseContent = EditorGUIUtility.TrTextContent("Browse...", "Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.");
             public GUIContent playOnAwakeContent =
-                EditorGUIUtility.TextContent("Play On Awake|Start playback as soon as the game is started.");
+                EditorGUIUtility.TrTextContent("Play On Awake", "Start playback as soon as the game is started.");
             public GUIContent waitForFirstFrameContent =
-                EditorGUIUtility.TextContent("Wait For First Frame|Wait for first frame to be ready before starting playback. When on, player time will only start increasing when the first image is ready.  When off, the first few frames may be skipped while clip preparation is ongoing.");
+                EditorGUIUtility.TrTextContent("Wait For First Frame", "Wait for first frame to be ready before starting playback. When on, player time will only start increasing when the first image is ready.  When off, the first few frames may be skipped while clip preparation is ongoing.");
             public GUIContent loopContent =
-                EditorGUIUtility.TextContent("Loop|Start playback at the beginning when end is reached.");
+                EditorGUIUtility.TrTextContent("Loop", "Start playback at the beginning when end is reached.");
             public GUIContent playbackSpeedContent =
-                EditorGUIUtility.TextContent("Playback Speed|Increase or decrease the playback speed. 1.0 is the normal speed.");
+                EditorGUIUtility.TrTextContent("Playback Speed", "Increase or decrease the playback speed. 1.0 is the normal speed.");
             public GUIContent renderModeContent =
-                EditorGUIUtility.TextContent("Render Mode|Type of object on which the played images will be drawn.");
+                EditorGUIUtility.TrTextContent("Render Mode", "Type of object on which the played images will be drawn.");
             public GUIContent cameraContent =
-                EditorGUIUtility.TextContent("Camera|Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
+                EditorGUIUtility.TrTextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
             public GUIContent textureContent =
-                EditorGUIUtility.TextContent("Target Texture|RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and the used on other objects.");
+                EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and the used on other objects.");
             public GUIContent alphaContent =
-                EditorGUIUtility.TextContent("Alpha|A value less than 1.0 will reveal the content behind the video.");
+                EditorGUIUtility.TrTextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.");
             public GUIContent camera3DLayout =
-                EditorGUIUtility.TextContent("3D Layout|Layout of 3D content in the source video.");
+                EditorGUIUtility.TrTextContent("3D Layout", "Layout of 3D content in the source video.");
             public GUIContent audioOutputModeContent =
-                EditorGUIUtility.TextContent("Audio Output Mode|Where the audio in the movie will be output.");
+                EditorGUIUtility.TrTextContent("Audio Output Mode", "Where the audio in the movie will be output.");
             public GUIContent audioSourceContent =
-                EditorGUIUtility.TextContent("Audio Source|AudioSource component that will receive this track's audio samples.");
-            public GUIContent aspectRatioLabel = EditorGUIUtility.TextContent("Aspect Ratio");
-            public GUIContent muteLabel = EditorGUIUtility.TextContent("Mute");
-            public GUIContent volumeLabel = EditorGUIUtility.TextContent("Volume");
+                EditorGUIUtility.TrTextContent("Audio Source", "AudioSource component that will receive this track's audio samples.");
+            public GUIContent aspectRatioLabel = EditorGUIUtility.TrTextContent("Aspect Ratio");
+            public GUIContent muteLabel = EditorGUIUtility.TrTextContent("Mute");
+            public GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume");
             public GUIContent controlledAudioTrackCountContent = EditorGUIUtility.TextContent(
                     "Controlled Tracks|How many audio tracks will the player control.  The actual number of tracks is only known during playback when the source is a URL.");
             public GUIContent materialRendererContent = EditorGUIUtility.TextContent(

@@ -17,7 +17,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent = new GUIContent("Failed to load");
+            titleContent = EditorGUIUtility.TrTextContent("Failed to load");
         }
 
         void OnGUI()

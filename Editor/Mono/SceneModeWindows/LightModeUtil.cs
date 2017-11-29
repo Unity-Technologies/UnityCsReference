@@ -21,7 +21,7 @@ namespace UnityEditor
             ShadowmaskAndIndirect = 2,
         }
 
-        public  static readonly GUIContent s_enableBaked = EditorGUIUtility.TextContent("Baked Global Illumination|Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
+        public  static readonly GUIContent s_enableBaked = EditorGUIUtility.TrTextContent("Baked Global Illumination", "Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
 
         // combobox content
         private int[]               m_modeVals          = { 0, 0, 0 };

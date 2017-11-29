@@ -2194,6 +2194,14 @@ namespace UnityEditor
             return PowerSlider(position, label, value, leftValue, rightValue, 1.0f);
         }
 
+        internal static float Slider(Rect position, GUIContent label, float value, float sliderMin, float sliderMax, float textFieldMin, float textFieldMax)
+        {
+            var id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
+            var controlRect = PrefixLabel(position, id, label);
+            var dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
+            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null);
+        }
+
         /// *listonly*
         internal static float PowerSlider(Rect position, string label, float sliderValue, float leftValue, float rightValue, float power)
         {
@@ -5331,13 +5339,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Draws the alpha channel of a texture within a rectangle.
-        internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect)
+        internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
-            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect);
+            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel);
         }
 
         // Draws texture transparantly using the alpha channel.
-        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect)
+        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
             if (imageAspect == 0f && image == null)
             {
@@ -5346,16 +5354,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             if (imageAspect == 0f)
-            {
                 imageAspect = (float)image.width / (float)image.height;
-            }
 
             DrawTransparencyCheckerTexture(position, scaleMode, imageAspect);
-
             if (image != null)
-            {
-                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect);
-            }
+                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel);
         }
 
         internal static void DrawTransparencyCheckerTexture(Rect position, ScaleMode scaleMode, float imageAspect)
@@ -5377,19 +5380,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Draws the texture within a rectangle.
-        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect)
+        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
             if (Event.current.type == EventType.Repaint)
             {
                 if (imageAspect == 0)
-                {
                     imageAspect = (float)image.width / (float)image.height;
-                }
 
                 if (mat == null)
-                {
-                    mat = GetMaterialForSpecialTexture(image);
-                }
+                    mat = GetMaterialForSpecialTexture(image, colorMaterial);
+                mat.SetFloat("_Mip", mipLevel);
 
                 RenderTexture rt = image as RenderTexture;
                 bool manualResolve = (rt != null) && rt.bindTextureMS;
@@ -5405,26 +5405,17 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     image = resolved;
                 }
 
-                if (mat == null)
+                Rect screenRect = new Rect(), sourceRect = new Rect();
+                GUI.CalculateScaledTextureRects(position, scaleMode, imageAspect, ref screenRect, ref sourceRect);
+                Texture2D t2d = image as Texture2D;
+                if (t2d != null && TextureUtil.GetUsageMode(image) == TextureUsageMode.AlwaysPadded)
                 {
-                    // fallback to GUI.DrawTexture() with blit material
-                    GUI.DrawTexture(position, image, scaleMode, false, imageAspect);
+                    // In case of always padded textures, only show the non-padded area
+                    sourceRect.width *= (float)t2d.width / TextureUtil.GetGPUWidth(t2d);
+                    sourceRect.height *= (float)t2d.height / TextureUtil.GetGPUHeight(t2d);
                 }
-                else
-                {
-                    Rect screenRect = new Rect();
-                    Rect sourceRect = new Rect();
+                Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
 
-                    GUI.CalculateScaledTextureRects(position, scaleMode, imageAspect, ref screenRect, ref sourceRect);
-                    Texture2D t2d = image as Texture2D;
-                    if (t2d != null && TextureUtil.GetUsageMode(image) == TextureUsageMode.AlwaysPadded)
-                    {
-                        // In case of always padded textures, only show the non-padded area
-                        sourceRect.width *= (float)t2d.width / TextureUtil.GetGPUWidth(t2d);
-                        sourceRect.height *= (float)t2d.height / TextureUtil.GetGPUHeight(t2d);
-                    }
-                    Graphics.DrawTexture(screenRect, image, sourceRect, 0, 0, 0, 0, GUI.color, mat);
-                }
 
                 if (manualResolve)
                 {
@@ -5434,8 +5425,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Gets a material for a special texture type: RGBM or doubleLDR lightmap or a DXT5nm normal map.
-        internal static Material GetMaterialForSpecialTexture(Texture t)
+        internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null)
         {
+            // i am not sure WHY do we check that (i would guess this is api user error and exception make sense, not "return something")
             if (t == null) return null;
 
             TextureUsageMode usage = TextureUtil.GetUsageMode(t);
@@ -5450,7 +5442,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return normalmapMaterial;
             else if (TextureUtil.IsAlphaOnlyTextureFormat(format))
                 return alphaMaterial;
-            return null;
+            return defaultMat;
         }
 
         internal static Material alphaMaterial
@@ -5496,6 +5488,21 @@ This warning only shows up in development builds.", helpTopic, pageName);
         internal static Material normalmapMaterial
         {
             get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedNormalsMaterial.mat") as Material; }
+        }
+
+        // for some reason we were adding materials to editor resources for older previews. I dont see a single reason why, though
+        internal static Material s_Color2DPreviewMaterial;
+        internal static Material colorMaterial
+        {
+            get
+            {
+                if (!s_Color2DPreviewMaterial)
+                {
+                    s_Color2DPreviewMaterial = new Material(EditorGUIUtility.LoadRequired("Previews/PreviewColor2D.shader") as Shader);
+                    s_Color2DPreviewMaterial.hideFlags = HideFlags.HideAndDontSave;
+                }
+                return s_Color2DPreviewMaterial;
+            }
         }
 
 

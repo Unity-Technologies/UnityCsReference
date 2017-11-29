@@ -363,6 +363,7 @@ namespace UnityEditor
 
     [NativeType(Header = "Editor/Src/AssetPipeline/ModelImporting/ModelImporter.h")]
     [NativeHeader("Editor/Src/AssetPipeline/ModelImporting/ModelImporter.bindings.h")]
+    [NativeHeader("Runtime/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter
     {
         [System.Obsolete("Use importMaterials, materialName and materialSearch instead")]
@@ -787,6 +788,12 @@ namespace UnityEditor
             }
         }
 
+        extern public HumanDescription humanDescription
+        {
+            get;
+            set;
+        }
+
         private extern Avatar GetSourceAvatar();
         [FreeFunction("ModelImporterBindings::SetSourceAvatarInternal")]
         private extern static void SetSourceAvatarInternal(ModelImporter self, Avatar value);
@@ -824,6 +831,8 @@ namespace UnityEditor
         [FreeFunction("ModelImporterBindings::UpdateTransformMask")]
         extern internal static void UpdateTransformMask(AvatarMask mask, SerializedProperty serializedProperty);
 
+        [FreeFunction("ModelImporterBindings::UpdateSkeletonPose")]
+        extern internal static void UpdateSkeletonPose(SkeletonBone[] skeletonBones, [NotNull] SerializedProperty serializedProperty);
         extern internal AnimationClip GetPreviewAnimationClipForTake(string takeName);
 
         extern internal string CalculateBestFittingPreviewGameObject();

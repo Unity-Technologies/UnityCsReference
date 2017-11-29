@@ -19,14 +19,14 @@ namespace UnityEditor
             {
                 public readonly GUIStyle    sMenuItem = "MenuItem";
                 public readonly GUIStyle    sSeparator = "sv_iconselector_sep";
-                public readonly GUIContent  sEnvironment = EditorGUIUtility.TextContent("Environment");
-                public readonly GUIContent  sAngleOffset = EditorGUIUtility.TextContent("Angle offset|Rotate the environment");
-                public readonly GUIContent  sResetEnv = EditorGUIUtility.TextContent("Reset Environment|Reset environment settings");
-                public readonly GUIContent  sShadows = EditorGUIUtility.TextContent("Shadows");
-                public readonly GUIContent  sShadowIntensity = EditorGUIUtility.TextContent("Shadow brightness|Shadow brightness");
-                public readonly GUIContent  sShadowColor = EditorGUIUtility.TextContent("Color|Shadow color");
-                public readonly GUIContent  sBrightest = EditorGUIUtility.TextContent("Set position to brightest point|Set the shadow direction to the brightest (higher value) point of the latLong map");
-                public readonly GUIContent  sResetShadow = EditorGUIUtility.TextContent("Reset Shadows|Reset shadow properties");
+                public readonly GUIContent  sEnvironment = EditorGUIUtility.TrTextContent("Environment");
+                public readonly GUIContent  sAngleOffset = EditorGUIUtility.TrTextContent("Angle offset", "Rotate the environment");
+                public readonly GUIContent  sResetEnv = EditorGUIUtility.TrTextContent("Reset Environment", "Reset environment settings");
+                public readonly GUIContent  sShadows = EditorGUIUtility.TrTextContent("Shadows");
+                public readonly GUIContent  sShadowIntensity = EditorGUIUtility.TrTextContent("Shadow brightness", "Shadow brightness");
+                public readonly GUIContent  sShadowColor = EditorGUIUtility.TrTextContent("Color", "Shadow color");
+                public readonly GUIContent  sBrightest = EditorGUIUtility.TrTextContent("Set position to brightest point", "Set the shadow direction to the brightest (higher value) point of the latLong map");
+                public readonly GUIContent  sResetShadow = EditorGUIUtility.TrTextContent("Reset Shadows", "Reset shadow properties");
             }
 
             static Styles s_Styles = null;
@@ -118,7 +118,7 @@ namespace UnityEditor
 
         public class Styles
         {
-            public readonly GUIContent  sTitle = EditorGUIUtility.TextContent("HDRI View|Manage your list of HDRI environments.");
+            public readonly GUIContent  sTitle = EditorGUIUtility.TrTextContent("HDRI View", "Manage your list of HDRI environments.");
             public readonly GUIContent  sCloseIcon = new GUIContent(EditorGUIUtility.IconContent("LookDevClose"));
             public readonly GUIStyle    sSeparatorStyle = "sv_iconselector_sep";
             public readonly GUIStyle    sLabelStyleFirstContext = new GUIStyle(EditorStyles.miniLabel);
@@ -127,7 +127,7 @@ namespace UnityEditor
             public readonly Texture     sLightTexture = EditorGUIUtility.FindTexture("LookDevLight");
             public readonly Texture     sLatlongFrameTexture = EditorGUIUtility.FindTexture("LookDevShadowFrame");
             public readonly GUIContent  sEnvControlIcon = new GUIContent(EditorGUIUtility.IconContent("LookDevPaneOption"));
-            public readonly GUIContent  sDragAndDropHDRIText = EditorGUIUtility.TextContent("Drag and drop HDR panorama here.");
+            public readonly GUIContent  sDragAndDropHDRIText = EditorGUIUtility.TrTextContent("Drag and drop HDR panorama here.");
 
             public Styles()
             {

@@ -117,8 +117,8 @@ namespace UnityEditor
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
                 editorWindow.Close();
 
-            GUI.Label(new Rect(rect.x + 5, rect.y + 3, rect.width - 10, 16), new GUIContent("Anchor Presets"), EditorStyles.boldLabel);
-            GUI.Label(new Rect(rect.x + 5, rect.y + 3 + 16, rect.width - 10, 16), new GUIContent("Shift: Also set pivot     Alt: Also set position"), EditorStyles.label);
+            GUI.Label(new Rect(rect.x + 5, rect.y + 3, rect.width - 10, 16), EditorGUIUtility.TrTextContent("Anchor Presets"), EditorStyles.boldLabel);
+            GUI.Label(new Rect(rect.x + 5, rect.y + 3 + 16, rect.width - 10, 16), EditorGUIUtility.TrTextContent("Shift: Also set pivot     Alt: Also set position"), EditorStyles.label);
 
             Color oldColor = GUI.color;
             GUI.color = s_Styles.tableLineColor * oldColor;

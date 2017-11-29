@@ -315,7 +315,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
-            m_SelectedElement.text = EditorGUILayout.TextField("Text", m_SelectedElement.text);
+            var textElement = m_SelectedElement as BaseTextElement;
+            if (textElement != null)
+            {
+                textElement.text = EditorGUILayout.TextField("Text", textElement.text);
+            }
             m_SelectedElement.clippingOptions = (VisualElement.ClippingOptions)EditorGUILayout.EnumPopup("Clipping Option", m_SelectedElement.clippingOptions);
             m_SelectedElement.visible = EditorGUILayout.Toggle("Visible", m_SelectedElement.visible);
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
@@ -621,7 +625,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         {
             m_PickingData = new PickingData();
 
-            titleContent = new GUIContent("UIElements Debugger");
+            titleContent = EditorGUIUtility.TrTextContent("UIElements Debugger");
             m_VisualTreeTreeViewState = new TreeViewState();
             m_VisualTreeTreeView = new VisualTreeTreeView(m_VisualTreeTreeViewState);
             if (m_SplitterState == null)
@@ -687,22 +691,22 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             public static GUIStyle KSizeLabel = new GUIStyle { alignment = TextAnchor.MiddleCenter };
             public static GUIStyle KInspectorTitle = new GUIStyle(EditorStyles.whiteLargeLabel) { alignment = TextAnchor.MiddleCenter };
 
-            public static readonly GUIContent elementStylesContent = new GUIContent("Element styles");
-            public static readonly GUIContent showDefaultsContent = new GUIContent("Show defaults");
-            public static readonly GUIContent sortContent = new GUIContent("Sort");
-            public static readonly GUIContent inlineContent = new GUIContent("INLINE");
-            public static readonly GUIContent marginContent = new GUIContent("Margin");
-            public static readonly GUIContent borderContent = new GUIContent("Border");
-            public static readonly GUIContent paddingContent = new GUIContent("Padding");
-            public static readonly GUIContent cancelPickingContent = new GUIContent("Cancel picking");
-            public static readonly GUIContent pickPanelContent = new GUIContent("Pick Panel");
-            public static readonly GUIContent pickElementInPanelContent = new GUIContent("Pick Element in panel");
-            public static readonly GUIContent overlayContent = new GUIContent("Overlay");
-            public static readonly GUIContent liveReloadContent = new GUIContent("UXML Live Reload");
-            public static readonly GUIContent uxmlContent = new GUIContent("UXML Dump");
-            public static readonly GUIContent stylesheetsContent = new GUIContent("Stylesheets");
-            public static readonly GUIContent selectorsContent = new GUIContent("Matching Selectors");
-            public static readonly GUIContent includeShadowHierarchyContent = new GUIContent("Include Shadow Hierarchy");
+            public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
+            public static readonly GUIContent showDefaultsContent = EditorGUIUtility.TrTextContent("Show defaults");
+            public static readonly GUIContent sortContent = EditorGUIUtility.TrTextContent("Sort");
+            public static readonly GUIContent inlineContent = EditorGUIUtility.TrTextContent("INLINE");
+            public static readonly GUIContent marginContent = EditorGUIUtility.TrTextContent("Margin");
+            public static readonly GUIContent borderContent = EditorGUIUtility.TrTextContent("Border");
+            public static readonly GUIContent paddingContent = EditorGUIUtility.TrTextContent("Padding");
+            public static readonly GUIContent cancelPickingContent = EditorGUIUtility.TrTextContent("Cancel picking");
+            public static readonly GUIContent pickPanelContent = EditorGUIUtility.TrTextContent("Pick Panel");
+            public static readonly GUIContent pickElementInPanelContent = EditorGUIUtility.TrTextContent("Pick Element in panel");
+            public static readonly GUIContent overlayContent = EditorGUIUtility.TrTextContent("Overlay");
+            public static readonly GUIContent liveReloadContent = EditorGUIUtility.TrTextContent("UXML Live Reload");
+            public static readonly GUIContent uxmlContent = EditorGUIUtility.TrTextContent("UXML Dump");
+            public static readonly GUIContent stylesheetsContent = EditorGUIUtility.TrTextContent("Stylesheets");
+            public static readonly GUIContent selectorsContent = EditorGUIUtility.TrTextContent("Matching Selectors");
+            public static readonly GUIContent includeShadowHierarchyContent = EditorGUIUtility.TrTextContent("Include Shadow Hierarchy");
 
             private static readonly Color k_SeparatorColorPro = new Color(0.15f, 0.15f, 0.15f);
             private static readonly Color k_SeparatorColorNonPro = new Color(0.6f, 0.6f, 0.6f);

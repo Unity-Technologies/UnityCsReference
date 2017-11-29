@@ -22,7 +22,7 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-            titleContent = EditorGUIUtility.TextContent("Preview");
+            titleContent = EditorGUIUtility.TrTextContent("Preview");
             minSize = new Vector2(260, 220);
         }
 

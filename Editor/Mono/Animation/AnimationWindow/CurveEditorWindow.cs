@@ -141,7 +141,7 @@ namespace UnityEditor
 
             m_CurveEditor.FrameSelected(frameH, frameV);
 
-            titleContent = new GUIContent("Curve");
+            titleContent = EditorGUIUtility.TrTextContent("Curve");
 
             // deal with window size
             minSize = new Vector2(240, 240 + kPresetsHeight);

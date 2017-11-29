@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class TextInputFieldBase : VisualElement
+    public abstract class TextInputFieldBase : BaseTextElement
     {
         const string SelectionColorProperty = "selection-color";
         const string CursorColorProperty = "cursor-color";
@@ -70,6 +71,15 @@ namespace UnityEngine.Experimental.UIElements
         internal TextEditorEngine editorEngine { get; private set; }
 
         public char maskChar { get; set; }
+
+        public override string text
+        {
+            set
+            {
+                base.text = value;
+                editorEngine.text = value;
+            }
+        }
 
         public TextInputFieldBase(int maxLength, char maskChar)
         {
@@ -135,7 +145,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     UpdateText(CullString(editorEngine.keyboardOnScreen.text));
 
-                    if (editorEngine.keyboardOnScreen.done)
+                    if (editorEngine.keyboardOnScreen.status != TouchScreenKeyboard.Status.Visible)
                     {
                         editorEngine.keyboardOnScreen = null;
                         GUI.changed = true;

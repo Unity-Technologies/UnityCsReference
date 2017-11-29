@@ -59,7 +59,7 @@ namespace UnityEditor
                 m_Assets = new List<AssetStoreAsset>();
                 m_Name = groupName;
                 m_ListMode = false;
-                m_ShowMoreDims = EditorStyles.miniButton.CalcSize(new GUIContent("Show more"));
+                m_ShowMoreDims = EditorStyles.miniButton.CalcSize(EditorGUIUtility.TrTextContent("Show more"));
                 m_Owner.UpdateGroupSizes(this);
                 ItemsWantedShown = kDefaultRowsShown * m_Grid.columns;
             }

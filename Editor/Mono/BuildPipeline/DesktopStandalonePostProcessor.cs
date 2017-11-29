@@ -409,13 +409,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         public ScriptingImplementation[] Enabled()
         {
-            // Enable il2cpp for internal builds
-            if (Unsupported.IsDeveloperMode())
-            {
-                return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
-            }
-
-            return new[] { ScriptingImplementation.Mono2x };
+            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
         }
     }
 }

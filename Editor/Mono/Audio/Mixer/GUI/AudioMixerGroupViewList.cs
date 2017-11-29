@@ -21,7 +21,7 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent header = new GUIContent("Views", "A view is the saved visiblity state of the current Mixer Groups. Use views to setup often used combinations of Mixer Groups.");
+            public GUIContent header = EditorGUIUtility.TrTextContent("Views", "A view is the saved visiblity state of the current Mixer Groups. Use views to setup often used combinations of Mixer Groups.");
             public GUIContent addButton = new GUIContent("+");
             public Texture2D viewsIcon = EditorGUIUtility.FindTexture("AudioMixerView Icon");
         }
@@ -218,9 +218,9 @@ namespace UnityEditor
             {
                 var menu = new GenericMenu();
                 data input = new data() { viewIndex = viewIndex, list = list };
-                menu.AddItem(new GUIContent("Rename"), false, Rename, input);
-                menu.AddItem(new GUIContent("Duplicate"), false, Duplicate, input);
-                menu.AddItem(new GUIContent("Delete"), false, Delete, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, Rename, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, Duplicate, input);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete, input);
 
                 menu.DropDown(buttonRect);
             }

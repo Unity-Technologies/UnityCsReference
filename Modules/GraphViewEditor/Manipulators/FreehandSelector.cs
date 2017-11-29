@@ -10,8 +10,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class FreehandSelector : MouseManipulator
+    public class FreehandSelector : MouseManipulator
     {
         private readonly FreehandElement m_FreehandElement;
         private bool m_Active;

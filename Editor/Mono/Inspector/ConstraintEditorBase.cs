@@ -10,24 +10,43 @@ using System.Collections.Generic;
 
 namespace UnityEditor
 {
-    internal interface IConstraintStyle
+    internal abstract class ConstraintStyleBase
     {
-        GUIContent Activate { get; }
-        GUIContent Zero { get; }
+        GUIContent m_Activate = EditorGUIUtility.TextContent("Activate|Activate the constraint at the current offset from the sources.");
+        GUIContent m_Zero = EditorGUIUtility.TextContent("Zero|Activate the constraint at zero offset from the sources.");
 
-        GUIContent AtRest { get; }
-        GUIContent Offset { get; }
+        GUIContent m_Sources = EditorGUIUtility.TextContent("Sources");
 
-        GUIContent Sources { get; }
+        GUIContent m_Weight = EditorGUIUtility.TextContent("Weight");
 
-        GUIContent Weight { get; }
+        GUIContent m_IsActive = EditorGUIUtility.TextContent("Is Active|When set, the constraint is being evaluated.");
+        GUIContent m_IsLocked = EditorGUIUtility.TextContent("Lock|When set, evaluate with the current offset. When not set, update the offset based on the current transform.");
 
-        GUIContent IsActive { get; }
-        GUIContent IsLocked { get; }
+        GUIContent[] m_Axes =
+        {
+            EditorGUIUtility.TextContent("X"),
+            EditorGUIUtility.TextContent("Y"),
+            EditorGUIUtility.TextContent("Z")
+        };
 
-        GUIContent[] Axes { get; }
+        GUIContent m_ConstraintSettings = EditorGUIUtility.TextContent("Constraint Settings");
 
-        GUIContent ConstraintSettings { get; }
+        public virtual GUIContent Activate { get { return m_Activate; } }
+        public virtual GUIContent Zero { get { return m_Zero; } }
+
+        public abstract GUIContent AtRest { get; }
+        public abstract GUIContent Offset { get; }
+
+        public virtual GUIContent Sources { get { return m_Sources; } }
+
+        public virtual GUIContent Weight { get { return m_Weight; } }
+
+        public virtual GUIContent IsActive { get { return m_IsActive; } }
+        public virtual GUIContent IsLocked { get { return m_IsLocked; } }
+
+        public virtual GUIContent[] Axes { get { return m_Axes; } }
+
+        public virtual GUIContent ConstraintSettings { get { return m_ConstraintSettings; } }
     }
 
     internal abstract class ConstraintEditorBase : Editor
@@ -48,7 +67,7 @@ namespace UnityEditor
 
         protected const int kSourceWeightWidth = 60;
 
-        public void OnEnable(IConstraintStyle style)
+        public void OnEnable(ConstraintStyleBase style)
         {
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
@@ -58,7 +77,7 @@ namespace UnityEditor
             m_SourceList.drawHeaderCallback += rect => EditorGUI.LabelField(rect, style.Sources);
             m_SourceList.onRemoveCallback += OnRemoveCallback;
             m_SourceList.onSelectCallback += OnSelectedCallback;
-            m_SourceList.elementHeightCallback += OnElementHeightCallback;
+            m_SourceList.onReorderCallbackWithDetails += OnReorderCallback;
 
             if (sources.arraySize > 0 && m_SelectedSourceIdx == -1)
             {
@@ -88,10 +107,12 @@ namespace UnityEditor
             }
         }
 
-        private void OnSelectedCallback(ReorderableList list)
+        protected virtual void OnSelectedCallback(ReorderableList list)
         {
             SelectSource(list.index);
         }
+
+        protected virtual void OnReorderCallback(ReorderableList list, int oldActiveElement, int newActiveElement) {}
 
         protected virtual void OnRemoveCallback(ReorderableList list)
         {
@@ -114,7 +135,7 @@ namespace UnityEditor
             SelectSource(index);
         }
 
-        protected virtual void DrawElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        private void DrawElementCallback(Rect rect, int index, bool isActive, bool isFocused)
         {
             rect.height = EditorGUIUtility.singleLineHeight;
             rect.y += 1;
@@ -127,18 +148,13 @@ namespace UnityEditor
             EditorGUI.PropertyField(new Rect(rect.x + rect.width - kSourceWeightWidth, rect.y, kSourceWeightWidth, EditorGUIUtility.singleLineHeight), weight, GUIContent.none);
         }
 
-        protected virtual float OnElementHeightCallback(int index)
-        {
-            return EditorGUIUtility.singleLineHeight;
-        }
-
         internal abstract void OnValueAtRestChanged();
         internal abstract void ShowFreezeAxesControl();
 
         /// Show the custom constraint properties that are not included in the foldout
         internal virtual void ShowCustomProperties() {}
 
-        internal void ShowConstraintEditor<T>(IConstraintStyle style) where T : class, IConstraintInternal
+        internal void ShowConstraintEditor<T>(ConstraintStyleBase style) where T : class, IConstraintInternal
         {
             if (m_SelectedSourceIdx == -1 || m_SelectedSourceIdx >= m_SourceList.serializedProperty.arraySize)
             {
@@ -199,7 +215,7 @@ namespace UnityEditor
             m_SourceList.DoLayoutList();
         }
 
-        internal virtual void ShowValueAtRest(IConstraintStyle style)
+        internal virtual void ShowValueAtRest(ConstraintStyleBase style)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(atRest, style.AtRest);
@@ -209,7 +225,7 @@ namespace UnityEditor
             }
         }
 
-        internal virtual void ShowOffset<T>(IConstraintStyle style) where T : class, IConstraintInternal
+        internal virtual void ShowOffset<T>(ConstraintStyleBase style) where T : class, IConstraintInternal
         {
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(offset, style.Offset);

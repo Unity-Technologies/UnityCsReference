@@ -144,11 +144,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
+            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
+
+            var isTestAssembly = (OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.TestAssemblies;
+            var isBuildingWithTestAssemblies = (options & EditorScriptCompilationOptions.BuildingIncludingTestAssemblies) == EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+            if (!buildingForEditor && isTestAssembly && !isBuildingWithTestAssemblies)
+            {
+                return false;
+            }
+
             // Compatible with editor and all platforms.
             if (IncludePlatforms == null && ExcludePlatforms == null)
                 return true;
 
-            bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
             if (buildingForEditor)
                 return IsCompatibleWithEditor();

@@ -15,19 +15,19 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent multieditingNotSupported = EditorGUIUtility.TextContent("Multi-editing cells not supported");
+            public static readonly GUIContent multieditingNotSupported = EditorGUIUtility.TrTextContent("Multi-editing cells not supported");
 
-            public static readonly GUIContent tileLabel = EditorGUIUtility.TextContent("Tile|Tile set in tilemap");
-            public static readonly GUIContent spriteLabel = EditorGUIUtility.TextContent("Sprite|Sprite set when tile is set in tilemap");
-            public static readonly GUIContent colorLabel = EditorGUIUtility.TextContent("Color|Color set when tile is set in tilemap");
-            public static readonly GUIContent gameObjectLabel = EditorGUIUtility.TextContent("GameObject|Game Object instantiated when tile is set in tilemap");
-            public static readonly GUIContent colliderTypeLabel = EditorGUIUtility.TextContent("Collider Type|Collider shape used for tile");
-            public static readonly GUIContent gridPositionLabel = EditorGUIUtility.TextContent("Grid Position|Position of the tile in the tilemap");
-            public static readonly GUIContent lockColorLabel = EditorGUIUtility.TextContent("Lock Color|Prevents tilemap from changing color of tile");
-            public static readonly GUIContent lockTransformLabel = EditorGUIUtility.TextContent("Lock Transform|Prevents tilemap from changing transform of tile");
-            public static readonly GUIContent instantiateGameObjectRuntimeOnlyLabel = EditorGUIUtility.TextContent("Instantiate GameObject Runtime Only|Instantiates GameObject in runtime play mode only");
+            public static readonly GUIContent tileLabel = EditorGUIUtility.TrTextContent("Tile", "Tile set in tilemap");
+            public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "Sprite set when tile is set in tilemap");
+            public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Color set when tile is set in tilemap");
+            public static readonly GUIContent gameObjectLabel = EditorGUIUtility.TrTextContent("GameObject", "Game Object instantiated when tile is set in tilemap");
+            public static readonly GUIContent colliderTypeLabel = EditorGUIUtility.TrTextContent("Collider Type", "Collider shape used for tile");
+            public static readonly GUIContent gridPositionLabel = EditorGUIUtility.TrTextContent("Grid Position", "Position of the tile in the tilemap");
+            public static readonly GUIContent lockColorLabel = EditorGUIUtility.TrTextContent("Lock Color", "Prevents tilemap from changing color of tile");
+            public static readonly GUIContent lockTransformLabel = EditorGUIUtility.TrTextContent("Lock Transform", "Prevents tilemap from changing transform of tile");
+            public static readonly GUIContent instantiateGameObjectRuntimeOnlyLabel = EditorGUIUtility.TrTextContent("Instantiate GameObject Runtime Only", "Instantiates GameObject in runtime play mode only");
 
-            public static readonly GUIContent floodFillPreviewLabel = EditorGUIUtility.TextContent("Show Flood Fill Preview|Whether a preview is shown while painting a Tilemap when Flood Fill mode is enabled");
+            public static readonly GUIContent floodFillPreviewLabel = EditorGUIUtility.TrTextContent("Show Flood Fill Preview", "Whether a preview is shown while painting a Tilemap when Flood Fill mode is enabled");
             public static readonly string floodFillPreviewEditorPref = "GridBrush.EnableFloodFillPreview";
         }
 

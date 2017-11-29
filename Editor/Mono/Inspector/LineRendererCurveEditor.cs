@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static GUIContent widthMultiplier = EditorGUIUtility.TextContent("Width|The multiplier applied to the curve, describing the width (in world space) along the line.");
+            public static GUIContent widthMultiplier = EditorGUIUtility.TrTextContent("Width", "The multiplier applied to the curve, describing the width (in world space) along the line.");
         }
 
         private bool m_Refresh = false;

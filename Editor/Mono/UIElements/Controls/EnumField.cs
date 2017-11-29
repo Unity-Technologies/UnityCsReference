@@ -8,7 +8,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class EnumField : VisualElement, INotifyValueChanged<Enum>
+    public class EnumField : BaseTextElement, INotifyValueChanged<Enum>
     {
         private Type m_EnumType;
 

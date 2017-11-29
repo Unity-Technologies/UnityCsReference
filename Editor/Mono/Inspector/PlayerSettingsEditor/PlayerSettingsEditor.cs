@@ -39,135 +39,136 @@ namespace UnityEditor
         {
             public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
 
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
-            public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
-            public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'minimum iOS version' set to 8.0 at least");
-            public static readonly GUIContent colorSpaceTVOSWarning = EditorGUIUtility.TextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API.");
-            public static readonly GUIContent recordingInfo = EditorGUIUtility.TextContent("Reordering the list will switch editor to the first available platform");
-            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TextContent("Not applicable for this platform.");
-            public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TextContent("* Shared setting between multiple platforms.");
-            public static readonly GUIContent VRSupportOverridenInfo = EditorGUIUtility.TextContent("This setting is overridden by Virtual Reality Support.");
-            public static readonly GUIContent IL2CPPAndroidExperimentalInfo = EditorGUIUtility.TextContent("IL2CPP on Android is experimental and unsupported");
+            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
+            public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'minimum iOS version' set to 8.0 at least");
+            public static readonly GUIContent colorSpaceTVOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API.");
+            public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
+            public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
+            public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
+            public static readonly GUIContent VRSupportOverridenInfo = EditorGUIUtility.TrTextContent("This setting is overridden by Virtual Reality Support.");
+            public static readonly GUIContent IL2CPPAndroidExperimentalInfo = EditorGUIUtility.TrTextContent("IL2CPP on Android is experimental and unsupported");
 
-            public static readonly GUIContent cursorHotspot = EditorGUIUtility.TextContent("Cursor Hotspot");
-            public static readonly GUIContent defaultCursor = EditorGUIUtility.TextContent("Default Cursor");
-            public static readonly GUIContent defaultIcon = EditorGUIUtility.TextContent("Default Icon");
-            public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TextContent("Vertex Compression*|Select which vertex channels should be compressed. Compression can save memory and bandwidth but precision will be lower.");
+            public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
+            public static readonly GUIContent defaultCursor = EditorGUIUtility.TrTextContent("Default Cursor");
+            public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");
+            public static readonly GUIContent vertexChannelCompressionMask = EditorGUIUtility.TrTextContent("Vertex Compression*", "Select which vertex channels should be compressed. Compression can save memory and bandwidth but precision will be lower.");
 
-            public static readonly GUIContent iconTitle = EditorGUIUtility.TextContent("Icon");
-            public static readonly GUIContent resolutionPresentationTitle = EditorGUIUtility.TextContent("Resolution and Presentation");
-            public static readonly GUIContent resolutionTitle = EditorGUIUtility.TextContent("Resolution");
-            public static readonly GUIContent orientationTitle = EditorGUIUtility.TextContent("Orientation");
-            public static readonly GUIContent allowedOrientationTitle = EditorGUIUtility.TextContent("Allowed Orientations for Auto Rotation");
-            public static readonly GUIContent multitaskingSupportTitle = EditorGUIUtility.TextContent("Multitasking Support");
-            public static readonly GUIContent statusBarTitle = EditorGUIUtility.TextContent("Status Bar");
-            public static readonly GUIContent standalonePlayerOptionsTitle = EditorGUIUtility.TextContent("Standalone Player Options");
-            public static readonly GUIContent debuggingCrashReportingTitle = EditorGUIUtility.TextContent("Debugging and crash reporting");
-            public static readonly GUIContent debuggingTitle = EditorGUIUtility.TextContent("Debugging");
-            public static readonly GUIContent crashReportingTitle = EditorGUIUtility.TextContent("Crash Reporting");
-            public static readonly GUIContent otherSettingsTitle = EditorGUIUtility.TextContent("Other Settings");
-            public static readonly GUIContent renderingTitle = EditorGUIUtility.TextContent("Rendering");
-            public static readonly GUIContent identificationTitle = EditorGUIUtility.TextContent("Identification");
-            public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TextContent("Mac App Store Options");
-            public static readonly GUIContent configurationTitle = EditorGUIUtility.TextContent("Configuration");
-            public static readonly GUIContent optimizationTitle = EditorGUIUtility.TextContent("Optimization");
-            public static readonly GUIContent loggingTitle = EditorGUIUtility.TextContent("Logging*");
-            public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TextContent("Publishing Settings");
+            public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
+            public static readonly GUIContent resolutionPresentationTitle = EditorGUIUtility.TrTextContent("Resolution and Presentation");
+            public static readonly GUIContent resolutionTitle = EditorGUIUtility.TrTextContent("Resolution");
+            public static readonly GUIContent orientationTitle = EditorGUIUtility.TrTextContent("Orientation");
+            public static readonly GUIContent allowedOrientationTitle = EditorGUIUtility.TrTextContent("Allowed Orientations for Auto Rotation");
+            public static readonly GUIContent multitaskingSupportTitle = EditorGUIUtility.TrTextContent("Multitasking Support");
+            public static readonly GUIContent statusBarTitle = EditorGUIUtility.TrTextContent("Status Bar");
+            public static readonly GUIContent standalonePlayerOptionsTitle = EditorGUIUtility.TrTextContent("Standalone Player Options");
+            public static readonly GUIContent debuggingCrashReportingTitle = EditorGUIUtility.TrTextContent("Debugging and crash reporting");
+            public static readonly GUIContent debuggingTitle = EditorGUIUtility.TrTextContent("Debugging");
+            public static readonly GUIContent crashReportingTitle = EditorGUIUtility.TrTextContent("Crash Reporting");
+            public static readonly GUIContent otherSettingsTitle = EditorGUIUtility.TrTextContent("Other Settings");
+            public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
+            public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
+            public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TrTextContent("Mac App Store Options");
+            public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
+            public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
+            public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Logging*");
+            public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
-            public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TextContent("Prebake Collision Meshes*|Bake collision data into the meshes on build time");
-            public static readonly GUIContent keepLoadedShadersAlive = EditorGUIUtility.TextContent("Keep Loaded Shaders Alive*|Prevents shaders from being unloaded");
-            public static readonly GUIContent preloadedAssets = EditorGUIUtility.TextContent("Preloaded Assets*|Assets to load at start up in the player and kept alive until the player terminates");
-            public static readonly GUIContent stripEngineCode = EditorGUIUtility.TextContent("Strip Engine Code*|Strip Unused Engine Code - Note that byte code stripping of managed assemblies is always enabled for the IL2CPP scripting backend.");
-            public static readonly GUIContent iPhoneStrippingLevel = EditorGUIUtility.TextContent("Stripping Level*");
-            public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TextContent("Script Call Optimization*");
-            public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TextContent("Enable Internal Profiler* (Deprecated)|Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
-            public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TextContent("Optimize Mesh Data*|Remove unused mesh components");
-            public static readonly GUIContent videoMemoryForVertexBuffers = EditorGUIUtility.TextContent("Mesh Video Mem*|How many megabytes of video memory to use for mesh data before we use main memory");
-            public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TextContent("Protect Graphics Memory|Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
-            public static readonly GUIContent defaultIsFullScreen = EditorGUIUtility.TextContent("Default Is Full Screen*");
-            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TextContent("Use Animated Autorotation|If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
-            public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TextContent("Prerendered Icon");
-            public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TextContent("Default Screen Width");
-            public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TextContent("Default Screen Height");
-            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TextContent("Mac Retina Support");
-            public static readonly GUIContent runInBackground = EditorGUIUtility.TextContent("Run In Background*");
-            public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TextContent("Default Orientation*");
-            public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TextContent("Portrait");
-            public static readonly GUIContent allowedAutoRotateToPortraitUpsideDown = EditorGUIUtility.TextContent("Portrait Upside Down");
-            public static readonly GUIContent allowedAutoRotateToLandscapeRight = EditorGUIUtility.TextContent("Landscape Right");
-            public static readonly GUIContent allowedAutoRotateToLandscapeLeft = EditorGUIUtility.TextContent("Landscape Left");
-            public static readonly GUIContent UIRequiresFullScreen = EditorGUIUtility.TextContent("Requires Fullscreen");
-            public static readonly GUIContent UIStatusBarHidden = EditorGUIUtility.TextContent("Status Bar Hidden");
-            public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TextContent("Status Bar Style");
-            public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TextContent("Mac App Store Validation");
-            public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TextContent("Category|'LSApplicationCategoryType'");
-            public static readonly GUIContent fullscreenMode = EditorGUIUtility.TextContent("Fullscreen Mode | Not all platforms support all modes");
-            public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TextContent("Exclusive Fullscreen");
-            public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TextContent("Fullscreen Window");
-            public static readonly GUIContent maximizedWindow = EditorGUIUtility.TextContent("Maximized Window");
-            public static readonly GUIContent windowed = EditorGUIUtility.TextContent("Windowed");
-            public static readonly GUIContent visibleInBackground = EditorGUIUtility.TextContent("Visible In Background");
-            public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TextContent("Allow Fullscreen Switch");
-            public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TextContent("Use 32-bit Display Buffer*|If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
-            public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TextContent("Disable Depth and Stencil*");
-            public static readonly GUIContent iosShowActivityIndicatorOnLoading = EditorGUIUtility.TextContent("Show Loading Indicator");
-            public static readonly GUIContent androidShowActivityIndicatorOnLoading = EditorGUIUtility.TextContent("Show Loading Indicator");
-            public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TextContent("On .Net UnhandledException*");
-            public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TextContent("Log Obj-C Uncaught Exceptions*");
-            public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TextContent("Enable CrashReport API*");
-            public static readonly GUIContent activeColorSpace = EditorGUIUtility.TextContent("Color Space*");
-            public static readonly GUIContent colorGamut = EditorGUIUtility.TextContent("Color Gamut*");
-            public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TextContent("Color Gamut For Mac*");
-            public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TextContent("Force hard shadows on Metal*");
-            public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TextContent("Metal Editor Support* (Experimental)");
-            public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TextContent("Metal API Validation*");
-            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TextContent("Metal Restricted Backbuffer Use|Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
-            public static readonly GUIContent mTRendering = EditorGUIUtility.TextContent("Multithreaded Rendering*");
-            public static readonly GUIContent staticBatching = EditorGUIUtility.TextContent("Static Batching");
-            public static readonly GUIContent dynamicBatching = EditorGUIUtility.TextContent("Dynamic Batching");
-            public static readonly GUIContent graphicsJobs = EditorGUIUtility.TextContent("Graphics Jobs (Experimental)*");
-            public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TextContent("Graphics Jobs Mode*");
-            public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TextContent("Build");
-            public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TextContent("iOS Developer Team ID|Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
-            public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TextContent("Use on demand resources*");
-            public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TextContent("Accelerometer Frequency*");
-            public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TextContent("Camera Usage Description*");
-            public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TextContent("Location Usage Description*");
-            public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TextContent("Microphone Usage Description*");
-            public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TextContent("Mute Other Audio Sources*");
-            public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TextContent("Prepare iOS for Recording");
-            public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TextContent("Force iOS Speakers when Recording");
-            public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TextContent("Requires Persistent WiFi*");
-            public static readonly GUIContent iOSAllowHTTPDownload = EditorGUIUtility.TextContent("Allow downloads over HTTP (nonsecure)*");
-            public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TextContent("Supported URL schemes*");
-            public static readonly GUIContent aotOptions = EditorGUIUtility.TextContent("AOT Compilation Options*");
-            public static readonly GUIContent require31 = EditorGUIUtility.TextContent("Require ES3.1");
-            public static readonly GUIContent requireAEP = EditorGUIUtility.TextContent("Require ES3.1+AEP");
-            public static readonly GUIContent skinOnGPU = EditorGUIUtility.TextContent("GPU Skinning*|Use DX11/ES3 GPU Skinning");
-            public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TextContent("Compute Skinning*|Use Compute pipeline for Skinning");
-            public static readonly GUIContent skinOnGPUAndroidWarning = EditorGUIUtility.TextContent("GPU skinning on Android devices is only enabled in VR builds, and is experimental. Be sure to validate behavior and performance on your target devices.");
-            public static readonly GUIContent disableStatistics = EditorGUIUtility.TextContent("Disable HW Statistics*|Disables HW Statistics (Pro Only)");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TextContent("Scripting Define Symbols*");
-            public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TextContent("Scripting Runtime Version*|The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TextContent("Stable (.NET 3.5 Equivalent)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TextContent("Experimental (.NET 4.6 Equivalent)");
-            public static readonly GUIContent scriptingBackend = EditorGUIUtility.TextContent("Scripting Backend");
-            public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TextContent("C++ Compiler Configuration");
-            public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TextContent("Mono");
-            public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TextContent(".NET");
-            public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TextContent("IL2CPP");
-            public static readonly GUIContent scriptingDefault = EditorGUIUtility.TextContent("Default");
-            public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TextContent("Api Compatibility Level*");
-            public static readonly GUIContent apiCompatibilityLevel_WiiUSubset = EditorGUIUtility.TextContent("WiiU Subset");
-            public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TextContent(".NET 2.0");
-            public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TextContent(".NET 2.0 Subset");
-            public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TextContent(".NET 4.6");
-            public static readonly GUIContent activeInputHandling = EditorGUIUtility.TextContent("Active Input Handling*");
-            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { new GUIContent("Input Manager"), new GUIContent("Input System (Preview)"), new GUIContent("Both") };
-            public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TextContent("Virtual Reality moved to XR Settings");
-            public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TextContent("Lightmap Encoding|Affects the encoding scheme and compression format of the lightmaps.");
-            public static readonly GUIContent[] lightmapEncodingNames = { new GUIContent("Normal Quality"), new GUIContent("High Quality")};
-            public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TextContent("Mono is not supported on iOS11 and above.");
+            public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
+            public static readonly GUIContent keepLoadedShadersAlive = EditorGUIUtility.TrTextContent("Keep Loaded Shaders Alive*", "Prevents shaders from being unloaded");
+            public static readonly GUIContent preloadedAssets = EditorGUIUtility.TrTextContent("Preloaded Assets*", "Assets to load at start up in the player and kept alive until the player terminates");
+            public static readonly GUIContent stripEngineCode = EditorGUIUtility.TrTextContent("Strip Engine Code*", "Strip Unused Engine Code - Note that byte code stripping of managed assemblies is always enabled for the IL2CPP scripting backend.");
+            public static readonly GUIContent iPhoneStrippingLevel = EditorGUIUtility.TrTextContent("Stripping Level*");
+            public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
+            public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
+            public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
+            public static readonly GUIContent videoMemoryForVertexBuffers = EditorGUIUtility.TrTextContent("Mesh Video Mem*", "How many megabytes of video memory to use for mesh data before we use main memory");
+            public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TrTextContent("Protect Graphics Memory", "Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
+            public static readonly GUIContent defaultIsFullScreen = EditorGUIUtility.TrTextContent("Default Is Full Screen*");
+            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
+            public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
+            public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
+            public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
+            public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
+            public static readonly GUIContent runInBackground = EditorGUIUtility.TrTextContent("Run In Background*");
+            public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TrTextContent("Default Orientation*");
+            public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TrTextContent("Portrait");
+            public static readonly GUIContent allowedAutoRotateToPortraitUpsideDown = EditorGUIUtility.TrTextContent("Portrait Upside Down");
+            public static readonly GUIContent allowedAutoRotateToLandscapeRight = EditorGUIUtility.TrTextContent("Landscape Right");
+            public static readonly GUIContent allowedAutoRotateToLandscapeLeft = EditorGUIUtility.TrTextContent("Landscape Left");
+            public static readonly GUIContent UIRequiresFullScreen = EditorGUIUtility.TrTextContent("Requires Fullscreen");
+            public static readonly GUIContent UIStatusBarHidden = EditorGUIUtility.TrTextContent("Status Bar Hidden");
+            public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TrTextContent("Status Bar Style");
+            public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TrTextContent("Mac App Store Validation");
+            public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TrTextContent("Category", "'LSApplicationCategoryType'");
+            public static readonly GUIContent fullscreenMode = EditorGUIUtility.TrTextContent("Fullscreen Mode ", " Not all platforms support all modes");
+            public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TrTextContent("Exclusive Fullscreen");
+            public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
+            public static readonly GUIContent maximizedWindow = EditorGUIUtility.TrTextContent("Maximized Window");
+            public static readonly GUIContent windowed = EditorGUIUtility.TrTextContent("Windowed");
+            public static readonly GUIContent visibleInBackground = EditorGUIUtility.TrTextContent("Visible In Background");
+            public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
+            public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
+            public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
+            public static readonly GUIContent iosShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
+            public static readonly GUIContent androidShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
+            public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*");
+            public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
+            public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
+            public static readonly GUIContent activeColorSpace = EditorGUIUtility.TrTextContent("Color Space*");
+            public static readonly GUIContent colorGamut = EditorGUIUtility.TrTextContent("Color Gamut*");
+            public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TrTextContent("Color Gamut For Mac*");
+            public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
+            public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TextContent("Metal Editor Support*");
+            public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
+            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Restricted Backbuffer Use", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
+            public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
+            public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
+            public static readonly GUIContent graphicsJobs = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)*");
+            public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode*");
+            public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
+            public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
+            public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on demand resources*");
+            public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
+            public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*");
+            public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*");
+            public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*");
+            public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
+            public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
+            public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
+            public static readonly GUIContent UIRequiresPersistentWiFi = EditorGUIUtility.TrTextContent("Requires Persistent WiFi*");
+            public static readonly GUIContent iOSAllowHTTPDownload = EditorGUIUtility.TrTextContent("Allow downloads over HTTP (nonsecure)*");
+            public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
+            public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
+            public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
+            public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
+            public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
+            public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
+            public static readonly GUIContent skinOnGPUAndroidWarning = EditorGUIUtility.TrTextContent("GPU skinning on Android devices is only enabled in VR builds, and is experimental. Be sure to validate behavior and performance on your target devices.");
+            public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
+            public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Stable (.NET 3.5 Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Experimental (.NET 4.6 Equivalent)");
+            public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
+            public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
+            public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
+            public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TrTextContent(".NET");
+            public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
+            public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
+            public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
+            public static readonly GUIContent apiCompatibilityLevel_WiiUSubset = EditorGUIUtility.TrTextContent("WiiU Subset");
+            public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
+            public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
+            public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.6");
+            public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
+            public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
+            public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TrTextContent("Virtual Reality moved to XR Settings");
+            public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
+            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
+            public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TrTextContent("Mono is not supported on iOS11 and above.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -197,7 +198,7 @@ namespace UnityEditor
         }
 
         private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
-        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { new GUIContent("Native"), new GUIContent("Legacy") };
+        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy") };
 
         // Section and tab selection state
 
@@ -314,6 +315,9 @@ namespace UnityEditor
         SerializedProperty m_RequireES31AEP;
 
         SerializedProperty m_LightmapEncodingQuality;
+
+        // Localization Cache
+        string m_LocalizedTargetName;
 
         // reorderable lists of graphics devices, per platform
         static Dictionary<BuildTarget, ReorderableList> s_GraphicsDeviceLists = new Dictionary<BuildTarget, ReorderableList>();
@@ -494,6 +498,16 @@ namespace UnityEditor
             return false;
         }
 
+        internal override string targetTitle
+        {
+            get
+            {
+                if (m_LocalizedTargetName == null)
+                    m_LocalizedTargetName = L10n.Tr(target.name);
+                return m_LocalizedTargetName;
+            }
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -522,7 +536,7 @@ namespace UnityEditor
                 // If we don't do this, the resolution width/height value will not update correctly when they have the focus
                 GUI.FocusControl("");
             }
-            GUILayout.Label("Settings for " + validPlatforms[selectedPlatform].title.text);
+            GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatform].title.text));
 
             // Compensate so settings inside boxes line up with settings at the top, though keep a minimum of 150.
             EditorGUIUtility.labelWidth = Mathf.Max(150, EditorGUIUtility.labelWidth - 8);
@@ -669,7 +683,7 @@ namespace UnityEditor
                             // consider the icon overridden for this platform
                             GUI.changed = false;
                             overrideIcons = (icons.Length == widths.Length);
-                            overrideIcons = GUILayout.Toggle(overrideIcons, "Override for " + platform.title.text);
+                            overrideIcons = GUILayout.Toggle(overrideIcons, string.Format(L10n.Tr("Override for {0}"), platform.title.text));
                             GUI.enabled = enabled && overrideIcons;
                             if (GUI.changed || (!overrideIcons && icons.Length > 0))
                             {
@@ -937,7 +951,7 @@ namespace UnityEditor
                     }
                     if (targetGroup == BuildTargetGroup.Tizen)
                     {
-                        EditorGUILayout.PropertyField(m_tizenShowActivityIndicatorOnLoading, EditorGUIUtility.TextContent("Show Loading Indicator"));
+                        EditorGUILayout.PropertyField(m_tizenShowActivityIndicatorOnLoading, EditorGUIUtility.TrTextContent("Show Loading Indicator"));
                     }
                     if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.Tizen)
                     {
@@ -1120,7 +1134,7 @@ namespace UnityEditor
             // toggle for automatic API selection
             EditorGUI.BeginChangeCheck();
             var automatic = PlayerSettings.GetUseDefaultGraphicsAPIs(targetPlatform);
-            automatic = EditorGUILayout.Toggle("Auto Graphics API" + (platformTitle ?? string.Empty), automatic);
+            automatic = EditorGUILayout.Toggle(string.Format(L10n.Tr("Auto Graphics API {0}"), (platformTitle ?? string.Empty)), automatic);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, Styles.undoChangedGraphicsAPIString);
@@ -1700,7 +1714,7 @@ namespace UnityEditor
 
             if (hdrSupported)
             {
-                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TextContent("Use display in HDR mode|Automatically switch the display to HDR output (on supported displays) at start of application."), PlayerSettings.useHDRDisplay);
+                PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Use display in HDR mode", "Automatically switch the display to HDR output (on supported displays) at start of application."), PlayerSettings.useHDRDisplay);
             }
 
             EditorGUILayout.Space();
@@ -1722,9 +1736,9 @@ namespace UnityEditor
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(Styles.macAppStoreTitle, EditorStyles.boldLabel);
 
-                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier|'CFBundleIdentifier'", Styles.undoChangedBundleIdentifierString);
-                EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TextContent("Version*|'CFBundleShortVersionString'"));
-                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build|'CFBundleVersion'", Styles.undoChangedBuildNumberString);
+                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'", Styles.undoChangedBundleIdentifierString);
+                EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TrTextContent("Version*", "'CFBundleShortVersionString'"));
+                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'", Styles.undoChangedBuildNumberString);
 
                 EditorGUILayout.PropertyField(m_MacAppStoreCategory, Styles.macAppStoreCategory);
                 EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, Styles.useMacAppStoreValidation);
@@ -1797,10 +1811,10 @@ namespace UnityEditor
             }
         }
 
-        internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
+        internal static void ShowApplicationIdentifierUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string tooltip, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string identifier = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetApplicationIdentifier(targetGroup));
+            string identifier = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.GetApplicationIdentifier(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -1808,10 +1822,10 @@ namespace UnityEditor
             }
         }
 
-        internal static void ShowBuildNumberUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string undoText)
+        internal static void ShowBuildNumberUI(SerializedObject serializedObject, BuildTargetGroup targetGroup, string label, string tooltip, string undoText)
         {
             EditorGUI.BeginChangeCheck();
-            string buildNumber = EditorGUILayout.TextField(EditorGUIUtility.TextContent(label), PlayerSettings.GetBuildNumber(targetGroup));
+            string buildNumber = EditorGUILayout.TextField(EditorGUIUtility.TrTextContent(label, tooltip), PlayerSettings.GetBuildNumber(targetGroup));
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(serializedObject.targetObject, undoText);
@@ -2003,14 +2017,18 @@ namespace UnityEditor
 
             // Active input handling
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
+            int oldInputOption = inputOption;
             EditorGUI.BeginChangeCheck();
             inputOption = EditorGUILayout.Popup(Styles.activeInputHandling, inputOption, Styles.activeInputHandlingOptions);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
-                m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
-                m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
-                m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                if (inputOption != oldInputOption)
+                {
+                    EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
+                    m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
+                    m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
+                    m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                }
                 EditorGUIUtility.ExitGUI();
             }
 
@@ -2102,9 +2120,9 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        static ApiCompatibilityLevel[] only_4_x_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6 };
+        static ApiCompatibilityLevel[] only_4_x_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
         static ApiCompatibilityLevel[] only_2_0_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset };
-        static ApiCompatibilityLevel[] allProfiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6 };
+        static ApiCompatibilityLevel[] allProfiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
 
         private ApiCompatibilityLevel[] GetAvailableApiCompatibilityLevels(BuildTargetGroup activeBuildTargetGroup)
         {
@@ -2146,6 +2164,11 @@ namespace UnityEditor
             }
 
             return m_Il2cppCompilerConfigurationNames;
+        }
+
+        public static bool IsLatestApiCompatibility(ApiCompatibilityLevel level)
+        {
+            return (level == ApiCompatibilityLevel.NET_4_6 || level == ApiCompatibilityLevel.NET_Standard_2_0);
         }
 
         private void OtherSectionLoggingGUI()
@@ -2221,7 +2244,8 @@ namespace UnityEditor
                 {
                     { ApiCompatibilityLevel.NET_2_0, Styles.apiCompatibilityLevel_NET_2_0 },
                     { ApiCompatibilityLevel.NET_2_0_Subset, Styles.apiCompatibilityLevel_NET_2_0_Subset },
-                    { ApiCompatibilityLevel.NET_4_6, Styles.apiCompatibilityLevel_NET_4_6 }
+                    { ApiCompatibilityLevel.NET_4_6, Styles.apiCompatibilityLevel_NET_4_6 },
+                    { ApiCompatibilityLevel.NET_Standard_2_0, Styles.apiCompatibilityLevel_NET_Standard_2_0 }
                 };
             }
 
@@ -2244,7 +2268,7 @@ namespace UnityEditor
 
             EditorGUILayout.PrefixLabel(EditorGUIUtility.TextContent(propertyLabel));
 
-            GUIContent browseBtnLabel = new GUIContent("...");
+            GUIContent browseBtnLabel = EditorGUIUtility.TrTextContent("...");
             Vector2 sizeOfLabel = GUI.skin.GetStyle("Button").CalcSize(browseBtnLabel);
 
             if (GUILayout.Button(browseBtnLabel, EditorStyles.miniButton, GUILayout.MaxWidth(sizeOfLabel.x)))
@@ -2277,7 +2301,7 @@ namespace UnityEditor
             {
                 if (emptyString)
                 {
-                    gc = EditorGUIUtility.TextContent("Not selected.");
+                    gc = EditorGUIUtility.TrTextContent("Not selected.");
                 }
                 else
                 {

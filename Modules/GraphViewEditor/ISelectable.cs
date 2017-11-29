@@ -7,8 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    interface ISelectable
+    public interface ISelectable
     {
         bool IsSelectable();
         bool HitTest(Vector2 localPoint);

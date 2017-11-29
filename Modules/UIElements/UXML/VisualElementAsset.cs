@@ -137,8 +137,9 @@ namespace UnityEngine.Experimental.UIElements
                     res.AddStyleSheetPath(stylesheets[i]);
             }
 
-            if (!string.IsNullOrEmpty(text))
-                res.text = text;
+            var textEle = res as BaseTextElement;
+            if (textEle != null && !string.IsNullOrEmpty(text))
+                textEle.text = text;
 
             res.pickingMode = pickingMode;
 

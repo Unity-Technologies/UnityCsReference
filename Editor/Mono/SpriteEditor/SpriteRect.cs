@@ -12,7 +12,7 @@ using UnityEditorInternal;
 namespace UnityEditor
 {
     [Serializable]
-    internal class SpriteRect
+    public class SpriteRect
     {
         [SerializeField]
         string m_Name;
@@ -33,34 +33,15 @@ namespace UnityEditor
         Rect m_Rect;
 
         [SerializeField]
-        List<SpriteOutline> m_Outline = new List<SpriteOutline>();
+        string m_SpriteID;
 
-        [SerializeField]
-        List<SpriteOutline> m_PhysicsShape = new List<SpriteOutline>();
-
-        [SerializeField]
-        float m_TessellationDetail; // sprite detail for mesh generation on a per-sprite basis
+        GUID m_GUID;
 
         public string name
         {
             get { return m_Name; }
             set { m_Name = value; }
         }
-
-        public string originalName
-        {
-            get
-            {
-                if (m_OriginalName == null)
-                {
-                    m_OriginalName = name;
-                }
-                return m_OriginalName;
-            }
-
-            set { m_OriginalName = value; }
-        }
-
 
         public Vector2 pivot
         {
@@ -86,121 +67,56 @@ namespace UnityEditor
             set { m_Rect = value; }
         }
 
-        public List<SpriteOutline> outline
+        internal string originalName
         {
-            get { return m_Outline; }
-            set { m_Outline = value; }
-        }
-
-        public List<SpriteOutline> physicsShape
-        {
-            get { return m_PhysicsShape; }
-            set { m_PhysicsShape = value; }
-        }
-
-        public float tessellationDetail
-        {
-            get { return m_TessellationDetail; }
-            set { m_TessellationDetail = value; }
-        }
-
-        static public List<SpriteOutline> AcquireOutline(List<Vector2[]> outlineSP)
-        {
-            var outline = new List<SpriteOutline>();
-            if (outlineSP != null)
+            get
             {
-                for (int j = 0; j < outlineSP.Count; ++j)
+                if (m_OriginalName == null)
                 {
-                    SpriteOutline o = new SpriteOutline();
-                    o.m_Path.AddRange(outlineSP[j]);
-                    outline.Add(o);
+                    m_OriginalName = name;
                 }
+                return m_OriginalName;
             }
 
-            return outline;
+            set { m_OriginalName = value; }
         }
 
-        static public List<Vector2[]> ApplyOutlineChanges(List<SpriteOutline> outline)
+        public GUID spriteID
         {
-            var result = new List<Vector2[]>();
-            if (outline != null)
+            get
             {
-                for (int j = 0; j < outline.Count; ++j)
+                ValidateGUID();
+                return m_GUID;
+            }
+            set
+            {
+                m_GUID = value;
+                m_SpriteID = m_GUID.ToString();
+                ValidateGUID();
+            }
+        }
+
+        private void ValidateGUID()
+        {
+            if (m_GUID.Empty())
+            {
+                // We can't use ISerializationCallbackReceiver because we will hit into Script serialization errors
+                m_GUID = new GUID(m_SpriteID);
+                if (m_GUID.Empty())
                 {
-                    result.Add(outline[j].m_Path.ToArray());
+                    m_GUID = GUID.Generate();
+                    m_SpriteID = m_GUID.ToString();
                 }
             }
-
-            return result;
         }
 
-        public void LoadFromSpriteData(SpriteDataBase sp)
+        public static GUID GetSpriteIDFromSerializedProperty(SerializedProperty sp)
         {
-            rect = sp.rect;
-            border = sp.border;
-            name = sp.name;
-            alignment = sp.alignment;
-            pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.pivot);
-            tessellationDetail = sp.tessellationDetail;
-            outline = AcquireOutline(sp.outline);
-            physicsShape = AcquireOutline(sp.physicsShape);
-        }
-
-        public void ApplyToSpriteData(SpriteDataBase sp)
-        {
-            sp.rect = rect;
-            sp.border = border;
-            sp.name = name;
-            sp.alignment = alignment;
-            sp.pivot = pivot;
-            sp.tessellationDetail = tessellationDetail;
-            sp.outline = ApplyOutlineChanges(outline);
-            sp.physicsShape = ApplyOutlineChanges(physicsShape);
+            return new GUID(sp.FindPropertyRelative("m_SpriteID").stringValue);
         }
     }
 
-
-    // We need this so that undo/redo works
-    [Serializable]
-    internal class SpriteOutline
-    {
-        [SerializeField]
-        public List<Vector2> m_Path = new List<Vector2>();
-
-        public void Add(Vector2 point)
-        {
-            m_Path.Add(point);
-        }
-
-        public void Insert(int index, Vector2 point)
-        {
-            m_Path.Insert(index, point);
-        }
-
-        public void RemoveAt(int index)
-        {
-            m_Path.RemoveAt(index);
-        }
-
-        public Vector2 this[int index]
-        {
-            get { return m_Path[index]; }
-            set { m_Path[index] = value; }
-        }
-
-        public int Count
-        {
-            get { return m_Path.Count; }
-        }
-
-        public void AddRange(IEnumerable<Vector2> addRange)
-        {
-            m_Path.AddRange(addRange);
-        }
-    }
-
-    [Serializable]
-    internal class SpriteRectCache : ScriptableObject,  ISpriteRectCache
+    internal class SpriteRectCache : ScriptableObject
     {
         [SerializeField]
         public List<SpriteRect> m_Rects;
@@ -224,7 +140,7 @@ namespace UnityEditor
         public void RemoveRect(SpriteRect r)
         {
             if (m_Rects != null)
-                m_Rects.Remove(r);
+                m_Rects.RemoveAll(x => x.spriteID == r.spriteID);
         }
 
         public void ClearAll()
@@ -235,16 +151,16 @@ namespace UnityEditor
 
         public int GetIndex(SpriteRect spriteRect)
         {
-            if (m_Rects != null)
-                return m_Rects.FindIndex(p => p.Equals(spriteRect));
+            if (m_Rects != null && spriteRect != null)
+                return m_Rects.FindIndex(p => p.spriteID == spriteRect.spriteID);
 
-            return 0;
+            return -1;
         }
 
         public bool Contains(SpriteRect spriteRect)
         {
-            if (m_Rects != null)
-                return m_Rects.Contains(spriteRect);
+            if (m_Rects != null && spriteRect != null)
+                return m_Rects.Find(x => x.spriteID == spriteRect.spriteID) != null;
 
             return false;
         }

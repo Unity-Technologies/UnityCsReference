@@ -17,7 +17,8 @@ namespace UnityEditor.Scripting.Compilers
         protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments)
         {
             AddCustomResponseFileIfPresent(arguments, Path.GetFileNameWithoutExtension(compiler) + ".rsp");
-            var monoInstallation = _island._api_compatibility_level == ApiCompatibilityLevel.NET_4_6
+
+            var monoInstallation = (PlayerSettingsEditor.IsLatestApiCompatibility(_island._api_compatibility_level))
                 ? MonoInstallationFinder.GetMonoBleedingEdgeInstallation()
                 : MonoInstallationFinder.GetMonoInstallation();
             return StartCompiler(target, compiler, arguments, true, monoInstallation);

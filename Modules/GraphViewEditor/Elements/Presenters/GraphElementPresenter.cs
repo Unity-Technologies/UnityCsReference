@@ -10,8 +10,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    abstract class GraphElementPresenter : ScriptableObject
+    public abstract class GraphElementPresenter : ScriptableObject
     {
         [SerializeField]
         private bool m_Selected;

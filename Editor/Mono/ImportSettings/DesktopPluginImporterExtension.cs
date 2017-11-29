@@ -80,13 +80,13 @@ namespace UnityEditor
         private Property[] GetProperties()
         {
             List<Property> properties = new List<Property>();
-            m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows));
-            m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64));
+            m_WindowsX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows));
+            m_WindowsX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneWindows64));
 
-            m_LinuxX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux), DesktopPluginCPUArchitecture.x86);
-            m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
+            m_LinuxX86 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux), DesktopPluginCPUArchitecture.x86);
+            m_LinuxX86_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x86_x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneLinux64), DesktopPluginCPUArchitecture.x86_64);
 
-            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX));
+            m_OSX_X64 = new DesktopSingleCPUProperty(EditorGUIUtility.TrTextContent("x64"), BuildPipeline.GetBuildTargetName(BuildTarget.StandaloneOSX));
 
             properties.Add(m_WindowsX86);
             properties.Add(m_WindowsX86_X64);
@@ -147,7 +147,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             if (IsUsableOnWindows(imp))
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TextContent("Windows"), EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Windows"), EditorStyles.boldLabel);
                 m_WindowsX86.OnGUI(inspector);
                 m_WindowsX86_X64.OnGUI(inspector);
                 EditorGUILayout.Space();
@@ -155,7 +155,7 @@ namespace UnityEditor
 
             if (IsUsableOnLinux(imp))
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TextContent("Linux"), EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Linux"), EditorStyles.boldLabel);
                 m_LinuxX86.OnGUI(inspector);
                 m_LinuxX86_X64.OnGUI(inspector);
                 EditorGUILayout.Space();
@@ -163,7 +163,7 @@ namespace UnityEditor
 
             if (IsUsableOnOSX(imp))
             {
-                EditorGUILayout.LabelField(EditorGUIUtility.TextContent("Mac OS X"), EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Mac OS X"), EditorStyles.boldLabel);
                 m_OSX_X64.OnGUI(inspector);
             }
 

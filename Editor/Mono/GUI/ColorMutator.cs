@@ -179,7 +179,8 @@ namespace UnityEditor
 
             var newColor = exposureAdjustedColor;
             var maxColorComponent = newColor.maxColorComponent;
-            if (maxColorComponent <= 1f)
+            // replicate Photoshops's decomposition behaviour
+            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent > 1 / 255f)
             {
                 m_ExposureValue = 0f;
 
@@ -187,7 +188,6 @@ namespace UnityEditor
                 m_Color[(int)RgbaChannel.G] = (byte)Mathf.RoundToInt(newColor.g * 255f);
                 m_Color[(int)RgbaChannel.B] = (byte)Mathf.RoundToInt(newColor.b * 255f);
             }
-            // replicate Photoshops's decomposition behaviour
             else
             {
                 // calibrate exposure to the max float color component

@@ -106,16 +106,7 @@ namespace UnityEngine.Animations
 
         public void RemoveSource(int index)
         {
-            if (sourceCount == 0)
-            {
-                throw new InvalidOperationException("The PositionConstraint component has no sources.");
-            }
-
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
+            ValidateSourceIndex(index);
             RemoveSourceInternal(index);
         }
 
@@ -124,6 +115,24 @@ namespace UnityEngine.Animations
 
         public ConstraintSource GetSource(int index)
         {
+            ValidateSourceIndex(index);
+            return GetSourceInternal(index);
+        }
+
+        [NativeName("GetSource")]
+        private extern ConstraintSource GetSourceInternal(int index);
+
+        public void SetSource(int index, ConstraintSource source)
+        {
+            ValidateSourceIndex(index);
+            SetSourceInternal(index, source);
+        }
+
+        [NativeName("SetSource")]
+        private extern void SetSourceInternal(int index, ConstraintSource source);
+
+        private void ValidateSourceIndex(int index)
+        {
             if (sourceCount == 0)
             {
                 throw new InvalidOperationException("The PositionConstraint component has no sources.");
@@ -133,24 +142,7 @@ namespace UnityEngine.Animations
             {
                 throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
             }
-            return GetSourceInternal(index);
         }
-
-        [NativeName("GetSource")]
-        private extern ConstraintSource GetSourceInternal(int index);
-
-        public void SetSource(int index, ConstraintSource source)
-        {
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
-            SetSourceInternal(index, source);
-        }
-
-        [NativeName("SetSource")]
-        private extern void SetSourceInternal(int index, ConstraintSource source);
 
         extern void ActivateAndPreserveOffset();
         extern void ActivateWithZeroOffset();
@@ -223,16 +215,7 @@ namespace UnityEngine.Animations
 
         public void RemoveSource(int index)
         {
-            if (sourceCount == 0)
-            {
-                throw new InvalidOperationException("The RotationConstraint component has no sources.");
-            }
-
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
+            ValidateSourceIndex(index);
             RemoveSourceInternal(index);
         }
 
@@ -241,6 +224,23 @@ namespace UnityEngine.Animations
 
         public ConstraintSource GetSource(int index)
         {
+            ValidateSourceIndex(index);
+            return GetSourceInternal(index);
+        }
+
+        [NativeName("GetSource")]
+        private extern ConstraintSource GetSourceInternal(int index);
+
+        public void SetSource(int index, ConstraintSource source)
+        {
+            ValidateSourceIndex(index);
+            SetSourceInternal(index, source);
+        }
+
+        [NativeName("SetSource")]
+        private extern void SetSourceInternal(int index, ConstraintSource source);
+        private void ValidateSourceIndex(int index)
+        {
             if (sourceCount == 0)
             {
                 throw new InvalidOperationException("The RotationConstraint component has no sources.");
@@ -250,24 +250,7 @@ namespace UnityEngine.Animations
             {
                 throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
             }
-            return GetSourceInternal(index);
         }
-
-        [NativeName("GetSource")]
-        private extern ConstraintSource GetSourceInternal(int index);
-
-        public void SetSource(int index, ConstraintSource source)
-        {
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
-            SetSourceInternal(index, source);
-        }
-
-        [NativeName("SetSource")]
-        private extern void SetSourceInternal(int index, ConstraintSource source);
 
         extern void ActivateAndPreserveOffset();
         extern void ActivateWithZeroOffset();
@@ -340,16 +323,7 @@ namespace UnityEngine.Animations
 
         public void RemoveSource(int index)
         {
-            if (sourceCount == 0)
-            {
-                throw new InvalidOperationException("The ScaleConstraint component has no sources.");
-            }
-
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
+            ValidateSourceIndex(index);
             RemoveSourceInternal(index);
         }
 
@@ -358,6 +332,24 @@ namespace UnityEngine.Animations
 
         public ConstraintSource GetSource(int index)
         {
+            ValidateSourceIndex(index);
+            return GetSourceInternal(index);
+        }
+
+        [NativeName("GetSource")]
+        private extern ConstraintSource GetSourceInternal(int index);
+
+        public void SetSource(int index, ConstraintSource source)
+        {
+            ValidateSourceIndex(index);
+            SetSourceInternal(index, source);
+        }
+
+        [NativeName("SetSource")]
+        private extern void SetSourceInternal(int index, ConstraintSource source);
+
+        private void ValidateSourceIndex(int index)
+        {
             if (sourceCount == 0)
             {
                 throw new InvalidOperationException("The ScaleConstraint component has no sources.");
@@ -367,24 +359,7 @@ namespace UnityEngine.Animations
             {
                 throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
             }
-            return GetSourceInternal(index);
         }
-
-        [NativeName("GetSource")]
-        private extern ConstraintSource GetSourceInternal(int index);
-
-        public void SetSource(int index, ConstraintSource source)
-        {
-            if (index < 0 || index >= sourceCount)
-            {
-                throw new ArgumentOutOfRangeException("index", string.Format("Constraint source index {0} is out of bounds (0-{1}).", index, sourceCount));
-            }
-
-            SetSourceInternal(index, source);
-        }
-
-        [NativeName("SetSource")]
-        private extern void SetSourceInternal(int index, ConstraintSource source);
 
         extern void ActivateAndPreserveOffset();
         extern void ActivateWithZeroOffset();

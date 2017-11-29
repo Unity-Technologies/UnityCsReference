@@ -77,7 +77,8 @@ namespace UnityEditor.Scripting.Compilers
         protected string GetMonoProfileLibDirectory()
         {
             var profile = BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
-            var monoInstall = _island._api_compatibility_level == ApiCompatibilityLevel.NET_4_6
+
+            var monoInstall = (PlayerSettingsEditor.IsLatestApiCompatibility(_island._api_compatibility_level))
                 ? MonoInstallationFinder.MonoBleedingEdgeInstallation
                 : MonoInstallationFinder.MonoInstallation;
 

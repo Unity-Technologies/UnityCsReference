@@ -49,6 +49,8 @@ namespace UnityEditor.Collaboration
     internal partial class Collab
     {
         public event StateChangedDelegate StateChanged;
+        public event StateChangedDelegate RevisionUpdated;
+        public event StateChangedDelegate JobsCompleted;
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;
@@ -265,6 +267,25 @@ namespace UnityEditor.Collaboration
             {
                 handler(instance.collabInfo);
             }
+        }
+
+        private static void OnRevisionUpdated()
+        {
+            var handler = instance.RevisionUpdated;
+            if (handler != null)
+            {
+                handler(instance.collabInfo);
+            }
+        }
+
+        private static void OnJobsCompleted()
+        {
+            var handler = instance.JobsCompleted;
+            if (handler != null)
+            {
+                handler(instance.collabInfo);
+            }
+            CollabTesting.OnJobsCompleted();
         }
 
         private static void PublishDialog(string changelist)

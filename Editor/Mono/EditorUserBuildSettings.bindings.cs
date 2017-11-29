@@ -336,6 +336,9 @@ namespace UnityEditor
         // Should we force an install on the build package, even if there are validation errors
         public static extern bool forceInstallation { get; set; }
 
+        // Should we move the package to the Bluray disc outer edge (larger ISO, but faster loading)
+        public static extern bool movePackageToDiscOuterEdge { get; set; }
+
         // Should we compress files added to the package file
         public static extern bool compressFilesInPackage { get; set; }
 

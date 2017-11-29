@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Collections;
-using UnityEditor;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Media
@@ -31,6 +31,7 @@ namespace UnityEditor.Media
         public uint          width;
         public uint          height;
         public bool          includeAlpha; // For webm only; not applicable to mp4.
+        public VideoBitrateMode bitRateMode;
     }
 
     public struct AudioTrackAttributes

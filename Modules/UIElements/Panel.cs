@@ -483,12 +483,13 @@ namespace UnityEngine.Experimental.UIElements
 
                 // validate cache texture size first
                 var worldBound = root.worldBound;
-                int w = Mathf.RoundToInt(worldBound.width);
-                int h = Mathf.RoundToInt(worldBound.height);
+
+                int w = Mathf.RoundToInt(worldBound.xMax) - Mathf.RoundToInt(worldBound.xMin);
+                int h = Mathf.RoundToInt(worldBound.yMax) - Mathf.RoundToInt(worldBound.yMin);
 
                 // This needs to be consistent with RoundRect() in GUITexture.cpp. Otherwise, the texture may be stretched.
-                int textureWidth = Mathf.RoundToInt((Mathf.RoundToInt(worldBound.xMax) - Mathf.RoundToInt(worldBound.xMin)) * GUIUtility.pixelsPerPoint);
-                int textureHeight = Mathf.RoundToInt((Mathf.RoundToInt(worldBound.yMax) - Mathf.RoundToInt(worldBound.yMin)) * GUIUtility.pixelsPerPoint);
+                int textureWidth = Mathf.RoundToInt(w * GUIUtility.pixelsPerPoint);
+                int textureHeight = Mathf.RoundToInt(h * GUIUtility.pixelsPerPoint);
 
                 // Prevent the texture size from going empty, which may occur if the element has a sub-pixel size
                 textureWidth = Math.Max(textureWidth, 1);
@@ -542,12 +543,16 @@ namespace UnityEngine.Experimental.UIElements
                         RenderTexture.active = cache;
 
                         GL.Clear(true, true, new Color(0, 0, 0, 0));
-                        // fix up transform for subtree to match texture upper left
-                        offset = Matrix4x4.Translate(new Vector3(-worldBound.x, -worldBound.y, 0));
+
+                        // Calculate the offset required to translate the origin of the rect to the upper left corner
+                        // of the pixel cache. We need to round because the rect will be rounded when rendered.
+                        var childrenOffset = Matrix4x4.Translate(new Vector3(-Mathf.RoundToInt(worldBound.x), -Mathf.RoundToInt(worldBound.y), 0));
+
+                        Matrix4x4 offsetWorldTransform = childrenOffset * root.worldTransform;
 
                         // reset clipping
                         var textureClip = new Rect(0, 0, w, h);
-                        painter.currentTransform = offset * root.worldTransform;
+                        painter.currentTransform = offsetWorldTransform;
 
                         // Metal ignores the sRGBWrite flag and will always do linear to gamma conversions
                         // when writing to an sRGB buffer.  In this situation, we disable the manual sRGB
@@ -561,17 +566,15 @@ namespace UnityEngine.Experimental.UIElements
                                 root.DoRepaint(painter);
                                 root.ClearDirty(ChangeType.Repaint);
 
-                                PaintSubTreeChildren(e, root, offset, textureClip);
+                                PaintSubTreeChildren(e, root, childrenOffset, textureClip);
                             }
 
                         if (hasRoundedBorderRects)
                         {
-                            RenderTexture newCache = root.renderData.pixelCache;
-
-                            RenderTexture.active = newCache;
+                            RenderTexture.active = root.renderData.pixelCache;
 
                             // Fix up transform for subtree to match texture upper left
-                            painter.currentTransform = offset * root.worldTransform;
+                            painter.currentTransform = Matrix4x4.identity;
 
                             using (new GUIUtility.ManualTex2SRGBScope(manualTex2SRGBEnabled))
                                 using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
@@ -581,13 +584,32 @@ namespace UnityEngine.Experimental.UIElements
                                     var textureParams = painter.GetDefaultTextureParameters(root);
                                     textureParams.texture = cache;
                                     textureParams.scaleMode = ScaleMode.StretchToFill;
+                                    textureParams.rect = textureClip;
 
                                     textureParams.border.SetWidth(0.0f);
 
-                                    // We blit the texture, clipping the round corners
-                                    painter.DrawTexture(textureParams);
+                                    // The rect of the temporary texture implicitly carries the scale factor of the
+                                    // transform. Since we are blitting with an identity matrix, we need to scale the
+                                    // radius manually.
+                                    // We assume uniform positive scaling without rotations.
+                                    Vector4 toScale = new Vector4(1, 0, 0, 0);
+                                    Vector4 scaled = offsetWorldTransform * toScale;
+                                    float radiusScale = scaled.x;
+                                    textureParams.border.SetRadius(
+                                        textureParams.border.topLeftRadius * radiusScale,
+                                        textureParams.border.topRightRadius * radiusScale,
+                                        textureParams.border.bottomRightRadius * radiusScale,
+                                        textureParams.border.bottomLeftRadius * radiusScale);
 
-                                    // We draw the border again
+                                    // No border is drawn but the rounded corners are clipped properly.
+                                    painter.DrawTexture(textureParams);
+                                }
+
+                            // Draw the border.
+                            painter.currentTransform = offsetWorldTransform;
+                            using (new GUIUtility.ManualTex2SRGBScope(manualTex2SRGBEnabled))
+                                using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
+                                {
                                     painter.DrawBorder(root);
                                 }
                         }
@@ -604,7 +626,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 painter.currentWorldClip = currentGlobalClip;
-                painter.currentTransform = root.worldTransform;
+                painter.currentTransform = offset * root.worldTransform;
 
                 var painterParams = new TextureStylePainterParameters
                 {

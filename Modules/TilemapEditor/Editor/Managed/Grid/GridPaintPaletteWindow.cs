@@ -66,20 +66,20 @@ namespace UnityEditor
             };
             public static readonly Texture2D[] mouseCursorTextures;
 
-            public static readonly GUIContent emptyProjectInfo = EditorGUIUtility.TextContent("Create a new palette in the dropdown above.");
-            public static readonly GUIContent emptyClipboardInfo = EditorGUIUtility.TextContent("Drag Tile, Sprite or Sprite Texture assets here.");
-            public static readonly GUIContent invalidClipboardInfo = EditorGUIUtility.TextContent("This is an invalid clipboard. Did you delete the clipboard asset?");
-            public static readonly GUIContent selectPaintTarget = EditorGUIUtility.TextContent("Select Paint Target");
-            public static readonly GUIContent selectPalettePrefab = EditorGUIUtility.TextContent("Select Palette Prefab");
-            public static readonly GUIContent selectTileAsset = EditorGUIUtility.TextContent("Select Tile Asset");
-            public static readonly GUIContent unlockPaletteEditing = EditorGUIUtility.TextContent("Unlock Palette Editing");
-            public static readonly GUIContent lockPaletteEditing = EditorGUIUtility.TextContent("Lock Palette Editing");
-            public static readonly GUIContent createNewPalette = EditorGUIUtility.TextContent("Create New Palette");
-            public static readonly GUIContent focusLabel = EditorGUIUtility.TextContent("Focus On");
-            public static readonly GUIContent rendererOverlayTitleLabel = EditorGUIUtility.TextContent("Tilemap");
-            public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TextContent("Active Tilemap|Specifies the currently active Tilemap used for painting in the Scene View.");
+            public static readonly GUIContent emptyProjectInfo = EditorGUIUtility.TrTextContent("Create a new palette in the dropdown above.");
+            public static readonly GUIContent emptyClipboardInfo = EditorGUIUtility.TrTextContent("Drag Tile, Sprite or Sprite Texture assets here.");
+            public static readonly GUIContent invalidClipboardInfo = EditorGUIUtility.TrTextContent("This is an invalid clipboard. Did you delete the clipboard asset?");
+            public static readonly GUIContent selectPaintTarget = EditorGUIUtility.TrTextContent("Select Paint Target");
+            public static readonly GUIContent selectPalettePrefab = EditorGUIUtility.TrTextContent("Select Palette Prefab");
+            public static readonly GUIContent selectTileAsset = EditorGUIUtility.TrTextContent("Select Tile Asset");
+            public static readonly GUIContent unlockPaletteEditing = EditorGUIUtility.TrTextContent("Unlock Palette Editing");
+            public static readonly GUIContent lockPaletteEditing = EditorGUIUtility.TrTextContent("Lock Palette Editing");
+            public static readonly GUIContent createNewPalette = EditorGUIUtility.TrTextContent("Create New Palette");
+            public static readonly GUIContent focusLabel = EditorGUIUtility.TrTextContent("Focus On");
+            public static readonly GUIContent rendererOverlayTitleLabel = EditorGUIUtility.TrTextContent("Tilemap");
+            public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TrTextContent("Active Tilemap", "Specifies the currently active Tilemap used for painting in the Scene View.");
 
-            public static readonly GUIContent edit = EditorGUIUtility.TextContent("Edit");
+            public static readonly GUIContent edit = EditorGUIUtility.TrTextContent("Edit");
             public static readonly GUIContent editModified = EditorGUIUtility.TextContent("Edit*");
             public static readonly GUIStyle ToolbarStyle = "preToolbar";
             public static readonly GUIStyle ToolbarTitleStyle = "preToolbar";
@@ -115,7 +115,7 @@ namespace UnityEditor
         private const float k_ToolbarHeight = 17f;
         private const float k_ResizerDragRectPadding = 10f;
 
-        public static readonly GUIContent tilePalette = EditorGUIUtility.TextContent("Tile Palette");
+        public static readonly GUIContent tilePalette = EditorGUIUtility.TrTextContent("Tile Palette");
 
         private PaintableSceneViewGrid m_PaintableSceneViewGrid;
         public PaintableGrid paintableSceneViewGrid { get { return m_PaintableSceneViewGrid; } }

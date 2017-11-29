@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.Linq;
 using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D;
 using UnityAssetImporter = UnityEditor.AssetImporter;
@@ -15,12 +16,7 @@ namespace UnityEditor.U2D.Interface
 {
     internal abstract class ITextureImporter
     {
-        public abstract void GetWidthAndHeight(ref int width, ref int height);
         public abstract SpriteImportMode spriteImportMode { get; }
-        public abstract Vector4 spriteBorder { get; }
-        public abstract Vector2 spritePivot { get; }
-
-        public abstract string assetPath { get; }
 
         public static bool operator==(ITextureImporter t1, ITextureImporter t2)
         {
@@ -56,18 +52,16 @@ namespace UnityEditor.U2D.Interface
     internal class TextureImporter : ITextureImporter, ISpriteEditorDataProvider
     {
         protected UnityAssetImporter m_AssetImporter;
-        List<SpriteDataMultipleMode> m_SpritesMultiple;
-        SpriteDataSingleMode m_SpriteSingle;
-        SerializedObject m_TextureImporterSO;
+        List<SpriteDataExt> m_SpritesMultiple;
+        SpriteDataExt m_SpriteSingle;
+        SpriteImportMode m_SpriteImportMode;
 
         public TextureImporter(UnityTextureImporter textureImporter)
         {
             m_AssetImporter = textureImporter;
-        }
-
-        public override string assetPath
-        {
-            get { return m_AssetImporter.assetPath; }
+            m_SpriteImportMode = textureImporter.textureType != TextureImporterType.Sprite ?
+                SpriteImportMode.None :
+                textureImporter.spriteImportMode;
         }
 
         public override bool Equals(object other)
@@ -83,122 +77,160 @@ namespace UnityEditor.U2D.Interface
             return m_AssetImporter.GetHashCode();
         }
 
-        public override void GetWidthAndHeight(ref int width, ref int height)
-        {
-            ((UnityTextureImporter)m_AssetImporter).GetWidthAndHeight(ref width, ref height);
-        }
-
         public override SpriteImportMode spriteImportMode
         {
-            get { return ((UnityTextureImporter)m_AssetImporter).spriteImportMode; }
+            get { return m_SpriteImportMode; }
         }
 
-        public override Vector4 spriteBorder
+        // ISpriteEditorDataProvider interface
+        public float pixelsPerUnit
         {
-            get { return ((UnityTextureImporter)m_AssetImporter).spriteBorder; }
+            get { return ((UnityTextureImporter)m_AssetImporter).spritePixelsPerUnit; }
         }
 
-        public override Vector2 spritePivot
+        public UnityEngine.Object targetObject
         {
-            get { return ((UnityTextureImporter)m_AssetImporter).spritePivot; }
+            get { return m_AssetImporter; }
         }
 
-        public void InitSpriteEditorDataProvider(SerializedObject so)
+        public SpriteRect[] GetSpriteRects()
         {
-            m_TextureImporterSO = so;
-            var spriteSheetSO = m_TextureImporterSO.FindProperty("m_SpriteSheet.m_Sprites");
-            m_SpritesMultiple = new List<SpriteDataMultipleMode>();
-            m_SpriteSingle = new SpriteDataSingleMode();
-            m_SpriteSingle.Load(m_TextureImporterSO);
+            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.Select(x => x as SpriteRect).ToArray() : new[] {m_SpriteSingle};
+        }
+
+        public void SetSpriteRects(SpriteRect[] spriteRects)
+        {
+            if (spriteImportMode == SpriteImportMode.Single && spriteRects.Length == 1)
+            {
+                m_SpriteSingle.CopyFromSpriteRect(spriteRects[0]);
+            }
+            else if (spriteImportMode == SpriteImportMode.Multiple)
+            {
+                for (int i = m_SpritesMultiple.Count - 1; i >= 0; --i)
+                {
+                    if (!spriteRects.Contains(m_SpritesMultiple[i]))
+                        m_SpritesMultiple.RemoveAt(i);
+                }
+                for (int i = 0; i < spriteRects.Length; i++)
+                {
+                    var spriteRect = spriteRects[i];
+                    var index = m_SpritesMultiple.FindIndex(x => x.spriteID == spriteRect.spriteID);
+                    if (-1 == index)
+                        m_SpritesMultiple.Add(new SpriteDataExt(spriteRect));
+                    else
+                        m_SpritesMultiple[index].CopyFromSpriteRect(spriteRects[i]);
+                }
+            }
+        }
+
+        public SpriteRect GetSpriteData(GUID guid)
+        {
+            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.Where(x => x.spriteID == guid).FirstOrDefault() : m_SpriteSingle;
+        }
+
+        public int GetSpriteDataIndex(GUID guid)
+        {
+            switch (spriteImportMode)
+            {
+                case SpriteImportMode.Single:
+                case SpriteImportMode.Polygon:
+                    return 0;
+                case SpriteImportMode.Multiple:
+                {
+                    return m_SpritesMultiple.FindIndex(x => x.spriteID == guid);
+                }
+                default:
+                    throw new InvalidOperationException("GUID not found");
+            }
+        }
+
+        public void Apply()
+        {
+            var so = new SerializedObject(m_AssetImporter);
+            m_SpriteSingle.Apply(so);
+            var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
+            GUID[] guids = new GUID[spriteSheetSO.arraySize];
             for (int i = 0; i < spriteSheetSO.arraySize; ++i)
             {
-                var data = new SpriteDataMultipleMode();
+                var element = spriteSheetSO.GetArrayElementAtIndex(i);
+                guids[i] = SpriteRect.GetSpriteIDFromSerializedProperty(element);
+                // find the GUID in our sprite list and apply to it;
+                var smd = m_SpritesMultiple.Find(x => x.spriteID == guids[i]);
+                if (smd == null) // we can't find it, it is already deleted
+                {
+                    spriteSheetSO.DeleteArrayElementAtIndex(i);
+                    --i;
+                }
+                else
+                    smd.Apply(element);
+            }
+
+            // Add new ones
+            var newSprites = m_SpritesMultiple.Where(x => !guids.Contains(x.spriteID));
+            foreach (var newSprite in newSprites)
+            {
+                spriteSheetSO.InsertArrayElementAtIndex(spriteSheetSO.arraySize);
+                var element = spriteSheetSO.GetArrayElementAtIndex(spriteSheetSO.arraySize - 1);
+                newSprite.Apply(element);
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        public void InitSpriteEditorDataProvider()
+        {
+            var so = new SerializedObject(m_AssetImporter);
+            var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
+            m_SpritesMultiple = new List<SpriteDataExt>();
+            m_SpriteSingle = new SpriteDataExt();
+            m_SpriteSingle.Load(so);
+
+            for (int i = 0; i < spriteSheetSO.arraySize; ++i)
+            {
+                var data = new SpriteDataExt();
                 var sp = spriteSheetSO.GetArrayElementAtIndex(i);
                 data.Load(sp);
                 m_SpritesMultiple.Add(data);
             }
         }
 
-        public int spriteDataCount
+        public T GetDataProvider<T>() where T : class
         {
-            get
+            if (typeof(T) == typeof(ISpriteBoneDataProvider))
             {
-                switch (spriteImportMode)
-                {
-                    case SpriteImportMode.Multiple:
-                        return m_SpritesMultiple.Count;
-                    case SpriteImportMode.Single:
-                    case SpriteImportMode.Polygon:
-                        return 1;
-                }
-                return 0;
+                return new SpriteBoneDataTransfer(this) as T;
             }
-
-            set
+            if (typeof(T) == typeof(ISpriteMeshDataProvider))
             {
-                if (spriteImportMode != SpriteImportMode.Multiple)
-                {
-                    Debug.LogError("SetSpriteDataSize can only be called when in SpriteImportMode.Multiple");
-                    return;
-                }
-
-                while (m_SpritesMultiple.Count < value)
-                    m_SpritesMultiple.Add(new SpriteDataMultipleMode());
-                if (m_SpritesMultiple.Count > value)
-                {
-                    var diff = m_SpritesMultiple.Count - value;
-                    m_SpritesMultiple.RemoveRange(m_SpritesMultiple.Count - diff, diff);
-                }
+                return new SpriteMeshDataTransfer(this) as T;
             }
+            if (typeof(T) == typeof(ISpriteOutlineDataProvider))
+            {
+                return new SpriteOutlineDataTransfer(this) as T;
+            }
+            if (typeof(T) == typeof(ISpritePhysicsOutlineDataProvider))
+            {
+                return new SpritePhysicsOutlineDataTransfer(this) as T;
+            }
+            if (typeof(T) == typeof(ITextureDataProvider))
+            {
+                return new SpriteTextureDataTransfer(this) as T;
+            }
+            else
+                return this as T;
         }
 
-        public UnityEngine.Object targetObject
+        public bool HasDataProvider(Type type)
         {
-            get
+            if (type == typeof(ISpriteBoneDataProvider) ||
+                type == typeof(ISpriteMeshDataProvider) ||
+                type == typeof(ISpriteOutlineDataProvider) ||
+                type == typeof(ISpritePhysicsOutlineDataProvider) ||
+                type == typeof(ITextureDataProvider))
             {
-                return m_AssetImporter;
+                return true;
             }
-        }
-
-        public SpriteDataBase GetSpriteData(int i)
-        {
-            switch (spriteImportMode)
-            {
-                case SpriteImportMode.Multiple:
-                    if (m_SpritesMultiple.Count > i)
-                        return m_SpritesMultiple[i];
-                    break;
-                case SpriteImportMode.Single:
-                case SpriteImportMode.Polygon:
-                    return m_SpriteSingle;
-            }
-            return null;
-        }
-
-        public void Apply(SerializedObject so)
-        {
-            m_SpriteSingle.Apply(so);
-
-            var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
-            for (int i = 0; i < m_SpritesMultiple.Count; ++i)
-            {
-                if (spriteSheetSO.arraySize < m_SpritesMultiple.Count)
-                {
-                    spriteSheetSO.InsertArrayElementAtIndex(spriteSheetSO.arraySize);
-                }
-                var sp = spriteSheetSO.GetArrayElementAtIndex(i);
-                m_SpritesMultiple[i].Apply(sp);
-            }
-            while (m_SpritesMultiple.Count < spriteSheetSO.arraySize)
-            {
-                spriteSheetSO.DeleteArrayElementAtIndex(m_SpritesMultiple.Count);
-            }
-        }
-
-        public void GetTextureActualWidthAndHeight(out int width, out int height)
-        {
-            width = height = 0;
-            ((UnityTextureImporter)m_AssetImporter).GetWidthAndHeight(ref width, ref height);
+            else
+                return type.IsAssignableFrom(GetType());
         }
     }
 }

@@ -10,8 +10,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    class NodePresenter : SimpleElementPresenter
+    public class NodePresenter : SimpleElementPresenter
     {
         [SerializeField]
         protected List<PortPresenter> m_InputPorts;

@@ -15,7 +15,7 @@ namespace UnityEditor
         private float m_duration;
         private bool m_linearTexture;
 
-        public static GUIContent linearTextureContent = EditorGUIUtility.TextContent("Bypass sRGB Sampling|Texture will not be converted from gamma space to linear when sampled. Enable for IMGUI textures and non-color textures.");
+        public static GUIContent linearTextureContent = EditorGUIUtility.TrTextContent("Bypass sRGB Sampling", "Texture will not be converted from gamma space to linear when sampled. Enable for IMGUI textures and non-color textures.");
 
         // Don't show the imported movie as a separate editor
         public override bool showImportedObject { get { return false; } }

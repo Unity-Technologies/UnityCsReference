@@ -1,0 +1,72 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System.Linq;
+using UnityEngine;
+using UnityEngine.Experimental.UIElements;
+using System.Collections.Generic;
+using UnityEditor.Connect;
+
+namespace UnityEditor.Collaboration
+{
+    internal class CollabHistoryDropDown : VisualElement
+    {
+        private readonly VisualElement m_FilesContainer;
+        private readonly Label m_ToggleLabel;
+        private int m_ChangesTotal;
+
+        public CollabHistoryDropDown(ICollection<ChangeData> changes, int changesTotal, bool changesTruncated)
+        {
+            m_FilesContainer = new VisualElement();
+            m_ChangesTotal = changesTotal;
+
+            m_ToggleLabel = new Label(ToggleText(false));
+            m_ToggleLabel.AddManipulator(new Clickable(ToggleDropdown));
+            Add(m_ToggleLabel);
+
+            foreach (ChangeData change in changes)
+            {
+                m_FilesContainer.Add(new CollabHistoryDropDownItem(change.path, change.action));
+            }
+
+            if (changesTruncated)
+            {
+                m_FilesContainer.Add(new Button(ShowAllClick)
+                {
+                    text = "Show all on dashboard"
+                });
+            }
+        }
+
+        void ToggleDropdown()
+        {
+            if (Contains(m_FilesContainer))
+            {
+                Remove(m_FilesContainer);
+                m_ToggleLabel.text = ToggleText(false);
+            }
+            else
+            {
+                Add(m_FilesContainer);
+                m_ToggleLabel.text = ToggleText(true);
+            }
+        }
+
+        private string ToggleText(bool open)
+        {
+            var icon = open ? "\u25bc" : "\u25b6";
+            var change = m_ChangesTotal == 1 ? "Change" : "Changes";
+            return string.Format("{0} {1} Asset {2}", icon, m_ChangesTotal, change);
+        }
+
+        private void ShowAllClick()
+        {
+            var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudCollab);
+            var org = UnityConnect.instance.GetOrganizationForeignKey();
+            var proj = UnityConnect.instance.GetProjectGUID();
+            var url = string.Format("{0}/orgs/{1}/projects/{2}/assets", host, org, proj);
+            Application.OpenURL(url);
+        }
+    }
+}

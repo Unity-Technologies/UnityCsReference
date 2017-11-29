@@ -10,15 +10,16 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class Port : GraphElement
+    public class Port : GraphElement
     {
+        private const string k_PortColorProperty = "port-color";
+        private const string k_DisabledPortColorProperty = "disabled-port-color";
+
         protected EdgeConnector m_EdgeConnector;
 
         protected VisualElement m_ConnectorBox;
-        protected VisualElement m_ConnectorText;
+        protected Label m_ConnectorText;
 
-        protected Color m_HoleColor;
         protected VisualElement m_ConnectorBoxCap;
 
         internal Color capColor
@@ -43,15 +44,61 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             set { m_ConnectorText.text = value; }
         }
 
+        private bool m_portCapLit;
+        public bool portCapLit
+        {
+            get
+            {
+                return m_portCapLit;
+            }
+            set
+            {
+                if (value == m_portCapLit)
+                    return;
+                m_portCapLit = value;
+                UpdateCapColor();
+            }
+        }
+
         public Direction direction { get; private set; }
         public Orientation orientation { get; private set; }
+
+        private string m_VisualClass;
+        public string visualClass
+        {
+            get { return m_VisualClass; }
+            set
+            {
+                if (value == m_VisualClass)
+                    return;
+
+                // Clean whatever class we previously had
+                if (!string.IsNullOrEmpty(m_VisualClass))
+                    RemoveFromClassList(m_VisualClass);
+                else
+                    ManageTypeClassList(m_PortType, RemoveFromClassList);
+
+                m_VisualClass = value;
+
+                // Add the given class if not null or empty. Use the auto class otherwise.
+                if (!string.IsNullOrEmpty(m_VisualClass))
+                    AddToClassList(m_VisualClass);
+                else
+                    ManageTypeClassList(m_PortType, AddToClassList);
+            }
+        }
 
         private Type m_PortType;
         public Type portType
         {
             get { return m_PortType; }
-            private set
+            set
             {
+                if (m_PortType == value)
+                    return;
+
+                ManageTypeClassList(m_PortType, RemoveFromClassList);
+
                 m_PortType = value;
                 Type genericClass = typeof(PortSource<>);
                 Type constructedClass = genericClass.MakeGenericType(m_PortType);
@@ -59,7 +106,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (string.IsNullOrEmpty(m_ConnectorText.text))
                     m_ConnectorText.text = m_PortType.Name;
+
+                ManageTypeClassList(m_PortType, AddToClassList);
             }
+        }
+
+        private void ManageTypeClassList(Type type, Action<string> classListAction)
+        {
+            // If there's an visual class explicitly set, don't set an automatic one.
+            if (type == null || !string.IsNullOrEmpty(m_VisualClass))
+                return;
+
+            if (type.IsSubclassOf(typeof(Component)))
+                classListAction("typeComponent");
+            else if (type.IsSubclassOf(typeof(GameObject)))
+                classListAction("typeGameObject");
+            else
+                classListAction("type" + type.Name);
         }
 
         public EdgeConnector edgeConnector
@@ -69,7 +132,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public object source { get; set; }
 
-        private bool m_Highlight;
+        private bool m_Highlight = true;
         public bool highlight
         {
             get
@@ -93,14 +156,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_Highlight = value;
 
-                if (m_Highlight)
-                {
-                    m_ConnectorBox.AddToClassList("portHighlight");
-                }
-                else
-                {
-                    m_ConnectorBox.RemoveFromClassList("portHighlight");
-                }
+                UpdateConnectorColor();
             }
         }
 
@@ -136,6 +192,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     return portPresenter.collapsed;
 
                 return false;
+            }
+        }
+
+        StyleValue<Color> m_PortColor;
+        public Color portColor
+        {
+            get
+            {
+                return m_PortColor.GetSpecifiedValueOrDefault(new Color(240 / 255f, 240 / 255f, 240 / 255f));
+            }
+        }
+
+        StyleValue<Color> m_DisabledPortColor;
+        public Color disabledPortColor
+        {
+            get
+            {
+                return m_PortColor.GetSpecifiedValueOrDefault(new Color(70 / 255f, 70 / 255f, 70 / 255f));
             }
         }
 
@@ -269,20 +343,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return port;
         }
 
-        public virtual void UpdateClasses(bool fakeConnection)
-        {
-            PortPresenter portPresenter = GetPresenter<PortPresenter>();
-
-            if (portPresenter.connected || fakeConnection)
-            {
-                AddToClassList("connected");
-            }
-            else
-            {
-                RemoveFromClassList("connected");
-            }
-        }
-
+        // TODO: Remove when removing presenters.
+        // TODO: Remove!
         protected virtual VisualElement CreateConnector()
         {
             return new VisualElement();
@@ -298,16 +360,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorBox.AddToClassList("connector");
 
-            m_ConnectorText = this.Q(name: "type");
+            m_ConnectorText = this.Q<Label>(name: "type");
             m_ConnectorText.AddToClassList("type");
 
             m_ConnectorBoxCap = this.Q(name: "cap");
-
-            VisualElement hole = this.Q(name: "hole");
-            if (hole != null)
-            {
-                m_HoleColor = hole.style.backgroundColor;
-            }
 
             m_Connections = new HashSet<Edge>();
 
@@ -351,34 +407,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
+        // TODO: Remove when removing presenters.
         public override void OnDataChanged()
         {
             UpdateConnector();
-            UpdateClasses(false);
 
             var portPresenter = GetPresenter<PortPresenter>();
-            Type portType = portPresenter.portType;
+            Type presenterPortType = portPresenter.portType;
             Type genericClass = typeof(PortSource<>);
             try
             {
-                Type constructedClass = genericClass.MakeGenericType(portType);
+                Type constructedClass = genericClass.MakeGenericType(presenterPortType);
                 portPresenter.source = Activator.CreateInstance(constructedClass);
             }
             catch (Exception e)
             {
-                Debug.Log("Couldn't build PortSouce<" + (portType == null ? "null" : portType.Name) + "> " + e.Message);
+                Debug.Log("Couldn't build PortSouce<" + (presenterPortType == null ? "null" : presenterPortType.Name) + "> " + e.Message);
             }
 
-            if (portPresenter.highlight)
-            {
-                m_ConnectorBox.AddToClassList("portHighlight");
-            }
-            else
-            {
-                m_ConnectorBox.RemoveFromClassList("portHighlight");
-            }
-
-            string portName = string.IsNullOrEmpty(portPresenter.name) ? portType.Name : portPresenter.name;
+            string portName = string.IsNullOrEmpty(portPresenter.name) ? presenterPortType.Name : portPresenter.name;
             m_ConnectorText.text = portName;
 
             portPresenter.capabilities &= ~Capabilities.Selectable;
@@ -400,9 +447,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return m_ConnectorBox.ContainsPoint(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));
         }
 
-        internal void ResetCapColor()
+        internal void UpdateCapColor()
         {
-            m_ConnectorBoxCap.style.backgroundColor = StyleValue<Color>.nil;
+            if (portCapLit || connected)
+            {
+                m_ConnectorBoxCap.style.backgroundColor = portColor;
+            }
+            else
+            {
+                m_ConnectorBoxCap.style.backgroundColor = StyleValue<Color>.nil;
+            }
+        }
+
+        private void UpdateConnectorColor()
+        {
+            if (m_ConnectorBox == null)
+                return;
+
+            m_ConnectorBox.style.backgroundColor = highlight ? m_PortColor.value : m_DisabledPortColor.value;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -411,13 +473,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
             {
-                m_ConnectorBox.pseudoStates |= PseudoStates.Hover;
-                m_ConnectorBoxCap.pseudoStates |= PseudoStates.Hover;
+                m_ConnectorBoxCap.style.backgroundColor = portColor;
             }
             else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
             {
-                m_ConnectorBox.pseudoStates &= ~PseudoStates.Hover;
-                m_ConnectorBoxCap.pseudoStates &= ~PseudoStates.Hover;
+                UpdateCapColor();
             }
             else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
             {
@@ -425,10 +485,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 var mouseUp = (MouseUpEvent)evt;
                 if (!layout.Contains(mouseUp.localMousePosition))
                 {
-                    m_ConnectorBox.pseudoStates &= ~PseudoStates.Hover;
-                    m_ConnectorBoxCap.pseudoStates &= ~PseudoStates.Hover;
+                    UpdateCapColor();
                 }
             }
+        }
+
+        protected override void OnStyleResolved(ICustomStyle styles)
+        {
+            base.OnStyleResolved(styles);
+
+            styles.ApplyCustomProperty(k_PortColorProperty, ref m_PortColor);
+            styles.ApplyCustomProperty(k_DisabledPortColorProperty, ref m_DisabledPortColor);
+
+            UpdateConnectorColor();
         }
     }
 }

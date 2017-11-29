@@ -122,7 +122,7 @@ namespace UnityEditor
         [NativeMethod(Name = "GUIDToString", IsFreeFunction = true)]
         extern private static string GUIDToHexInternal(ref GUID value);
 
-        [NativeMethod(Name = "StringToGUID", IsFreeFunction = true)]
+        [NativeMethod(Name = "CoreStringToGUID", IsFreeFunction = true)]
         extern private static GUID HexToGUIDInternal(string hex);
 
         [NativeMethod(Name = "GenerateGUID", IsFreeFunction = true)]

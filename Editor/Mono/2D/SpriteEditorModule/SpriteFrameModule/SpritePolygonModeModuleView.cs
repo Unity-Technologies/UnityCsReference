@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
+using UnityEditor.Experimental.U2D;
 
 namespace UnityEditor
 {
@@ -13,10 +14,10 @@ namespace UnityEditor
     {
         private static class SpritePolygonModeStyles
         {
-            public static readonly GUIContent changeShapeLabel = EditorGUIUtility.TextContent("Change Shape");
-            public static readonly GUIContent sidesLabel = EditorGUIUtility.TextContent("Sides");
-            public static readonly GUIContent polygonChangeShapeHelpBoxContent = EditorGUIUtility.TextContent("Sides can only be either 0 or anything between 3 and 128");
-            public static readonly GUIContent changeButtonLabel = EditorGUIUtility.TextContent("Change|Change to the new number of sides");
+            public static readonly GUIContent changeShapeLabel = EditorGUIUtility.TrTextContent("Change Shape");
+            public static readonly GUIContent sidesLabel = EditorGUIUtility.TrTextContent("Sides");
+            public static readonly GUIContent polygonChangeShapeHelpBoxContent = EditorGUIUtility.TrTextContent("Sides can only be either 0 or anything between 3 and 128");
+            public static readonly GUIContent changeButtonLabel = EditorGUIUtility.TrTextContent("Change", "Change to the new number of sides");
         }
 
         private const int k_PolygonChangeShapeWindowMargin = EditorGUI.kWindowToolbarHeight;
@@ -27,16 +28,16 @@ namespace UnityEditor
         private Rect m_PolygonChangeShapeWindowRect = new Rect(0, k_PolygonChangeShapeWindowMargin, k_PolygonChangeShapeWindowWidth, k_PolygonChangeShapeWindowHeight);
 
         // overrides for SpriteFrameModuleViewBase
-        public override void OnPostGUI()
+        public override void DoPostGUI()
         {
             // Polygon change shape window
             DoPolygonChangeShapeWindow();
-            base.OnPostGUI();
+            base.DoPostGUI();
         }
 
-        public override void DoTextureGUI()
+        public override void DoMainGUI()
         {
-            base.DoTextureGUI();
+            base.DoMainGUI();
             DrawGizmos();
 
             HandleGizmoMode();
@@ -51,7 +52,7 @@ namespace UnityEditor
                 spriteEditor.HandleSpriteSelection();
         }
 
-        public override void DrawToolbarGUI(Rect toolbarRect)
+        public override void DoToolbarGUI(Rect toolbarRect)
         {
             using (new EditorGUI.DisabledScope(spriteEditor.editingDisabled))
             {
@@ -71,14 +72,14 @@ namespace UnityEditor
                 return;
             for (int i = 0; i < spriteCount; i++)
             {
-                List<SpriteOutline> outline = GetSpriteOutlineAt(i);
+                List<Vector2[]> outline = GetSpriteOutlineAt(i);
                 Vector2 offset = GetSpriteRectAt(i).size * 0.5f;
                 if (outline.Count > 0)
                 {
                     SpriteEditorUtility.BeginLines(new Color(0.75f, 0.75f, 0.75f, 0.75f));
                     for (int j = 0; j < outline.Count; ++j)
                     {
-                        for (int k = 0, last = outline[j].Count - 1; k < outline[j].Count; last = k, ++k)
+                        for (int k = 0, last = outline[j].Length - 1; k < outline[j].Length; last = k, ++k)
                             SpriteEditorUtility.DrawLine(outline[j][last] + offset, outline[j][k] + offset);
                     }
                     SpriteEditorUtility.EndLines();

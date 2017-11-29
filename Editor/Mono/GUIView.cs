@@ -113,7 +113,6 @@ namespace UnityEditor
             Internal_SetWantsMouseEnterLeaveWindow(m_EventInterests.wantsMouseMove);
 
             panel.visualTree.SetSize(windowPosition.size);
-
             m_BackgroundValid = false;
         }
 
@@ -198,6 +197,7 @@ namespace UnityEditor
         }
 
         protected virtual void OldOnGUI() {}
+
         // Without leaving this in here for MonoBehaviour::DoGUI(), GetMethod(MonoScriptCache::kGUI) will return null.
         // In that case, commands are not delegated (e.g., keyboard-based delete in Hierarchy/Project)
         protected virtual void OnGUI() {}
@@ -220,6 +220,7 @@ namespace UnityEditor
             panel.visualTree.SetSize(windowPosition.size);
             if (positionChanged != null)
                 positionChanged(this);
+
             Repaint();
         }
 

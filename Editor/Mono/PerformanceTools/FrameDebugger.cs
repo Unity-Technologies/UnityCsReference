@@ -348,7 +348,7 @@ namespace UnityEditor
             var wnd = GetWindow(typeof(FrameDebuggerWindow)) as FrameDebuggerWindow;
             if (wnd != null)
             {
-                wnd.titleContent = EditorGUIUtility.TextContent("Frame Debug");
+                wnd.titleContent = EditorGUIUtility.TrTextContent("Frame Debug");
             }
             return wnd;
         }
@@ -983,7 +983,7 @@ namespace UnityEditor
             {
                 e.Use();
                 var menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Copy value"), false, delegate
+                menu.AddItem(EditorGUIUtility.TrTextContent("Copy value"), false, delegate
                     {
                         var str = string.Empty;
                         if (value is Vector4)
@@ -1415,9 +1415,9 @@ namespace UnityEditor
             public GUIStyle entryOdd = "OL EntryBackOdd";
             public GUIStyle rowText = "OL Label";
             public GUIStyle rowTextRight = new GUIStyle("OL Label");
-            public GUIContent recordButton = new GUIContent(EditorGUIUtility.TextContent("Record|Record profiling information"));
-            public GUIContent prevFrame = new GUIContent(EditorGUIUtility.IconContent("Profiler.PrevFrame", "|Go back one frame"));
-            public GUIContent nextFrame = new GUIContent(EditorGUIUtility.IconContent("Profiler.NextFrame", "|Go one frame forwards"));
+            public GUIContent recordButton = new GUIContent(EditorGUIUtility.TrTextContent("Record", "Record profiling information"));
+            public GUIContent prevFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame"));
+            public GUIContent nextFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards"));
 
             public GUIContent[] headerContent;
             public readonly string[] batchBreakCauses;
@@ -1425,30 +1425,30 @@ namespace UnityEditor
             public static readonly string[] s_ColumnNames = new[] { "#", "Type", "Vertices", "Indices" };
             public static readonly GUIContent[] mrtLabels = new[]
             {
-                EditorGUIUtility.TextContent("RT 0|Show render target #0"),
-                EditorGUIUtility.TextContent("RT 1|Show render target #1"),
-                EditorGUIUtility.TextContent("RT 2|Show render target #2"),
-                EditorGUIUtility.TextContent("RT 3|Show render target #3"),
-                EditorGUIUtility.TextContent("RT 4|Show render target #4"),
-                EditorGUIUtility.TextContent("RT 5|Show render target #5"),
-                EditorGUIUtility.TextContent("RT 6|Show render target #6"),
-                EditorGUIUtility.TextContent("RT 7|Show render target #7")
+                EditorGUIUtility.TrTextContent("RT 0", "Show render target #0"),
+                EditorGUIUtility.TrTextContent("RT 1", "Show render target #1"),
+                EditorGUIUtility.TrTextContent("RT 2", "Show render target #2"),
+                EditorGUIUtility.TrTextContent("RT 3", "Show render target #3"),
+                EditorGUIUtility.TrTextContent("RT 4", "Show render target #4"),
+                EditorGUIUtility.TrTextContent("RT 5", "Show render target #5"),
+                EditorGUIUtility.TrTextContent("RT 6", "Show render target #6"),
+                EditorGUIUtility.TrTextContent("RT 7", "Show render target #7")
             };
-            public static readonly GUIContent depthLabel = EditorGUIUtility.TextContent("Depth|Show depth buffer");
+            public static readonly GUIContent depthLabel = EditorGUIUtility.TrTextContent("Depth", "Show depth buffer");
             public static readonly GUIContent[] channelLabels = new[]
             {
-                EditorGUIUtility.TextContent("All|Show all (RGB) color channels"),
-                EditorGUIUtility.TextContent("R|Show red channel only"),
-                EditorGUIUtility.TextContent("G|Show green channel only"),
-                EditorGUIUtility.TextContent("B|Show blue channel only"),
-                EditorGUIUtility.TextContent("A|Show alpha channel only")
+                EditorGUIUtility.TrTextContent("All", "Show all (RGB) color channels"),
+                EditorGUIUtility.TrTextContent("R", "Show red channel only"),
+                EditorGUIUtility.TrTextContent("G", "Show green channel only"),
+                EditorGUIUtility.TrTextContent("B", "Show blue channel only"),
+                EditorGUIUtility.TrTextContent("A", "Show alpha channel only")
             };
-            public static readonly GUIContent channelHeader = EditorGUIUtility.TextContent("Channels|Which render target color channels to show");
-            public static readonly GUIContent levelsHeader = EditorGUIUtility.TextContent("Levels|Render target display black/white intensity levels");
-            public static readonly GUIContent causeOfNewDrawCallLabel = EditorGUIUtility.TextContent("Why this draw call can't be batched with the previous one");
-            public static readonly GUIContent selectShaderTooltip = EditorGUIUtility.TextContent("|Click to select shader");
-            public static readonly GUIContent copyToClipboardTooltip = EditorGUIUtility.TextContent("|Click to copy shader and keywords text to clipboard.");
-            public static readonly GUIContent arrayValuePopupButton = new GUIContent("...");
+            public static readonly GUIContent channelHeader = EditorGUIUtility.TrTextContent("Channels", "Which render target color channels to show");
+            public static readonly GUIContent levelsHeader = EditorGUIUtility.TrTextContent("Levels", "Render target display black/white intensity levels");
+            public static readonly GUIContent causeOfNewDrawCallLabel = EditorGUIUtility.TrTextContent("Why this draw call can't be batched with the previous one");
+            public static readonly GUIContent selectShaderTooltip = EditorGUIUtility.TrTextContent("", "Click to select shader");
+            public static readonly GUIContent copyToClipboardTooltip = EditorGUIUtility.TrTextContent("", "Click to copy shader and keywords text to clipboard.");
+            public static readonly GUIContent arrayValuePopupButton = EditorGUIUtility.TrTextContent("...");
 
             public Styles()
             {
@@ -1522,7 +1522,7 @@ namespace UnityEditor
                     }
 
                     var menu = new GenericMenu();
-                    menu.AddItem(new GUIContent("Copy value"), false, delegate
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy value"), false, delegate
                         {
                             EditorGUIUtility.systemCopyBuffer = allText;
                         });

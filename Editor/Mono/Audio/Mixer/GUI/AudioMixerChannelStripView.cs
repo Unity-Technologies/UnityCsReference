@@ -991,8 +991,8 @@ namespace UnityEditor
                 var effect = group.effects[effectSlotIndex];
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsReceive() && !effect.IsDuckVolume())
                 {
-                    pm.AddItem(new GUIContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { effect.enableWetMix = !effect.enableWetMix; });
-                    pm.AddItem(new GUIContent("Bypass"), effect.bypass, delegate { effect.bypass = !effect.bypass; m_Controller.UpdateBypass(); InspectorWindow.RepaintAllInspectors(); });
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate { effect.enableWetMix = !effect.enableWetMix; });
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate { effect.bypass = !effect.bypass; m_Controller.UpdateBypass(); InspectorWindow.RepaintAllInspectors(); });
                     pm.AddSeparator("");
                 }
 
@@ -1011,7 +1011,7 @@ namespace UnityEditor
                 if (!effect.IsAttenuation())
                 {
                     pm.AddSeparator("");
-                    pm.AddItem(new GUIContent("Remove"), false, RemoveEffectPopupCallback, new EffectContext(m_Controller, groups, effectSlotIndex, ""));
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, RemoveEffectPopupCallback, new EffectContext(m_Controller, groups, effectSlotIndex, ""));
                     bool insertedSeparator = false;
                     if (effect.IsSend())
                     {
@@ -1022,7 +1022,7 @@ namespace UnityEditor
                                 insertedSeparator = true;
                                 pm.AddSeparator("");
                             }
-                            pm.AddItem(new GUIContent("Disconnect from '" + effect.GetSendTargetDisplayString(effectMap) + "'") , false, ConnectSendPopupCallback, new ConnectSendContext(effect, null));
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Disconnect from '" + effect.GetSendTargetDisplayString(effectMap) + "'") , false, ConnectSendPopupCallback, new ConnectSendContext(effect, null));
                         }
 
                         if (!insertedSeparator)
@@ -1290,7 +1290,7 @@ namespace UnityEditor
             GUI.Label(rect, string.Format("{0:F1} dB", vu_level), styles.totalVULevel);
         }
 
-        GUIContent addText = new GUIContent("Add..");
+        GUIContent addText = EditorGUIUtility.TrTextContent("Add..");
         void DoEffectList(ChannelStripParams p, bool selected, ref int highlightEffectIndex, ref Dictionary<AudioMixerEffectController, PatchSlot> patchslots, bool showBusConnectionsOfSelection)
         {
             Event evt = Event.current;

@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -38,8 +40,51 @@ namespace UnityEditor
                 projectWasLoaded();
         }
 
+        [RequiredByNativeCode]
+        static bool Internal_EditorApplicationWantsToQuit()
+        {
+            if (wantsToQuit == null)
+                return true;
+
+            foreach (Func<bool> continueQuit in wantsToQuit.GetInvocationList())
+            {
+                try
+                {
+                    if (!continueQuit())
+                        return false;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogWarningFormat("EditorApplication.wantsToQuit: Exception raised during quit event."
+                        + Environment.NewLine +
+                        "Check the exception error's callstack to find out which event handler threw the exception.");
+                    Debug.LogException(exception);
+
+                    if (InternalEditorUtility.isHumanControllingUs)
+                    {
+                        string st = exception.StackTrace;
+                        StringBuilder dialogText = new StringBuilder("An exception was thrown here:");
+                        dialogText.AppendLine(Environment.NewLine);
+                        dialogText.AppendLine(st.Substring(0, st.IndexOf(Environment.NewLine)));
+
+                        bool abortQuit = !EditorUtility.DisplayDialog("Error while quitting",
+                                dialogText.ToString(),
+                                "Ignore", "Cancel Quit");
+
+                        if (abortQuit)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         static void Internal_EditorApplicationQuit()
         {
+            if (quitting != null)
+                quitting();
+
             if (editorApplicationQuit != null)
                 editorApplicationQuit();
         }
@@ -93,6 +138,10 @@ namespace UnityEditor
 
         // Delegate for generic updates.
         public static CallbackFunction update;
+
+        public static event Func<bool> wantsToQuit;
+
+        public static event Action quitting;
 
         public static CallbackFunction delayCall;
 

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditorInternal;
 using System;
@@ -12,6 +13,7 @@ using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
+    [UsedByNativeCode]
     internal class PackageImport : EditorWindow
     {
         [SerializeField]  private ImportPackageItem[] m_ImportPackageItems;
@@ -57,6 +59,7 @@ namespace UnityEditor
 
 
         // Invoked from menu
+        [UsedByNativeCode]
         public static void ShowImportPackage(string packagePath, ImportPackageItem[] items, string packageIconPath, bool allowReInstall)
         {
             if (!ValidateInput(items))
@@ -216,12 +219,12 @@ namespace UnityEditor
             GUILayout.Space(8);
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
-            if (GUILayout.Button(EditorGUIUtility.TextContent("All"), GUILayout.Width(50)))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("All"), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.All);
             }
 
-            if (GUILayout.Button(EditorGUIUtility.TextContent("None"), GUILayout.Width(50)))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("None"), GUILayout.Width(50)))
             {
                 m_Tree.SetAllEnabled(PackageImportTreeView.EnabledState.None);
             }
@@ -229,13 +232,13 @@ namespace UnityEditor
             ReInstallToggle();
 
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(EditorGUIUtility.TextContent("Cancel")))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
                 PopupWindowWithoutFocus.Hide();
                 Close();
                 GUIUtility.ExitGUI();
             }
-            if (GUILayout.Button(EditorGUIUtility.TextContent("Import")))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Import")))
             {
                 bool doImport = true;
                 if (doReInstall)

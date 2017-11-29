@@ -42,6 +42,7 @@ namespace UnityEngine
         [FreeFunction(Name = "RendererScripting::GetPropertyBlock", HasExplicitThis = true)] extern internal void Internal_GetPropertyBlock([NotNull] MaterialPropertyBlock dest);
         [FreeFunction(Name = "RendererScripting::SetPropertyBlockMaterialIndex", HasExplicitThis = true)] extern internal void Internal_SetPropertyBlockMaterialIndex(MaterialPropertyBlock properties, int materialIndex);
         [FreeFunction(Name = "RendererScripting::GetPropertyBlockMaterialIndex", HasExplicitThis = true)] extern internal void Internal_GetPropertyBlockMaterialIndex([NotNull] MaterialPropertyBlock dest, int materialIndex);
+        [FreeFunction(Name = "RendererScripting::HasPropertyBlock", HasExplicitThis = true)] extern public bool HasPropertyBlock();
 
         public void SetPropertyBlock(MaterialPropertyBlock properties) { Internal_SetPropertyBlock(properties); }
         public void SetPropertyBlock(MaterialPropertyBlock properties, int materialIndex) { Internal_SetPropertyBlockMaterialIndex(properties, materialIndex); }
@@ -256,5 +257,6 @@ namespace UnityEngine
     public partial class MeshRenderer : Renderer
     {
         extern public Mesh additionalVertexStreams { get; set; }
+        extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
     }
 }

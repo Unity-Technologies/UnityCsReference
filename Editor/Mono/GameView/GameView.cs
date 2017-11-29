@@ -81,16 +81,16 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static GUIContent gizmosContent = EditorGUIUtility.TextContent("Gizmos");
-            public static GUIContent zoomSliderContent = EditorGUIUtility.TextContent("Scale|Size of the game view on the screen.");
-            public static GUIContent maximizeOnPlayContent = EditorGUIUtility.TextContent("Maximize On Play");
-            public static GUIContent muteContent = EditorGUIUtility.TextContent("Mute Audio");
-            public static GUIContent statsContent = EditorGUIUtility.TextContent("Stats");
-            public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TextContent("Frame Debugger On");
-            public static GUIContent loadRenderDocContent = EditorGUIUtility.TextContent("Load RenderDoc");
-            public static GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TextContent("Warn if No Cameras Rendering");
-            public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TextContent("Clear Every Frame in Edit Mode");
-            public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TextContent("Low Resolution Aspect Ratios");
+            public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
+            public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
+            public static GUIContent maximizeOnPlayContent = EditorGUIUtility.TrTextContent("Maximize On Play");
+            public static GUIContent muteContent = EditorGUIUtility.TrTextContent("Mute Audio");
+            public static GUIContent statsContent = EditorGUIUtility.TrTextContent("Stats");
+            public static GUIContent frameDebuggerOnContent = EditorGUIUtility.TrTextContent("Frame Debugger On");
+            public static GUIContent loadRenderDocContent = EditorGUIUtility.TrTextContent("Load RenderDoc");
+            public static GUIContent noCameraWarningContextMenuContent = EditorGUIUtility.TrTextContent("Warn if No Cameras Rendering");
+            public static GUIContent clearEveryFrameContextMenuContent = EditorGUIUtility.TrTextContent("Clear Every Frame in Edit Mode");
+            public static GUIContent lowResAspectRatiosContextMenuContent = EditorGUIUtility.TrTextContent("Low Resolution Aspect Ratios");
             public static GUIContent renderdocContent;
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle gameViewBackgroundStyle;
@@ -99,7 +99,7 @@ namespace UnityEditor
             {
                 gameViewBackgroundStyle = (GUIStyle)"GameViewBackground";
                 gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
-                renderdocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc.");
+                renderdocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
             }
         };
 

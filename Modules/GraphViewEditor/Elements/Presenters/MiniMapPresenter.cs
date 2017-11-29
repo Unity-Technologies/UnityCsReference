@@ -8,8 +8,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    class MiniMapPresenter : GraphElementPresenter
+    public class MiniMapPresenter : GraphElementPresenter
     {
         public float maxHeight;
         public float maxWidth;

@@ -11,8 +11,8 @@ namespace UnityEditor
 {
     internal class ColorPicker : EditorWindow
     {
-        // a sufficient amount of stops for e.g., a physically-based sunlight source
-        private const float k_MaxExposureStops = 31f;
+        // the default max amount of stops to use for the intensity slider; same as in Photoshop/Affinity
+        private const float k_DefaultExposureSliderMax = 10f;
 
         public static string presetsEditorPrefID { get { return "Color"; } }
 
@@ -78,8 +78,13 @@ namespace UnityEditor
         [SerializeField]
         GUIView m_DelegateView;
 
+        private Action<Color> m_ColorChangedCallback;
+
         [SerializeField]
         int m_ModalUndoGroup = -1;
+
+        // the exposure slider range can dynamically grow if needed per color picker "session"
+        private float m_ExposureSliderMax = k_DefaultExposureSliderMax;
 
         PresetLibraryEditor<ColorPresetLibrary> m_ColorLibraryEditor;
         PresetLibraryEditorState m_ColorLibraryEditorState;
@@ -243,7 +248,7 @@ namespace UnityEditor
                 case SliderMode.RGBFloat:
                     value = m_Color.GetColorChannelHdr(channel);
                     var maxRgbNormalized = ((Color)m_Color.color).maxColorComponent;
-                    var sliderMax = m_HDR ? m_Color.exposureAdjustedColor.maxColorComponent / maxRgbNormalized : 1f;
+                    var sliderMax = m_HDR && m_Color.exposureAdjustedColor.maxColorComponent > 1f ? m_Color.exposureAdjustedColor.maxColorComponent / maxRgbNormalized : 1f;
                     var textFieldMax = m_HDR ? float.MaxValue : 1f;
                     EditorGUI.BeginChangeCheck();
                     value = EditorGUILayout.SliderWithTexture(
@@ -451,10 +456,10 @@ namespace UnityEditor
             public static readonly GUIStyle exposureSwatch = "ColorPickerExposureSwatch";
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
 
-            public static readonly GUIContent eyeDropper = EditorGUIUtility.IconContent("EyeDropper.Large", "Pick a color from the screen.");
-            public static readonly GUIContent exposureValue = EditorGUIUtility.TextContent("Intensity|Number of stops to over- or under-expose the color.");
-            public static readonly GUIContent hexLabel = EditorGUIUtility.TextContent("Hexadecimal");
-            public static readonly GUIContent presetsToggle = EditorGUIUtility.TextContent("Swatches");
+            public static readonly GUIContent eyeDropper = EditorGUIUtility.TrIconContent("EyeDropper.Large", "Pick a color from the screen.");
+            public static readonly GUIContent exposureValue = EditorGUIUtility.TrTextContent("Intensity", "Number of stops to over- or under-expose the color.");
+            public static readonly GUIContent hexLabel = EditorGUIUtility.TrTextContent("Hexadecimal");
+            public static readonly GUIContent presetsToggle = EditorGUIUtility.TrTextContent("Swatches");
 
             public static readonly ScalableGUIContent originalColorSwatchFill =
                 new ScalableGUIContent(string.Empty, "The original color. Click this swatch to reset the color picker to this value.", "ColorPicker-OriginalColor");
@@ -462,11 +467,15 @@ namespace UnityEditor
                 new ScalableGUIContent(string.Empty, "The new color.", "ColorPicker-CurrentColor");
             public static readonly ScalableGUIContent hueDialThumbFill = new ScalableGUIContent("ColorPicker-HueRing-Thumb-Fill");
 
+            // force load the checker background from the light skin
+            public static readonly Texture2D alphaSliderCheckerBackground =
+                EditorGUIUtility.LoadRequired("Previews/Textures/textureChecker.png") as Texture2D;
+
             public static readonly GUIContent[] sliderModeLabels = new[]
             {
-                EditorGUIUtility.TextContent("RGB 0-255"),
-                EditorGUIUtility.TextContent("RGB 0-1.0"),
-                EditorGUIUtility.TextContent("HSV")
+                EditorGUIUtility.TrTextContent("RGB 0-255"),
+                EditorGUIUtility.TrTextContent("RGB 0-1.0"),
+                EditorGUIUtility.TrTextContent("HSV")
             };
 
             public static readonly int[] sliderModeValues = new[] { 0, 1, 2 };
@@ -531,7 +540,8 @@ namespace UnityEditor
 
             if (GUILayout.Button(Styles.eyeDropper, GUIStyle.none, GUILayout.Width(40), GUILayout.ExpandWidth(false)))
             {
-                EyeDropper.Start(m_Parent);
+                GUIUtility.keyboardControl = 0;
+                EyeDropper.Start(m_Parent, false);
                 m_ColorBoxMode = ColorBoxMode.EyeDropper;
                 GUIUtility.ExitGUI();
             }
@@ -548,16 +558,19 @@ namespace UnityEditor
                 x = rect.xMax - swatchSize.x
             };
 
-            var oldColor = GUI.contentColor;
+            var backgroundColor = GUI.backgroundColor;
+            var contentColor = GUI.contentColor;
 
             var id = GUIUtility.GetControlID(FocusType.Passive);
             if (Event.current.type == EventType.Repaint)
             {
+                GUI.backgroundColor = m_Color.exposureAdjustedColor.a == 1f ? Color.clear : Color.white;
                 GUI.contentColor = m_Color.exposureAdjustedColor;
                 Styles.currentColorSwatch.Draw(swatchRect, Styles.currentColorSwatchFill, id);
             }
 
             swatchRect.x -= swatchRect.width;
+            GUI.backgroundColor = m_Color.originalColor.a == 1f ? Color.clear : Color.white;
             GUI.contentColor = m_Color.originalColor;
             if (GUI.Button(swatchRect, Styles.originalColorSwatchFill, Styles.originalColorSwatch))
             {
@@ -566,7 +579,8 @@ namespace UnityEditor
                 OnColorChanged();
             }
 
-            GUI.contentColor = oldColor;
+            GUI.backgroundColor = backgroundColor;
+            GUI.contentColor = contentColor;
 
             GUILayout.EndHorizontal();
         }
@@ -691,7 +705,7 @@ namespace UnityEditor
                         width = backgroundRect.width / backgroundRect.height, // texture aspect is 1:1
                         height = 1f
                     };
-                    Graphics.DrawTexture(backgroundRect, EditorGUI.transparentCheckerTexture, uvLayout, 0, 0, 0, 0);
+                    Graphics.DrawTexture(backgroundRect, Styles.alphaSliderCheckerBackground, uvLayout, 0, 0, 0, 0);
                 }
 
                 EditorGUI.BeginChangeCheck();
@@ -738,9 +752,11 @@ namespace UnityEditor
                 EditorStyles.label.CalcSize(Styles.exposureValue).x
                 + EditorStyles.label.margin.right;
 
+            var sliderPosition = GUILayoutUtility.GetRect(0f, EditorGUIUtility.singleLineHeight);
+
             EditorGUI.BeginChangeCheck();
-            var exposureValue = EditorGUILayout.Slider(
-                    Styles.exposureValue, m_Color.exposureValue, -k_MaxExposureStops, k_MaxExposureStops
+            var exposureValue = EditorGUI.Slider(
+                    sliderPosition, Styles.exposureValue, m_Color.exposureValue, -m_ExposureSliderMax, m_ExposureSliderMax, float.MinValue, float.MaxValue
                     );
             if (EditorGUI.EndChangeCheck())
             {
@@ -784,7 +800,7 @@ namespace UnityEditor
                     )
                 {
                     m_Color.exposureValue =
-                        Mathf.Clamp(m_Color.exposureValue + stop, -k_MaxExposureStops, k_MaxExposureStops);
+                        Mathf.Clamp(m_Color.exposureValue + stop, -m_ExposureSliderMax, m_ExposureSliderMax);
                     OnColorChanged();
                 }
 
@@ -830,14 +846,14 @@ namespace UnityEditor
                     case "EyeDropperClicked":
                         m_ColorBoxMode = ColorBoxMode.HSV;
                         Color col = EyeDropper.GetLastPickedColor();
-                        m_Color.SetColorChannel(RgbaChannel.R, col.r);
-                        m_Color.SetColorChannel(RgbaChannel.G, col.g);
-                        m_Color.SetColorChannel(RgbaChannel.B, col.b);
+                        m_Color.SetColorChannelHdr(RgbaChannel.R, col.r);
+                        m_Color.SetColorChannelHdr(RgbaChannel.G, col.g);
+                        m_Color.SetColorChannelHdr(RgbaChannel.B, col.b);
+                        m_Color.SetColorChannelHdr(RgbaChannel.A, col.a);
                         OnColorChanged();
                         break;
                     case "EyeDropperCancelled":
-                        Repaint();
-                        m_ColorBoxMode = ColorBoxMode.HSV;
+                        OnEyedropperCancelled();
                         break;
                 }
             }
@@ -888,11 +904,20 @@ namespace UnityEditor
                 switch (Event.current.keyCode)
                 {
                     case KeyCode.Escape:
-                        Undo.RevertAllDownToGroup(m_ModalUndoGroup);
-                        m_Color.Reset();
-                        OnColorChanged(false);
-                        Close();
-                        GUIUtility.ExitGUI();
+                        // eyedropper GUIView never gets keyboard focus from ColorPicker, so esc to exit it must be handled here
+                        if (m_ColorBoxMode == ColorBoxMode.EyeDropper)
+                        {
+                            EyeDropper.End();
+                            OnEyedropperCancelled();
+                        }
+                        else
+                        {
+                            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+                            m_Color.Reset();
+                            OnColorChanged(false);
+                            Close();
+                            GUIUtility.ExitGUI();
+                        }
                         break;
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
@@ -907,6 +932,12 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = 0;
                 Repaint();
             }
+        }
+
+        void OnEyedropperCancelled()
+        {
+            Repaint();
+            m_ColorBoxMode = ColorBoxMode.HSV;
         }
 
         void SetHeight(float newHeight)
@@ -996,15 +1027,20 @@ namespace UnityEditor
         {
             m_OldAlpha = -1f;
             m_ColorSpaceBoxDirty = true;
-            if (m_DelegateView == null)
-                return;
-
-            var e = EditorGUIUtility.CommandEvent("ColorPickerChanged");
-            if (!m_IsOSColorPicker)
-                Repaint();
-            m_DelegateView.SendEvent(e);
-            if (!m_IsOSColorPicker && exitGUI)
-                GUIUtility.ExitGUI();
+            m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_Color.exposureValue);
+            if (m_DelegateView != null)
+            {
+                var e = EditorGUIUtility.CommandEvent("ColorPickerChanged");
+                if (!m_IsOSColorPicker)
+                    Repaint();
+                m_DelegateView.SendEvent(e);
+                if (!m_IsOSColorPicker && exitGUI)
+                    GUIUtility.ExitGUI();
+            }
+            if (m_ColorChangedCallback != null)
+            {
+                m_ColorChangedCallback(color);
+            }
         }
 
         private void SetColor(Color c)
@@ -1022,19 +1058,26 @@ namespace UnityEditor
             }
         }
 
-        public static void Show(GUIView viewToUpdate, Color col)
+        public static void Show(GUIView viewToUpdate, Color col, bool showAlpha = true, bool hdr = false)
         {
-            Show(viewToUpdate, col, true, false);
+            Show(viewToUpdate, null, col, showAlpha, hdr);
         }
 
-        public static void Show(GUIView viewToUpdate, Color col, bool showAlpha, bool hdr)
+        public static void Show(Action<Color> colorChangedCallback, Color col, bool showAlpha = true, bool hdr = false)
+        {
+            Show(null, colorChangedCallback, col, showAlpha, hdr);
+        }
+
+        static void Show(GUIView viewToUpdate, Action<Color> colorChangedCallback, Color col, bool showAlpha, bool hdr)
         {
             var cp = instance;
             cp.m_HDR = hdr;
             cp.m_Color = new ColorMutator(col);
             cp.m_ShowAlpha = showAlpha;
             cp.m_DelegateView = viewToUpdate;
+            cp.m_ColorChangedCallback = colorChangedCallback;
             cp.m_ModalUndoGroup = Undo.GetCurrentGroup();
+            cp.m_ExposureSliderMax = Mathf.Max(cp.m_ExposureSliderMax, cp.m_Color.exposureValue);
             originalKeyboardControl = GUIUtility.keyboardControl;
 
             // For now we enforce our Color Picker for hdr colors
@@ -1045,7 +1088,7 @@ namespace UnityEditor
                 OSColorPicker.Show(showAlpha);
             else
             {
-                cp.titleContent = hdr ? EditorGUIUtility.TextContent("HDR Color") : EditorGUIUtility.TextContent("Color");
+                cp.titleContent = hdr ? EditorGUIUtility.TrTextContent("HDR Color") : EditorGUIUtility.TrTextContent("Color");
                 float height = EditorPrefs.GetInt("CPickerHeight", (int)cp.position.height);
                 cp.minSize = new Vector2(Styles.fixedWindowWidth, height);
                 cp.maxSize = new Vector2(Styles.fixedWindowWidth, height);
@@ -1146,21 +1189,45 @@ namespace UnityEditor
         static EyeDropper s_Instance;
         private static Vector2 s_PickCoordinates = Vector2.zero;
         private bool m_Focused = false;
+        private Action<Color> m_ColorPickedCallback;
 
-
-        public Action<Color> m_OnColorPicked;
-
-        public static void Start(GUIView viewToUpdate)
+        public static void Start(GUIView viewToUpdate, bool stealFocus = true)
         {
-            get.Show(viewToUpdate, null);
+            Start(viewToUpdate, null, stealFocus);
         }
 
-        public static void Start(Action<Color> onColorPicked)
+        public static void Start(Action<Color> colorPickedCallback, bool stealFocus = true)
         {
-            get.Show(null, onColorPicked);
+            Start(null, colorPickedCallback, stealFocus);
         }
 
-        static EyeDropper get
+        static void Start(GUIView viewToUpdate, Action<Color> colorPickedCallback, bool stealFocus)
+        {
+            instance.m_DelegateView = viewToUpdate;
+            instance.m_ColorPickedCallback = colorPickedCallback;
+            ContainerWindow win = CreateInstance<ContainerWindow>();
+            win.m_DontSaveToLayout = true;
+            win.title = "EyeDropper";
+            win.hideFlags = HideFlags.DontSave;
+            win.rootView = instance;
+            win.Show(ShowMode.PopupMenu, true, false);
+            instance.AddToAuxWindowList();
+            win.SetInvisible();
+            instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
+            win.position = new Rect(-kDummyWindowSize / 2, -kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
+            instance.wantsMouseMove = true;
+            instance.StealMouseCapture();
+            if (stealFocus)
+                instance.Focus();
+        }
+
+        public static void End()
+        {
+            if (s_Instance != null)
+                s_Instance.window.Close();
+        }
+
+        static EyeDropper instance
         {
             get
             {
@@ -1173,24 +1240,6 @@ namespace UnityEditor
         EyeDropper()
         {
             s_Instance = this;
-        }
-
-        void Show(GUIView sourceView, Action<Color> onColorPicked)
-        {
-            m_DelegateView = sourceView;
-            m_OnColorPicked = onColorPicked;
-            ContainerWindow win = CreateInstance<ContainerWindow>();
-            win.m_DontSaveToLayout = true;
-            win.title = "EyeDropper";
-            win.hideFlags = HideFlags.DontSave;
-            win.rootView = this;
-            win.Show(ShowMode.PopupMenu, true, false);
-            AddToAuxWindowList();
-            win.SetInvisible();
-            SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));
-            win.position = new Rect(-kDummyWindowSize / 2, -kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
-            wantsMouseMove = true;
-            StealMouseCapture();
         }
 
         public static Color GetPickedColor()
@@ -1215,12 +1264,12 @@ namespace UnityEditor
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            Texture2D preview = get.m_Preview;
+            Texture2D preview = instance.m_Preview;
             int width = (int)Mathf.Ceil(position.width / kPixelSize);
             int height = (int)Mathf.Ceil(position.height / kPixelSize);
             if (preview == null)
             {
-                get.m_Preview = preview = ColorPicker.MakeTexture(width, height);
+                instance.m_Preview = preview = ColorPicker.MakeTexture(width, height);
                 preview.filterMode = FilterMode.Point;
             }
             if (preview.width != width || preview.height != height)
@@ -1267,7 +1316,7 @@ namespace UnityEditor
                 case EventType.MouseMove:
                     s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
                     StealMouseCapture();
-                    SendEvent("EyeDropperUpdate", true);
+                    SendEvent("EyeDropperUpdate", true, false);
                     break;
                 case EventType.MouseDown:
                     if (Event.current.button == 0)
@@ -1278,32 +1327,35 @@ namespace UnityEditor
                         // That might cause invalid picked color.
                         window.Close();
                         s_LastPickedColor = GetPickedColor();
+                        Event.current.Use();
                         SendEvent("EyeDropperClicked", true);
+                        if (m_ColorPickedCallback != null)
+                        {
+                            m_ColorPickedCallback(s_LastPickedColor);
+                        }
                     }
                     break;
                 case EventType.KeyDown:
                     if (Event.current.keyCode == KeyCode.Escape)
                     {
                         window.Close();
+                        Event.current.Use();
                         SendEvent("EyeDropperCancelled", true);
                     }
                     break;
             }
         }
 
-        void SendEvent(string eventName, bool exitGUI)
+        void SendEvent(string eventName, bool exitGUI, bool focusOther = true)
         {
-            if (m_DelegateView)
+            if (m_DelegateView != null)
             {
-                Event e = EditorGUIUtility.CommandEvent(eventName);
+                var e = EditorGUIUtility.CommandEvent(eventName);
+                if (focusOther)
+                    m_DelegateView.Focus();
                 m_DelegateView.SendEvent(e);
                 if (exitGUI)
                     GUIUtility.ExitGUI();
-            }
-
-            if (m_OnColorPicked != null && eventName == "EyeDropperClicked")
-            {
-                m_OnColorPicked(s_LastPickedColor);
             }
         }
 

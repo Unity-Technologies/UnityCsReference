@@ -13,6 +13,7 @@ namespace UnityEditor
         string m_Name;
         string m_DisplayName;
         string m_Description;
+        string m_DefaultScene;
         string m_Version;
 
         [MenuItem("internal:Project/Save As Template...")]
@@ -24,7 +25,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent = new GUIContent("Save Template");
+            titleContent = EditorGUIUtility.TrTextContent("Save Template");
         }
 
         void OnGUI()
@@ -32,14 +33,16 @@ namespace UnityEditor
             m_Name = EditorGUILayout.TextField("Name:", m_Name);
             m_DisplayName = EditorGUILayout.TextField("Display name:", m_DisplayName);
             m_Description = EditorGUILayout.TextField("Description:", m_Description);
+            m_DefaultScene = EditorGUILayout.TextField("Default scene:", m_DefaultScene);
             m_Version = EditorGUILayout.TextField("Version:", m_Version);
+
             if (GUILayout.Button("Save As...", GUILayout.Width(100)))
             {
                 string path = EditorUtility.SaveFolderPanel("Save template to folder", "", "");
                 if (path.Length > 0)
                 {
                     AssetDatabase.SaveAssets();
-                    EditorUtility.SaveProjectAsTemplate(path, m_Name, m_DisplayName, m_Description, m_Version);
+                    EditorUtility.SaveProjectAsTemplate(path, m_Name, m_DisplayName, m_Description, m_DefaultScene, m_Version);
                 }
             }
         }

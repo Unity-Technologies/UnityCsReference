@@ -23,15 +23,15 @@ namespace UnityEditor
         internal class Styles
         {
             // copy pasted from TextureImporterInspector.TextureSettingsGUI()
-            public static readonly GUIContent readWrite     = EditorGUIUtility.TextContent("Read/Write Enabled|Enable to be able to access the raw pixel data from code.");
-            public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TextContent("sRGB (Color Texture)|Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
-            public static readonly GUIContent wrapMode      = EditorGUIUtility.TextContent("Wrap Mode");
-            public static readonly GUIContent filterMode    = EditorGUIUtility.TextContent("Filter Mode");
+            public static readonly GUIContent readWrite     = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
+            public static readonly GUIContent wrapMode      = EditorGUIUtility.TrTextContent("Wrap Mode");
+            public static readonly GUIContent filterMode    = EditorGUIUtility.TrTextContent("Filter Mode");
 
             public static readonly int[] filterModeValues           =
             { (int)FilterMode.Point, (int)FilterMode.Bilinear, (int)FilterMode.Trilinear };
             public static readonly GUIContent[] filterModeOptions   =
-            { EditorGUIUtility.TextContent("Point (no filter)"), EditorGUIUtility.TextContent("Bilinear"), EditorGUIUtility.TextContent("Trilinear") };
+            { EditorGUIUtility.TextContent("Point (no filter)"), EditorGUIUtility.TextContent("Bilinear"), EditorGUIUtility.TrTextContent("Trilinear") };
         }
 
 

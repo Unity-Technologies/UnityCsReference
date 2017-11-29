@@ -37,10 +37,10 @@ namespace UnityEditor.Collaboration
             return dialog;
         }
 
-        static GUIContent DescribeChangesText = EditorGUIUtility.TextContent("Describe your changes here");
-        static GUIContent ChangeAssetsText = EditorGUIUtility.TextContent("Changed assets:");
-        static GUIContent PublishText = EditorGUIUtility.TextContent("Publish");
-        static GUIContent CancelText = EditorGUIUtility.TextContent("Cancel");
+        static GUIContent DescribeChangesText = EditorGUIUtility.TrTextContent("Describe your changes here");
+        static GUIContent ChangeAssetsText = EditorGUIUtility.TrTextContent("Changed assets:");
+        static GUIContent PublishText = EditorGUIUtility.TrTextContent("Publish");
+        static GUIContent CancelText = EditorGUIUtility.TrTextContent("Cancel");
 
         public Vector2 scrollView;
         public string Changelist;
@@ -109,8 +109,8 @@ namespace UnityEditor.Collaboration
         static GUIContent WarningText = EditorGUIUtility.TextContent(string.Format(
                     "Files that have been moved or in a changed folder cannot be selectively published, " +
                     "please use the Publish option in the collab window to publish all your changes."));
-        static GUIContent IssuesText = EditorGUIUtility.TextContent("Issues:");
-        static GUIContent AcceptText = EditorGUIUtility.TextContent("Accept");
+        static GUIContent IssuesText = EditorGUIUtility.TrTextContent("Issues:");
+        static GUIContent AcceptText = EditorGUIUtility.TrTextContent("Accept");
 
         public Vector2 scrollPosition;
         public string InfoMessage;

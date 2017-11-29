@@ -94,14 +94,12 @@ namespace UnityEditor
         {
             if (s_IsVisible == true) return;
             s_IsVisible = true;
-            LightmapVisualization.enabled = true;
             RepaintSceneAndGameViews();
         }
 
         void OnBecameInvisible()
         {
             s_IsVisible = false;
-            LightmapVisualization.enabled = false;
             RepaintSceneAndGameViews();
         }
 
@@ -179,7 +177,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(rect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive, EditorStyles.iconButton))
             {
                 //@TODO: Split...
-                EditorUtility.DisplayCustomMenu(rect, new[] { new GUIContent("Reset") }, -1, ResetSettings, null);
+                EditorUtility.DisplayCustomMenu(rect, new[] { EditorGUIUtility.TrTextContent("Reset") }, -1, ResetSettings, null);
             }
         }
 
@@ -514,13 +512,13 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] ModeToggles =
             {
-                EditorGUIUtility.TextContent("Scene"),
-                EditorGUIUtility.TextContent("Global Maps"),
-                EditorGUIUtility.TextContent("Object Maps")
+                EditorGUIUtility.TrTextContent("Scene"),
+                EditorGUIUtility.TrTextContent("Global Maps"),
+                EditorGUIUtility.TrTextContent("Object Maps")
             };
 
-            public static readonly GUIContent ContinuousBakeLabel = EditorGUIUtility.TextContent("Auto Generate|Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
-            public static readonly GUIContent BuildLabel = EditorGUIUtility.TextContent("Generate Lighting|Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
+            public static readonly GUIContent ContinuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
+            public static readonly GUIContent BuildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
 
             public static readonly GUIStyle LabelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIStyle ToolbarStyle = "preToolbar";

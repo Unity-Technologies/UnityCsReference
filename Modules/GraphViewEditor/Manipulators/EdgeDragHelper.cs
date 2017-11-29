@@ -3,14 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    abstract class EdgeDragHelper
+    public abstract class EdgeDragHelper
     {
         public abstract Edge edgeCandidate { get; set; }
         public abstract Port draggedPort { get; set; }
@@ -24,8 +22,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         internal const int k_PanInterval = 10;
     }
 
-    internal
-    class EdgeDragHelper<TEdge> : EdgeDragHelper where TEdge : Edge, new()
+    public class EdgeDragHelper<TEdge> : EdgeDragHelper where TEdge : Edge, new()
     {
         protected List<Port> m_CompatiblePorts;
         private Edge m_GhostEdge;
@@ -54,10 +51,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_CompatiblePorts != null)
             {
-                // Remove highlights.
+                // Reset the highlights.
                 foreach (Port compatiblePort in m_CompatiblePorts)
                 {
-                    compatiblePort.highlight = false;
+                    compatiblePort.highlight = true;
                 }
             }
 
@@ -122,6 +119,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 edgeCandidate.input = draggedPort;
             }
 
+            draggedPort.portCapLit = true;
+
             if (edgeCandidate.parent == null)
             {
                 m_GraphView.AddElement(edgeCandidate);
@@ -129,6 +128,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             edgeCandidate.candidatePosition = mousePosition;
 
             m_CompatiblePorts = m_GraphView.GetCompatiblePorts(draggedPort, s_nodeAdapter);
+
+            // Only light compatible anchors when dragging an edge.
+            foreach (Port port in m_GraphView.ports.ToList())
+            {
+                port.highlight = false;
+            }
 
             foreach (Port compatiblePort in m_CompatiblePorts)
             {
@@ -191,16 +196,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (edgeCandidate.output == null)
                 {
                     m_GhostEdge.input = edgeCandidate.input;
+                    if (m_GhostEdge.output != null)
+                        m_GhostEdge.output.portCapLit = false;
                     m_GhostEdge.output = endPort;
+                    m_GhostEdge.output.portCapLit = true;
                 }
                 else
                 {
+                    if (m_GhostEdge.input != null)
+                        m_GhostEdge.input.portCapLit = false;
                     m_GhostEdge.input = endPort;
+                    m_GhostEdge.input.portCapLit = true;
                     m_GhostEdge.output = edgeCandidate.output;
                 }
             }
             else if (m_GhostEdge != null)
             {
+                if (edgeCandidate.input == null)
+                {
+                    if (m_GhostEdge.input != null)
+                        m_GhostEdge.input.portCapLit = false;
+                }
+                else
+                {
+                    if (m_GhostEdge.output != null)
+                        m_GhostEdge.output.portCapLit = false;
+                }
                 m_GraphView.RemoveElement(m_GhostEdge);
                 m_GhostEdge.input = null;
                 m_GhostEdge.output = null;
@@ -220,15 +241,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Vector2 mousePosition = evt.mousePosition;
 
-            // Remove highlights.
-            foreach (Port compatiblePort in m_CompatiblePorts)
+            // Reset the highlights.
+            foreach (Port port in m_GraphView.ports.ToList())
             {
-                compatiblePort.highlight = false;
+                port.highlight = true;
             }
 
             // Clean up ghost edges.
             if (m_GhostEdge != null)
             {
+                if (m_GhostEdge.input != null)
+                    m_GhostEdge.input.portCapLit = false;
+                if (m_GhostEdge.output != null)
+                    m_GhostEdge.output.portCapLit = false;
+
                 m_GraphView.RemoveElement(m_GhostEdge);
                 m_GhostEdge.input = null;
                 m_GhostEdge.output = null;
@@ -243,6 +269,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             m_GraphView.RemoveElement(edgeCandidate);
+
+            if (edgeCandidate.input != null)
+                edgeCandidate.input.portCapLit = false;
+
+            if (edgeCandidate.output != null)
+                edgeCandidate.output.portCapLit = false;
 
             if (endPort != null)
             {

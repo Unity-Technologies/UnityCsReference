@@ -28,16 +28,16 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent create = EditorGUIUtility.TextContent("|Create and assign a Particle System as sub emitter");
-            public GUIContent inherit = EditorGUIUtility.TextContent("Inherit");
+            public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub emitter");
+            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit");
 
             public GUIContent[] subEmitterTypes = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Birth"),
-                EditorGUIUtility.TextContent("Collision"),
-                EditorGUIUtility.TextContent("Death"),
-                EditorGUIUtility.TextContent("Trigger"),
-                EditorGUIUtility.TextContent("Manual")
+                EditorGUIUtility.TrTextContent("Birth"),
+                EditorGUIUtility.TrTextContent("Collision"),
+                EditorGUIUtility.TrTextContent("Death"),
+                EditorGUIUtility.TrTextContent("Trigger"),
+                EditorGUIUtility.TrTextContent("Manual")
             };
 
             // Keep in sync with SubModule::InheritedProperties
@@ -55,7 +55,7 @@ namespace UnityEditor
         public SubModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "SubModule", displayName)
         {
-            m_ToolTip = "Sub emission of particles. This allows each particle to emit particles in another system.";
+            m_ToolTip = L10n.Tr("Sub emission of particles. This allows each particle to emit particles in another system.");
             Init(); // Init when created because we need to query if we have any subemitters referenced
         }
 

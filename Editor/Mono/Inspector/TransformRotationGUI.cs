@@ -10,7 +10,7 @@ namespace UnityEditor
     [System.Serializable]
     internal class TransformRotationGUI
     {
-        private GUIContent rotationContent = new GUIContent("Rotation", "The local rotation of this Game Object relative to the parent.");
+        private GUIContent rotationContent = EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this Game Object relative to the parent.");
 
         private Vector3 m_EulerAngles;
         // Some random rotation that will never be the same as the current one

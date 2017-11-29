@@ -18,30 +18,30 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent OtherSettings = EditorGUIUtility.TextContent("Other Settings");
-            public static readonly GUIContent DebugSettings = EditorGUIUtility.TextContent("Debug Settings");
-            public static readonly GUIContent LightProbeVisualization = EditorGUIUtility.TextContent("Light Probe Visualization");
-            public static readonly GUIContent StatisticsCategory = EditorGUIUtility.TextContent("Category");
-            public static readonly GUIContent StatisticsEnabled = EditorGUIUtility.TextContent("Enabled");
-            public static readonly GUIContent StatisticsDisabled = EditorGUIUtility.TextContent("Disabled|The Light’s GameObject is active, but the Light component is disabled. These lights have no effect on the Scene.");
-            public static readonly GUIContent StatisticsInactive = EditorGUIUtility.TextContent("Inactive|The Light’s GameObject is inactive. These lights have no effect on the Scene.");
-            public static readonly GUIContent UpdateStatistics = EditorGUIUtility.TextContent("Update Statistics|Turn off to prevent statistics from being updated during play mode to improve performance.");
+            public static readonly GUIContent OtherSettings = EditorGUIUtility.TrTextContent("Other Settings");
+            public static readonly GUIContent DebugSettings = EditorGUIUtility.TrTextContent("Debug Settings");
+            public static readonly GUIContent LightProbeVisualization = EditorGUIUtility.TrTextContent("Light Probe Visualization");
+            public static readonly GUIContent StatisticsCategory = EditorGUIUtility.TrTextContent("Category");
+            public static readonly GUIContent StatisticsEnabled = EditorGUIUtility.TrTextContent("Enabled");
+            public static readonly GUIContent StatisticsDisabled = EditorGUIUtility.TrTextContent("Disabled", "The Light’s GameObject is active, but the Light component is disabled. These lights have no effect on the Scene.");
+            public static readonly GUIContent StatisticsInactive = EditorGUIUtility.TrTextContent("Inactive", "The Light’s GameObject is inactive. These lights have no effect on the Scene.");
+            public static readonly GUIContent UpdateStatistics = EditorGUIUtility.TrTextContent("Update Statistics", "Turn off to prevent statistics from being updated during play mode to improve performance.");
 
             public static readonly string StatisticsWarning = "Statistics are not updated during play mode. This behavior can be changed via Settings -> Debug Settings -> \"Update Statistics\"";
             public static GUIStyle StatsTableHeader  = new GUIStyle("preLabel");
             public static GUIStyle StatsTableContent = new GUIStyle(EditorStyles.whiteLabel);
 
-            public static readonly GUIContent RealtimeLights = EditorGUIUtility.TextContent("Realtime Lights");
-            public static readonly GUIContent MixedLights = EditorGUIUtility.TextContent("Mixed Lights");
-            public static readonly GUIContent BakedLights = EditorGUIUtility.TextContent("Baked Lights");
-            public static readonly GUIContent DynamicMeshes = EditorGUIUtility.TextContent("Dynamic Meshes");
-            public static readonly GUIContent StaticMeshes = EditorGUIUtility.TextContent("Static Meshes");
-            public static readonly GUIContent StaticMeshesIconWarning = EditorGUIUtility.TextContentWithIcon("|Baked Global Illumination is Enabled but there are no Static Meshes or Terrains in the Scene. Please enable the Lightmap Static property on the meshes you want included in baked lighting.", "console.warnicon");
+            public static readonly GUIContent RealtimeLights = EditorGUIUtility.TrTextContent("Realtime Lights");
+            public static readonly GUIContent MixedLights = EditorGUIUtility.TrTextContent("Mixed Lights");
+            public static readonly GUIContent BakedLights = EditorGUIUtility.TrTextContent("Baked Lights");
+            public static readonly GUIContent DynamicMeshes = EditorGUIUtility.TrTextContent("Dynamic Meshes");
+            public static readonly GUIContent StaticMeshes = EditorGUIUtility.TrTextContent("Static Meshes");
+            public static readonly GUIContent StaticMeshesIconWarning = EditorGUIUtility.TrTextContentWithIcon("", "Baked Global Illumination is Enabled but there are no Static Meshes or Terrains in the Scene. Please enable the Lightmap Static property on the meshes you want included in baked lighting.", "console.warnicon");
 
-            public static readonly GUIContent RealtimeEmissiveMaterials = EditorGUIUtility.TextContent("Realtime Emissive Materials");
-            public static readonly GUIContent BakedEmissiveMaterials = EditorGUIUtility.TextContent("Baked Emissive Materials");
-            public static readonly GUIContent LightProbeGroups = EditorGUIUtility.TextContent("Light Probe Groups");
-            public static readonly GUIContent ReflectionProbes = EditorGUIUtility.TextContent("Reflection Probes");
+            public static readonly GUIContent RealtimeEmissiveMaterials = EditorGUIUtility.TrTextContent("Realtime Emissive Materials");
+            public static readonly GUIContent BakedEmissiveMaterials = EditorGUIUtility.TrTextContent("Baked Emissive Materials");
+            public static readonly GUIContent LightProbeGroups = EditorGUIUtility.TrTextContent("Light Probe Groups");
+            public static readonly GUIContent ReflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes");
         }
 
         Editor          m_LightingEditor;

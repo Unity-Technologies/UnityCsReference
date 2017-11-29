@@ -13,8 +13,8 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static readonly GUIContent iconAdd    = EditorGUIUtility.IconContent("Toolbar Plus", "|Add variant");
-            public static readonly GUIContent iconRemove = EditorGUIUtility.IconContent("Toolbar Minus", "|Remove entry");
+            public static readonly GUIContent iconAdd    = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add variant");
+            public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove entry");
             public static readonly GUIStyle invisibleButton = "InvisibleButton";
         }
 

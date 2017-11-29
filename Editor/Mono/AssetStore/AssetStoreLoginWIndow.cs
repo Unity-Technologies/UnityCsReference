@@ -155,7 +155,7 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             m_Password = EditorGUILayout.PasswordField("Password", m_Password, GUILayout.ExpandWidth(true));
-            if (GUILayout.Button(new GUIContent("Forgot?", "Reset your password"), styles.link, GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Forgot?", "Reset your password"), styles.link, GUILayout.ExpandWidth(false)))
             {
                 Application.OpenURL("https://accounts.unity3d.com/password/new");
             }

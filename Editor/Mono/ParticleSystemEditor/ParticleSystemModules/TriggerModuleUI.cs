@@ -26,20 +26,20 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent collisionShapes = EditorGUIUtility.TextContent("Colliders|The list of collision shapes to use for the trigger.");
-            public GUIContent createCollisionShape = EditorGUIUtility.TextContent("|Create a GameObject containing a sphere collider and assigns it to the list.");
-            public GUIContent inside = EditorGUIUtility.TextContent("Inside|What to do for particles that are inside the collision volume.");
-            public GUIContent outside = EditorGUIUtility.TextContent("Outside|What to do for particles that are outside the collision volume.");
-            public GUIContent enter = EditorGUIUtility.TextContent("Enter|Triggered once when particles enter the collison volume.");
-            public GUIContent exit = EditorGUIUtility.TextContent("Exit|Triggered once when particles leave the collison volume.");
-            public GUIContent radiusScale = EditorGUIUtility.TextContent("Radius Scale|Scale particle bounds by this amount to get more precise collisions.");
-            public GUIContent visualizeBounds = EditorGUIUtility.TextContent("Visualize Bounds|Render the collision bounds of the particles.");
+            public GUIContent collisionShapes = EditorGUIUtility.TrTextContent("Colliders", "The list of collision shapes to use for the trigger.");
+            public GUIContent createCollisionShape = EditorGUIUtility.TrTextContent("", "Create a GameObject containing a sphere collider and assigns it to the list.");
+            public GUIContent inside = EditorGUIUtility.TrTextContent("Inside", "What to do for particles that are inside the collision volume.");
+            public GUIContent outside = EditorGUIUtility.TrTextContent("Outside", "What to do for particles that are outside the collision volume.");
+            public GUIContent enter = EditorGUIUtility.TrTextContent("Enter", "Triggered once when particles enter the collison volume.");
+            public GUIContent exit = EditorGUIUtility.TrTextContent("Exit", "Triggered once when particles leave the collison volume.");
+            public GUIContent radiusScale = EditorGUIUtility.TrTextContent("Radius Scale", "Scale particle bounds by this amount to get more precise collisions.");
+            public GUIContent visualizeBounds = EditorGUIUtility.TrTextContent("Visualize Bounds", "Render the collision bounds of the particles.");
 
             public GUIContent[] overlapOptions = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Ignore"),
-                EditorGUIUtility.TextContent("Kill"),
-                EditorGUIUtility.TextContent("Callback")
+                EditorGUIUtility.TrTextContent("Ignore"),
+                EditorGUIUtility.TrTextContent("Kill"),
+                EditorGUIUtility.TrTextContent("Callback")
             };
         }
         private static Texts s_Texts;

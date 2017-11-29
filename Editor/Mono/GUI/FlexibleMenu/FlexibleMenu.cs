@@ -290,8 +290,8 @@ namespace UnityEditor
             {
                 s_Caller = caller;
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Edit..."), false, Edit, itemIndex);
-                menu.AddItem(new GUIContent("Delete"), false, Delete, itemIndex);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Edit..."), false, Edit, itemIndex);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, Delete, itemIndex);
                 menu.ShowAsContext();
                 EditorGUIUtility.ExitGUI();
             }

@@ -63,10 +63,10 @@ namespace UnityEditor
         GUIContent iconToggleContent = new GUIContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = new GUIContent("", "Select Icon");
 
-        GUIContent icon3dGizmoContent = new GUIContent("3D Icons");
-        GUIContent showGridContent = new GUIContent("Show Grid");
-        GUIContent showOutlineContent = new GUIContent("Selection Outline");
-        GUIContent showWireframeContent = new GUIContent("Selection Wire");
+        GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
+        GUIContent showGridContent = EditorGUIUtility.TrTextContent("Show Grid");
+        GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
+        GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
         private bool m_IsGameView;
 
         const float exponentStart = -3.0f;
@@ -397,9 +397,9 @@ namespace UnityEditor
             float curY = 0;
             bool headerDrawn = false;
 
-            curY = DrawListSection(curY, "Recently Changed",    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true, ref headerDrawn);
-            curY = DrawListSection(curY, "Scripts",             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
-            curY = DrawListSection(curY, "Built-in Components", m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Recently Changed"),    m_RecentAnnotations,    doDraw, listElementWidth, startY, endY, ref even, true, ref headerDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Scripts"),             m_ScriptAnnotations,    doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
+            curY = DrawListSection(curY, L10n.Tr("Built-in Components"), m_BuiltinAnnotations,   doDraw, listElementWidth, startY, endY, ref even, false, ref headerDrawn);
 
             return curY;
         }

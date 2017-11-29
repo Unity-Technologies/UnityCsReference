@@ -9,11 +9,17 @@ using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     [CustomEditor(typeof(PresetManager))]
     internal sealed class PresetManagerEditor : Editor
     {
+        static class Style
+        {
+            public static GUIContent managerIcon = EditorGUIUtility.IconContent("GameManager Icon");
+            public static GUIStyle centerStyle = new GUIStyle() {alignment = TextAnchor.MiddleCenter};
+        }
+
         Dictionary<string, List<Preset>> m_DiscoveredPresets = new Dictionary<string, List<Preset>>();
 
         SerializedProperty m_DefaultPresets;
@@ -23,6 +29,17 @@ namespace UnityEditor
         GenericMenu m_AddingMenu;
 
         static GUIContent s_DropIcon = null;
+
+        internal override void OnHeaderIconGUI(Rect iconRect)
+        {
+            GUI.Label(iconRect, Style.managerIcon, Style.centerStyle);
+        }
+
+        internal override void OnHeaderTitleGUI(Rect titleRect, string header)
+        {
+            header = "PresetManager";
+            base.OnHeaderTitleGUI(titleRect, header);
+        }
 
         void OnEnable()
         {
@@ -157,7 +174,11 @@ namespace UnityEditor
             if (references.Length == 1)
             {
                 var preset = references[0] as Preset;
-                if (preset != null && ((Preset)property.objectReferenceValue).GetTargetFullTypeName() == preset.GetTargetFullTypeName())
+                string propertyPath = property.propertyPath;
+                var numberStart = propertyPath.IndexOf("[") + 1;
+                var numberLenght = propertyPath.IndexOf("]") - numberStart;
+                var propertyPosition = int.Parse(propertyPath.Substring(numberStart, numberLenght));
+                if (preset != null && PresetManager.GetPresetTypeNameAtIndex(propertyPosition) == preset.GetTargetFullTypeName())
                 {
                     return references[0];
                 }
@@ -178,48 +199,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             m_List.DoLayoutList();
-
-            var dropArea = EditorGUILayout.GetControlRect(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            switch (Event.current.type)
-            {
-                case EventType.DragUpdated:
-                    if (dropArea.Contains(Event.current.mousePosition))
-                    {
-                        var dragObject = DragAndDrop.objectReferences;
-                        foreach (var o in dragObject)
-                        {
-                            var preset = o as Preset;
-                            if (preset != null && !Preset.IsPresetExcludedFromDefaultPresets(preset))
-                            {
-                                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                                Event.current.Use();
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                case EventType.DragPerform:
-                    if (dropArea.Contains(Event.current.mousePosition))
-                    {
-                        var presetList = DragAndDrop.objectReferences
-                            .OfType<Preset>()
-                            .Where(p => !Preset.IsPresetExcludedFromDefaultPresets(p));
-                        if (presetList.Count() > 0)
-                        {
-                            DragAndDrop.AcceptDrag();
-                            serializedObject.ApplyModifiedProperties();
-                            Undo.RecordObject(target, "Inspector");
-                            foreach (var preset in presetList)
-                            {
-                                Preset.SetAsDefault(preset);
-                            }
-                            serializedObject.Update();
-                            RefreshAddList();
-                        }
-                    }
-                    break;
-            }
-
 
             serializedObject.ApplyModifiedProperties();
         }

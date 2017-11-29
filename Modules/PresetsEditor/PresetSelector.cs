@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     public abstract class PresetSelectorReceiver : ScriptableObject
     {
@@ -126,7 +126,7 @@ namespace UnityEditor
             m_CanCreateNew = createNewAllowed;
 
             ShowWithMode(ShowMode.AuxWindow);
-            titleContent = new GUIContent("Select Preset");
+            titleContent = EditorGUIUtility.TrTextContent("Select Preset");
 
             // Deal with window size
             Rect rect = m_Parent.window.position;

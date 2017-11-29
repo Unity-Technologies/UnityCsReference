@@ -292,7 +292,7 @@ namespace UnityEditor
             if (GetSelection().Count > 0)
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Remove Selection"), false, RemoveSelection);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Remove Selection"), false, RemoveSelection);
                 menu.ShowAsContext();
             }
         }

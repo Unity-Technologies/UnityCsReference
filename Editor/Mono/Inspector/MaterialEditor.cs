@@ -18,20 +18,20 @@ namespace UnityEditor
         private static class Styles
         {
             public static readonly GUIStyle kReflectionProbePickerStyle = "PaneOptions";
-            public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TextContent("Global Illumination|Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
-            public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TextContent("Baked"), EditorGUIUtility.TextContent("None") };
+            public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
+            public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
-            public static string propBlockInfo = EditorGUIUtility.TextContent("MaterialPropertyBlock is used to modify these values").text;
+            public static string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
 
             public const int kNewShaderQueueValue = -1;
             public const int kCustomQueueIndex = 4;
-            public static readonly GUIContent queueLabel = EditorGUIUtility.TextContent("Render Queue");
+            public static readonly GUIContent queueLabel = EditorGUIUtility.TrTextContent("Render Queue");
             public static readonly GUIContent[] queueNames =
             {
-                EditorGUIUtility.TextContent("From Shader"),
-                EditorGUIUtility.TextContent("Geometry|Queue 2000"),
-                EditorGUIUtility.TextContent("AlphaTest|Queue 2450"),
-                EditorGUIUtility.TextContent("Transparent|Queue 3000"),
+                EditorGUIUtility.TrTextContent("From Shader"),
+                EditorGUIUtility.TrTextContent("Geometry", "Queue 2000"),
+                EditorGUIUtility.TrTextContent("AlphaTest", "Queue 2450"),
+                EditorGUIUtility.TrTextContent("Transparent", "Queue 3000"),
             };
             public static readonly int[] queueValues =
             {
@@ -57,9 +57,9 @@ namespace UnityEditor
                 0, // This value will be overriden during runtime
             };
 
-            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TextContent("Enable GPU Instancing");
-            public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TextContent("Double Sided Global Illumination|When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
-            public static readonly GUIContent emissionLabel = EditorGUIUtility.TextContent("Emission");
+            public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TrTextContent("Enable GPU Instancing");
+            public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TrTextContent("Double Sided Global Illumination", "When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
+            public static readonly GUIContent emissionLabel = EditorGUIUtility.TrTextContent("Emission");
         }
 
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
@@ -109,8 +109,8 @@ namespace UnityEditor
         private int                         m_SelectedMesh;
         private int                         m_TimeUpdate;
         private int                         m_LightMode = 1;
-        private static readonly GUIContent  s_TilingText = new GUIContent("Tiling");
-        private static readonly GUIContent  s_OffsetText = new GUIContent("Offset");
+        private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
+        private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
 
         ShaderGUI   m_CustomShaderGUI;
         string      m_CustomEditorClassName;
@@ -848,8 +848,8 @@ namespace UnityEditor
             if (InternalEditorUtility.BumpMapTextureNeedsFixing(prop))
             {
                 if (HelpBoxWithButton(
-                        EditorGUIUtility.TextContent("This texture is not marked as a normal map"),
-                        EditorGUIUtility.TextContent("Fix Now")))
+                        EditorGUIUtility.TrTextContent("This texture is not marked as a normal map"),
+                        EditorGUIUtility.TrTextContent("Fix Now")))
                 {
                     InternalEditorUtility.FixNormalmapTexture(prop);
                 }

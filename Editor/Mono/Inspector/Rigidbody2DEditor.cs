@@ -35,8 +35,8 @@ namespace UnityEditor
         readonly AnimBool m_ShowContacts = new AnimBool();
         Vector2 m_ContactScrollPosition;
 
-        static readonly GUIContent m_FreezePositionLabel = new GUIContent("Freeze Position");
-        static readonly GUIContent m_FreezeRotationLabel = new GUIContent("Freeze Rotation");
+        static readonly GUIContent m_FreezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
+        static readonly GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
 
         static ContactPoint2D[] m_Contacts = new ContactPoint2D[100];
 

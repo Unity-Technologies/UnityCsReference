@@ -12,28 +12,28 @@ namespace UnityEditor
     {
         public static Texture2D pointIcon = EditorGUIUtility.LoadIcon("animationkeyframe");
 
-        public static GUIContent playContent = EditorGUIUtility.IconContent("Animation.Play", "|Play the animation clip.");
-        public static GUIContent recordContent = EditorGUIUtility.IconContent("Animation.Record", "|Enable/disable keyframe recording mode.");
-        public static GUIContent previewContent = EditorGUIUtility.TextContent("Preview|Enable/disable scene preview mode.");
-        public static GUIContent prevKeyContent = EditorGUIUtility.IconContent("Animation.PrevKey", "|Go to previous keyframe.");
-        public static GUIContent nextKeyContent = EditorGUIUtility.IconContent("Animation.NextKey", "|Go to next keyframe.");
-        public static GUIContent firstKeyContent = EditorGUIUtility.IconContent("Animation.FirstKey", "|Go to the beginning of the animation clip.");
-        public static GUIContent lastKeyContent = EditorGUIUtility.IconContent("Animation.LastKey", "|Go to the end of the animation clip.");
-        public static GUIContent addKeyframeContent = EditorGUIUtility.IconContent("Animation.AddKeyframe", "|Add keyframe.");
-        public static GUIContent addEventContent = EditorGUIUtility.IconContent("Animation.AddEvent", "|Add event.");
-        public static GUIContent sequencerLinkContent = EditorGUIUtility.IconContent("Animation.SequencerLink", "|Animation Window is linked to Sequence Editor.  Press to Unlink.");
+        public static GUIContent playContent = EditorGUIUtility.TrIconContent("Animation.Play", "Play the animation clip.");
+        public static GUIContent recordContent = EditorGUIUtility.TrIconContent("Animation.Record", "Enable/disable keyframe recording mode.");
+        public static GUIContent previewContent = EditorGUIUtility.TrTextContent("Preview", "Enable/disable scene preview mode.");
+        public static GUIContent prevKeyContent = EditorGUIUtility.TrIconContent("Animation.PrevKey", "Go to previous keyframe.");
+        public static GUIContent nextKeyContent = EditorGUIUtility.TrIconContent("Animation.NextKey", "Go to next keyframe.");
+        public static GUIContent firstKeyContent = EditorGUIUtility.TrIconContent("Animation.FirstKey", "Go to the beginning of the animation clip.");
+        public static GUIContent lastKeyContent = EditorGUIUtility.TrIconContent("Animation.LastKey", "Go to the end of the animation clip.");
+        public static GUIContent addKeyframeContent = EditorGUIUtility.TrIconContent("Animation.AddKeyframe", "Add keyframe.");
+        public static GUIContent addEventContent = EditorGUIUtility.TrIconContent("Animation.AddEvent", "Add event.");
+        public static GUIContent sequencerLinkContent = EditorGUIUtility.TrIconContent("Animation.SequencerLink", "Animation Window is linked to Sequence Editor.  Press to Unlink.");
 
-        public static GUIContent noAnimatableObjectSelectedText = EditorGUIUtility.TextContent("No animatable object selected.");
-        public static GUIContent formatIsMissing = EditorGUIUtility.TextContent("To begin animating {0}, create {1}.");
-        public static GUIContent animatorAndAnimationClip = EditorGUIUtility.TextContent("an Animator and an Animation Clip");
-        public static GUIContent animationClip = EditorGUIUtility.TextContent("an Animation Clip");
-        public static GUIContent create = EditorGUIUtility.TextContent("Create");
-        public static GUIContent dopesheet = EditorGUIUtility.TextContent("Dopesheet");
-        public static GUIContent curves = EditorGUIUtility.TextContent("Curves");
-        public static GUIContent samples = EditorGUIUtility.TextContent("Samples");
-        public static GUIContent createNewClip = EditorGUIUtility.TextContent("Create New Clip...");
+        public static GUIContent noAnimatableObjectSelectedText = EditorGUIUtility.TrTextContent("No animatable object selected.");
+        public static GUIContent formatIsMissing = EditorGUIUtility.TrTextContent("To begin animating {0}, create {1}.");
+        public static GUIContent animatorAndAnimationClip = EditorGUIUtility.TrTextContent("an Animator and an Animation Clip");
+        public static GUIContent animationClip = EditorGUIUtility.TrTextContent("an Animation Clip");
+        public static GUIContent create = EditorGUIUtility.TrTextContent("Create");
+        public static GUIContent dopesheet = EditorGUIUtility.TrTextContent("Dopesheet");
+        public static GUIContent curves = EditorGUIUtility.TrTextContent("Curves");
+        public static GUIContent samples = EditorGUIUtility.TrTextContent("Samples");
+        public static GUIContent createNewClip = EditorGUIUtility.TrTextContent("Create New Clip...");
 
-        public static GUIContent animatorOptimizedText = EditorGUIUtility.TextContent("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.");
+        public static GUIContent animatorOptimizedText = EditorGUIUtility.TrTextContent("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.");
 
         public static GUIStyle playHead = "AnimationPlayHead";
 

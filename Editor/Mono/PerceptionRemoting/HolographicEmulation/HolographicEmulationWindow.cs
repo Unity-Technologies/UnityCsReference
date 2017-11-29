@@ -40,43 +40,43 @@ namespace UnityEditorInternal.VR
         private string[] m_RemoteMachineHistory;
         private static int s_MaxHistoryLength = 4;
 
-        private static GUIContent s_ConnectionStatusText = new GUIContent("Connection Status");
-        private static GUIContent s_EmulationModeText = new GUIContent("Emulation Mode");
-        private static GUIContent s_RoomText = new GUIContent("Room");
-        private static GUIContent s_HandText = new GUIContent("Gesture Hand");
-        private static GUIContent s_RemoteMachineText = new GUIContent("Remote Machine");
-        private static GUIContent s_EnableVideoText = new GUIContent("Enable Video");
-        private static GUIContent s_EnableAudioText = new GUIContent("Enable Audio");
-        private static GUIContent s_MaxBitrateText = new GUIContent("Max Bitrate (kbps)");
-        private static GUIContent s_ConnectionButtonConnectText = new GUIContent("Connect");
-        private static GUIContent s_ConnectionButtonDisconnectText = new GUIContent("Disconnect");
-        private static GUIContent s_ConnectionStateDisconnectedText = new GUIContent("Disconnected");
-        private static GUIContent s_ConnectionStateConnectingText = new GUIContent("Connecting");
-        private static GUIContent s_ConnectionStateConnectedText = new GUIContent("Connected");
+        private static GUIContent s_ConnectionStatusText = EditorGUIUtility.TrTextContent("Connection Status");
+        private static GUIContent s_EmulationModeText = EditorGUIUtility.TrTextContent("Emulation Mode");
+        private static GUIContent s_RoomText = EditorGUIUtility.TrTextContent("Room");
+        private static GUIContent s_HandText = EditorGUIUtility.TrTextContent("Gesture Hand");
+        private static GUIContent s_RemoteMachineText = EditorGUIUtility.TrTextContent("Remote Machine");
+        private static GUIContent s_EnableVideoText = EditorGUIUtility.TrTextContent("Enable Video");
+        private static GUIContent s_EnableAudioText = EditorGUIUtility.TrTextContent("Enable Audio");
+        private static GUIContent s_MaxBitrateText = EditorGUIUtility.TrTextContent("Max Bitrate (kbps)");
+        private static GUIContent s_ConnectionButtonConnectText = EditorGUIUtility.TrTextContent("Connect");
+        private static GUIContent s_ConnectionButtonDisconnectText = EditorGUIUtility.TrTextContent("Disconnect");
+        private static GUIContent s_ConnectionStateDisconnectedText = EditorGUIUtility.TrTextContent("Disconnected");
+        private static GUIContent s_ConnectionStateConnectingText = EditorGUIUtility.TrTextContent("Connecting");
+        private static GUIContent s_ConnectionStateConnectedText = EditorGUIUtility.TrTextContent("Connected");
         private static Texture2D s_ConnectedTexture = null;
         private static Texture2D s_ConnectingTexture = null;
         private static Texture2D s_DisconnectedTexture = null;
         private static GUIContent[] s_ModeStrings = new GUIContent[]
         {
-            new GUIContent("None"),
-            new GUIContent("Remote to Device"),
-            new GUIContent("Simulate in Editor")
+            EditorGUIUtility.TrTextContent("None"),
+            EditorGUIUtility.TrTextContent("Remote to Device"),
+            EditorGUIUtility.TrTextContent("Simulate in Editor")
         };
 
         private static GUIContent[] s_RoomStrings = new GUIContent[]
         {
-            new GUIContent("None"),
-            new GUIContent("DefaultRoom"),
-            new GUIContent("Bedroom1"),
-            new GUIContent("Bedroom2"),
-            new GUIContent("GreatRoom"),
-            new GUIContent("LivingRoom")
+            EditorGUIUtility.TrTextContent("None"),
+            EditorGUIUtility.TrTextContent("DefaultRoom"),
+            EditorGUIUtility.TrTextContent("Bedroom1"),
+            EditorGUIUtility.TrTextContent("Bedroom2"),
+            EditorGUIUtility.TrTextContent("GreatRoom"),
+            EditorGUIUtility.TrTextContent("LivingRoom")
         };
 
         private static GUIContent[] s_HandStrings = new GUIContent[]
         {
-            new GUIContent("Left Hand"),
-            new GUIContent("Right Hand"),
+            EditorGUIUtility.TrTextContent("Left Hand"),
+            EditorGUIUtility.TrTextContent("Right Hand"),
         };
 
         public EmulationMode emulationMode
@@ -94,7 +94,7 @@ namespace UnityEditorInternal.VR
 
         private void OnEnable()
         {
-            titleContent = new GUIContent("Holographic");
+            titleContent = EditorGUIUtility.TrTextContent("Holographic");
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_InPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
 

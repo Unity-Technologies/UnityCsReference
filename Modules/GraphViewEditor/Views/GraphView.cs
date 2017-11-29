@@ -35,8 +35,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
     }
 
-    internal
-    struct GraphViewChange
+    public struct GraphViewChange
     {
         // Operations Pending
         public List<GraphElement> elementsToRemove;
@@ -46,8 +45,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public List<GraphElement> movedElements;
     }
 
-    internal
-    abstract class GraphView : DataWatchContainer, ISelection
+    public struct NodeCreationContext
+    {
+        public Vector2 screenMousePosition;
+    }
+
+    public abstract class GraphView : DataWatchContainer, ISelection
     {
         // Layer class. Used for queries below.
         class Layer : VisualElement {}
@@ -62,6 +65,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         // Delegates and Callbacks
+        public Action<NodeCreationContext> nodeCreationRequest { get; set; }
 
         public delegate GraphViewChange GraphViewChanged(GraphViewChange graphViewChange);
         public GraphViewChanged graphViewChanged { get; set; }
@@ -136,6 +140,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public VisualElement contentViewContainer { get; private set; }
 
+        // TODO: Remove!
         public VisualElement viewport
         {
             get { return this; }
@@ -217,6 +222,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             RegisterCallback<IMGUIEvent>(OnExecuteCommand);
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+            RegisterCallback<MouseUpEvent>(ShowContextualMenu);
+        }
+
+        void ShowContextualMenu(MouseUpEvent e)
+        {
+            if (MouseCaptureController.IsMouseCaptureTaken())
+                return;
+
+            if (nodeCreationRequest != null && e.button == (int)MouseButton.RightMouse)
+            {
+                GUIView guiView = elementPanel.ownerObject as GUIView;
+
+                if (guiView == null)
+                    return;
+
+                Vector2 screenPoint = guiView.screenPosition.position + e.mousePosition;
+
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Create node"), false, OnContextMenuNodeCreate, screenPoint);
+                menu.DropDown(new Rect(e.mousePosition.x, e.mousePosition.y, 0, 0));
+                e.StopPropagation();
+            }
+        }
+
+        void OnContextMenuNodeCreate(object userData)
+        {
+            if (nodeCreationRequest != null)
+                nodeCreationRequest(new NodeCreationContext() { screenMousePosition = (Vector2)userData});
         }
 
         internal override void ChangePanel(BaseVisualElementPanel p)

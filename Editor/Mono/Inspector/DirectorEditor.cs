@@ -17,14 +17,14 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent PlayableText = EditorGUIUtility.TextContent("Playable");
-            public static readonly GUIContent InitialTimeContent = EditorGUIUtility.TextContent("Initial Time|The time at which the Playable will begin playing");
-            public static readonly GUIContent TimeContent = EditorGUIUtility.TextContent("Current Time|The current Playable time");
-            public static readonly GUIContent InitialStateContent = EditorGUIUtility.TextContent("Play On Awake|Whether the Playable should be playing after it loads");
-            public static readonly GUIContent UpdateMethod = EditorGUIUtility.TextContent("Update Method|Controls how the Playable updates every frame");
-            public static readonly GUIContent WrapModeContent = EditorGUIUtility.TextContent("Wrap Mode|Controls the behaviour of evaluating the Playable outside its duration");
-            public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TextContent("This channel will not playback because it is not currently assigned");
-            public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TextContent("Bindings");
+            public static readonly GUIContent PlayableText = EditorGUIUtility.TrTextContent("Playable");
+            public static readonly GUIContent InitialTimeContent = EditorGUIUtility.TrTextContent("Initial Time", "The time at which the Playable will begin playing");
+            public static readonly GUIContent TimeContent = EditorGUIUtility.TrTextContent("Current Time", "The current Playable time");
+            public static readonly GUIContent InitialStateContent = EditorGUIUtility.TrTextContent("Play On Awake", "Whether the Playable should be playing after it loads");
+            public static readonly GUIContent UpdateMethod = EditorGUIUtility.TrTextContent("Update Method", "Controls how the Playable updates every frame");
+            public static readonly GUIContent WrapModeContent = EditorGUIUtility.TrTextContent("Wrap Mode", "Controls the behaviour of evaluating the Playable outside its duration");
+            public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TrTextContent("This channel will not playback because it is not currently assigned");
+            public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TrTextContent("Bindings");
         }
 
         private SerializedProperty m_PlayableAsset;

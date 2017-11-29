@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor.Presets
 {
     [CustomEditor(typeof(Preset))]
     [CanEditMultipleObjects]
@@ -14,7 +14,7 @@ namespace UnityEditor
     {
         static class Style
         {
-            public static GUIContent presetType = EditorGUIUtility.TextContent("Preset Type|The Object type this Preset can be applied to.");
+            public static GUIContent presetType = EditorGUIUtility.TrTextContent("Preset Type", "The Object type this Preset can be applied to.");
             public static GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public static GUIStyle centerStyle = new GUIStyle() { alignment = TextAnchor.MiddleCenter };
 

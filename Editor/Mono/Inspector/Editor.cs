@@ -340,6 +340,7 @@ namespace UnityEditor
 
         class Styles
         {
+            public GUIContent open = EditorGUIUtility.TrTextContent("Open");
             public GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
             public GUIStyle inspectorBigInner = new GUIStyle("IN BigTitle inner");
             public GUIStyle centerStyle = new GUIStyle();
@@ -462,7 +463,7 @@ namespace UnityEditor
 
             if (showOpenButton && !ShouldHideOpenButton())
             {
-                if (GUILayout.Button("Open", EditorStyles.miniButton))
+                if (GUILayout.Button(s_Styles.open, EditorStyles.miniButton))
                 {
                     if (this is AssetImporterEditor)
                         AssetDatabase.OpenAsset((this as AssetImporterEditor).assetTargets);

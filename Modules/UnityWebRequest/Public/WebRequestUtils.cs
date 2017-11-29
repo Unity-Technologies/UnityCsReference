@@ -503,48 +503,48 @@ namespace UnityEngineInternal
             if (targetUrl.StartsWith("jar:file://"))
                 return targetUrl;
 
-            // Prevent blob url slashes from being stripped (to blob:http:/...)
-            if (targetUrl.StartsWith("blob:http://"))
+            // Prevent blob url slashes from being stripped (to blob:http:/... or blob:https:/...)
+            if (targetUrl.StartsWith("blob:http"))
                 return targetUrl;
 
             var localUri = new System.Uri(localUrl);
+            Uri targetUri = null;
 
-            if (targetUrl.StartsWith("//"))
+            if (targetUrl[0] == '/')
             {
-                // Prepend current protocol/scheme
-                targetUrl = localUri.Scheme + ":" + targetUrl;
+                // Prepend scheme and (if needed) host
+                targetUri = new Uri(localUri, targetUrl);
             }
 
-            if (targetUrl.StartsWith("/"))
-            {
-                // Prepend scheme and host
-                targetUrl = localUri.Scheme + "://" + localUri.Host + targetUrl;
-            }
-
-            if (domainRegex.IsMatch(targetUrl))
+            if (targetUri == null && domainRegex.IsMatch(targetUrl))
             {
                 targetUrl = localUri.Scheme + "://" + targetUrl;
             }
 
-            System.Uri targetUri = null;
+            FormatException ex = null;
             try
             {
-                targetUri = new System.Uri(targetUrl);
+                // If URL starts with dot, it is relative and this would throw, skip to combining
+                if (targetUri == null && targetUrl[0] != '.')
+                    targetUri = new System.Uri(targetUrl);
             }
             catch (FormatException e1)
             {
                 // Technically, this should be UriFormatException but MSDN says WSA/PCL doesn't support
                 // UriFormatException, and recommends FormatException instead
                 // See: https://msdn.microsoft.com/en-us/library/system.uriformatexception%28v=vs.110%29.aspx
+                ex = e1;
+            }
+
+            if (targetUri == null)
                 try
                 {
                     targetUri = new System.Uri(localUri, targetUrl);
                 }
                 catch (FormatException)
                 {
-                    throw e1;
+                    throw ex;
                 }
-            }
 
             // for file://protocol pass in unescaped string so we can pass it to VFS
             if (targetUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))

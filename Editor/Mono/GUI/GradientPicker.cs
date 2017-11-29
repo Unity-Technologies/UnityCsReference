@@ -20,13 +20,34 @@ namespace UnityEditor
         private Gradient m_Gradient;
         private const int k_DefaultNumSteps = 0;
         private GUIView m_DelegateView;
+        private System.Action<Gradient> m_Delegate;
         private bool m_HDR;
-        private bool gradientChanged {get; set; }
+        private bool gradientChanged { get; set; }
 
         // Static methods
         public static void Show(Gradient newGradient, bool hdr)
         {
             GUIView currentView = GUIView.current;
+            PrepareShow(hdr);
+            s_GradientPicker.m_DelegateView = currentView;
+            s_GradientPicker.m_Delegate = null;
+            s_GradientPicker.Init(newGradient, hdr);
+
+            GradientPreviewCache.ClearCache();
+        }
+
+        public static void Show(Gradient newGradient, bool hdr, System.Action<Gradient> onGradientChanged)
+        {
+            PrepareShow(hdr);
+            s_GradientPicker.m_DelegateView = null;
+            s_GradientPicker.m_Delegate = onGradientChanged;
+            s_GradientPicker.Init(newGradient, hdr);
+
+            GradientPreviewCache.ClearCache();
+        }
+
+        static void PrepareShow(bool hdr)
+        {
             if (s_GradientPicker == null)
             {
                 string title = hdr ? "HDR Gradient Editor" : "Gradient Editor";
@@ -42,10 +63,6 @@ namespace UnityEditor
             {
                 s_GradientPicker.Repaint(); // Ensure we get a OnGUI so we refresh if new gradient
             }
-            s_GradientPicker.m_DelegateView = currentView;
-            s_GradientPicker.Init(newGradient, hdr);
-
-            GradientPreviewCache.ClearCache();
         }
 
         public static GradientPicker instance
@@ -139,7 +156,7 @@ namespace UnityEditor
                 m_GradientEditor.Init(m_Gradient, k_DefaultNumSteps, m_HDR);
             }
 
-            if (m_GradientLibraryEditorState ==  null)
+            if (m_GradientLibraryEditorState == null)
             {
                 m_GradientLibraryEditorState = new PresetLibraryEditorState(presetsEditorPrefID);
                 m_GradientLibraryEditorState.TransferEditorPrefsState(true);
@@ -161,6 +178,7 @@ namespace UnityEditor
                 Debug.LogError("Incorrect object passed " + presetObject);
 
             SetCurrentGradient(gradient);
+            UnityEditorInternal.GradientPreviewCache.ClearCache();
             gradientChanged = true;
         }
 
@@ -205,6 +223,10 @@ namespace UnityEditor
                 m_DelegateView.SendEvent(e);
                 if (exitGUI)
                     GUIUtility.ExitGUI();
+            }
+            if (m_Delegate != null)
+            {
+                m_Delegate(gradient);
             }
         }
 

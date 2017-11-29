@@ -90,19 +90,19 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static readonly GUIContent editConstraintsLabel = EditorGUIUtility.TextContent("Edit Constraints");
-            public static readonly GUIContent editSelfInterCollisionLabel = EditorGUIUtility.TextContent("Edit Collision Particles");
-            public static readonly GUIContent selfInterCollisionParticleColor = EditorGUIUtility.TextContent("Visualization Color");
-            public static readonly GUIContent selfInterCollisionBrushColor = EditorGUIUtility.TextContent("Brush Color");
-            public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TextContent("Cloth Self-Collision And Inter-Collision");
-            public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TextContent("Paint Collision Particles");
-            public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TextContent("Select Collision Particles");
-            public static readonly GUIContent brushRadiusString = EditorGUIUtility.TextContent("Brush Radius");
-            public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TextContent("Paint or Select Particles");
-            public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TextContent("Back Face Manipulation");
-            public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TextContent("Manipulate Backfaces");
-            public static readonly GUIContent selfCollisionString = EditorGUIUtility.TextContent("Self Collision");
-            public static readonly GUIContent setSelfAndInterCollisionString = EditorGUIUtility.TextContent("Self-Collision and Inter-Collision");
+            public static readonly GUIContent editConstraintsLabel = EditorGUIUtility.TrTextContent("Edit Constraints");
+            public static readonly GUIContent editSelfInterCollisionLabel = EditorGUIUtility.TrTextContent("Edit Collision Particles");
+            public static readonly GUIContent selfInterCollisionParticleColor = EditorGUIUtility.TrTextContent("Visualization Color");
+            public static readonly GUIContent selfInterCollisionBrushColor = EditorGUIUtility.TrTextContent("Brush Color");
+            public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TrTextContent("Cloth Self-Collision And Inter-Collision");
+            public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
+            public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
+            public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
+            public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TrTextContent("Paint or Select Particles");
+            public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TrTextContent("Back Face Manipulation");
+            public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TrTextContent("Manipulate Backfaces");
+            public static readonly GUIContent selfCollisionString = EditorGUIUtility.TrTextContent("Self Collision");
+            public static readonly GUIContent setSelfAndInterCollisionString = EditorGUIUtility.TrTextContent("Self-Collision and Inter-Collision");
 
             public static readonly int clothEditorWindowWidth = 300;
 
@@ -114,38 +114,38 @@ namespace UnityEditor
 
             public static GUIContent[] toolIcons =
             {
-                EditorGUIUtility.TextContent("Select"),
-                EditorGUIUtility.TextContent("Paint")
+                EditorGUIUtility.TrTextContent("Select"),
+                EditorGUIUtility.TrTextContent("Paint")
             };
 
             public static GUIContent[] drawModeStrings =
             {
-                EditorGUIUtility.TextContent("Fixed"),
-                EditorGUIUtility.TextContent("Max Distance"),
-                EditorGUIUtility.TextContent("Surface Penetration")
+                EditorGUIUtility.TrTextContent("Fixed"),
+                EditorGUIUtility.TrTextContent("Max Distance"),
+                EditorGUIUtility.TrTextContent("Surface Penetration")
             };
 
             public static GUIContent[] toolModeStrings =
             {
-                EditorGUIUtility.TextContent("Select"),
-                EditorGUIUtility.TextContent("Paint"),
-                EditorGUIUtility.TextContent("Erase")
+                EditorGUIUtility.TrTextContent("Select"),
+                EditorGUIUtility.TrTextContent("Paint"),
+                EditorGUIUtility.TrTextContent("Erase")
             };
 
             public static GUIContent[] collToolModeIcons =
             {
-                EditorGUIUtility.TextContent("Select"),
-                EditorGUIUtility.TextContent("Paint"),
-                EditorGUIUtility.TextContent("Erase")
+                EditorGUIUtility.TrTextContent("Select"),
+                EditorGUIUtility.TrTextContent("Paint"),
+                EditorGUIUtility.TrTextContent("Erase")
             };
 
             public static GUIContent[] collVisModeStrings =
             {
-                EditorGUIUtility.TextContent("Self Collision"),
-                EditorGUIUtility.TextContent("Inter Collision"),
+                EditorGUIUtility.TrTextContent("Self Collision"),
+                EditorGUIUtility.TrTextContent("Inter Collision"),
             };
 
-            public static GUIContent paintIcon = EditorGUIUtility.IconContent("ClothInspector.PaintValue", "Change this vertex coefficient value by painting in the scene view.");
+            public static GUIContent paintIcon = EditorGUIUtility.TrIconContent("ClothInspector.PaintValue", "Change this vertex coefficient value by painting in the scene view.");
 
             public static EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {
@@ -153,20 +153,20 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles
             };
 
-            public static GUIContent selfCollisionDistanceGUIContent = EditorGUIUtility.TextContent("Self Collision Distance");
-            public static GUIContent selfCollisionStiffnessGUIContent = EditorGUIUtility.TextContent("Self Collision Stiffness");
+            public static GUIContent selfCollisionDistanceGUIContent = EditorGUIUtility.TrTextContent("Self Collision Distance");
+            public static GUIContent selfCollisionStiffnessGUIContent = EditorGUIUtility.TrTextContent("Self Collision Stiffness");
 
             static Styles()
             {
-                toolContents[0].tooltip = EditorGUIUtility.TextContent("Edit cloth constraints").text;
-                toolContents[1].tooltip = EditorGUIUtility.TextContent("Edit cloth self or inter collision").text;
+                toolContents[0].tooltip = EditorGUIUtility.TrTextContent("Edit cloth constraints").text;
+                toolContents[1].tooltip = EditorGUIUtility.TrTextContent("Edit cloth self or inter collision").text;
 
-                toolIcons[0].tooltip = EditorGUIUtility.TextContent("Select cloth particles for use in self or inter collision").text;
-                toolIcons[1].tooltip = EditorGUIUtility.TextContent("Paint cloth particles for use in self or inter collision").text;
+                toolIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles for use in self or inter collision").text;
+                toolIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles for use in self or inter collision").text;
 
-                collToolModeIcons[0].tooltip = EditorGUIUtility.TextContent("Select cloth particles.").text;
-                collToolModeIcons[1].tooltip = EditorGUIUtility.TextContent("Paint cloth particles.").text;
-                collToolModeIcons[2].tooltip = EditorGUIUtility.TextContent("Erase cloth particles.").text;
+                collToolModeIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles.").text;
+                collToolModeIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles.").text;
+                collToolModeIcons[2].tooltip = EditorGUIUtility.TrTextContent("Erase cloth particles.").text;
             }
         }
 
@@ -226,12 +226,7 @@ namespace UnityEditor
         {
             if (cloth.vertices.Length != m_NumVerts)
             {
-                InitBrushCollider();
-                InitSelfAndInterCollisionSelection();
-                InitClothParticlesInWorldSpace();
-
-                m_NumVerts = cloth.vertices.Length;
-
+                InitInspector();
                 return true;
             }
             else if (m_NumVerts == 0)
@@ -440,13 +435,16 @@ namespace UnityEditor
 
         void InitClothParticlesInWorldSpace()
         {
-            int length = cloth.vertices.Length;
+            Vector3[] vertices = cloth.vertices;
+            int length = vertices.Length;
             m_ClothParticlesInWorldSpace = new Vector3[length];
 
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
+            Quaternion rotation = t.rotation;
+            Vector3 position = t.position;
             for (int i = 0; i < length; i++)
             {
-                m_ClothParticlesInWorldSpace[i] = t.rotation * cloth.vertices[i] + t.position;
+                m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
             }
         }
 
@@ -500,6 +498,15 @@ namespace UnityEditor
             }
         }
 
+        void InitInspector()
+        {
+            InitBrushCollider();
+            InitSelfAndInterCollisionSelection();
+            InitClothParticlesInWorldSpace();
+
+            m_NumVerts = cloth.vertices.Length;
+        }
+
         void OnEnable()
         {
             if (s_ColorTexture == null)
@@ -507,13 +514,9 @@ namespace UnityEditor
 
             m_SkinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
 
+            InitInspector();
+
             GenerateSelectionMesh();
-
-            InitBrushCollider();
-            InitSelfAndInterCollisionSelection();
-            InitClothParticlesInWorldSpace();
-
-            m_NumVerts = cloth.vertices.Length;
 
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
@@ -1347,8 +1350,7 @@ namespace UnityEditor
             {
                 ClothSkinningCoefficient[] coefficients = cloth.coefficients;
                 if (m_ParticleSelection.Length != coefficients.Length)
-                    // Recreate selection if underlying mesh has changed.
-                    OnEnable();
+                    InitInspector();
             }
 
             Handles.BeginGUI();
@@ -1454,7 +1456,7 @@ namespace UnityEditor
                 EditorStyles.selectionRect.Draw(EditorGUIExt.FromToRect(m_SelectStartPoint, m_SelectMousePoint), GUIContent.none, false, false, false, false);
             Handles.EndGUI();
 
-            SceneViewOverlay.Window(new GUIContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Cloth Constraints"), ConstraintEditing, (int)SceneViewOverlay.Ordering.ClothConstraints, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
         void OnSceneEditSelfAndInterCollisionParticlesGUI()
@@ -1559,7 +1561,7 @@ namespace UnityEditor
                 menu.AddItem(GetDrawModeString(DrawMode.MaxDistance), drawMode == DrawMode.MaxDistance , VisualizationMenuSetMaxDistanceMode);
                 menu.AddItem(GetDrawModeString(DrawMode.CollisionSphereDistance), drawMode == DrawMode.CollisionSphereDistance , VisualizationMenuSetCollisionSphereMode);
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Manipulate Backfaces"), state.ManipulateBackfaces , VisualizationMenuToggleManipulateBackfaces);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Manipulate Backfaces"), state.ManipulateBackfaces , VisualizationMenuToggleManipulateBackfaces);
                 menu.DropDown(buttonRect);
             }
 

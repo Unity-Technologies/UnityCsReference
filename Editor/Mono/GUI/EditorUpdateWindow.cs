@@ -73,13 +73,13 @@ namespace UnityEditor
 
             s_ShowAtStartup = EditorPrefs.GetBool("EditorUpdateShowAtStartup", true);
 
-            s_Title = EditorGUIUtility.TextContent("Unity Editor Update Check");
+            s_Title = EditorGUIUtility.TrTextContent("Unity Editor Update Check");
 
             s_UnityLogo = EditorGUIUtility.IconContent("UnityLogo");
-            s_TextHasUpdate = EditorGUIUtility.TextContent("There is a new version of the Unity Editor available for download.\n\nCurrently installed version is {0}\nNew version is {1}");
-            s_TextUpToDate = EditorGUIUtility.TextContent("The Unity Editor is up to date. Currently installed version is {0}");
+            s_TextHasUpdate = EditorGUIUtility.TrTextContent("There is a new version of the Unity Editor available for download.\n\nCurrently installed version is {0}\nNew version is {1}");
+            s_TextUpToDate = EditorGUIUtility.TrTextContent("The Unity Editor is up to date. Currently installed version is {0}");
 
-            s_CheckForNewUpdatesText = EditorGUIUtility.TextContent("Check for Updates");
+            s_CheckForNewUpdatesText = EditorGUIUtility.TrTextContent("Check for Updates");
         }
 
         public void OnGUI()

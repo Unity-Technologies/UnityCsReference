@@ -36,17 +36,17 @@ namespace UnityEditor
 
         private class Styles
         {
-            public GUIContent hslContent                = new GUIContent("HSL Adjustment", "Hue_Shift, Saturation, Luminosity");
-            public GUIContent randomSeedContent         = new GUIContent("Random Seed", "$randomseed : the overall random aspect of the texture.");
-            public GUIContent randomizeButtonContent    = new GUIContent("Randomize");
-            public GUIContent generateAllOutputsContent = new GUIContent("Generate all outputs", "Force the generation of all Substance outputs.");
-            public GUIContent animatedContent           = new GUIContent("Animation update rate", "Set the animation update rate in millisecond");
-            public GUIContent defaultPlatform           = EditorGUIUtility.TextContent("Default");
-            public GUIContent targetWidth               = new GUIContent("Target Width");
-            public GUIContent targetHeight              = new GUIContent("Target Height");
-            public GUIContent textureFormat             = EditorGUIUtility.TextContent("Format");
-            public GUIContent loadBehavior              = new GUIContent("Load Behavior");
-            public GUIContent mipmapContent             = new GUIContent("Generate Mip Maps");
+            public GUIContent hslContent                = EditorGUIUtility.TrTextContent("HSL Adjustment", "Hue_Shift, Saturation, Luminosity");
+            public GUIContent randomSeedContent         = EditorGUIUtility.TrTextContent("Random Seed", "$randomseed : the overall random aspect of the texture.");
+            public GUIContent randomizeButtonContent    = EditorGUIUtility.TrTextContent("Randomize");
+            public GUIContent generateAllOutputsContent = EditorGUIUtility.TrTextContent("Generate all outputs", "Force the generation of all Substance outputs.");
+            public GUIContent animatedContent           = EditorGUIUtility.TrTextContent("Animation update rate", "Set the animation update rate in millisecond");
+            public GUIContent defaultPlatform           = EditorGUIUtility.TrTextContent("Default");
+            public GUIContent targetWidth               = EditorGUIUtility.TrTextContent("Target Width");
+            public GUIContent targetHeight              = EditorGUIUtility.TrTextContent("Target Height");
+            public GUIContent textureFormat             = EditorGUIUtility.TrTextContent("Format");
+            public GUIContent loadBehavior              = EditorGUIUtility.TrTextContent("Load Behavior");
+            public GUIContent mipmapContent             = EditorGUIUtility.TrTextContent("Generate Mip Maps");
         }
 
         // A ProceduralMaterialInspector is either created by a multi-material SubstanceImporterInspector,

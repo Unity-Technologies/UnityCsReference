@@ -24,6 +24,9 @@ namespace UnityEditorInternal
 
             switch (extension)
             {
+                // Most .asset files use their scriptable object defined icon instead of a default one.
+                case "asset": return AssetDatabase.GetCachedIcon(fileName) as Texture2D ?? EditorGUIUtility.FindTexture("GameManager Icon");
+
                 case "boo": return EditorGUIUtility.FindTexture("boo Script Icon");
                 case "cginc": return EditorGUIUtility.FindTexture("CGProgram Icon");
                 case "cs": return EditorGUIUtility.FindTexture("cs Script Icon");
@@ -37,14 +40,15 @@ namespace UnityEditorInternal
                 case "shader": return EditorGUIUtility.FindTexture(typeof(Shader));
                 case "txt": return EditorGUIUtility.FindTexture(typeof(TextAsset));
                 case "unity": return EditorGUIUtility.FindTexture(typeof(SceneAsset));
-                case "asset": case "prefs": return EditorGUIUtility.FindTexture(typeof(EditorSettings));
+                case "prefs": return EditorGUIUtility.FindTexture(typeof(EditorSettings));
                 case "anim": return EditorGUIUtility.FindTexture(typeof(Animation));
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
                 case "uxml": return EditorGUIUtility.FindTexture("UxmlScript Icon");
                 case "uss": return EditorGUIUtility.FindTexture("UssScript Icon");
 
-                case "ttf": case "otf": case "fon": case "fnt":  return EditorGUIUtility.FindTexture(typeof(Font));
+                case "ttf": case "otf": case "fon": case "fnt":
+                    return EditorGUIUtility.FindTexture(typeof(Font));
 
                 case "aac": case "aif": case "aiff": case "au": case "mid": case "midi": case "mp3": case "mpa":
                 case "ra": case "ram": case "wma": case "wav": case "wave": case "ogg":
@@ -63,11 +67,11 @@ namespace UnityEditorInternal
                 case "wrl": case "wrz": case "fbx":
                     return EditorGUIUtility.FindTexture(typeof(Mesh));
 
+                case "dv": case "mp4": case "mpg": case "mpeg": case "m4v": case "ogv": case "vp8": case "webm":
                 case "asf": case "asx": case "avi": case "dat": case "divx": case "dvx": case "mlv": case "m2l":
-                case "m2t": case "m2ts": case "m2v": case "m4e": case "m4v": case "mjp": case "mov": case "movie":
-                case "mp21": case "mp4": case "mpe": case "mpeg": case "mpg": case "mpv2": case "ogm": case "qt":
-                case "rm": case "rmvb": case "wmw": case "xvid":
-                    return EditorGUIUtility.FindTexture(typeof(MovieTexture));
+                case "m2t": case "m2ts": case "m2v": case "m4e": case "mjp": case "mov": case "movie":
+                case "mp21": case "mpe": case "mpv2": case "ogm": case "qt": case "rm": case "rmvb": case "wmw": case "xvid":
+                    return AssetDatabase.GetCachedIcon(fileName) as Texture2D ?? EditorGUIUtility.FindTexture(typeof(MovieTexture));
 
                 case "colors": case "gradients":
                 case "curves": case "curvesnormalized": case "particlecurves": case "particlecurvessigned": case "particledoublecurves": case "particledoublecurvessigned":
@@ -412,6 +416,11 @@ namespace UnityEditorInternal
             // It lives next to the editor dll.
             var dir = Path.GetDirectoryName(GetEditorAssemblyPath());
             return Path.Combine(dir, "UnityEngine.dll");
+        }
+
+        internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target)
+        {
+            return GetCompilationDefines(options, targetGroup, target, PlayerSettings.GetApiCompatibilityLevel(targetGroup));
         }
     }
 }

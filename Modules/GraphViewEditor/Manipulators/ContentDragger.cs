@@ -10,8 +10,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     // drags the contentContainer of a graphview around
     // add to the GraphView
-    internal
-    class ContentDragger : MouseManipulator
+    public class ContentDragger : MouseManipulator
     {
         private Vector2 m_Start;
         public Vector2 panSpeed { get; set; }

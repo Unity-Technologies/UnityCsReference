@@ -108,7 +108,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             }
 
             m_Labels = new GUIContent[m_Panels.Count + 1];
-            m_Labels[0] = new GUIContent("Select a panel");
+            m_Labels[0] = EditorGUIUtility.TrTextContent("Select a panel");
             for (int i = 0; i < m_Panels.Count; i++)
                 m_Labels[i + 1] = new GUIContent(GetName(m_Panels[i]));
 

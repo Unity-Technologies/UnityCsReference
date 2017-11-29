@@ -23,38 +23,38 @@ namespace UnityEditor
         {
             static Styles() {}
 
-            public static readonly GUIContent env_top = EditorGUIUtility.TextContent("Environment");
-            public static readonly GUIContent env_skybox_mat = EditorGUIUtility.TextContent("Skybox Material|Specifies the material that is used to simulate the sky or other distant background in the Scene.");
-            public static readonly GUIContent env_skybox_sun = EditorGUIUtility.TextContent("Sun Source|Specifies the directional light that is used to indicate the direction of the sun when a procedural skybox is used. If set to None, the brightest directional light in the Scene is used to represent the sun.");
-            public static readonly GUIContent env_amb_top = EditorGUIUtility.TextContent("Environment Lighting");
-            public static readonly GUIContent env_amb_src = EditorGUIUtility.TextContent("Source|Specifies whether to use a skybox, gradient, or color for ambient light contributed to the Scene.");
-            public static readonly GUIContent env_amb_int = EditorGUIUtility.TextContent("Intensity Multiplier|Controls the brightness of the skybox lighting in the Scene.");
-            public static readonly GUIContent env_refl_top = EditorGUIUtility.TextContent("Environment Reflections");
-            public static readonly GUIContent env_refl_src = EditorGUIUtility.TextContent("Source|Specifies whether to use the skybox or a custom cube map for reflection effects in the Scene.");
-            public static readonly GUIContent env_refl_res = EditorGUIUtility.TextContent("Resolution|Controls the resolution for the cube map assigned to the skybox material for reflection effects in the Scene.");
-            public static readonly GUIContent env_refl_cmp = EditorGUIUtility.TextContent("Compression|Controls how Unity compresses the reflection cube maps. Options are Auto, Compressed, and Uncompressed. Auto compresses the cube maps if the compression format is suitable.");
-            public static readonly GUIContent env_refl_int = EditorGUIUtility.TextContent("Intensity Multiplier|Controls how much the skybox or custom cubemap affects reflections in the Scene. A value of 1 produces physically correct results.");
-            public static readonly GUIContent env_refl_bnc = EditorGUIUtility.TextContent("Bounces|Controls how many times a reflection includes other reflections. A value of 1 results in the Scene being rendered once so mirrored reflections will be black. A value of 2 results in mirrored reflections being visible in the Scene.");
-            public static readonly GUIContent skyboxWarning = EditorGUIUtility.TextContent("Shader of this material does not support skybox rendering.");
-            public static readonly GUIContent createLight = EditorGUIUtility.TextContent("Create Light");
-            public static readonly GUIContent ambientUp = EditorGUIUtility.TextContent("Sky Color|Controls the color of light emitted from the sky in the Scene.");
-            public static readonly GUIContent ambientMid = EditorGUIUtility.TextContent("Equator Color|Controls the color of light emitted from the sides of the Scene.");
-            public static readonly GUIContent ambientDown = EditorGUIUtility.TextContent("Ground Color|Controls the color of light emitted from the ground of the Scene.");
-            public static readonly GUIContent ambient = EditorGUIUtility.TextContent("Ambient Color|Controls the color of the ambient light contributed to the Scene.");
-            public static readonly GUIContent customReflection = EditorGUIUtility.TextContent("Cubemap|Specifies the custom cube map used for reflection effects in the Scene.");
-            public static readonly GUIContent AmbientLightingMode = EditorGUIUtility.TextContent("Ambient Mode|Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. Options are Realtime or Baked. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
+            public static readonly GUIContent env_top = EditorGUIUtility.TrTextContent("Environment");
+            public static readonly GUIContent env_skybox_mat = EditorGUIUtility.TrTextContent("Skybox Material", "Specifies the material that is used to simulate the sky or other distant background in the Scene.");
+            public static readonly GUIContent env_skybox_sun = EditorGUIUtility.TrTextContent("Sun Source", "Specifies the directional light that is used to indicate the direction of the sun when a procedural skybox is used. If set to None, the brightest directional light in the Scene is used to represent the sun.");
+            public static readonly GUIContent env_amb_top = EditorGUIUtility.TrTextContent("Environment Lighting");
+            public static readonly GUIContent env_amb_src = EditorGUIUtility.TrTextContent("Source", "Specifies whether to use a skybox, gradient, or color for ambient light contributed to the Scene.");
+            public static readonly GUIContent env_amb_int = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Controls the brightness of the skybox lighting in the Scene.");
+            public static readonly GUIContent env_refl_top = EditorGUIUtility.TrTextContent("Environment Reflections");
+            public static readonly GUIContent env_refl_src = EditorGUIUtility.TrTextContent("Source", "Specifies whether to use the skybox or a custom cube map for reflection effects in the Scene.");
+            public static readonly GUIContent env_refl_res = EditorGUIUtility.TrTextContent("Resolution", "Controls the resolution for the cube map assigned to the skybox material for reflection effects in the Scene.");
+            public static readonly GUIContent env_refl_cmp = EditorGUIUtility.TrTextContent("Compression", "Controls how Unity compresses the reflection cube maps. Options are Auto, Compressed, and Uncompressed. Auto compresses the cube maps if the compression format is suitable.");
+            public static readonly GUIContent env_refl_int = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Controls how much the skybox or custom cubemap affects reflections in the Scene. A value of 1 produces physically correct results.");
+            public static readonly GUIContent env_refl_bnc = EditorGUIUtility.TrTextContent("Bounces", "Controls how many times a reflection includes other reflections. A value of 1 results in the Scene being rendered once so mirrored reflections will be black. A value of 2 results in mirrored reflections being visible in the Scene.");
+            public static readonly GUIContent skyboxWarning = EditorGUIUtility.TrTextContent("Shader of this material does not support skybox rendering.");
+            public static readonly GUIContent createLight = EditorGUIUtility.TrTextContent("Create Light");
+            public static readonly GUIContent ambientUp = EditorGUIUtility.TrTextContent("Sky Color", "Controls the color of light emitted from the sky in the Scene.");
+            public static readonly GUIContent ambientMid = EditorGUIUtility.TrTextContent("Equator Color", "Controls the color of light emitted from the sides of the Scene.");
+            public static readonly GUIContent ambientDown = EditorGUIUtility.TrTextContent("Ground Color", "Controls the color of light emitted from the ground of the Scene.");
+            public static readonly GUIContent ambient = EditorGUIUtility.TrTextContent("Ambient Color", "Controls the color of the ambient light contributed to the Scene.");
+            public static readonly GUIContent customReflection = EditorGUIUtility.TrTextContent("Cubemap", "Specifies the custom cube map used for reflection effects in the Scene.");
+            public static readonly GUIContent AmbientLightingMode = EditorGUIUtility.TrTextContent("Ambient Mode", "Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. Options are Realtime or Baked. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
 
             public static readonly GUIContent[] kFullAmbientSource =
             {
-                EditorGUIUtility.TextContent("Skybox"),
-                EditorGUIUtility.TextContent("Gradient"),
-                EditorGUIUtility.TextContent("Color"),
+                EditorGUIUtility.TrTextContent("Skybox"),
+                EditorGUIUtility.TrTextContent("Gradient"),
+                EditorGUIUtility.TrTextContent("Color"),
             };
 
             public static readonly GUIContent[] AmbientLightingModes =
             {
-                EditorGUIUtility.TextContent("Realtime"),
-                EditorGUIUtility.TextContent("Baked")
+                EditorGUIUtility.TrTextContent("Realtime"),
+                EditorGUIUtility.TrTextContent("Baked")
             };
 
             public static readonly int[] kFullAmbientSourceValues = { (int)AmbientMode.Skybox, (int)AmbientMode.Trilight, (int)AmbientMode.Flat };

@@ -521,7 +521,7 @@ namespace UnityEditor.VersionControl
                 // Draw separation line over the button
                 GUI.Label(rect, GUIContent.none, s_Styles.bottomBarBg);
 
-                var content = new GUIContent("Apply All Incoming Changes");
+                var content = EditorGUIUtility.TrTextContent("Apply All Incoming Changes");
                 var buttonSize = EditorStyles.miniButton.CalcSize(content);
                 Rect progressRect = new Rect(rect.x, rect.y - 2, rect.width - buttonSize.x - 5f, rect.height);
                 ProgressGUI(progressRect, Provider.activeTask, false);
@@ -621,12 +621,12 @@ namespace UnityEditor.VersionControl
 
             if (s_ToolbarButtonsWidth == 0f)
             {
-                s_ToolbarButtonsWidth = EditorStyles.toolbarButton.CalcSize(new GUIContent("Incoming (xx)")).x;
-                s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(new GUIContent("Outgoing")).x;
+                s_ToolbarButtonsWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Incoming (xx)")).x;
+                s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Outgoing")).x;
                 s_ToolbarButtonsWidth += EditorStyles.toolbarButton.CalcSize(new GUIContent(refreshIcon)).x;
 
-                s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(new GUIContent("Settings")).x;
-                s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(new GUIContent("Delete Empty Changesets")).x;
+                s_SettingsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Settings")).x;
+                s_DeleteChangesetsButtonWidth = EditorStyles.toolbarButton.CalcSize(EditorGUIUtility.TrTextContent("Delete Empty Changesets")).x;
             }
         }
 

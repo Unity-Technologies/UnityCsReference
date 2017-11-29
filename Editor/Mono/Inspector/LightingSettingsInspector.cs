@@ -13,54 +13,54 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIContent OptimizeRealtimeUVs = EditorGUIUtility.TextContent("Optimize Realtime UVs|Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, scaled, and packed for optimisation purposes. When disabled, the authored UVs will get scaled and packed, but not merged.");
-            public GUIContent IgnoreNormalsForChartDetection = EditorGUIUtility.TextContent("Ignore Normals|When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
+            public GUIContent OptimizeRealtimeUVs = EditorGUIUtility.TrTextContent("Optimize Realtime UVs", "Specifies whether the authored mesh UVs get optimized for Realtime Global Illumination or not. When enabled, the authored UVs can get merged, scaled, and packed for optimisation purposes. When disabled, the authored UVs will get scaled and packed, but not merged.");
+            public GUIContent IgnoreNormalsForChartDetection = EditorGUIUtility.TrTextContent("Ignore Normals", "When enabled, prevents the UV charts from being split during the precompute process for Realtime Global Illumination lighting.");
             public int[] MinimumChartSizeValues = { 2, 4 };
             public GUIContent[] MinimumChartSizeStrings =
             {
-                EditorGUIUtility.TextContent("2 (Minimum)"),
-                EditorGUIUtility.TextContent("4 (Stitchable)"),
+                EditorGUIUtility.TrTextContent("2 (Minimum)"),
+                EditorGUIUtility.TrTextContent("4 (Stitchable)"),
             };
-            public GUIContent Lighting = new GUIContent(EditorGUIUtility.TextContent("Lighting").text); // prevent the Lighting window icon from being added
-            public GUIContent MinimumChartSize = EditorGUIUtility.TextContent("Min Chart Size|Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
-            public GUIContent ImportantGI = EditorGUIUtility.TextContent("Prioritize Illumination|When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
-            public GUIContent StitchLightmapSeams = EditorGUIUtility.TextContent("Stitch Seams|When enabled, seams in baked lightmaps will get smoothed.");
-            public GUIContent AutoUVMaxDistance = EditorGUIUtility.TextContent("Max Distance|Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance they will be simplified for optimization purposes.");
-            public GUIContent AutoUVMaxAngle = EditorGUIUtility.TextContent("Max Angle|Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
-            public GUIContent LightmapParameters = EditorGUIUtility.TextContent("Lightmap Parameters|Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-            public GUIContent AtlasTilingX = EditorGUIUtility.TextContent("Tiling X");
-            public GUIContent AtlasTilingY = EditorGUIUtility.TextContent("Tiling Y");
-            public GUIContent AtlasOffsetX = EditorGUIUtility.TextContent("Offset X");
-            public GUIContent AtlasOffsetY = EditorGUIUtility.TextContent("Offset Y");
-            public GUIContent ClampedSize = EditorGUIUtility.TextContent("Object's size in lightmap has reached the max atlas size.|If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightmapEditorSettings class.");
-            public GUIContent ClampedPackingResolution = EditorGUIUtility.TextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
-            public GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
-            public GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
-            public GUIContent UVOverlap = EditorGUIUtility.TextContent("This GameObject has overlapping UVs. Please enable 'Generate Lightmap UVs' on the Asset or fix in your modelling package.");
-            public GUIContent Atlas = EditorGUIUtility.TextContent("Baked Lightmap");
-            public GUIContent RealtimeLM = EditorGUIUtility.TextContent("Realtime Lightmap");
-            public GUIContent ScaleInLightmap = EditorGUIUtility.TextContent("Scale In Lightmap|Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
-            public GUIContent AtlasIndex = EditorGUIUtility.TextContent("Lightmap Index");
-            public GUIContent PVRInstanceHash = EditorGUIUtility.TextContent("Instance Hash|The hash of the baked GI instance.");
-            public GUIContent PVRAtlasHash = EditorGUIUtility.TextContent("Atlas Hash|The hash of the atlas this baked GI instance is a part of.");
-            public GUIContent PVRAtlasInstanceOffset = EditorGUIUtility.TextContent("Atlas Instance Offset|The offset into the transform array instances of this atlas start at.");
-            public GUIContent RealtimeLMResolution = EditorGUIUtility.TextContent("System Resolution|The resolution in texels of the realtime lightmap that this renderer belongs to.");
-            public GUIContent RealtimeLMInstanceResolution = EditorGUIUtility.TextContent("Instance Resolution|The resolution in texels of the realtime lightmap packed instance.");
-            public GUIContent RealtimeLMInputSystemHash = EditorGUIUtility.TextContent("System Hash|The hash of the realtime system that the renderer belongs to.");
-            public GUIContent RealtimeLMInstanceHash = EditorGUIUtility.TextContent("Instance Hash|The hash of the realtime GI instance.");
-            public GUIContent RealtimeLMGeometryHash = EditorGUIUtility.TextContent("Geometry Hash|The hash of the realtime GI geometry that the renderer is using.");
-            public GUIContent UVCharting = EditorGUIUtility.TextContent("UV Charting Control");
-            public GUIContent LightmapSettings = EditorGUIUtility.TextContent("Lightmap Settings");
-            public GUIContent LightmapStatic = EditorGUIUtility.TextContent("Lightmap Static|Controls whether the geometry will be marked as Static for lightmapping purposes. When enabled, this mesh will be present in lightmap calculations.");
-            public GUIContent CastShadows = EditorGUIUtility.TextContent("Cast Shadows|Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
-            public GUIContent ReceiveShadows = EditorGUIUtility.TextContent("Receive Shadows|When enabled, any shadows cast from other objects are drawn on the geometry.");
-            public GUIContent MotionVectors = EditorGUIUtility.TextContent("Motion Vectors|Specifies whether the Mesh renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
+            public GUIContent Lighting = new GUIContent(EditorGUIUtility.TrTextContent("Lighting").text); // prevent the Lighting window icon from being added
+            public GUIContent MinimumChartSize = EditorGUIUtility.TrTextContent("Min Chart Size", "Specifies the minimum texel size used for a UV chart. If stitching is required, a value of 4 will create a chart of 4x4 texels to store lighting and directionality. If stitching is not required, a value of 2 will reduce the texel density and provide better lighting build times and run time performance.");
+            public GUIContent ImportantGI = EditorGUIUtility.TrTextContent("Prioritize Illumination", "When enabled, the object will be marked as a priority object and always included in lighting calculations. Useful for objects that will be strongly emissive to make sure that other objects will be illuminated by this object.");
+            public GUIContent StitchLightmapSeams = EditorGUIUtility.TrTextContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
+            public GUIContent AutoUVMaxDistance = EditorGUIUtility.TrTextContent("Max Distance", "Specifies the maximum worldspace distance to be used for UV chart simplification. If charts are within this distance they will be simplified for optimization purposes.");
+            public GUIContent AutoUVMaxAngle = EditorGUIUtility.TrTextContent("Max Angle", "Specifies the maximum angle in degrees between faces sharing a UV edge. If the angle between the faces is below this value, the UV charts will be simplified.");
+            public GUIContent LightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
+            public GUIContent AtlasTilingX = EditorGUIUtility.TrTextContent("Tiling X");
+            public GUIContent AtlasTilingY = EditorGUIUtility.TrTextContent("Tiling Y");
+            public GUIContent AtlasOffsetX = EditorGUIUtility.TrTextContent("Offset X");
+            public GUIContent AtlasOffsetY = EditorGUIUtility.TrTextContent("Offset Y");
+            public GUIContent ClampedSize = EditorGUIUtility.TrTextContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, divide it into smaller meshes or set higher max atlas size via the LightmapEditorSettings class.");
+            public GUIContent ClampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
+            public GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
+            public GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
+            public GUIContent UVOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please enable 'Generate Lightmap UVs' on the Asset or fix in your modelling package.");
+            public GUIContent Atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
+            public GUIContent RealtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
+            public GUIContent ScaleInLightmap = EditorGUIUtility.TrTextContent("Scale In Lightmap", "Specifies the relative size of object's UVs within a lightmap. A value of 0 will result in the object not being lightmapped, but still contribute lighting to other objects in the Scene.");
+            public GUIContent AtlasIndex = EditorGUIUtility.TrTextContent("Lightmap Index");
+            public GUIContent PVRInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the baked GI instance.");
+            public GUIContent PVRAtlasHash = EditorGUIUtility.TrTextContent("Atlas Hash", "The hash of the atlas this baked GI instance is a part of.");
+            public GUIContent PVRAtlasInstanceOffset = EditorGUIUtility.TrTextContent("Atlas Instance Offset", "The offset into the transform array instances of this atlas start at.");
+            public GUIContent RealtimeLMResolution = EditorGUIUtility.TrTextContent("System Resolution", "The resolution in texels of the realtime lightmap that this renderer belongs to.");
+            public GUIContent RealtimeLMInstanceResolution = EditorGUIUtility.TrTextContent("Instance Resolution", "The resolution in texels of the realtime lightmap packed instance.");
+            public GUIContent RealtimeLMInputSystemHash = EditorGUIUtility.TrTextContent("System Hash", "The hash of the realtime system that the renderer belongs to.");
+            public GUIContent RealtimeLMInstanceHash = EditorGUIUtility.TrTextContent("Instance Hash", "The hash of the realtime GI instance.");
+            public GUIContent RealtimeLMGeometryHash = EditorGUIUtility.TrTextContent("Geometry Hash", "The hash of the realtime GI geometry that the renderer is using.");
+            public GUIContent UVCharting = EditorGUIUtility.TrTextContent("UV Charting Control");
+            public GUIContent LightmapSettings = EditorGUIUtility.TrTextContent("Lightmap Settings");
+            public GUIContent LightmapStatic = EditorGUIUtility.TrTextContent("Lightmap Static", "Controls whether the geometry will be marked as Static for lightmapping purposes. When enabled, this mesh will be present in lightmap calculations.");
+            public GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
+            public GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
+            public GUIContent MotionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
 
-            public GUIContent LightmapInfoBox = EditorGUIUtility.TextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
-            public GUIContent TerrainLightmapInfoBox = EditorGUIUtility.TextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
-            public GUIContent ResolutionTooHighWarning = EditorGUIUtility.TextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
-            public GUIContent ResolutionTooLowWarning = EditorGUIUtility.TextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
-            public GUIContent GINotEnabledInfo = EditorGUIUtility.TextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
+            public GUIContent LightmapInfoBox = EditorGUIUtility.TrTextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
+            public GUIContent TerrainLightmapInfoBox = EditorGUIUtility.TrTextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
+            public GUIContent ResolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
+            public GUIContent ResolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
+            public GUIContent GINotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
         }
 
         static Styles s_Styles;
@@ -70,7 +70,6 @@ namespace UnityEditor
         bool m_ShowLightmapSettings = true;
         bool m_ShowBakedLM = false;
         bool m_ShowRealtimeLM = false;
-        AnimBool m_ShowClampedSize = new AnimBool();
 
         SerializedObject m_SerializedObject;
         SerializedObject m_GameObjectsSerializedObject;
@@ -202,9 +201,15 @@ namespace UnityEditor
             // Most of the settings apply to both, realtime and baked GI.
             if (enableSettings)
             {
-                m_ShowChartingSettings = EditorGUILayout.Foldout(m_ShowChartingSettings, s_Styles.UVCharting);
-                if (m_ShowChartingSettings)
-                    RendererUVSettings();
+                bool showEnlightenSettings = isPrefabAsset || LightModeUtil.Get().IsRealtimeGIEnabled() || (LightModeUtil.Get().AreBakedLightmapsEnabled() && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
+                bool showProgressiveSettings = isPrefabAsset || (LightModeUtil.Get().AreBakedLightmapsEnabled() && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU);
+
+                if (showEnlightenSettings)
+                {
+                    m_ShowChartingSettings = EditorGUILayout.Foldout(m_ShowChartingSettings, s_Styles.UVCharting);
+                    if (m_ShowChartingSettings)
+                        RendererUVSettings();
+                }
 
                 m_ShowLightmapSettings = EditorGUILayout.Foldout(m_ShowLightmapSettings, s_Styles.LightmapSettings);
 
@@ -226,13 +231,11 @@ namespace UnityEditor
 
                     ShowClampedSizeInLightmapGUI(lightmapScale, cachedSurfaceArea);
 
-                    EditorGUILayout.PropertyField(m_ImportantGI, s_Styles.ImportantGI);
+                    // Enlighten specific
+                    if (showEnlightenSettings)
+                        EditorGUILayout.PropertyField(m_ImportantGI, s_Styles.ImportantGI);
 
-                    bool pathTracerIsActive = (
-                            LightModeUtil.Get().AreBakedLightmapsEnabled() &&
-                            LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU);
-
-                    if (isPrefabAsset || pathTracerIsActive)
+                    if (showProgressiveSettings)
                         EditorGUILayout.PropertyField(m_StitchLightmapSeams, s_Styles.StitchLightmapSeams);
 
                     LightmapParametersGUI(m_LightmapParameters, s_Styles.LightmapParameters);
@@ -378,12 +381,9 @@ namespace UnityEditor
         void ShowClampedSizeInLightmapGUI(float lightmapScale, float cachedSurfaceArea)
         {
             float sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * LightmapEditorSettings.bakeResolution * lightmapScale;
-            m_ShowClampedSize.target = sizeInLightmap > LightmapEditorSettings.maxAtlasSize;
 
-            if (EditorGUILayout.BeginFadeGroup(m_ShowClampedSize.faded))
+            if (sizeInLightmap > LightmapEditorSettings.maxAtlasSize)
                 EditorGUILayout.HelpBox(s_Styles.ClampedSize.text, MessageType.Info);
-
-            EditorGUILayout.EndFadeGroup();
         }
 
         float LightmapScaleGUI(float lodScale)
@@ -578,7 +578,7 @@ namespace UnityEditor
                 }
             }
             if (terrainChunksX * terrainChunksY > 1)
-                EditorGUILayout.HelpBox(string.Format("Terrain is chunked up into {0} instances for baking.", terrainChunksX * terrainChunksY), MessageType.None);
+                EditorGUILayout.HelpBox(string.Format(L10n.Tr("Terrain is chunked up into {0} instances for baking."), terrainChunksX * terrainChunksY), MessageType.None);
         }
 
         void ShowBakePerformanceWarning(Terrain terrain)

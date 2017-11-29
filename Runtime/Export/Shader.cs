@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using PassType = UnityEngine.Rendering.PassType;
+using SphericalHarmonicsL2 = UnityEngine.Rendering.SphericalHarmonicsL2;
 
 namespace UnityEngine
 {
@@ -186,6 +187,76 @@ namespace UnityEngine
         public void GetVectorArray(int name, List<Vector4> values)      { ExtractVectorArray(name, values); }
         public void GetMatrixArray(string name, List<Matrix4x4> values) { ExtractMatrixArray(Shader.PropertyToID(name), values); }
         public void GetMatrixArray(int name, List<Matrix4x4> values)    { ExtractMatrixArray(name, values); }
+
+        public void CopySHCoefficientArraysFrom(List<SphericalHarmonicsL2> lightProbes)
+        {
+            if (lightProbes == null)
+                throw new ArgumentNullException("lightProbes");
+            CopySHCoefficientArraysFrom(NoAllocHelpers.ExtractArrayFromListT(lightProbes), 0, 0, lightProbes.Count);
+        }
+
+        public void CopySHCoefficientArraysFrom(SphericalHarmonicsL2[] lightProbes)
+        {
+            if (lightProbes == null)
+                throw new ArgumentNullException("lightProbes");
+            CopySHCoefficientArraysFrom(lightProbes, 0, 0, lightProbes.Length);
+        }
+
+        public void CopySHCoefficientArraysFrom(List<SphericalHarmonicsL2> lightProbes, int sourceStart, int destStart, int count)
+        {
+            CopySHCoefficientArraysFrom(NoAllocHelpers.ExtractArrayFromListT(lightProbes), sourceStart, destStart, count);
+        }
+
+        public void CopySHCoefficientArraysFrom(SphericalHarmonicsL2[] lightProbes, int sourceStart, int destStart, int count)
+        {
+            if (lightProbes == null)
+                throw new ArgumentNullException("lightProbes");
+            else if (sourceStart < 0)
+                throw new ArgumentOutOfRangeException("sourceStart", "Argument sourceStart must not be negative.");
+            else if (destStart < 0)
+                throw new ArgumentOutOfRangeException("sourceStart", "Argument destStart must not be negative.");
+            else if (count < 0)
+                throw new ArgumentOutOfRangeException("count", "Argument count must not be negative.");
+            else if (lightProbes.Length < sourceStart + count)
+                throw new ArgumentOutOfRangeException("The specified source start index or count is out of the range.");
+
+            Internal_CopySHCoefficientArraysFrom(this, lightProbes, sourceStart, destStart, count);
+        }
+
+        public void CopyProbeOcclusionArrayFrom(List<Vector4> occlusionProbes)
+        {
+            if (occlusionProbes == null)
+                throw new ArgumentNullException("occlusionProbes");
+            CopyProbeOcclusionArrayFrom(NoAllocHelpers.ExtractArrayFromListT(occlusionProbes), 0, 0, occlusionProbes.Count);
+        }
+
+        public void CopyProbeOcclusionArrayFrom(Vector4[] occlusionProbes)
+        {
+            if (occlusionProbes == null)
+                throw new ArgumentNullException("occlusionProbes");
+            CopyProbeOcclusionArrayFrom(occlusionProbes, 0, 0, occlusionProbes.Length);
+        }
+
+        public void CopyProbeOcclusionArrayFrom(List<Vector4> occlusionProbes, int sourceStart, int destStart, int count)
+        {
+            CopyProbeOcclusionArrayFrom(NoAllocHelpers.ExtractArrayFromListT(occlusionProbes), sourceStart, destStart, count);
+        }
+
+        public void CopyProbeOcclusionArrayFrom(Vector4[] occlusionProbes, int sourceStart, int destStart, int count)
+        {
+            if (occlusionProbes == null)
+                throw new ArgumentNullException("occlusionProbes");
+            else if (sourceStart < 0)
+                throw new ArgumentOutOfRangeException("sourceStart", "Argument sourceStart must not be negative.");
+            else if (destStart < 0)
+                throw new ArgumentOutOfRangeException("sourceStart", "Argument destStart must not be negative.");
+            else if (count < 0)
+                throw new ArgumentOutOfRangeException("count", "Argument count must not be negative.");
+            else if (occlusionProbes.Length < sourceStart + count)
+                throw new ArgumentOutOfRangeException("The specified source start index or count is out of the range.");
+
+            Internal_CopyProbeOcclusionArrayFrom(this, occlusionProbes, sourceStart, destStart, count);
+        }
     }
 }
 

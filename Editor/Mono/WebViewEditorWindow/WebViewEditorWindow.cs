@@ -80,9 +80,9 @@ namespace UnityEditor.Web
 
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Reload"), false, Reload);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Reload"), false, Reload);
             if (Unsupported.IsDeveloperMode())
-                menu.AddItem(new GUIContent("About"), false, About);
+                menu.AddItem(EditorGUIUtility.TrTextContent("About"), false, About);
         }
 
         // Reloads the web view

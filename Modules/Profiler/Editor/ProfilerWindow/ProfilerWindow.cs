@@ -23,44 +23,44 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent addArea = EditorGUIUtility.TextContent("Add Profiler|Add a profiler area");
-            public static readonly GUIContent deepProfile = EditorGUIUtility.TextContent("Deep Profile|Instrument all mono calls to investigate scripts");
-            public static readonly GUIContent profileEditor = EditorGUIUtility.TextContent("Profile Editor|Enable profiling of the editor");
-            public static readonly GUIContent noData = EditorGUIUtility.TextContent("No frame data available");
-            public static readonly GUIContent frameDebugger = EditorGUIUtility.TextContent("Open Frame Debugger|Frame Debugger for current game view");
-            public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TextContent("Frame Debugger|Open Frame Debugger (Current frame needs to be selected)");
-            public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TextContent("Gather object references|Collect reference information to see where objects are referenced from. Disable this to save memory");
+            public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Add Profiler", "Add a profiler area");
+            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all mono calls to investigate scripts");
+            public static readonly GUIContent profileEditor = EditorGUIUtility.TrTextContent("Profile Editor", "Enable profiling of the editor");
+            public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
+            public static readonly GUIContent frameDebugger = EditorGUIUtility.TrTextContent("Open Frame Debugger", "Frame Debugger for current game view");
+            public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TrTextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)");
+            public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
 
-            public static readonly GUIContent memRecord = EditorGUIUtility.TextContent("Mem Record|Record activity in the native memory system");
-            public static readonly GUIContent profilerRecord = EditorGUIUtility.TextContentWithIcon("Record|Record profiling information", "Profiler.Record");
-            public static readonly GUIContent profilerInstrumentation = EditorGUIUtility.TextContent("Instrumentation|Add Profiler Instrumentation to selected functions");
-            public static readonly GUIContent prevFrame = EditorGUIUtility.IconContent("Profiler.PrevFrame", "|Go back one frame");
-            public static readonly GUIContent nextFrame = EditorGUIUtility.IconContent("Profiler.NextFrame", "|Go one frame forwards");
-            public static readonly GUIContent currentFrame = EditorGUIUtility.TextContent("Current|Go to current frame");
-            public static readonly GUIContent frame = EditorGUIUtility.TextContent("Frame: ");
-            public static readonly GUIContent clearOnPlay = EditorGUIUtility.TextContent("Clear on Play");
-            public static readonly GUIContent clearData = EditorGUIUtility.TextContent("Clear");
-            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TextContent("Save|Save current profiling information to a binary file");
-            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TextContent("Load|Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly GUIContent memRecord = EditorGUIUtility.TrTextContent("Mem Record", "Record activity in the native memory system");
+            public static readonly GUIContent profilerRecord = EditorGUIUtility.TrTextContentWithIcon("Record", "Record profiling information", "Profiler.Record");
+            public static readonly GUIContent profilerInstrumentation = EditorGUIUtility.TrTextContent("Instrumentation", "Add Profiler Instrumentation to selected functions");
+            public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame");
+            public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards");
+            public static readonly GUIContent currentFrame = EditorGUIUtility.TrTextContent("Current", "Go to current frame");
+            public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ");
+            public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
+            public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear");
+            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrTextContent("Save", "Save current profiling information to a binary file");
+            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
 
-            public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TextContent("Color Blind Mode");
+            public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
 
             internal static GUIContent[] GetLocalizedReasons()
             {
                 GUIContent[] gc = new GUIContent[11];
-                gc[(int)MemoryInfoGCReason.SceneObject] = EditorGUIUtility.TextContent("Scene object (Unloaded by loading a new scene or destroying it)");
-                gc[(int)MemoryInfoGCReason.BuiltinResource] = EditorGUIUtility.TextContent("Builtin Resource (Never unloaded)");
-                gc[(int)MemoryInfoGCReason.MarkedDontSave] = EditorGUIUtility.TextContent("Object is marked Don't Save. (Must be explicitly destroyed or it will leak)");
-                gc[(int)MemoryInfoGCReason.AssetMarkedDirtyInEditor] = EditorGUIUtility.TextContent("Asset is dirty and must be saved first (Editor only)");
+                gc[(int)MemoryInfoGCReason.SceneObject] = EditorGUIUtility.TrTextContent("Scene object (Unloaded by loading a new scene or destroying it)");
+                gc[(int)MemoryInfoGCReason.BuiltinResource] = EditorGUIUtility.TrTextContent("Builtin Resource (Never unloaded)");
+                gc[(int)MemoryInfoGCReason.MarkedDontSave] = EditorGUIUtility.TrTextContent("Object is marked Don't Save. (Must be explicitly destroyed or it will leak)");
+                gc[(int)MemoryInfoGCReason.AssetMarkedDirtyInEditor] = EditorGUIUtility.TrTextContent("Asset is dirty and must be saved first (Editor only)");
 
-                gc[(int)MemoryInfoGCReason.SceneAssetReferencedByNativeCodeOnly] = EditorGUIUtility.TextContent("Asset type created from code or stored in the scene, referenced from native code.");
-                gc[(int)MemoryInfoGCReason.SceneAssetReferenced] = EditorGUIUtility.TextContent("Asset type created from code or stored in the scene, referenced from scripts and native code.");
+                gc[(int)MemoryInfoGCReason.SceneAssetReferencedByNativeCodeOnly] = EditorGUIUtility.TrTextContent("Asset type created from code or stored in the scene, referenced from native code.");
+                gc[(int)MemoryInfoGCReason.SceneAssetReferenced] = EditorGUIUtility.TrTextContent("Asset type created from code or stored in the scene, referenced from scripts and native code.");
 
-                gc[(int)MemoryInfoGCReason.AssetReferencedByNativeCodeOnly] = EditorGUIUtility.TextContent("Asset referenced from native code.");
-                gc[(int)MemoryInfoGCReason.AssetReferenced] = EditorGUIUtility.TextContent("Asset referenced from scripts and native code.");
+                gc[(int)MemoryInfoGCReason.AssetReferencedByNativeCodeOnly] = EditorGUIUtility.TrTextContent("Asset referenced from native code.");
+                gc[(int)MemoryInfoGCReason.AssetReferenced] = EditorGUIUtility.TrTextContent("Asset referenced from scripts and native code.");
 
-                gc[(int)MemoryInfoGCReason.NotApplicable] = EditorGUIUtility.TextContent("Not Applicable");
+                gc[(int)MemoryInfoGCReason.NotApplicable] = EditorGUIUtility.TrTextContent("Not Applicable");
                 return gc;
             }
 
@@ -1213,6 +1213,9 @@ namespace UnityEditor
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
                 ProfilerDriver.SaveProfile(selected);
             }
+
+            // Opened a save pop-up, MacOS will redraw the window so bail out now
+            EditorGUIUtility.ExitGUI();
         }
 
         void LoadProfilingData(bool keepExistingData)
@@ -1231,6 +1234,9 @@ namespace UnityEditor
                     NetworkDetailStats.m_NetworkOperations.Clear();
                 }
             }
+
+            // Opened a load pop-up, MacOS will redraw the window so bail out now
+            EditorGUIUtility.ExitGUI();
         }
 
         private void DrawMainToolbar()

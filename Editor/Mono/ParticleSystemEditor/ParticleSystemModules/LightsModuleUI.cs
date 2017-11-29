@@ -11,15 +11,15 @@ namespace UnityEditor
     {
         class Texts
         {
-            public GUIContent ratio = new GUIContent("Ratio", "Amount of particles that have a light source attached to them.");
-            public GUIContent randomDistribution = new GUIContent("Random Distribution", "Emit lights randomly, or at regular intervals.");
-            public GUIContent light = new GUIContent("Light", "Light prefab to be used for spawning particle lights.");
-            public GUIContent color = new GUIContent("Use Particle Color", "Check the option to multiply the particle color by the light color. Otherwise, only the color of the light is used.");
-            public GUIContent range = new GUIContent("Size Affects Range", "Multiply the range of the light with the size of the particle.");
-            public GUIContent intensity = new GUIContent("Alpha Affects Intensity", "Multiply the intensity of the light with the alpha of the particle.");
-            public GUIContent rangeCurve = new GUIContent("Range Multiplier", "Apply a custom multiplier to the range of the lights.");
-            public GUIContent intensityCurve = new GUIContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights.");
-            public GUIContent maxLights = new GUIContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.");
+            public GUIContent ratio = EditorGUIUtility.TrTextContent("Ratio", "Amount of particles that have a light source attached to them.");
+            public GUIContent randomDistribution = EditorGUIUtility.TrTextContent("Random Distribution", "Emit lights randomly, or at regular intervals.");
+            public GUIContent light = EditorGUIUtility.TrTextContent("Light", "Light prefab to be used for spawning particle lights.");
+            public GUIContent color = EditorGUIUtility.TrTextContent("Use Particle Color", "Check the option to multiply the particle color by the light color. Otherwise, only the color of the light is used.");
+            public GUIContent range = EditorGUIUtility.TrTextContent("Size Affects Range", "Multiply the range of the light with the size of the particle.");
+            public GUIContent intensity = EditorGUIUtility.TrTextContent("Alpha Affects Intensity", "Multiply the intensity of the light with the alpha of the particle.");
+            public GUIContent rangeCurve = EditorGUIUtility.TrTextContent("Range Multiplier", "Apply a custom multiplier to the range of the lights.");
+            public GUIContent intensityCurve = EditorGUIUtility.TrTextContent("Intensity Multiplier", "Apply a custom multiplier to the intensity of the lights.");
+            public GUIContent maxLights = EditorGUIUtility.TrTextContent("Maximum Lights", "Limit the amount of lights the system can create. This module makes it very easy to create lots of lights, which can hurt performance.");
         }
         static Texts s_Texts;
 
@@ -76,7 +76,7 @@ namespace UnityEditor
                 Light light = (Light)m_Light.objectReferenceValue;
                 if (light.type != LightType.Point && light.type != LightType.Spot)
                 {
-                    GUIContent warning = EditorGUIUtility.TextContent("Only point and spot lights are supported on particles.");
+                    GUIContent warning = EditorGUIUtility.TrTextContent("Only point and spot lights are supported on particles.");
                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
                 }
             }

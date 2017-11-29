@@ -24,8 +24,8 @@ internal class ParticleSystemCurveEditor
         public GUIStyle curveSwatch = "PopupCurveEditorSwatch";
         public GUIStyle curveSwatchArea = "PopupCurveSwatchBackground";
         public GUIStyle yAxisHeader = new GUIStyle(ParticleSystemStyles.Get().label);
-        public GUIContent optimizeCurveText = new GUIContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
-        public GUIContent removeCurveText = new GUIContent("Remove", "Remove selected curve(s)");
+        public GUIContent optimizeCurveText = EditorGUIUtility.TrTextContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
+        public GUIContent removeCurveText = EditorGUIUtility.TrTextContent("Remove", "Remove selected curve(s)");
         public GUIContent curveLibraryPopup = new GUIContent("", "Open curve library");
         public GUIContent presetTooltip = new GUIContent();
     }
@@ -607,6 +607,10 @@ internal class ParticleSystemCurveEditor
                 curX += spaceBetweenSwatches;
 
             Rect swatchRect = new Rect(curX, curY, swatchWidth, swatchHeight);
+
+            if (swatchRect.xMax > position.width)
+                break;
+
             s_Styles.presetTooltip.tooltip = curveLibrary.GetName(i);
             if (GUI.Button(swatchRect, s_Styles.presetTooltip, GUIStyle.none))
             {

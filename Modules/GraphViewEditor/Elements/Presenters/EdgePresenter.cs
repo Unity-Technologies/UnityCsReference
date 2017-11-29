@@ -8,8 +8,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    class EdgePresenter : GraphElementPresenter
+    public class EdgePresenter : GraphElementPresenter
     {
         [SerializeField]
         protected PortPresenter m_OutputPresenter;

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -92,14 +91,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return EventPropagation.Stop;
         }
     }
-    internal
-    class GroupNode : GraphElement
+
+    public class GroupNode : GraphElement
     {
         private const int k_GroupNodeLayer = -500;
         private const int k_TitleItemMinWidth = 10;
         private VisualElement m_MainContainer;
         private VisualElement m_HeaderItem;
-        private VisualElement m_TitleItem;
+        private Label m_TitleItem;
         private TextField m_TitleEditor;
         private VisualElement m_ContentItem;
         private List<GraphElement> m_ContainedElements;
@@ -145,7 +144,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_HeaderItem = m_MainContainer.Q(name: "header");
             m_HeaderItem.AddToClassList("header");
 
-            m_TitleItem = m_MainContainer.Q(name: "titleLabel");
+            m_TitleItem = m_MainContainer.Q<Label>(name: "titleLabel");
             m_TitleItem.AddToClassList("label");
 
             m_TitleEditor = m_MainContainer.Q(name: "titleField") as TextField;

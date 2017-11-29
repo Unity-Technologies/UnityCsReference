@@ -90,15 +90,15 @@ namespace UnityEditor
             public GUIStyle buttonLeft = "ButtonLeft";
             public GUIStyle buttonMid = "ButtonMid";
             public GUIStyle buttonRight = "ButtonRight";
-            public GUIContent snapAllAxes = EditorGUIUtility.TextContent("Snap All Axes|Snaps selected objects to the grid");
-            public GUIContent snapX = EditorGUIUtility.TextContent("X|Snaps selected objects to the grid on the x axis");
-            public GUIContent snapY = EditorGUIUtility.TextContent("Y|Snaps selected objects to the grid on the y axis");
-            public GUIContent snapZ = EditorGUIUtility.TextContent("Z|Snaps selected objects to the grid on the z axis");
-            public GUIContent moveX = EditorGUIUtility.TextContent("Move X|Grid spacing X");
-            public GUIContent moveY = EditorGUIUtility.TextContent("Move Y|Grid spacing Y");
-            public GUIContent moveZ = EditorGUIUtility.TextContent("Move Z|Grid spacing Z");
-            public GUIContent scale = EditorGUIUtility.TextContent("Scale|Grid spacing for scaling");
-            public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Grid spacing for rotation in degrees");
+            public GUIContent snapAllAxes = EditorGUIUtility.TrTextContent("Snap All Axes", "Snaps selected objects to the grid");
+            public GUIContent snapX = EditorGUIUtility.TrTextContent("X", "Snaps selected objects to the grid on the x axis");
+            public GUIContent snapY = EditorGUIUtility.TrTextContent("Y", "Snaps selected objects to the grid on the y axis");
+            public GUIContent snapZ = EditorGUIUtility.TrTextContent("Z", "Snaps selected objects to the grid on the z axis");
+            public GUIContent moveX = EditorGUIUtility.TrTextContent("Move X", "Grid spacing X");
+            public GUIContent moveY = EditorGUIUtility.TrTextContent("Move Y", "Grid spacing Y");
+            public GUIContent moveZ = EditorGUIUtility.TrTextContent("Move Z", "Grid spacing Z");
+            public GUIContent scale = EditorGUIUtility.TrTextContent("Scale", "Grid spacing for scaling");
+            public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Grid spacing for rotation in degrees");
         }
         static Styles ms_Styles;
 

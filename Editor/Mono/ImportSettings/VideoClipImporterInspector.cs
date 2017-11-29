@@ -42,7 +42,7 @@ namespace UnityEditor
         public override GUIContent GetPreviewTitle()
         {
             if (m_Title == null)
-                m_Title = new GUIContent("Source Info");
+                m_Title = EditorGUIUtility.TrTextContent("Source Info");
             return m_Title;
         }
 
@@ -238,8 +238,8 @@ namespace UnityEditor
                     "Importer Version|Selects the type of video asset produced.");
             public GUIContent[] importerVersionOptions =
             {
-                EditorGUIUtility.TextContent("VideoClip|Produce VideoClip asset (for use with VideoPlayer)"),
-                EditorGUIUtility.TextContent("MovieTexture (Deprecated)|Produce MovieTexture asset (deprecated in factor of VideoClip)"),
+                EditorGUIUtility.TrTextContent("VideoClip", "Produce VideoClip asset (for use with VideoPlayer)"),
+                EditorGUIUtility.TrTextContent("MovieTexture (Deprecated)", "Produce MovieTexture asset (deprecated in factor of VideoClip)"),
             };
             public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
                     "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");

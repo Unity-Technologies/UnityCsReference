@@ -4,7 +4,7 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class RepeatButton : VisualElement
+    public class RepeatButton : BaseTextElement
     {
         public RepeatButton(System.Action clickEvent, long delay, long interval)
         {

@@ -21,8 +21,8 @@ namespace UnityEditor
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
-            public GUIContent randomizePerFrame = EditorGUIUtility.TextContent("Randomize|Randomize force every frame. Only available when using random between two constants or random between two curves.");
-            public GUIContent space = EditorGUIUtility.TextContent("Space|Specifies if the force values are in local space (rotated with the transform) or world space.");
+            public GUIContent randomizePerFrame = EditorGUIUtility.TrTextContent("Randomize", "Randomize force every frame. Only available when using random between two constants or random between two curves.");
+            public GUIContent space = EditorGUIUtility.TrTextContent("Space", "Specifies if the force values are in local space (rotated with the transform) or world space.");
             public string[] spaces = {"Local", "World"};
         }
         static Texts s_Texts;

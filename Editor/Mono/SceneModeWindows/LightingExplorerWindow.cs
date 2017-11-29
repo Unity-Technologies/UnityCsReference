@@ -15,10 +15,10 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] TabTypes =
             {
-                EditorGUIUtility.TextContent("Lights"),
-                EditorGUIUtility.TextContent("Reflection Probes"),
-                EditorGUIUtility.TextContent("Light Probes"),
-                EditorGUIUtility.TextContent("Static Emissives")
+                EditorGUIUtility.TrTextContent("Lights"),
+                EditorGUIUtility.TrTextContent("Reflection Probes"),
+                EditorGUIUtility.TrTextContent("Light Probes"),
+                EditorGUIUtility.TrTextContent("Static Emissives")
             };
         }
 

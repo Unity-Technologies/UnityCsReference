@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityStyleSheet = UnityEngine.StyleSheets.StyleSheet;

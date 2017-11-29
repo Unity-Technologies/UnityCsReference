@@ -8,19 +8,185 @@ using UnityEditor.Experimental.U2D;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
 using UnityEditor.U2D.Interface;
-
+using System;
+using System.Linq;
 
 namespace UnityEditor.U2D
 {
+    // We need this so that undo/redo works
+    [Serializable]
+    internal class SpriteOutline
+    {
+        [SerializeField]
+        public List<Vector2> m_Path = new List<Vector2>();
+
+        public void Add(Vector2 point)
+        {
+            m_Path.Add(point);
+        }
+
+        public void Insert(int index, Vector2 point)
+        {
+            m_Path.Insert(index, point);
+        }
+
+        public void RemoveAt(int index)
+        {
+            m_Path.RemoveAt(index);
+        }
+
+        public Vector2 this[int index]
+        {
+            get { return m_Path[index]; }
+            set { m_Path[index] = value; }
+        }
+
+        public int Count
+        {
+            get { return m_Path.Count; }
+        }
+
+        public void AddRange(IEnumerable<Vector2> addRange)
+        {
+            m_Path.AddRange(addRange);
+        }
+    }
+
+    // Collection of outlines for a single Sprite
+    [Serializable]
+    internal class SpriteOutlineList
+    {
+        [SerializeField]
+        List<SpriteOutline> m_SpriteOutlines = new List<SpriteOutline>();
+        [SerializeField]
+        float m_TessellationDetail = 0;
+
+        public List<SpriteOutline> spriteOutlines { get { return m_SpriteOutlines; } set { m_SpriteOutlines = value; } }
+        public GUID spriteID { get; private set; }
+
+        public float tessellationDetail
+        {
+            get { return m_TessellationDetail; }
+            set
+            {
+                m_TessellationDetail = value;
+                m_TessellationDetail = Mathf.Min(1, m_TessellationDetail);
+                m_TessellationDetail = Mathf.Max(0, m_TessellationDetail);
+            }
+        }
+
+        public SpriteOutlineList(GUID guid)
+        {
+            this.spriteID = guid;
+            m_SpriteOutlines = new List<SpriteOutline>();
+        }
+
+        public SpriteOutlineList(GUID guid, List<Vector2[]> list)
+        {
+            this.spriteID = guid;
+
+            m_SpriteOutlines = new List<SpriteOutline>(list.Count);
+            for (int i = 0; i < list.Count; ++i)
+            {
+                var newList = new SpriteOutline();
+                newList.m_Path.AddRange(list[i]);
+                m_SpriteOutlines.Add(newList);
+            }
+        }
+
+        public SpriteOutlineList(GUID guid, List<SpriteOutline> list)
+        {
+            this.spriteID = guid;
+
+            m_SpriteOutlines = list;
+        }
+
+        public List<Vector2[]> ToListVector()
+        {
+            var value = new List<Vector2[]>(m_SpriteOutlines.Count);
+            foreach (var s in m_SpriteOutlines)
+            {
+                value.Add(s.m_Path.ToArray());
+            }
+            return value;
+        }
+
+        public SpriteOutline this[int index]
+        {
+            get { return IsValidIndex(index) ? m_SpriteOutlines[index] : null; }
+            set
+            {
+                if (IsValidIndex(index))
+                    m_SpriteOutlines[index] = value;
+            }
+        }
+
+        public static implicit operator List<SpriteOutline>(SpriteOutlineList list)
+        {
+            return list != null ? list.m_SpriteOutlines : null;
+        }
+
+        public int Count { get { return m_SpriteOutlines.Count; } }
+
+        bool IsValidIndex(int index)
+        {
+            return index >= 0 && index < Count;
+        }
+    }
+
+    // Collection of Sprites' outlines
+    internal class SpriteOutlineModel : ScriptableObject
+    {
+        [SerializeField]
+        List<SpriteOutlineList> m_SpriteOutlineList = new List<SpriteOutlineList>();
+
+        private SpriteOutlineModel()
+        {}
+
+        public SpriteOutlineList this[int index]
+        {
+            get { return IsValidIndex(index) ? m_SpriteOutlineList[index] : null; }
+            set
+            {
+                if (IsValidIndex(index))
+                    m_SpriteOutlineList[index] = value;
+            }
+        }
+
+        public SpriteOutlineList this[GUID guid]
+        {
+            get { return m_SpriteOutlineList.FirstOrDefault(x => x.spriteID == guid); }
+            set
+            {
+                var index = m_SpriteOutlineList.FindIndex(x => x.spriteID == guid);
+                if (index != -1)
+                    m_SpriteOutlineList[index] = value;
+            }
+        }
+
+        public void AddListVector2(GUID guid, List<Vector2[]> outline)
+        {
+            m_SpriteOutlineList.Add(new SpriteOutlineList(guid, outline));
+        }
+
+        public int Count { get { return m_SpriteOutlineList.Count; } }
+
+        bool IsValidIndex(int index)
+        {
+            return index >= 0 && index < Count;
+        }
+    }
+
+    [RequireSpriteDataProvider(typeof(ISpriteOutlineDataProvider), typeof(ITextureDataProvider))]
     internal class SpriteOutlineModule : ISpriteEditorModule
     {
         class Styles
         {
-            public GUIContent generateOutlineLabel = EditorGUIUtility.TextContent("Update|Update new outline based on mesh detail value.");
-            public GUIContent outlineTolerance = EditorGUIUtility.TextContent("Outline Tolerance|Sets how tight the outline should be from the sprite.");
-            public GUIContent snapButtonLabel = EditorGUIUtility.TextContent("Snap|Snap points to nearest pixel");
-            public GUIContent generatingOutlineDialogTitle = EditorGUIUtility.TextContent("Outline");
-            public GUIContent generatingOutlineDialogContent = EditorGUIUtility.TextContent("Generating outline {0}/{1}");
+            public GUIContent generateOutlineLabel = EditorGUIUtility.TrTextContent("Update", "Update new outline based on mesh detail value.");
+            public GUIContent outlineTolerance = EditorGUIUtility.TrTextContent("Outline Tolerance", "Sets how tight the outline should be from the sprite.");
+            public GUIContent snapButtonLabel = EditorGUIUtility.TrTextContent("Snap", "Snap points to nearest pixel");
+            public GUIContent generatingOutlineDialogTitle = EditorGUIUtility.TrTextContent("Outline");
+            public GUIContent generatingOutlineDialogContent = EditorGUIUtility.TrTextContent("Generating outline {0}/{1}");
             public Color spriteBorderColor = new Color(0.25f, 0.5f, 1f, 0.75f);
         }
 
@@ -40,6 +206,8 @@ namespace UnityEditor.U2D
         private Rect? m_SelectionRect;
         private ITexture2D m_OutlineTexture;
         private Styles m_Styles;
+        protected SpriteOutlineModel m_Outline;
+        protected ITextureDataProvider m_TextureDataProvider;
 
         public SpriteOutlineModule(ISpriteEditor sem, IEventSystem es, IUndoSystem us, IAssetDatabase ad, IGUIUtility gu, IShapeEditorFactory sef, ITexture2D outlineTexture)
         {
@@ -62,6 +230,27 @@ namespace UnityEditor.U2D
             get { return "Edit Outline"; }
         }
 
+        public virtual bool ApplyRevert(bool apply)
+        {
+            if (m_Outline != null)
+            {
+                if (apply)
+                {
+                    var outlineDataProvider = spriteEditorWindow.GetDataProvider<ISpriteOutlineDataProvider>();
+                    for (int i = 0; i < m_Outline.Count; ++i)
+                    {
+                        outlineDataProvider.SetOutlines(m_Outline[i].spriteID, m_Outline[i].ToListVector());
+                        outlineDataProvider.SetTessellationDetail(m_Outline[i].spriteID, m_Outline[i].tessellationDetail);
+                    }
+                }
+
+                ScriptableObject.DestroyImmediate(m_Outline);
+                m_Outline = null;
+            }
+
+            return true;
+        }
+
         private Styles styles
         {
             get
@@ -74,8 +263,14 @@ namespace UnityEditor.U2D
 
         protected virtual List<SpriteOutline> selectedShapeOutline
         {
-            get { return m_Selected.outline; }
-            set { m_Selected.outline = value; }
+            get
+            {
+                return m_Outline[m_Selected.spriteID].spriteOutlines;
+            }
+            set
+            {
+                m_Outline[m_Selected.spriteID].spriteOutlines = value;
+            }
         }
 
         private bool shapeEditorDirty
@@ -129,8 +324,23 @@ namespace UnityEditor.U2D
             m_RequestRepaint = true;
         }
 
+        protected virtual void LoadOutline()
+        {
+            m_Outline = ScriptableObject.CreateInstance<SpriteOutlineModel>();
+            var spriteDataProvider = spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>();
+            var outlineDataProvider = spriteEditorWindow.GetDataProvider<ISpriteOutlineDataProvider>();
+            foreach (var rect in spriteDataProvider.GetSpriteRects())
+            {
+                var outlines = outlineDataProvider.GetOutlines(rect.spriteID);
+                m_Outline.AddListVector2(rect.spriteID, outlines);
+                m_Outline[m_Outline.Count - 1].tessellationDetail = outlineDataProvider.GetTessellationDetail(rect.spriteID);
+            }
+        }
+
         public void OnModuleActivate()
         {
+            m_TextureDataProvider = spriteEditorWindow.GetDataProvider<ITextureDataProvider>();
+            LoadOutline();
             GenerateOutlineIfNotExist();
             undoSystem.RegisterUndoCallback(UndoRedoPerformed);
             shapeEditorDirty = true;
@@ -140,18 +350,18 @@ namespace UnityEditor.U2D
 
         void GenerateOutlineIfNotExist()
         {
-            var rectCache = spriteEditorWindow.spriteRects;
+            var rectCache = spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>().GetSpriteRects();
             if (rectCache != null)
             {
                 bool needApply = false;
-                for (int i = 0; i < rectCache.Count; ++i)
+                for (int i = 0; i < rectCache.Length; ++i)
                 {
-                    var rect = rectCache.RectAt(i);
+                    var rect = rectCache[i];
                     if (!HasShapeOutline(rect))
                     {
-                        spriteEditorWindow.DisplayProgressBar(styles.generatingOutlineDialogTitle.text,
-                            string.Format(styles.generatingOutlineDialogContent.text, i + 1 , rectCache.Count),
-                            (float)(i) / rectCache.Count);
+                        EditorUtility.DisplayProgressBar(styles.generatingOutlineDialogTitle.text,
+                            string.Format(styles.generatingOutlineDialogContent.text, i + 1 , rectCache.Length),
+                            (float)(i) / rectCache.Length);
 
                         SetupShapeEditorOutline(rect);
                         needApply = true;
@@ -159,8 +369,9 @@ namespace UnityEditor.U2D
                 }
                 if (needApply)
                 {
-                    spriteEditorWindow.ClearProgressBar();
+                    EditorUtility.ClearProgressBar();
                     spriteEditorWindow.ApplyOrRevertModification(true);
+                    LoadOutline();
                 }
             }
         }
@@ -171,9 +382,15 @@ namespace UnityEditor.U2D
             CleanupShapeEditors();
             m_Selected = null;
             spriteEditorWindow.enableMouseMoveEvent = false;
+            if (m_Outline != null)
+            {
+                undoSystem.ClearUndo(m_Outline);
+                ScriptableObject.DestroyImmediate(m_Outline);
+                m_Outline = null;
+            }
         }
 
-        public void DoTextureGUI()
+        public void DoMainGUI()
         {
             IEvent evt = eventSystem.current;
 
@@ -198,7 +415,7 @@ namespace UnityEditor.U2D
                 spriteEditorWindow.RequestRepaint();
         }
 
-        public void DrawToolbarGUI(Rect drawArea)
+        public void DoToolbarGUI(Rect drawArea)
         {
             var style = styles;
 
@@ -224,7 +441,7 @@ namespace UnityEditor.U2D
 
                 if (drawArea.width > 0)
                 {
-                    float tesselationValue = m_Selected != null ? m_Selected.tessellationDetail : 0;
+                    float tesselationValue = m_Selected != null ? m_Outline[m_Selected.spriteID].tessellationDetail : 0;
                     EditorGUI.BeginChangeCheck();
                     float oldFieldWidth = EditorGUIUtility.fieldWidth;
                     float oldLabelWidth = EditorGUIUtility.labelWidth;
@@ -234,7 +451,7 @@ namespace UnityEditor.U2D
                     if (EditorGUI.EndChangeCheck())
                     {
                         RecordUndo();
-                        m_Selected.tessellationDetail = tesselationValue;
+                        m_Outline[m_Selected.spriteID].tessellationDetail = tesselationValue;
                     }
                     EditorGUIUtility.fieldWidth = oldFieldWidth;
                     EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -257,17 +474,17 @@ namespace UnityEditor.U2D
             }
         }
 
-        public void OnPostGUI()
+        public void DoPostGUI()
         {}
 
         public bool CanBeActivated()
         {
-            return SpriteUtility.GetSpriteImportMode(spriteEditorWindow.spriteEditorDataProvider) != SpriteImportMode.None;
+            return SpriteUtility.GetSpriteImportMode(spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>()) != SpriteImportMode.None;
         }
 
         private void RecordUndo()
         {
-            undoSystem.RegisterCompleteObjectUndo(spriteEditorWindow.spriteRects, "Outline changed");
+            undoSystem.RegisterCompleteObjectUndo(m_Outline, "Outline changed");
         }
 
         public void CreateNewOutline(Rect rectOutline)
@@ -437,18 +654,22 @@ namespace UnityEditor.U2D
 
         protected virtual bool HasShapeOutline(SpriteRect spriteRect)
         {
-            return ((spriteRect.outline != null) && (spriteRect.outline.Count > 0));
+            var outline = m_Outline[spriteRect.spriteID]?.spriteOutlines;
+            return outline != null && outline.Count > 0;
         }
 
         protected virtual void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
-            if (spriteRect.outline == null || spriteRect.outline.Count == 0)
+            var outline = m_Outline[spriteRect.spriteID];
+            if (outline.spriteOutlines == null || outline.spriteOutlines.Count == 0)
             {
-                spriteRect.outline = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture, spriteRect.tessellationDetail, 0, spriteEditorWindow.spriteEditorDataProvider);
-                if (spriteRect.outline.Count == 0)
+                var outlines = GenerateSpriteRectOutline(spriteRect.rect,
+                        Math.Abs(outline.tessellationDetail - (-1f)) < Mathf.Epsilon ? 0 : outline.tessellationDetail,
+                        0, m_TextureDataProvider);
+                if (outlines.Count == 0)
                 {
                     Vector2 halfSize = spriteRect.rect.size * 0.5f;
-                    spriteRect.outline = new List<SpriteOutline>()
+                    outlines = new List<SpriteOutline>()
                     {
                         new SpriteOutline()
                         {
@@ -462,6 +683,7 @@ namespace UnityEditor.U2D
                         }
                     };
                 }
+                m_Outline[spriteRect.spriteID].spriteOutlines = outlines;
             }
         }
 
@@ -549,9 +771,10 @@ namespace UnityEditor.U2D
             }
         }
 
-        protected static List<SpriteOutline> GenerateSpriteRectOutline(Rect rect, ITexture2D texture, float detail, byte alphaTolerance, ISpriteEditorDataProvider spriteEditorDataProvider)
+        protected static List<SpriteOutline> GenerateSpriteRectOutline(Rect rect, float detail, byte alphaTolerance, ITextureDataProvider textureProvider)
         {
             List<SpriteOutline> outline = new List<SpriteOutline>();
+            var texture = textureProvider.texture;
             if (texture != null)
             {
                 Vector2[][] paths;
@@ -560,7 +783,7 @@ namespace UnityEditor.U2D
                 // in that case, we need to convert values from capped space to actual texture space and back.
                 int actualWidth = 0, actualHeight = 0;
                 int cappedWidth, cappedHeight;
-                spriteEditorDataProvider.GetTextureActualWidthAndHeight(out actualWidth, out actualHeight);
+                textureProvider.GetTextureActualWidthAndHeight(out actualWidth, out actualHeight);
                 cappedWidth = texture.width;
                 cappedHeight = texture.height;
 

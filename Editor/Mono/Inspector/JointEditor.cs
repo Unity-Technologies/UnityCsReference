@@ -15,11 +15,11 @@ namespace UnityEditor
         protected static class Styles
         {
             public static readonly GUIContent editAngularLimitsButton = new GUIContent(EditorGUIUtility.IconContent("JointAngularLimits"));
-            public static readonly string editAngularLimitsUndoMessage = EditorGUIUtility.TextContent("Change Joint Angular Limits").text;
+            public static readonly string editAngularLimitsUndoMessage = EditorGUIUtility.TrTextContent("Change Joint Angular Limits").text;
 
             static Styles()
             {
-                editAngularLimitsButton.tooltip = EditorGUIUtility.TextContent("Edit joint angular limits.").text;
+                editAngularLimitsButton.tooltip = EditorGUIUtility.TrTextContent("Edit joint angular limits.").text;
             }
         }
 

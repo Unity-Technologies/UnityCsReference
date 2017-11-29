@@ -56,25 +56,25 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent animate = EditorGUIUtility.TextContent("Animation");
-            public GUIContent backgroundColor = EditorGUIUtility.TextContent("Background Color|Background color when no background image is used.");
-            public GUIContent backgroundImage = EditorGUIUtility.TextContent("Background Image|Image to be used in landscape and portrait(when portrait image is not set).");
-            public GUIContent backgroundPortraitImage = EditorGUIUtility.TextContent("Alternate Portrait Image*|Optional image to be used in portrait mode.");
-            public GUIContent backgroundTitle = EditorGUIUtility.TextContent("Background*");
-            public GUIContent backgroundZoom = EditorGUIUtility.TextContent("Background Zoom");
-            public GUIContent configDialogBanner = EditorGUIUtility.TextContent("Application Config Dialog Banner");
-            public GUIContent drawMode = EditorGUIUtility.TextContent("Draw Mode");
-            public GUIContent logoDuration = EditorGUIUtility.TextContent("Logo Duration|The time the logo will be shown for.");
-            public GUIContent logosTitle = EditorGUIUtility.TextContent("Logos*");
-            public GUIContent logoZoom = EditorGUIUtility.TextContent("Logo Zoom");
-            public GUIContent overlayOpacity = EditorGUIUtility.TextContent("Overlay Opacity|Overlay strength applied to improve logo visibility.");
-            public GUIContent previewSplash = EditorGUIUtility.TextContent("Preview|Preview the splash screen in the game view.");
-            public GUIContent showLogo = EditorGUIUtility.TextContent("Show Unity Logo");
-            public GUIContent showSplash = EditorGUIUtility.TextContent("Show Splash Screen");
-            public GUIContent splashStyle = EditorGUIUtility.TextContent("Splash Style");
-            public GUIContent splashTitle = EditorGUIUtility.TextContent("Splash Screen");
-            public GUIContent title = EditorGUIUtility.TextContent("Splash Image");
-            public GUIContent vrSplashScreen = EditorGUIUtility.TextContent("Virtual Reality Splash Image");
+            public GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
+            public GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used.");
+            public GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait(when portrait image is not set).");
+            public GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
+            public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
+            public GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
+            public GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
+            public GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
+            public GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
+            public GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
+            public GUIContent logoZoom = EditorGUIUtility.TrTextContent("Logo Zoom");
+            public GUIContent overlayOpacity = EditorGUIUtility.TrTextContent("Overlay Opacity", "Overlay strength applied to improve logo visibility.");
+            public GUIContent previewSplash = EditorGUIUtility.TrTextContent("Preview", "Preview the splash screen in the game view.");
+            public GUIContent showLogo = EditorGUIUtility.TrTextContent("Show Unity Logo");
+            public GUIContent showSplash = EditorGUIUtility.TrTextContent("Show Splash Screen");
+            public GUIContent splashStyle = EditorGUIUtility.TrTextContent("Splash Style");
+            public GUIContent splashTitle = EditorGUIUtility.TrTextContent("Splash Screen");
+            public GUIContent title = EditorGUIUtility.TrTextContent("Splash Image");
+            public GUIContent vrSplashScreen = EditorGUIUtility.TrTextContent("Virtual Reality Splash Image");
         }
         static readonly Texts k_Texts = new Texts();
 

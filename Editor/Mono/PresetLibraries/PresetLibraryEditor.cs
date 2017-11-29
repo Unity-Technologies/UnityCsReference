@@ -78,8 +78,8 @@ namespace UnityEditor
             public GUIStyle newPresetStyle = new GUIStyle(EditorStyles.boldLabel);
             public GUIContent plusButtonText = new GUIContent("", "Add new preset");
             public GUIContent plusButtonTextNotCheckedOut = new GUIContent("", "To add presets you need to press the 'Check out' button below");
-            public GUIContent header = new GUIContent("Presets");
-            public GUIContent newPreset = new GUIContent("New");
+            public GUIContent header = EditorGUIUtility.TrTextContent("Presets");
+            public GUIContent newPreset = EditorGUIUtility.TrTextContent("New");
 
             public Styles()
             {
@@ -918,10 +918,10 @@ namespace UnityEditor
                 s_Caller = caller;
                 s_PresetIndex = presetIndex;
 
-                GUIContent replaceText = new GUIContent("Replace");
-                GUIContent deleteText = new GUIContent("Delete");
-                GUIContent renameText = new GUIContent("Rename");
-                GUIContent moveToText = new GUIContent("Move To First");
+                GUIContent replaceText = EditorGUIUtility.TrTextContent("Replace");
+                GUIContent deleteText = EditorGUIUtility.TrTextContent("Delete");
+                GUIContent renameText = EditorGUIUtility.TrTextContent("Rename");
+                GUIContent moveToText = EditorGUIUtility.TrTextContent("Move To First");
 
                 GenericMenu menu = new GenericMenu();
                 if (isOpenForEdit)

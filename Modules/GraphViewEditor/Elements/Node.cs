@@ -10,8 +10,7 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class Node : GraphElement
+    public class Node : GraphElement
     {
         public virtual VisualElement mainContainer { get; private set; }
         public virtual VisualElement leftContainer { get; private set; }

@@ -13,8 +13,8 @@ namespace UnityEditor
         SerializedProperty m_TerrainData;
         SerializedProperty m_EnableTreeColliders;
 
-        protected GUIContent terrainContent = EditorGUIUtility.TextContent("Terrain Data|The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.");
-        protected GUIContent treeColliderContent = EditorGUIUtility.TextContent("Enable Tree Colliders|When selected, Tree Colliders will be enabled.");
+        protected GUIContent terrainContent = EditorGUIUtility.TrTextContent("Terrain Data", "The TerrainData asset that stores heightmaps, terrain textures, detail meshes and trees.");
+        protected GUIContent treeColliderContent = EditorGUIUtility.TrTextContent("Enable Tree Colliders", "When selected, Tree Colliders will be enabled.");
 
         public override void OnEnable()
         {

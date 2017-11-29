@@ -28,11 +28,11 @@ namespace UnityEditor
             // in different order than they appear in the enum.
             private static readonly GUIContent[] kCameraRenderPaths =
             {
-                new GUIContent("Use Graphics Settings"),
-                new GUIContent("Forward"),
-                new GUIContent("Deferred"),
-                new GUIContent("Legacy Vertex Lit"),
-                new GUIContent("Legacy Deferred (light prepass)")
+                EditorGUIUtility.TrTextContent("Use Graphics Settings"),
+                EditorGUIUtility.TrTextContent("Forward"),
+                EditorGUIUtility.TrTextContent("Deferred"),
+                EditorGUIUtility.TrTextContent("Legacy Vertex Lit"),
+                EditorGUIUtility.TrTextContent("Legacy Deferred (light prepass)")
             };
             private static readonly int[] kCameraRenderPathValues =
             {
@@ -69,10 +69,10 @@ namespace UnityEditor
 
             private static readonly GUIContent[] kTargetEyes =
             {
-                new GUIContent("Both"),
-                new GUIContent("Left"),
-                new GUIContent("Right"),
-                new GUIContent("None (Main Display)"),
+                EditorGUIUtility.TrTextContent("Both"),
+                EditorGUIUtility.TrTextContent("Left"),
+                EditorGUIUtility.TrTextContent("Right"),
+                EditorGUIUtility.TrTextContent("None (Main Display)"),
             };
             private static readonly int[] kTargetEyeValues = { (int)StereoTargetEyeMask.Both, (int)StereoTargetEyeMask.Left, (int)StereoTargetEyeMask.Right, (int)StereoTargetEyeMask.None };
 
@@ -677,7 +677,7 @@ namespace UnityEditor
             if (!IsViewPortRectValidToRender(c.rect))
                 return;
 
-            SceneViewOverlay.Window(new GUIContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+            SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
             Color orgHandlesColor = Handles.color;
             Color slidersColor = kGizmoCamera;

@@ -26,10 +26,10 @@ namespace UnityEditor
             public static GUIStyle bottomBarBg               = "ProjectBrowserBottomBarBg";
             public static GUIStyle topBarBg                  = new GUIStyle("ProjectBrowserHeaderBgTop");
             public static GUIStyle loadingTextStyle          = new GUIStyle(EditorStyles.label);
-            public static GUIContent allText                 = EditorGUIUtility.TextContent("All");
-            public static GUIContent noneText                = EditorGUIUtility.TextContent("None");
-            public static GUIContent includeDependenciesText = EditorGUIUtility.TextContent("Include dependencies");
-            public static GUIContent header                  = new GUIContent("Items to Export");
+            public static GUIContent allText                 = EditorGUIUtility.TrTextContent("All");
+            public static GUIContent noneText                = EditorGUIUtility.TrTextContent("None");
+            public static GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies");
+            public static GUIContent header                  = EditorGUIUtility.TrTextContent("Items to Export");
 
             static Styles()
             {
@@ -185,7 +185,7 @@ namespace UnityEditor
 
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button(EditorGUIUtility.TextContent("Export...")))
+            if (GUILayout.Button(EditorGUIUtility.TrTextContent("Export...")))
             {
                 Export();
                 GUIUtility.ExitGUI();

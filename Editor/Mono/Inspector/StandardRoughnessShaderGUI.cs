@@ -19,21 +19,21 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static GUIContent uvSetLabel = new GUIContent("UV Set");
+            public static GUIContent uvSetLabel = EditorGUIUtility.TrTextContent("UV Set");
 
-            public static GUIContent albedoText = new GUIContent("Albedo", "Albedo (RGB) and Transparency (A)");
-            public static GUIContent alphaCutoffText = new GUIContent("Alpha Cutoff", "Threshold for alpha cutoff");
-            public static GUIContent metallicMapText = new GUIContent("Metallic", "Metallic (R) and Smoothness (A)");
-            public static GUIContent roughnessText = new GUIContent("Roughness", "Roughness value");
-            public static GUIContent highlightsText = new GUIContent("Specular Highlights", "Specular Highlights");
-            public static GUIContent reflectionsText = new GUIContent("Reflections", "Glossy Reflections");
-            public static GUIContent normalMapText = new GUIContent("Normal Map", "Normal Map");
-            public static GUIContent heightMapText = new GUIContent("Height Map", "Height Map (G)");
-            public static GUIContent occlusionText = new GUIContent("Occlusion", "Occlusion (G)");
-            public static GUIContent emissionText = new GUIContent("Color", "Emission (RGB)");
-            public static GUIContent detailMaskText = new GUIContent("Detail Mask", "Mask for Secondary Maps (A)");
-            public static GUIContent detailAlbedoText = new GUIContent("Detail Albedo x2", "Albedo (RGB) multiplied by 2");
-            public static GUIContent detailNormalMapText = new GUIContent("Normal Map", "Normal Map");
+            public static GUIContent albedoText = EditorGUIUtility.TrTextContent("Albedo", "Albedo (RGB) and Transparency (A)");
+            public static GUIContent alphaCutoffText = EditorGUIUtility.TrTextContent("Alpha Cutoff", "Threshold for alpha cutoff");
+            public static GUIContent metallicMapText = EditorGUIUtility.TrTextContent("Metallic", "Metallic (R) and Smoothness (A)");
+            public static GUIContent roughnessText = EditorGUIUtility.TrTextContent("Roughness", "Roughness value");
+            public static GUIContent highlightsText = EditorGUIUtility.TrTextContent("Specular Highlights", "Specular Highlights");
+            public static GUIContent reflectionsText = EditorGUIUtility.TrTextContent("Reflections", "Glossy Reflections");
+            public static GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
+            public static GUIContent heightMapText = EditorGUIUtility.TrTextContent("Height Map", "Height Map (G)");
+            public static GUIContent occlusionText = EditorGUIUtility.TrTextContent("Occlusion", "Occlusion (G)");
+            public static GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB)");
+            public static GUIContent detailMaskText = EditorGUIUtility.TrTextContent("Detail Mask", "Mask for Secondary Maps (A)");
+            public static GUIContent detailAlbedoText = EditorGUIUtility.TrTextContent("Detail Albedo x2", "Albedo (RGB) multiplied by 2");
+            public static GUIContent detailNormalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
 
             public static string primaryMapsText = "Main Maps";
             public static string secondaryMapsText = "Secondary Maps";
@@ -168,6 +168,7 @@ namespace UnityEditor
             // NB renderqueue editor is not shown on purpose: we want to override it based on blend mode
             GUILayout.Label(Styles.advancedText, EditorStyles.boldLabel);
             m_MaterialEditor.EnableInstancingField();
+            m_MaterialEditor.DoubleSidedGIField();
         }
 
         public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)

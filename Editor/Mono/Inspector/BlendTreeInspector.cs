@@ -1278,7 +1278,7 @@ namespace UnityEditor
         public void AddButton(Rect rect, UnityEditorInternal.ReorderableList list)
         {
             GenericMenu menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Add Motion Field"), false, AddChildAnimation);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Add Motion Field"), false, AddChildAnimation);
             menu.AddItem(EditorGUIUtility.TempContent("New Blend Tree"), false, AddBlendTreeCallback);
             menu.Popup(rect, 0);
         }
@@ -1521,8 +1521,8 @@ namespace UnityEditor
                     }
                     else
                     {
-                        menu.AddItem(new GUIContent("Velocity XZ"), false, ComputePositionsFromVelocity);
-                        menu.AddItem(new GUIContent("Speed And Angular Speed"), false, ComputePositionsFromSpeedAndAngularSpeed);
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Velocity XZ"), false, ComputePositionsFromVelocity);
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Speed And Angular Speed"), false, ComputePositionsFromSpeedAndAngularSpeed);
                         AddComputeMenuItems(menu, "X Position From/", ChildPropertyToCompute.PositionX);
                         AddComputeMenuItems(menu, "Y Position From/", ChildPropertyToCompute.PositionY);
                     }
@@ -1539,8 +1539,8 @@ namespace UnityEditor
                 if (EditorGUI.DropdownButton(controlRect, EditorGUIUtility.TempContent("Select"), FocusType.Passive, EditorStyles.popup))
                 {
                     GenericMenu menu = new GenericMenu();
-                    menu.AddItem(new GUIContent("Homogeneous Speed"), false, ComputeTimeScaleFromSpeed);
-                    menu.AddItem(new GUIContent("Reset Time Scale"), false, ResetTimeScale);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Homogeneous Speed"), false, ComputeTimeScaleFromSpeed);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Reset Time Scale"), false, ResetTimeScale);
                     menu.DropDown(controlRect);
                 }
             }

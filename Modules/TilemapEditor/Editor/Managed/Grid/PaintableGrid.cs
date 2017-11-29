@@ -250,7 +250,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            if (evt.type == EventType.MouseDown && evt.button == 0 && EditMode.editMode == EditMode.SceneViewEditMode.GridMove)
+            if (evt.type == EventType.MouseDown && evt.button == 0 && !evt.alt && EditMode.editMode == EditMode.SceneViewEditMode.GridMove)
             {
                 RegisterUndo();
                 Vector3Int mouse3D = new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, GridSelection.position.zMin);
@@ -365,12 +365,12 @@ namespace UnityEditor
 
         private bool IsErasingEvent(Event evt)
         {
-            return (evt.button == 0 && (!evt.control && !evt.alt
-                                        && (evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
-                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
-                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
-                                            && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
-                                        || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
+            return (evt.button == 0 && !evt.control && !evt.alt
+                    && ((evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
+                         && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
+                         && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
+                         && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
+                        || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
         }
 
         private void HandleFloodFill()
@@ -378,7 +378,7 @@ namespace UnityEditor
             if (EditMode.editMode == EditMode.SceneViewEditMode.GridFloodFill && GridPaintingState.gridBrush != null && ValidateFloodFillPosition(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, 0)))
             {
                 Event evt = Event.current;
-                if (evt.type == EventType.MouseDown && evt.button == 0)
+                if (evt.type == EventType.MouseDown && evt.button == 0 && !evt.alt)
                 {
                     GUIUtility.hotControl = m_PermanentControlID;
                     GUI.changed = true;
@@ -401,7 +401,7 @@ namespace UnityEditor
         {
             Event evt = Event.current;
 
-            if (evt.type == EventType.MouseDown && evt.button == 0 && EditMode.editMode == EditMode.SceneViewEditMode.GridBox)
+            if (evt.type == EventType.MouseDown && evt.button == 0 && !evt.alt && EditMode.editMode == EditMode.SceneViewEditMode.GridBox)
             {
                 m_MarqueeStart = mouseGridPosition;
                 m_MarqueeType = MarqueeType.Box;

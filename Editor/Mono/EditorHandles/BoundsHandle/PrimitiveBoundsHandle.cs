@@ -40,7 +40,7 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     s_EditModeButton = new GUIContent(
                             EditorGUIUtility.IconContent("EditCollider").image,
-                            EditorGUIUtility.TextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.").text
+                            EditorGUIUtility.TrTextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.").text
                             );
                 }
                 return s_EditModeButton;

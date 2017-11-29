@@ -21,15 +21,15 @@ namespace UnityEditor
     {
         internal class Styles
         {
-            public static readonly GUIContent showEditorWindow = new GUIContent("Open Editor...");
-            public static readonly GUIContent closeEditorWindow = new GUIContent("Close Editor");
-            public static readonly GUIContent tierSettings = EditorGUIUtility.TextContent("Tier Settings");
-            public static readonly GUIContent builtinSettings = EditorGUIUtility.TextContent("Built-in Shader Settings");
-            public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TextContent("Shader Stripping");
-            public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TextContent("Shader Preloading");
-            public static readonly GUIContent cameraSettings = EditorGUIUtility.TextContent("Camera Settings");
-            public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TextContent("Scriptable Render Pipeline Settings");
-            public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TextContent("Scriptable Render Pipeline");
+            public static readonly GUIContent showEditorWindow = EditorGUIUtility.TrTextContent("Open Editor...");
+            public static readonly GUIContent closeEditorWindow = EditorGUIUtility.TrTextContent("Close Editor");
+            public static readonly GUIContent tierSettings = EditorGUIUtility.TrTextContent("Tier Settings");
+            public static readonly GUIContent builtinSettings = EditorGUIUtility.TrTextContent("Built-in Shader Settings");
+            public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TrTextContent("Shader Stripping");
+            public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader Preloading");
+            public static readonly GUIContent cameraSettings = EditorGUIUtility.TrTextContent("Camera Settings");
+            public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline Settings");
+            public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
         }
 
         Editor m_TierSettingsEditor;

@@ -326,8 +326,6 @@ namespace UnityEditor
 
             HandleScrollbars();
             SetupHandlesMatrix();
-            HandleZoom();
-            HandlePanning();
             DrawScreenspaceBackground();
 
             GUIClip.Push(m_TextureViewRect, -m_ScrollPosition, Vector2.zero, false);
@@ -342,6 +340,10 @@ namespace UnityEditor
             DoTextureGUIExtras();
 
             GUIClip.Pop();
+
+            // Handle this after DoTextureGUIExtras in case user wants any event that is handled by Zoom or Panning
+            HandleZoom();
+            HandlePanning();
         }
 
         protected virtual void DoTextureGUIExtras()

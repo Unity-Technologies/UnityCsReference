@@ -53,7 +53,7 @@ namespace UnityEditor
 
             if (showScriptWarning)
             {
-                GUIContent c = EditorGUIUtility.TextContent("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+                GUIContent c = EditorGUIUtility.TrTextContent("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
                 EditorGUILayout.HelpBox(c.text, MessageType.Warning, true);
             }
 

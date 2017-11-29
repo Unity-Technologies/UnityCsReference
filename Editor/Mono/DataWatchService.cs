@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Remoting.Messaging;
-using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using Object = UnityEngine.Object;
 
@@ -252,4 +250,3 @@ namespace UnityEditor
         }
     }
 }
-

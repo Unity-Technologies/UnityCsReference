@@ -15,18 +15,18 @@ namespace UnityEditor
     {
         private class Styles
         {
-            public static GUIContent Volume                 = EditorGUIUtility.TextContent("Global Volume|Initial volume multiplier (AudioListener.volume)");
-            public static GUIContent RolloffScale           = EditorGUIUtility.TextContent("Volume Rolloff Scale|Global volume rolloff multiplier (applies only to logarithmic volume curves).");
-            public static GUIContent DopplerFactor          = EditorGUIUtility.TextContent("Doppler Factor|Global Doppler speed multiplier for sounds in motion.");
-            public static GUIContent DefaultSpeakerMode     = EditorGUIUtility.TextContent("Default Speaker Mode|Speaker mode at start of the game. This may be changed at runtime using the AudioSettings.Reset function.");
-            public static GUIContent SampleRate             = EditorGUIUtility.TextContent("System Sample Rate|Sample rate at which the output device of the audio system runs. Individual sounds may run at different sample rates and will be slowed down/sped up accordingly to match the output rate.");
-            public static GUIContent DSPBufferSize          = EditorGUIUtility.TextContent("DSP Buffer Size|Length of mixing buffer. This determines the output latency of the game.");
-            public static GUIContent VirtualVoiceCount      = EditorGUIUtility.TextContent("Max Virtual Voices|Maximum number of sounds managed by the system. Even though at most RealVoiceCount of the loudest sounds will be physically playing, the remaining sounds will still be updating their play position.");
-            public static GUIContent RealVoiceCount         = EditorGUIUtility.TextContent("Max Real Voices|Maximum number of actual simultanously playing sounds.");
-            public static GUIContent SpatializerPlugin      = EditorGUIUtility.TextContent("Spatializer Plugin|Native audio plugin performing spatialized filtering of 3D sources.");
-            public static GUIContent AmbisonicDecoderPlugin = EditorGUIUtility.TextContent("Ambisonic Decoder Plugin|Native audio plugin performing ambisonic-to-binaural filtering of sources.");
-            public static GUIContent DisableAudio           = EditorGUIUtility.TextContent("Disable Unity Audio|Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.");
-            public static GUIContent VirtualizeEffects      = EditorGUIUtility.TextContent("Virtualize Effects|When enabled dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
+            public static GUIContent Volume                 = EditorGUIUtility.TrTextContent("Global Volume", "Initial volume multiplier (AudioListener.volume)");
+            public static GUIContent RolloffScale           = EditorGUIUtility.TrTextContent("Volume Rolloff Scale", "Global volume rolloff multiplier (applies only to logarithmic volume curves).");
+            public static GUIContent DopplerFactor          = EditorGUIUtility.TrTextContent("Doppler Factor", "Global Doppler speed multiplier for sounds in motion.");
+            public static GUIContent DefaultSpeakerMode     = EditorGUIUtility.TrTextContent("Default Speaker Mode", "Speaker mode at start of the game. This may be changed at runtime using the AudioSettings.Reset function.");
+            public static GUIContent SampleRate             = EditorGUIUtility.TrTextContent("System Sample Rate", "Sample rate at which the output device of the audio system runs. Individual sounds may run at different sample rates and will be slowed down/sped up accordingly to match the output rate.");
+            public static GUIContent DSPBufferSize          = EditorGUIUtility.TrTextContent("DSP Buffer Size", "Length of mixing buffer. This determines the output latency of the game.");
+            public static GUIContent VirtualVoiceCount      = EditorGUIUtility.TrTextContent("Max Virtual Voices", "Maximum number of sounds managed by the system. Even though at most RealVoiceCount of the loudest sounds will be physically playing, the remaining sounds will still be updating their play position.");
+            public static GUIContent RealVoiceCount         = EditorGUIUtility.TrTextContent("Max Real Voices", "Maximum number of actual simultanously playing sounds.");
+            public static GUIContent SpatializerPlugin      = EditorGUIUtility.TrTextContent("Spatializer Plugin", "Native audio plugin performing spatialized filtering of 3D sources.");
+            public static GUIContent AmbisonicDecoderPlugin = EditorGUIUtility.TrTextContent("Ambisonic Decoder Plugin", "Native audio plugin performing ambisonic-to-binaural filtering of sources.");
+            public static GUIContent DisableAudio           = EditorGUIUtility.TrTextContent("Disable Unity Audio", "Prevent allocating the output device in the runtime. Use this if you want to use other sound systems than the built-in one.");
+            public static GUIContent VirtualizeEffects      = EditorGUIUtility.TrTextContent("Virtualize Effects", "When enabled dynamically turn off effects and spatializers on AudioSources that are culled in order to save CPU.");
         }
 
         private SerializedProperty m_Volume;

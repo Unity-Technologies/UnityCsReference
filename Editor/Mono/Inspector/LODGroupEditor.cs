@@ -739,11 +739,11 @@ namespace UnityEditor
                         var pm = new GenericMenu();
                         if (lods.Count >= 8)
                         {
-                            pm.AddDisabledItem(EditorGUIUtility.TextContent("Insert Before"));
+                            pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Insert Before"));
                         }
                         else
                         {
-                            pm.AddItem(EditorGUIUtility.TextContent("Insert Before"), false,
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Insert Before"), false,
                                 new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, null).
                                 InsertLOD);
                         }
@@ -754,9 +754,9 @@ namespace UnityEditor
                             disabledRegion = false;
 
                         if (disabledRegion)
-                            pm.AddDisabledItem(EditorGUIUtility.TextContent("Delete"));
+                            pm.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
                         else
-                            pm.AddItem(EditorGUIUtility.TextContent("Delete"), false,
+                            pm.AddItem(EditorGUIUtility.TrTextContent("Delete"), false,
                                 new LODAction(lods, cameraPercent, evt.mousePosition, m_LODs, DeletedLOD).
                                 DeleteLOD);
                         pm.ShowAsContext();

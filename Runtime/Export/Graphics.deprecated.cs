@@ -41,18 +41,22 @@ namespace UnityEngine
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Method DrawMesh has been deprecated. Use Graphics.DrawMeshNow instead (UnityUpgradable) -> DrawMeshNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
         static public void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation) {}
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Method DrawMesh has been deprecated. Use Graphics.DrawMeshNow instead (UnityUpgradable) -> DrawMeshNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
         static public void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex) {}
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Method DrawMesh has been deprecated. Use Graphics.DrawMeshNow instead (UnityUpgradable) -> DrawMeshNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
         static public void DrawMesh(Mesh mesh, Matrix4x4 matrix) {}
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Method DrawMesh has been deprecated. Use Graphics.DrawMeshNow instead (UnityUpgradable) -> DrawMeshNow(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs]
         static public void DrawMesh(Mesh mesh, Matrix4x4 matrix, int materialIndex) {}
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

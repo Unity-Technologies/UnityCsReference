@@ -15,7 +15,7 @@ namespace UnityEditor
         private bool m_AddSpatializerExtension = false;
         private bool m_AddSpatializerExtensionMixedValues = false;
 
-        private GUIContent addSpatializerExtensionLabel = new GUIContent("Override Spatializer Settings", "Override the Google spatializer's default settings.");
+        private GUIContent addSpatializerExtensionLabel = EditorGUIUtility.TrTextContent("Override Spatializer Settings", "Override the Google spatializer's default settings.");
 
         void OnEnable()
         {

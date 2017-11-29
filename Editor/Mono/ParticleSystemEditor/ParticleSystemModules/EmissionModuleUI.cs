@@ -24,14 +24,14 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent rateOverTime = EditorGUIUtility.TextContent("Rate over Time|The number of particles emitted per second.");
-            public GUIContent rateOverDistance = EditorGUIUtility.TextContent("Rate over Distance|The number of particles emitted per distance unit.");
-            public GUIContent burst = EditorGUIUtility.TextContent("Bursts|Emission of extra particles at specific times during the duration of the system.");
-            public GUIContent burstTime = EditorGUIUtility.TextContent("Time|When the burst will trigger.");
-            public GUIContent burstCount = EditorGUIUtility.TextContent("Count|The number of particles to emit.");
-            public GUIContent burstCycleCount = EditorGUIUtility.TextContent("Cycles|How many times to emit the burst. Use the dropdown to repeat infinitely.");
-            public GUIContent burstCycleCountInfinite = EditorGUIUtility.TextContent("Infinite");
-            public GUIContent burstRepeatInterval = EditorGUIUtility.TextContent("Interval|Repeat the burst every N seconds.");
+            public GUIContent rateOverTime = EditorGUIUtility.TrTextContent("Rate over Time", "The number of particles emitted per second.");
+            public GUIContent rateOverDistance = EditorGUIUtility.TrTextContent("Rate over Distance", "The number of particles emitted per distance unit.");
+            public GUIContent burst = EditorGUIUtility.TrTextContent("Bursts", "Emission of extra particles at specific times during the duration of the system.");
+            public GUIContent burstTime = EditorGUIUtility.TrTextContent("Time", "When the burst will trigger.");
+            public GUIContent burstCount = EditorGUIUtility.TrTextContent("Count", "The number of particles to emit.");
+            public GUIContent burstCycleCount = EditorGUIUtility.TrTextContent("Cycles", "How many times to emit the burst. Use the dropdown to repeat infinitely.");
+            public GUIContent burstCycleCountInfinite = EditorGUIUtility.TrTextContent("Infinite");
+            public GUIContent burstRepeatInterval = EditorGUIUtility.TrTextContent("Interval", "Repeat the burst every N seconds.");
         }
         private static Texts s_Texts;
 
@@ -209,7 +209,7 @@ namespace UnityEditor
         {
             if (EditorGUI.DropdownButton(rect, GUIContent.none, FocusType.Passive, ParticleSystemStyles.Get().minMaxCurveStateDropDown))
             {
-                GUIContent[] texts = { new GUIContent("Infinite"), new GUIContent("Count") };
+                GUIContent[] texts = { EditorGUIUtility.TrTextContent("Infinite"), EditorGUIUtility.TrTextContent("Count") };
 
                 GenericMenu menu = new GenericMenu();
                 for (int i = 0; i < texts.Length; ++i)

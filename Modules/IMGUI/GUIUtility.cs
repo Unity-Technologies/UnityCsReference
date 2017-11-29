@@ -352,6 +352,7 @@ namespace UnityEngine
         {
             private bool m_Disposed;
 
+            /// <param name="clipRect">AABB in the transformed space.</param>
             public ParentClipScope(Matrix4x4 objectTransform, Rect clipRect)
             {
                 m_Disposed = false;

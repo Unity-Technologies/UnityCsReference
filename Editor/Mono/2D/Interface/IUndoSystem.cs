@@ -6,15 +6,12 @@ using UnityEngine;
 
 namespace UnityEditor.U2D.Interface
 {
-    internal interface IUndoableObject
-    {}
-
     internal interface IUndoSystem
     {
         void RegisterUndoCallback(Undo.UndoRedoCallback undoCallback);
         void UnregisterUndoCallback(Undo.UndoRedoCallback undoCallback);
-        void RegisterCompleteObjectUndo(IUndoableObject obj, string undoText);
-        void ClearUndo(IUndoableObject obj);
+        void RegisterCompleteObjectUndo(ScriptableObject obj, string undoText);
+        void ClearUndo(ScriptableObject obj);
     }
 
     internal class UndoSystem : IUndoSystem
@@ -29,28 +26,16 @@ namespace UnityEditor.U2D.Interface
             Undo.undoRedoPerformed -= undoCallback;
         }
 
-        public void RegisterCompleteObjectUndo(IUndoableObject obj, string undoText)
+        public void RegisterCompleteObjectUndo(ScriptableObject so, string undoText)
         {
-            var so = CheckUndoObjectType(obj);
             if (so != null)
             {
                 Undo.RegisterCompleteObjectUndo(so, undoText);
             }
         }
 
-        ScriptableObject CheckUndoObjectType(IUndoableObject obj)
+        public void ClearUndo(ScriptableObject so)
         {
-            ScriptableObject so = obj as ScriptableObject;
-            if (so == null)
-            {
-                Debug.LogError("Register Undo object is not a ScriptableObject");
-            }
-            return so;
-        }
-
-        public void ClearUndo(IUndoableObject obj)
-        {
-            var so = CheckUndoObjectType(obj);
             if (so != null)
             {
                 Undo.ClearUndo(so);

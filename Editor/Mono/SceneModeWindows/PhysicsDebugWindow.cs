@@ -22,22 +22,22 @@ namespace UnityEditor
 
         private static class Contents
         {
-            public static readonly GUIContent physicsDebug          = new GUIContent("Physics Debug");
-            public static readonly GUIContent workflow              = new GUIContent("Workflow", "The \"Hide\" mode is useful for fast discovery while the \"Show\" mode is useful for finding specific items.");
-            public static readonly GUIContent staticColor           = new GUIContent("Static Colliders");
-            public static readonly GUIContent triggerColor          = new GUIContent("Triggers");
-            public static readonly GUIContent rigidbodyColor        = new GUIContent("Rigidbodies");
-            public static readonly GUIContent kinematicColor        = new GUIContent("Kinematic Bodies");
-            public static readonly GUIContent sleepingBodyColor     = new GUIContent("Sleeping Bodies");
-            public static readonly GUIContent forceOverdraw         = EditorGUIUtility.TextContent("Force Overdraw|Draws Collider geometry on top of render geometry");
-            public static readonly GUIContent viewDistance          = EditorGUIUtility.TextContent("View Distance|Lower bound on distance from camera to physics geometry.");
-            public static readonly GUIContent terrainTilesMax       = EditorGUIUtility.TextContent("Terrain Tiles Max|Number of mesh tiles to drawn.");
-            public static readonly GUIContent devOptions            = EditorGUIUtility.TextContent("devOptions");
-            public static readonly GUIContent forceDot              = EditorGUIUtility.TextContent("Force Dot");
-            public static readonly GUIContent toolsHidden           = EditorGUIUtility.TextContent("Hide tools");
-            public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TextContent("Collision Geometry");
-            public static readonly GUIContent enableMouseSelect     = EditorGUIUtility.TextContent("Mouse Select");
-            public static readonly GUIContent useSceneCam           = EditorGUIUtility.TextContent("Use Scene Cam");
+            public static readonly GUIContent physicsDebug          = EditorGUIUtility.TrTextContent("Physics Debug");
+            public static readonly GUIContent workflow              = EditorGUIUtility.TrTextContent("Workflow", "The \"Hide\" mode is useful for fast discovery while the \"Show\" mode is useful for finding specific items.");
+            public static readonly GUIContent staticColor           = EditorGUIUtility.TrTextContent("Static Colliders");
+            public static readonly GUIContent triggerColor          = EditorGUIUtility.TrTextContent("Triggers");
+            public static readonly GUIContent rigidbodyColor        = EditorGUIUtility.TrTextContent("Rigidbodies");
+            public static readonly GUIContent kinematicColor        = EditorGUIUtility.TrTextContent("Kinematic Bodies");
+            public static readonly GUIContent sleepingBodyColor     = EditorGUIUtility.TrTextContent("Sleeping Bodies");
+            public static readonly GUIContent forceOverdraw         = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
+            public static readonly GUIContent viewDistance          = EditorGUIUtility.TrTextContent("View Distance", "Lower bound on distance from camera to physics geometry.");
+            public static readonly GUIContent terrainTilesMax       = EditorGUIUtility.TrTextContent("Terrain Tiles Max", "Number of mesh tiles to drawn.");
+            public static readonly GUIContent devOptions            = EditorGUIUtility.TrTextContent("devOptions");
+            public static readonly GUIContent forceDot              = EditorGUIUtility.TrTextContent("Force Dot");
+            public static readonly GUIContent toolsHidden           = EditorGUIUtility.TrTextContent("Hide tools");
+            public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TrTextContent("Collision Geometry");
+            public static readonly GUIContent enableMouseSelect     = EditorGUIUtility.TrTextContent("Mouse Select");
+            public static readonly GUIContent useSceneCam           = EditorGUIUtility.TrTextContent("Use Scene Cam");
         }
 
         //---------------------------------------------------------------------

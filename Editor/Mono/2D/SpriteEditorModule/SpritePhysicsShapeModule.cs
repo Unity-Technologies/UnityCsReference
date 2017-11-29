@@ -5,12 +5,14 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Experimental.U2D;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
 using UnityEditor.U2D.Interface;
 
 namespace UnityEditor.U2D
 {
+    [RequireSpriteDataProvider(typeof(ISpritePhysicsOutlineDataProvider), typeof(ITextureDataProvider))]
     internal class SpritePhysicsShapeModule : SpriteOutlineModule
     {
         private readonly float kDefaultPhysicsTessellationDetail = 0.25f;
@@ -32,25 +34,50 @@ namespace UnityEditor.U2D
             get; set;
         }
 
-        protected override List<SpriteOutline> selectedShapeOutline
+        public override bool ApplyRevert(bool apply)
         {
-            get { return m_Selected.physicsShape; }
-            set { m_Selected.physicsShape = value; }
+            if (m_Outline != null)
+            {
+                if (apply)
+                {
+                    var dp = spriteEditorWindow.GetDataProvider<ISpritePhysicsOutlineDataProvider>();
+                    for (int i = 0; i < m_Outline.Count; ++i)
+                    {
+                        dp.SetOutlines(m_Outline[i].spriteID, m_Outline[i].ToListVector());
+                        dp.SetTessellationDetail(m_Outline[i].spriteID, m_Outline[i].tessellationDetail);
+                    }
+                }
+
+                ScriptableObject.DestroyImmediate(m_Outline);
+                m_Outline = null;
+            }
+
+            return true;
         }
 
-        protected override bool HasShapeOutline(SpriteRect spriteRect)
+        protected override void LoadOutline()
         {
-            return ((spriteRect.physicsShape != null) && (spriteRect.physicsShape.Count > 0));
+            m_Outline = ScriptableObject.CreateInstance<SpriteOutlineModel>();
+            var spriteDataProvider = spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>();
+            var outlineDataProvider = spriteEditorWindow.GetDataProvider<ISpritePhysicsOutlineDataProvider>();
+            foreach (var rect in spriteDataProvider.GetSpriteRects())
+            {
+                var outlines = outlineDataProvider.GetOutlines(rect.spriteID);
+                m_Outline.AddListVector2(rect.spriteID, outlines);
+                m_Outline[m_Outline.Count - 1].tessellationDetail = outlineDataProvider.GetTessellationDetail(rect.spriteID);
+            }
         }
 
         protected override void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
-            if (spriteRect.physicsShape == null || spriteRect.physicsShape.Count == 0)
+            var physicsShape = m_Outline[spriteRect.spriteID];
+            if (physicsShape.spriteOutlines == null || physicsShape.spriteOutlines.Count == 0)
             {
-                spriteRect.physicsShape = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture,
-                        Math.Abs(spriteRect.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : spriteRect.tessellationDetail,
-                        kDefaultPhysicsAlphaTolerance, spriteEditorWindow.spriteEditorDataProvider);
+                var physicsShapes = GenerateSpriteRectOutline(spriteRect.rect,
+                        Math.Abs(physicsShape.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : physicsShape.tessellationDetail,
+                        kDefaultPhysicsAlphaTolerance, m_TextureDataProvider);
                 spriteEditorWindow.SetDataModified();
+                m_Outline[spriteRect.spriteID].spriteOutlines = physicsShapes;
             }
         }
     }

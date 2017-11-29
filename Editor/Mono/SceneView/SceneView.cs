@@ -503,12 +503,12 @@ namespace UnityEditor
             dontClearBackground = true;
             s_SceneViews.Add(this);
 
-            m_Lighting = EditorGUIUtility.IconContent("SceneviewLighting", "Lighting|When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-            m_Fx = EditorGUIUtility.IconContent("SceneviewFx", "Effects|Toggle skybox, fog, and various other effects.");
-            m_AudioPlayContent = EditorGUIUtility.IconContent("SceneviewAudio", "AudioPlay|Toggle audio on or off.");
-            m_GizmosContent = EditorGUIUtility.TextContent("Gizmos|Toggle the visibility of different Gizmos in the Scene view.");
-            m_2DModeContent = new GUIContent("2D", "When togggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
-            m_RenderDocContent = EditorGUIUtility.IconContent("renderdoc", "Capture|Capture the current view and open in RenderDoc.");
+            m_Lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
+            m_Fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
+            m_AudioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
+            m_GizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle the visibility of different Gizmos in the Scene view.");
+            m_2DModeContent = EditorGUIUtility.TrTextContent("2D", "When togggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            m_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
 
@@ -639,7 +639,7 @@ namespace UnityEditor
             {
                 // render mode popup
                 GUIContent modeContent = EditorGUIUtility.TextContent(m_CameraMode.name);
-                modeContent.tooltip = LocalizationDatabase.GetLocalizedString("The Draw Mode used to display the Scene.");
+                modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
                 Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
                 if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
                 {
@@ -789,7 +789,7 @@ namespace UnityEditor
         {
             if (RenderDoc.IsInstalled() && !RenderDoc.IsLoaded())
             {
-                menu.AddItem(new GUIContent("Load RenderDoc"), false, LoadRenderDoc);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Load RenderDoc"), false, LoadRenderDoc);
             }
         }
 
@@ -1529,7 +1529,7 @@ namespace UnityEditor
         internal void DrawTrueMetalCheckbox()
         {
             EditorGUI.BeginChangeCheck();
-            m_ValidateTrueMetals = EditorGUILayout.ToggleLeft(new GUIContent("Check Pure Metals", "Check if albedo is black for materials with an average specular color above 0.45"), m_ValidateTrueMetals);
+            m_ValidateTrueMetals = EditorGUILayout.ToggleLeft(EditorGUIUtility.TrTextContent("Check Pure Metals", "Check if albedo is black for materials with an average specular color above 0.45"), m_ValidateTrueMetals);
             if (EditorGUI.EndChangeCheck())
             {
                 Shader.SetGlobalInt("_CheckPureMetal", m_ValidateTrueMetals ? 1 : 0);
@@ -1547,7 +1547,7 @@ namespace UnityEditor
 
                 EditorGUIUtility.labelWidth = 140;
 
-                m_SelectedAlbedoSwatchIndex = EditorGUILayout.Popup(new GUIContent("Luminance Validation:", "Select default luminance validation or validate against a configured albedo swatch"), m_SelectedAlbedoSwatchIndex, m_AlbedoSwatchGUIContent);
+                m_SelectedAlbedoSwatchIndex = EditorGUILayout.Popup(EditorGUIUtility.TrTextContent("Luminance Validation:", "Select default luminance validation or validate against a configured albedo swatch"), m_SelectedAlbedoSwatchIndex, m_AlbedoSwatchGUIContent);
                 EditorGUI.indentLevel++;
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -1565,9 +1565,9 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     using (new EditorGUI.DisabledScope(m_SelectedAlbedoSwatchIndex == 0))
                     {
-                        m_AlbedoSwatchHueTolerance = EditorGUILayout.Slider(new GUIContent("Hue Tolerance:", "Check that the hue of the albedo value of a material is within the tolerance of the hue of the albedo swatch being validated against"), m_AlbedoSwatchHueTolerance, 0f, 0.5f);
+                        m_AlbedoSwatchHueTolerance = EditorGUILayout.Slider(EditorGUIUtility.TrTextContent("Hue Tolerance:", "Check that the hue of the albedo value of a material is within the tolerance of the hue of the albedo swatch being validated against"), m_AlbedoSwatchHueTolerance, 0f, 0.5f);
 
-                        m_AlbedoSwatchSaturationTolerance = EditorGUILayout.Slider(new GUIContent("Saturation Tolerance:", "Check that the saturation of the albedo value of a material is within the tolerance of the saturation of the albedo swatch being validated against"), m_AlbedoSwatchSaturationTolerance, 0f, 0.5f);
+                        m_AlbedoSwatchSaturationTolerance = EditorGUILayout.Slider(EditorGUIUtility.TrTextContent("Saturation Tolerance:", "Check that the saturation of the albedo value of a material is within the tolerance of the saturation of the albedo swatch being validated against"), m_AlbedoSwatchSaturationTolerance, 0f, 0.5f);
                     }
 
                     if (EditorGUI.EndChangeCheck())
@@ -1637,7 +1637,7 @@ namespace UnityEditor
             if (sceneView.cameraMode.drawMode == DrawCameraMode.ValidateAlbedo || sceneView.cameraMode.drawMode == DrawCameraMode.ValidateMetalSpecular)
             {
                 sceneView.PrepareValidationUI();
-                SceneViewOverlay.Window(new GUIContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
+                SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("PBR Validation Settings"), DrawPBRSettings, (int)SceneViewOverlay.Ordering.PhysicsDebug, sceneView, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
             }
         }
 
@@ -2702,7 +2702,7 @@ namespace UnityEditor
             // In this case, we wan't to explicitely try the GameView before passing it on to whatever notificationView we have
             var gameView = (GameView)WindowLayout.FindEditorWindowOfType(typeof(GameView));
             if (gameView != null && gameView.hasFocus)
-                gameView.ShowNotification(new GUIContent("You must exit play mode to save the scene!"));
+                gameView.ShowNotification(EditorGUIUtility.TrTextContent("You must exit play mode to save the scene!"));
             else
                 ShowNotification("You must exit play mode to save the scene!");
         }

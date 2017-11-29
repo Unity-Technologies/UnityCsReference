@@ -37,31 +37,31 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent separateAxes = EditorGUIUtility.TextContent("Separate Axes|If enabled, you can control the noise separately for each axis.");
-            public GUIContent strength = EditorGUIUtility.TextContent("Strength|How strong the overall noise effect is.");
-            public GUIContent frequency = EditorGUIUtility.TextContent("Frequency|Low values create soft, smooth noise, and high values create rapidly changing noise.");
-            public GUIContent damping = EditorGUIUtility.TextContent("Damping|If enabled, strength is proportional to frequency.");
-            public GUIContent octaves = EditorGUIUtility.TextContent("Octaves|Layers of noise that combine to produce final noise (Adding octaves increases the performance cost substantially!)");
-            public GUIContent octaveMultiplier = EditorGUIUtility.TextContent("Octave Multiplier|When combining each octave, scale the intensity by this amount.");
-            public GUIContent octaveScale = EditorGUIUtility.TextContent("Octave Scale|When combining each octave, zoom in by this amount.");
-            public GUIContent quality = EditorGUIUtility.TextContent("Quality|Generate 1D, 2D or 3D noise.");
-            public GUIContent scrollSpeed = EditorGUIUtility.TextContent("Scroll Speed|Scroll the noise map over the particle system.");
-            public GUIContent remap = EditorGUIUtility.TextContent("Remap|Remap the final noise values into a new range.");
-            public GUIContent remapCurve = EditorGUIUtility.TextContent("Remap Curve");
-            public GUIContent positionAmount = EditorGUIUtility.TextContent("Position Amount|What proportion of the noise is applied to the particle positions.");
-            public GUIContent rotationAmount = EditorGUIUtility.TextContent("Rotation Amount|What proportion of the noise is applied to the particle rotations, in degrees per second.");
-            public GUIContent sizeAmount = EditorGUIUtility.TextContent("Size Amount|Multiply the size of the particle by a proportion of the noise.");
+            public GUIContent separateAxes = EditorGUIUtility.TrTextContent("Separate Axes", "If enabled, you can control the noise separately for each axis.");
+            public GUIContent strength = EditorGUIUtility.TrTextContent("Strength", "How strong the overall noise effect is.");
+            public GUIContent frequency = EditorGUIUtility.TrTextContent("Frequency", "Low values create soft, smooth noise, and high values create rapidly changing noise.");
+            public GUIContent damping = EditorGUIUtility.TrTextContent("Damping", "If enabled, strength is proportional to frequency.");
+            public GUIContent octaves = EditorGUIUtility.TrTextContent("Octaves", "Layers of noise that combine to produce final noise (Adding octaves increases the performance cost substantially!)");
+            public GUIContent octaveMultiplier = EditorGUIUtility.TrTextContent("Octave Multiplier", "When combining each octave, scale the intensity by this amount.");
+            public GUIContent octaveScale = EditorGUIUtility.TrTextContent("Octave Scale", "When combining each octave, zoom in by this amount.");
+            public GUIContent quality = EditorGUIUtility.TrTextContent("Quality", "Generate 1D, 2D or 3D noise.");
+            public GUIContent scrollSpeed = EditorGUIUtility.TrTextContent("Scroll Speed", "Scroll the noise map over the particle system.");
+            public GUIContent remap = EditorGUIUtility.TrTextContent("Remap", "Remap the final noise values into a new range.");
+            public GUIContent remapCurve = EditorGUIUtility.TrTextContent("Remap Curve");
+            public GUIContent positionAmount = EditorGUIUtility.TrTextContent("Position Amount", "What proportion of the noise is applied to the particle positions.");
+            public GUIContent rotationAmount = EditorGUIUtility.TrTextContent("Rotation Amount", "What proportion of the noise is applied to the particle rotations, in degrees per second.");
+            public GUIContent sizeAmount = EditorGUIUtility.TrTextContent("Size Amount", "Multiply the size of the particle by a proportion of the noise.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
-            public GUIContent previewTexture = EditorGUIUtility.TextContent("Preview|Preview the noise as a texture.");
-            public GUIContent previewTextureMultiEdit = EditorGUIUtility.TextContent("Preview (Disabled)|Preview is disabled in multi-object editing mode.");
+            public GUIContent previewTexture = EditorGUIUtility.TrTextContent("Preview", "Preview the noise as a texture.");
+            public GUIContent previewTextureMultiEdit = EditorGUIUtility.TrTextContent("Preview (Disabled)", "Preview is disabled in multi-object editing mode.");
 
             public GUIContent[] qualityDropdown = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Low (1D)"),
-                EditorGUIUtility.TextContent("Medium (2D)"),
-                EditorGUIUtility.TextContent("High (3D)")
+                EditorGUIUtility.TrTextContent("Low (1D)"),
+                EditorGUIUtility.TrTextContent("Medium (2D)"),
+                EditorGUIUtility.TrTextContent("High (3D)")
             };
         }
         private static Texts s_Texts;

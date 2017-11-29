@@ -21,25 +21,25 @@ namespace UnityEditor
         {
             public static readonly GUIContent[] ObjectPreviewTextureOptions =
             {
-                EditorGUIUtility.TextContent("UV Charts"),
-                EditorGUIUtility.TextContent("Realtime Albedo"),
-                EditorGUIUtility.TextContent("Realtime Emissive"),
-                EditorGUIUtility.TextContent("Realtime Indirect"),
-                EditorGUIUtility.TextContent("Realtime Directionality"),
-                EditorGUIUtility.TextContent("Baked Lightmap"),
-                EditorGUIUtility.TextContent("Baked Directionality"),
-                EditorGUIUtility.TextContent("Baked Shadowmask"),
-                EditorGUIUtility.TextContent("Baked Albedo"),
-                EditorGUIUtility.TextContent("Baked Emissive"),
-                EditorGUIUtility.TextContent("Baked UV Charts"),
-                EditorGUIUtility.TextContent("Baked Texel Validity"),
-                EditorGUIUtility.TextContent("Baked UV Overlap"),
+                EditorGUIUtility.TrTextContent("UV Charts"),
+                EditorGUIUtility.TrTextContent("Realtime Albedo"),
+                EditorGUIUtility.TrTextContent("Realtime Emissive"),
+                EditorGUIUtility.TrTextContent("Realtime Indirect"),
+                EditorGUIUtility.TrTextContent("Realtime Directionality"),
+                EditorGUIUtility.TrTextContent("Baked Lightmap"),
+                EditorGUIUtility.TrTextContent("Baked Directionality"),
+                EditorGUIUtility.TrTextContent("Baked Shadowmask"),
+                EditorGUIUtility.TrTextContent("Baked Albedo"),
+                EditorGUIUtility.TrTextContent("Baked Emissive"),
+                EditorGUIUtility.TrTextContent("Baked UV Charts"),
+                EditorGUIUtility.TrTextContent("Baked Texel Validity"),
+                EditorGUIUtility.TrTextContent("Baked UV Overlap"),
             };
 
-            public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TextContent("The texture is not available at the moment.");
-            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to Lightmap Static if it's meant to be baked.");
-            public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
-            public static readonly GUIContent TextureLoading = EditorGUIUtility.TextContent("Loading...");
+            public static readonly GUIContent TextureNotAvailableRealtime = EditorGUIUtility.TrTextContent("The texture is not available at the moment.");
+            public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to Lightmap Static if it's meant to be baked.");
+            public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
+            public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
         }
 
         GITextureType[] kObjectPreviewTextureTypes =

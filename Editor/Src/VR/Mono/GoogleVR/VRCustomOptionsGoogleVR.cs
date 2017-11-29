@@ -14,11 +14,11 @@ namespace UnityEditorInternal.VR
     {
         static GUIContent[] s_DepthOptions =
         {
-            new GUIContent("16-bit depth"),
-            new GUIContent("24-bit depth"),
-            new GUIContent("24-bit depth | 8-bit stencil")
+            EditorGUIUtility.TrTextContent("16-bit depth"),
+            EditorGUIUtility.TrTextContent("24-bit depth"),
+            EditorGUIUtility.TrTextContent("24-bit depth | 8-bit stencil")
         };
-        static GUIContent s_DepthFormatLabel = new GUIContent("Depth Format");
+        static GUIContent s_DepthFormatLabel = EditorGUIUtility.TrTextContent("Depth Format");
 
         SerializedProperty m_DepthFormat;
 
@@ -55,7 +55,7 @@ namespace UnityEditorInternal.VR
 
     internal class VRCustomOptionsCardboard : VRCustomOptionsGoogleVR
     {
-        static GUIContent s_EnableTransitionViewLabel = new GUIContent("Enable Transition View");
+        static GUIContent s_EnableTransitionViewLabel = EditorGUIUtility.TrTextContent("Enable Transition View");
         SerializedProperty m_EnableTransitionView;
 
         public override void Initialize(SerializedObject settings)
@@ -104,18 +104,18 @@ namespace UnityEditorInternal.VR
 
         const float s_Indent = 10.0f;
 
-        static GUIContent s_ForegroundIconLabel = EditorGUIUtility.TextContent("Foreground Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
-        static GUIContent s_BackgroundIconLabel = EditorGUIUtility.TextContent("Background Icon|Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
-        static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TextContent("Sustained Performance|Sustained Performance mode is intended to provide a consistent level of performance for a prolonged amount of time");
-        static GUIContent s_EnableVideoLayer = EditorGUIUtility.TextContent("Video Surface|Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
-        static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TextContent("Protected Memory|Enable the use of DRM protection. Only usable if all content is DRM Protected.");
-        static GUIContent s_MinimumTargetHeadTracking  = EditorGUIUtility.TextContent("Positional Head Tracking|Requested head tracking support of target devices to run the application on.");
+        static GUIContent s_ForegroundIconLabel = EditorGUIUtility.TrTextContent("Foreground Icon", "Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
+        static GUIContent s_BackgroundIconLabel = EditorGUIUtility.TrTextContent("Background Icon", "Icon should be a Texture with dimensions of 512px by 512px and a 1:1 aspect ratio.");
+        static GUIContent s_SustainedPerformanceModeLabel = EditorGUIUtility.TrTextContent("Sustained Performance", "Sustained Performance mode is intended to provide a consistent level of performance for a prolonged amount of time");
+        static GUIContent s_EnableVideoLayer = EditorGUIUtility.TrTextContent("Video Surface", "Enable the use of the video surface integrated with Daydream asynchronous reprojection.");
+        static GUIContent s_UseProtectedVideoMemoryLabel = EditorGUIUtility.TrTextContent("Protected Memory", "Enable the use of DRM protection. Only usable if all content is DRM Protected.");
+        static GUIContent s_MinimumTargetHeadTracking  = EditorGUIUtility.TrTextContent("Positional Head Tracking", "Requested head tracking support of target devices to run the application on.");
 
         static GUIContent[] s_TargetHeadTrackingOptions =
         {
-            EditorGUIUtility.TextContent("Disabled|Will run on any device and provides no head tracking."),
-            EditorGUIUtility.TextContent("Supported|Will run on any device and will provide head tracking on devices that support head tracking."),
-            EditorGUIUtility.TextContent("Required|Will only run on devices with full 6 DoF head tracking support."),
+            EditorGUIUtility.TrTextContent("Disabled", "Will run on any device and provides no head tracking."),
+            EditorGUIUtility.TrTextContent("Supported", "Will run on any device and will provide head tracking on devices that support head tracking."),
+            EditorGUIUtility.TrTextContent("Required", "Will only run on devices with full 6 DoF head tracking support."),
         };
 
         SerializedProperty m_DaydreamIcon;

@@ -89,27 +89,27 @@ namespace UnityEditor
         class Styles
         {
             public GUIStyle labelStyle = "ProfilerBadge";
-            public GUIContent rolloffLabel =  new GUIContent("Volume Rolloff", "Which type of rolloff curve to use");
+            public GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
             public string controlledByCurveLabel = "Controlled by curve";
-            public GUIContent audioClipLabel = new GUIContent("AudioClip", "The AudioClip asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
-            public GUIContent panStereoLabel = new GUIContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will Stereo sounds have each left/right value faded up and down according to the specified pan value.");
-            public GUIContent spatialBlendLabel = new GUIContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
-            public GUIContent reverbZoneMixLabel = new GUIContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
-            public GUIContent dopplerLevelLabel = new GUIContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.");
-            public GUIContent spreadLabel = new GUIContent("Spread", "Sets the spread of a 3d sound in speaker space");
-            public GUIContent outputMixerGroupLabel = new GUIContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener");
-            public GUIContent volumeLabel = new GUIContent("Volume", "Sets the overall volume of the sound.");
-            public GUIContent pitchLabel = new GUIContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.");
-            public GUIContent priorityLabel = new GUIContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.");
-            public GUIContent spatializeLabel = new GUIContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.");
-            public GUIContent spatializePostEffectsLabel = new GUIContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.");
-            public GUIContent priorityLeftLabel = new GUIContent("High");
-            public GUIContent priorityRightLabel = new GUIContent("Low");
-            public GUIContent spatialLeftLabel = new GUIContent("2D");
-            public GUIContent spatialRightLabel = new GUIContent("3D");
-            public GUIContent panLeftLabel = new GUIContent("Left");
-            public GUIContent panRightLabel = new GUIContent("Right");
-            public GUIContent addSpatializerExtensionLabel = new GUIContent("Override Spatializer Settings", "Override the Google spatializer's default property settings.");
+            public GUIContent audioClipLabel = EditorGUIUtility.TrTextContent("AudioClip", "The AudioClip asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
+            public GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will Stereo sounds have each left/right value faded up and down according to the specified pan value.");
+            public GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
+            public GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
+            public GUIContent dopplerLevelLabel = EditorGUIUtility.TrTextContent("Doppler Level", "Specifies how much the pitch is changed based on the relative velocity between AudioListener and AudioSource.");
+            public GUIContent spreadLabel = EditorGUIUtility.TrTextContent("Spread", "Sets the spread of a 3d sound in speaker space");
+            public GUIContent outputMixerGroupLabel = EditorGUIUtility.TrTextContent("Output", "Set whether the sound should play through an Audio Mixer first or directly to the Audio Listener");
+            public GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume", "Sets the overall volume of the sound.");
+            public GUIContent pitchLabel = EditorGUIUtility.TrTextContent("Pitch", "Sets the frequency of the sound. Use this to slow down or speed up the sound.");
+            public GUIContent priorityLabel = EditorGUIUtility.TrTextContent("Priority", "Sets the priority of the source. Note that a sound with a larger priority value will more likely be stolen by sounds with smaller priority values.");
+            public GUIContent spatializeLabel = EditorGUIUtility.TrTextContent("Spatialize", "Enables or disables custom spatialization for the AudioSource.");
+            public GUIContent spatializePostEffectsLabel = EditorGUIUtility.TrTextContent("Spatialize Post Effects", "Determines if the custom spatializer is applied before or after the effect filters attached to the AudioSource. This flag only has an effect if the spatialize flag is enabled on the AudioSource.");
+            public GUIContent priorityLeftLabel = EditorGUIUtility.TrTextContent("High");
+            public GUIContent priorityRightLabel = EditorGUIUtility.TrTextContent("Low");
+            public GUIContent spatialLeftLabel = EditorGUIUtility.TrTextContent("2D");
+            public GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
+            public GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
+            public GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
+            public GUIContent addSpatializerExtensionLabel = EditorGUIUtility.TrTextContent("Override Spatializer Settings", "Override the Google spatializer's default property settings.");
         }
         static Styles ms_Styles;
 

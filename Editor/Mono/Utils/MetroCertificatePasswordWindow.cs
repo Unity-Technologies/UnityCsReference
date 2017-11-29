@@ -42,7 +42,7 @@ namespace UnityEditor
             }
             else
             {
-                window.titleContent = EditorGUIUtility.TextContent("Enter Windows Store Certificate Password");
+                window.titleContent = EditorGUIUtility.TrTextContent("Enter Windows Store Certificate Password");
 
                 window.position = new Rect(100, 100, 350, 90);
                 window.minSize = new Vector2(window.position.width, window.position.height);
@@ -74,7 +74,7 @@ namespace UnityEditor
 
                     using (HorizontalLayout.DoLayout())
                     {
-                        GUILayout.Label(EditorGUIUtility.TextContent("Password|Certificate password."), kLabelWidth);
+                        GUILayout.Label(EditorGUIUtility.TrTextContent("Password", "Certificate password."), kLabelWidth);
                         GUI.SetNextControlName(kPasswordId);
                         password = GUILayout.PasswordField(password, kPasswordChar);
                     }
@@ -87,7 +87,7 @@ namespace UnityEditor
 
                         GUILayout.FlexibleSpace();
 
-                        if (GUILayout.Button(EditorGUIUtility.TextContent("Ok"), kButtonWidth) || enter)
+                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("Ok"), kButtonWidth) || enter)
                         {
                             message = GUIContent.none;
 
@@ -99,7 +99,7 @@ namespace UnityEditor
                                 }
                                 else
                                 {
-                                    message = EditorGUIUtility.TextContent("Invalid password.");
+                                    message = EditorGUIUtility.TrTextContent("Invalid password.");
                                 }
                             }
                             catch (UnityException ex)

@@ -21,7 +21,7 @@ namespace UnityEditor
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle button = "LargeButton";
-            public GUIContent overviewText = EditorGUIUtility.TextContent("A Material is using the texture as a normal map.\nThe texture must be marked as a normal map in the import settings.");
+            public GUIContent overviewText = EditorGUIUtility.TrTextContent("A Material is using the texture as a normal map.\nThe texture must be marked as a normal map in the import settings.");
         }
 
         static Styles s_Styles = null;
@@ -31,7 +31,7 @@ namespace UnityEditor
 
         public BumpMapSettingsFixingWindow()
         {
-            titleContent = new GUIContent("NormalMap settings");
+            titleContent = EditorGUIUtility.TrTextContent("NormalMap settings");
         }
 
         public void SetPaths(string[] paths)

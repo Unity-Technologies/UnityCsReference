@@ -10,8 +10,7 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    internal
-    class RectangleSelector : MouseManipulator
+    public class RectangleSelector : MouseManipulator
     {
         private readonly RectangleSelect m_Rectangle;
         bool m_Active;
@@ -19,6 +18,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public RectangleSelector()
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
             m_Rectangle = new RectangleSelect();
             m_Rectangle.style.positionType = PositionType.Absolute;
             m_Rectangle.style.positionTop = 0;
@@ -73,7 +73,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (CanStartManipulation(e))
             {
-                if (!e.ctrlKey)
+                if (!e.shiftKey)
                 {
                     graphView.ClearSelection();
                 }
@@ -130,7 +130,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (selection.Contains(selectable))
                 {
-                    if (e.ctrlKey) // invert selection on ctrl only
+                    if (e.shiftKey) // invert selection on shift only
                         graphView.RemoveFromSelection(selectable);
                 }
                 else

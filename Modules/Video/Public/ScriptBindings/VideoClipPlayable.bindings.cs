@@ -131,7 +131,7 @@ namespace UnityEngine.Experimental.Video
             Seek(startTime, startDelay, 0);
         }
 
-        public void Seek(double startTime, double startDelay, [DefaultValue(0)] double duration)
+        public void Seek(double startTime, double startDelay, [DefaultValue("0")] double duration)
         {
             ValidateStartDelayInternal(startDelay);
             SetStartDelayInternal(ref m_Handle, startDelay);

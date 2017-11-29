@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.Experimental.U2D;
+using System;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor.U2D.Interface;
-using UnityEngine.U2D.Interface;
 
-namespace UnityEditor
+namespace UnityEditor.Experimental.U2D
 {
     internal interface ISpriteEditorModule
     {
@@ -19,46 +19,69 @@ namespace UnityEditor
         void OnModuleDeactivate();
         // Called after SpriteEditorWindow drawed the sprite.
         // Handles call are in texture space
-        void DoTextureGUI();
+        void DoMainGUI();
         // Draw user tool bar
-        void DrawToolbarGUI(Rect drawArea);
+        void DoToolbarGUI(Rect drawArea);
         // Any last GUI draw. This is in the SpriteEditorWindow's space.
         // Any GUI draw will appear on top
-        void OnPostGUI();
-        // Called when Sprite selection changed.
+        void DoPostGUI();
         // If return false, the module will not be shown for selection
         bool CanBeActivated();
+        // User triggers data apply. Return true to indicate the asset needs a reimport
+        bool ApplyRevert(bool apply);
     }
 
-    internal interface ISpriteEditor
+    public abstract class SpriteEditorModuleBase : ISpriteEditorModule
     {
-        ISpriteRectCache spriteRects { get; }
+        public ISpriteEditor spriteEditor { get; internal set; }
+
+        public abstract string moduleName { get; }
+
+        public abstract bool CanBeActivated();
+        public abstract void DoMainGUI();
+        public abstract void DoToolbarGUI(Rect drawArea);
+        public abstract void OnModuleActivate();
+        public abstract void OnModuleDeactivate();
+        public abstract void DoPostGUI();
+        public abstract bool ApplyRevert(bool apply);
+    }
+
+    public interface ISpriteEditor
+    {
+        List<SpriteRect> spriteRects { set; }
         SpriteRect selectedSpriteRect { get; set; }
         bool enableMouseMoveEvent { set; }
         bool editingDisabled { get; }
         Rect windowDimension { get; }
-        ITexture2D selectedTexture { get; }
-        ITexture2D previewTexture { get; }
-        ISpriteEditorDataProvider spriteEditorDataProvider { get; }
+        T GetDataProvider<T>() where T : class;
 
-        void HandleSpriteSelection();
+        bool HandleSpriteSelection();
         void RequestRepaint();
         void SetDataModified();
-        void DisplayProgressBar(string title, string content, float progress);
-        void ClearProgressBar();
-        ITexture2D GetReadableTexture2D();
         void ApplyOrRevertModification(bool apply);
     }
 
-    internal interface ISpriteRectCache : IUndoableObject
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    public class SpriteEditorModuleAssetPostProcessAttribute : Attribute
     {
-        int Count { get; }
+    }
 
-        SpriteRect RectAt(int i);
-        void AddRect(SpriteRect r);
-        void RemoveRect(SpriteRect r);
-        void ClearAll();
-        int GetIndex(SpriteRect spriteRect);
-        bool Contains(SpriteRect spriteRect);
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    public class RequireSpriteDataProviderAttribute : Attribute
+    {
+        Type[] m_Types;
+
+        public RequireSpriteDataProviderAttribute(params Type[] types)
+        {
+            m_Types = types;
+        }
+
+        internal bool ContainsAllType(ISpriteEditorDataProvider provider)
+        {
+            return provider == null ? false : m_Types.Where(x =>
+                {
+                    return provider.HasDataProvider(x);
+                }).Count() == m_Types.Length;
+        }
     }
 }

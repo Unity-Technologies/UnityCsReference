@@ -90,25 +90,25 @@ namespace UnityEditor
             public static string[] bakeCustomOptionText = {"Bake as new Cubemap..."};
             public static string[] bakeButtonsText = {"Bake All Reflection Probes"};
 
-            public static GUIContent bakeCustomButtonText = EditorGUIUtility.TextContent("Bake|Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
-            public static GUIContent runtimeSettingsHeader = new GUIContent("Runtime settings", "These settings are used by objects when they render with the cubemap of this probe");
-            public static GUIContent backgroundColorText = new GUIContent("Background", "Camera clears the screen to this color before rendering.");
-            public static GUIContent clearFlagsText = new GUIContent("Clear Flags");
-            public static GUIContent intensityText = new GUIContent("Intensity");
-            public static GUIContent resolutionText = new GUIContent("Resolution");
-            public static GUIContent captureCubemapHeaderText = new GUIContent("Cubemap capture settings");
-            public static GUIContent boxProjectionText = new GUIContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away. Note that this feature can be globally disabled from Graphics Settings -> Tier Settings");
-            public static GUIContent blendDistanceText = new GUIContent("Blend Distance", "Area around the probe where it is blended with other probes. Only used in deferred probes.");
-            public static GUIContent sizeText = EditorGUIUtility.TextContent("Box Size|The size of the box in which the reflections will be applied to objects. The value is not affected by the Transform of the Game Object.");
-            public static GUIContent centerText = EditorGUIUtility.TextContent("Box Offset|The center of the box in which the reflections will be applied to objects. The value is relative to the position of the Game Object.");
-            public static GUIContent customCubemapText = new GUIContent("Cubemap");
-            public static GUIContent importanceText = new GUIContent("Importance");
-            public static GUIContent renderDynamicObjects = new GUIContent("Dynamic Objects", "If enabled dynamic objects are also rendered into the cubemap");
-            public static GUIContent timeSlicing = new GUIContent("Time Slicing", "If enabled this probe will update over several frames, to help reduce the impact on the frame rate");
-            public static GUIContent refreshMode = new GUIContent("Refresh Mode", "Controls how this probe refreshes in the Player");
+            public static GUIContent bakeCustomButtonText = EditorGUIUtility.TrTextContent("Bake", "Bakes Reflection Probe's cubemap, overwriting the existing cubemap texture asset (if any).");
+            public static GUIContent runtimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime settings", "These settings are used by objects when they render with the cubemap of this probe");
+            public static GUIContent backgroundColorText = EditorGUIUtility.TrTextContent("Background", "Camera clears the screen to this color before rendering.");
+            public static GUIContent clearFlagsText = EditorGUIUtility.TrTextContent("Clear Flags");
+            public static GUIContent intensityText = EditorGUIUtility.TrTextContent("Intensity");
+            public static GUIContent resolutionText = EditorGUIUtility.TrTextContent("Resolution");
+            public static GUIContent captureCubemapHeaderText = EditorGUIUtility.TrTextContent("Cubemap capture settings");
+            public static GUIContent boxProjectionText = EditorGUIUtility.TrTextContent("Box Projection", "Box projection causes reflections to appear to change based on the object's position within the probe's box, while still using a single probe as the source of the reflection. This works well for reflections on objects that are moving through enclosed spaces such as corridors and rooms. Setting box projection to False and the cubemap reflection will be treated as coming from infinitely far away. Note that this feature can be globally disabled from Graphics Settings -> Tier Settings");
+            public static GUIContent blendDistanceText = EditorGUIUtility.TrTextContent("Blend Distance", "Area around the probe where it is blended with other probes. Only used in deferred probes.");
+            public static GUIContent sizeText = EditorGUIUtility.TrTextContent("Box Size", "The size of the box in which the reflections will be applied to objects. The value is not affected by the Transform of the Game Object.");
+            public static GUIContent centerText = EditorGUIUtility.TrTextContent("Box Offset", "The center of the box in which the reflections will be applied to objects. The value is relative to the position of the Game Object.");
+            public static GUIContent customCubemapText = EditorGUIUtility.TrTextContent("Cubemap");
+            public static GUIContent importanceText = EditorGUIUtility.TrTextContent("Importance");
+            public static GUIContent renderDynamicObjects = EditorGUIUtility.TrTextContent("Dynamic Objects", "If enabled dynamic objects are also rendered into the cubemap");
+            public static GUIContent timeSlicing = EditorGUIUtility.TrTextContent("Time Slicing", "If enabled this probe will update over several frames, to help reduce the impact on the frame rate");
+            public static GUIContent refreshMode = EditorGUIUtility.TrTextContent("Refresh Mode", "Controls how this probe refreshes in the Player");
 
-            public static  GUIContent typeText = new GUIContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
-            public static GUIContent[] reflectionProbeMode = { new GUIContent("Baked"), new GUIContent("Custom"), new GUIContent("Realtime") };
+            public static  GUIContent typeText = EditorGUIUtility.TrTextContent("Type", "'Baked Cubemap' uses the 'Auto Baking' mode from the Lighting window. If it is enabled then baking is automatic otherwise manual bake is needed (use the bake button below). \n'Custom' can be used if a custom cubemap is wanted. \n'Realtime' can be used to dynamically re-render the cubemap during runtime (via scripting).");
+            public static GUIContent[] reflectionProbeMode = { EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("Custom"), EditorGUIUtility.TrTextContent("Realtime") };
             public static int[] reflectionProbeModeValues = { (int)ReflectionProbeMode.Baked, (int)ReflectionProbeMode.Custom, (int)ReflectionProbeMode.Realtime };
 
             public static int[] reflectionResolutionValuesArray = null;
@@ -116,15 +116,15 @@ namespace UnityEditor
 
             public static GUIContent[] clearFlags =
             {
-                new GUIContent("Skybox"),
-                new GUIContent("Solid Color")
+                EditorGUIUtility.TrTextContent("Skybox"),
+                EditorGUIUtility.TrTextContent("Solid Color")
             };
             public static int[] clearFlagsValues = { 1, 2 }; // taken from Camera.h
 
             public static GUIContent[] toolContents =
             {
                 PrimitiveBoundsHandle.editModeButton,
-                EditorGUIUtility.IconContent("MoveTool", "|Move the selected objects.")
+                EditorGUIUtility.TrIconContent("MoveTool", "Move the selected objects.")
             };
             public static EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {

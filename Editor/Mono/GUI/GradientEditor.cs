@@ -17,10 +17,10 @@ namespace UnityEditor
             public GUIStyle downSwatch = "Grad Down Swatch";
             public GUIStyle downSwatchOverlay = "Grad Down Swatch Overlay";
 
-            public GUIContent modeText = new GUIContent("Mode");
-            public GUIContent alphaText = new GUIContent("Alpha");
-            public GUIContent colorText = new GUIContent("Color");
-            public GUIContent locationText = new GUIContent("Location");
+            public GUIContent modeText = EditorGUIUtility.TrTextContent("Mode");
+            public GUIContent alphaText = EditorGUIUtility.TrTextContent("Alpha");
+            public GUIContent colorText = EditorGUIUtility.TrTextContent("Color");
+            public GUIContent locationText = EditorGUIUtility.TrTextContent("Location");
             public GUIContent percentText = new GUIContent("%");
 
             static GUIStyle GetStyle(string name)

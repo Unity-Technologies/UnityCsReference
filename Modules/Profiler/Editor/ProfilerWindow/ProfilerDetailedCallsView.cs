@@ -250,14 +250,14 @@ namespace UnityEditorInternal.Profiling
 
             static class Styles
             {
-                public static GUIContent callersLabel = new GUIContent("Called From", "Parents the selected function is called from\n\n(Press 'F' for frame selection)");
-                public static GUIContent calleesLabel = new GUIContent("Calls To", "Functions which are called from the selected function\n\n(Press 'F' for frame selection)");
-                public static GUIContent callsLabel = new GUIContent("Calls", "Total number of calls in a selected frame");
-                public static GUIContent gcAllocLabel = new GUIContent("GC Alloc");
-                public static GUIContent timeMsCallersLabel = new GUIContent("Time ms", "Total time the selected function spend within a parent");
-                public static GUIContent timeMsCalleesLabel = new GUIContent("Time ms", "Total time the child call spend within selected function");
-                public static GUIContent timePctCallersLabel = new GUIContent("Time %", "Shows how often the selected function was called from the parent call");
-                public static GUIContent timePctCalleesLabel = new GUIContent("Time %", "Shows how often child call was called from the selected function");
+                public static GUIContent callersLabel = EditorGUIUtility.TrTextContent("Called From", "Parents the selected function is called from\n\n(Press 'F' for frame selection)");
+                public static GUIContent calleesLabel = EditorGUIUtility.TrTextContent("Calls To", "Functions which are called from the selected function\n\n(Press 'F' for frame selection)");
+                public static GUIContent callsLabel = EditorGUIUtility.TrTextContent("Calls", "Total number of calls in a selected frame");
+                public static GUIContent gcAllocLabel = EditorGUIUtility.TrTextContent("GC Alloc");
+                public static GUIContent timeMsCallersLabel = EditorGUIUtility.TrTextContent("Time ms", "Total time the selected function spend within a parent");
+                public static GUIContent timeMsCalleesLabel = EditorGUIUtility.TrTextContent("Time ms", "Total time the child call spend within selected function");
+                public static GUIContent timePctCallersLabel = EditorGUIUtility.TrTextContent("Time %", "Shows how often the selected function was called from the parent call");
+                public static GUIContent timePctCalleesLabel = EditorGUIUtility.TrTextContent("Time %", "Shows how often child call was called from the selected function");
             }
 
             public event FrameItemCallback frameItemEvent;

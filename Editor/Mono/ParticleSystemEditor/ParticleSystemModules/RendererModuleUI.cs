@@ -71,77 +71,77 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent renderMode = EditorGUIUtility.TextContent("Render Mode|Defines the render mode of the particle renderer.");
-            public GUIContent material = EditorGUIUtility.TextContent("Material|Defines the material used to render particles.");
-            public GUIContent trailMaterial = EditorGUIUtility.TextContent("Trail Material|Defines the material used to render particle trails.");
-            public GUIContent mesh = EditorGUIUtility.TextContent("Mesh|Defines the mesh that will be rendered as particle.");
-            public GUIContent minParticleSize = EditorGUIUtility.TextContent("Min Particle Size|How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.");
-            public GUIContent maxParticleSize = EditorGUIUtility.TextContent("Max Particle Size|How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.");
-            public GUIContent cameraSpeedScale = EditorGUIUtility.TextContent("Camera Scale|How much the camera speed is factored in when determining particle stretching.");
-            public GUIContent speedScale = EditorGUIUtility.TextContent("Speed Scale|Defines the length of the particle compared to its speed.");
-            public GUIContent lengthScale = EditorGUIUtility.TextContent("Length Scale|Defines the length of the particle compared to its width.");
-            public GUIContent sortingFudge = EditorGUIUtility.TextContent("Sorting Fudge|Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
-            public GUIContent sortMode = EditorGUIUtility.TextContent("Sort Mode|The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
-            public GUIContent rotation = EditorGUIUtility.TextContent("Rotation|Set whether the rotation of the particles is defined in Screen or World space.");
-            public GUIContent castShadows = EditorGUIUtility.TextContent("Cast Shadows|Only opaque materials cast shadows");
-            public GUIContent receiveShadows = EditorGUIUtility.TextContent("Receive Shadows|Only opaque materials receive shadows");
-            public GUIContent motionVectors = EditorGUIUtility.TextContent("Motion Vectors|Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
-            public GUIContent normalDirection = EditorGUIUtility.TextContent("Normal Direction|Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
+            public GUIContent renderMode = EditorGUIUtility.TrTextContent("Render Mode", "Defines the render mode of the particle renderer.");
+            public GUIContent material = EditorGUIUtility.TrTextContent("Material", "Defines the material used to render particles.");
+            public GUIContent trailMaterial = EditorGUIUtility.TrTextContent("Trail Material", "Defines the material used to render particle trails.");
+            public GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh", "Defines the mesh that will be rendered as particle.");
+            public GUIContent minParticleSize = EditorGUIUtility.TrTextContent("Min Particle Size", "How small is a particle allowed to be on screen at least? 1 is entire viewport. 0.5 is half viewport.");
+            public GUIContent maxParticleSize = EditorGUIUtility.TrTextContent("Max Particle Size", "How large is a particle allowed to be on screen at most? 1 is entire viewport. 0.5 is half viewport.");
+            public GUIContent cameraSpeedScale = EditorGUIUtility.TrTextContent("Camera Scale", "How much the camera speed is factored in when determining particle stretching.");
+            public GUIContent speedScale = EditorGUIUtility.TrTextContent("Speed Scale", "Defines the length of the particle compared to its speed.");
+            public GUIContent lengthScale = EditorGUIUtility.TrTextContent("Length Scale", "Defines the length of the particle compared to its width.");
+            public GUIContent sortingFudge = EditorGUIUtility.TrTextContent("Sorting Fudge", "Lower the number and most likely these particles will appear in front of other transparent objects, including other particles.");
+            public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
+            public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
+            public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
+            public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows");
+            public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
+            public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
 
-            public GUIContent sortingLayer = EditorGUIUtility.TextContent("Sorting Layer|Name of the Renderer's sorting layer.");
-            public GUIContent sortingOrder = EditorGUIUtility.TextContent("Order in Layer|Renderer's order within a sorting layer");
-            public GUIContent space = EditorGUIUtility.TextContent("Render Alignment|Specifies if the particles will face the camera, align to world axes, or stay local to the system's transform.");
-            public GUIContent pivot = EditorGUIUtility.TextContent("Pivot|Applies an offset to the pivot of particles, as a multiplier of its size.");
-            public GUIContent visualizePivot = EditorGUIUtility.TextContent("Visualize Pivot|Render the pivot positions of the particles.");
-            public GUIContent useCustomVertexStreams = EditorGUIUtility.TextContent("Custom Vertex Streams|Choose whether to send custom particle data to the shader.");
-            public GUIContent enableGPUInstancing = EditorGUIUtility.TextContent("Enable GPU Instancing|Use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
+            public GUIContent sortingLayer = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer.");
+            public GUIContent sortingOrder = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
+            public GUIContent space = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles will face the camera, align to world axes, or stay local to the system's transform.");
+            public GUIContent pivot = EditorGUIUtility.TrTextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.");
+            public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
+            public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
+            public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable GPU Instancing", "Use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
 
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Billboard"),
-                EditorGUIUtility.TextContent("Stretched Billboard"),
-                EditorGUIUtility.TextContent("Horizontal Billboard"),
-                EditorGUIUtility.TextContent("Vertical Billboard"),
-                EditorGUIUtility.TextContent("Mesh"),
-                EditorGUIUtility.TextContent("None")
+                EditorGUIUtility.TrTextContent("Billboard"),
+                EditorGUIUtility.TrTextContent("Stretched Billboard"),
+                EditorGUIUtility.TrTextContent("Horizontal Billboard"),
+                EditorGUIUtility.TrTextContent("Vertical Billboard"),
+                EditorGUIUtility.TrTextContent("Mesh"),
+                EditorGUIUtility.TrTextContent("None")
             };
 
             public GUIContent[] sortTypes = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("None"),
-                EditorGUIUtility.TextContent("By Distance"),
-                EditorGUIUtility.TextContent("Oldest in Front"),
-                EditorGUIUtility.TextContent("Youngest in Front")
+                EditorGUIUtility.TrTextContent("None"),
+                EditorGUIUtility.TrTextContent("By Distance"),
+                EditorGUIUtility.TrTextContent("Oldest in Front"),
+                EditorGUIUtility.TrTextContent("Youngest in Front")
             };
 
             public GUIContent[] spaces = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("View"),
-                EditorGUIUtility.TextContent("World"),
-                EditorGUIUtility.TextContent("Local"),
-                EditorGUIUtility.TextContent("Facing"),
-                EditorGUIUtility.TextContent("Velocity")
+                EditorGUIUtility.TrTextContent("View"),
+                EditorGUIUtility.TrTextContent("World"),
+                EditorGUIUtility.TrTextContent("Local"),
+                EditorGUIUtility.TrTextContent("Facing"),
+                EditorGUIUtility.TrTextContent("Velocity")
             };
 
             public GUIContent[] localSpace = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Local")
+                EditorGUIUtility.TrTextContent("Local")
             };
 
             public GUIContent[] motionVectorOptions = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Camera Motion Only"),
-                EditorGUIUtility.TextContent("Per Object Motion"),
-                EditorGUIUtility.TextContent("Force No Motion")
+                EditorGUIUtility.TrTextContent("Camera Motion Only"),
+                EditorGUIUtility.TrTextContent("Per Object Motion"),
+                EditorGUIUtility.TrTextContent("Force No Motion")
             };
 
-            public GUIContent maskingMode = EditorGUIUtility.TextContent("Masking|Defines the masking behavior of the particles. See Sprite Masking documentation for more details.");
+            public GUIContent maskingMode = EditorGUIUtility.TrTextContent("Masking", "Defines the masking behavior of the particles. See Sprite Masking documentation for more details.");
             public GUIContent[] maskInteractions = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("No Masking"),
-                EditorGUIUtility.TextContent("Visible Inside Mask"),
-                EditorGUIUtility.TextContent("Visible Outside Mask")
+                EditorGUIUtility.TrTextContent("No Masking"),
+                EditorGUIUtility.TrTextContent("Visible Inside Mask"),
+                EditorGUIUtility.TrTextContent("Visible Outside Mask")
             };
 
             private string[] vertexStreamsMenu = { "Position", "Normal", "Tangent", "Color", "UV/UV1", "UV/UV2", "UV/UV3", "UV/UV4", "UV/AnimBlend", "UV/AnimFrame", "Center", "VertexID", "Size/Size.x", "Size/Size.xy", "Size/Size.xyz", "Rotation/Rotation", "Rotation/Rotation3D", "Rotation/RotationSpeed", "Rotation/RotationSpeed3D", "Velocity", "Speed", "Lifetime/AgePercent", "Lifetime/InverseStartLifetime", "Random/Stable.x", "Random/Stable.xy", "Random/Stable.xyz", "Random/Stable.xyzw", "Random/Varying.x", "Random/Varying.xy", "Random/Varying.xyz", "Random/Varying.xyzw", "Custom/Custom1.x", "Custom/Custom1.xy", "Custom/Custom1.xyz", "Custom/Custom1.xyzw", "Custom/Custom2.x", "Custom/Custom2.xy", "Custom/Custom2.xyz", "Custom/Custom2.xyzw", "Noise/Sum.x", "Noise/Sum.xy", "Noise/Sum.xyz", "Noise/Impulse.x", "Noise/Impulse.xy", "Noise/Impulse.xyz" };
@@ -289,7 +289,7 @@ namespace UnityEditor
                                 GUIPopup(s_Texts.space, 0, s_Texts.localSpace); // force to "Local"
                             }
 
-                            GUIContent info = EditorGUIUtility.TextContent("Using Align to Direction in the Shape Module forces the system to be rendered using Local Render Alignment.");
+                            GUIContent info = EditorGUIUtility.TrTextContent("Using Align to Direction in the Shape Module forces the system to be rendered using Local Render Alignment.");
                             EditorGUILayout.HelpBox(info.text, MessageType.Info, true);
                         }
                         else

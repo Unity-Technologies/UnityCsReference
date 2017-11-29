@@ -31,35 +31,35 @@ namespace UnityEditor
         {
             public GUIContent[] BodyPartMapping =
             {
-                EditorGUIUtility.TextContent("Avatar"),
-                EditorGUIUtility.TextContent("Body"),
-                EditorGUIUtility.TextContent("Head"),
-                EditorGUIUtility.TextContent("Left Arm"),
-                EditorGUIUtility.TextContent("Left Fingers"),
-                EditorGUIUtility.TextContent("Right Arm"),
-                EditorGUIUtility.TextContent("Right Fingers"),
-                EditorGUIUtility.TextContent("Left Leg"),
-                EditorGUIUtility.TextContent("Right Leg")
+                EditorGUIUtility.TrTextContent("Avatar"),
+                EditorGUIUtility.TrTextContent("Body"),
+                EditorGUIUtility.TrTextContent("Head"),
+                EditorGUIUtility.TrTextContent("Left Arm"),
+                EditorGUIUtility.TrTextContent("Left Fingers"),
+                EditorGUIUtility.TrTextContent("Right Arm"),
+                EditorGUIUtility.TrTextContent("Right Fingers"),
+                EditorGUIUtility.TrTextContent("Left Leg"),
+                EditorGUIUtility.TrTextContent("Right Leg")
             };
 
-            public GUIContent RequiredBone = EditorGUIUtility.TextContent("Optional Bones");
-            public GUIContent DoneCharacter = EditorGUIUtility.TextContent("Done");
+            public GUIContent RequiredBone = EditorGUIUtility.TrTextContent("Optional Bones");
+            public GUIContent DoneCharacter = EditorGUIUtility.TrTextContent("Done");
 
-            public GUIContent mapping = EditorGUIUtility.TextContent("Mapping");
-            public GUIContent clearMapping = EditorGUIUtility.TextContent("Clear");
-            public GUIContent autoMapping = EditorGUIUtility.TextContent("Automap");
-            public GUIContent bipedMapping = EditorGUIUtility.TextContent("Biped");
-            public GUIContent loadMapping = EditorGUIUtility.TextContent("Load");
-            public GUIContent saveMapping = EditorGUIUtility.TextContent("Save");
+            public GUIContent mapping = EditorGUIUtility.TrTextContent("Mapping");
+            public GUIContent clearMapping = EditorGUIUtility.TrTextContent("Clear");
+            public GUIContent autoMapping = EditorGUIUtility.TrTextContent("Automap");
+            public GUIContent bipedMapping = EditorGUIUtility.TrTextContent("Biped");
+            public GUIContent loadMapping = EditorGUIUtility.TrTextContent("Load");
+            public GUIContent saveMapping = EditorGUIUtility.TrTextContent("Save");
 
-            public GUIContent pose = EditorGUIUtility.TextContent("Pose");
-            public GUIContent resetPose = EditorGUIUtility.TextContent("Reset");
-            public GUIContent sampleBindPose = EditorGUIUtility.TextContent("Sample Bind-Pose");
-            public GUIContent enforceTPose = EditorGUIUtility.TextContent("Enforce T-Pose");
-            public GUIContent bipedPose = EditorGUIUtility.TextContent("Biped Pose");
+            public GUIContent pose = EditorGUIUtility.TrTextContent("Pose");
+            public GUIContent resetPose = EditorGUIUtility.TrTextContent("Reset");
+            public GUIContent sampleBindPose = EditorGUIUtility.TrTextContent("Sample Bind-Pose");
+            public GUIContent enforceTPose = EditorGUIUtility.TrTextContent("Enforce T-Pose");
+            public GUIContent bipedPose = EditorGUIUtility.TrTextContent("Biped Pose");
 
-            public GUIContent ShowError = EditorGUIUtility.TextContent("Show Error (s)...");
-            public GUIContent CloseError = EditorGUIUtility.TextContent("Close Error (s)");
+            public GUIContent ShowError = EditorGUIUtility.TrTextContent("Show Error (s)...");
+            public GUIContent CloseError = EditorGUIUtility.TrTextContent("Close Error (s)");
 
             public GUIContent dotFill = EditorGUIUtility.IconContent("AvatarInspector/DotFill");
             public GUIContent dotFrame = EditorGUIUtility.IconContent("AvatarInspector/DotFrame");

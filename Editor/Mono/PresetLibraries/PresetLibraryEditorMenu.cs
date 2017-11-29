@@ -36,18 +36,18 @@ namespace UnityEditor
                 {
                     viewModeData = new List<ViewModeData>
                     {
-                        new ViewModeData {text = new GUIContent("Grid"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
-                        new ViewModeData {text = new GUIContent("List"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List},
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("Grid"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("List"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List},
                     };
                 }
                 else
                 {
                     viewModeData = new List<ViewModeData>
                     {
-                        new ViewModeData {text = new GUIContent("Small Grid"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
-                        new ViewModeData {text = new GUIContent("Large Grid"), itemHeight = maxItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
-                        new ViewModeData {text = new GUIContent("Small List"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List},
-                        new ViewModeData {text = new GUIContent("Large List"), itemHeight = maxItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List}
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("Small Grid"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("Large Grid"), itemHeight = maxItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.Grid},
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("Small List"), itemHeight = minItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List},
+                        new ViewModeData {text = EditorGUIUtility.TrTextContent("Large List"), itemHeight = maxItemHeight, viewmode = PresetLibraryEditorState.ItemViewMode.List}
                     };
                 }
 
@@ -79,14 +79,14 @@ namespace UnityEditor
                     menu.AddItem(new GUIContent(libName + projectFolderTag), currentLibWithExtension == libPath, LibraryModeChange, libPath);
                 }
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Create New Library..."), false, CreateLibrary, 0);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Create New Library..."), false, CreateLibrary, 0);
                 if (HasDefaultPresets())
                 {
                     menu.AddSeparator("");
-                    menu.AddItem(new GUIContent("Add Factory Presets To Current Library"), false, AddDefaultPresetsToCurrentLibrary, 0);
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Add Factory Presets To Current Library"), false, AddDefaultPresetsToCurrentLibrary, 0);
                 }
                 menu.AddSeparator("");
-                menu.AddItem(new GUIContent("Reveal Current Library Location"), false, RevealCurrentLibrary, 0);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Reveal Current Library Location"), false, RevealCurrentLibrary, 0);
                 menu.DropDown(activatorRect);
             }
 

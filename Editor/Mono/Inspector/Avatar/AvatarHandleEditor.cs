@@ -20,10 +20,10 @@ namespace UnityEditor
 
             public int AlignTransform = FoldoutSize;
 
-            public GUIContent Position = EditorGUIUtility.TextContent ("Position");
-            public GUIContent Rotation = EditorGUIUtility.TextContent ("Rotation");
-            public GUIContent Scale = EditorGUIUtility.TextContent ("Scale");
-            public GUIContent LookAt = EditorGUIUtility.TextContent ("Look At");
+            public GUIContent Position = EditorGUIUtility.TrTextContent ("Position");
+            public GUIContent Rotation = EditorGUIUtility.TrTextContent ("Rotation");
+            public GUIContent Scale = EditorGUIUtility.TrTextContent ("Scale");
+            public GUIContent LookAt = EditorGUIUtility.TrTextContent ("Look At");
 
             public GUILayoutOption[] ToggleSize = new GUILayoutOption[] { GUILayout.MaxWidth (FoldoutSize) };
 

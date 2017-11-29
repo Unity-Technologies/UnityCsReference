@@ -10,8 +10,7 @@ using UnityEngine;
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     [Serializable]
-    internal
-    abstract class GraphViewPresenter : ScriptableObject
+    public abstract class GraphViewPresenter : ScriptableObject
     {
         [SerializeField]
         // TODO TEMP protected while upgrading MaterialGraph. Needs to go back private
