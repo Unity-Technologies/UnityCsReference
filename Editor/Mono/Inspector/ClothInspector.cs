@@ -226,12 +226,7 @@ namespace UnityEditor
         {
             if (cloth.vertices.Length != m_NumVerts)
             {
-                InitBrushCollider();
-                InitSelfAndInterCollisionSelection();
-                InitClothParticlesInWorldSpace();
-
-                m_NumVerts = cloth.vertices.Length;
-
+                InitInspector();
                 return true;
             }
             else if (m_NumVerts == 0)
@@ -440,13 +435,16 @@ namespace UnityEditor
 
         void InitClothParticlesInWorldSpace()
         {
-            int length = cloth.vertices.Length;
+            Vector3[] vertices = cloth.vertices;
+            int length = vertices.Length;
             m_ClothParticlesInWorldSpace = new Vector3[length];
 
             Transform t = m_SkinnedMeshRenderer.actualRootBone;
+            Quaternion rotation = t.rotation;
+            Vector3 position = t.position;
             for (int i = 0; i < length; i++)
             {
-                m_ClothParticlesInWorldSpace[i] = t.rotation * cloth.vertices[i] + t.position;
+                m_ClothParticlesInWorldSpace[i] = rotation * vertices[i] + position;
             }
         }
 
@@ -497,6 +495,15 @@ namespace UnityEditor
             }
         }
 
+        void InitInspector()
+        {
+            InitBrushCollider();
+            InitSelfAndInterCollisionSelection();
+            InitClothParticlesInWorldSpace();
+
+            m_NumVerts = cloth.vertices.Length;
+        }
+
         void OnEnable()
         {
             if (s_ColorTexture == null)
@@ -504,13 +511,9 @@ namespace UnityEditor
 
             m_SkinnedMeshRenderer = cloth.GetComponent<SkinnedMeshRenderer>();
 
+            InitInspector();
+
             GenerateSelectionMesh();
-
-            InitBrushCollider();
-            InitSelfAndInterCollisionSelection();
-            InitClothParticlesInWorldSpace();
-
-            m_NumVerts = cloth.vertices.Length;
 
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
@@ -1342,8 +1345,7 @@ namespace UnityEditor
             {
                 ClothSkinningCoefficient[] coefficients = cloth.coefficients;
                 if (m_ParticleSelection.Length != coefficients.Length)
-                    // Recreate selection if underlying mesh has changed.
-                    OnEnable();
+                    InitInspector();
             }
 
             Handles.BeginGUI();

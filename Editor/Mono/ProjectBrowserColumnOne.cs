@@ -276,9 +276,9 @@ namespace UnityEditor
             TreeViewItem packagesRootItem = null;
             if (Unsupported.IsDeveloperBuild() && EditorPrefs.GetBool("ShowPackagesFolder"))
             {
-                var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesRootPath());
+                var packagesGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetPackagesMountPoint());
                 var packagesFolderInstanceID = AssetDatabase.GetInstanceIDFromGUID(packagesGuid);
-                string packagesDisplayName = AssetDatabase.GetPackagesRootPath();
+                string packagesDisplayName = AssetDatabase.GetPackagesMountPoint();
                 packagesRootItem = new TreeViewItem(packagesFolderInstanceID, depth, m_RootItem, packagesDisplayName);
                 ReadAssetDatabase(HierarchyType.Packages, packagesRootItem, depth + 1);
             }

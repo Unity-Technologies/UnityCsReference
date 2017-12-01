@@ -91,7 +91,7 @@ namespace UnityEditor
             public static PositionHandleParam DefaultHandle = new PositionHandleParam(
                     Handle.X | Handle.Y | Handle.Z | Handle.XY | Handle.XZ | Handle.YZ,
                     Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,
-                    Orientation.Signed, Orientation.Signed);
+                    Orientation.Signed, Orientation.Camera);
             public static PositionHandleParam DefaultFreeMoveHandle = new PositionHandleParam(
                     Handle.X | Handle.Y | Handle.Z | Handle.XYZ,
                     Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,

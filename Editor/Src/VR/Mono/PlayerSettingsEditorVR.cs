@@ -145,6 +145,8 @@ namespace UnityEditorInternal.VR
                 {
                     DevicesGUI(targetGroup);
 
+                    ErrorOnVRDeviceIncompatibility(targetGroup);
+
                     SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
 
                     TangoGUI(targetGroup);
@@ -467,16 +469,25 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        private void ErrorOnVRDeviceIncompatibility(BuildTargetGroup targetGroup)
         {
+            if (!PlayerSettings.GetVirtualRealitySupported(targetGroup))
+                return;
+
             if (targetGroup == BuildTargetGroup.Android)
             {
                 List<string> enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup).ToList();
                 if (enabledDevices.Contains("Oculus") && enabledDevices.Contains("daydream"))
                 {
-                    EditorGUILayout.HelpBox("It is recommended to use unique product IDs and build separate APKs when targeting both Oculus and Daydream SDKs to avoid initialization conflicts on some devices.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("To avoid initialization conflicts on devices which support both Daydream and Oculus based VR, build separate APKs with different package names, targeting only the Daydream or Oculus VR SDK in the respective APK.", MessageType.Warning);
                 }
+            }
+        }
 
+        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+            {
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
