@@ -92,7 +92,7 @@ namespace UnityEditor
                         Vector3.zero,
                         Vector3.one * 0.375f,
                         PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Signed
+                        PositionHandleParam.Orientation.Camera
                         ),
                     new RotationHandleParam(
                         RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z
@@ -148,7 +148,7 @@ namespace UnityEditor
                         Vector3.zero,
                         Vector3.one * 0.375f,
                         PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Signed
+                        PositionHandleParam.Orientation.Camera
                         ),
                     new RotationHandleParam(
                         RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z

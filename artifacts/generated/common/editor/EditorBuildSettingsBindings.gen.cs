@@ -297,9 +297,16 @@ public sealed partial class EditorBuildSettings
 
 public sealed partial class EditorUserBuildSettings
 {
-    internal static AppleBuildAndRunType appleBuildAndRunType = AppleBuildAndRunType.Xcode;
-    
-    
+    internal extern static AppleBuildAndRunType appleBuildAndRunType
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern static BuildTargetGroup selectedBuildTargetGroup
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
