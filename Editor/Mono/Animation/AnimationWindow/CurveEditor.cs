@@ -3564,7 +3564,7 @@ namespace UnityEditor
             float buttonSize = Styles.wrapModeMenuIcon.image.width;
             var keyPosition = new Vector3(key.time, key.value);
             keyPosition = DrawingToViewTransformPoint(keyPosition);
-            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y + drawRect.y, buttonSize, buttonSize);
+            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y, buttonSize, buttonSize);
 
             var selectedValue = (WrapModeFixedCurve)oldWrap;
 

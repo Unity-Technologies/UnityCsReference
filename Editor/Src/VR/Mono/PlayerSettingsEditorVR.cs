@@ -125,6 +125,12 @@ namespace UnityEditorInternal.VR
             if (!TargetGroupSupportsVirtualReality(targetGroup) && !TargetGroupSupportsAugmentedReality(targetGroup))
                 return;
 
+            if (VREditor.IsDeviceListDirty(targetGroup))
+            {
+                VREditor.ClearDeviceListDirty(targetGroup);
+                m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
+            }
+
             // Check to see if any devices require an install and need their GUI hidden
             CheckDevicesRequireInstall(targetGroup);
 
@@ -138,6 +144,8 @@ namespace UnityEditorInternal.VR
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported
                 {
                     DevicesGUI(targetGroup);
+
+                    ErrorOnVRDeviceIncompatibility(targetGroup);
 
                     SinglePassStereoGUI(targetGroup, m_StereoRenderingPath);
 
@@ -225,6 +233,7 @@ namespace UnityEditorInternal.VR
                 case BuildTargetGroup.Standalone:
                 case BuildTargetGroup.PS4:
                 case BuildTargetGroup.Android:
+                case BuildTargetGroup.WSA:
                     return true;
                 default:
                     return false;
@@ -459,16 +468,25 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        private void ErrorOnVRDeviceIncompatibility(BuildTargetGroup targetGroup)
         {
+            if (!PlayerSettings.GetVirtualRealitySupported(targetGroup))
+                return;
+
             if (targetGroup == BuildTargetGroup.Android)
             {
                 List<string> enabledDevices = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup).ToList();
                 if (enabledDevices.Contains("Oculus") && enabledDevices.Contains("daydream"))
                 {
-                    EditorGUILayout.HelpBox("It is recommended to use unique product IDs and build separate APKs when targeting both Oculus and Daydream SDKs to avoid initialization conflicts on some devices.", MessageType.Warning);
+                    EditorGUILayout.HelpBox("To avoid initialization conflicts on devices which support both Daydream and Oculus based VR, build separate APKs with different package names, targeting only the Daydream or Oculus VR SDK in the respective APK.", MessageType.Warning);
                 }
+            }
+        }
 
+        private void ErrorOnARDeviceIncompatibility(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android)
+            {
                 if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);

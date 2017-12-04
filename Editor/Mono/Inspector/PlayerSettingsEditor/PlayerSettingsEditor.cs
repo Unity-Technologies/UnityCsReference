@@ -1861,13 +1861,17 @@ namespace UnityEditor
 
             // Active input handling
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
+            int oldInputOption = inputOption;
             EditorGUI.BeginChangeCheck();
             inputOption = EditorGUILayout.Popup(Styles.activeInputHandling, inputOption, Styles.activeInputHandlingOptions);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
-                m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
-                m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
+                if (inputOption != oldInputOption)
+                {
+                    EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
+                    m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
+                    m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
+                }
             }
 
             EditorGUILayout.Space();

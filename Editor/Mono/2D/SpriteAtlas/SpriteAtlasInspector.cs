@@ -190,7 +190,6 @@ namespace UnityEditor.U2D
             m_EnableRotation = serializedObject.FindProperty("m_EditorData.packingParameters.enableRotation");
             m_Padding = serializedObject.FindProperty("m_EditorData.packingParameters.padding");
 
-            m_Hash = serializedObject.FindProperty("m_EditorData.hashString").stringValue;
             m_MasterAtlas = serializedObject.FindProperty("m_MasterAtlas");
             m_BindAsDefault = serializedObject.FindProperty("m_EditorData.bindAsDefault");
             m_VariantMultiplier = serializedObject.FindProperty("m_EditorData.variantMultiplier");
