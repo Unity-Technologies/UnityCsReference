@@ -254,6 +254,10 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 
+            // Exit if the window was destroyed after entering play mode or on domain-reload.
+            if (window == null)
+                return;
+
             // Add CursorRects
             SplitView sp = parent as SplitView;
 

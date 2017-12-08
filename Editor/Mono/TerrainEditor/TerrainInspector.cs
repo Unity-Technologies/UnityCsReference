@@ -1074,11 +1074,12 @@ namespace UnityEditor
                 TreePainter.treeColorAdjustment = EditorGUILayout.Slider(styles.treeColorVar, TreePainter.treeColorAdjustment, 0, 1);
 
             GameObject prefab = m_Terrain.terrainData.treePrototypes[TreePainter.selectedTree].m_Prefab;
-            StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);
-            bool lightmapStatic = (staticEditorFlags & StaticEditorFlags.LightmapStatic) != 0;
-            using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
+            if (prefab != null)
             {
-                lightmapStatic = EditorGUILayout.Toggle(styles.treeLightmapStatic, lightmapStatic);
+                StaticEditorFlags staticEditorFlags = GameObjectUtility.GetStaticEditorFlags(prefab);
+                bool lightmapStatic = (staticEditorFlags & StaticEditorFlags.LightmapStatic) != 0;
+                using (new EditorGUI.DisabledScope(true))   // Always disabled, because we don't want to edit the prefab.
+                    lightmapStatic = EditorGUILayout.Toggle(styles.treeLightmapStatic, lightmapStatic);
             }
         }
 

@@ -109,6 +109,7 @@ namespace UnityEditorInternal.VersionControl
             Rect topLeft = new Rect(itemRect.x - offsetX, itemRect.y - offsetY, iconWidth, iconWidth);
             Rect topRight = new Rect(itemRect.xMax - iconWidth + offsetX, itemRect.y - offsetY, iconWidth, iconWidth);
             Rect bottomLeft = new Rect(itemRect.x - offsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
+            Rect bottomRight = new Rect(itemRect.xMax - iconWidth + offsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
             Rect syncRect = new Rect(itemRect.xMax - iconWidth + syncOffsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
 
             Asset.States unmodifiedState = Asset.States.Local | Asset.States.MetaFile | Asset.States.ReadOnly | Asset.States.Synced;
@@ -196,6 +197,8 @@ namespace UnityEditorInternal.VersionControl
             if (asset.IsState(Asset.States.Conflicted) || (metaAsset != null && metaAsset.IsState(Asset.States.Conflicted)))
                 DrawOverlay(Asset.States.Conflicted, bottomLeft);
 
+            if ((asset.isFolder == false && asset.IsState(Asset.States.Updating)) || (metaAsset != null && metaAsset.IsState(Asset.States.Updating)))
+                DrawOverlay(Asset.States.Updating, bottomRight);
 
             // Remote state overlay
             if (asset.IsState(Asset.States.AddedRemote))

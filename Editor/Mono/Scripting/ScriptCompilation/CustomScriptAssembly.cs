@@ -80,31 +80,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static CustomScriptAssembly()
         {
-            Platforms = new CustomScriptAssemblyPlatform[20];
-
-            int i = 0;
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Editor", "Editor", BuildTarget.NoTarget);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("macOSStandalone", "macOS", BuildTarget.StandaloneOSX);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone32", "Windows 32-bit", BuildTarget.StandaloneWindows);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WindowsStandalone64", "Windows 64-bit", BuildTarget.StandaloneWindows64);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone32", "Linux 32-bit", BuildTarget.StandaloneLinux);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandalone64", "Linux 64-bit", BuildTarget.StandaloneLinux64);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", "Linux Universal", BuildTarget.StandaloneLinuxUniversal);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("iOS", BuildTarget.iOS);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Android", BuildTarget.Android);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WSA", "Windows Store App", BuildTarget.WSAPlayer);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS);
-            Platforms[i++] = new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch);
-
-            System.Diagnostics.Debug.Assert(Platforms.Length == i - 1);
+            Platforms = new CustomScriptAssemblyPlatform[]
+            {
+                new CustomScriptAssemblyPlatform("Editor", "Editor", BuildTarget.NoTarget),
+                new CustomScriptAssemblyPlatform("macOSStandalone", "macOS", BuildTarget.StandaloneOSX),
+                new CustomScriptAssemblyPlatform("WindowsStandalone32", "Windows 32-bit", BuildTarget.StandaloneWindows),
+                new CustomScriptAssemblyPlatform("WindowsStandalone64", "Windows 64-bit", BuildTarget.StandaloneWindows64),
+                new CustomScriptAssemblyPlatform("LinuxStandalone32", "Linux 32-bit", BuildTarget.StandaloneLinux),
+                new CustomScriptAssemblyPlatform("LinuxStandalone64", "Linux 64-bit", BuildTarget.StandaloneLinux64),
+                new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", "Linux Universal", BuildTarget.StandaloneLinuxUniversal),
+                new CustomScriptAssemblyPlatform("iOS", BuildTarget.iOS),
+                new CustomScriptAssemblyPlatform("Android", BuildTarget.Android),
+                new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL),
+                new CustomScriptAssemblyPlatform("WSA", "Windows Store App", BuildTarget.WSAPlayer),
+                new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen),
+                new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
+                new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4),
+                new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM),
+                new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne),
+                new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
+                new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU),
+                new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
+                new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch)
+            };
         }
 
         public bool IsCompatibleWithEditor()

@@ -189,25 +189,30 @@ namespace UnityEditor
         {
             if (targets.Length == 1)
             {
-                GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
-
                 var assetPath = AssetDatabase.GetAssetPath(target);
-                var assembly = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
-                EditorGUILayout.LabelField("Filename", assembly);
+                var assemblyName = Compilation.CompilationPipeline.GetAssemblyNameFromScriptPath(assetPath);
 
-                var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
-
-                if (assemblyDefinitionFile != null)
+                // assemblyName is null for MonoScript's inside assemblies.
+                if (assemblyName != null)
                 {
-                    var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
+                    GUILayout.Label("Assembly Information", EditorStyles.boldLabel);
 
-                    using (new EditorGUI.DisabledScope(true))
+                    EditorGUILayout.LabelField("Filename", assemblyName);
+
+                    var assemblyDefinitionFile = Compilation.CompilationPipeline.GetAssemblyDefinitionFilePathFromScriptPath(assetPath);
+
+                    if (assemblyDefinitionFile != null)
                     {
-                        EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
-                    }
-                }
+                        var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
 
-                EditorGUILayout.Space();
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
+                        }
+                    }
+
+                    EditorGUILayout.Space();
+                }
             }
 
             base.OnInspectorGUI();

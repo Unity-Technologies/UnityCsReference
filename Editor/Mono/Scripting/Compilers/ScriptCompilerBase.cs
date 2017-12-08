@@ -15,6 +15,8 @@ namespace UnityEditor.Scripting.Compilers
     {
         private Program process;
         private string _responseFile = null;
+        private bool _runAPIUpdater;
+
         // ToDo: would be nice to move MonoIsland to MonoScriptCompilerBase
         protected MonoIsland _island;
 
@@ -22,9 +24,10 @@ namespace UnityEditor.Scripting.Compilers
 
         protected abstract CompilerOutputParserBase CreateOutputParser();
 
-        protected ScriptCompilerBase(MonoIsland island)
+        protected ScriptCompilerBase(MonoIsland island, bool runAPIUpdater)
         {
             _island = island;
+            _runAPIUpdater = runAPIUpdater;
         }
 
         protected string[] GetErrorOutput()
@@ -191,6 +194,14 @@ namespace UnityEditor.Scripting.Compilers
                     Console.WriteLine(line);
                 Console.WriteLine("-----EndCompilerOutput---------------");
             }
+        }
+
+        protected void RunAPIUpdaterIfRequired(string responseFile)
+        {
+            if (!_runAPIUpdater)
+                return;
+
+            APIUpdaterHelper.UpdateScripts(responseFile, _island.GetExtensionOfSourceFiles());
         }
     }
 

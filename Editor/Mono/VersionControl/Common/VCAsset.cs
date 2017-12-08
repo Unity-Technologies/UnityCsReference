@@ -86,6 +86,9 @@ namespace UnityEditor.VersionControl
             if (IsState(state, Asset.States.OutOfSync))
                 return "Out Of Sync";
 
+            if (IsState(state, Asset.States.Updating))
+                return "Updating Status";
+
             return "";
         }
 

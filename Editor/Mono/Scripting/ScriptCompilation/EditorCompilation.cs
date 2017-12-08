@@ -569,7 +569,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal CustomScriptAssembly FindCustomScriptAssemblyFromScriptPath(string scriptPath)
         {
             var customTargetAssembly = EditorBuildRules.GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
-            var customScriptAssembly = FindCustomScriptAssemblyFromAssemblyName(customTargetAssembly.Filename);
+            var customScriptAssembly = customTargetAssembly != null ? FindCustomScriptAssemblyFromAssemblyName(customTargetAssembly.Filename) : null;
 
             return customScriptAssembly;
         }
@@ -669,13 +669,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                     Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
-                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
 
                     if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                         runScriptUpdaterAssemblies.Remove(assembly.Filename);
 
                     if (messages.Any(m => m.type == CompilerMessageType.Error))
+                    {
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
+                    }
 
                     var buildingForEditor = scriptAssemblySettings.BuildingForEditor;
                     string enginePath = InternalEditorUtility.GetEngineCoreModuleAssemblyPath();
@@ -685,6 +687,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         messages.Add(new CompilerMessage { message = "UNet Weaver failed", type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopAllCompilation();
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
 
@@ -693,8 +696,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         messages.Add(new CompilerMessage { message = string.Format("Copying assembly from directory {0} to {1} failed", tempBuildDirectory, assembly.OutputDirectory), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopAllCompilation();
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
+
+                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                 };
 
             compilationTask.Poll();
@@ -1028,7 +1034,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options);
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory(), assemblySuffix);
-            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, precompiledAssemblies);
+            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 
             var references = unityReferences.Concat(customReferences).Concat(precompiledReferences).Concat(editorReferences);
