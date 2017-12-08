@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Linq;
@@ -20,6 +21,8 @@ namespace UnityEditor
     {
         internal static class Styles
         {
+            static Styles() {}
+
             public static readonly GUIContent env_top = EditorGUIUtility.TextContent("Environment");
             public static readonly GUIContent env_skybox_mat = EditorGUIUtility.TextContent("Skybox Material|Specifies the material that is used to simulate the sky or other distant background in the Scene.");
             public static readonly GUIContent env_skybox_sun = EditorGUIUtility.TextContent("Sun Source|Specifies the directional light that is used to indicate the direction of the sun when a procedural skybox is used. If set to None, the brightest directional light in the Scene is used to represent the sun.");
@@ -40,9 +43,6 @@ namespace UnityEditor
             public static readonly GUIContent ambient = EditorGUIUtility.TextContent("Ambient Color|Controls the color of the ambient light contributed to the Scene.");
             public static readonly GUIContent customReflection = EditorGUIUtility.TextContent("Cubemap|Specifies the custom cube map used for reflection effects in the Scene.");
             public static readonly GUIContent AmbientLightingMode = EditorGUIUtility.TextContent("Ambient Mode|Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. Options are Realtime or Baked. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
-
-            public static int[] defaultReflectionSizesValues = { 128, 256, 512, 1024 };
-            public static GUIContent[] defaultReflectionSizes = defaultReflectionSizesValues.Select(n => new GUIContent(n.ToString())).ToArray();
 
             public static readonly GUIContent[] kFullAmbientSource =
             {
@@ -203,8 +203,13 @@ namespace UnityEditor
                 switch (defReflectionMode)
                 {
                     case DefaultReflectionMode.FromSkybox:
-                        EditorGUILayout.IntPopup(m_DefaultReflectionResolution, Styles.defaultReflectionSizes, Styles.defaultReflectionSizesValues, Styles.env_refl_res, GUILayout.MinWidth(40));
-                        break;
+                    {
+                        int[] reflectionResolutionValuesArray = null;
+                        GUIContent[] reflectionResolutionTextArray = null;
+                        ReflectionProbeEditor.GetResolutionArray(ref reflectionResolutionValuesArray, ref reflectionResolutionTextArray);
+                        EditorGUILayout.IntPopup(m_DefaultReflectionResolution, reflectionResolutionTextArray, reflectionResolutionValuesArray, Styles.env_refl_res, GUILayout.MinWidth(40));
+                    }
+                    break;
                     case DefaultReflectionMode.Custom:
                         EditorGUILayout.PropertyField(m_CustomReflection, Styles.customReflection);
                         break;

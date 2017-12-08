@@ -47,6 +47,9 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             CanadianFrench,
             Portuguese,
             Russian,
+            SimplifiedChinese,
+            TraditionalChinese,
+            Korean,
         }
 
         public enum StartupUserAccount        
@@ -495,6 +498,17 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             get;
         }
 
+        public extern static bool isScreenshotEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        [System.Obsolete ("isAllowsScreenshot was renamed to isScreenshotEnabled.")]
         public extern static bool isAllowsScreenshot
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -505,6 +519,27 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
+        public extern static bool isVideoCapturingEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        public extern static bool isDataLossConfirmationEnabled
+        {
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            get;
+            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+            set;
+        }
+
+        [System.Obsolete ("isDataLossConfirmation was renamed to isDataLossConfirmationEnabled.")]
         public extern static bool isDataLossConfirmation
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

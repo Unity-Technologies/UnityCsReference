@@ -113,10 +113,7 @@ namespace UnityEditor
                     propertyName            = "m_Lightmapping",
                     dependencyIndices       = new int[] { 2 },
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
-                    drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
-                        {
-                            LightModeUtil.Get().DrawElement(r, prop, dep[0]);
-                        }
+                    drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
                 },
                 new SerializedPropertyTreeView.Column // 4: Color
                 {
