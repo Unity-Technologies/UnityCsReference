@@ -64,7 +64,12 @@ namespace UnityEditor.Compilation
 
         static CompilationPipeline()
         {
-            EditorCompilationInterface.Instance.assemblyCompilationStarted += (assemblyPath) =>
+            SubscribeToEvents(EditorCompilationInterface.Instance);
+        }
+
+        internal static void SubscribeToEvents(EditorCompilation editorCompilation)
+        {
+            editorCompilation.assemblyCompilationStarted += (assemblyPath) =>
                 {
                     try
                     {
@@ -77,7 +82,7 @@ namespace UnityEditor.Compilation
                     }
                 };
 
-            EditorCompilationInterface.Instance.assemblyCompilationFinished += (assemblyPath, messages) =>
+            editorCompilation.assemblyCompilationFinished += (assemblyPath, messages) =>
                 {
                     try
                     {
@@ -161,8 +166,15 @@ namespace UnityEditor.Compilation
 
         internal static string GetAssemblyNameFromScriptPath(EditorCompilation editorCompilation, string sourceFilePath)
         {
-            var targetAssembly = editorCompilation.GetTargetAssembly(sourceFilePath);
-            return targetAssembly.Name;
+            try
+            {
+                var targetAssembly = editorCompilation.GetTargetAssembly(sourceFilePath);
+                return targetAssembly.Name;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         internal static string GetAssemblyDefinitionFilePathFromAssemblyName(EditorCompilation editorCompilation, string assemblyName)
@@ -183,7 +195,7 @@ namespace UnityEditor.Compilation
             try
             {
                 var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
-                return customScriptAssembly.FilePath;
+                return customScriptAssembly != null ? customScriptAssembly.FilePath : null;
             }
             catch (Exception)
             {

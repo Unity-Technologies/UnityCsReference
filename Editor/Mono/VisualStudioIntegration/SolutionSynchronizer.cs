@@ -17,6 +17,9 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditorInternal;
 using UnityEditor.Scripting.Compilers;
 
+using Mono.Cecil;
+using UnityEditor.Compilation;
+
 namespace UnityEditor.VisualStudioIntegration
 {
     enum ScriptingLanguage
@@ -195,13 +198,14 @@ namespace UnityEditor.VisualStudioIntegration
                 IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
                     Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
 
-                string otherAssetsProjectPart = GenerateAllAssetProjectPart();
+                var allAssetProjectParts = GenerateAllAssetProjectParts();
+
                 var responseFileDefines = ScriptCompilerBase.GetResponseFileDefinesFromFile(MonoCSharpCompiler.ReponseFilename);
 
                 SyncSolution(islands);
                 var allProjectIslands = RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()).ToList();
                 foreach (MonoIsland island in allProjectIslands)
-                    SyncProject(island, otherAssetsProjectPart, responseFileDefines, allProjectIslands);
+                    SyncProject(island, allAssetProjectParts, responseFileDefines, allProjectIslands);
 
                 if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                     WriteVSCodeSettingsFiles();
@@ -210,24 +214,45 @@ namespace UnityEditor.VisualStudioIntegration
             AssetPostprocessingInternal.CallOnGeneratedCSProjectFiles();
         }
 
-        string GenerateAllAssetProjectPart()
+        Dictionary<string, string> GenerateAllAssetProjectParts()
         {
-            StringBuilder projectBuilder = new StringBuilder();
+            Dictionary<string, StringBuilder> stringBuilders = new Dictionary<string, StringBuilder>();
+
             foreach (string asset in AssetDatabase.GetAllAssetPaths())
             {
                 string extension = Path.GetExtension(asset);
                 if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
                 {
+                    // Find assembly the asset belongs to by adding script extension and using compilation pipeline.
+                    var assemblyName = CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".cs");
+                    assemblyName = assemblyName ?? CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".js");
+                    assemblyName = assemblyName ?? CompilationPipeline.GetAssemblyNameFromScriptPath(asset + ".boo");
+
+                    assemblyName = Path.GetFileNameWithoutExtension(assemblyName);
+
+                    StringBuilder projectBuilder = null;
+
+                    if (!stringBuilders.TryGetValue(assemblyName, out projectBuilder))
+                    {
+                        projectBuilder = new StringBuilder();
+                        stringBuilders[assemblyName] = projectBuilder;
+                    }
+
                     projectBuilder.AppendFormat("     <None Include=\"{0}\" />{1}", EscapedRelativePathFor(asset), WindowsNewline);
                 }
             }
 
-            return projectBuilder.ToString();
+            var result = new Dictionary<string, string>();
+
+            foreach (var entry in stringBuilders)
+                result[entry.Key] = entry.Value.ToString();
+
+            return result;
         }
 
-        void SyncProject(MonoIsland island, string otherAssetsProjectPart, string[] additionalDefines, List<MonoIsland> allProjectIslands)
+        void SyncProject(MonoIsland island, Dictionary<string, string> allAssetsProjectParts, string[] additionalDefines, List<MonoIsland> allProjectIslands)
         {
-            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), otherAssetsProjectPart, additionalDefines, allProjectIslands));
+            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, additionalDefines, allProjectIslands));
         }
 
         private static void SyncFileIfNotChanged(string filename, string newContents)
@@ -264,7 +289,7 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        string ProjectText(MonoIsland island, Mode mode, string allAssetsProject, string[] additionalDefines, List<MonoIsland> allProjectIslands)
+        string ProjectText(MonoIsland island, Mode mode, Dictionary<string, string> allAssetsProjectParts, string[] additionalDefines, List<MonoIsland> allProjectIslands)
         {
             var projectBuilder = new StringBuilder(ProjectHeader(island, additionalDefines));
             var references = new List<string>();
@@ -293,7 +318,12 @@ namespace UnityEditor.VisualStudioIntegration
                 }
             }
 
-            projectBuilder.Append(allAssetsProject);
+            string additionalAssetsForProject;
+            var assemblyName = Path.GetFileNameWithoutExtension(island._output);
+
+            // Append additional non-script files that should be included in project generation.
+            if (allAssetsProjectParts.TryGetValue(assemblyName, out additionalAssetsForProject))
+                projectBuilder.Append(additionalAssetsForProject);
 
             var allAdditionalReferenceFilenames = new List<string>();
 

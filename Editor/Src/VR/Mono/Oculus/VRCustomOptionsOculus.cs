@@ -7,7 +7,6 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 
-
 namespace UnityEditorInternal.VR
 {
     internal class VRCustomOptionsOculus : VRCustomOptions

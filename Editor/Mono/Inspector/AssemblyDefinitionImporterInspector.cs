@@ -6,7 +6,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor.Scripting;
 using UnityEditorInternal;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Experimental.AssetImporters;
@@ -19,11 +18,28 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class AssemblyDefinitionImporterInspector : AssetImporterEditor
     {
+        internal class Styles
+        {
+            public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
+            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("References");
+            public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
+            public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
+            public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
+            public static readonly GUIContent excludePlatforms = EditorGUIUtility.TrTextContent("Exclude Platforms");
+            public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select all");
+            public static readonly GUIContent deselectAll = EditorGUIUtility.TrTextContent("Deselect all");
+            public static readonly GUIContent apply = EditorGUIUtility.TrTextContent("Apply");
+            public static readonly GUIContent revert = EditorGUIUtility.TrTextContent("Revert");
+            public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
+        }
+
+        GUIStyle m_TextStyle;
+
         internal enum MixedBool : int
         {
             Mixed = -1,
-            True = 0,
-            False = 1
+            False = 0,
+            True = 1
         }
 
         internal class AssemblyDefinitionReference
@@ -55,7 +71,6 @@ namespace UnityEditor
 
         AssemblyDefintionState m_State;
         ReorderableList m_ReferencesList;
-        GUIStyle m_TextStyle;
 
         public override bool showImportedObject { get { return false; } }
 
@@ -85,22 +100,22 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(true))
                     {
                         var value = string.Join(", ", m_TargetStates.Select(t => t.name).ToArray());
-                        EditorGUILayout.TextField("Name", value, EditorStyles.textField);
+                        EditorGUILayout.TextField(Styles.name, value, EditorStyles.textField);
                     }
                 }
                 else
                 {
-                    m_State.name = EditorGUILayout.TextField("Name", m_State.name, EditorStyles.textField);
+                    m_State.name = EditorGUILayout.TextField(Styles.name, m_State.name, EditorStyles.textField);
                 }
 
-                GUILayout.Label("References", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.references, EditorStyles.boldLabel);
                 m_ReferencesList.DoLayoutList();
 
-                GUILayout.Label("Platforms", EditorStyles.boldLabel);
+                GUILayout.Label(Styles.platforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
 
                 var compatibleWithAnyPlatform = m_State.compatibleWithAnyPlatform;
-                m_State.compatibleWithAnyPlatform = ToggleWithMixedValue("Any Platform", m_State.compatibleWithAnyPlatform);
+                m_State.compatibleWithAnyPlatform = ToggleWithMixedValue(Styles.anyPlatform, m_State.compatibleWithAnyPlatform);
 
                 if (compatibleWithAnyPlatform == MixedBool.Mixed && m_State.compatibleWithAnyPlatform != MixedBool.Mixed)
                 {
@@ -120,25 +135,25 @@ namespace UnityEditor
 
                 if (m_State.compatibleWithAnyPlatform != MixedBool.Mixed)
                 {
-                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.False ? "Exclude Platforms" : "Include Platforms", EditorStyles.boldLabel);
+                    GUILayout.Label(m_State.compatibleWithAnyPlatform == MixedBool.True ? Styles.excludePlatforms : Styles.includePlatforms, EditorStyles.boldLabel);
 
                     for (int i = 0; i < platforms.Length; ++i)
                     {
-                        m_State.platformCompatibility[i] = ToggleWithMixedValue(platforms[i].DisplayName, m_State.platformCompatibility[i]);
+                        m_State.platformCompatibility[i] = ToggleWithMixedValue(new GUIContent(platforms[i].DisplayName), m_State.platformCompatibility[i]);
                     }
 
                     EditorGUILayout.Space();
 
                     GUILayout.BeginHorizontal();
 
-                    if (GUILayout.Button("Select all"))
-                    {
-                        SetPlatformCompatibility(m_State, MixedBool.False);
-                    }
-
-                    if (GUILayout.Button("Deselect all"))
+                    if (GUILayout.Button(Styles.selectAll))
                     {
                         SetPlatformCompatibility(m_State, MixedBool.True);
+                    }
+
+                    if (GUILayout.Button(Styles.deselectAll))
+                    {
+                        SetPlatformCompatibility(m_State, MixedBool.False);
                     }
 
                     GUILayout.FlexibleSpace();
@@ -159,12 +174,12 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!m_State.modified))
             {
-                if (GUILayout.Button("Revert"))
+                if (GUILayout.Button(Styles.revert))
                 {
                     LoadAssemblyDefinitionFiles();
                 }
 
-                if (GUILayout.Button("Apply"))
+                if (GUILayout.Button(Styles.apply))
                 {
                     SaveAndUpdateAssemblyDefinitionStates(m_State, m_TargetStates);
                 }
@@ -208,15 +223,15 @@ namespace UnityEditor
             }
         }
 
-        static MixedBool ToggleWithMixedValue(string title, MixedBool value)
+        static MixedBool ToggleWithMixedValue(GUIContent title, MixedBool value)
         {
             EditorGUI.showMixedValue = value == MixedBool.Mixed;
 
             EditorGUI.BeginChangeCheck();
 
-            bool newBoolValue = EditorGUILayout.Toggle(title, value == MixedBool.False);
+            bool newBoolValue = EditorGUILayout.Toggle(title, value == MixedBool.True);
             if (EditorGUI.EndChangeCheck())
-                return newBoolValue ? MixedBool.False : MixedBool.True;
+                return newBoolValue ? MixedBool.True : MixedBool.False;
 
             EditorGUI.showMixedValue = false;
             return value;
@@ -240,11 +255,11 @@ namespace UnityEditor
 
         static MixedBool InverseCompability(MixedBool compatibility)
         {
-            if (compatibility == MixedBool.False)
-                return MixedBool.True;
-
             if (compatibility == MixedBool.True)
                 return MixedBool.False;
+
+            if (compatibility == MixedBool.False)
+                return MixedBool.True;
 
             return MixedBool.Mixed;
         }
@@ -254,7 +269,7 @@ namespace UnityEditor
             if (m_TextStyle == null)
                 m_TextStyle = "ScriptText";
 
-            GUILayout.Label("Load Error", EditorStyles.boldLabel);
+            GUILayout.Label(Styles.loadError, EditorStyles.boldLabel);
             Rect rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(e.Message), m_TextStyle);
             EditorGUI.HelpBox(rect, e.Message, MessageType.Error);
         }
@@ -383,7 +398,7 @@ namespace UnityEditor
                             throw new AssemblyDefinitionException(string.Format("Reference assembly definition file '{0}' not found", referencePath), path);
 
                         assemblyDefinitionFile.data = CustomScriptAssemblyData.FromJson(assemblyDefinitionFile.asset.text);
-                        assemblyDefinitionFile.displayValue = MixedBool.True;
+                        assemblyDefinitionFile.displayValue = MixedBool.False;
                         state.references.Add(assemblyDefinitionFile);
                     }
                     catch (AssemblyDefinitionException e)
@@ -398,17 +413,17 @@ namespace UnityEditor
             var platforms = Compilation.CompilationPipeline.GetAssemblyDefinitionPlatforms();
             state.platformCompatibility = new MixedBool[platforms.Length];
 
-            state.compatibleWithAnyPlatform = MixedBool.False;
+            state.compatibleWithAnyPlatform = MixedBool.True;
             string[] dataPlatforms = null;
 
             if (data.includePlatforms != null && data.includePlatforms.Length > 0)
             {
-                state.compatibleWithAnyPlatform = MixedBool.True;
+                state.compatibleWithAnyPlatform = MixedBool.False;
                 dataPlatforms = data.includePlatforms;
             }
             else if (data.excludePlatforms != null && data.excludePlatforms.Length > 0)
             {
-                state.compatibleWithAnyPlatform = MixedBool.False;
+                state.compatibleWithAnyPlatform = MixedBool.True;
                 dataPlatforms = data.excludePlatforms;
             }
 
@@ -416,7 +431,7 @@ namespace UnityEditor
                 foreach (var platform in dataPlatforms)
                 {
                     var platformIndex = GetPlatformIndex(platforms, platform);
-                    state.platformCompatibility[platformIndex] = MixedBool.False;
+                    state.platformCompatibility[platformIndex] = MixedBool.True;
                 }
 
             return state;
@@ -486,13 +501,13 @@ namespace UnityEditor
 
             for (int i = 0; i < platforms.Length; ++i)
             {
-                if (state.platformCompatibility[i] == MixedBool.False)
+                if (state.platformCompatibility[i] == MixedBool.True)
                     dataPlatforms.Add(platforms[i].Name);
             }
 
             if (dataPlatforms.Any())
             {
-                if (state.compatibleWithAnyPlatform == MixedBool.False)
+                if (state.compatibleWithAnyPlatform == MixedBool.True)
                     data.excludePlatforms = dataPlatforms.ToArray();
                 else
                     data.includePlatforms = dataPlatforms.ToArray();

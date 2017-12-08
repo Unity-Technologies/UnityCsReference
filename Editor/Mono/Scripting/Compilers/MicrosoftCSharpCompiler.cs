@@ -14,8 +14,7 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal class MicrosoftCSharpCompiler : ScriptCompilerBase
     {
-        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater)
-            : base(island)
+        public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
 
@@ -114,6 +113,9 @@ namespace UnityEditor.Scripting.Compilers
             AddCustomResponseFileIfPresent(arguments, "csc.rsp");
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
+
+            RunAPIUpdaterIfRequired(responseFile);
+
             var psi = new ProcessStartInfo() { Arguments = "\"" + csc + "\" " + argsPrefix + "@" + responseFile, FileName = coreRun, CreateNoWindow = true };
             var program = new Program(psi);
             program.Start();
@@ -128,13 +130,22 @@ namespace UnityEditor.Scripting.Compilers
             // it seems you can still succesfully debug C# scripts in Visual Studio
             var arguments = new List<string>
             {
-                "/debug:pdbonly",
-                "/optimize+",
                 "/target:library",
                 "/nowarn:0169",
                 "/unsafe",
                 "/out:" + outputPath
             };
+
+            if (!_island._development_player)
+            {
+                arguments.Add("/debug:pdbonly");
+                arguments.Add("/optimize+");
+            }
+            else
+            {
+                arguments.Add("/debug:full");
+                arguments.Add("/optimize-");
+            }
 
             string argsPrefix;
             FillCompilerOptions(arguments, out argsPrefix);

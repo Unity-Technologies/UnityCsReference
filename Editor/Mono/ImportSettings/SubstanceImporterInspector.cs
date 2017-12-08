@@ -20,6 +20,7 @@ namespace UnityEditor
         private const float kPreviewWidth = 60;
         private const float kPreviewHeight = kPreviewWidth + 16;
         private const int kMaxRows = 2;
+        private const string kDeprecationWarning = "Built-in support for Substance Designer materials has been deprecated and will be removed in Unity 2018.1. To continue using Substance Designer materials in Unity 2018.1, you will need to install a suitable third-party external importer from the Asset Store.";
 
         private static SubstanceArchive s_LastSelectedPackage = null;
         private static string s_CachedSelectedMaterialInstanceName = null;
@@ -181,6 +182,7 @@ namespace UnityEditor
             if (materialEditor)
             {
                 materialEditor.DrawHeader();
+                EditorGUILayout.HelpBox(kDeprecationWarning, MessageType.Warning);
                 materialEditor.OnInspectorGUI();
             }
         }

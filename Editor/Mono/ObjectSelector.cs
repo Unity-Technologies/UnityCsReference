@@ -258,11 +258,14 @@ namespace UnityEditor
 
             if (property != null)
             {
-                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
-                // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
-                // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
                 if (requiredType == null)
-                    m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                {
+                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
+                    // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
+                    // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
+                    if (requiredType == null)
+                        m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                }
 
                 obj = property.objectReferenceValue;
                 m_ObjectBeingEdited = property.serializedObject.targetObject;
