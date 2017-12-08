@@ -3526,6 +3526,7 @@ namespace UnityEditor
 
             if (curve != null && curve.length >= 2 && curve.preWrapMode != WrapMode.Default)
             {
+                GUI.BeginGroup(drawRect);
                 Color oldText = GUI.contentColor;
 
                 var preKey = curve.keys[0];
@@ -3554,6 +3555,7 @@ namespace UnityEditor
                 }
 
                 GUI.contentColor = oldText;
+                GUI.EndGroup();
             }
         }
 
@@ -3562,7 +3564,7 @@ namespace UnityEditor
             float buttonSize = Styles.wrapModeMenuIcon.image.width;
             var keyPosition = new Vector3(key.time, key.value);
             keyPosition = DrawingToViewTransformPoint(keyPosition);
-            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y + drawRect.y, buttonSize, buttonSize);
+            var r = new Rect(keyPosition.x + buttonSize * hOffset, keyPosition.y, buttonSize, buttonSize);
 
             var selectedValue = (WrapModeFixedCurve)oldWrap;
 

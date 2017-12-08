@@ -436,7 +436,9 @@ namespace UnityEditor
         public SceneView()
         {
             m_HierarchyType = HierarchyType.GameObjects;
-            // Note: we always render into a custom RT, so no need for depth buffer or AA on the window itself
+
+            // Note: Rendering for Scene view picking depends on the depth buffer of the window
+            depthBufferBits = 32;
         }
 
         internal void Awake()

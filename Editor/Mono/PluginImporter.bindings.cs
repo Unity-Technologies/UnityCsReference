@@ -19,27 +19,11 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/PluginImporter.h")]
     public sealed partial class PluginImporter : AssetImporter
     {
-        private static bool IsCompatible(PluginImporter imp, string platformName)
-        {
-            if (string.IsNullOrEmpty(imp.assetPath))
-                return false;
+        [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
+        extern internal bool GetCompatibleWithPlatformOrAnyPlatformBuildTarget(string buildTarget);
 
-            if (!imp.GetCompatibleWithPlatform(platformName) &&
-                !(imp.GetCompatibleWithAnyPlatform() && !imp.GetExcludeFromAnyPlatform(platformName)))
-            {
-                return false;
-            }
-
-            return imp.ShouldIncludeInBuild();
-        }
-
-        private static bool IsCompatible(PluginImporter imp, string buildTargetGroup, string buildTarget)
-        {
-            if (string.IsNullOrEmpty(imp.assetPath))
-                return false;
-
-            return imp.GetCompatibleWithPlatform(buildTargetGroup, buildTarget) || imp.GetCompatibleWithAnyPlatform();
-        }
+        [NativeMethod("GetCompatibleWithPlatformOrAnyPlatform")]
+        extern private bool GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(string buildTargetGroup, string buildTarget);
 
         public static PluginImporter[] GetImporters(string platformName)
         {
@@ -49,7 +33,7 @@ namespace UnityEditor
             // Contains all unique finalPaths. Used to remove overridable plugins from the finalImporters list
             Dictionary<string, PluginImporter> uniqueFinalPathToImporterMap = new Dictionary<string, PluginImporter>();
 
-            PluginImporter[] allImporters = GetAllImporters().Where(imp => IsCompatible(imp, platformName)).ToArray();
+            PluginImporter[] allImporters = GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildTarget(platformName)).ToArray();
             IPluginImporterExtension pluginImporterExtension = ModuleManager.GetPluginImporterExtension(platformName);
 
             if (pluginImporterExtension == null)
@@ -103,7 +87,7 @@ namespace UnityEditor
 
         public static PluginImporter[] GetImporters(string buildTargetGroup, string buildTarget)
         {
-            return GetAllImporters().Where(imp => IsCompatible(imp, buildTargetGroup, buildTarget)).ToArray();
+            return GetAllImporters().Where(imp => imp.GetCompatibleWithPlatformOrAnyPlatformBuildGroupAndTarget(buildTargetGroup, buildTarget)).ToArray();
         }
 
         public static PluginImporter[] GetImporters(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)

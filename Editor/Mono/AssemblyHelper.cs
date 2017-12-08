@@ -22,6 +22,10 @@ namespace UnityEditor
         {
             string fileName = Path.GetFileNameWithoutExtension(assemblyPath);
             string assemblyName = ExtractInternalAssemblyName(assemblyPath);
+
+            if (string.IsNullOrEmpty(assemblyName))
+                return;
+
             if (fileName != assemblyName)
             {
                 Debug.LogWarning("Assembly '" + assemblyName + "' has non matching file name: '" + Path.GetFileName(assemblyPath) + "'. This can cause build issues on some platforms.");
@@ -66,8 +70,15 @@ namespace UnityEditor
 
         static public string ExtractInternalAssemblyName(string path)
         {
-            AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
-            return definition.Name.Name;
+            try
+            {
+                AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
+                return definition.Name.Name;
+            }
+            catch
+            {
+                return ""; // Possible on just deleted FacebookSDK
+            }
         }
 
         static AssemblyDefinition GetAssemblyDefinitionCached(string path, Dictionary<string, AssemblyDefinition> cache)
