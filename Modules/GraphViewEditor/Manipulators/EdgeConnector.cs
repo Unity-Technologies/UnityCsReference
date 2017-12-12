@@ -92,6 +92,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_EdgeDragHelper.HandleMouseMove(e);
                 m_EdgeCandidate.candidatePosition = e.mousePosition;
+                m_EdgeCandidate.UpdateEdgeControl();
 
                 e.StopPropagation();
             }

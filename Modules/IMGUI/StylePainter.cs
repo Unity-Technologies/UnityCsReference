@@ -68,6 +68,7 @@ namespace UnityEngine
     internal struct TextureStylePainterParameters
     {
         public Rect rect;
+        public Rect uv;
         public Color color;
         public Texture texture;
         public ScaleMode scaleMode;
@@ -168,6 +169,7 @@ namespace UnityEngine
         public void DrawTexture(TextureStylePainterParameters painterParams)
         {
             Rect screenRect = painterParams.rect;
+            Rect sourceRect = painterParams.uv != Rect.zero ? painterParams.uv : new Rect(0, 0, 1, 1);
             Texture texture = painterParams.texture;
             Color color = painterParams.color;
             ScaleMode scaleMode = painterParams.scaleMode;
@@ -177,8 +179,7 @@ namespace UnityEngine
             int sliceBottom = painterParams.sliceBottom;
 
             Rect textureRect = screenRect;
-            Rect sourceRect = new Rect(0, 0, 1, 1);
-            float textureAspect = (float)texture.width / texture.height;
+            float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
             float destAspect = screenRect.width / screenRect.height;
             switch (scaleMode)
             {
@@ -186,27 +187,29 @@ namespace UnityEngine
                     break;
 
                 case ScaleMode.ScaleAndCrop:
-                    if (destAspect > textureAspect)
+                    if (destAspect > srcAspect)
                     {
-                        float stretch = textureAspect / destAspect;
-                        sourceRect = new Rect(0, (1 - stretch) * .5f, 1, stretch);
+                        float stretch = sourceRect.height * (srcAspect / destAspect);
+                        float crop = (sourceRect.height - stretch) * 0.5f;
+                        sourceRect = new Rect(sourceRect.x, sourceRect.y + crop, sourceRect.width, stretch);
                     }
                     else
                     {
-                        float stretch = destAspect / textureAspect;
-                        sourceRect = new Rect(.5f - stretch * .5f, 0, stretch, 1);
+                        float stretch = sourceRect.width * (destAspect / srcAspect);
+                        float crop = (sourceRect.width - stretch) * 0.5f;
+                        sourceRect = new Rect(sourceRect.x + crop, sourceRect.y, stretch, sourceRect.height);
                     }
                     break;
 
                 case ScaleMode.ScaleToFit:
-                    if (destAspect > textureAspect)
+                    if (destAspect > srcAspect)
                     {
-                        float stretch = textureAspect / destAspect;
+                        float stretch = srcAspect / destAspect;
                         textureRect = new Rect(screenRect.xMin + screenRect.width * (1.0f - stretch) * .5f, screenRect.yMin, stretch * screenRect.width, screenRect.height);
                     }
                     else
                     {
-                        float stretch = destAspect / textureAspect;
+                        float stretch = destAspect / srcAspect;
                         textureRect = new Rect(screenRect.xMin, screenRect.yMin + screenRect.height * (1.0f - stretch) * .5f, screenRect.width, stretch * screenRect.height);
                     }
                     break;

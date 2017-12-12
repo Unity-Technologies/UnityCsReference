@@ -34,15 +34,9 @@ namespace UnityEditor
         }
     }
 
-    internal class PostprocessBuildPlayer
+    internal static class PostprocessBuildPlayer
     {
         internal const string StreamingAssets = "Assets/StreamingAssets";
-
-        ///@TODO: This should be moved to C++ since playerprefs has it there already
-        internal static string GenerateBundleIdentifier(string companyName, string productName)
-        {
-            return "unity" + "." + companyName + "." + productName;
-        }
 
         // Seems to be used only by PlatformDependent\AndroidPlayer\Editor\Managed\PostProcessAndroidPlayer.cs
         internal static bool InstallPluginsByExtension(string pluginSourceFolder, string extension, string debugExtension, string destPluginFolder, bool copyDirectories)

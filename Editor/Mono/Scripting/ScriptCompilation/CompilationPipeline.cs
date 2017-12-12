@@ -190,7 +190,7 @@ namespace UnityEditor.Compilation
             try
             {
                 var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromScriptPath(sourceFilePath);
-                return customScriptAssembly.FilePath;
+                return customScriptAssembly != null ? customScriptAssembly.FilePath : null;
             }
             catch (Exception)
             {

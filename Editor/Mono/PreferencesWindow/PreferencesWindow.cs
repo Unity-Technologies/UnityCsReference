@@ -392,68 +392,19 @@ namespace UnityEditor
             }
         }
 
-        static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
-                RegexOptions.Compiled);
-        private String GetMonoDevelopInstallerURL()
-        {
-            string fullVersion = InternalEditorUtility.GetFullUnityVersion();
-            string revision = "";
-            Match versionMatch = s_VersionPattern.Match(fullVersion);
-            if (!versionMatch.Success || !versionMatch.Groups["suffix"].Success)
-                Debug.LogWarningFormat("Error parsing version '{0}'", fullVersion);
-
-            if (versionMatch.Groups["revision"].Success)
-                revision = versionMatch.Groups["revision"].Value;
-
-            string prefix = "download";
-            string suffix = "download_unity";
-            string folder = "Unknown";
-
-            if (versionMatch.Groups["alphabeta"].Success)
-            {
-                // These releases are hosted on the beta site
-                prefix = "beta";
-                suffix = "download";
-            }
-
-            string moduleName = "Unsupported";
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-            {
-                folder = "WindowsMonoDevelopInstaller";
-                moduleName = "UnityMonoDevelopSetup.exe";
-            }
-            else if (Application.platform == RuntimePlatform.OSXEditor)
-            {
-                folder = "MacMonoDevelopInstaller";
-                moduleName = "UnityMonoDevelop.pkg";
-            }
-
-            return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/{4}", prefix, suffix, revision, folder, moduleName);
-        }
-
         private void ShowExternalApplications()
         {
             // Applications
             FilePopup(Styles.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
-            if (!IsSelectedScriptEditorSpecial())
+
+            var scriptEditor = GetSelectedScriptEditor();
+
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Other)
             {
                 string oldEditorArgs = m_ScriptEditorArgs;
                 m_ScriptEditorArgs = EditorGUILayout.TextField("External Script Editor Args", m_ScriptEditorArgs);
                 if (oldEditorArgs != m_ScriptEditorArgs)
                     OnScriptEditorArgsChanged();
-            }
-            else
-            {
-                String monodevPath = EditorUtility.GetInternalEditorPath();
-                // path is a directory on Mac, but a file on Windows, so have to check both
-                if (monodevPath != null && !(Directory.Exists(monodevPath) || File.Exists(monodevPath)))
-                {
-                    if (GUILayout.Button(Styles.downloadMonoDevelopInstaller, GUILayout.Width(220)))
-                    {
-                        var url = GetMonoDevelopInstallerURL();
-                        Help.BrowseURL(url);
-                    }
-                }
             }
 
             DoUnityProjCheckbox();
@@ -515,11 +466,7 @@ namespace UnityEditor
 
             ScriptEditorUtility.ScriptEditor scriptEditor = GetSelectedScriptEditor();
 
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Internal)
-            {
-                value = true;
-            }
-            else if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.MonoDevelop)
             {
                 isConfigurable = true;
                 value = m_ExternalEditorSupportsUnityProj;
@@ -532,11 +479,6 @@ namespace UnityEditor
 
             if (isConfigurable)
                 m_ExternalEditorSupportsUnityProj = value;
-        }
-
-        private bool IsSelectedScriptEditorSpecial()
-        {
-            return ScriptEditorUtility.IsScriptEditorSpecial(m_ScriptEditorPath.str);
         }
 
         private ScriptEditorUtility.ScriptEditor GetSelectedScriptEditor()
@@ -1161,7 +1103,7 @@ namespace UnityEditor
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
             m_ScriptAppDisplayNames = BuildFriendlyAppNameList(m_ScriptApps, m_ScriptAppsEditions,
-                    L10n.Tr("MonoDevelop (built-in)"));
+                    "Open by file extension");
 
             m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null,
                     L10n.Tr("Open by file extension"));

@@ -151,7 +151,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (ce == null || !ce.IsMovable())
                         continue;
 
-                    m_OriginalPos[ce] = ce.layout;
+                    m_OriginalPos[ce] = ce.GetPosition();
                 }
 
                 m_originalMouse = e.mousePosition;
@@ -229,10 +229,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Matrix4x4 g = ce.worldTransform;
                 var scale = new Vector3(g.m00, g.m11, g.m22);
 
+                Rect ceLayout = ce.GetPosition();
+
                 ce.SetPosition(
                     new Rect(v.Value.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x,
                         v.Value.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y,
-                        ce.layout.width, ce.layout.height));
+                        ceLayout.width, ceLayout.height));
             }
             List<ISelectable> selection = m_GraphView.selection;
 
@@ -274,10 +276,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Matrix4x4 g = ce.worldTransform;
                 var scale = new Vector3(g.m00, g.m11, g.m22);
 
+                Rect ceLayout = ce.GetPosition();
+
                 ce.SetPosition(
                     new Rect(v.Value.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x,
                         v.Value.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y,
-                        ce.layout.width, ce.layout.height));
+                        ceLayout.width, ceLayout.height));
             }
         }
 

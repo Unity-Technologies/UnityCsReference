@@ -6,10 +6,7 @@ using UnityEngine;
 using UnityEditor;
 
 using System.IO;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEditor.Utils;
 using UnityEditor.Scripting.ScriptCompilation;
 
@@ -18,14 +15,14 @@ namespace UnityEditorInternal
     public class ScriptEditorUtility
     {
         // Keep in sync with enum ScriptEditorType in ExternalEditor.h
-        public enum ScriptEditor { Internal = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Rider = 5, Other = 32 }
+        public enum ScriptEditor { SystemDefault = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Rider = 5, Other = 32 }
 
         public static ScriptEditor GetScriptEditorFromPath(string path)
         {
             string lowerCasePath = path.ToLower();
 
             if (lowerCasePath == "internal")
-                return ScriptEditor.Internal;
+                return ScriptEditor.SystemDefault;
 
             if (lowerCasePath.Contains("monodevelop") || lowerCasePath.Contains("xamarinstudio") || lowerCasePath.Contains("xamarin studio"))
                 return ScriptEditor.MonoDevelop;
@@ -52,14 +49,20 @@ namespace UnityEditorInternal
             return ScriptEditor.Other;
         }
 
-        public static bool IsScriptEditorSpecial(string path)
-        {
-            return GetScriptEditorFromPath(path) != ScriptEditor.Other;
-        }
-
         public static string GetExternalScriptEditor()
         {
-            return EditorPrefs.GetString("kScriptsDefaultApp");
+            var editor =  EditorPrefs.GetString("kScriptsDefaultApp");
+
+            if (!string.IsNullOrEmpty(editor))
+                return editor;
+
+            // If no script editor is set, try to use first found supported one.
+            var editorPaths = GetFoundScriptEditorPaths(Application.platform);
+
+            if (editorPaths.Length > 0)
+                return editorPaths[0];
+
+            return string.Empty;
         }
 
         public static void SetExternalScriptEditor(string path)
@@ -100,8 +103,9 @@ namespace UnityEditorInternal
         public static string GetExternalScriptEditorArgs()
         {
             string editor = GetExternalScriptEditor();
+            var scriptEditor = GetScriptEditorFromPath(editor);
 
-            if (IsScriptEditorSpecial(editor))
+            if (scriptEditor != ScriptEditor.Other)
                 return "";
 
             return EditorPrefs.GetString(GetScriptEditorArgsKey(editor), GetDefaultStringEditorArgs());

@@ -94,7 +94,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
     public class GroupNode : GraphElement
     {
-        private const int k_GroupNodeLayer = -500;
         private const int k_TitleItemMinWidth = 10;
         private VisualElement m_MainContainer;
         private VisualElement m_HeaderItem;
@@ -127,8 +126,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
             }
         }
-
-        public override int layer { get { return k_GroupNodeLayer; } }
 
         public GroupNode()
         {

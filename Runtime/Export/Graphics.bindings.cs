@@ -621,7 +621,7 @@ namespace UnityEngine
     }
 }
 
-namespace UnityEngine.Experimental.Graphics
+namespace UnityEngine.Experimental.Rendering
 {
     public enum VertexAttribute
     {

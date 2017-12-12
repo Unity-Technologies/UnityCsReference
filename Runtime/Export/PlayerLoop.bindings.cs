@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -286,8 +283,8 @@ namespace UnityEngine.Experimental.LowLevel
     {
         public Type type;
         public PlayerLoopSystem.UpdateFunction updateDelegate;
-        public System.IntPtr updateFunction;
-        public System.IntPtr loopConditionFunction;
+        public IntPtr updateFunction;
+        public IntPtr loopConditionFunction;
         public int numSubSystems;
     }
 
@@ -296,8 +293,8 @@ namespace UnityEngine.Experimental.LowLevel
         public Type type;
         public PlayerLoopSystem[] subSystemList;
         public UpdateFunction updateDelegate;
-        public System.IntPtr updateFunction;
-        public System.IntPtr loopConditionFunction;
+        public IntPtr updateFunction;
+        public IntPtr loopConditionFunction;
 
         public delegate void UpdateFunction();
     }
@@ -307,7 +304,7 @@ namespace UnityEngine.Experimental.LowLevel
         public static PlayerLoopSystem GetDefaultPlayerLoop()
         {
             var intSys = GetDefaultPlayerLoopInternal();
-            int offset = 0;
+            var offset = 0;
             return InternalToPlayerLoopSystem(intSys, ref offset);
         }
 
@@ -320,13 +317,15 @@ namespace UnityEngine.Experimental.LowLevel
 
         static int PlayerLoopSystemToInternal(PlayerLoopSystem sys, ref List<PlayerLoopSystemInternal> internalSys)
         {
-            int idx = internalSys.Count;
-            PlayerLoopSystemInternal newSys = new PlayerLoopSystemInternal();
-            newSys.type = sys.type;
-            newSys.updateDelegate = sys.updateDelegate;
-            newSys.updateFunction = sys.updateFunction;
-            newSys.loopConditionFunction = sys.loopConditionFunction;
-            newSys.numSubSystems = 0;
+            var idx = internalSys.Count;
+            var newSys = new PlayerLoopSystemInternal
+            {
+                type = sys.type,
+                updateDelegate = sys.updateDelegate,
+                updateFunction = sys.updateFunction,
+                loopConditionFunction = sys.loopConditionFunction,
+                numSubSystems = 0
+            };
             internalSys.Add(newSys);
             if (sys.subSystemList != null)
             {
@@ -341,14 +340,16 @@ namespace UnityEngine.Experimental.LowLevel
 
         static PlayerLoopSystem InternalToPlayerLoopSystem(PlayerLoopSystemInternal[] internalSys, ref int offset)
         {
-            var sys = new PlayerLoopSystem();
-            sys.type = internalSys[offset].type;
-            sys.updateDelegate = internalSys[offset].updateDelegate;
-            sys.updateFunction = internalSys[offset].updateFunction;
-            sys.loopConditionFunction = internalSys[offset].loopConditionFunction;
-            sys.subSystemList = null;
+            var sys = new PlayerLoopSystem
+            {
+                type = internalSys[offset].type,
+                updateDelegate = internalSys[offset].updateDelegate,
+                updateFunction = internalSys[offset].updateFunction,
+                loopConditionFunction = internalSys[offset].loopConditionFunction,
+                subSystemList = null
+            };
 
-            int idx = offset++;
+            var idx = offset++;
             if (internalSys[idx].numSubSystems > 0)
             {
                 var subsys = new List<PlayerLoopSystem>();
@@ -362,8 +363,8 @@ namespace UnityEngine.Experimental.LowLevel
 
 
         [NativeMethod(IsFreeFunction = true)]
-        extern private static PlayerLoopSystemInternal[] GetDefaultPlayerLoopInternal();
+        private static extern PlayerLoopSystemInternal[] GetDefaultPlayerLoopInternal();
         [NativeMethod(IsFreeFunction = true)]
-        extern private static void SetPlayerLoopInternal(PlayerLoopSystemInternal[] loop);
+        private static extern void SetPlayerLoopInternal(PlayerLoopSystemInternal[] loop);
     }
 }

@@ -6,11 +6,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using UnityEngine;
-using UnityEngine.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
-namespace UnityEngine.Collections
+namespace Unity.Collections
 {
     public static class NativeSliceExtensions
     {
@@ -43,17 +43,16 @@ namespace UnityEngine.Collections
         internal int                                     m_Length;
 
 
+        public static implicit operator NativeSlice<T>(NativeArray<T> array)
+        {
+            return new NativeSlice<T>(array);
+        }
+
         public NativeSlice(NativeArray<T> array) : this(array, 0, array.Length) {}
         public NativeSlice(NativeArray<T> array, int start) : this(array, start, array.Length - start) {}
 
         public unsafe NativeSlice(NativeArray<T> array, int start, int length)
         {
-            if (start < 0)
-                throw new System.ArgumentException("Slice start range must be >= 0.");
-            if (length < 0)
-                throw new System.ArgumentException("Slice length must be >= 0.");
-            if (start + length > array.Length)
-                throw new System.ArgumentException("Slice start + length range must be <= array.Length");
 
             m_Stride = UnsafeUtility.SizeOf<T>();
             byte* ptr = (byte*)array.m_Buffer + m_Stride * start;
@@ -63,32 +62,23 @@ namespace UnityEngine.Collections
         }
 
         // Keeps stride, changes length
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public NativeSlice<U> SliceConvert<U>() where U : struct
         {
-            if (m_Stride != UnsafeUtility.SizeOf<T>())
-                throw new System.ArgumentException("SliceConvert requires that stride matches the size of the source type");
+            var sizeofU = UnsafeUtility.SizeOf<U>();
+
             NativeSlice<U> outputSlice;
             outputSlice.m_Buffer = m_Buffer;
-
-            int sizeofU = UnsafeUtility.SizeOf<U>();
             outputSlice.m_Stride = sizeofU;
-
-            bool isMultiple = (m_Stride * m_Length) % sizeofU  == 0;
-            if (!isMultiple)
-                throw new System.ArgumentException("SliceConvert requires that Length * Stride is a multiple of sizeof(U).");
-
             outputSlice.m_Length = (m_Length * m_Stride) / sizeofU;
 
             return outputSlice;
         }
 
         // Keeps length, changes stride
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public unsafe NativeSlice<U> SliceWithStride<U>(int offset) where U : struct
         {
-            if (offset < 0)
-                throw new ArgumentException("SliceWithStride offset must be >= 0");
-            if (offset + UnsafeUtility.SizeOf<U>() > UnsafeUtility.SizeOf<T>())
-                throw new ArgumentException("SliceWithStride sizeof(U) + offset must be <= sizeof(T)");
 
             NativeSlice<U> outputSlice;
             byte* ptr = (byte*)m_Buffer + offset;
@@ -99,15 +89,16 @@ namespace UnityEngine.Collections
             return outputSlice;
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public NativeSlice<U> SliceWithStride<U>() where U : struct
         {
             return SliceWithStride<U>(0);
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public NativeSlice<U> SliceWithStride<U>(string offsetFieldName) where U : struct
         {
-            int offsetOf = UnsafeUtility.OffsetOf<T>(offsetFieldName);
-            //@TODO: check that U matches offsetFieldName type
+            var offsetOf = UnsafeUtility.OffsetOf<T>(offsetFieldName);
             return SliceWithStride<U>(offsetOf);
         }
 
@@ -115,63 +106,50 @@ namespace UnityEngine.Collections
         {
             get
             {
-                if ((uint)index >= (uint)m_Length)
-                    FailOutOfRangeError(index);
 
                 return UnsafeUtility.ReadArrayElementWithStride<T>(m_Buffer, index, m_Stride);
             }
 
             set
             {
-                if ((uint)index >= (uint)m_Length)
-                    FailOutOfRangeError(index);
 
                 UnsafeUtility.WriteArrayElementWithStride(m_Buffer, index, m_Stride, value);
             }
         }
 
-        private void FailOutOfRangeError(int index)
-        {
 
-            throw new IndexOutOfRangeException(string.Format("Index {0} is out of range of '{1}' Length.", index, Length));
-        }
-
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyFrom(NativeSlice<T> slice)
         {
-            if (Length != slice.Length)
-                throw new ArgumentException(string.Format("array.Length ({0}) does not match NativeSlice.Length({1}).", slice.Length, Length));
 
-            for (int i = 0; i != m_Length; i++)
+            for (var i = 0; i != m_Length; i++)
                 this[i] = slice[i];
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyFrom(T[] array)
         {
-            if (Length != array.Length)
-                throw new ArgumentException(string.Format("array.Length ({0}) does not match NativeSlice.Length({1}).", array.Length, Length));
 
-            for (int i = 0; i != m_Length; i++)
+            for (var i = 0; i != m_Length; i++)
                 this[i] = array[i];
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyTo(NativeArray<T> array)
         {
-            if (Length != array.Length)
-                throw new ArgumentException(string.Format("array.Length ({0}) does not match NativeSlice.Length({1}).", array.Length, Length));
 
-            for (int i = 0; i != m_Length; i++)
+            for (var i = 0; i != m_Length; i++)
                 array[i] = this[i];
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyTo(T[] array)
         {
-            if (Length != array.Length)
-                throw new ArgumentException(string.Format("array.Length ({0}) does not match NativeSlice.Length({1}).", array.Length, Length));
-
-            for (int i = 0; i != m_Length; i++)
+            for (var i = 0; i != m_Length; i++)
                 array[i] = this[i];
         }
 
+        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public T[] ToArray()
         {
             var array = new T[Length];
@@ -181,22 +159,6 @@ namespace UnityEngine.Collections
 
         public int      Stride { get { return m_Stride; } }
         public int      Length { get { return m_Length; } }
-
-        public IntPtr   UnsafePtr
-        {
-            get
-            {
-                return m_Buffer;
-            }
-        }
-
-        public IntPtr   UnsafeReadOnlyPtr
-        {
-            get
-            {
-                return m_Buffer;
-            }
-        }
 
         public IEnumerator<T> GetEnumerator()
         {
@@ -208,15 +170,15 @@ namespace UnityEngine.Collections
             return GetEnumerator();
         }
 
-        public struct Enumerator : IEnumerator<T>
+        internal struct Enumerator : IEnumerator<T>
         {
-            private NativeSlice<T> array;
-            private int index;
+            private NativeSlice<T> m_Array;
+            private int m_Index;
 
             public Enumerator(ref NativeSlice<T> array)
             {
-                this.array = array;
-                this.index = -1;
+                m_Array = array;
+                m_Index = -1;
             }
 
             public void Dispose()
@@ -225,21 +187,21 @@ namespace UnityEngine.Collections
 
             public bool MoveNext()
             {
-                index++;
-                return index < array.Length;
+                m_Index++;
+                return m_Index < m_Array.Length;
             }
 
             public void Reset()
             {
-                index = -1;
+                m_Index = -1;
             }
 
             public T Current
             {
                 get
                 {
-                    // Let NativeSlice indexer checks for out of range
-                    return array[index];
+                    // Let NativeSlice indexer check for out of range.
+                    return m_Array[m_Index];
                 }
             }
 
@@ -255,28 +217,39 @@ namespace UnityEngine.Collections
     /// </summary>
     internal sealed class NativeSliceDebugView<T> where T : struct
     {
-        private NativeSlice<T> array;
+        private NativeSlice<T> m_Array;
 
         public NativeSliceDebugView(NativeSlice<T> array)
         {
-            this.array = array;
+            m_Array = array;
         }
 
         public T[] Items
         {
-            get { return array.ToArray(); }
+            get { return m_Array.ToArray(); }
         }
     }
 }
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
-    internal static class NativeSliceUnsafeUtility
+    public static class NativeSliceUnsafeUtility
     {
-        public unsafe static NativeSlice<T> ConvertExistingDataToNativeSlice<T>(IntPtr dataPointer, int start, int length, int stride, AtomicSafetyHandle safety) where T : struct
+        public static NativeSlice<T> ConvertExistingDataToNativeSlice<T>(IntPtr dataPointer, int length) where T : struct
         {
-            NativeSlice<T> slice = new NativeSlice<T>();
+            var newSlice = new NativeSlice<T>
+            {
+                m_Stride = UnsafeUtility.SizeOf<T>(),
+                m_Buffer = dataPointer,
+                m_Length = length,
 
+            };
+
+            return newSlice;
+        }
+
+        public static unsafe NativeSlice<T> ConvertExistingDataToNativeSlice<T>(IntPtr dataPointer, int start, int length, int stride) where T : struct
+        {
             if (length < 0)
                 throw new System.ArgumentException(String.Format("Invalid length of '{0}'. It must be greater than 0.", length));
             if (start < 0)
@@ -284,13 +257,28 @@ namespace Unity.Collections.LowLevel.Unsafe
             if (stride < 0)
                 throw new System.ArgumentException(String.Format("Invalid stride '{0}'. It must be greater than 0.", stride));
 
-            slice.m_Stride = stride;
             byte* ptr = (byte*)dataPointer + start;
-            slice.m_Buffer = (IntPtr)ptr;
-            slice.m_Length = length;
+            var newSlice = new NativeSlice<T>
+            {
+                m_Stride = stride,
+                m_Buffer = (IntPtr)ptr,
+                m_Length = length,
 
-            return slice;
+            };
+
+            return newSlice;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static IntPtr GetUnsafePtr<T>(this NativeSlice<T> nativeSlice) where T : struct
+        {
+            return nativeSlice.m_Buffer;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static IntPtr GetUnsafeReadOnlyPtr<T>(this NativeSlice<T> nativeSlice) where T : struct
+        {
+            return nativeSlice.m_Buffer;
         }
     }
 }
-

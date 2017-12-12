@@ -46,8 +46,9 @@ namespace UnityEditor
             EditMode.editModeEnded += OnEditModeEnd;
             GridPaintingState.brushChanged += OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
-            GridSnapping.snapPosition += OnSnapPosition;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            GridSnapping.snapPosition = OnSnapPosition;
+            GridSnapping.activeFunc = GetActive;
 
             m_RegisteredEventHandlers = true;
         }
@@ -87,8 +88,9 @@ namespace UnityEditor
             EditMode.editModeEnded -= OnEditModeEnd;
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
-            GridSnapping.snapPosition -= OnSnapPosition;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            GridSnapping.snapPosition = null;
+            GridSnapping.activeFunc = null;
             m_RegisteredEventHandlers = false;
         }
 
@@ -130,6 +132,11 @@ namespace UnityEditor
             {
                 sceneView.showGlobalGrid = value;
             }
+        }
+
+        private bool GetActive()
+        {
+            return active;
         }
 
         private Vector3 OnSnapPosition(Vector3 position)

@@ -14,7 +14,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngineInternal;
 using UnityEngine.Audio;
-using UnityEngine.Collections;
 
 namespace UnityEngine
 {

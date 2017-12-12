@@ -78,6 +78,16 @@ namespace UnityEngine.Animations
             SetApplyFootIKInternal(ref m_Handle, value);
         }
 
+        public bool GetApplyPlayableIK()
+        {
+            return GetApplyPlayableIKInternal(ref m_Handle);
+        }
+
+        public void SetApplyPlayableIK(bool value)
+        {
+            SetApplyPlayableIKInternal(ref m_Handle, value);
+        }
+
         internal bool GetRemoveStartOffset()
         {
             return GetRemoveStartOffsetInternal(ref m_Handle);
@@ -93,6 +103,8 @@ namespace UnityEngine.Animations
         extern private static AnimationClip GetAnimationClipInternal(ref PlayableHandle handle);
         extern private static bool GetApplyFootIKInternal(ref PlayableHandle handle);
         extern private static void SetApplyFootIKInternal(ref PlayableHandle handle, bool value);
+        extern private static bool GetApplyPlayableIKInternal(ref PlayableHandle handle);
+        extern private static void SetApplyPlayableIKInternal(ref PlayableHandle handle, bool value);
         extern private static bool GetRemoveStartOffsetInternal(ref PlayableHandle handle);
         extern private static void SetRemoveStartOffsetInternal(ref PlayableHandle handle, bool value);
     }

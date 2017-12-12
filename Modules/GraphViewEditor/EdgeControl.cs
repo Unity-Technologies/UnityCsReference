@@ -318,6 +318,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             m_ControlPointsDirty = true;
             Dirty(ChangeType.Repaint);
+            GetFirstAncestorOfType<Edge>().UpdateEdgeDrawers();
         }
 
         // The points that will be rendered. Expressed in coordinates local to the element.
@@ -610,7 +611,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             //Make sure that we have the place to display Edges with EdgeControl.k_MinEdgeWidth at the lowest level of zoom.
-            float margin = Mathf.Max(edgeWidth * 0.5f + 1, EdgeControl.k_MinEdgeWidth / m_GraphView.minScale.x);
+            float margin = Mathf.Max(edgeWidth * 0.5f + 1, EdgeControl.k_MinEdgeWidth / m_GraphView.minScale);
 
             rect.xMin -= margin;
             rect.yMin -= margin;

@@ -5,26 +5,26 @@
 using System;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Collections
+namespace Unity.Collections
 {
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public class ReadOnlyAttribute : Attribute
+    public sealed class ReadOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public class WriteOnlyAttribute : Attribute
+    public sealed class WriteOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public class DeallocateOnJobCompletionAttribute : Attribute
+    public sealed class DeallocateOnJobCompletionAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public class NativeFixedLengthAttribute : System.Attribute
+    public sealed class NativeFixedLengthAttribute : Attribute
     {
         public NativeFixedLengthAttribute(int fixedLength) { FixedLength = fixedLength; }
         public int FixedLength;
@@ -32,31 +32,44 @@ namespace UnityEngine.Collections
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    public class NativeMatchesParallelForLengthAttribute : System.Attribute
+    public sealed class NativeMatchesParallelForLengthAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
-    internal class NativeDisableParallelForRestrictionAttribute : System.Attribute
+    public sealed class NativeDisableParallelForRestrictionAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute
+    {}
+}
+
+namespace Unity.Collections.LowLevel.Unsafe
+{
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Struct)]
+    public sealed class NativeContainerAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    public class NativeContainerAttribute : Attribute
+    public sealed class NativeContainerIsAtomicWriteOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    public class NativeContainerIsAtomicWriteOnlyAttribute : Attribute
+    public sealed class NativeContainerSupportsMinMaxWriteRestrictionAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    public class NativeContainerSupportsMinMaxWriteRestrictionAttribute : Attribute
+    public sealed class NativeContainerSupportsDeallocateOnJobCompletionAttribute : Attribute
     {}
 
-    [UnityEngine.Scripting.RequiredByNativeCode]
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
-    public class NativeContainerSupportsDeallocateOnJobCompletionAttribute : System.Attribute
+    public sealed class NativeContainerNeedsThreadIndexAttribute : Attribute
     {}
 }

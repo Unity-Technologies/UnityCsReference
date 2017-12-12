@@ -42,6 +42,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<float> minHeight;
         internal StyleValue<float> flex;
         internal StyleValue<float> flexBasis;
+        internal StyleValue<float> flexShrink;
+        internal StyleValue<float> flexGrow;
         internal StyleValue<int> overflow;
         internal StyleValue<float> positionLeft;
         internal StyleValue<float> positionTop;
@@ -110,6 +112,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             minHeight.Apply(other.minHeight, mode);
             flex.Apply(other.flex, mode);
             flexBasis.Apply(other.flexBasis, mode);
+            flexGrow.Apply(other.flexGrow, mode);
+            flexShrink.Apply(other.flexShrink, mode);
             overflow.Apply(other.overflow, mode);
             positionLeft.Apply(other.positionLeft, mode);
             positionTop.Apply(other.positionTop, mode);
@@ -261,6 +265,14 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
                     case StylePropertyID.FlexBasis:
                         registry.Apply(handles, specificity, ref flexBasis, StyleSheetApplicator.ApplyFloat);
+                        break;
+
+                    case StylePropertyID.FlexGrow:
+                        registry.Apply(handles, specificity, ref flexGrow, StyleSheetApplicator.ApplyFloat);
+                        break;
+
+                    case StylePropertyID.FlexShrink:
+                        registry.Apply(handles, specificity, ref flexShrink, StyleSheetApplicator.ApplyFloat);
                         break;
 
                     case StylePropertyID.Font:

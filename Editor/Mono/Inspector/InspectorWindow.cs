@@ -995,6 +995,16 @@ namespace UnityEditor
             if (editors.Length > 1 && editors[0] is AssetImporterEditor)
             {
                 (editors[0] as AssetImporterEditor).assetEditor = editors[1];
+                // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
+                // get the target back from the serialized object for all editors
+                // (dealing with multiple editors when a GameObject is involved)
+                for (int i = 0; i < editors.Length; i++)
+                {
+                    if (editors[i].target == null)
+                    {
+                        editors[i].InternalSetTargets(editors[i].serializedObject.targetObjects);
+                    }
+                }
             }
         }
 

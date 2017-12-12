@@ -864,6 +864,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             cssNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
             cssNode.FlexBasis = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.FlexGrow = style.flexGrow.GetSpecifiedValueOrDefault(float.NaN);
+            cssNode.FlexShrink = style.flexShrink.GetSpecifiedValueOrDefault(float.NaN);
             cssNode.SetPosition(CSSEdge.Left, style.positionLeft.GetSpecifiedValueOrDefault(float.NaN));
             cssNode.SetPosition(CSSEdge.Top, style.positionTop.GetSpecifiedValueOrDefault(float.NaN));
             cssNode.SetPosition(CSSEdge.Right, style.positionRight.GetSpecifiedValueOrDefault(float.NaN));
@@ -1137,6 +1139,7 @@ namespace UnityEngine.Experimental.UIElements
             var painterParams = new TextureStylePainterParameters
             {
                 rect = ve.rect,
+                uv = new Rect(0, 0, 1, 1),
                 color = Color.white,
                 texture = style.backgroundImage,
                 scaleMode = style.backgroundSize,

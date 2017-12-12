@@ -128,7 +128,7 @@ namespace UnityEngine
 
         internal WWW(string url, string name, Hash128 hash, uint crc)
         {
-            _uwr = UnityWebRequest.GetAssetBundle(url, new CachedAssetBundle(name, hash), crc);
+            _uwr = UnityWebRequestAssetBundle.GetAssetBundle(url, new CachedAssetBundle(name, hash), crc);
             _uwr.SendWebRequest();
         }
 

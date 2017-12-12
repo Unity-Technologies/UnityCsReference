@@ -10,6 +10,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         private StyleValue<int> m_ScaleMode;
         private StyleValue<Texture> m_Image;
+        private Rect m_UV;
 
         public StyleValue<Texture> image
         {
@@ -19,8 +20,27 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref m_Image, value))
                 {
                     Dirty(ChangeType.Repaint | ChangeType.Layout);
+                    if (m_Image.value == null)
+                    {
+                        m_UV = new Rect(0, 0, 1 , 1);
+                    }
                 }
             }
+        }
+
+        public Rect sourceRect
+        {
+            get { return GetSourceRect();  }
+            set
+            {
+                CalculateUV(value);
+            }
+        }
+
+        public Rect uv
+        {
+            get { return m_UV; }
+            set { m_UV = value; }
         }
 
         public StyleValue<ScaleMode> scaleMode
@@ -39,6 +59,7 @@ namespace UnityEngine.Experimental.UIElements
         public Image()
         {
             this.scaleMode = ScaleMode.ScaleAndCrop;
+            m_UV = new Rect(0, 0, 1, 1);
         }
 
         protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
@@ -51,8 +72,10 @@ namespace UnityEngine.Experimental.UIElements
                 return new Vector2(measuredWidth, measuredHeight);
 
             // covers the MeasureMode.Exactly case
-            measuredWidth = current.width;
-            measuredHeight = current.height;
+            Rect rect = sourceRect;
+            bool hasImagePosition = rect != Rect.zero;
+            measuredWidth = hasImagePosition ? rect.width : current.width;
+            measuredHeight = hasImagePosition ? rect.height : current.height;
 
             if (widthMode == MeasureMode.AtMost)
             {
@@ -82,6 +105,7 @@ namespace UnityEngine.Experimental.UIElements
             var painterParams = new TextureStylePainterParameters
             {
                 rect = contentRect,
+                uv = uv,
                 texture = current,
                 color = GUI.color,
                 scaleMode = scaleMode
@@ -94,6 +118,42 @@ namespace UnityEngine.Experimental.UIElements
             base.OnStyleResolved(elementStyle);
             elementStyle.ApplyCustomProperty("image", ref m_Image);
             elementStyle.ApplyCustomProperty("image-size", ref m_ScaleMode);
+        }
+
+        private void CalculateUV(Rect srcRect)
+        {
+            m_UV = new Rect(0, 0, 1, 1);
+            Texture texture = image.GetSpecifiedValueOrDefault(null);
+            if (texture != null)
+            {
+                // Convert texture coordinates to UV
+                int width = texture.width;
+                int height = texture.height;
+
+                m_UV.x =  srcRect.x / width;
+                m_UV.width = srcRect.width / width;
+                m_UV.height =  srcRect.height / height;
+                m_UV.y = 1.0f - m_UV.height - (srcRect.y / height);
+            }
+        }
+
+        private Rect GetSourceRect()
+        {
+            Rect rect = Rect.zero;
+            Texture texture = image.GetSpecifiedValueOrDefault(null);
+            if (texture != null)
+            {
+                // Convert UV to texture coordinates
+                int width = texture.width;
+                int height = texture.height;
+
+                rect.x = uv.x * width;
+                rect.width = uv.width * width;
+                rect.y = (1.0f - uv.y - uv.height) * height;
+                rect.height = uv.height * height;
+            }
+
+            return rect;
         }
     }
 }

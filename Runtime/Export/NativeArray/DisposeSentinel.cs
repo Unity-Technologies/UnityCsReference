@@ -6,7 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-namespace UnityEngine.Collections
+namespace Unity.Collections
 {
     public enum NativeLeakDetectionMode
     {
@@ -22,5 +22,6 @@ namespace UnityEngine.Collections
 
         public static NativeLeakDetectionMode Mode { get { return (NativeLeakDetectionMode)s_NativeLeakDetectionMode; } set { s_NativeLeakDetectionMode = (int)value; } }
     }
-
 }
+
+

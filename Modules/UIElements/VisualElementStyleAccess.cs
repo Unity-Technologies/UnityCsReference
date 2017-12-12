@@ -125,6 +125,32 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        StyleValue<float> IStyle.flexGrow
+        {
+            get { return effectiveStyle.flexGrow; }
+            set
+            {
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexGrow, value))
+                {
+                    Dirty(ChangeType.Layout);
+                    cssNode.FlexGrow = value.value;
+                }
+            }
+        }
+
+        StyleValue<float> IStyle.flexShrink
+        {
+            get { return effectiveStyle.flexShrink; }
+            set
+            {
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexShrink, value))
+                {
+                    Dirty(ChangeType.Layout);
+                    cssNode.FlexShrink = value.value;
+                }
+            }
+        }
+
         StyleValue<Overflow> IStyle.overflow
         {
             get

@@ -60,7 +60,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public Direction direction { get; private set; }
+        public Direction direction
+        {
+            get { return m_Direction; }
+            private set
+            {
+                if (m_Direction != value)
+                {
+                    RemoveFromClassList(m_Direction.ToString().ToLower());
+                    m_Direction = value;
+                    AddToClassList(m_Direction.ToString().ToLower());
+                }
+            }
+        }
+
         public Orientation orientation { get; private set; }
 
         private string m_VisualClass;
@@ -161,6 +174,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private HashSet<Edge> m_Connections;
+        private Direction m_Direction;
+
         public virtual IEnumerable<Edge> connections
         {
             get
@@ -219,6 +234,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 throw new ArgumentException("The value passed to Port.Connect is null");
             }
+            edge.UpdateEdgeDrawers();
 
             // TODO: Remove when removing presenters.
             var presenter = GetPresenter<PortPresenter>();
@@ -250,6 +266,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 presenter.Disconnect(edgePresenter);
                 return;
             }
+
+            edge.UpdateEdgeDrawers();
 
             m_Connections.Remove(edge);
         }
@@ -358,10 +376,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Port.uxml") as VisualTreeAsset;
             tpl.CloneTree(this, null);
             m_ConnectorBox = this.Q(name: "connector");
-            m_ConnectorBox.AddToClassList("connector");
-
             m_ConnectorText = this.Q<Label>(name: "type");
-            m_ConnectorText.AddToClassList("type");
+            m_ConnectorText.clippingOptions = ClippingOptions.NoClipping;
 
             m_ConnectorBoxCap = this.Q(name: "cap");
 
@@ -370,6 +386,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             orientation = portOrientation;
             direction = portDirection;
             portType = type;
+
+            AddToClassList(portDirection.ToString().ToLower());
         }
 
         private void UpdateConnector()
@@ -444,7 +462,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            return m_ConnectorBox.ContainsPoint(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));
+            Rect lRect = m_ConnectorBox.layout;
+
+            Rect boxRect;
+            if (direction == Direction.Input)
+            {
+                boxRect = new Rect(-lRect.xMin, -lRect.yMin,
+                        lRect.width + lRect.xMin, rect.height);
+            }
+            else
+            {
+                boxRect = new Rect(0, -lRect.yMin,
+                        rect.width - lRect.xMin, rect.height);
+            }
+
+            return boxRect.Contains(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));
         }
 
         internal void UpdateCapColor()
@@ -464,12 +496,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_ConnectorBox == null)
                 return;
 
-            m_ConnectorBox.style.backgroundColor = highlight ? m_PortColor.value : m_DisabledPortColor.value;
+            m_ConnectorBox.style.borderColor = highlight ? m_PortColor.value : m_DisabledPortColor.value;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
+
+            if (m_ConnectorBox == null || m_ConnectorBoxCap == null)
+            {
+                return;
+            }
 
             if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
             {

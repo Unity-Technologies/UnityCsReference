@@ -6,7 +6,8 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.Collections;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Media
@@ -85,7 +86,7 @@ namespace UnityEditor.Media
         public bool AddSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
         {
             return Internal_AddSamples(
-                m_Ptr, trackIndex, interleavedSamples.UnsafeReadOnlyPtr,
+                m_Ptr, trackIndex, interleavedSamples.GetUnsafeReadOnlyPtr(),
                 interleavedSamples.Length);
         }
 

@@ -18,6 +18,8 @@ namespace UnityEditorInternal
             {
                 new Color(0.4831376f, 0.6211768f, 0.0219608f, 1.0f),
                 new Color(0.2070592f, 0.5333336f, 0.6556864f, 1.0f),
+                Color.red, // ManagedJob
+                Color.green, // BurstJob
                 new Color(0.8f, 0.4423528f, 0.0f, 1.0f),
                 new Color(0.4486272f, 0.4078432f, 0.050196f, 1.0f),
                 new Color(0.7749016f, 0.6368624f, 0.0250984f, 1.0f),
