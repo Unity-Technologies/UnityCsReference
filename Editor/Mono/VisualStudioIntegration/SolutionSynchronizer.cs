@@ -200,8 +200,14 @@ namespace UnityEditor.VisualStudioIntegration
             bool externalCodeAlreadyGeneratedProjects = AssetPostprocessingInternal.OnPreGeneratingCSProjectFiles();
             if (!externalCodeAlreadyGeneratedProjects)
             {
+                var scriptEditor = ScriptEditorUtility.GetScriptEditorFromPreferences();
+
+                // Do not generate .sln and .csproj for unsupported code editors.
+                if (scriptEditor == ScriptEditorUtility.ScriptEditor.SystemDefault || scriptEditor == ScriptEditorUtility.ScriptEditor.Other)
+                    return;
+
                 // Only synchronize islands that have associated source files and ones that we actually want in the project.
-                // This also filters out DLLs coming from .assembly.json files in packages.
+                // This also filters out DLLs coming from .asmdef files in packages.
                 IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
                     Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
 
@@ -214,7 +220,7 @@ namespace UnityEditor.VisualStudioIntegration
                 foreach (MonoIsland island in allProjectIslands)
                     SyncProject(island, allAssetProjectParts, responseFileDefines, allProjectIslands);
 
-                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+                if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                     WriteVSCodeSettingsFiles();
             }
 
@@ -486,9 +492,6 @@ namespace UnityEditor.VisualStudioIntegration
                 scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioExpress ||
                 scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                 return Mode.UnityScriptAsPrecompiledAssembly;
-
-            if (scriptEditor == ScriptEditorUtility.ScriptEditor.Internal) // Bundled MonoDevelop
-                return Mode.UnityScriptAsUnityProj;
 
             return EditorPrefs.GetBool("kExternalEditorSupportsUnityProj", false) ? Mode.UnityScriptAsUnityProj : Mode.UnityScriptAsPrecompiledAssembly;
         }

@@ -68,57 +68,34 @@ namespace UnityEngine.Networking
             return null;
         }
 
+        [Obsolete("UnityWebRequest.GetAssetBundle is obsolete. Use UnityWebRequestAssetBundle.GetAssetBundle instead (UnityUpgradable) -> [UnityEngine] UnityWebRequestAssetBundle.GetAssetBundle(*)", true)]
         public static UnityWebRequest GetAssetBundle(string uri)
         {
-            return GetAssetBundle(uri, 0);
+            return null;
         }
 
+        [Obsolete("UnityWebRequest.GetAssetBundle is obsolete. Use UnityWebRequestAssetBundle.GetAssetBundle instead (UnityUpgradable) -> [UnityEngine] UnityWebRequestAssetBundle.GetAssetBundle(*)", true)]
         public static UnityWebRequest GetAssetBundle(string uri, uint crc)
         {
-            UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri, crc),
-                    null
-                    );
-
-            return request;
+            return null;
         }
 
+        [Obsolete("UnityWebRequest.GetAssetBundle is obsolete. Use UnityWebRequestAssetBundle.GetAssetBundle instead (UnityUpgradable) -> [UnityEngine] UnityWebRequestAssetBundle.GetAssetBundle(*)", true)]
         public static UnityWebRequest GetAssetBundle(string uri, uint version, uint crc)
         {
-            UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri, version, crc),
-                    null
-                    );
-
-            return request;
+            return null;
         }
 
+        [Obsolete("UnityWebRequest.GetAssetBundle is obsolete. Use UnityWebRequestAssetBundle.GetAssetBundle instead (UnityUpgradable) -> [UnityEngine] UnityWebRequestAssetBundle.GetAssetBundle(*)", true)]
         public static UnityWebRequest GetAssetBundle(string uri, Hash128 hash, uint crc)
         {
-            UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri, hash, crc),
-                    null
-                    );
-
-            return request;
+            return null;
         }
 
+        [Obsolete("UnityWebRequest.GetAssetBundle is obsolete. Use UnityWebRequestAssetBundle.GetAssetBundle instead (UnityUpgradable) -> [UnityEngine] UnityWebRequestAssetBundle.GetAssetBundle(*)", true)]
         public static UnityWebRequest GetAssetBundle(string uri, CachedAssetBundle cachedAssetBundle, uint crc)
         {
-            UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri, cachedAssetBundle.name, cachedAssetBundle.hash, crc),
-                    null
-                    );
-
-            return request;
+            return null;
         }
 
         public static UnityWebRequest Put(string uri, byte[] bodyData)

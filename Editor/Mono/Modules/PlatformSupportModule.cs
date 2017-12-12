@@ -139,8 +139,6 @@ namespace UnityEditor.Modules
 
         bool SupportsLz4Compression();
 
-        void PostProcessScriptsOnly(BuildPostProcessArgs args);
-
         bool SupportsScriptsOnlyBuild();
 
         // This is the place to make sure platform has everything it needs for the build.

@@ -48,8 +48,11 @@ namespace UnityEditor
 
         static void CreateAndPlacePrimitive(PrimitiveType type, GameObject parent)
         {
+            // make sure to get the unique name before the GameObject is created
+            // or GetUniqueNameForSibling will always end up with (1) in empty scene
+            string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent != null ? parent.transform : null, type.ToString());
             var primitive = ObjectFactory.CreatePrimitive(type);
-            primitive.name = GameObjectUtility.GetUniqueNameForSibling(parent != null ? parent.transform : null, primitive.name);
+            primitive.name = uniqueName;
             Place(primitive, parent);
         }
 

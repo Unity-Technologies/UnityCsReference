@@ -5,7 +5,8 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -32,19 +33,20 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format("Layer index is out of range {0} / {1}", layer, layerCount));
 
             int stride = UnsafeUtility.SizeOf<T>();
-            return NativeArray<T>.ConvertExistingDataToNativeArrayInternal(GetDataRaw(layer), GetLayerDataSize() / stride, GetSafetyHandle(), Allocator.None);
+
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(GetDataRaw(layer), GetLayerDataSize() / stride, Allocator.None);
+            return array;
         }
 
         public bool done { get { return IsDone(); } }
         public bool hasError { get { return HasError(); } }
         public int layerCount { get { return GetLayerCount(); } }
 
-        internal extern void CreateSafetyHandle();
 
         private extern bool IsDone();
         private extern bool HasError();
         private extern int GetLayerCount();
-        private extern AtomicSafetyHandle GetSafetyHandle();
+
         private extern IntPtr GetDataRaw(int layer);
         private extern int GetLayerDataSize();
     }
@@ -58,7 +60,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_1(src);
-            request.CreateSafetyHandle();
             return request;
         }
 
@@ -68,7 +69,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_ComputeBuffer_2(src, size, offset);
-            request.CreateSafetyHandle();
             return request;
         }
 
@@ -78,7 +78,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_Texture_1(src, mipIndex);
-            request.CreateSafetyHandle();
             return request;
         }
 
@@ -88,7 +87,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_Texture_2(src, mipIndex, dstFormat);
-            request.CreateSafetyHandle();
             return request;
         }
 
@@ -98,7 +96,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_Texture_3(src, mipIndex, x, width, y, height, z, depth);
-            request.CreateSafetyHandle();
             return request;
         }
 
@@ -108,7 +105,6 @@ namespace UnityEngine
                 throw new ArgumentNullException();
 
             AsyncGPUReadbackRequest request = Request_Internal_Texture_4(src, mipIndex, x, width, y, height, z, depth, dstFormat);
-            request.CreateSafetyHandle();
             return request;
         }
 

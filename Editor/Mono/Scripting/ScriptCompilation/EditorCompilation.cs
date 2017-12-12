@@ -577,7 +577,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal CustomScriptAssembly FindCustomScriptAssemblyFromScriptPath(string scriptPath)
         {
             var customTargetAssembly = EditorBuildRules.GetCustomTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
-            var customScriptAssembly = FindCustomScriptAssemblyFromAssemblyName(customTargetAssembly.Filename);
+            var customScriptAssembly = customTargetAssembly != null ? FindCustomScriptAssemblyFromAssemblyName(customTargetAssembly.Filename) : null;
 
             return customScriptAssembly;
         }

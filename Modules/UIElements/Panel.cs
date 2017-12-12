@@ -616,6 +616,7 @@ namespace UnityEngine.Experimental.UIElements
                     }
                     finally
                     {
+                        cache = null;
                         if (temporaryTexture != null)
                         {
                             RenderTexture.ReleaseTemporary(temporaryTexture);
@@ -631,6 +632,7 @@ namespace UnityEngine.Experimental.UIElements
                 var painterParams = new TextureStylePainterParameters
                 {
                     rect = root.rect,
+                    uv = new Rect(0, 0, 1, 1),
                     texture = root.renderData.pixelCache,
                     color = Color.white,
                     scaleMode = ScaleMode.ScaleAndCrop

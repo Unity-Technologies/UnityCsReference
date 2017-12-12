@@ -24,23 +24,7 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             get
             {
-                var title = string.Empty;
-
-                if (assetEditor != null)
-                {
-                    // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
-                    // try to get the target from the serialized object
-                    if (assetEditor.target == null)
-                    {
-                        assetEditor.InternalSetTargets(assetEditor.serializedObject.targetObjects);
-                    }
-                    if (assetEditor.target != null)
-                    {
-                        title = assetEditor.targetTitle;
-                    }
-                }
-
-                return string.Format(L10n.Tr("{0} Import Settings"), title);
+                return string.Format(L10n.Tr("{0} Import Settings"), assetEditor == null ? string.Empty : assetEditor.targetTitle);
             }
         }
 

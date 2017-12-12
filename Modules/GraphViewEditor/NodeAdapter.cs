@@ -82,7 +82,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         if (methodParams.Length == 3)
                         {
                             string pa = methodParams[1].ParameterType + methodParams[2].ParameterType.ToString();
-                            s_NodeAdapterDictionary.Add(pa.GetHashCode(), method);
+                            int hash = pa.GetHashCode();
+                            if (s_NodeAdapterDictionary.ContainsKey(hash))
+                            {
+                                Debug.Log("NodeAdapter: multiple extensions have the same signature:\n" +
+                                    "1: " + method + "\n" +
+                                    "2: " + s_NodeAdapterDictionary[hash]);
+                            }
+                            else
+                            {
+                                s_NodeAdapterDictionary.Add(hash, method);
+                            }
                         }
                     }
                 }

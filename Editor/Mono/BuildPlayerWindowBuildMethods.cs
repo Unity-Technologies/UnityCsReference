@@ -200,7 +200,7 @@ namespace UnityEditor
 
                 bool updateExistingBuild = false;
 
-                BuildTarget buildTarget = CalculateSelectedBuildTarget();
+                BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
                 BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
 
                 // Pick location for the build

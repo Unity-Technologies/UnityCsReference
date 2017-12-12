@@ -6,7 +6,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine.Collections;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
 
 [assembly: InternalsVisibleTo("UnityEngine.VideoModule")]
@@ -111,7 +112,7 @@ namespace UnityEngine.Experimental.Audio
                 return 0;
 
             return m_ConsumeSampleFramesNativeFunction(
-                id, sampleFrames.UnsafePtr, (uint)sampleFrames.Length / channelCount);
+                id, sampleFrames.GetUnsafePtr(), (uint)sampleFrames.Length / channelCount);
         }
 
         public static ConsumeSampleFramesNativeFunction consumeSampleFramesNativeFunction

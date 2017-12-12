@@ -19,6 +19,7 @@ namespace UnityEditor
         static AudioMixerWindow s_Instance;
 
         static string kAudioMixerUseRMSMetering = "AudioMixerUseRMSMetering";
+        static string kAudioMixerUseHorzLayout = "AudioMixerUseHorzLayout";
 
         enum SectionType
         {
@@ -66,8 +67,8 @@ namespace UnityEditor
         Layout m_LayoutStripsOnRight;
         [SerializeField]
         SectionType[] m_SectionOrder = { SectionType.MixerTree, SectionType.SnapshotList, SectionType.GroupTree, SectionType.ViewList }; // default order
-        [SerializeField]
-        LayoutMode m_LayoutMode = LayoutMode.Vertical;  // We use vertical layout as default as it is the most compact layout
+
+        LayoutMode m_LayoutMode;
         [SerializeField]
         bool m_SortGroupsAlphabetically = false;
         [SerializeField]
@@ -99,6 +100,7 @@ namespace UnityEditor
             {
                 m_LayoutMode = value;
                 m_RepaintCounter = 2;
+                EditorPrefs.SetBool(kAudioMixerUseHorzLayout, m_LayoutMode == LayoutMode.Horizontal);
             }
         }
 
@@ -276,6 +278,8 @@ namespace UnityEditor
 
         public void OnEnable()
         {
+            // We use vertical layout as default as it is the most compact layout
+            m_LayoutMode = EditorPrefs.GetBool(kAudioMixerUseHorzLayout) ? LayoutMode.Horizontal : LayoutMode.Vertical;
             titleContent = GetLocalizedTitleContent();
 
             s_Instance = this;

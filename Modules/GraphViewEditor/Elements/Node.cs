@@ -10,34 +10,19 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    public class Node : GraphElement
+    public class Node : GraphElement, IEdgeDrawerContainer
     {
-        public virtual VisualElement mainContainer { get; private set; }
-        public virtual VisualElement leftContainer { get; private set; }
-        public virtual VisualElement rightContainer { get; private set; }
-        public virtual VisualElement titleContainer { get; private set; }
-        public virtual VisualElement inputContainer { get; private set; }
-        public virtual VisualElement outputContainer { get; private set; }
+        public VisualElement mainContainer { get; private set; }
+        public VisualElement titleContainer { get; private set; }
+        public VisualElement inputContainer { get; private set; }
+        public VisualElement outputContainer { get; private set; }
 
-        private Orientation m_Orientation;
-        public Orientation orientation
-        {
-            get { return m_Orientation; }
-            private set
-            {
-                // If the value hasn't change and we already have a class added, return.
-                if (m_Orientation == value && (ClassListContains("vertical") || ClassListContains("horizontal")))
-                    return;
+        //This directly contains input and output containers
+        public VisualElement topContainer { get; private set; }
+        public VisualElement extensionContainer { get; private set; }
+        private VisualElement m_CollapsibleArea;
+        public EdgeDrawer edgeDrawer { get; private set; }
 
-                // Clear orientation classes.
-                RemoveFromClassList("vertical");
-                RemoveFromClassList("horizontal");
-
-                m_Orientation = value;
-
-                AddToClassList(m_Orientation == Orientation.Vertical ? "vertical" : "horizontal");
-            }
-        }
 
         private bool m_Expanded;
         public virtual bool expanded
@@ -49,9 +34,64 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     return;
 
                 m_Expanded = value;
-                m_CollapseButton.text = m_Expanded ? "collapse" : "expand";
+                RefreshExpandedState();
+            }
+        }
 
-                RefreshPorts();
+        public void RefreshExpandedState()
+        {
+            UpdateExpandedButtonState();
+
+            bool hasPorts = RefreshPorts();
+
+            VisualElement contents = mainContainer.Q("contents");
+
+            if (contents == null)
+            {
+                return;
+            }
+            VisualElement divider = contents.Q("divider");
+
+            if (divider != null)
+            {
+                SetElementVisible(divider, hasPorts);
+            }
+
+
+            UpdateCollapsibleAreaVisibility();
+        }
+
+        void UpdateCollapsibleAreaVisibility()
+        {
+            if (m_CollapsibleArea == null)
+            {
+                return;
+            }
+
+            bool displayBottom = expanded && extensionContainer.childCount > 0;
+
+            if (displayBottom)
+            {
+                if (m_CollapsibleArea.parent == null)
+                {
+                    VisualElement contents = mainContainer.Q("contents");
+
+                    if (contents == null)
+                    {
+                        return;
+                    }
+
+                    contents.Add(m_CollapsibleArea);
+                }
+
+                m_CollapsibleArea.BringToFront();
+            }
+            else
+            {
+                if (m_CollapsibleArea.parent != null)
+                {
+                    m_CollapsibleArea.RemoveFromHierarchy();
+                }
             }
         }
 
@@ -62,38 +102,31 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             set { m_TitleLabel.text = value; }
         }
 
-        protected readonly Button m_CollapseButton;
+        protected readonly VisualElement m_CollapseButton;
+
+        private const string k_ExpandedStyleClass = "expanded";
+        private const string k_CollapsedStyleClass = "collapsed";
+        private void UpdateExpandedButtonState()
+        {
+            RemoveFromClassList(m_Expanded ? k_CollapsedStyleClass : k_ExpandedStyleClass);
+            AddToClassList(m_Expanded ? k_ExpandedStyleClass : k_CollapsedStyleClass);
+        }
 
         public override Rect GetPosition()
         {
-            if (ClassListContains("vertical"))
-            {
-                return base.GetPosition();
-            }
-            else
-            {
-                return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
-            }
+            return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
         }
 
         public override void SetPosition(Rect newPos)
         {
-            if (ClassListContains("vertical"))
-            {
-                base.SetPosition(newPos);
-            }
-            else
-            {
-                style.positionType = PositionType.Absolute;
-                style.positionLeft = newPos.x;
-                style.positionTop = newPos.y;
-            }
+            style.positionType = PositionType.Absolute;
+            style.positionLeft = newPos.x;
+            style.positionTop = newPos.y;
         }
 
         // TODO: Remove when removing presenters.
         protected virtual void SetLayoutClassLists(NodePresenter nodePresenter)
         {
-            orientation = nodePresenter.orientation;
         }
 
         protected virtual void OnPortRemoved(Port port)
@@ -158,6 +191,32 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return Port.Create<EdgePresenter, Edge>(newPres);
         }
 
+        private void SetElementVisible(VisualElement element, bool isVisible)
+        {
+            const string k_HiddenClassList = "hidden";
+
+            element.visible = isVisible;
+            if (isVisible)
+            {
+                element.RemoveFromClassList(k_HiddenClassList);
+            }
+            else
+            {
+                element.AddToClassList(k_HiddenClassList);
+            }
+        }
+
+        private bool AllElementsHidden(VisualElement element)
+        {
+            for (int i = 0; i < element.childCount; ++i)
+            {
+                if (element[i].visible)
+                    return false;
+            }
+
+            return true;
+        }
+
         private int ShowPorts(bool show, IList<Port> currentPorts)
         {
             int count = 0;
@@ -165,24 +224,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if ((show || port.connected) && !port.collapsed)
                 {
-                    port.visible = true;
-                    port.RemoveFromClassList("hidden");
+                    SetElementVisible(port, true);
                     count++;
                 }
                 else
                 {
-                    port.visible = false;
-                    port.AddToClassList("hidden");
+                    SetElementVisible(port, false);
                 }
             }
             return count;
         }
 
-        public void RefreshPorts()
+        public bool RefreshPorts()
         {
             var nodePresenter = GetPresenter<NodePresenter>();
 
-            var expandedState = expanded;
+            bool expandedState = expanded;
 
             // TODO: Remove when removing presenters.
             if (nodePresenter != null)
@@ -203,27 +260,52 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var updatedInputs = inputContainer.Query<Port>().ToList();
             var updatedOutputs = outputContainer.Query<Port>().ToList();
 
-            ShowPorts(expandedState, updatedInputs);
+            int inputCount = ShowPorts(expandedState, updatedInputs);
             int outputCount = ShowPorts(expandedState, updatedOutputs);
 
+            VisualElement divider = topContainer.Q("divider");
+
+            bool outputVisible = outputCount > 0 || !AllElementsHidden(outputContainer);
+            bool inputVisible = inputCount > 0 || !AllElementsHidden(inputContainer);
+
             // Show output container only if we have one or more child
-            if (outputCount > 0)
+            if (outputVisible)
             {
-                if (!mainContainer.Contains(rightContainer))
+                if (outputContainer.shadow.parent != topContainer)
                 {
-                    mainContainer.Add(rightContainer);
+                    topContainer.Add(outputContainer);
+                    outputContainer.BringToFront();
                 }
             }
             else
             {
-                if (mainContainer.Contains(rightContainer))
+                if (outputContainer.shadow.parent == topContainer)
                 {
-                    mainContainer.Remove(rightContainer);
+                    outputContainer.RemoveFromHierarchy();
                 }
             }
+
+            if (inputVisible)
+            {
+                if (inputContainer.shadow.parent != topContainer)
+                {
+                    topContainer.Add(inputContainer);
+                    inputContainer.SendToBack();
+                }
+            }
+            else
+            {
+                if (inputContainer.shadow.parent == topContainer)
+                {
+                    inputContainer.RemoveFromHierarchy();
+                }
+            }
+
+            SetElementVisible(divider, inputVisible && outputVisible);
+
+            return inputVisible || outputVisible;
         }
 
-        // TODO: Remove when removing presenters.
         public override void OnDataChanged()
         {
             base.OnDataChanged();
@@ -234,11 +316,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // the property setter to apply here.
             m_Expanded = nodePresenter.expanded;
 
-            RefreshPorts();
+            RefreshExpandedState();
 
             m_TitleLabel.text = nodePresenter.title;
-
-            m_CollapseButton.text = nodePresenter.expanded ? "collapse" : "expand";
 
             SetLayoutClassLists(nodePresenter);
         }
@@ -262,36 +342,67 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             expanded = !expanded;
         }
 
-        // TODO: Remove when removing presenters.
-        public Node() : this(Orientation.Horizontal) {}
-
-        public Node(Orientation nodeOrientation = Orientation.Horizontal)
+        void IEdgeDrawerContainer.EdgeDirty()
         {
-            var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
-            mainContainer = tpl.CloneTree(null);
-            mainContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
-            leftContainer = mainContainer.Q(name: "left");
-            rightContainer = mainContainer.Q(name: "right");
-            titleContainer = mainContainer.Q(name: "title");
-            inputContainer = mainContainer.Q(name: "input");
-            outputContainer = mainContainer.Q(name: "output");
+            if (edgeDrawer != null)
+            {
+                edgeDrawer.Dirty(ChangeType.Repaint);
+            }
+        }
 
-            m_TitleLabel = mainContainer.Q<Label>(name: "titleLabel");
-            m_CollapseButton = mainContainer.Q<Button>(name: "collapseButton");
-            m_CollapseButton.clickable.clicked += ToggleCollapse;
+        public Node()
+        {
+            clippingOptions = ClippingOptions.NoClipping;
+            var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
+
+            tpl.CloneTree(this, new Dictionary<string, VisualElement>());
+
+            VisualElement main = this;
+            VisualElement borderContainer = main.Q(name: "node-border");
+
+            if (borderContainer != null)
+            {
+                borderContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
+                mainContainer = borderContainer;
+            }
+            else
+            {
+                mainContainer = main;
+            }
+
+
+            titleContainer = main.Q(name: "title");
+            inputContainer = main.Q(name: "input");
+            m_CollapsibleArea = main.Q(name: "collapsible-area");
+            extensionContainer = main.Q("extension");
+            VisualElement output = main.Q(name: "output");
+            outputContainer = output;
+
+            topContainer = output.parent;
+
+            edgeDrawer = main.Q(name: "edgeDrawer") as EdgeDrawer;
+            if (edgeDrawer != null)
+                edgeDrawer.element = this;
+
+            m_TitleLabel = main.Q<Label>(name: "title-label");
+            m_CollapseButton = main.Q<VisualElement>(name: "collapse-button");
+            m_CollapseButton.AddManipulator(new Clickable(ToggleCollapse));
 
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
 
-            Add(mainContainer);
-            mainContainer.AddToClassList("mainContainer");
+            if (main != this)
+            {
+                Add(main);
+            }
 
-            ClearClassList();
+            //ClearClassList();
             AddToClassList("node");
 
-            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable;
-            orientation = nodeOrientation;
+            capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable;
 
             m_Expanded = true;
+            UpdateExpandedButtonState();
+            UpdateCollapsibleAreaVisibility();
         }
     }
 }

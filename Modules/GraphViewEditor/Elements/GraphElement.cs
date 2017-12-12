@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -17,7 +18,30 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Color elementTypeColor { get; set; }
 
-        public virtual int layer { get { return 0; } }
+
+        StyleValue<int> m_Layer;
+        public int layer
+        {
+            get { return m_Layer.value; }
+        }
+
+        const string k_LayerProperty = "layer";
+
+        protected override void OnStyleResolved(ICustomStyle style)
+        {
+            base.OnStyleResolved(style);
+            int prevLayer = m_Layer.value;
+            style.ApplyCustomProperty(k_LayerProperty, ref m_Layer);
+
+            if (prevLayer != m_Layer.value)
+            {
+                GraphView view = GetFirstAncestorOfType<GraphView>();
+                if (view != null)
+                {
+                    view.ChangeLayer(this);
+                }
+            }
+        }
 
         private Capabilities m_Capabilities;
 
@@ -166,6 +190,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return (capabilities & Capabilities.Floating) == Capabilities.Floating;
         }
 
+        public virtual bool IsAscendable()
+        {
+            return (capabilities & Capabilities.Ascendable) == Capabilities.Ascendable;
+        }
+
         public virtual Vector3 GetGlobalCenter()
         {
             var center = layout.center;
@@ -180,7 +209,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             RemoveWatch();
-            presenter.position = layout;
+            presenter.position = GetPosition();
             presenter.CommitChanges();
             AddWatch();
         }
@@ -198,6 +227,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void OnSelected()
         {
+            if (IsAscendable())
+            {
+                this.BringToFront();
+            }
         }
 
         public virtual void OnUnselected()

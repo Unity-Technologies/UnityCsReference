@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
@@ -124,6 +125,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             ClearClassList();
             AddToClassList("edge");
+            style.positionType = PositionType.Absolute;
 
             Add(edgeControl);
 
@@ -216,6 +218,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        public override void OnSelected()
+        {
+            base.OnSelected();
+
+            UpdateEdgeDrawers();
+        }
+
+        public override void OnUnselected()
+        {
+            base.OnUnselected();
+
+            UpdateEdgeDrawers();
+        }
+
+        public void UpdateEdgeDrawers()
+        {
+            if (input != null)
+            {
+                IEdgeDrawerContainer container = input.GetFirstOfType<IEdgeDrawerContainer>();
+                container.EdgeDirty();
+            }
+            if (output != null)
+            {
+                IEdgeDrawerContainer container = output.GetFirstOfType<IEdgeDrawerContainer>();
+                container.EdgeDirty();
+            }
+        }
+
         protected override void OnStyleResolved(ICustomStyle styles)
         {
             base.OnStyleResolved(styles);
@@ -224,6 +254,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             styles.ApplyCustomProperty(k_SelectedEdgeColorProperty, ref m_SelectedColor);
             styles.ApplyCustomProperty(k_GhostEdgeColorProperty, ref m_GhostColor);
             styles.ApplyCustomProperty(k_EdgeColorProperty, ref m_DefaultColor);
+
+            if (IsDirty(ChangeType.Repaint))
+            {
+                UpdateEdgeDrawers();
+            }
         }
 
         public override void OnDataChanged()

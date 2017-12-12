@@ -3,10 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
+
 
 namespace UnityEditor.Experimental.AssetImporters
 {
@@ -23,10 +26,12 @@ namespace UnityEditor.Experimental.AssetImporters
         internal IntPtr m_Self;
 
         // the context can only be instantiated in native code
-        private AssetImportContext() {}
+        AssetImportContext() {}
 
         public extern string assetPath { get; internal set; }
         public extern BuildTarget selectedBuildTarget { get; }
+
+        extern void LogMessage(string msg, string file, int line, UnityEngine.Object obj, bool isAnError);
 
         [NativeThrows]
         public extern void SetMainObject(Object obj);
@@ -54,5 +59,24 @@ namespace UnityEditor.Experimental.AssetImporters
 
         [NativeName("DependOnHashOfSourceFile")]
         private extern void DependOnHashOfSourceFileInternal(string path);
+
+        // Internal for now, will be made public once UI/UX for persistent importer logs is implemented.
+        public void LogImportError(string msg, UnityEngine.Object obj = null)
+        {
+            AddToLog(msg, true, obj);
+        }
+
+        // Internal for now, will be made public once UI/UX for persistent importer logs is implemented.
+        public void LogImportWarning(string msg, UnityEngine.Object obj = null)
+        {
+            AddToLog(msg, false, obj);
+        }
+
+        void AddToLog(string msg, bool isAnError, UnityEngine.Object obj)
+        {
+            var st = new StackTrace(2, true);
+            var sf = st.GetFrame(0);
+            LogMessage(msg, sf.GetFileName(), sf.GetFileLineNumber(), obj, isAnError);
+        }
     }
 }

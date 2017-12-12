@@ -12,7 +12,6 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.Collections;
 
 namespace UnityEngine.Rendering
 {

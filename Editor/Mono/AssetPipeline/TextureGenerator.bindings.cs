@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
-using UnityEngine.Collections;
+using Unity.Collections;
 
 namespace UnityEditor.Experimental.AssetImporters
 {

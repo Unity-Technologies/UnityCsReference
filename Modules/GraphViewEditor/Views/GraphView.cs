@@ -52,6 +52,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
     public abstract class GraphView : DataWatchContainer, ISelection
     {
+        static GraphView()
+        {
+            Factories.RegisterFactory<EdgeDrawer>((_, __) => new EdgeDrawer());
+        }
+
         // Layer class. Used for queries below.
         class Layer : VisualElement {}
 
@@ -210,6 +215,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
             nodes = this.Query<Layer>().Children<Node>().Build();
+            edges = this.Query<Layer>().Children<Edge>().Build();
             ports = contentViewContainer.Query().Children<Layer>().Descendents<Port>().Build();
 
             m_ElementsToRemove = new List<GraphElement>();
@@ -373,7 +379,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             SavePersistentData();
         }
 
-        void AddLayer(int index)
+        public void AddLayer(int index)
         {
             m_ContainerLayers.Add(index, new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore });
 
@@ -390,9 +396,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return m_ContainerLayers[index];
         }
 
+        internal void ChangeLayer(GraphElement element)
+        {
+            if (!m_ContainerLayers.ContainsKey(element.layer))
+            {
+                AddLayer(element.layer);
+            }
+            GetLayer(element.layer).Add(element);
+        }
+
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
         public UQuery.QueryState<Node> nodes { get; private set; }
         public UQuery.QueryState<Port> ports;
+        public UQuery.QueryState<Edge> edges { get; private set; }
 
         [Serializable]
         class PersistedViewTransform
@@ -404,15 +420,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         ContentZoomer m_Zoomer;
         int m_ZoomerMaxElementCountWithPixelCacheRegen = 100;
-        Vector3 m_MinScale = ContentZoomer.DefaultMinScale;
-        Vector3 m_MaxScale = ContentZoomer.DefaultMaxScale;
+        float m_MinScale = ContentZoomer.DefaultMinScale;
+        float m_MaxScale = ContentZoomer.DefaultMaxScale;
 
-        public Vector3 minScale
+        public float minScale
         {
             get { return m_MinScale; }
         }
 
-        public Vector3 maxScale
+        public float maxScale
         {
             get { return m_MaxScale; }
         }
@@ -456,7 +472,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return graphElements.ToList().OfType<Edge>().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
-        public void SetupZoom(Vector3 minScaleSetup, Vector3 maxScaleSetup)
+        public void SetupZoom(float minScaleSetup, float maxScaleSetup)
         {
             m_MinScale = minScaleSetup;
             m_MaxScale = maxScaleSetup;
@@ -520,8 +536,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             Vector3 transformScale = viewTransform.scale;
 
-            transformScale.x = Mathf.Max(Mathf.Min(maxScale.x, transformScale.x), minScale.x);
-            transformScale.y = Mathf.Max(Mathf.Min(maxScale.y, transformScale.y), minScale.y);
+            transformScale.x = Mathf.Clamp(transformScale.x, minScale, maxScale);
+            transformScale.y = Mathf.Clamp(transformScale.y, minScale, maxScale);
 
             viewTransform.scale = transformScale;
         }
@@ -548,8 +564,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // edges can now exist in a valid state but without a presenter
                 if (c.dependsOnPresenter && !m_Presenter.elements.Contains(c.presenter))
                 {
-                    c.parent.Remove(c);
                     selection.Remove(c);
+                    RemoveElement(c);
                 }
             }
 
@@ -621,7 +637,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var graphElement = selectable as GraphElement;
             if (graphElement == null)
                 return;
-            graphElement.OnSelected();
             graphElement.selected = true;
 
             // TODO: Remove when removing presenters.
@@ -629,6 +644,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 graphElement.presenter.selected = true;
 
             selection.Add(selectable);
+            graphElement.OnSelected();
             contentViewContainer.Dirty(ChangeType.Repaint);
 
             if (ShouldRecordUndo())
@@ -1018,17 +1034,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void RemoveElement(GraphElement graphElement)
         {
-            bool attachToContainer = !graphElement.IsFloating();
-            if (attachToContainer)
-            {
-                int layer = graphElement.layer;
-                if (m_ContainerLayers.ContainsKey(layer))
-                    GetLayer(layer).Remove(graphElement);
-            }
-            else
-            {
-                Remove(graphElement);
-            }
+            graphElement.RemoveFromHierarchy();
         }
 
         // TODO: Remove when removing presenters.
@@ -1321,7 +1327,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             float zoomLevel = Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
 
             // clamp
-            zoomLevel = Mathf.Clamp(zoomLevel, ContentZoomer.DefaultMinScale.y, 1.0f);
+            zoomLevel = Mathf.Clamp(zoomLevel, ContentZoomer.DefaultMinScale, 1.0f);
 
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(zoomLevel, zoomLevel, 1.0f));
 

@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 
 // needed for UnityEngine.Networking.DownloadHandler.DownloadHandler
+[assembly: InternalsVisibleTo("UnityEngine.UnityWebRequestAssetBundleModule")]
 [assembly: InternalsVisibleTo("UnityEngine.UnityWebRequestAudioModule")]
 [assembly: InternalsVisibleTo("UnityEngine.UnityWebRequestTextureModule")]
 

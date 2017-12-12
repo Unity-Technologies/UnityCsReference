@@ -170,6 +170,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Graphics/RenderTexture.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [NativeHeader("Runtime/Camera/Camera.h")]
     public partial class RenderTexture : Texture
     {
         override extern public int width  { get; set; }
@@ -198,6 +199,7 @@ namespace UnityEngine
         extern public void Release();
         extern public bool IsCreated();
         extern public void GenerateMips();
+        extern public void ConvertToEquirect(RenderTexture equirect, Camera.MonoOrStereoscopicEye eye = Camera.MonoOrStereoscopicEye.Mono);
 
         extern internal void SetSRGBReadWrite(bool srgb);
 

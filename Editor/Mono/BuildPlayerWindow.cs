@@ -173,7 +173,7 @@ namespace UnityEditor
         // output location is not valid.
         static void BuildPlayerAndRun()
         {
-            var buildTarget = CalculateSelectedBuildTarget();
+            var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             var buildLocation = EditorUserBuildSettings.GetBuildLocation(buildTarget);
             BuildPlayerAndRun(!BuildLocationIsValid(buildLocation));
         }
@@ -248,25 +248,6 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        internal static BuildTarget CalculateSelectedBuildTarget()
-        {
-            BuildTargetGroup targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Standalone:
-                    return DesktopStandaloneBuildWindowExtension.GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
-                case BuildTargetGroup.Facebook:
-                    return EditorUserBuildSettings.selectedFacebookTarget;
-                default:
-                    if (BuildPlatforms.instance == null)
-                        throw new System.Exception("Build platforms are not initialized.");
-                    BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(targetGroup);
-                    if (platform == null)
-                        throw new System.Exception("Could not find build platform for target group " + targetGroup);
-                    return platform.defaultTarget;
-            }
-        }
-
         private void ActiveBuildTargetsGUI()
         {
             GUILayout.BeginVertical();
@@ -303,7 +284,7 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             // Switching build target in the editor
-            BuildTarget selectedTarget = CalculateSelectedBuildTarget();
+            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             BuildTargetGroup selectedTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
 
             GUILayout.BeginHorizontal();
@@ -574,7 +555,7 @@ namespace UnityEditor
         {
             EditorGUIUtility.labelWidth = Mathf.Min(180, (position.width - 265) * 0.47f);
 
-            BuildTarget buildTarget = CalculateSelectedBuildTarget();
+            BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromTargetGroup(buildTargetGroup);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
@@ -868,7 +849,7 @@ namespace UnityEditor
             if (EditorGUILayout.LinkLabel(styles.learnAboutUnityCloudBuild))
             {
                 Application.OpenURL(string.Format("{0}/from/editor/buildsettings?upid={1}&pid={2}&currentplatform={3}&selectedplatform={4}&unityversion={5}",
-                        UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, CalculateSelectedBuildTarget(), Application.unityVersion));
+                        UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget(), Application.unityVersion));
             }
             GUILayout.EndHorizontal();
             // Space 6 for alignment with platform column and to reduce missclicks with Build And Run button

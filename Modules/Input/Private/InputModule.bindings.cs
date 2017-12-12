@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngineInternal;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngineInternal.Input
 {

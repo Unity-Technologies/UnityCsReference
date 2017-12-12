@@ -17,6 +17,11 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<float> minHeight { get; set; }
         StyleValue<float> flex { get; set; }
         StyleValue<float> flexBasis { get; set; }
+        StyleValue<float> flexGrow { get; set; }
+        StyleValue<float> flexShrink { get; set; }
+        StyleValue<FlexDirection> flexDirection { get; set; }
+        StyleValue<Wrap> flexWrap { get; set; }
+
         StyleValue<Overflow> overflow { get; set; }
         StyleValue<float> positionLeft { get; set; }
         StyleValue<float> positionTop { get; set; }
@@ -43,7 +48,6 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<int> fontSize { get; set; }
         StyleValue<bool> wordWrap { get; set; }
         StyleValue<Color> textColor { get; set; }
-        StyleValue<FlexDirection> flexDirection { get; set; }
         StyleValue<Color> backgroundColor { get; set; }
         StyleValue<Color> borderColor { get; set; }
         StyleValue<Texture2D> backgroundImage { get; set; }
@@ -51,7 +55,6 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<Align> alignItems { get; set; }
         StyleValue<Align> alignContent { get; set; }
         StyleValue<Justify> justifyContent { get; set; }
-        StyleValue<Wrap> flexWrap { get; set; }
         StyleValue<float> borderLeftWidth { get; set; }
         StyleValue<float> borderTopWidth { get; set; }
         StyleValue<float> borderRightWidth { get; set; }

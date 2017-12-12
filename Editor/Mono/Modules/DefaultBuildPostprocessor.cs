@@ -44,12 +44,6 @@ namespace UnityEditor.Modules
             return false;
         }
 
-        public virtual void PostProcessScriptsOnly(BuildPostProcessArgs args)
-        {
-            if (!SupportsScriptsOnlyBuild())
-                throw new NotSupportedException();
-        }
-
         public virtual bool SupportsScriptsOnlyBuild()
         {
             return true;

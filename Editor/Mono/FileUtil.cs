@@ -127,18 +127,21 @@ namespace UnityEditor
 
         internal static void CopyDirectoryFiltered(string source, string target, bool overwrite, Func<string, bool> includeCallback, bool recursive)
         {
-            // Check if the target directory exists, if not, create it.
-            if (Directory.Exists(target) == false)
-            {
-                Directory.CreateDirectory(target);
-                overwrite = false; // no reason to perform this on subdirs
-            }
+            // Check if the target directory exists, but dont create it yet until we know there are files to copy.
+            bool createDirectory = !Directory.Exists(target);
 
             // Copy each file into the new directory.
             foreach (string fi in Directory.GetFiles(source))
             {
                 if (!includeCallback(fi))
                     continue;
+
+                if (createDirectory)
+                {
+                    Directory.CreateDirectory(target);
+                    overwrite = false; // no reason to perform this on subdirs
+                    createDirectory = false;
+                }
 
                 string fname = Path.GetFileName(fi);
                 string targetfname = Path.Combine(target, fname);

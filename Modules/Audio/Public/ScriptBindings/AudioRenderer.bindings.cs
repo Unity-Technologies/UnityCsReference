@@ -6,7 +6,8 @@ using System;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Bindings;
-using UnityEngine.Collections;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -31,12 +32,12 @@ namespace UnityEngine
         // We should consider making this delegate-based in order to provide information like channel count and format. Also the term "sink" is quite audio-domain specific.
         internal static bool AddMixerGroupSink(AudioMixerGroup mixerGroup, NativeArray<float> buffer, bool excludeFromMix)
         {
-            return Internal_AudioRenderer_AddMixerGroupSink(mixerGroup, buffer.UnsafePtr, buffer.Length, excludeFromMix);
+            return Internal_AudioRenderer_AddMixerGroupSink(mixerGroup, buffer.GetUnsafePtr(), buffer.Length, excludeFromMix);
         }
 
         public static bool Render(NativeArray<float> buffer)
         {
-            return Internal_AudioRenderer_Render(buffer.UnsafePtr, buffer.Length);
+            return Internal_AudioRenderer_Render(buffer.GetUnsafePtr(), buffer.Length);
         }
 
         internal static extern bool Internal_AudioRenderer_Start();

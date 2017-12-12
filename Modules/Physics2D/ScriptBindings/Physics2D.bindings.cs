@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 
@@ -369,7 +370,7 @@ namespace UnityEngine
             return Raycast_Internal(origin, direction, distance, contactFilter);
         }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         [ExcludeFromDocs]
         public static RaycastHit2D Raycast(Vector2 origin, Vector2 direction, float distance, int layerMask)
         {
@@ -917,7 +918,7 @@ namespace UnityEngine
             return GetRayIntersectionAll_Internal(ray.origin, ray.direction, distance, DefaultRaycastLayers);
         }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static RaycastHit2D[] GetRayIntersectionAll(Ray ray, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
         {
             return GetRayIntersectionAll_Internal(ray.origin, ray.direction, distance, layerMask);
@@ -936,7 +937,7 @@ namespace UnityEngine
             return GetRayIntersectionNonAlloc_Internal(ray.origin, ray.direction, distance, DefaultRaycastLayers, results);
         }
 
-        [UsedByNativeCode]
+        [RequiredByNativeCode]
         public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
         {
             return GetRayIntersectionNonAlloc_Internal(ray.origin, ray.direction, distance, layerMask, results);
