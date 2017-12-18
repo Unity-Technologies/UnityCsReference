@@ -94,14 +94,12 @@ namespace UnityEditor
         {
             if (s_IsVisible == true) return;
             s_IsVisible = true;
-            LightmapVisualization.enabled = true;
             RepaintSceneAndGameViews();
         }
 
         void OnBecameInvisible()
         {
             s_IsVisible = false;
-            LightmapVisualization.enabled = false;
             RepaintSceneAndGameViews();
         }
 

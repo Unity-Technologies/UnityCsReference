@@ -630,7 +630,7 @@ namespace UnityEditor
             Quaternion pivotRot = rootRot;
 
             // Scale all Preview Objects to fit avatar size.
-            PositionPreviewObjects(pivotRot, pivotPos, bodyRot, bodyPos, directionRot, rootRot, rootPos, directionPos, m_AvatarScale);
+            PositionPreviewObjects(pivotRot, pivotPos, bodyRot, bodyPosition, directionRot, rootRot, rootPos, directionPos, m_AvatarScale);
 
             bool dynamicFloorHeight = is2D ? false : Mathf.Abs(m_NextFloorHeight - m_PrevFloorHeight) > m_ZoomFactor * 0.01f;
 
