@@ -12,7 +12,7 @@ namespace UnityEditorInternal.VR
     internal class VRCustomOptionsOculus : VRCustomOptions
     {
         static GUIContent s_SharedDepthBufferLabel = EditorGUIUtility.TextContent("Shared Depth Buffer|Enable depth buffer submission to allow for overlay depth occlusion, etc.");
-        static GUIContent s_DashSupportLabel = EditorGUIUtility.TextContent("Dash Suport|If enabled, pressing the home button brings up Dash, otherwise it brings up the older universal menu.");
+        static GUIContent s_DashSupportLabel = EditorGUIUtility.TextContent("Dash Support|If enabled, pressing the home button brings up Dash, otherwise it brings up the older universal menu.");
 
         SerializedProperty m_SharedDepthBuffer;
         SerializedProperty m_DashSupport;
