@@ -52,6 +52,7 @@ namespace UnityEngine.Experimental.UIElements
         FocusChangeDirection focusChangeDirection = FocusChangeDirection.unspecified;
         bool hasFocusableControls = false;
 
+        int newKeyboardFocusControlID = 0;
         public override bool canGrabFocus
         {
             get { return base.canGrabFocus && hasFocusableControls; }
@@ -172,6 +173,8 @@ namespace UnityEngine.Experimental.UIElements
                     focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                 }
             }
+            // We intentionally don't send the NewKeuboardFocus command here since it creates an issue with the AutomatedWindow
+            // newKeyboardFocusControlID = GUIUtility.keyboardControl;
 
             GUIDepth = GUIUtility.Internal_GetGUIDepth();
             EventType originalEventType = Event.current.type;
@@ -237,6 +240,7 @@ namespace UnityEngine.Experimental.UIElements
                                     GUIUtility.SetKeyboardControlToFirstControlId();
                                 }
 
+                                newKeyboardFocusControlID = GUIUtility.keyboardControl;
                                 focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
                             }
                             else
@@ -252,6 +256,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         // A positive result indicates that the focused control has changed.
                         focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                        newKeyboardFocusControlID = GUIUtility.keyboardControl;
                     }
                     else if (result == 0 && originalEventType == EventType.MouseDown)
                     {
@@ -335,6 +340,16 @@ namespace UnityEngine.Experimental.UIElements
             // the actual event
             e.type = originalEventType;
             DoOnGUI(e);
+
+            if (newKeyboardFocusControlID > 0)
+            {
+                newKeyboardFocusControlID = 0;
+                Event focusCommand = new Event();
+                focusCommand.type = EventType.ExecuteCommand;
+                focusCommand.commandName = "NewKeyboardFocus";
+
+                HandleIMGUIEvent(focusCommand);
+            }
 
             if (e.type == EventType.Used)
             {
