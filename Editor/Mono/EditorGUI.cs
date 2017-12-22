@@ -682,7 +682,7 @@ namespace UnityEditor
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
                 }
-                else if (s_DragCandidateState == 0)
+                else if (EditorGUIUtility.editingTextField || (evt.GetTypeForControl(id) == EventType.ExecuteCommand && evt.commandName == "NewKeyboardFocus"))
                 {
                     // This one is worse: we are the new keyboardControl, but didn't know about it.
                     // this means a Tab operation or setting focus from code.
@@ -690,6 +690,11 @@ namespace UnityEditor
                     // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
                     if (GUI.skin.settings.cursorColor.a > 0)
                         editor.SelectAll();
+
+                    if (evt.GetTypeForControl(id) == EventType.ExecuteCommand)
+                    {
+                        evt.Use();
+                    }
                 }
             }
 
