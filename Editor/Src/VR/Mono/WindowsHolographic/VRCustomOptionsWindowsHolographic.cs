@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace UnityEditorInternal.VR
 {
-    internal class VRCustomOptionsHololens : VRCustomOptions
+    internal class VRCustomOptionsWindowsMR : VRCustomOptions
     {
         static GUIContent[] s_DepthOptions =
         {
@@ -19,13 +19,16 @@ namespace UnityEditorInternal.VR
         };
 
         static GUIContent s_DepthFormatLabel = EditorGUIUtility.TrTextContent("Depth Format");
+        static GUIContent s_DepthBufferSharingLabel = EditorGUIUtility.TrTextContent("Enable Depth Buffer Sharing");
 
         SerializedProperty m_DepthFormat;
+        SerializedProperty m_DepthBufferSharingEnabled;
 
         public override void Initialize(SerializedObject settings, string propertyName)
         {
             base.Initialize(settings, "hololens");
             m_DepthFormat = FindPropertyAssert("depthFormat");
+            m_DepthBufferSharingEnabled = FindPropertyAssert("depthBufferSharingEnabled");
         }
 
         public override Rect Draw(Rect rect)
@@ -39,6 +42,17 @@ namespace UnityEditorInternal.VR
             if (EditorGUI.EndChangeCheck())
             {
                 m_DepthFormat.intValue = intValue;
+            }
+            EditorGUI.EndProperty();
+
+            rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
+
+            label = EditorGUI.BeginProperty(rect, s_DepthBufferSharingLabel, m_DepthBufferSharingEnabled);
+            EditorGUI.BeginChangeCheck();
+            bool depthBufferSharingEnabled = EditorGUI.Toggle(rect, s_DepthBufferSharingLabel, m_DepthBufferSharingEnabled.boolValue);
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_DepthBufferSharingEnabled.boolValue = depthBufferSharingEnabled;
             }
             EditorGUI.EndProperty();
 

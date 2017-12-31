@@ -2,103 +2,35 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEditor;
 using System;
 using System.Linq;
 using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D;
-using UnityAssetImporter = UnityEditor.AssetImporter;
-using UnityTextureImporter = UnityEditor.TextureImporter;
 using System.Collections.Generic;
 
-namespace UnityEditor.U2D.Interface
+namespace UnityEditor
 {
-    internal abstract class ITextureImporter
+    public sealed partial class TextureImporter : AssetImporter, ISpriteEditorDataProvider
     {
-        public abstract SpriteImportMode spriteImportMode { get; }
-
-        public static bool operator==(ITextureImporter t1, ITextureImporter t2)
-        {
-            if (object.ReferenceEquals(t1, null))
-            {
-                return object.ReferenceEquals(t2, null) || t2 == null;
-            }
-
-            return t1.Equals(t2);
-        }
-
-        public static bool operator!=(ITextureImporter t1, ITextureImporter t2)
-        {
-            if (object.ReferenceEquals(t1, null))
-            {
-                return !object.ReferenceEquals(t2, null) && t2 != null;
-            }
-
-            return !t1.Equals(t2);
-        }
-
-        public override bool Equals(object other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    internal class TextureImporter : ITextureImporter, ISpriteEditorDataProvider
-    {
-        protected UnityAssetImporter m_AssetImporter;
         List<SpriteDataExt> m_SpritesMultiple;
         SpriteDataExt m_SpriteSingle;
-        SpriteImportMode m_SpriteImportMode;
 
-        public TextureImporter(UnityTextureImporter textureImporter)
+        float ISpriteEditorDataProvider.pixelsPerUnit
         {
-            m_AssetImporter = textureImporter;
-            m_SpriteImportMode = textureImporter.textureType != TextureImporterType.Sprite ?
-                SpriteImportMode.None :
-                textureImporter.spriteImportMode;
+            get { return spritePixelsPerUnit; }
         }
 
-        public override bool Equals(object other)
+        UnityEngine.Object ISpriteEditorDataProvider.targetObject
         {
-            TextureImporter t = other as TextureImporter;
-            if (object.ReferenceEquals(t, null))
-                return m_AssetImporter == null;
-            return m_AssetImporter == t.m_AssetImporter;
+            get { return this; }
         }
 
-        public override int GetHashCode()
+        SpriteRect[] ISpriteEditorDataProvider.GetSpriteRects()
         {
-            return m_AssetImporter.GetHashCode();
+            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.Select(x => new SpriteDataExt(x) as SpriteRect).ToArray() : new[] { new SpriteDataExt(m_SpriteSingle) };
         }
 
-        public override SpriteImportMode spriteImportMode
-        {
-            get { return m_SpriteImportMode; }
-        }
-
-        // ISpriteEditorDataProvider interface
-        public float pixelsPerUnit
-        {
-            get { return ((UnityTextureImporter)m_AssetImporter).spritePixelsPerUnit; }
-        }
-
-        public UnityEngine.Object targetObject
-        {
-            get { return m_AssetImporter; }
-        }
-
-        public SpriteRect[] GetSpriteRects()
-        {
-            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.Select(x => x as SpriteRect).ToArray() : new[] {m_SpriteSingle};
-        }
-
-        public void SetSpriteRects(SpriteRect[] spriteRects)
+        void ISpriteEditorDataProvider.SetSpriteRects(SpriteRect[] spriteRects)
         {
             if (spriteImportMode == SpriteImportMode.Single && spriteRects.Length == 1)
             {
@@ -123,12 +55,12 @@ namespace UnityEditor.U2D.Interface
             }
         }
 
-        public SpriteRect GetSpriteData(GUID guid)
+        internal SpriteRect GetSpriteData(GUID guid)
         {
-            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.Where(x => x.spriteID == guid).FirstOrDefault() : m_SpriteSingle;
+            return spriteImportMode == SpriteImportMode.Multiple ? m_SpritesMultiple.FirstOrDefault(x => x.spriteID == guid) : m_SpriteSingle;
         }
 
-        public int GetSpriteDataIndex(GUID guid)
+        internal int GetSpriteDataIndex(GUID guid)
         {
             switch (spriteImportMode)
             {
@@ -140,13 +72,13 @@ namespace UnityEditor.U2D.Interface
                     return m_SpritesMultiple.FindIndex(x => x.spriteID == guid);
                 }
                 default:
-                    throw new InvalidOperationException("GUID not found");
+                    throw new InvalidOperationException(string.Format("Sprite with GUID {0} not found", guid));
             }
         }
 
-        public void Apply()
+        void ISpriteEditorDataProvider.Apply()
         {
-            var so = new SerializedObject(m_AssetImporter);
+            var so = new SerializedObject(this);
             m_SpriteSingle.Apply(so);
             var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
             GUID[] guids = new GUID[spriteSheetSO.arraySize];
@@ -176,9 +108,9 @@ namespace UnityEditor.U2D.Interface
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        public void InitSpriteEditorDataProvider()
+        void ISpriteEditorDataProvider.InitSpriteEditorDataProvider()
         {
-            var so = new SerializedObject(m_AssetImporter);
+            var so = new SerializedObject(this);
             var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
             m_SpritesMultiple = new List<SpriteDataExt>();
             m_SpriteSingle = new SpriteDataExt();
@@ -193,7 +125,7 @@ namespace UnityEditor.U2D.Interface
             }
         }
 
-        public T GetDataProvider<T>() where T : class
+        T ISpriteEditorDataProvider.GetDataProvider<T>()
         {
             if (typeof(T) == typeof(ISpriteBoneDataProvider))
             {
@@ -219,7 +151,7 @@ namespace UnityEditor.U2D.Interface
                 return this as T;
         }
 
-        public bool HasDataProvider(Type type)
+        bool ISpriteEditorDataProvider.HasDataProvider(Type type)
         {
             if (type == typeof(ISpriteBoneDataProvider) ||
                 type == typeof(ISpriteMeshDataProvider) ||

@@ -521,27 +521,9 @@ namespace UnityEditor
 
             ChangeInspectorLock(m_InspectorLocked);
 
-            // TODO@sonny cannot call newscene or openscene when editor is updating the asset database
-            // it can occur when the user is currently editing an avatar and delete the asset file containing this avatar
-            // Also cannot call EditorApplication.NewScene(); when editor is been destroy when user click on unlock inspector because it does delete the inspector twice
-            if (!EditorApplication.isUpdating && !Unsupported.IsDestroyScriptableObject(this))
-            {
-                string currentScene = SceneManager.GetActiveScene().path;
-                if (currentScene.Length > 0)
-                {
-                    // in this case the user did save manually the current scene and want to keep it or
-                    // he did open a new scene
-                    // do nothing
-                }
-                else if (sceneSetup != null && sceneSetup.Length > 0)
-                {
-                    EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
-                    sceneSetup = null;
-                }
-                else
-                    EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects);
-            }
-            else if (Unsupported.IsDestroyScriptableObject(this))
+            // if the user started play mode While in Edit mode it not clear what we should do
+            // for now let the active scene open and do nothing
+            if (!EditorApplication.isPlaying)
             {
                 EditorApplication.CallbackFunction CleanUpSceneOnDestroy = null;
                 CleanUpSceneOnDestroy = () =>
@@ -553,6 +535,7 @@ namespace UnityEditor
                             // he did open a new scene
                             // do nothing
                         }
+                        // Restore scene that was loaded when user pressed Configure button
                         else if (sceneSetup != null && sceneSetup.Length > 0)
                         {
                             EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);

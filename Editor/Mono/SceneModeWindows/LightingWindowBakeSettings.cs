@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using UnityEditor.AnimatedValues;
+using UnityEngine.Experimental.Rendering;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
@@ -17,7 +18,6 @@ namespace UnityEditor
     internal class LightingWindowBakeSettings
     {
         // light modes
-        LightModeUtil            m_LightModeUtil;
         private bool             m_ShowRealtimeLightsSettings       = true;
         private bool             m_ShowMixedLightsSettings          = true;
         private bool             m_ShowGeneralLightmapSettings      = true;
@@ -31,9 +31,12 @@ namespace UnityEditor
         SerializedObject m_RenderSettingsSO;
 
         //realtime GI
+        SerializedProperty m_EnableRealtimeGI;
         SerializedProperty m_Resolution;
 
         //baked
+        SerializedProperty m_MixedBakeMode;
+        SerializedProperty m_EnabledBakedGI;
         SerializedProperty m_AlbedoBoost;
         SerializedProperty m_IndirectOutputScale;
         SerializedProperty m_LightmapParameters;
@@ -77,11 +80,6 @@ namespace UnityEditor
             return hasSM20Api;
         }
 
-        public LightingWindowBakeSettings()
-        {
-            m_LightModeUtil = LightModeUtil.Get();
-        }
-
         private void InitSettings()
         {
             Object renderSettings = RenderSettings.GetRenderSettings();
@@ -93,9 +91,12 @@ namespace UnityEditor
             SerializedObject so = m_LightmapSettingsSO = new SerializedObject(m_LightmapSettings);
 
             //realtime GI
+            m_EnableRealtimeGI = so.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
             m_Resolution = so.FindProperty("m_LightmapEditorSettings.m_Resolution");
 
             //baked
+            m_MixedBakeMode = so.FindProperty("m_LightmapEditorSettings.m_MixedBakeMode");
+            m_EnabledBakedGI = so.FindProperty("m_GISettings.m_EnableBakedLightmaps");
             m_AlbedoBoost = so.FindProperty("m_GISettings.m_AlbedoBoost");
             m_IndirectOutputScale = so.FindProperty("m_GISettings.m_IndirectOutputScale");
             m_LightmapParameters = so.FindProperty("m_LightmapEditorSettings.m_LightmapParameters");
@@ -127,7 +128,6 @@ namespace UnityEditor
             m_PVRFilteringAtrousPositionSigmaDirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaDirect");
             m_PVRFilteringAtrousPositionSigmaIndirect = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaIndirect");
             m_PVRFilteringAtrousPositionSigmaAO = so.FindProperty("m_LightmapEditorSettings.m_PVRFilteringAtrousPositionSigmaAO");
-
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
@@ -241,25 +241,18 @@ namespace UnityEditor
 
         void RealtimeLightingGUI()
         {
+            if (!SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+                return;
+
             m_ShowRealtimeLightsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowRealtimeLightsSettings, Styles.RealtimeLightsLabel, true);
 
             if (m_ShowRealtimeLightsSettings)
             {
                 EditorGUI.indentLevel++;
 
-                int realtimeMode, mixedMode;
-                m_LightModeUtil.GetModes(out realtimeMode, out mixedMode);
+                EditorGUILayout.PropertyField(m_EnableRealtimeGI, Styles.UseRealtimeGI);
 
-                bool realtimeGI = (realtimeMode == 0);
-
-                realtimeGI = EditorGUILayout.Toggle(Styles.UseRealtimeGI, realtimeGI);
-
-                if (realtimeGI != (realtimeMode == 0))
-                {
-                    m_LightModeUtil.Store(realtimeGI ? 0 : 1, mixedMode);
-                }
-
-                if (realtimeGI && PlayerHasSM20Support())
+                if (m_EnableRealtimeGI.boolValue && PlayerHasSM20Support())
                 {
                     EditorGUILayout.HelpBox(Styles.NoRealtimeGIInSM2AndGLES2.text, MessageType.Warning);
                 }
@@ -271,40 +264,47 @@ namespace UnityEditor
 
         void MixedLightingGUI()
         {
+            if (!SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked))
+                return;
+
             m_ShowMixedLightsSettings = EditorGUILayout.FoldoutTitlebar(m_ShowMixedLightsSettings, Styles.MixedLightsLabel, true);
 
             if (m_ShowMixedLightsSettings)
             {
                 EditorGUI.indentLevel++;
 
-                LightModeUtil.Get().DrawBakedGIElement();
+                EditorGUILayout.PropertyField(m_EnabledBakedGI, Styles.EnableBaked);
 
-                if (!LightModeUtil.Get().AreBakedLightmapsEnabled())
+                if (!m_EnabledBakedGI.boolValue)
                 {
                     EditorGUILayout.HelpBox(Styles.BakedGIDisabledInfo.text, MessageType.Info);
                 }
 
-                using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
+                using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                 {
-                    int realtimeMode, mixedMode;
-                    m_LightModeUtil.GetModes(out realtimeMode, out mixedMode);
-                    int newMixedMode = EditorGUILayout.IntPopup(Styles.MixedLightMode, mixedMode, Styles.MixedModeStrings, Styles.MixedModeValues);
+                    bool mixedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Mixed);
 
-                    if (LightModeUtil.Get().AreBakedLightmapsEnabled())
+                    if (mixedGISupported)
                     {
-                        EditorGUILayout.HelpBox(Styles.HelpStringsMixed[mixedMode].text, MessageType.Info);
-                    }
+                        EditorGUILayout.IntPopup(m_MixedBakeMode, Styles.MixedModeStrings, Styles.MixedModeValues, Styles.MixedLightMode);
 
-                    if (newMixedMode != mixedMode)
-                    {
-                        m_LightModeUtil.Store(realtimeMode, newMixedMode);
-                    }
+                        if (!SupportedRenderingFeatures.IsMixedLightingModeSupported((MixedLightingMode)m_MixedBakeMode.intValue))
+                        {
+                            string fallbackMode = Styles.MixedModeStrings[(int)SupportedRenderingFeatures.FallbackMixedLightingMode()].text;
 
-                    if (m_LightModeUtil.IsSubtractiveModeEnabled())
-                    {
-                        EditorGUILayout.PropertyField(m_SubtractiveShadowColor, Styles.SubtractiveShadowColor);
-                        m_RenderSettingsSO.ApplyModifiedProperties();
-                        EditorGUILayout.Space();
+                            EditorGUILayout.HelpBox("The Mixed Mode is not supported by the current render pipline. Fallback mode is " + fallbackMode, MessageType.Warning);
+                        }
+                        else if (m_EnabledBakedGI.boolValue)
+                        {
+                            EditorGUILayout.HelpBox(Styles.HelpStringsMixed[m_MixedBakeMode.intValue].text, MessageType.Info);
+                        }
+
+                        if (m_MixedBakeMode.intValue == (int)MixedLightingMode.Subtractive)
+                        {
+                            EditorGUILayout.PropertyField(m_SubtractiveShadowColor, Styles.SubtractiveShadowColor);
+                            m_RenderSettingsSO.ApplyModifiedProperties();
+                            EditorGUILayout.Space();
+                        }
                     }
                 }
                 EditorGUI.indentLevel--;
@@ -345,136 +345,170 @@ namespace UnityEditor
 
         void GeneralLightmapSettingsGUI()
         {
+            bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
+
+            if (!bakedGISupported && !SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+                return;
+
             m_ShowGeneralLightmapSettings = EditorGUILayout.FoldoutTitlebar(m_ShowGeneralLightmapSettings, Styles.GeneralLightmapLabel, true);
             if (m_ShowGeneralLightmapSettings)
             {
                 EditorGUI.indentLevel++;
-                using (new EditorGUI.DisabledScope(!LightModeUtil.Get().IsAnyGIEnabled()))
+                using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue && !m_EnableRealtimeGI.boolValue))
                 {
-                    using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
+                    if (bakedGISupported)
                     {
-                        EditorGUI.BeginChangeCheck();
-                        EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
-                        if (EditorGUI.EndChangeCheck())
-                            InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
-
-                        if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
+                        using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                         {
-                            EditorGUI.indentLevel++;
-
-                            EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
-
-                            // Sampling type
-                            //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
-
-                            if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
-                            {
-                                // Update those constants also in LightmapBake.cpp UpdateSamples().
-                                const int kMinSamples = 10;
-                                const int kMaxSamples = 100000;
-
-                                // Sample count
-                                // TODO(PVR): make non-fixed sampling modes work.
-                                //EditorGUI.indentLevel++;
-                                //if (LightmapEditorSettings.giPathTracerSampling == LightmapEditorSettings.PathTracerSampling.PathTracerSamplingAdaptive)
-                                //  EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRSampleCountAdaptive);
-                                //else
-
-                                EditorGUILayout.PropertyField(m_PVRDirectSampleCount, Styles.PVRDirectSampleCount);
-                                EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRIndirectSampleCount);
-
-                                if (m_PVRSampleCount.intValue < kMinSamples || m_PVRSampleCount.intValue > kMaxSamples)
-                                {
-                                    m_PVRSampleCount.intValue = Math.Max(Math.Min(m_PVRSampleCount.intValue, kMaxSamples), kMinSamples);
-                                }
-
-                                // TODO(PVR): make non-fixed sampling modes work.
-                                //EditorGUI.indentLevel--;
-                            }
-
-                            EditorGUILayout.IntPopup(m_PVRBounces, Styles.BouncesStrings, Styles.BouncesValues, Styles.PVRBounces);
-
-                            // Filtering
-                            EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.PVRFilteringMode);
-
-                            if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
+                            if (EditorGUI.EndChangeCheck())
+                                InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
+                            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
                             {
                                 EditorGUI.indentLevel++;
 
-                                EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
-                                DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect, m_PVRFilteringAtrousPositionSigmaDirect,
-                                    Styles.PVRFilteringGaussRadiusDirect, Styles.PVRFilteringAtrousPositionSigmaDirect,
-                                    LightmapEditorSettings.filterTypeDirect);
+                                EditorGUILayout.PropertyField(m_PVRCulling, Styles.PVRCulling);
 
-                                EditorGUILayout.Space();
+                                // Sampling type
+                                //EditorGUILayout.PropertyField(m_PvrSampling, Styles.m_PVRSampling); // TODO(PVR): make non-fixed sampling modes work.
 
-                                EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
-                                DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect, m_PVRFilteringAtrousPositionSigmaIndirect,
-                                    Styles.PVRFilteringGaussRadiusIndirect, Styles.PVRFilteringAtrousPositionSigmaIndirect,
-                                    LightmapEditorSettings.filterTypeIndirect);
-
-                                using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
+                                if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
                                 {
+                                    // Update those constants also in LightmapBake.cpp UpdateSamples().
+                                    const int kMinSamples = 10;
+                                    const int kMaxSamples = 100000;
+
+                                    // Sample count
+                                    // TODO(PVR): make non-fixed sampling modes work.
+                                    //EditorGUI.indentLevel++;
+                                    //if (LightmapEditorSettings.giPathTracerSampling == LightmapEditorSettings.PathTracerSampling.PathTracerSamplingAdaptive)
+                                    //  EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRSampleCountAdaptive);
+                                    //else
+
+                                    EditorGUILayout.PropertyField(m_PVRDirectSampleCount, Styles.PVRDirectSampleCount);
+                                    EditorGUILayout.PropertyField(m_PVRSampleCount, Styles.PVRIndirectSampleCount);
+
+                                    if (m_PVRSampleCount.intValue < kMinSamples ||
+                                        m_PVRSampleCount.intValue > kMaxSamples)
+                                    {
+                                        m_PVRSampleCount.intValue = Math.Max(Math.Min(m_PVRSampleCount.intValue, kMaxSamples), kMinSamples);
+                                    }
+
+                                    // TODO(PVR): make non-fixed sampling modes work.
+                                    //EditorGUI.indentLevel--;
+                                }
+
+                                EditorGUILayout.IntPopup(m_PVRBounces, Styles.BouncesStrings, Styles.BouncesValues, Styles.PVRBounces);
+
+                                // Filtering
+                                EditorGUILayout.PropertyField(m_PVRFilteringMode, Styles.PVRFilteringMode);
+
+                                if (m_PVRFilteringMode.enumValueIndex == (int)LightmapEditorSettings.FilterMode.Advanced)
+                                {
+                                    EditorGUI.indentLevel++;
+
+                                    EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
+                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
+                                        m_PVRFilteringAtrousPositionSigmaDirect,
+                                        Styles.PVRFilteringGaussRadiusDirect,
+                                        Styles.PVRFilteringAtrousPositionSigmaDirect,
+                                        LightmapEditorSettings.filterTypeDirect);
+
                                     EditorGUILayout.Space();
 
-                                    EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
-                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusAO, m_PVRFilteringAtrousPositionSigmaAO,
-                                        Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
-                                        LightmapEditorSettings.filterTypeAO);
+                                    EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
+                                    DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
+                                        m_PVRFilteringAtrousPositionSigmaIndirect,
+                                        Styles.PVRFilteringGaussRadiusIndirect,
+                                        Styles.PVRFilteringAtrousPositionSigmaIndirect,
+                                        LightmapEditorSettings.filterTypeIndirect);
+
+                                    using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
+                                    {
+                                        EditorGUILayout.Space();
+
+                                        EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
+                                        DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
+                                            m_PVRFilteringAtrousPositionSigmaAO,
+                                            Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
+                                            LightmapEditorSettings.filterTypeAO);
+                                    }
+
+                                    EditorGUI.indentLevel--;
                                 }
 
                                 EditorGUI.indentLevel--;
+                                EditorGUILayout.Space();
                             }
-
-                            EditorGUI.indentLevel--;
-                            EditorGUILayout.Space();
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !LightModeUtil.Get().IsRealtimeGIEnabled()))
+                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU) && !m_EnableRealtimeGI.boolValue))
                     {
                         DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                     }
 
-                    using (new EditorGUI.DisabledScope(!LightModeUtil.Get().AreBakedLightmapsEnabled()))
+                    if (bakedGISupported)
                     {
-                        DrawResolutionField(m_BakeResolution, Styles.LightmapResolution);
-
-                        GUILayout.BeginHorizontal();
-                        EditorGUILayout.PropertyField(m_Padding, Styles.Padding);
-                        GUILayout.Label(" texels", Styles.LabelStyle);
-                        GUILayout.EndHorizontal();
-
-                        EditorGUILayout.IntPopup(m_LightmapSize, Styles.LightmapSizeStrings, Styles.LightmapSizeValues, Styles.LightmapSize);
-
-                        EditorGUILayout.PropertyField(m_TextureCompression, Styles.TextureCompression);
-
-                        EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.AmbientOcclusion);
-                        if (m_AmbientOcclusion.boolValue)
+                        using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                         {
-                            EditorGUI.indentLevel++;
-                            EditorGUILayout.PropertyField(m_AOMaxDistance, Styles.AOMaxDistance);
-                            if (m_AOMaxDistance.floatValue < 0.0f)
-                                m_AOMaxDistance.floatValue = 0.0f;
-                            EditorGUILayout.Slider(m_CompAOExponent, 0.0f, 10.0f, Styles.AmbientOcclusionContribution);
-                            EditorGUILayout.Slider(m_CompAOExponentDirect, 0.0f, 10.0f, Styles.AmbientOcclusionContributionDirect);
-                            EditorGUI.indentLevel--;
-                        }
+                            DrawResolutionField(m_BakeResolution, Styles.LightmapResolution);
 
-                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)
-                        {
-                            EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
-                            if (m_FinalGather.boolValue)
+                            GUILayout.BeginHorizontal();
+                            EditorGUILayout.PropertyField(m_Padding, Styles.Padding);
+                            GUILayout.Label(" texels", Styles.LabelStyle);
+                            GUILayout.EndHorizontal();
+
+                            EditorGUILayout.IntPopup(m_LightmapSize, Styles.LightmapSizeStrings, Styles.LightmapSizeValues, Styles.LightmapSize);
+
+                            EditorGUILayout.PropertyField(m_TextureCompression, Styles.TextureCompression);
+
+                            EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.AmbientOcclusion);
+                            if (m_AmbientOcclusion.boolValue)
                             {
                                 EditorGUI.indentLevel++;
-                                EditorGUILayout.PropertyField(m_FinalGatherRayCount, Styles.FinalGatherRayCount);
-                                EditorGUILayout.PropertyField(m_FinalGatherFiltering, Styles.FinalGatherFiltering);
+                                EditorGUILayout.PropertyField(m_AOMaxDistance, Styles.AOMaxDistance);
+                                if (m_AOMaxDistance.floatValue < 0.0f)
+                                    m_AOMaxDistance.floatValue = 0.0f;
+                                EditorGUILayout.Slider(m_CompAOExponent, 0.0f, 10.0f, Styles.AmbientOcclusionContribution);
+                                EditorGUILayout.Slider(m_CompAOExponentDirect, 0.0f, 10.0f, Styles.AmbientOcclusionContributionDirect);
                                 EditorGUI.indentLevel--;
+                            }
+
+                            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten)
+                            {
+                                EditorGUILayout.PropertyField(m_FinalGather, Styles.FinalGather);
+                                if (m_FinalGather.boolValue)
+                                {
+                                    EditorGUI.indentLevel++;
+                                    EditorGUILayout.PropertyField(m_FinalGatherRayCount, Styles.FinalGatherRayCount);
+                                    EditorGUILayout.PropertyField(m_FinalGatherFiltering, Styles.FinalGatherFiltering);
+                                    EditorGUI.indentLevel--;
+                                }
                             }
                         }
                     }
 
-                    EditorGUILayout.IntPopup(m_LightmapDirectionalMode, Styles.LightmapDirectionalModeStrings, Styles.LightmapDirectionalModeValues, Styles.LightmapDirectionalMode);
+                    bool directionalSupported = SupportedRenderingFeatures.IsLightmapsModeSupported(LightmapsMode.CombinedDirectional);
+
+                    if (directionalSupported || (m_LightmapDirectionalMode.intValue == (int)LightmapsMode.CombinedDirectional))
+                    {
+                        EditorGUILayout.IntPopup(m_LightmapDirectionalMode, Styles.LightmapDirectionalModeStrings, Styles.LightmapDirectionalModeValues, Styles.LightmapDirectionalMode);
+
+                        if (!directionalSupported)
+                        {
+                            EditorGUILayout.HelpBox("Directional Mode is not supported. Fallback will be Non-Directional.", MessageType.Warning);
+                        }
+                    }
+                    else
+                    {
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUILayout.IntPopup(Styles.LightmapDirectionalMode, 0, Styles.LightmapDirectionalModeStrings, Styles.LightmapDirectionalModeValues);
+                        }
+                    }
+
                     EditorGUILayout.Slider(m_IndirectOutputScale, 0.0f, 5.0f, Styles.IndirectOutputScale);
 
                     // albedo boost, push the albedo value towards one in order to get more bounce
@@ -528,12 +562,12 @@ namespace UnityEditor
             };
 
             // must match LightmapMixedBakeMode
-            public static readonly int[] MixedModeValues = { 0, 2, 1 };
+            public static readonly int[] MixedModeValues = { 0, 1, 2 };
             public static readonly GUIContent[] MixedModeStrings =
             {
                 EditorGUIUtility.TrTextContent("Baked Indirect"),
-                EditorGUIUtility.TrTextContent("Shadowmask"),
-                EditorGUIUtility.TrTextContent("Subtractive")
+                EditorGUIUtility.TrTextContent("Subtractive"),
+                EditorGUIUtility.TrTextContent("Shadowmask")
             };
 
             public static readonly int[] BouncesValues = { 0, 1, 2, 3, 4 };
@@ -553,6 +587,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. The Shadowmask Mode used at run time can be set in the Quality Settings panel.")
             };
 
+            public static readonly GUIContent EnableBaked = EditorGUIUtility.TextContent("Baked Global Illumination|Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
             public static readonly GUIContent BounceScale = EditorGUIUtility.TextContent("Bounce Scale|Multiplier for indirect lighting. Use with care.");
             public static readonly GUIContent UpdateThreshold = EditorGUIUtility.TextContent("Update Threshold|Threshold for updating realtime GI. A lower value causes more frequent updates (default 1.0).");
             public static readonly GUIContent AlbedoBoost = EditorGUIUtility.TextContent("Albedo Boost|Controls the amount of light bounced between surfaces by intensifying the albedo of materials in the scene. Increasing this draws the albedo value towards white for indirect light computation. The default value is physically accurate.");

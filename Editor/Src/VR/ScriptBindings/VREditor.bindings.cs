@@ -39,3 +39,31 @@ namespace UnityEditorInternal.VR
         extern public static  void SetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices);
     }
 }
+
+namespace UnityEditorInternal
+{
+    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
+    [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+    internal class PlayerSettings360StereoCapture
+    {
+        public static extern bool enable360StereoCapture
+        {
+            get;
+            set;
+        }
+    }
+}
+
+// When Nested classes is supported for bindings, the above Internal only class should be removed and
+// the below class should be updated with the proper PlayerSettings calls.
+namespace UnityEditor
+{
+    partial class PlayerSettings
+    {
+        public static bool enable360StereoCapture
+        {
+            get { return UnityEditorInternal.PlayerSettings360StereoCapture.enable360StereoCapture; }
+            set { UnityEditorInternal.PlayerSettings360StereoCapture.enable360StereoCapture = value; }
+        }
+    }
+}

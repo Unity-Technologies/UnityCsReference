@@ -11,9 +11,12 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Animation/Animator.h")]
+    [NativeHeader("Runtime/Animation/ScriptBindings/AnimatorControllerParameter.bindings.h")]
     [NativeHeader("Runtime/Animation/AnimatorControllerParameter.h")]
+    [NativeAsStruct]
+    [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
+    [NativeType(CodegenOptions.Custom, "MonoAnimatorControllerParameter")]
     public class AnimatorControllerParameter
     {
         public string                             name
@@ -31,7 +34,6 @@ namespace UnityEngine
         public float                              defaultFloat                    {   get { return m_DefaultFloat; }              set {  m_DefaultFloat = value; } }
         public int                                defaultInt                      {   get { return m_DefaultInt; }                set {  m_DefaultInt = value; }   }
         public bool                               defaultBool                     {   get { return m_DefaultBool; }               set {  m_DefaultBool = value; }  }
-
 
         internal string                                 m_Name = "";
         internal AnimatorControllerParameterType        m_Type;

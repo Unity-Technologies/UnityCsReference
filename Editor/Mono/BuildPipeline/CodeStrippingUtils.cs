@@ -13,7 +13,7 @@ using System.Security;
 using System.Xml;
 using UnityEditorInternal;
 using Mono.Cecil;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Networking;
 using UnityEditor.Utils;
@@ -165,7 +165,7 @@ namespace UnityEditor
                 {
                     string requiredMessage = module + " is always required";
                     nativeModules.Add(module);
-                    strippingInfo.AddModule(StrippingInfo.ModuleName(module));
+                    strippingInfo.AddModule(module);
                     strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), requiredMessage);
                     strippingInfo.SetIcon(requiredMessage, "class/DefaultAsset");
                 }
@@ -239,8 +239,7 @@ namespace UnityEditor
                                 {
                                     var moduleName = StrippingInfo.ModuleName(module);
                                     strippingInfo.RegisterDependency(StrippingInfo.ModuleName(dependentModule), "Required by " + moduleName);
-                                    if (strippingInfo.icons.ContainsKey(moduleName))
-                                        strippingInfo.SetIcon("Required by " + moduleName, strippingInfo.icons[moduleName]);
+                                    strippingInfo.SetIcon("Required by " + moduleName, $"package/com.unity.modules.{module.ToLower()}");
                                 }
                             }
                         }
@@ -254,8 +253,8 @@ namespace UnityEditor
             if (strippingInfo != null)
             {
                 foreach (var module in nativeModules)
-                    strippingInfo.AddModule(StrippingInfo.ModuleName(module));
-                strippingInfo.AddModule(StrippingInfo.ModuleName("Core"));
+                    strippingInfo.AddModule(module);
+                strippingInfo.AddModule("Core");
             }
 
             if (nativeClasses != null && strippingInfo != null)

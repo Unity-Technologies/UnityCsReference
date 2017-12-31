@@ -42,5 +42,10 @@ namespace UnityEngine
         {
             WriteStringToUnityLog(s);
         }
+
+        public override void Write(char[] buffer, int index, int count)
+        {
+            WriteStringToUnityLogImpl(new string(buffer, index, count));
+        }
     }
 }

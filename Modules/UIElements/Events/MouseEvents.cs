@@ -214,4 +214,42 @@ namespace UnityEngine.Experimental.UIElements
     public class MouseOutEvent : MouseEventBase<MouseOutEvent>
     {
     }
+
+    public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
+    {
+        public ContextualMenu menu { get; private set; }
+
+        public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, ContextualMenu menu, IEventHandler target)
+        {
+            ContextualMenuPopulateEvent e = GetPooled();
+            if (triggerEvent != null)
+            {
+                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
+                if (mouseEvent != null)
+                {
+                    e.modifiers = mouseEvent.modifiers;
+                    e.mousePosition = mouseEvent.mousePosition;
+                    e.localMousePosition = mouseEvent.mousePosition;
+                    e.mouseDelta = mouseEvent.mouseDelta;
+                    e.button = mouseEvent.button;
+                    e.clickCount = mouseEvent.clickCount;
+                }
+
+                e.target = target;
+                e.menu = menu;
+            }
+            return e;
+        }
+
+        protected override void Init()
+        {
+            base.Init();
+            menu = null;
+        }
+
+        public ContextualMenuPopulateEvent()
+        {
+            Init();
+        }
+    }
 }

@@ -15,13 +15,13 @@ namespace UnityEditor.Collaboration
         public CollabHistoryDropDownItem(string path, string action)
         {
             var fileName = Path.GetFileName(path);
-            var folderName = Path.GetDirectoryName(path);
-            var fileIcon = GetIconElement(action, fileName);
+            var isFolder = Path.GetFileNameWithoutExtension(path).Equals(fileName);
+            var fileIcon = GetIconElement(action, fileName, isFolder);
             var metaContainer = new VisualElement();
             var fileNameLabel = new Label
             {
                 name = "FileName",
-                text = String.IsNullOrEmpty(fileName) ? folderName : fileName
+                text = fileName
             };
             var filePathLabel = new Label
             {
@@ -34,10 +34,12 @@ namespace UnityEditor.Collaboration
             Add(metaContainer);
         }
 
-        private Image GetIconElement(string action, string fileName)
+        private Image GetIconElement(string action, string fileName, bool isFolder)
         {
-            var prefix = String.IsNullOrEmpty(fileName) ? "Folder" : "File";
+            var prefix = isFolder ? "Folder" : "File";
             var actionName = action.First().ToString().ToUpper() + action.Substring(1);
+            // Use the same icon for renamed and moved files
+            actionName = actionName.Equals("Renamed") ? "Moved" : actionName;
             var iconElement = new Image
             {
                 name = "FileIcon",

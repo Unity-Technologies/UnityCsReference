@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine.Bindings;
 
@@ -17,32 +19,32 @@ namespace UnityEditor
             | BindingFlags.Instance
             | BindingFlags.Static;
 
-        internal static MethodInfo[] GetAllMethodsWithAttribute<T>(BindingFlags bindingFlags = k_DefaultMethodBindingFlags)
+        internal static IEnumerable<MethodInfo> GetAllMethodsWithAttribute<T>(BindingFlags bindingFlags = k_DefaultMethodBindingFlags)
             where T : Attribute
         {
-            return GetAllMethodsWithAttribute(typeof(T), bindingFlags);
+            return Internal_GetAllMethodsWithAttribute(typeof(T), bindingFlags).Cast<MethodInfo>();
         }
 
-        [FreeFunction]
-        extern static MethodInfo[] GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
+        [FreeFunction(Name = "GetAllMethodsWithAttribute")]
+        extern static object[] Internal_GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
 
-        internal static Type[] GetAllTypesWithAttribute<T>() where T : Attribute
+        internal static IEnumerable<Type> GetAllTypesWithAttribute<T>() where T : Attribute
         {
-            return GetAllTypesWithAttribute(typeof(T));
+            return Internal_GetAllTypesWithAttribute(typeof(T));
         }
 
-        [FreeFunction]
-        extern static Type[] GetAllTypesWithAttribute(Type attrType);
+        [FreeFunction(Name = "GetAllTypesWithAttribute")]
+        extern static Type[] Internal_GetAllTypesWithAttribute(Type attrType);
 
-        internal static Type[] GetAllTypesWithInterface<T>() where T : class
+        internal static IEnumerable<Type> GetAllTypesWithInterface<T>() where T : class
         {
             return GetAllTypesWithInterface(typeof(T));
         }
 
-        internal static Type[] GetAllTypesWithInterface(Type interfaceType)
+        private static IEnumerable<Type> GetAllTypesWithInterface(Type interfaceType)
         {
             if (!interfaceType.IsInterface)
-                throw new ArgumentException(string.Format("Specified type {0} is not an interface.", interfaceType), "interfaceType");
+                throw new ArgumentException(string.Format("Specified type {0} is not an interface.", interfaceType), nameof(interfaceType));
             return Internal_GetAllTypesWithInterface(interfaceType);
         }
 

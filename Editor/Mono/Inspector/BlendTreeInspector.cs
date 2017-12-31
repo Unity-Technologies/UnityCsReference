@@ -535,7 +535,7 @@ namespace UnityEditor
                 else
                 {
                     str = EditorGUI.s_RecycledCurrentEditingString;
-                    if (evt.type == EventType.ValidateCommand && evt.commandName == "UndoRedoPerformed")
+                    if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                         str = value.ToString("g7");
                 }
 

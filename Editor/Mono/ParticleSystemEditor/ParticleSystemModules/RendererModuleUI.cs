@@ -84,7 +84,7 @@ namespace UnityEditor
             public GUIContent sortMode = EditorGUIUtility.TrTextContent("Sort Mode", "The draw order of particles can be sorted by distance, oldest in front, or youngest in front.");
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
             public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
-            public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows");
+            public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
             public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
 
@@ -164,6 +164,30 @@ namespace UnityEditor
             : base(owner, o, "ParticleSystemRenderer", displayName, VisibilityState.VisibleAndFolded)
         {
             m_ToolTip = "Specifies how the particles are rendered.";
+        }
+
+        public override bool DrawHeader(Rect rect, GUIContent label)
+        {
+            var wasBold = EditorGUIUtility.GetBoldDefaultFont();
+            SerializedProperty itr = m_Object.GetIterator();
+            bool useBold = false;
+            if (m_Object.targetObjects.Length == 1)
+            {
+                bool validItr = itr.Next(true);
+                while (validItr)
+                {
+                    if (itr.isInstantiatedPrefab && itr.prefabOverride)
+                    {
+                        useBold = true;
+                        break;
+                    }
+                    validItr = itr.Next(false);
+                }
+            }
+            EditorGUIUtility.SetBoldDefaultFont(useBold);
+            var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().moduleHeaderStyle);
+            EditorGUIUtility.SetBoldDefaultFont(wasBold);
+            return toggleState;
         }
 
         protected override void Init()
@@ -302,44 +326,45 @@ namespace UnityEditor
                     {
                         GUIToggle(s_Texts.enableGPUInstancing, m_EnableGPUInstancing);
                     }
+                }
 
-                    GUIVector3Field(s_Texts.pivot, m_Pivot);
+                GUIVector3Field(s_Texts.pivot, m_Pivot);
 
-                    EditorGUI.BeginChangeCheck();
-                    s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
-                    }
+                EditorGUI.BeginChangeCheck();
+                s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
                 }
 
                 GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
 
-                if (!m_RenderMode.hasMultipleDifferentValues)
+                if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
+                    DoVertexStreamsGUI(renderMode);
+            }
+
+            EditorGUILayout.Space();
+
+            GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
+
+            if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            {
+                // Disable ReceiveShadows options for Deferred rendering path
+                if (SceneView.IsUsingDeferredRenderingPath())
                 {
-                    if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
-                        DoVertexStreamsGUI(renderMode);
-
-                    EditorGUILayout.Space();
-
-                    GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
-
-                    if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
-                    {
-                        // Disable ReceiveShadows options for Deferred rendering path
-                        using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
-                        {
-                            GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
-                        }
-                    }
-
-                    if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
-                        GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
-
-                    EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
-                    GUIInt(s_Texts.sortingOrder, m_SortingOrder);
+                    using (new EditorGUI.DisabledScope(true)) { GUIToggle(s_Texts.receiveShadows, true); }
+                }
+                else
+                {
+                    GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
                 }
             }
+
+            if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+                GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
+
+            GUISortingLayerField(s_Texts.sortingLayer, m_SortingLayerID);
+            GUIInt(s_Texts.sortingOrder, m_SortingOrder);
 
             List<ParticleSystemRenderer> renderers = new List<ParticleSystemRenderer>();
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)

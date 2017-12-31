@@ -21,24 +21,25 @@ namespace UnityEditor
         {}
     }
 
-    internal abstract partial class SpriteFrameModuleBase : ISpriteEditorModule
+    internal abstract partial class SpriteFrameModuleBase : SpriteEditorModuleBase
     {
         protected SpriteRectModel m_RectsCache;
         protected ITextureDataProvider m_TextureDataProvider;
         protected ISpriteEditorDataProvider m_SpriteDataProvider;
+        string m_ModuleName;
+
         protected SpriteFrameModuleBase(string name, ISpriteEditor sw, IEventSystem es, IUndoSystem us, IAssetDatabase ad)
         {
             spriteEditor = sw;
             eventSystem = es;
             undoSystem = us;
             assetDatabase = ad;
-            moduleName = name;
+            m_ModuleName = name;
         }
 
         // implements ISpriteEditorModule
-        public abstract bool CanBeActivated();
 
-        public virtual void OnModuleActivate()
+        public override void OnModuleActivate()
         {
             spriteImportMode = SpriteUtility.GetSpriteImportMode(spriteEditor.GetDataProvider<ISpriteEditorDataProvider>());
             m_TextureDataProvider = spriteEditor.GetDataProvider<ITextureDataProvider>();
@@ -49,9 +50,11 @@ namespace UnityEditor
             textureActualHeight = height;
             m_RectsCache = ScriptableObject.CreateInstance<SpriteRectModel>();
             m_RectsCache.spriteRects = m_SpriteDataProvider.GetSpriteRects().ToList();
+            if (spriteEditor.selectedSpriteRect != null)
+                spriteEditor.selectedSpriteRect = m_RectsCache.spriteRects.FirstOrDefault(x => x.spriteID == spriteEditor.selectedSpriteRect.spriteID);
         }
 
-        public virtual void OnModuleDeactivate()
+        public override void OnModuleDeactivate()
         {
             if (m_RectsCache != null)
             {
@@ -61,7 +64,7 @@ namespace UnityEditor
             }
         }
 
-        public bool ApplyRevert(bool apply)
+        public override bool ApplyRevert(bool apply)
         {
             if (apply)
             {
@@ -90,19 +93,26 @@ namespace UnityEditor
                 }
                 m_SpriteDataProvider.SetSpriteRects(m_RectsCache?.spriteRects.ToArray());
                 if (m_RectsCache != null)
+                    undoSystem.ClearUndo(m_RectsCache);
+            }
+            else
+            {
+                if (m_RectsCache != null)
                 {
                     undoSystem.ClearUndo(m_RectsCache);
-                    ScriptableObject.DestroyImmediate(m_RectsCache);
+                    m_RectsCache.spriteRects = m_SpriteDataProvider.GetSpriteRects().ToList();
+                    spriteEditor.spriteRects = m_RectsCache.spriteRects;
+                    if (spriteEditor.selectedSpriteRect != null)
+                        spriteEditor.selectedSpriteRect = m_RectsCache.spriteRects.FirstOrDefault(x => x.spriteID == spriteEditor.selectedSpriteRect.spriteID);
                 }
             }
 
             return true;
         }
 
-        public string moduleName
+        public override string moduleName
         {
-            get;
-            private set;
+            get { return m_ModuleName; }
         }
 
         // injected interfaces
@@ -113,12 +123,6 @@ namespace UnityEditor
         }
 
         protected IUndoSystem undoSystem
-        {
-            get;
-            private set;
-        }
-
-        protected ISpriteEditor spriteEditor
         {
             get;
             private set;
@@ -163,8 +167,8 @@ namespace UnityEditor
 
         public int CurrentSelectedSpriteIndex()
         {
-            if (m_RectsCache != null)
-                return m_RectsCache.spriteRects.IndexOf(selected);
+            if (m_RectsCache != null && selected != null)
+                return m_RectsCache.spriteRects.FindIndex(x => x.spriteID == selected.spriteID);
             return -1;
         }
 

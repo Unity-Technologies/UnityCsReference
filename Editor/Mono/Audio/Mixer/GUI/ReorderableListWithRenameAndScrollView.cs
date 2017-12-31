@@ -261,7 +261,7 @@ namespace UnityEditorInternal
             {
                 switch (evt.commandName)
                 {
-                    case "OnLostFocus":
+                    case EventCommandNames.OnLostFocus:
                         EndRename(true);
                         evt.Use();
                         break;

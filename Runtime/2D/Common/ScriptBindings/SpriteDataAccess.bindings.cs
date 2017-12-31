@@ -9,9 +9,10 @@ using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine.Jobs;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+
+using Unity.Jobs;
 
 namespace UnityEngine.Experimental.U2D
 {
@@ -22,14 +23,19 @@ namespace UnityEngine.Experimental.U2D
     [Serializable]
     public struct SpriteBone
     {
+        [SerializeField]
         [NativeNameAttribute("name")]
         string m_Name;
+        [SerializeField]
         [NativeNameAttribute("position")]
         Vector3 m_Position;
+        [SerializeField]
         [NativeNameAttribute("rotation")]
         Quaternion m_Rotation;
+        [SerializeField]
         [NativeNameAttribute("length")]
         float m_Length;
+        [SerializeField]
         [NativeNameAttribute("parentId")]
         int m_ParentId;
 
@@ -70,15 +76,18 @@ namespace UnityEngine.Experimental.U2D
                 case VertexAttribute.Position:
                 case VertexAttribute.Normal:
                     channelTypeMatches = typeof(T) == typeof(Vector3); break;
+                case VertexAttribute.Tangent:
+                    channelTypeMatches = typeof(T) == typeof(Vector4); break;
                 case VertexAttribute.Color:
                     channelTypeMatches = typeof(T) == typeof(Color32); break;
                 case VertexAttribute.TexCoord0:
                 case VertexAttribute.TexCoord1:
                 case VertexAttribute.TexCoord2:
                 case VertexAttribute.TexCoord3:
+                case VertexAttribute.TexCoord4:
+                case VertexAttribute.TexCoord5:
+                case VertexAttribute.TexCoord6:
                     channelTypeMatches = typeof(T) == typeof(Vector2); break;
-                case VertexAttribute.Tangent:
-                    channelTypeMatches = typeof(T) == typeof(Vector4); break;
                 default:
                     throw new InvalidOperationException(String.Format("The requested channel '{0}' is unknown.", channel));
             }
@@ -147,6 +156,9 @@ namespace UnityEngine.Experimental.U2D
             SetBoneData(sprite, src);
         }
 
+        [NativeName("HasChannel")]
+        extern public static bool HasVertexAttribute(this Sprite sprite, VertexAttribute channel);
+
         // The only way to change the vertex count
         extern public static void SetVertexCount(this Sprite sprite, int count);
         extern public static int GetVertexCount(this Sprite sprite);
@@ -182,9 +194,7 @@ namespace UnityEngine.Experimental.U2D
 
         extern public static void DeactivateDeformableBuffer(this SpriteRenderer renderer);
 
-        // This method will be enabled when JobSystem Properly lands... The tests will follow as well
-        // It is just a simple comment out because nothing else needs to be disabled.
-        // extern public static void UpdateDeformableBuffer(this SpriteRenderer spriteRenderer, JobHandle fence);
+        extern public static void UpdateDeformableBuffer(this SpriteRenderer spriteRenderer, JobHandle fence);
 
         extern private static SpriteChannelInfo GetDeformableChannelInfo(this SpriteRenderer sprite, VertexAttribute channel);
 

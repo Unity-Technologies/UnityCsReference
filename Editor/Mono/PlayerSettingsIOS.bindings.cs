@@ -520,7 +520,7 @@ namespace UnityEditor
 
             internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
             {
-                Version minimumVersion = new Version(7, 0);
+                Version minimumVersion = new Version(8, 0);
                 Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
                 return requestedVersion >= requiredVersion;
             }

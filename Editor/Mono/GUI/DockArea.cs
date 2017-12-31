@@ -87,8 +87,17 @@ namespace UnityEditor
                 Invoke("OnLostFocus");
 
             actualView = null;
-            foreach (EditorWindow w in m_Panes)
+
+            // Since m_Panes can me modified indirectly by OnDestroy() callbacks, make a copy of it for safe iteration
+            var windows = new List<EditorWindow>(m_Panes);
+
+            foreach (EditorWindow w in windows)
+            {
+                // Avoid destroying a window that has already being destroyed (case 967778)
+                if (w == null)
+                    continue;
                 UnityEngine.Object.DestroyImmediate(w, true);
+            }
 
             base.OnDestroy();
         }

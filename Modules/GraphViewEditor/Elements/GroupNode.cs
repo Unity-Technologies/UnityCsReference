@@ -18,6 +18,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public bool CanAcceptDrop(List<ISelectable> selection)
         {
+            if (selection.Count == 0)
+                return false;
+
+            foreach (ISelectable selectable in selection)
+            {
+                var selectedElement = selectable as GraphElement;
+
+                if (selectedElement == null || selectedElement is GroupNode)
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -38,7 +51,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     var selectedGraphElement = selectedElement as GraphElement;
 
-                    if (group.ContainsElement(selectedGraphElement))
+                    if (group.ContainsElement(selectedGraphElement) || selectedGraphElement.GetContainingGroupNode() != null)
                         continue;
 
                     group.AddElement(selectedGraphElement);
@@ -72,7 +85,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
                 else
                 {
-                    if (!group.ContainsElement(selectedGraphElement))
+                    if (!group.ContainsElement(selectedGraphElement) && selectedGraphElement.GetContainingGroupNode() == null)
                     {
                         canDrop = true;
                     }
@@ -100,7 +113,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Label m_TitleItem;
         private TextField m_TitleEditor;
         private VisualElement m_ContentItem;
+        static readonly List<GraphElement> s_EmptyList = new List<GraphElement>();
         private List<GraphElement> m_ContainedElements;
+        private Rect m_ContainedElementsRect;
         private bool m_IsUpdatingGeometryFromContent = false;
         private bool m_IsMovingElements = false;
         bool m_Initialized = false;
@@ -123,9 +138,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     {
                         gv.groupNodeTitleChanged(this, value);
                     }
+
+                    UpdateGeometryFromContent();
                 }
             }
         }
+
+        public List<GraphElement> containedElements { get { return m_ContainedElements != null ? m_ContainedElements : s_EmptyList; } }
+        public Rect containedElementsRect { get { return m_ContainedElementsRect; } }
 
         public GroupNode()
         {
@@ -175,6 +195,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 UpdateGeometryFromContent();
             }
+        }
+
+        void OnSubElementDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            // Do nothing if the group is not in a panel
+            if (panel == null)
+                return;
+
+            GraphElement element = evt.target as GraphElement;
+
+            RemoveElement(element);
         }
 
         private static bool IsValidSize(Vector2 size)
@@ -274,20 +305,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void AddElement(GraphElement element)
         {
+            if (element == null)
+                throw new ArgumentException("Cannot add null element");
+
+            if (element is GroupNode)
+                throw new ArgumentException("Nested group node is not supported yet.");
+
             if (m_ContainedElements == null)
             {
                 m_ContainedElements = new List<GraphElement>();
             }
-
-            if (m_ContainedElements.Contains(element))
+            else if (m_ContainedElements.Contains(element))
             {
-                return;
+                throw new ArgumentException("The element is already contained in this group node.");
+            }
+
+            // Removes the element from its current group
+            GroupNode currentGroup = element.GetContainingGroupNode();
+
+            if (currentGroup != null)
+            {
+                currentGroup.RemoveElement(element);
             }
 
             m_ContainedElements.Add(element);
 
             // To update the group geometry whenever the added element's geometry changes
             element.RegisterCallback<PostLayoutEvent>(OnSubElementPostLayout);
+            element.RegisterCallback<DetachFromPanelEvent>(OnSubElementDetachedFromPanel);
 
             UpdateGeometryFromContent();
 
@@ -301,18 +346,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void RemoveElement(GraphElement element)
         {
+            if (element == null)
+                throw new ArgumentException("Cannot remove null element from this group");
+
             if (m_ContainedElements == null)
-            {
                 return;
-            }
 
             if (!m_ContainedElements.Contains(element))
-            {
-                return;
-            }
+                throw new ArgumentException("This element is not contained in this group");
 
             m_ContainedElements.Remove(element);
             element.UnregisterCallback<PostLayoutEvent>(OnSubElementPostLayout);
+            element.UnregisterCallback<DetachFromPanelEvent>(OnSubElementDetachedFromPanel);
             UpdateGeometryFromContent();
 
             GraphView gv = GetFirstAncestorOfType<GraphView>();
@@ -325,7 +370,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void MoveElements()
         {
-            if (!m_Initialized)
+            if (panel == null || !m_Initialized)
                 return;
 
             GraphView graphView = GetFirstAncestorOfType<GraphView>();
@@ -392,14 +437,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void UpdateGeometryFromContent()
         {
-            if (!m_Initialized || m_IsUpdatingGeometryFromContent || m_IsMovingElements)
+            if (panel == null || !m_Initialized || m_IsUpdatingGeometryFromContent || m_IsMovingElements)
+            {
+                return;
+            }
+
+            GraphView graphView = GetFirstAncestorOfType<GraphView>();
+            if (graphView == null)
             {
                 return;
             }
 
             m_IsUpdatingGeometryFromContent = true;
 
-            GraphView graphView = GetFirstAncestorOfType<GraphView>();
             VisualElement viewport = graphView.contentViewContainer;
             Rect contentRectInViewportSpace = Rect.zero;
 
@@ -409,6 +459,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 for (int i = 0; i < m_ContainedElements.Count; ++i)
                 {
                     GraphElement subElement = m_ContainedElements[i];
+
+                    if (subElement.panel != panel)
+                        continue;
+
                     Rect boundingRect = new Rect(0, 0, subElement.GetPosition().width, subElement.GetPosition().height);
 
                     if (IsValidRect(boundingRect))
@@ -430,7 +484,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if ((m_ContainedElements == null) || (m_ContainedElements.Count == 0))
             {
-                contentRectInViewportSpace = this.ChangeCoordinatesTo(viewport, new Rect(m_ContentItem.style.paddingLeft.value, m_HeaderItem.layout.height + m_ContentItem.style.paddingTop.value, 0, 0));
+                float contentX = m_ContentItem.style.borderLeftWidth.value + m_ContentItem.style.paddingLeft.value;
+                float contentY = m_HeaderItem.layout.height + m_ContentItem.style.borderTopWidth.value + m_ContentItem.style.paddingTop.value;
+
+                contentRectInViewportSpace = this.ChangeCoordinatesTo(viewport, new Rect(contentX, contentY, 0, 0));
             }
 
             float titleItemImplicitWidth = k_TitleItemMinWidth;
@@ -466,7 +523,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Vector2 newPosInCanvasSpace = this.ChangeCoordinatesTo(viewport, new Vector2(0, 0));
             mPreviousPosInCanvasSpace = newPosInCanvasSpace;
-
+            m_ContainedElementsRect = viewport.ChangeCoordinatesTo(this, contentRectInViewportSpace);
             m_IsUpdatingGeometryFromContent = false;
         }
     }

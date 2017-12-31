@@ -438,7 +438,9 @@ namespace UnityEditorInternal
             Color color = isChild ? Color.gray.AlphaMultiplied(0.05f) : Color.gray.AlphaMultiplied(0.16f);
 
             // Draw background
-            if (!dopeline.isMasterDopeline)
+            if (dopeline.isMasterDopeline)
+                DrawMasterDopelineBackground(dopeline.position);
+            else
                 DrawBox(dopeline.position, color);
 
             // Draw keys
@@ -688,12 +690,12 @@ namespace UnityEditorInternal
             {
                 switch (Event.current.commandName)
                 {
-                    case "SelectAll":
+                    case EventCommandNames.SelectAll:
                         if (Event.current.type == EventType.ExecuteCommand)
                             HandleSelectAll();
                         Event.current.Use();
                         break;
-                    case "FrameSelected":
+                    case EventCommandNames.FrameSelected:
                         if (Event.current.type == EventType.ExecuteCommand)
                             FrameSelected();
                         Event.current.Use();
@@ -735,7 +737,7 @@ namespace UnityEditorInternal
             {
                 case EventType.ValidateCommand:
                 case EventType.ExecuteCommand:
-                    if ((Event.current.commandName == "SoftDelete" || Event.current.commandName == "Delete"))
+                    if ((Event.current.commandName == EventCommandNames.SoftDelete || Event.current.commandName == EventCommandNames.Delete))
                     {
                         if (Event.current.type == EventType.ExecuteCommand)
                             state.DeleteSelectedKeys();
@@ -914,8 +916,6 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             if (!dopeline.position.Contains(evt.mousePosition))
                 return;
-
-            //state.animationWindow.EnsureAnimationMode ();
 
             bool keysAreSelected = false;
             foreach (AnimationWindowKeyframe keyframe in dopeline.keys)

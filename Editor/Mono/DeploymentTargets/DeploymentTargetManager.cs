@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Modules;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace UnityEditor.DeploymentTargets
@@ -36,10 +37,10 @@ namespace UnityEditor.DeploymentTargets
         public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildProperties buildProperties)
         {
             return info.GetSupportFlags().HasFlags(DeploymentTargetSupportFlags.Launch) &&
-                info.CheckBuild(buildProperties).Passed();
+                info.CheckTarget(buildProperties.GetTargetRequirements()).Passed();
         }
 
-        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildReporting.BuildReport buildReport)
+        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildReport buildReport)
         {
             return SupportsLaunchBuild(info, BuildProperties.GetFromBuildReport(buildReport));
         }
@@ -50,7 +51,7 @@ namespace UnityEditor.DeploymentTargets
             extension.LaunchBuildOnTarget(buildProperties, targetId, progressHandler);
         }
 
-        public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
+        public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
             LaunchBuildOnTarget(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport), targetId, progressHandler);
         }
@@ -78,7 +79,7 @@ namespace UnityEditor.DeploymentTargets
             return validTargetIds;
         }
 
-        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReporting.BuildReport buildReport)
+        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReport buildReport)
         {
             return FindValidTargetsForLaunchBuild(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport));
         }

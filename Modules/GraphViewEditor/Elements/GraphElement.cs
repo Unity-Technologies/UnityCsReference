@@ -23,6 +23,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public int layer
         {
             get { return m_Layer.value; }
+            set
+            {
+                if (m_Layer.value == value)
+                    return;
+                m_Layer = value;
+            }
+        }
+
+        public void ResetLayer()
+        {
+            int prevLayer = m_Layer.value;
+            m_Layer = StyleValue<int>.nil;
+            effectiveStyle.ApplyCustomProperty(k_LayerProperty, ref m_Layer);
+            UpdateLayer(prevLayer);
         }
 
         const string k_LayerProperty = "layer";
@@ -32,7 +46,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             base.OnStyleResolved(style);
             int prevLayer = m_Layer.value;
             style.ApplyCustomProperty(k_LayerProperty, ref m_Layer);
+            UpdateLayer(prevLayer);
+        }
 
+        private void UpdateLayer(int prevLayer)
+        {
             if (prevLayer != m_Layer.value)
             {
                 GraphView view = GetFirstAncestorOfType<GraphView>();
@@ -44,7 +62,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private Capabilities m_Capabilities;
-
         public Capabilities capabilities
         {
             get { return m_Capabilities; }
@@ -185,11 +202,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return (capabilities & Capabilities.Droppable) == Capabilities.Droppable;
         }
 
-        public virtual bool IsFloating()
-        {
-            return (capabilities & Capabilities.Floating) == Capabilities.Floating;
-        }
-
         public virtual bool IsAscendable()
         {
             return (capabilities & Capabilities.Ascendable) == Capabilities.Ascendable;
@@ -229,7 +241,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (IsAscendable())
             {
-                this.BringToFront();
+                BringToFront();
             }
         }
 

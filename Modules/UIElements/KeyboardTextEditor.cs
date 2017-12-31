@@ -53,24 +53,23 @@ namespace UnityEngine.Experimental.UIElements
 
         void OnMouseDown(MouseDownEvent evt)
         {
-            if (evt.button != 0)
-            {
-                return;
-            }
-
             textInputField.SyncTextEngine();
             m_Changed = false;
 
-            textInputField.TakeMouseCapture();
-
-            if (!editorEngine.m_HasFocus)
+            if (!textInputField.hasFocus)
             {
                 editorEngine.m_HasFocus = true;
 
-                editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.shiftKey);
+                editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, evt.button == (int)MouseButton.LeftMouse && evt.shiftKey);
+
+                if (evt.button == (int)MouseButton.LeftMouse)
+                {
+                    textInputField.TakeMouseCapture();
+                }
+
                 evt.StopPropagation();
             }
-            else
+            else if (evt.button == (int)MouseButton.LeftMouse)
             {
                 if (evt.clickCount == 2 && textInputField.doubleClickSelectsWord)
                 {
@@ -92,7 +91,17 @@ namespace UnityEngine.Experimental.UIElements
                     m_SelectAllOnMouseUp = false;
                 }
 
+                textInputField.TakeMouseCapture();
                 evt.StopPropagation();
+            }
+            else if (evt.button == (int)MouseButton.RightMouse)
+            {
+                if (editorEngine.cursorIndex == editorEngine.selectIndex)
+                {
+                    editorEngine.MoveCursorToPosition_Internal(evt.localMousePosition, false);
+                }
+                m_SelectAllOnMouseUp = false;
+                m_DragToPosition = false;
             }
 
             // Scroll offset might need to be updated
@@ -264,19 +273,19 @@ namespace UnityEngine.Experimental.UIElements
                 case EventType.ValidateCommand:
                     switch (evt.imguiEvent.commandName)
                     {
-                        case "Cut":
-                        case "Copy":
+                        case EventCommandNames.Cut:
+                        case EventCommandNames.Copy:
                             if (!editorEngine.hasSelection)
                                 return;
                             break;
-                        case "Paste":
+                        case EventCommandNames.Paste:
                             if (!editorEngine.CanPaste())
                                 return;
                             break;
-                        case "SelectAll":
-                        case "Delete":
+                        case EventCommandNames.SelectAll:
+                        case EventCommandNames.Delete:
                             break;
-                        case "UndoRedoPerformed":
+                        case EventCommandNames.UndoRedoPerformed:
                             // TODO: ????? editor.text = text; --> see EditorGUI's DoTextField
                             break;
                     }
@@ -292,26 +301,26 @@ namespace UnityEngine.Experimental.UIElements
 
                     switch (evt.imguiEvent.commandName)
                     {
-                        case "OnLostFocus":
+                        case EventCommandNames.OnLostFocus:
                             evt.StopPropagation();
                             return;
-                        case "Cut":
+                        case EventCommandNames.Cut:
                             editorEngine.Cut();
                             mayHaveChanged = true;
                             break;
-                        case "Copy":
+                        case EventCommandNames.Copy:
                             editorEngine.Copy();
                             evt.StopPropagation();
                             return;
-                        case "Paste":
+                        case EventCommandNames.Paste:
                             editorEngine.Paste();
                             mayHaveChanged = true;
                             break;
-                        case "SelectAll":
+                        case EventCommandNames.SelectAll:
                             editorEngine.SelectAll();
                             evt.StopPropagation();
                             return;
-                        case "Delete":
+                        case EventCommandNames.Delete:
                             // This "Delete" command stems from a Shift-Delete in the text
                             // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
                             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)

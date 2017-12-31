@@ -16,26 +16,18 @@ namespace UnityEditor.PackageManager
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
     [NativeAsStruct]
-    public class UpmPackageInfo
+    [NativeType(IntermediateScriptingStructName = "PackageManager_PackageInfo")]
+    public class PackageInfo
     {
         [SerializeField]
         [NativeName("packageId")]
         private string m_PackageId;
-        [SerializeField]
-        [NativeName("tag")]
-        private string m_Tag;
         [SerializeField]
         [NativeName("version")]
         private string m_Version;
         [SerializeField]
         [NativeName("originType")]
         private OriginType m_OriginType;
-        [SerializeField]
-        [NativeName("originLocation")]
-        private string m_OriginLocation;
-        [SerializeField]
-        [NativeName("relationType")]
-        private RelationType m_RelationType;
         [SerializeField]
         [NativeName("resolvedPath")]
         private string m_ResolvedPath;
@@ -57,10 +49,13 @@ namespace UnityEditor.PackageManager
         [SerializeField]
         [NativeName("errors")]
         private Error[] m_Errors;
+        [SerializeField]
+        [NativeName("versions")]
+        private VersionsInfo m_Versions;
 
-        private UpmPackageInfo() {}
+        private PackageInfo() {}
 
-        internal UpmPackageInfo(
+        internal PackageInfo(
             string packageId,
             string displayName = "",
             string category = "",
@@ -68,13 +63,11 @@ namespace UnityEditor.PackageManager
             string resolvedPath = "",
             string tag = "",
             PackageStatus status = PackageStatus.Unavailable,
-            IEnumerable<Error> errors = null)
+            IEnumerable<Error> errors = null,
+            VersionsInfo versions = null)
         {
             // Set the default values
             m_OriginType = OriginType.Unknown;
-            m_RelationType = RelationType.Unknown;
-            m_Tag = tag;
-            m_OriginLocation = "not implemented";
             m_PackageId = packageId;
             m_DisplayName = displayName;
             m_Category = category;
@@ -82,6 +75,7 @@ namespace UnityEditor.PackageManager
             m_ResolvedPath = resolvedPath;
             m_Status = status;
             m_Errors = (errors ?? new Error[] {}).ToArray();
+            m_Versions = versions ?? new VersionsInfo(null, null, null);
 
             // Populate name and version
             var nameAndVersion = packageId.Split('@');
@@ -90,11 +84,9 @@ namespace UnityEditor.PackageManager
         }
 
         public string packageId { get { return m_PackageId;  } }
-        public string tag { get { return m_Tag;  } }
         public string version { get { return m_Version;  } }
-        public OriginType originType { get { return m_OriginType;  } }
-        public string originLocation { get { return m_OriginLocation;  } }
-        public RelationType relationType { get { return m_RelationType;  } }
+        // Mocked for PAX uncomment when properly implemented
+        // public OriginType originType { get { return m_OriginType;  } }}
         public string resolvedPath { get { return m_ResolvedPath;  } }
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
@@ -102,6 +94,19 @@ namespace UnityEditor.PackageManager
         public string description { get { return m_Description;  } }
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
+        public VersionsInfo versions { get { return m_Versions; } }
+
+        // Mock needed by PAX
+        public OriginType originType
+        {
+            get
+            {
+                if (m_Name.StartsWith("com.unity.modules."))
+                    return OriginType.Builtin;
+                else
+                    return OriginType.Registry;
+            }
+        }
     }
 }
 

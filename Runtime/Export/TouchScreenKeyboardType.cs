@@ -24,6 +24,7 @@ namespace UnityEngine
         // Keyboard with additional keys suitable for typing email addresses, features the "@" and "."
         EmailAddress = 7,
         // Keyboard with the Nintendo Network Account key layout (only available on the Wii U)
+        [System.Obsolete("Wii U is no longer supported as of Unity 2018.1.")]
         NintendoNetworkAccount = 8,
         // Keyboard with symbol keys often used on social media such as Twitter, features the "@" (and "#" on iOS/tvOS)
         Social = 9,

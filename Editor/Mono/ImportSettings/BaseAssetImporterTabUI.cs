@@ -27,6 +27,16 @@ namespace UnityEditor
             get { return m_PanelContainer.target; }
         }
 
+        public Object assetTarget
+        {
+            get { return m_PanelContainer.assetTarget; }
+        }
+
+        public Object[] assetTargets
+        {
+            get { return m_PanelContainer.assetTargets; }
+        }
+
         public int referenceTargetIndex
         {
             get { return m_PanelContainer.referenceTargetIndex; }

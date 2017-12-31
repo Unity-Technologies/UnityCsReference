@@ -284,6 +284,9 @@ namespace UnityEditor
                             evt.Use();
                         }
                         break;
+                    case EventType.DragExited:
+                        m_DragSelection.Clear();
+                        break;
                 }
             }
 
@@ -359,9 +362,6 @@ namespace UnityEditor
                             m_DragSelection.Clear();
                     }
                     break;
-                    case EventType.DragExited:
-                        m_DragSelection.Clear();
-                        break;
                     case EventType.MouseUp:
                         if (GUIUtility.hotControl == controlID)
                         {

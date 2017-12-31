@@ -260,7 +260,7 @@ namespace UnityEditor.Modules
 
     internal interface IBuildAnalyzer
     {
-        void OnAddedExecutable(BuildReporting.BuildReport report, int fileIndex);
+        void OnAddedExecutable(Build.Reporting.BuildReport report, int fileIndex);
     }
 
     // Extension point to add platform-specific texture import settings.
@@ -324,7 +324,7 @@ namespace UnityEditor.Modules
         public string installPath;
         public string productName;
         public BuildOptions options;
-        public BuildReporting.BuildReport report;
+        public Build.Reporting.BuildReport report;
     }
 
     internal struct BuildPostProcessArgs
@@ -339,7 +339,7 @@ namespace UnityEditor.Modules
         public string productName;
         public Guid productGUID;
         public BuildOptions options;
-        public BuildReporting.BuildReport report;
+        public Build.Reporting.BuildReport report;
         internal RuntimeClassRegistry usedClassRegistry;
     }
 

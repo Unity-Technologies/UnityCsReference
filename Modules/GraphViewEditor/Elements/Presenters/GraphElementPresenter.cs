@@ -46,6 +46,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        public virtual bool isFloating => false;
+
         public virtual UnityEngine.Object[] GetObjectsToWatch()
         {
             return new UnityEngine.Object[] { this };
@@ -53,7 +55,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected virtual void OnEnable()
         {
-            capabilities = Capabilities.Normal | Capabilities.Movable | Capabilities.Selectable;
+            capabilities = Capabilities.Movable | Capabilities.Selectable;
         }
 
         public virtual void OnRemoveFromGraph()

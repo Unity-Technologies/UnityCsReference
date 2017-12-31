@@ -538,11 +538,11 @@ namespace UnityEditor.U2D
                     }
                     break;
                 case EventType.ValidateCommand:
-                    if (currentEvent.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
                         usedEvent = true;
                     break;
                 case EventType.ExecuteCommand:
-                    if (currentEvent.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
+                    if (currentEvent.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == s_Styles.packableSelectorHash)
                     {
                         var obj = ObjectSelector.GetCurrentObject();
                         if (IsPackable(obj))

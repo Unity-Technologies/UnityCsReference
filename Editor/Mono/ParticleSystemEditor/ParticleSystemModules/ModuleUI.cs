@@ -205,6 +205,14 @@ namespace UnityEditor
             return m_ParticleSystemUI.m_ParticleEffectUI.GetParticleSystemCurveEditor();
         }
 
+        public virtual bool DrawHeader(Rect rect, GUIContent label)
+        {
+            label = EditorGUI.BeginProperty(rect, label, m_ModuleRootProperty);
+            var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().moduleHeaderStyle);
+            EditorGUI.EndProperty();
+            return toggleState;
+        }
+
         public void AddToModuleCurves(SerializedProperty curveProp)
         {
             m_ModuleCurves.Add(curveProp);

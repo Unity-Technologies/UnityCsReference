@@ -821,49 +821,49 @@ namespace UnityEditor
 
             bool execute = evt.type == EventType.ExecuteCommand;
 
-            if (evt.commandName == "Delete" || evt.commandName == "SoftDelete")
+            if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
             {
                 if (execute)
                     DeleteGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "Duplicate")
+            else if (evt.commandName == EventCommandNames.Duplicate)
             {
                 if (execute)
                     DuplicateGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "Copy")
+            else if (evt.commandName == EventCommandNames.Copy)
             {
                 if (execute)
                     CopyGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "Paste")
+            else if (evt.commandName == EventCommandNames.Paste)
             {
                 if (execute)
                     PasteGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "SelectAll")
+            else if (evt.commandName == EventCommandNames.SelectAll)
             {
                 if (execute)
                     SelectAll();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "FrameSelected")
+            else if (evt.commandName == EventCommandNames.FrameSelected)
             {
                 if (evt.type == EventType.ExecuteCommand)
                     FrameObjectPrivate(Selection.activeInstanceID, true, true, true);
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            else if (evt.commandName == "Find")
+            else if (evt.commandName == EventCommandNames.Find)
             {
                 if (evt.type == EventType.ExecuteCommand)
                     FocusSearchField();

@@ -24,13 +24,11 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
-        bool m_IsPasswordField;
-        public bool isPasswordField
+        public override bool isPasswordField
         {
-            get { return m_IsPasswordField; }
             set
             {
-                m_IsPasswordField = value;
+                base.isPasswordField = value;
                 if (value)
                     multiline = false;
             }

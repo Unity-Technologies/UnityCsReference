@@ -21,10 +21,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             set { m_Anchored = value; }
         }
 
+        public override bool isFloating => true;
+
         protected new void OnEnable()
         {
             base.OnEnable();
-            capabilities = Capabilities.Floating | Capabilities.Movable;
+            capabilities = Capabilities.Movable;
         }
 
         protected MiniMapPresenter()

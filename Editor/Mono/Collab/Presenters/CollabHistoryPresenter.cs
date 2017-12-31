@@ -18,6 +18,7 @@ namespace UnityEditor.Collaboration
         int m_TotalRevisions;
         int m_CurrentPage;
         BuildAccess m_BuildAccess;
+        string m_ProgressRevision;
         public bool BuildServiceEnabled {get; set; }
 
         public CollabHistoryPresenter(ICollabHistoryWindow window, ICollabHistoryItemFactory factory, IRevisionsService service)
@@ -107,8 +108,19 @@ namespace UnityEditor.Collaboration
             if (CollabStatesEqual(m_CollabState, state))
                 return;
 
+            if (m_CollabState.tip != state.tip)
+                OnUpdatePage(m_CurrentPage);
+
             m_CollabState = state;
             m_Window.UpdateState(RecalculateState(), false);
+            if (state.inProgress)
+            {
+                m_Window.inProgressRevision = m_ProgressRevision;
+            }
+            else
+            {
+                m_Window.inProgressRevision = null;
+            }
         }
 
         private void OnCollabRevisionUpdated(CollabInfo state)
@@ -118,7 +130,7 @@ namespace UnityEditor.Collaboration
 
         private void OnCollabJobsCompleted(CollabInfo state)
         {
-            m_Window.inProgressRevision = null;
+            m_ProgressRevision = null;
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange stateChange)
@@ -201,25 +213,25 @@ namespace UnityEditor.Collaboration
             var revs = m_Service.GetRevisions(page * k_ItemsPerPage, k_ItemsPerPage);
             m_TotalRevisions = revs.RevisionsInRepo;
             var items = m_Factory.GenerateElements(revs.Revisions, m_TotalRevisions, page * k_ItemsPerPage, m_Service.tipRevision, m_Window.inProgressRevision,
-                    m_Window.revisionActionsEnabled, BuildServiceEnabled);
+                    m_Window.revisionActionsEnabled, BuildServiceEnabled, m_Service.currentUser);
             m_Window.UpdateRevisions(items, m_Service.tipRevision, m_TotalRevisions);
         }
 
         private void OnRestore(string revisionId, bool updatetorevision)
         {
-            m_Window.inProgressRevision = revisionId;
+            m_ProgressRevision = revisionId;
             Collab.instance.ResyncToRevision(revisionId);
         }
 
         private void OnGoBack(string revisionId, bool updatetorevision)
         {
-            m_Window.inProgressRevision = revisionId;
+            m_ProgressRevision = revisionId;
             Collab.instance.GoBackToRevision(revisionId, false);
         }
 
         private void OnUpdate(string revisionId, bool updatetorevision)
         {
-            m_Window.inProgressRevision = revisionId;
+            m_ProgressRevision = revisionId;
             Collab.instance.Update(revisionId, updatetorevision);
         }
     }

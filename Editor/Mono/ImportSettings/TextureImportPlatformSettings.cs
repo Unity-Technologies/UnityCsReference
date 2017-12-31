@@ -190,9 +190,6 @@ namespace UnityEditor
             int[] testValues;
             switch (m_Target)
             {
-                case BuildTarget.WiiU:
-                    testValues = kTextureFormatsValueWiiU;
-                    break;
                 case BuildTarget.PSP2:
                     testValues = kTextureFormatsValuePSP2;
                     break;
@@ -329,16 +326,6 @@ namespace UnityEditor
                 imp.SetPlatformTextureSettings(platformSettings);
             }
         }
-
-        public static readonly int[] kTextureFormatsValueWiiU =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.RGB16, // R5G6B5
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.RGBA16, // R4G4B4A4
-        };
 
         public static readonly int[] kTextureFormatsValuePSP2 =
         {

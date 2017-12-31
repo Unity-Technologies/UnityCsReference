@@ -10,7 +10,7 @@ using UnityEditor.Experimental.U2D;
 
 namespace UnityEditor
 {
-    internal partial class SpritePolygonModeModule : SpriteFrameModuleBase, ISpriteEditorModule
+    internal partial class SpritePolygonModeModule : SpriteFrameModuleBase
     {
         private static class SpritePolygonModeStyles
         {

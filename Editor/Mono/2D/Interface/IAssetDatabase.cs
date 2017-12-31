@@ -3,13 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEditor;
 
 namespace UnityEditor.U2D.Interface
 {
     internal interface IAssetDatabase
     {
         string GetAssetPath(Object o);
-        ITextureImporter GetAssetImporterFromPath(string path);
+        AssetImporter GetAssetImporterFromPath(string path);
     }
 
     internal class AssetDatabaseSystem : IAssetDatabase
@@ -19,10 +20,9 @@ namespace UnityEditor.U2D.Interface
             return UnityEditor.AssetDatabase.GetAssetPath(o);
         }
 
-        public ITextureImporter GetAssetImporterFromPath(string path)
+        public AssetImporter GetAssetImporterFromPath(string path)
         {
-            UnityEditor.AssetImporter ai = UnityEditor.AssetImporter.GetAtPath(path) as UnityEditor.TextureImporter;
-            return ai == null ? null : new TextureImporter((UnityEditor.TextureImporter)ai);
+            return UnityEditor.AssetImporter.GetAtPath(path);
         }
     }
 }

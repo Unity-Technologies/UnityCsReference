@@ -52,11 +52,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
     public abstract class GraphView : DataWatchContainer, ISelection
     {
-        static GraphView()
-        {
-            Factories.RegisterFactory<EdgeDrawer>((_, __) => new EdgeDrawer());
-        }
-
         // Layer class. Used for queries below.
         class Layer : VisualElement {}
 
@@ -131,6 +126,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private int m_SavedSelectionVersion;
         private PersistedSelection m_PersistedSelection;
         private GraphViewUndoRedoSelection m_GraphViewUndoRedoSelection;
+        private bool m_FontsOverridden = false;
 
         class ContentViewContainer : VisualElement
         {
@@ -228,34 +224,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             RegisterCallback<IMGUIEvent>(OnExecuteCommand);
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
-            RegisterCallback<MouseUpEvent>(ShowContextualMenu);
-        }
+            RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenu);
 
-        void ShowContextualMenu(MouseUpEvent e)
-        {
-            if (MouseCaptureController.IsMouseCaptureTaken())
-                return;
-
-            if (nodeCreationRequest != null && e.button == (int)MouseButton.RightMouse)
+            // We override the font for all GraphElements here so we can use the fallback system.
+            // We load the dummy font first and then we overwrite the fontNames, just like we do
+            // with the Editor's default font asset. Loading system fonts directly via
+            // Font.CreateDynamicFontFromOSFont() caused TextMesh to generate the wrong bounds.
+            //
+            // TODO: Add font fallback specifications and use of system fonts to USS.
+            if (!m_FontsOverridden && (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.OSXEditor))
             {
-                GUIView guiView = elementPanel.ownerObject as GUIView;
+                Font graphViewFont = EditorGUIUtility.LoadRequired("GraphView/DummyFont(LucidaGrande).ttf") as Font;
 
-                if (guiView == null)
-                    return;
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    graphViewFont.fontNames = new string[] { "Segoe UI", "Helvetica Neue", "Helvetica", "Arial", "Verdana" };
+                else if (Application.platform == RuntimePlatform.OSXEditor)
+                    graphViewFont.fontNames = new string[] { "Helvetica Neue", "Lucida Grande" };
 
-                Vector2 screenPoint = guiView.screenPosition.position + e.mousePosition;
-
-                var menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Create node"), false, OnContextMenuNodeCreate, screenPoint);
-                menu.DropDown(new Rect(e.mousePosition.x, e.mousePosition.y, 0, 0));
-                e.StopPropagation();
+                m_FontsOverridden = true;
             }
-        }
-
-        void OnContextMenuNodeCreate(object userData)
-        {
-            if (nodeCreationRequest != null)
-                nodeCreationRequest(new NodeCreationContext() { screenMousePosition = (Vector2)userData});
         }
 
         internal override void ChangePanel(BaseVisualElementPanel p)
@@ -381,14 +368,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void AddLayer(int index)
         {
-            m_ContainerLayers.Add(index, new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore });
+            Layer newLayer = new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore };
 
-            foreach (var layer in m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value))
-            {
-                if (layer.parent != null)
-                    contentViewContainer.Remove(layer);
-                contentViewContainer.Add(layer);
-            }
+            m_ContainerLayers.Add(index, newLayer);
+
+            int indexOfLayer = m_ContainerLayers.OrderBy(t => t.Key).Select(t => t.Value).ToList().IndexOf(newLayer);
+
+            contentViewContainer.Insert(indexOfLayer, newLayer);
         }
 
         VisualElement GetLayer(int index)
@@ -422,6 +408,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         int m_ZoomerMaxElementCountWithPixelCacheRegen = 100;
         float m_MinScale = ContentZoomer.DefaultMinScale;
         float m_MaxScale = ContentZoomer.DefaultMaxScale;
+        float m_ScaleStep = ContentZoomer.DefaultScaleStep;
+        float m_ReferenceScale = ContentZoomer.DefaultReferenceScale;
 
         public float minScale
         {
@@ -431,6 +419,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public float maxScale
         {
             get { return m_MaxScale; }
+        }
+
+        public float scaleStep
+        {
+            get { return m_ScaleStep; }
+        }
+
+        public float referenceScale
+        {
+            get { return m_ReferenceScale; }
         }
 
         public float scale
@@ -474,8 +472,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void SetupZoom(float minScaleSetup, float maxScaleSetup)
         {
+            SetupZoom(minScaleSetup, maxScaleSetup, m_ScaleStep, m_ReferenceScale);
+        }
+
+        public void SetupZoom(float minScaleSetup, float maxScaleSetup, float scaleStepSetup, float referenceScaleSetup)
+        {
             m_MinScale = minScaleSetup;
             m_MaxScale = maxScaleSetup;
+            m_ScaleStep = scaleStepSetup;
+            m_ReferenceScale = referenceScaleSetup;
             UpdateContentZoomer();
         }
 
@@ -512,14 +517,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_Zoomer == null)
                 {
-                    m_Zoomer = new ContentZoomer(m_MinScale, m_MaxScale);
+                    m_Zoomer = new ContentZoomer();
                     this.AddManipulator(m_Zoomer);
                 }
-                else
-                {
-                    m_Zoomer.minScale = m_MinScale;
-                    m_Zoomer.maxScale = m_MaxScale;
-                }
+
+                m_Zoomer.minScale = m_MinScale;
+                m_Zoomer.maxScale = m_MaxScale;
+                m_Zoomer.scaleStep = m_ScaleStep;
+                m_Zoomer.referenceScale = m_ReferenceScale;
             }
             else
             {
@@ -580,7 +585,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 // For regular presenters we check inside the contentViewContainer
                 // for their VisualElements.
-                if ((elementPresenter.capabilities & Capabilities.Floating) == 0)
+                if (!elementPresenter.isFloating)
                 {
                     foreach (var dc in current)
                     {
@@ -706,8 +711,75 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            if (evt.target is UIElements.GraphView.GraphView)
+            {
+                evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, ContextualMenu.MenuAction.AlwaysEnabled);
+                evt.menu.AppendSeparator();
+            }
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode || evt.target is Edge)
+            {
+                evt.menu.AppendAction("Cut", (e) => { CutSelectionCallback(); },
+                    (e) => { return canCutSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+            }
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode)
+            {
+                evt.menu.AppendAction("Copy", (e) => { CopySelectionCallback(); },
+                    (e) => { return canCopySelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+            }
+            if (evt.target is UIElements.GraphView.GraphView)
+            {
+                evt.menu.AppendAction("Paste", (e) => { PasteCallback(); },
+                    (e) => { return canPaste ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+            }
+        }
+
+        void OnContextMenuNodeCreate(EventBase evt)
+        {
+            if (nodeCreationRequest == null)
+                return;
+
+            GUIView guiView = elementPanel.ownerObject as GUIView;
+            if (guiView == null)
+                return;
+
+            Vector2 referencePosition;
+            if (evt is IMouseEvent)
+            {
+                referencePosition = (evt as IMouseEvent).mousePosition;
+            }
+            else
+            {
+                referencePosition = Vector2.zero;
+            }
+
+            Vector2 screenPoint = guiView.screenPosition.position + referencePosition;
+
+            nodeCreationRequest(new NodeCreationContext() { screenMousePosition = screenPoint });
+        }
+
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            base.ExecuteDefaultActionAtTarget(evt);
+
+            if (elementPanel != null && elementPanel.contextualMenuManager != null)
+            {
+                elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
+            }
+        }
+
+        void OnContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            // If popping a contextual menu on a GraphElement, add the cut/copy actions.
+            BuildContextualMenu(evt);
+        }
+
         void OnEnterPanel(AttachToPanelEvent e)
         {
+            // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
+            UIElementsEditorUtility.ForceDarkStyleSheet(this);
+
             if (isReframable)
                 panel.visualTree.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
         }
@@ -761,16 +833,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Event e = evt.imguiEvent;
             if (e != null && e.type == EventType.ValidateCommand)
             {
-                if ((e.commandName == "Copy" && canCopySelection)
-                    || (e.commandName == "Paste" && canPaste)
-                    || (e.commandName == "Duplicate" && canDuplicateSelection)
-                    || (e.commandName == "Cut" && canCutSelection)
-                    || ((e.commandName == "Delete" || e.commandName == "SoftDelete") && canDeleteSelection))
+                if ((e.commandName == EventCommandNames.Copy && canCopySelection)
+                    || (e.commandName == EventCommandNames.Paste && canPaste)
+                    || (e.commandName == EventCommandNames.Duplicate && canDuplicateSelection)
+                    || (e.commandName == EventCommandNames.Cut && canCutSelection)
+                    || ((e.commandName == EventCommandNames.Delete || e.commandName == EventCommandNames.SoftDelete) && canDeleteSelection))
                 {
                     evt.StopPropagation();
                     e.Use();
                 }
-                else if (e.commandName == "FrameSelected")
+                else if (e.commandName == EventCommandNames.FrameSelected)
                 {
                     evt.StopPropagation();
                     e.Use();
@@ -789,37 +861,37 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Event e = evt.imguiEvent;
             if (e != null && e.type == EventType.ExecuteCommand)
             {
-                if (e.commandName == "Copy")
+                if (e.commandName == EventCommandNames.Copy)
                 {
                     CopySelectionCallback();
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "Paste")
+                else if (e.commandName == EventCommandNames.Paste)
                 {
                     PasteCallback();
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "Duplicate")
+                else if (e.commandName == EventCommandNames.Duplicate)
                 {
                     DuplicateSelectionCallback();
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "Cut")
+                else if (e.commandName == EventCommandNames.Cut)
                 {
                     CutSelectionCallback();
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "Delete")
+                else if (e.commandName == EventCommandNames.Delete)
                 {
                     DeleteSelectionCallback(AskUser.DontAskUser);
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "SoftDelete")
+                else if (e.commandName == EventCommandNames.SoftDelete)
                 {
                     DeleteSelectionCallback(AskUser.AskUser);
                     evt.StopPropagation();
                 }
-                else if (e.commandName == "FrameSelected")
+                else if (e.commandName == EventCommandNames.FrameSelected)
                 {
                     FrameSelection();
                     evt.StopPropagation();
@@ -867,7 +939,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual bool canCopySelection
         {
-            get { return selection.Count > 0; }
+            get { return selection.OfType<Node>().Any() || selection.OfType<GroupNode>().Any(); }
         }
 
         protected internal void CopySelectionCallback()
@@ -881,7 +953,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual bool canCutSelection
         {
-            get { return canCopySelection; }
+            get { return selection.Count > 0; }
         }
 
         protected internal void CutSelectionCallback()
@@ -913,7 +985,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual bool canDeleteSelection
         {
-            get { return canCopySelection; }
+            get
+            {
+                return selection.Cast<GraphElement>().Where(e => e != null && (e.capabilities & Capabilities.Deletable) != 0).Any();
+            }
         }
 
         protected internal void DeleteSelectionCallback(AskUser askUser)
@@ -1014,20 +1089,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 graphElement.style.borderBottom = 6;
             }
 
-            bool attachToContainer = !graphElement.IsFloating();
-            if (attachToContainer)
+            int newLayer = graphElement.layer;
+            if (!m_ContainerLayers.ContainsKey(newLayer))
             {
-                int newLayer = graphElement.layer;
-                if (!m_ContainerLayers.ContainsKey(newLayer))
-                {
-                    AddLayer(newLayer);
-                }
-                GetLayer(newLayer).Add(graphElement);
+                AddLayer(newLayer);
             }
-            else
-            {
-                Add(graphElement);
-            }
+            GetLayer(newLayer).Add(graphElement);
+
             if (graphElement.presenter != null)
                 graphElement.OnDataChanged();
         }
@@ -1051,7 +1119,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             newElem.SetPosition(elementPresenter.position);
             newElem.presenter = elementPresenter;
 
-            AddElement(newElem);
+            if (elementPresenter.isFloating)
+                Add(newElem);
+            else
+                AddElement(newElem);
         }
 
         // TODO: Remove when removing presenters.
@@ -1123,16 +1194,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (connectorColl == null)
                     continue;
 
-                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.inputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
-                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().Cast<Port>().SelectMany(c => c.connections)
+                elementsToRemoveSet.UnionWith(connectorColl.outputContainer.Children().OfType<Port>().SelectMany(c => c.connections)
                     .Where(d => (d.capabilities & Capabilities.Deletable) != 0)
                     .Cast<GraphElement>());
             }
 
+            DeleteElements(elementsToRemoveSet);
+
+            selection.Clear();
+
+            return (elementsToRemoveSet.Count > 0) ? EventPropagation.Stop : EventPropagation.Continue;
+        }
+
+        public void DeleteElements(IEnumerable<GraphElement> elementsToRemove)
+        {
             m_ElementsToRemove.Clear();
-            foreach (GraphElement element in elementsToRemoveSet)
+            foreach (GraphElement element in elementsToRemove)
                 m_ElementsToRemove.Add(element);
 
             List<GraphElement> elementsToRemoveList = m_ElementsToRemove;
@@ -1154,14 +1234,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 connection.input = null;
             }
 
-            foreach (var elementToRemove in elementsToRemoveList)
+            foreach (GraphElement element in elementsToRemoveList)
             {
-                RemoveElement(elementToRemove);
+                RemoveElement(element);
             }
-
-            selection.Clear();
-
-            return (elementsToRemoveList.Count > 0) ? EventPropagation.Stop : EventPropagation.Continue;
         }
 
         public EventPropagation FrameAll()
@@ -1184,8 +1260,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
 
-            List<GraphElement> childrenList = graphElements.ToList();
-            childrenList.Reverse();
+            List<GraphElement> childrenList = graphElements.ToList().Where(e => e.IsSelectable() && !(e is Edge)).OrderByDescending(e => e.controlid).ToList();
             return FramePrevNext(childrenList);
         }
 
@@ -1193,11 +1268,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (contentViewContainer.childCount == 0)
                 return EventPropagation.Continue;
-            return FramePrevNext(graphElements.ToList());
+
+            List<GraphElement> childrenList = graphElements.ToList().Where(e => e.IsSelectable() && !(e is Edge)).OrderBy(e => e.controlid).ToList();
+            return FramePrevNext(childrenList);
         }
 
         // TODO: Do we limit to GraphElements or can we tab through ISelectable's?
-        EventPropagation FramePrevNext(List<GraphElement> childrenEnum)
+        EventPropagation FramePrevNext(List<GraphElement> childrenList)
         {
             GraphElement graphElement = null;
 
@@ -1205,24 +1282,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (selection.Count != 0)
                 graphElement = selection[0] as GraphElement;
 
-            for (int i = 0; i < childrenEnum.Count; i++)
-            {
-                if (childrenEnum[i] == graphElement)
-                {
-                    if (i < childrenEnum.Count - 1)
-                    {
-                        graphElement = childrenEnum[i + 1];
-                    }
-                    else
-                    {
-                        graphElement = childrenEnum[0];
-                    }
-                    break;
-                }
-            }
+            int idx = childrenList.IndexOf(graphElement);
 
-            if (graphElement == null)
+            if (idx < 0)
                 return EventPropagation.Continue;
+
+            if (idx < childrenList.Count - 1)
+                graphElement = childrenList[idx + 1];
+            else
+                graphElement = childrenList[0];
 
             // New selection...
             ClearSelection();
@@ -1238,12 +1306,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var frameTranslation = Vector3.zero;
             var frameScaling = Vector3.one;
 
+            if (frameType == FrameType.Selection &&
+                (selection.Count == 0 || !selection.Any(e => e.IsSelectable() && !(e is Edge))))
+                frameType = FrameType.All;
+
             if (frameType == FrameType.Selection)
             {
-                // Now calculate rectangle to fit all selected elements
-                if (selection.Count == 0)
-                    return EventPropagation.Continue;
-
                 var graphElement = selection[0] as GraphElement;
                 if (graphElement != null)
                     rectToFit = graphElement.localBound;
@@ -1288,8 +1356,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             graphElements.ForEach(ge =>
                 {
-                    if ((ge.capabilities & Capabilities.Floating) != 0 ||
-                        (ge is Edge))
+                    if (ge is Edge)
                     {
                         return;
                     }

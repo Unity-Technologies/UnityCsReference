@@ -16,7 +16,7 @@ using Mono.Cecil;
 using UnityEditor.Modules;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     internal static class BuildReportHelper
     {

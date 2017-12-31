@@ -1098,7 +1098,7 @@ namespace UnityEditor
 
         internal void SendCommandsOnModifierKeys()
         {
-            SceneView.lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent("ModifierKeysChanged"));
+            SceneView.lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.ModifierKeysChanged));
         }
 
         void SelectionPreSceneGUI(int id)
@@ -1154,7 +1154,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.ExecuteCommand:
-                    if (m_RectSelecting && e.commandName == "ModifierKeysChanged")
+                    if (m_RectSelecting && e.commandName == EventCommandNames.ModifierKeysChanged)
                     {
                         RectSelectionModeFromEvent();
                         UpdateRectParticleSelection();
@@ -1435,7 +1435,7 @@ namespace UnityEditor
                 DrawConstraints();
 
             var evt = Event.current;
-            if (evt.commandName == "SelectAll")
+            if (evt.commandName == EventCommandNames.SelectAll)
             {
                 if (evt.type == EventType.ValidateCommand)
                     evt.Use();

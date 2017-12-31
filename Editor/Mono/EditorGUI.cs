@@ -518,9 +518,9 @@ namespace UnityEditor
             {
                 if (RecycledTextEditor.s_AllowContextCutOrPaste)
                 {
-                    pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent("Cut", GUIView.current).SendEvent);
+                    pm.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, new PopupMenuEvent(EventCommandNames.Cut, GUIView.current).SendEvent);
                 }
-                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent("Copy", GUIView.current).SendEvent);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, new PopupMenuEvent(EventCommandNames.Copy, GUIView.current).SendEvent);
             }
             else
             {
@@ -533,7 +533,7 @@ namespace UnityEditor
 
             if (s_RecycledEditor.CanPaste() && RecycledTextEditor.s_AllowContextCutOrPaste)
             {
-                pm.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, new PopupMenuEvent("Paste", GUIView.current).SendEvent);
+                pm.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, new PopupMenuEvent(EventCommandNames.Paste, GUIView.current).SendEvent);
             }
             else
             {
@@ -681,7 +681,7 @@ namespace UnityEditor
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
                 }
-                else if (s_DragCandidateState == 0)
+                else if (EditorGUIUtility.editingTextField || (evt.GetTypeForControl(id) == EventType.ExecuteCommand && evt.commandName == EventCommandNames.NewKeyboardFocus))
                 {
                     // This one is worse: we are the new keyboardControl, but didn't know about it.
                     // this means a Tab operation or setting focus from code.
@@ -689,6 +689,11 @@ namespace UnityEditor
                     // If cursor is invisible, it's a selectable label, and we don't want to select all automatically
                     if (GUI.skin.settings.cursorColor.a > 0)
                         editor.SelectAll();
+
+                    if (evt.GetTypeForControl(id) == EventType.ExecuteCommand)
+                    {
+                        evt.Use();
+                    }
                 }
             }
 
@@ -708,24 +713,24 @@ namespace UnityEditor
                     {
                         switch (evt.commandName)
                         {
-                            case "Cut":
-                            case "Copy":
+                            case EventCommandNames.Cut:
+                            case EventCommandNames.Copy:
                                 if (editor.hasSelection)
                                 {
                                     evt.Use();
                                 }
                                 break;
-                            case "Paste":
+                            case EventCommandNames.Paste:
                                 if (editor.CanPaste())
                                 {
                                     evt.Use();
                                 }
                                 break;
-                            case "SelectAll":
-                            case "Delete":
+                            case EventCommandNames.SelectAll:
+                            case EventCommandNames.Delete:
                                 evt.Use();
                                 break;
-                            case "UndoRedoPerformed":
+                            case EventCommandNames.UndoRedoPerformed:
                                 editor.text = text;
                                 evt.Use();
                                 break;
@@ -738,32 +743,32 @@ namespace UnityEditor
                     {
                         switch (evt.commandName)
                         {
-                            case "OnLostFocus":
+                            case EventCommandNames.OnLostFocus:
                                 if (activeEditor != null)
                                 {
                                     activeEditor.EndEditing();
                                 }
                                 evt.Use();
                                 break;
-                            case "Cut":
+                            case EventCommandNames.Cut:
                                 editor.BeginEditing(id, text, position, style, multiline, passwordField);
                                 editor.Cut();
                                 mayHaveChanged = true;
                                 break;
-                            case "Copy":
+                            case EventCommandNames.Copy:
                                 editor.Copy();
                                 evt.Use();
                                 break;
-                            case "Paste":
+                            case EventCommandNames.Paste:
                                 editor.BeginEditing(id, text, position, style, multiline, passwordField);
                                 editor.Paste();
                                 mayHaveChanged = true;
                                 break;
-                            case "SelectAll":
+                            case EventCommandNames.SelectAll:
                                 editor.SelectAll();
                                 evt.Use();
                                 break;
-                            case "Delete":
+                            case EventCommandNames.Delete:
                                 // This "Delete" command stems from a Shift-Delete in the text editor.
                                 // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
                                 editor.BeginEditing(id, text, position, style, multiline, passwordField);
@@ -1615,7 +1620,7 @@ namespace UnityEditor
                 }
             }
 
-            if (e.type == EventType.ExecuteCommand && (e.commandName == "Paste" || e.commandName == "Cut") && GUIUtility.keyboardControl == id)
+            if (e.type == EventType.ExecuteCommand && (e.commandName == EventCommandNames.Paste || e.commandName == EventCommandNames.Cut) && GUIUtility.keyboardControl == id)
             {
                 e.Use();
             }
@@ -1864,7 +1869,7 @@ namespace UnityEditor
                                         str = s_RecycledCurrentEditingString;
                                     }
                     */
-                    if (evt.type == EventType.ValidateCommand && evt.commandName == "UndoRedoPerformed")
+                    if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
                         str = isDouble ? doubleVal.ToString(formatString) : longVal.ToString(formatString);
                     }
@@ -1991,7 +1996,7 @@ namespace UnityEditor
                     str = s_RecycledCurrentEditingString;
                 }
                 Event evt = Event.current;
-                if (evt.type == EventType.ValidateCommand && evt.commandName == "UndoRedoPerformed")
+                if (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed)
                 {
                     str = value;
                 }
@@ -4148,12 +4153,12 @@ namespace UnityEditor
                             {
                                 if (selected == 0)
                                 {
-                                    Event e = EditorGUIUtility.CommandEvent("Copy");
+                                    Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
                                     GUIView.current.SendEvent(e);
                                 }
                                 else if (selected == 1)
                                 {
-                                    Event e = EditorGUIUtility.CommandEvent("Paste");
+                                    Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
                                     GUIView.current.SendEvent(e);
                                 }
                             },
@@ -4212,15 +4217,15 @@ namespace UnityEditor
 
                     switch (evt.commandName)
                     {
-                        case "UndoRedoPerformed":
+                        case EventCommandNames.UndoRedoPerformed:
                             // Set color in ColorPicker in case an undo/redo has been made
                             // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
                             if ((GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id) && ColorPicker.visible)
                                 ColorPicker.color = value;
                             break;
 
-                        case "Copy":
-                        case "Paste":
+                        case EventCommandNames.Copy:
+                        case EventCommandNames.Paste:
                             evt.Use();
                             break;
                     }
@@ -4232,30 +4237,30 @@ namespace UnityEditor
                     {
                         switch (evt.commandName)
                         {
-                            case "EyeDropperUpdate":
+                            case EventCommandNames.EyeDropperUpdate:
                                 HandleUtility.Repaint();
                                 break;
-                            case "EyeDropperClicked":
+                            case EventCommandNames.EyeDropperClicked:
                                 GUI.changed = true;
                                 HandleUtility.Repaint();
                                 Color c = EyeDropper.GetLastPickedColor();
                                 c.a = value.a;
                                 s_ColorPickID = 0;
                                 return c;
-                            case "EyeDropperCancelled":
+                            case EventCommandNames.EyeDropperCancelled:
                                 HandleUtility.Repaint();
                                 s_ColorPickID = 0;
                                 break;
-                            case "ColorPickerChanged":
+                            case EventCommandNames.ColorPickerChanged:
                                 GUI.changed = true;
                                 HandleUtility.Repaint();
                                 return ColorPicker.color;
-                            case "Copy":
+                            case EventCommandNames.Copy:
                                 ColorClipboard.SetColor(value);
                                 evt.Use();
                                 break;
 
-                            case "Paste":
+                            case EventCommandNames.Paste:
                                 Color colorFromClipboard;
                                 if (ColorClipboard.TryGetColor(hdr, out colorFromClipboard))
                                 {
@@ -4417,7 +4422,7 @@ namespace UnityEditor
                     {
                         switch (evt.commandName)
                         {
-                            case "CurveChanged":
+                            case CurveEditorWindow.CurveChangedCommand:
                                 GUI.changed = true;
                                 AnimationCurvePreviewCache.ClearCache();
                                 HandleUtility.Repaint();
@@ -5015,7 +5020,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     if (Event.current.button == 0 && labelPosition.Contains(Event.current.mousePosition))
                     {
                         if (EditorGUIUtility.CanHaveKeyboardFocus(id))
+                        {
                             GUIUtility.keyboardControl = id;
+                        }
                         EditorGUIUtility.editingTextField = false;
                         HandleUtility.Repaint();
                     }
@@ -5245,7 +5252,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             // Delete & Duplicate commands
             if (Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand)
             {
-                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && (Event.current.commandName == "Delete" || Event.current.commandName == "SoftDelete"))
+                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete))
                 {
                     if (Event.current.type == EventType.ExecuteCommand)
                     {
@@ -5254,7 +5261,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     }
                     Event.current.Use();
                 }
-                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && Event.current.commandName == "Duplicate")
+                if (GUIUtility.keyboardControl == EditorGUIUtility.s_LastControlID && Event.current.commandName == EventCommandNames.Duplicate)
                 {
                     if (Event.current.type == EventType.ExecuteCommand)
                     {
@@ -5424,7 +5431,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
         }
 
-        // Gets a material for a special texture type: RGBM or doubleLDR lightmap or a DXT5nm normal map.
+        // This will return appriopriate material to use with the texture according to its usage mode
         internal static Material GetMaterialForSpecialTexture(Texture t, Material defaultMat = null)
         {
             // i am not sure WHY do we check that (i would guess this is api user error and exception make sense, not "return something")
@@ -5445,16 +5452,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return defaultMat;
         }
 
-        internal static Material alphaMaterial
-        {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewAlphaMaterial.mat") as Material; }
-        }
-
-        internal static Material transparentMaterial
-        {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewTransparentMaterial.mat") as Material; }
-        }
-
         internal static Texture2D transparentCheckerTexture
         {
             get
@@ -5470,41 +5467,48 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
         }
 
-        internal static Material lightmapRGBMMaterial
+
+        private static Material GetPreviewMaterial(ref Material m, string shaderPath)
         {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedLightmapRGBMMaterial.mat") as Material; }
+            if (m == null)
+            {
+                m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
+                m.hideFlags = HideFlags.HideAndDontSave;
+            }
+            return m;
         }
 
-        internal static Material lightmapDoubleLDRMaterial
-        {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedLightmapDoubleLDRMaterial.mat") as Material; }
-        }
+        private static Material s_ColorMaterial, s_AlphaMaterial, s_TransparentMaterial, s_NormalmapMaterial;
+        private static Material s_LightmapRGBMMaterial, s_LightmapDoubleLDRMaterial, s_LightmapFullHDRMaterial;
 
-        internal static Material lightmapFullHDRMaterial
-        {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedLightmapFullHDRMaterial.mat") as Material; }
-        }
-
-        internal static Material normalmapMaterial
-        {
-            get { return EditorGUIUtility.LoadRequired("Previews/PreviewEncodedNormalsMaterial.mat") as Material; }
-        }
-
-        // for some reason we were adding materials to editor resources for older previews. I dont see a single reason why, though
-        internal static Material s_Color2DPreviewMaterial;
         internal static Material colorMaterial
         {
-            get
-            {
-                if (!s_Color2DPreviewMaterial)
-                {
-                    s_Color2DPreviewMaterial = new Material(EditorGUIUtility.LoadRequired("Previews/PreviewColor2D.shader") as Shader);
-                    s_Color2DPreviewMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return s_Color2DPreviewMaterial;
-            }
+            get { return GetPreviewMaterial(ref s_ColorMaterial, "Previews/PreviewColor2D.shader"); }
         }
-
+        internal static Material alphaMaterial
+        {
+            get { return GetPreviewMaterial(ref s_AlphaMaterial, "Previews/PreviewAlpha.shader"); }
+        }
+        internal static Material transparentMaterial
+        {
+            get { return GetPreviewMaterial(ref s_TransparentMaterial, "Previews/PreviewTransparent.shader"); }
+        }
+        internal static Material normalmapMaterial
+        {
+            get { return GetPreviewMaterial(ref s_NormalmapMaterial, "Previews/PreviewEncodedNormals.shader"); }
+        }
+        internal static Material lightmapRGBMMaterial
+        {
+            get { return GetPreviewMaterial(ref s_LightmapRGBMMaterial, "Previews/PreviewEncodedLightmapRGBM.shader"); }
+        }
+        internal static Material lightmapDoubleLDRMaterial
+        {
+            get { return GetPreviewMaterial(ref s_LightmapDoubleLDRMaterial, "Previews/PreviewEncodedLightmapDoubleLDR.shader"); }
+        }
+        internal static Material lightmapFullHDRMaterial
+        {
+            get { return GetPreviewMaterial(ref s_LightmapFullHDRMaterial, "Previews/PreviewEncodedLightmapFullHDR.shader"); }
+        }
 
         private static void SetExpandedRecurse(SerializedProperty property, bool expanded)
         {

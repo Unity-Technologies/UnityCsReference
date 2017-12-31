@@ -620,11 +620,11 @@ namespace UnityEditorInternal.VersionControl
 
         private void HandleSelectAll()
         {
-            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == "SelectAll")
+            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == EventCommandNames.SelectAll)
             {
                 Event.current.Use();
             }
-            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "SelectAll")
+            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.SelectAll)
             {
                 SelectedAll();
                 Event.current.Use();

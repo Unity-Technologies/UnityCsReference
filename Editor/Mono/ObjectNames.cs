@@ -71,7 +71,10 @@ namespace UnityEditor
         // Inspector title for an object.
         public static string GetInspectorTitle(Object obj)
         {
-            if (!obj)
+            if (obj == null && (object)obj != null && (obj is MonoBehaviour || obj is ScriptableObject))
+                return " (Script)";
+
+            if (obj == null)
                 return "Nothing Selected";
 
             var title = ObjectNames.NicifyVariableName(GetObjectTypeName(obj));

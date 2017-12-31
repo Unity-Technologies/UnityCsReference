@@ -71,6 +71,38 @@ public enum TizenActivityIndicatorStyle
 
 public sealed partial class Handheld
 {
+    public static bool PlayFullScreenMovie (string path, [uei.DefaultValue("Color.black")]  Color bgColor , [uei.DefaultValue("FullScreenMovieControlMode.Full")]  FullScreenMovieControlMode controlMode , [uei.DefaultValue("FullScreenMovieScalingMode.AspectFit")]  FullScreenMovieScalingMode scalingMode ) {
+        return INTERNAL_CALL_PlayFullScreenMovie ( path, ref bgColor, controlMode, scalingMode );
+    }
+
+    [uei.ExcludeFromDocs]
+    public static bool PlayFullScreenMovie (string path, Color bgColor , FullScreenMovieControlMode controlMode ) {
+        FullScreenMovieScalingMode scalingMode = FullScreenMovieScalingMode.AspectFit;
+        return INTERNAL_CALL_PlayFullScreenMovie ( path, ref bgColor, controlMode, scalingMode );
+    }
+
+    [uei.ExcludeFromDocs]
+    public static bool PlayFullScreenMovie (string path, Color bgColor ) {
+        FullScreenMovieScalingMode scalingMode = FullScreenMovieScalingMode.AspectFit;
+        FullScreenMovieControlMode controlMode = FullScreenMovieControlMode.Full;
+        return INTERNAL_CALL_PlayFullScreenMovie ( path, ref bgColor, controlMode, scalingMode );
+    }
+
+    [uei.ExcludeFromDocs]
+    public static bool PlayFullScreenMovie (string path) {
+        FullScreenMovieScalingMode scalingMode = FullScreenMovieScalingMode.AspectFit;
+        FullScreenMovieControlMode controlMode = FullScreenMovieControlMode.Full;
+        Color bgColor = Color.black;
+        return INTERNAL_CALL_PlayFullScreenMovie ( path, ref bgColor, controlMode, scalingMode );
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static bool INTERNAL_CALL_PlayFullScreenMovie (string path, ref Color bgColor, FullScreenMovieControlMode controlMode, FullScreenMovieScalingMode scalingMode);
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void Vibrate () ;
+
     [System.Obsolete ("Property Handheld.use32BitDisplayBuffer has been deprecated. Modifying it has no effect, use PlayerSettings instead.")]
     public extern static bool use32BitDisplayBuffer
     {
@@ -167,7 +199,6 @@ public sealed partial class TouchScreenKeyboard
                     case RuntimePlatform.tvOS:
                     case RuntimePlatform.Android:
                     case RuntimePlatform.TizenPlayer:
-                    case RuntimePlatform.WiiU:
                     case RuntimePlatform.Switch:
                         return true;
                     case RuntimePlatform.WSAPlayerX86:

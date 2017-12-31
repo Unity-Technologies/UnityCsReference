@@ -396,12 +396,6 @@ public sealed partial class NetworkTransport
         }
     
     
-    static public void Init(GlobalConfig config)
-        {
-            InitWithParameters(new GlobalConfigInternal(config));
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void InitWithNoParameters () ;
@@ -788,10 +782,6 @@ public static int AddHostWithSimulator(HostTopology topology, int minTimeout, in
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  bool QueueMessageForSendingWrapper (int hostId, int connectionId, int channelId, byte[] buffer, int size, out byte error) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  bool NotifyConnectionSendable (int hostId, int connectionId, out byte error) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

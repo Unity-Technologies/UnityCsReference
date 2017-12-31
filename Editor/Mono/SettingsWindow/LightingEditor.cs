@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Linq;
 
@@ -60,6 +61,9 @@ namespace UnityEditor
             public static readonly int[] kFullAmbientSourceValues = { (int)AmbientMode.Skybox, (int)AmbientMode.Trilight, (int)AmbientMode.Flat };
         }
 
+        protected SerializedProperty m_EnabledBakedGI;
+        protected SerializedProperty m_EnabledRealtimeGI;
+
         protected SerializedProperty m_Sun;
         protected SerializedProperty m_AmbientSource;
         protected SerializedProperty m_AmbientSkyColor;
@@ -100,8 +104,10 @@ namespace UnityEditor
             m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
             m_ReflectionCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_ReflectionCompression");
             m_AmbientLightingMode = m_LightmapSettings.FindProperty("m_GISettings.m_EnvironmentLightingMode");
+            m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
+            m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
 
-            m_bShowEnvironment  = SessionState.GetBool(kShowEnvironment, true);
+            m_bShowEnvironment = SessionState.GetBool(kShowEnvironment, true);
         }
 
         public virtual void OnDisable()
@@ -175,19 +181,35 @@ namespace UnityEditor
                 }
 
                 // ambient GI - realtime / baked
-                if (LightModeUtil.Get().IsAnyGIEnabled())
+                bool realtimeGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime);
+                bool bakedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
+
+                if ((m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && (bakedGISupported || realtimeGISupported))
                 {
-                    int ambientLigtingMode;
-                    bool canChooseAmbientLightingMode = LightModeUtil.Get().GetAmbientLightingMode(out ambientLigtingMode);
+                    int[] modeVals = { 0, 1 };
 
-                    using (new EditorGUI.DisabledScope(!canChooseAmbientLightingMode))
+                    if (m_EnabledBakedGI.boolValue && m_EnabledRealtimeGI.boolValue)
                     {
-                        int[] modeVals = { 0, 1 };
+                        // if the user has selected the only state that is supported, then gray it out
+                        using (new EditorGUI.DisabledScope(((m_AmbientLightingMode.intValue == 0) && realtimeGISupported && !bakedGISupported) || ((m_AmbientLightingMode.intValue == 1) && bakedGISupported && !realtimeGISupported)))
+                        {
+                            EditorGUILayout.IntPopup(m_AmbientLightingMode, Styles.AmbientLightingModes, modeVals, Styles.AmbientLightingMode);
+                        }
 
-                        if (canChooseAmbientLightingMode)
-                            m_AmbientLightingMode.intValue = EditorGUILayout.IntPopup(Styles.AmbientLightingMode, m_AmbientLightingMode.intValue, Styles.AmbientLightingModes, modeVals);
-                        else // Show "Baked" if precomputed GI is disabled and "Realtime" if baked GI is disabled
-                            EditorGUILayout.IntPopup(Styles.AmbientLightingMode, ambientLigtingMode, Styles.AmbientLightingModes, modeVals);
+                        // if they have selected a state that isnt supported, show dialog, and still make the box editable
+                        if (((m_AmbientLightingMode.intValue == 0) && !realtimeGISupported) ||
+                            ((m_AmbientLightingMode.intValue == 1) && !bakedGISupported))
+                        {
+                            EditorGUILayout.HelpBox("The following mode is not supported and will fallback on " + (((m_AmbientLightingMode.intValue == 0) && !realtimeGISupported) ? "Baked" : "Realtime"), MessageType.Warning);
+                        }
+                    }
+                    // Show "Baked" if precomputed GI is disabled and "Realtime" if baked GI is disabled (but we don't wanna show the box if the whole mode is not supported.)
+                    else if ((m_EnabledBakedGI.boolValue && bakedGISupported) || (m_EnabledRealtimeGI.boolValue && realtimeGISupported))
+                    {
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUILayout.IntPopup(Styles.AmbientLightingMode, m_EnabledBakedGI.boolValue ? 1 : 0, Styles.AmbientLightingModes, modeVals);
+                        }
                     }
                 }
 

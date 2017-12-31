@@ -12,6 +12,7 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/TypeSystem/UnityType.bindings.h")]
     internal partial class UnityType
     {
+        #pragma warning disable 649
         [UsedByNativeCode]
         private struct UnityTypeTransport
         {

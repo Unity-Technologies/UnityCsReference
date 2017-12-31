@@ -30,6 +30,7 @@ namespace UnityEditor.Presets
         {
             if (selection != null)
             {
+                Undo.RecordObjects(m_Targets, "Apply Preset " + selection.name);
                 foreach (var target in m_Targets)
                 {
                     selection.ApplyTo(target);
@@ -37,6 +38,7 @@ namespace UnityEditor.Presets
             }
             else
             {
+                Undo.RecordObjects(m_Targets, "Cancel Preset");
                 for (int i = 0; i < m_Targets.Length; i++)
                 {
                     m_InitialValues[i].ApplyTo(m_Targets[i]);
@@ -57,6 +59,7 @@ namespace UnityEditor.Presets
         {
             public static GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
             public static GUIStyle toolbarBack = "ObjectPickerToolbar";
+            public static GUIContent presetIcon = EditorGUIUtility.IconContent("Preset.Context");
         }
 
         // Filter
@@ -74,6 +77,7 @@ namespace UnityEditor.Presets
         SavedInt    m_StartGridSize = new SavedInt("PresetSelector.GridSize", 64);
 
         bool m_CanCreateNew;
+        int m_ModalUndoGroup = -1;
         Object m_MainTarget;
 
         // get an existing ObjectSelector or create one
@@ -96,6 +100,23 @@ namespace UnityEditor.Presets
             }
         }
 
+        [EditorHeaderItem(typeof(Object), -1001)]
+        public static bool DrawPresetButton(Rect rectangle, Object[] targets)
+        {
+            var target = targets[0];
+
+            if (Preset.IsObjectExcludedFromPresets(target)
+                || (target.hideFlags & HideFlags.NotEditable) != 0)
+                return false;
+
+            if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,
+                    EditorStyles.iconButton))
+            {
+                PresetContextMenu.CreateAndShow(targets);
+            }
+            return true;
+        }
+
         public static void ShowSelector(Object[] targets, Preset currentSelection, bool createNewAllowed)
         {
             var eventHolder = CreateInstance<DefaultPresetSelectorReceiver>();
@@ -110,6 +131,8 @@ namespace UnityEditor.Presets
 
         void Init(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
+            m_ModalUndoGroup = Undo.GetCurrentGroup();
+
             // Freeze to prevent flicker on OSX.
             // Screen will be updated again when calling
             // SetFreezeDisplay(false) further down.
@@ -278,6 +301,8 @@ namespace UnityEditor.Presets
             {
                 m_EventObject.OnSelectionClosed(GetCurrentSelection());
             }
+
+            Undo.CollapseUndoOperations(m_ModalUndoGroup);
         }
 
         void OnDestroy()
@@ -300,6 +325,8 @@ namespace UnityEditor.Presets
 
         void Cancel()
         {
+            Undo.RevertAllDownToGroup(m_ModalUndoGroup);
+
             // Clear selection so that object field doesn't grab it
             m_ListArea.InitSelection(new int[0]);
 
@@ -357,6 +384,8 @@ namespace UnityEditor.Presets
                 if (oldPreset != null)
                 {
                     EditorUtility.CopySerialized(preset, oldPreset);
+                    // replace name because it was erased by the CopySerialized
+                    oldPreset.name = System.IO.Path.GetFileNameWithoutExtension(path);
                 }
                 else
                 {

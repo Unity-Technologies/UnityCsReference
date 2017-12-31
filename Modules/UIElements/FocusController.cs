@@ -51,11 +51,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
             {
-                MouseDownEvent mde = evt as MouseDownEvent;
-                if (mde.button == (int)MouseButton.LeftMouse)
-                {
-                    Focus();
-                }
+                Focus();
             }
 
             if (focusController != null)
@@ -209,21 +205,17 @@ namespace UnityEngine.Experimental.UIElements
 
         internal int imguiKeyboardControl { get; set; }
 
-        internal void SyncIMGUIFocus(IMGUIContainer imguiContainerHavingKeyboardControl)
+        internal void SyncIMGUIFocus(int imguiKeyboardControlID, IMGUIContainer imguiContainerHavingKeyboardControl)
         {
-            // Make sure the focusController state matches GUIUtility.keyboardControl
-            if (GUIUtility.keyboardControl != imguiKeyboardControl)
-            {
-                imguiKeyboardControl = GUIUtility.keyboardControl;
+            imguiKeyboardControl = imguiKeyboardControlID;
 
-                if (GUIUtility.keyboardControl != 0)
-                {
-                    SwitchFocus(imguiContainerHavingKeyboardControl, FocusChangeDirection.unspecified);
-                }
-                else
-                {
-                    SwitchFocus(null, FocusChangeDirection.unspecified);
-                }
+            if (imguiKeyboardControl != 0)
+            {
+                SwitchFocus(imguiContainerHavingKeyboardControl, FocusChangeDirection.unspecified);
+            }
+            else
+            {
+                SwitchFocus(null, FocusChangeDirection.unspecified);
             }
         }
     }

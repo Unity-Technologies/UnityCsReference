@@ -18,6 +18,7 @@ namespace UnityEditor
         Android,
         [System.Obsolete("PS3 has been removed in 5.5", false)]
         PS3,
+        [System.Obsolete("Wii U support was removed in 2018.1", false)]
         WiiU,
         Tizen,
         [Obsolete("Windows Phone 8 was removed in 5.3", false)]
@@ -33,7 +34,6 @@ namespace UnityEditor
         [SerializeField] GameViewSizeGroup m_Standalone = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_iOS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_Android = new GameViewSizeGroup();
-        [SerializeField] GameViewSizeGroup m_WiiU = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_Tizen = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_N3DS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_HMD = new GameViewSizeGroup();
@@ -68,6 +68,7 @@ namespace UnityEditor
                 case GameViewSizeGroupType.WebPlayer:
                 case GameViewSizeGroupType.WP8:
                 case GameViewSizeGroupType.PS3:
+                case GameViewSizeGroupType.WiiU:
 #pragma warning restore 618
                 case GameViewSizeGroupType.Standalone:
                     return m_Standalone;
@@ -75,8 +76,6 @@ namespace UnityEditor
                     return m_iOS;
                 case GameViewSizeGroupType.Android:
                     return m_Android;
-                case GameViewSizeGroupType.WiiU:
-                    return m_WiiU;
                 case GameViewSizeGroupType.Tizen:
                     return m_Tizen;
                 case GameViewSizeGroupType.N3DS:
@@ -214,11 +213,6 @@ namespace UnityEditor
             GameViewSize k_16_10_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 10, 16, "16:10 Portrait");
             GameViewSize k_16_10_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 16, 10, "16:10 Landscape");
 
-            // Wii U
-            GameViewSize kWiiU_1080p_169 = new GameViewSize(GameViewSizeType.FixedResolution, 1920, 1080, "1080p (16:9)");
-            GameViewSize kWiiU_720p_169 = new GameViewSize(GameViewSizeType.FixedResolution, 1280, 720, "720p (16:9)");
-            GameViewSize kWiiU_GamePad_854_480 = new GameViewSize(GameViewSizeType.FixedResolution, 854, 480, "GamePad 480p (16:9)");
-
             // Tizen
             GameViewSize k_Tizen_720p_16_9 = new GameViewSize(GameViewSizeType.FixedResolution, 1280, 720, "16:9 Landscape");
             GameViewSize k_Tizen_720p_9_16 = new GameViewSize(GameViewSizeType.FixedResolution, 720, 1280, "9:16 Portrait");
@@ -229,7 +223,6 @@ namespace UnityEditor
 
             m_Standalone.AddBuiltinSizes(kFree, k5_4, k4_3, k3_2, k16_10, k16_9, kStandalone);
 
-            m_WiiU.AddBuiltinSizes(kFree, k4_3, k16_9, kWiiU_1080p_169, kWiiU_720p_169, kWiiU_GamePad_854_480);
             m_iOS.AddBuiltinSizes(kFree,
                 k_iPhoneTall, k_iPhoneWide,
                 k_iPhone4GTall, k_iPhone4GWide,
@@ -271,7 +264,6 @@ namespace UnityEditor
             {
                 case GameViewSizeGroupType.Standalone:
                     return DefaultLowResolutionSettingForStandalone();
-                case GameViewSizeGroupType.WiiU:
                 case GameViewSizeGroupType.N3DS:
                     return true;
                 case GameViewSizeGroupType.iOS:
@@ -495,9 +487,6 @@ namespace UnityEditor
             {
                 case BuildTargetGroup.Standalone:
                     return GameViewSizeGroupType.Standalone;
-
-                case BuildTargetGroup.WiiU:
-                    return GameViewSizeGroupType.WiiU;
 
                 case BuildTargetGroup.iOS:
                     return GameViewSizeGroupType.iOS;

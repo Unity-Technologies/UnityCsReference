@@ -8,9 +8,11 @@ namespace UnityEditor.PackageManager
     public enum OriginType
     {
         Unknown,
+        Builtin,
         Registry,
-        Url,
-        Path
+        Embedded,
+        Local,
+        Git
     }
 }
 

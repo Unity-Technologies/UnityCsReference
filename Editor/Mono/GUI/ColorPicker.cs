@@ -22,6 +22,7 @@ namespace UnityEditor
         [SerializeField]
         private ColorMutator m_Color;
 
+        #pragma warning disable 649
         [SerializeField]
         Texture2D m_ColorSlider;
 
@@ -83,6 +84,10 @@ namespace UnityEditor
         [SerializeField]
         int m_ModalUndoGroup = -1;
 
+        // hdr float slider ranges dynamically adjust on mouse up
+        private float m_FloatSliderMaxOnMouseDown;
+        private bool m_DraggingFloatSlider;
+
         // the exposure slider range can dynamically grow if needed per color picker "session"
         private float m_ExposureSliderMax = k_DefaultExposureSliderMax;
 
@@ -92,7 +97,11 @@ namespace UnityEditor
         public static Color color
         {
             get { return instance.m_Color.exposureAdjustedColor; }
-            set { instance.SetColor(value); }
+            set
+            {
+                instance.SetColor(value);
+                instance.Repaint();
+            }
         }
 
         public static bool visible
@@ -244,16 +253,32 @@ namespace UnityEditor
                         m_Color.SetColorChannel(channel, value / 255f);
                         OnColorChanged();
                     }
+                    m_DraggingFloatSlider = false;
                     break;
                 case SliderMode.RGBFloat:
                     value = m_Color.GetColorChannelHdr(channel);
                     var maxRgbNormalized = ((Color)m_Color.color).maxColorComponent;
+                    var evtType = Event.current.type;
                     var sliderMax = m_HDR && m_Color.exposureAdjustedColor.maxColorComponent > 1f ? m_Color.exposureAdjustedColor.maxColorComponent / maxRgbNormalized : 1f;
                     var textFieldMax = m_HDR ? float.MaxValue : 1f;
                     EditorGUI.BeginChangeCheck();
                     value = EditorGUILayout.SliderWithTexture(
-                            GUIContent.Temp(label), value, 0f, sliderMax, EditorGUI.kFloatFieldFormatString, 0f, textFieldMax, sliderBackground
+                            GUIContent.Temp(label), value,
+                            0f, m_DraggingFloatSlider ? m_FloatSliderMaxOnMouseDown : sliderMax,
+                            EditorGUI.kFloatFieldFormatString,
+                            0f, textFieldMax,
+                            sliderBackground
                             );
+                    switch (evtType)
+                    {
+                        case EventType.MouseDown:
+                            m_FloatSliderMaxOnMouseDown = sliderMax;
+                            m_DraggingFloatSlider = true;
+                            break;
+                        case EventType.MouseUp:
+                            m_DraggingFloatSlider = false;
+                            break;
+                    }
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_Color.SetColorChannelHdr(channel, value);
@@ -840,10 +865,10 @@ namespace UnityEditor
             {
                 switch (Event.current.commandName)
                 {
-                    case "EyeDropperUpdate":
+                    case EventCommandNames.EyeDropperUpdate:
                         Repaint();
                         break;
-                    case "EyeDropperClicked":
+                    case EventCommandNames.EyeDropperClicked:
                         m_ColorBoxMode = ColorBoxMode.HSV;
                         Color col = EyeDropper.GetLastPickedColor();
                         m_Color.SetColorChannelHdr(RgbaChannel.R, col.r);
@@ -852,7 +877,7 @@ namespace UnityEditor
                         m_Color.SetColorChannelHdr(RgbaChannel.A, col.a);
                         OnColorChanged();
                         break;
-                    case "EyeDropperCancelled":
+                    case EventCommandNames.EyeDropperCancelled:
                         OnEyedropperCancelled();
                         break;
                 }
@@ -956,8 +981,8 @@ namespace UnityEditor
                 case EventType.ValidateCommand:
                     switch (evt.commandName)
                     {
-                        case "Copy":
-                        case "Paste":
+                        case EventCommandNames.Copy:
+                        case EventCommandNames.Paste:
                             evt.Use();
                             break;
                     }
@@ -966,12 +991,12 @@ namespace UnityEditor
                 case EventType.ExecuteCommand:
                     switch (evt.commandName)
                     {
-                        case "Copy":
+                        case EventCommandNames.Copy:
                             ColorClipboard.SetColor(color);
                             evt.Use();
                             break;
 
-                        case "Paste":
+                        case EventCommandNames.Paste:
                             Color colorFromClipboard;
                             if (ColorClipboard.TryGetColor(m_HDR, out colorFromClipboard))
                             {
@@ -1030,7 +1055,7 @@ namespace UnityEditor
             m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_Color.exposureValue);
             if (m_DelegateView != null)
             {
-                var e = EditorGUIUtility.CommandEvent("ColorPickerChanged");
+                var e = EditorGUIUtility.CommandEvent(EventCommandNames.ColorPickerChanged);
                 if (!m_IsOSColorPicker)
                     Repaint();
                 m_DelegateView.SendEvent(e);

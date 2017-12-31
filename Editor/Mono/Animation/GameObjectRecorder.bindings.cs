@@ -10,9 +10,9 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.Animations
 {
-    [NativeHeader("Runtime/Animation/EditorCurveBinding.bindings.h")]
-    [NativeHeader("Runtime/Animation/AnimationClip.h")]
+    [NativeHeader("Editor/Src/Animation/EditorCurveBinding.bindings.h")]
     [NativeHeader("Editor/Src/Animation/GameObjectRecorder.h")]
+    [NativeHeader("Runtime/Animation/AnimationClip.h")]
     [NativeType]
     public class GameObjectRecorder : Object
     {

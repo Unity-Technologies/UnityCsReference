@@ -159,6 +159,16 @@ internal partial class GUIView : View
         set;
     }
 
+    internal extern  bool disableInputEvents
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     internal void GrabPixels (RenderTexture rd, Rect rect) {
         INTERNAL_CALL_GrabPixels ( this, rd, ref rect );
     }

@@ -9,6 +9,7 @@ using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
@@ -53,6 +54,7 @@ public enum PrefabType
 
 [StructLayout(LayoutKind.Sequential)]
 [RequiredByNativeCode]
+[NativeAsStruct]
 public sealed partial class PropertyModification
 {
     public Object target;

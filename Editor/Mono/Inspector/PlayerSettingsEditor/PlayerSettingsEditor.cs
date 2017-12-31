@@ -84,7 +84,6 @@ namespace UnityEditor
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
             public static readonly GUIContent videoMemoryForVertexBuffers = EditorGUIUtility.TrTextContent("Mesh Video Mem*", "How many megabytes of video memory to use for mesh data before we use main memory");
             public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TrTextContent("Protect Graphics Memory", "Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
-            public static readonly GUIContent defaultIsFullScreen = EditorGUIUtility.TrTextContent("Default Is Full Screen*");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
@@ -158,7 +157,6 @@ namespace UnityEditor
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
-            public static readonly GUIContent apiCompatibilityLevel_WiiUSubset = EditorGUIUtility.TrTextContent("WiiU Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.6");
@@ -288,7 +286,6 @@ namespace UnityEditor
         SerializedProperty m_MetalForceHardShadows;
 
         SerializedProperty m_DisplayResolutionDialog;
-        SerializedProperty m_DefaultIsFullScreen;
         SerializedProperty m_DefaultIsNativeResolution;
         SerializedProperty m_MacRetinaSupport;
 
@@ -440,7 +437,6 @@ namespace UnityEditor
             m_androidShowActivityIndicatorOnLoading = FindPropertyAssert("androidShowActivityIndicatorOnLoading");
             m_tizenShowActivityIndicatorOnLoading   = FindPropertyAssert("tizenShowActivityIndicatorOnLoading");
 
-            m_DefaultIsFullScreen           = FindPropertyAssert("defaultIsFullScreen");
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
@@ -477,9 +473,6 @@ namespace UnityEditor
 
             for (int i = 0; i < m_SectionAnimators.Length; i++)
                 m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i, Repaint);
-
-            m_ShowDefaultIsNativeResolution.value = m_DefaultIsFullScreen.boolValue;
-            m_ShowResolution.value = !(m_DefaultIsFullScreen.boolValue && m_DefaultIsNativeResolution.boolValue);
 
             m_ShowDefaultIsNativeResolution.valueChanged.AddListener(Repaint);
             m_ShowResolution.valueChanged.AddListener(Repaint);
@@ -817,14 +810,18 @@ namespace UnityEditor
                     {
                         GUILayout.Label(Styles.resolutionTitle, EditorStyles.boldLabel);
 
-                        EditorGUILayout.PropertyField(m_DefaultIsFullScreen, Styles.defaultIsFullScreen);
-                        m_ShowDefaultIsNativeResolution.target = m_DefaultIsFullScreen.boolValue;
+                        var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
+                        var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
+                        var fullscreenModeNew = BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
+
+                        bool defaultIsFullScreen = fullscreenModeNew != FullScreenMode.Windowed;
+                        m_ShowDefaultIsNativeResolution.target = defaultIsFullScreen;
                         if (EditorGUILayout.BeginFadeGroup(m_ShowDefaultIsNativeResolution.faded))
                             EditorGUILayout.PropertyField(m_DefaultIsNativeResolution);
                         if (m_ShowDefaultIsNativeResolution.faded != 0 && m_ShowDefaultIsNativeResolution.faded != 1)
                             EditorGUILayout.EndFadeGroup();
 
-                        m_ShowResolution.target = !(m_DefaultIsFullScreen.boolValue && m_DefaultIsNativeResolution.boolValue);
+                        m_ShowResolution.target = !(defaultIsFullScreen && m_DefaultIsNativeResolution.boolValue);
                         if (EditorGUILayout.BeginFadeGroup(m_ShowResolution.faded))
                         {
                             EditorGUI.BeginChangeCheck();
@@ -911,10 +908,6 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
-
-                        var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
-                        var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
-                        BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
 
                         EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
 
@@ -1378,7 +1371,7 @@ namespace UnityEditor
             }
         }
 
-        public static void BuildEnumPopup<T>(SerializedProperty prop, GUIContent uiString, T[] options, GUIContent[] optionNames)
+        public static T BuildEnumPopup<T>(SerializedProperty prop, GUIContent uiString, T[] options, GUIContent[] optionNames)
         {
             T val = (T)(object)prop.intValue;
             T newVal = BuildEnumPopup(uiString, val, options, optionNames);
@@ -1389,6 +1382,8 @@ namespace UnityEditor
                 prop.intValue = (int)(object)newVal;
                 prop.serializedObject.ApplyModifiedProperties();
             }
+
+            return newVal;
         }
 
         public static T BuildEnumPopup<T>(GUIContent uiString, T selected, T[] options, GUIContent[] optionNames)
@@ -1439,7 +1434,6 @@ namespace UnityEditor
                 || targetGroup == BuildTargetGroup.PS4
                 || targetGroup == BuildTargetGroup.XboxOne
                 || targetGroup == BuildTargetGroup.WSA
-                || targetGroup == BuildTargetGroup.WiiU
                 || targetGroup == BuildTargetGroup.WebGL
                 || targetGroup == BuildTargetGroup.Switch)
             {
@@ -1619,8 +1613,7 @@ namespace UnityEditor
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
-            if (targetGroup == BuildTargetGroup.WiiU ||
-                targetGroup == BuildTargetGroup.Standalone ||
+            if (targetGroup == BuildTargetGroup.Standalone ||
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.Android ||
@@ -1913,20 +1906,13 @@ namespace UnityEditor
             }
 
             // Api Compatibility Level
-            if (targetGroup == BuildTargetGroup.WiiU)
-            {
-                BuildDisabledEnumPopup(Styles.apiCompatibilityLevel_WiiUSubset, Styles.apiCompatibilityLevel);
-            }
-            else
-            {
-                var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
-                var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
+            var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
+            var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
 
-                var newCompatibilityLevel = BuildEnumPopup(Styles.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
+            var newCompatibilityLevel = BuildEnumPopup(Styles.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
 
-                if (currentCompatibilityLevel != newCompatibilityLevel)
-                    PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
-            }
+            if (currentCompatibilityLevel != newCompatibilityLevel)
+                PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
 
             if (targetGroupSupportsIl2Cpp)
             {
@@ -2048,7 +2034,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WiiU ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.PSP2;
 
@@ -2061,7 +2046,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.Android ||
                 targetGroup == BuildTargetGroup.Tizen ||
                 targetGroup == BuildTargetGroup.WebGL ||
-                targetGroup == BuildTargetGroup.WiiU ||
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.XboxOne ||
@@ -2291,7 +2275,6 @@ namespace UnityEditor
                 {
                     property.stringValue = newStringValue;
                     serializedObject.ApplyModifiedProperties();
-                    GUIUtility.ExitGUI();
                 }
             }
 
@@ -2318,7 +2301,6 @@ namespace UnityEditor
                         property.stringValue = "";
                         serializedObject.ApplyModifiedProperties();
                         GUI.FocusControl("");
-                        GUIUtility.ExitGUI();
                     }
                 }
             }

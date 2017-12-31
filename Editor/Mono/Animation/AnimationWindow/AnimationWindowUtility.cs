@@ -398,11 +398,11 @@ namespace UnityEditorInternal
 
         public static List<EditorCurveBinding> GetAnimatableProperties(ScriptableObject scriptableObject, Type valueType)
         {
-            EditorCurveBinding[] animatable = AnimationUtility.GetScriptableObjectAnimatableBindings(scriptableObject);
+            EditorCurveBinding[] animatable = AnimationUtility.GetAnimatableBindings(scriptableObject);
 
             List<EditorCurveBinding> result = new List<EditorCurveBinding>();
             foreach (EditorCurveBinding binding in animatable)
-                if (AnimationUtility.GetScriptableObjectEditorCurveValueType(scriptableObject, binding) == valueType)
+                if (AnimationUtility.GetEditorCurveValueType(scriptableObject, binding) == valueType)
                     result.Add(binding);
 
             return result;
@@ -413,7 +413,7 @@ namespace UnityEditorInternal
             if (targetObject is ScriptableObject)
             {
                 ScriptableObject scriptableObject = (ScriptableObject)targetObject;
-                EditorCurveBinding[] allCurveBindings = AnimationUtility.GetScriptableObjectAnimatableBindings(scriptableObject);
+                EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(scriptableObject);
                 return Array.Exists(allCurveBindings, binding => binding.propertyName == propertyPath);
             }
             else

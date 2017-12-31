@@ -126,11 +126,10 @@ namespace UnityEditor
             {
                 Undo.RecordObjects(Selection.transforms, "Transform Manipulation");
 
-                Vector3 deltaPosition = endPosition - TransformManipulator.mouseDownHandlePosition;
-                if (deltaPosition != Vector3.zero)
+                if (TransformManipulator.HandleHasMoved(endPosition))
                 {
                     ManipulationToolUtility.SetMinDragDifferenceForPos(handlePosition);
-                    TransformManipulator.SetPositionDelta(deltaPosition);
+                    TransformManipulator.SetPositionDelta(endPosition, TransformManipulator.mouseDownHandlePosition);
                 }
 
                 Quaternion deltaRotation = Quaternion.Inverse(startRotation) * endRotation;
@@ -192,15 +191,14 @@ namespace UnityEditor
                 handleRotation = TransformManipulator.mouseDownHandleRotation;
 
             Vector3 pos2 = Handles.PositionHandle(handlePosition, handleRotation);
-            if (EditorGUI.EndChangeCheck() && !isStatic)
+            if (EditorGUI.EndChangeCheck() && !isStatic && TransformManipulator.HandleHasMoved(pos2))
             {
-                Vector3 delta = pos2 - TransformManipulator.mouseDownHandlePosition;
                 ManipulationToolUtility.SetMinDragDifferenceForPos(handlePosition);
 
                 if (Tools.vertexDragging)
                     ManipulationToolUtility.DisableMinDragDifference();
 
-                TransformManipulator.SetPositionDelta(delta);
+                TransformManipulator.SetPositionDelta(pos2, TransformManipulator.mouseDownHandlePosition);
             }
             TransformManipulator.EndManipulationHandling();
         }
@@ -459,8 +457,8 @@ namespace UnityEditor
                 if (GridSnapping.active)
                     newPos = GridSnapping.Snap(newPos);
 
-                Vector3 delta = newPos - TransformManipulator.mouseDownHandlePosition;
-                TransformManipulator.SetPositionDelta(delta);
+                if (TransformManipulator.HandleHasMoved(newPos))
+                    TransformManipulator.SetPositionDelta(newPos, TransformManipulator.mouseDownHandlePosition);
             }
             TransformManipulator.EndManipulationHandling();
 

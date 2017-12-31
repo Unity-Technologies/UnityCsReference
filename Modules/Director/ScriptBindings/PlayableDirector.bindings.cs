@@ -19,6 +19,7 @@ namespace UnityEngine.Playables
     }
 
     [NativeHeader("Modules/Director/PlayableDirector.h")]
+    [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
     [RequiredByNativeCode]
     public partial class PlayableDirector : Behaviour, IExposedPropertyTable
     {
@@ -35,8 +36,8 @@ namespace UnityEngine.Playables
 
         public PlayableAsset playableAsset
         {
-            get { return GetPlayableAssetInternal() as PlayableAsset; }
-            set { SetPlayableAssetInternal(value as ScriptableObject); }
+            get { return Internal_GetPlayableAsset() as PlayableAsset; }
+            set { SetPlayableAsset(value as ScriptableObject); }
         }
 
         public PlayableGraph playableGraph
@@ -73,6 +74,11 @@ namespace UnityEngine.Playables
             Play();
         }
 
+        public void SetGenericBinding(Object key, Object value)
+        {
+            Internal_SetGenericBinding(key, value);
+        }
+
         // Bindings properties.
         extern public DirectorUpdateMode timeUpdateMode { set; get; }
         extern public double time { set; get; }
@@ -87,8 +93,14 @@ namespace UnityEngine.Playables
         extern public void Resume();
         extern public void RebuildGraph();
         extern public void ClearReferenceValue(PropertyName id);
+        extern public void SetReferenceValue(PropertyName id, UnityEngine.Object value);
+        extern public UnityEngine.Object GetReferenceValue(PropertyName id, out bool idValid);
+        [NativeMethod("GetBindingFor")]
+        extern public Object GetGenericBinding(Object key);
 
         extern internal void ProcessPendingGraphChanges();
+        [NativeMethod("HasBinding")]
+        extern internal bool HasGenericBinding(Object key);
 
         extern private PlayState GetPlayState();
         extern private void SetWrapMode(DirectorWrapMode mode);
@@ -97,7 +109,9 @@ namespace UnityEngine.Playables
         extern private PlayableGraph GetGraphHandle();
         extern private void SetPlayOnAwake(bool on);
         extern private bool GetPlayOnAwake();
-
+        extern private void Internal_SetGenericBinding(Object key, Object value);
+        extern private void SetPlayableAsset(ScriptableObject asset);
+        extern private ScriptableObject Internal_GetPlayableAsset();
         //Delegates
         public event Action<PlayableDirector> played;
         public event Action<PlayableDirector> paused;

@@ -217,21 +217,21 @@ namespace UnityEditor
                 bool execute = Event.current.type == EventType.ExecuteCommand;
                 switch (Event.current.commandName)
                 {
-                    case "SoftDelete":
-                    case "Delete":
+                    case EventCommandNames.SoftDelete:
+                    case EventCommandNames.Delete:
                         if (execute) RemoveSelectedProbes();
                         Event.current.Use();
                         break;
-                    case "Duplicate":
+                    case EventCommandNames.Duplicate:
                         if (execute) DuplicateSelectedProbes();
                         Event.current.Use();
                         break;
-                    case "SelectAll":
+                    case EventCommandNames.SelectAll:
                         if (execute)
                             SelectAllProbes();
                         Event.current.Use();
                         break;
-                    case "Cut":
+                    case EventCommandNames.Cut:
                         if (execute)
                         {
                             CopySelectedProbes();
@@ -239,7 +239,7 @@ namespace UnityEditor
                         }
                         Event.current.Use();
                         break;
-                    case "Copy":
+                    case EventCommandNames.Copy:
                         if (execute) CopySelectedProbes();
                         Event.current.Use();
                         break;
@@ -332,7 +332,7 @@ namespace UnityEditor
             //Special handling for paste (want to be able to paste when not in edit mode!)
 
             if ((Event.current.type == EventType.ValidateCommand || Event.current.type == EventType.ExecuteCommand)
-                && Event.current.commandName == "Paste")
+                && Event.current.commandName == EventCommandNames.Paste)
             {
                 if (Event.current.type == EventType.ValidateCommand)
                 {

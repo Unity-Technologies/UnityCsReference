@@ -217,6 +217,11 @@ namespace UnityEditor
             DoVertexStreamsArea(material);
         }
 
+        public override void OnClosed(Material material)
+        {
+            material.SetShaderPassEnabled("Always", true);
+        }
+
         public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)
         {
             // Sync the lighting flag for the unlit shader
@@ -516,7 +521,7 @@ namespace UnityEditor
             {
                 instancedStreams.Add(ParticleSystemVertexStream.AnimFrame);
             }
-            else if (useFlipbookBlending)
+            if (useFlipbookBlending)
             {
                 streams.Add(ParticleSystemVertexStream.UV2);
                 streams.Add(ParticleSystemVertexStream.AnimBlend);

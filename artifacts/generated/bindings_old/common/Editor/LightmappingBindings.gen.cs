@@ -76,6 +76,7 @@ public sealed partial class Lightmapping
         Legacy = 2
     }
 
+    public delegate void OnStartedFunction();
     public delegate void OnCompletedFunction();
     
     
@@ -301,6 +302,16 @@ public sealed partial class Lightmapping
         get;
     }
 
+    public static event OnStartedFunction started;
+    
+    
+    private static void Internal_CallStartedFunctions()
+        {
+            if (started != null)
+                started();
+        }
+    
+    
     public static OnCompletedFunction completed;
     
     
@@ -896,6 +907,14 @@ public sealed partial class Lightmapping
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
     }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetCustomBakeInputs (Vector4[] inputData, int sampleCount) ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  bool GetCustomBakeResults (Vector4[] results) ;
 
 }
 

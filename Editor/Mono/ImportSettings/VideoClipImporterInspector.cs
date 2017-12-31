@@ -836,10 +836,9 @@ namespace UnityEditor
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            background.Draw(r, false, false, false, false);
+            var isRepainting = Event.current.type == EventType.Repaint;
+            if (isRepainting)
+                background.Draw(r, false, false, false, false);
 
             VideoClipImporter importer = (VideoClipImporter)target;
 
@@ -884,7 +883,7 @@ namespace UnityEditor
 
             m_Position = PreviewGUI.EndScrollView();
 
-            if (m_IsPlaying)
+            if (m_IsPlaying && isRepainting)
                 GUIView.current.Repaint();
         }
 

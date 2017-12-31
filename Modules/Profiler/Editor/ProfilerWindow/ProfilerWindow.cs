@@ -334,7 +334,7 @@ namespace UnityEditor
 
             m_Charts = new ProfilerChart[(int)ProfilerArea.AreaCount];
 
-            Color[] defaultColors = ProfilerColors.currentColors;
+            Color[] chartAreaColors = ProfilerColors.chartAreaColors;
 
             for (ProfilerArea i = 0; i < ProfilerArea.AreaCount; i++)
             {
@@ -351,7 +351,7 @@ namespace UnityEditor
                 ProfilerChart chart = CreateProfilerChart(i, chartType, scale, length);
                 for (int s = 0; s < length; s++)
                 {
-                    chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, defaultColors[s % defaultColors.Length]);
+                    chart.m_Series[s] = new ChartSeriesViewData(statisticsNames[s], historySize, chartAreaColors[s % chartAreaColors.Length]);
                     for (int frameIdx = 0; frameIdx < historySize; ++frameIdx)
                         chart.m_Series[s].xValues[frameIdx] = (float)frameIdx;
                 }
@@ -368,12 +368,14 @@ namespace UnityEditor
                 m_MemoryListView = new MemoryTreeListClickable(this, m_ReferenceListView);
 
             if (m_CPUFrameDataHierarchyView == null)
-                m_CPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView(false);
+                m_CPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView();
+            m_CPUFrameDataHierarchyView.gpuView = false;
             m_CPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_CPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
 
             if (m_GPUFrameDataHierarchyView == null)
-                m_GPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView(true);
+                m_GPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView();
+            m_GPUFrameDataHierarchyView.gpuView = true;
             m_GPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_GPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
 
@@ -460,6 +462,7 @@ namespace UnityEditor
             }
             m_UISystemProfiler.CurrentAreaChanged(m_CurrentArea);
             Repaint();
+            GUIUtility.keyboardControl = 0;
             GUIUtility.ExitGUI();
         }
 
@@ -1405,8 +1408,11 @@ namespace UnityEditor
             if (area == ProfilerArea.AreaCount)
                 return;
 
+            string activeText = ProfilerDriver.GetOverviewText(area, GetActiveVisibleFrameIndex());
+            float height = EditorStyles.wordWrappedLabel.CalcHeight(GUIContent.Temp(activeText), position.width);
+
             m_PaneScroll[(int)area] = GUILayout.BeginScrollView(m_PaneScroll[(int)area], Styles.background);
-            GUILayout.Label(ProfilerDriver.GetOverviewText(area, GetActiveVisibleFrameIndex()), EditorStyles.wordWrappedLabel);
+            EditorGUILayout.SelectableLabel(activeText, EditorStyles.wordWrappedLabel, GUILayout.MinHeight(height));
             GUILayout.EndScrollView();
         }
 

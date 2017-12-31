@@ -88,6 +88,7 @@ namespace UnityEngine
         ExponentialSquared = 3
     }
 
+    [Flags]
     public enum LightmapBakeType
     {
         Realtime = 4,
@@ -220,7 +221,9 @@ namespace UnityEngine
 
     public enum ScreenOrientation
     {
+        [System.Obsolete("Enum member Unknown has been deprecated.", false)]
         Unknown = 0,
+
         Portrait = 1,
         PortraitUpsideDown = 2,
         LandscapeLeft = 3,
@@ -428,6 +431,7 @@ namespace UnityEngine
         MSAA = 4
     }
 
+    [Flags]
     public enum LightmapsMode
     {
         NonDirectional = 0,

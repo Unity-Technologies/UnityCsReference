@@ -269,7 +269,7 @@ namespace UnityEditor
 
         private void Framing()
         {
-            if (currentEvent.commandName == "FrameSelected" && m_Selection.Count > 0)
+            if (currentEvent.commandName == EventCommandNames.FrameSelected && m_Selection.Count > 0)
             {
                 switch (currentEvent.type)
                 {
@@ -465,7 +465,7 @@ namespace UnityEditor
         {
             var wantsDelete =
                 (UnityEngine.Event.current.type == EventType.ExecuteCommand || UnityEngine.Event.current.type == EventType.ValidateCommand)
-                && (UnityEngine.Event.current.commandName == "SoftDelete" || UnityEngine.Event.current.commandName == "Delete");
+                && (UnityEngine.Event.current.commandName == EventCommandNames.SoftDelete || UnityEngine.Event.current.commandName == EventCommandNames.Delete);
             for (int i = 0; i < this.GetPointsCount(); i++)
             {
                 if (i == m_NewPointIndex)

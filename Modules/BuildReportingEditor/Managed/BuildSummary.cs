@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     [NativeType(Header = "Modules/BuildReportingEditor/Managed/BuildSummary.bindings.h", CodegenOptions = CodegenOptions.Custom)]
     public struct BuildSummary
@@ -26,12 +26,10 @@ namespace UnityEditor.BuildReporting
 
         internal UInt64 totalTimeTicks;
         public TimeSpan totalTime { get { return new TimeSpan((long)totalTimeTicks); } }
+        public DateTime buildEndedAt {  get { return buildStartedAt + totalTime; } }
 
-        [NativeName("totalErrors")]
-        public int errors { get; }
-
-        [NativeName("totalWarnings")]
-        public int warnings { get; }
+        public int totalErrors { get; }
+        public int totalWarnings { get; }
 
         [NativeName("buildResult")]
         public BuildResult result { get; }

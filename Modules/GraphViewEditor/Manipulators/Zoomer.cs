@@ -36,16 +36,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private bool delayRepaintScheduled { get; set; }
 
-        public ContentZoomer()
-        {
-        }
-
-        public ContentZoomer(float minScale, float maxScale)
-        {
-            this.minScale = minScale;
-            this.maxScale = maxScale;
-        }
-
         protected override void RegisterCallbacksOnTarget()
         {
             var graphView = target as GraphView;
@@ -86,7 +76,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         // The factors a and b are calculated in order to satisfy the conditions:
         // z(0) = referenceZoom
         // z(1) = referenceZoom * (1 + zoomStep)
-        static float CalculateNewZoom(float currentZoom, float wheelDelta, float zoomStep, float referenceZoom, float minZoom, float maxZoom)
+        private static float CalculateNewZoom(float currentZoom, float wheelDelta, float zoomStep, float referenceZoom, float minZoom, float maxZoom)
         {
             if (minZoom <= 0)
             {

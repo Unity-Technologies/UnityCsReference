@@ -31,11 +31,6 @@ namespace UnityEditor.U2D.Common
                     formatValues = TextureImportPlatformSettings.kTextureFormatsValueWebGL;
                     formatStrings = TextureImporterInspector.s_TextureFormatStringsWebGL;
                 }
-                else if (buildTarget == BuildTarget.WiiU)
-                {
-                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueWiiU;
-                    formatStrings = TextureImporterInspector.s_TextureFormatStringsWiiU;
-                }
                 else if (buildTarget == BuildTarget.PSP2)
                 {
                     formatValues = TextureImportPlatformSettings.kTextureFormatsValuePSP2;

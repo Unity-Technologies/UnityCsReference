@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Build.Reporting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.Build
@@ -17,17 +18,17 @@ namespace UnityEditor.Build
 
     public interface IPreprocessBuild : IOrderedCallback
     {
-        void OnPreprocessBuild(BuildTarget target, string path);
+        void OnPreprocessBuild(BuildReport report);
     }
 
     public interface IPostprocessBuild : IOrderedCallback
     {
-        void OnPostprocessBuild(BuildTarget target, string path);
+        void OnPostprocessBuild(BuildReport report);
     }
 
     public interface IProcessScene : IOrderedCallback
     {
-        void OnProcessScene(UnityEngine.SceneManagement.Scene scene);
+        void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report);
     }
 
     public interface IActiveBuildTargetChanged : IOrderedCallback
@@ -52,7 +53,7 @@ namespace UnityEditor.Build
         }
 
         //common comparer for all callback types
-        static int CompareICallbackOrder(IOrderedCallback a, IOrderedCallback b)
+        internal static int CompareICallbackOrder(IOrderedCallback a, IOrderedCallback b)
         {
             return a.callbackOrder - b.callbackOrder;
         }
@@ -84,12 +85,12 @@ namespace UnityEditor.Build
                 m_method.Invoke(null, new object[] { previousTarget, newTarget });
             }
 
-            public void OnPostprocessBuild(BuildTarget target, string path)
+            public void OnPostprocessBuild(BuildReport report)
             {
-                m_method.Invoke(null, new object[] { target, path });
+                m_method.Invoke(null, new object[] { report.summary.platform, report.summary.outputPath });
             }
 
-            public void OnProcessScene(UnityEngine.SceneManagement.Scene scene)
+            public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report)
             {
                 m_method.Invoke(null, null);
             }
@@ -216,7 +217,7 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
-        internal static void OnBuildPreProcess(BuildTarget platform, string path, bool strict)
+        internal static void OnBuildPreProcess(BuildReport report)
         {
             if (buildPreprocessors != null)
             {
@@ -224,12 +225,12 @@ namespace UnityEditor.Build
                 {
                     try
                     {
-                        bpp.OnPreprocessBuild(platform, path);
+                        bpp.OnPreprocessBuild(report);
                     }
                     catch (Exception e)
                     {
                         Debug.LogException(e);
-                        if (strict)
+                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
                             return;
                     }
                 }
@@ -237,7 +238,7 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
-        internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, bool strict)
+        internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, BuildReport report)
         {
             if (sceneProcessors != null)
             {
@@ -245,12 +246,12 @@ namespace UnityEditor.Build
                 {
                     try
                     {
-                        spp.OnProcessScene(scene);
+                        spp.OnProcessScene(scene, report);
                     }
                     catch (Exception e)
                     {
                         Debug.LogException(e);
-                        if (strict)
+                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
                             return;
                     }
                 }
@@ -258,7 +259,7 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
-        internal static void OnBuildPostProcess(BuildTarget platform, string path, bool strict)
+        internal static void OnBuildPostProcess(BuildReport report)
         {
             if (buildPostprocessors != null)
             {
@@ -266,12 +267,12 @@ namespace UnityEditor.Build
                 {
                     try
                     {
-                        bpp.OnPostprocessBuild(platform, path);
+                        bpp.OnPostprocessBuild(report);
                     }
                     catch (Exception e)
                     {
                         Debug.LogException(e);
-                        if (strict)
+                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
                             return;
                     }
                 }

@@ -972,7 +972,9 @@ namespace UnityEditor
 
             if (!m_SelectedLanguage.Equals(LocalizationDatabase.currentEditorLanguage.ToString()))
             {
-                GUILayout.Label(Styles.changingThisSettingRequiresRestart, EditorStyles.helpBox);
+                SystemLanguage lang = (SystemLanguage)Enum.Parse(typeof(SystemLanguage), m_SelectedLanguage);
+                EditorGUIUtility.NotifyLanguageChanged(lang);
+                InternalEditorUtility.RequestScriptReload();
             }
 
             ApplyChangesToPrefs();
@@ -1028,7 +1030,12 @@ namespace UnityEditor
             // The Preferences window always writes all preferences, we don't want this behavior since we
             // want the default value to just match "IsSourceBuild" until the developer has explicitly changed it.
             if (m_DeveloperModeDirty)
+            {
                 EditorPrefs.SetBool("DeveloperMode", m_DeveloperMode);
+
+                // Repaint all views to show/hide debug repaint indicator
+                InternalEditorUtility.RepaintAllViews();
+            }
 
             EditorPrefs.SetBool("AllowAttachedDebuggingOfEditor", m_AllowAttachedDebuggingOfEditor);
 

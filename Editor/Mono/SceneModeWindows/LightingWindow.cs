@@ -8,8 +8,10 @@ using System.Collections;
 using System.Linq;
 using System.Text;
 using UnityEditor.AnimatedValues;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
 
@@ -49,6 +51,12 @@ namespace UnityEditor
         public LightingWindowLightingTab    m_LightingTab;
         LightingWindowLightmapPreviewTab    m_LightmapPreviewTab;
 
+        Scene m_LastActiveScene;
+
+        SerializedObject m_LightmapSettings;
+        SerializedProperty m_WorkflowMode;
+        SerializedProperty m_EnabledBakedGI;
+
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
 
         static bool s_IsVisible = false;
@@ -76,6 +84,8 @@ namespace UnityEditor
             m_LightmapPreviewTab = new LightingWindowLightmapPreviewTab();
             m_ObjectTab = new LightingWindowObjectTab();
             m_ObjectTab.OnEnable(this);
+
+            InitLightmapSettings();
 
             autoRepaintOnSceneChange = false;
             m_PreviewResizer.Init("LightmappingPreview");
@@ -118,7 +128,9 @@ namespace UnityEditor
 
         void OnGUI()
         {
-            LightModeUtil.Get().Load();
+            InitLightmapSettings();
+
+            m_LightmapSettings.Update();
 
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
@@ -155,8 +167,29 @@ namespace UnityEditor
             Summary();
             PreviewSection();
 
-            if (LightModeUtil.Get().Flush())
-                InspectorWindow.RepaintAllInspectors();
+            m_LightmapSettings.ApplyModifiedProperties();
+        }
+
+        void InitLightmapSettings()
+        {
+            //None of the events from EditorSceneManager worked here.
+            //The problems is that EditorSceneManager.NewScene will trigger a repaint of all windows, and this happens before the EditorSceneManager events gets called.
+            //So this window never gets a chance to rebuild its m_LightmapSettings.
+            //For now the workaround is to poll for active scene change during OnGUI.
+            var currentScene = EditorSceneManager.GetActiveScene();
+            if (m_LastActiveScene != currentScene)
+            {
+                if (m_LightmapSettings != null)
+                {
+                    m_LightmapSettings.Dispose();
+                    m_EnabledBakedGI.Dispose();
+                    m_WorkflowMode.Dispose();
+                }
+                m_LastActiveScene = currentScene;
+                m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
+                m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
+                m_WorkflowMode = m_LightmapSettings.FindProperty("m_GIWorkflowMode");
+            }
         }
 
         void DrawHelpGUI()
@@ -251,8 +284,6 @@ namespace UnityEditor
             bool wasGUIEnabled = GUI.enabled;
             GUI.enabled &= !EditorApplication.isPlayingOrWillChangePlaymode;
 
-            bool isContinuous = LightModeUtil.Get().IsWorkflowAuto();
-
             if (Lightmapping.lightingDataAsset && !Lightmapping.lightingDataAsset.isValid)
             {
                 EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
@@ -262,18 +293,25 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            // Continous mode checkbox
+            Rect rect = GUILayoutUtility.GetRect(Styles.ContinuousBakeLabel, GUIStyle.none);
+            EditorGUI.BeginProperty(rect, Styles.ContinuousBakeLabel, m_WorkflowMode);
+
+            bool iterative = m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
+
             EditorGUI.BeginChangeCheck();
-            isContinuous = GUILayout.Toggle(isContinuous, Styles.ContinuousBakeLabel);
+            iterative = GUILayout.Toggle(iterative, Styles.ContinuousBakeLabel);
+
             if (EditorGUI.EndChangeCheck())
             {
-                LightModeUtil.Get().SetWorkflow(isContinuous);
+                m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
             }
 
-            using (new EditorGUI.DisabledScope(isContinuous))
+            EditorGUI.EndProperty();
+
+            using (new EditorGUI.DisabledScope(iterative))
             {
                 // Bake button if we are not currently baking
-                bool showBakeButton = isContinuous || !Lightmapping.isRunning;
+                bool showBakeButton = iterative || !Lightmapping.isRunning;
                 if (showBakeButton)
                 {
                     if (EditorGUI.ButtonWithDropdownList(Styles.BuildLabel, s_BakeModeOptions, BakeDropDownCallback, GUILayout.Width(170)))
@@ -290,7 +328,7 @@ namespace UnityEditor
                 {
                     // Only show Force Stop when using the PathTracer backend
                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU &&
-                        LightModeUtil.Get().AreBakedLightmapsEnabled() &&
+                        m_EnabledBakedGI.boolValue &&
                         GUILayout.Button("Force Stop", GUILayout.Width(kButtonWidth)))
                     {
                         Lightmapping.ForceStop();

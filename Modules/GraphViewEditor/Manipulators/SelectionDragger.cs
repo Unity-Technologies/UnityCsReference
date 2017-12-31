@@ -89,9 +89,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void SendDragAndDropEvent(IMGUIEvent evt, List<ISelectable> selection, IDropTarget dropTarget)
         {
-            if (dropTarget ==  null)
+            if (dropTarget ==  null || !dropTarget.CanAcceptDrop(selection))
                 return;
-
             switch (evt.imguiEvent.type)
             {
                 case EventType.DragPerform:
@@ -110,38 +109,36 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected new void OnMouseDown(MouseDownEvent e)
         {
-            m_PrevDropTarget = null;
-            m_Active = false;
-
             if (m_Active)
             {
                 e.StopImmediatePropagation();
                 return;
             }
 
-            m_GraphView = target as GraphView;
-
-            if (m_GraphView == null)
-                return;
-
-            selectedElement = null;
-
-            // avoid starting a manipulation on a non movable object
-            clickedElement = e.target as GraphElement;
-            if (clickedElement == null)
-            {
-                var ve = e.target as VisualElement;
-                clickedElement = ve.GetFirstAncestorOfType<GraphElement>();
-                if (clickedElement == null)
-                    return;
-            }
-
             if (CanStartManipulation(e))
             {
-                selectedElement = clickedElement;
+                m_GraphView = target as GraphView;
 
-                if (!selectedElement.IsMovable())
+                if (m_GraphView == null)
                     return;
+
+                selectedElement = null;
+
+                // avoid starting a manipulation on a non movable object
+                clickedElement = e.target as GraphElement;
+                if (clickedElement == null)
+                {
+                    var ve = e.target as VisualElement;
+                    clickedElement = ve.GetFirstAncestorOfType<GraphElement>();
+                    if (clickedElement == null)
+                        return;
+                }
+
+                // Only start manipulating if the clicked element is movable, selected and that the mouse is in its clickable region (it must be deselected otherwise).
+                if (!clickedElement.IsMovable() || !m_GraphView.selection.Contains(clickedElement) || !clickedElement.HitTest(clickedElement.WorldToLocal(e.mousePosition)))
+                    return;
+
+                selectedElement = clickedElement;
 
                 m_OriginalPos = new Dictionary<GraphElement, Rect>();
 
@@ -172,10 +169,33 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         internal const int k_PanAreaWidth = 100;
         internal const int k_PanSpeed = 4;
         internal const int k_PanInterval = 10;
+        internal const float k_MinSpeedFactor = 0.5f;
+        internal const float k_MaxSpeedFactor = 2.5f;
+        internal const float k_MaxPanSpeed = k_MaxSpeedFactor * k_PanSpeed;
+
         private IVisualElementScheduledItem m_PanSchedule;
         private Vector3 m_PanDiff = Vector3.zero;
         private Vector3 m_ItemPanDiff = Vector3.zero;
         private Vector2 m_MouseDiff = Vector2.zero;
+
+        internal Vector2 GetEffectivePanSpeed(Vector2 mousePos)
+        {
+            Vector2 effectiveSpeed = Vector2.zero;
+
+            if (mousePos.x <= k_PanAreaWidth)
+                effectiveSpeed.x = -(((k_PanAreaWidth - mousePos.x) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+            else if (mousePos.x >= m_GraphView.contentContainer.layout.width - k_PanAreaWidth)
+                effectiveSpeed.x = (((mousePos.x - (m_GraphView.contentContainer.layout.width - k_PanAreaWidth)) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+
+            if (mousePos.y <= k_PanAreaWidth)
+                effectiveSpeed.y = -(((k_PanAreaWidth - mousePos.y) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+            else if (mousePos.y >= m_GraphView.contentContainer.layout.height - k_PanAreaWidth)
+                effectiveSpeed.y = (((mousePos.y - (m_GraphView.contentContainer.layout.height - k_PanAreaWidth)) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+
+            effectiveSpeed = Vector2.ClampMagnitude(effectiveSpeed, k_MaxPanSpeed);
+
+            return effectiveSpeed;
+        }
 
         protected new void OnMouseMove(MouseMoveEvent e)
         {
@@ -185,6 +205,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // the MouseDown target must have taken it in its ExecuteDefaultAction().
                 // Stop processing the event sequence, then.
                 // FIXME: replace this by a handler on the upcoming LostCaptureEvent.
+
+                m_PrevDropTarget = null;
                 m_Active = false;
             }
 
@@ -196,17 +218,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             var ve = (VisualElement)e.target;
             Vector2 gvMousePos = ve.ChangeCoordinatesTo(m_GraphView.contentContainer, e.localMousePosition);
-            m_PanDiff = Vector3.zero;
-
-            if (gvMousePos.x <= k_PanAreaWidth)
-                m_PanDiff.x += -k_PanSpeed;
-            else if (gvMousePos.x >= m_GraphView.contentContainer.layout.width - k_PanAreaWidth)
-                m_PanDiff.x += k_PanSpeed;
-
-            if (gvMousePos.y <= k_PanAreaWidth)
-                m_PanDiff.y += -k_PanSpeed;
-            else if (gvMousePos.y >= m_GraphView.contentContainer.layout.height - k_PanAreaWidth)
-                m_PanDiff.y += k_PanSpeed;
+            m_PanDiff = GetEffectivePanSpeed(gvMousePos);
 
 
             if (m_PanDiff != Vector3.zero)
@@ -289,9 +301,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_GraphView == null)
             {
-                if (target.HasMouseCapture())
+                if (m_Active && target.HasMouseCapture())
                 {
                     target.ReleaseMouseCapture();
+                    selectedElement = null;
+                    m_Active = false;
+                    m_PrevDropTarget = null;
                 }
 
                 return;
@@ -329,18 +344,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         m_GraphView.UpdateViewTransform(p, s);
                     }
 
-                    if (selection.Count > 0)
+                    if (selection.Count > 0 && m_PrevDropTarget != null)
                     {
-                        IDropTarget dropTarget = GetDropTargetAt(evt.localMousePosition);
-
-                        if (dropTarget != null)
+                        using (IMGUIEvent drop = IMGUIEvent.GetPooled(evt.imguiEvent))
                         {
-                            using (IMGUIEvent drop = IMGUIEvent.GetPooled(evt.imguiEvent))
-                            {
-                                drop.imguiEvent.type = EventType.DragPerform;
-
-                                SendDragAndDropEvent(drop, selection, dropTarget);
-                            }
+                            drop.imguiEvent.type = EventType.DragPerform;
+                            SendDragAndDropEvent(drop, selection, m_PrevDropTarget);
                         }
                     }
 
@@ -372,7 +381,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Vector3 s = m_GraphView.contentViewContainer.transform.scale;
                 m_GraphView.UpdateViewTransform(p, s);
             }
-
 
             target.ReleaseMouseCapture();
             e.StopPropagation();

@@ -78,10 +78,10 @@ namespace UnityEditor
         {
             var root = FindOrCreateRootGrid();
             var uniqueName = GameObjectUtility.GetUniqueNameForSibling(root.transform, "Tilemap");
-            var tilemapGO = new GameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
-            tilemapGO.transform.SetParent(root.transform);
+            var tilemapGO = ObjectFactory.CreateGameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
+            Undo.SetTransformParent(tilemapGO.transform, root.transform, "");
             tilemapGO.transform.position = Vector3.zero;
-            Undo.RegisterCreatedObjectUndo(tilemapGO, "Create Tilemap");
+            Undo.SetCurrentGroupName("Create Tilemap");
         }
 
         private static GameObject FindOrCreateRootGrid()
@@ -102,12 +102,12 @@ namespace UnityEditor
             // If neither the active object nor its parent has a grid, create a grid for the tilemap
             if (gridGO == null)
             {
-                gridGO = new GameObject("Grid", typeof(Grid));
+                gridGO = ObjectFactory.CreateGameObject("Grid", typeof(Grid));
                 gridGO.transform.position = Vector3.zero;
 
                 var grid = gridGO.GetComponent<Grid>();
                 grid.cellSize = new Vector3(1.0f, 1.0f, 0.0f);
-                Undo.RegisterCreatedObjectUndo(gridGO, "Create Grid");
+                Undo.SetCurrentGroupName("Create Grid");
             }
 
             return gridGO;

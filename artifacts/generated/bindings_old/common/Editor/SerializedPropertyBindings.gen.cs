@@ -159,6 +159,19 @@ public sealed partial class SerializedObject : IDisposable
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private bool CopyFromSerializedPropertyIfDifferentInternal (SerializedProperty prop) ;
+
+    public bool CopyFromSerializedPropertyIfDifferent(SerializedProperty prop)
+        {
+            if (prop == null)
+                throw new ArgumentNullException("prop");
+
+            return CopyFromSerializedPropertyIfDifferentInternal(prop);
+        }
+    
+    
     internal extern  bool hasModifiedProperties
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -201,6 +214,7 @@ public sealed partial class SerializedProperty : IDisposable
     
             IntPtr m_Property;
             internal SerializedObject m_SerializedObject;
+            internal string m_CachedLocalizedDisplayName = "";
     
     
     [ThreadAndSerializationSafe ()]
@@ -800,6 +814,16 @@ public SerializedProperty GetEndProperty( [uei.DefaultValue("false")] bool inclu
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
+    }
+
+    internal extern  bool isValidDisplayNameCache
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
     }
 
     public SerializedProperty GetFixedBufferElementAtIndex(int index)

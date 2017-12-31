@@ -80,7 +80,7 @@ namespace UnityEditor
         /// Nintendo 3DS target.
         N3DS = 23,
 
-        /// WiiU player target.
+        [Obsolete("Wii U support was removed in 2018.1")]
         WiiU = 24,
 
         tvOS = 25,

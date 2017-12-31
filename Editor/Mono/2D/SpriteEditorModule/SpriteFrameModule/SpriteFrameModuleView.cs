@@ -195,7 +195,7 @@ namespace UnityEditor
         {
             IEvent evt = eventSystem.current;
             if ((evt.type == EventType.ValidateCommand || evt.type == EventType.ExecuteCommand)
-                && evt.commandName == "Duplicate")
+                && evt.commandName == EventCommandNames.Duplicate)
             {
                 if (evt.type == EventType.ExecuteCommand)
                     DuplicateSprite();
@@ -209,7 +209,7 @@ namespace UnityEditor
             IEvent evt = eventSystem.current;
 
             if ((evt.type == EventType.ValidateCommand || evt.type == EventType.ExecuteCommand)
-                && (evt.commandName == "SoftDelete" || evt.commandName == "Delete"))
+                && (evt.commandName == EventCommandNames.SoftDelete || evt.commandName == EventCommandNames.Delete))
             {
                 if (evt.type == EventType.ExecuteCommand && hasSelected)
                     DeleteSprite();

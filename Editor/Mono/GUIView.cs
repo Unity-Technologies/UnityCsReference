@@ -28,6 +28,7 @@ namespace UnityEditor
 
         Panel m_Panel = null;
         EditorCursorManager m_CursorManager = new EditorCursorManager();
+        static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
 
         static GUIView()
         {
@@ -45,26 +46,10 @@ namespace UnityEditor
                     UXMLEditorFactories.RegisterAll();
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
                     m_Panel.cursorManager = m_CursorManager;
-                    AddDefaultEditorStyleSheets(m_Panel.visualTree);
+                    m_Panel.contextualMenuManager = s_ContextualMenuManager;
                 }
 
                 return m_Panel;
-            }
-        }
-
-        internal static void AddDefaultEditorStyleSheets(VisualElement p)
-        {
-            if (p.styleSheets == null)
-            {
-                p.AddStyleSheetPath("StyleSheets/DefaultCommon.uss");
-                if (EditorGUIUtility.isProSkin)
-                {
-                    p.AddStyleSheetPath("StyleSheets/DefaultCommonDark.uss");
-                }
-                else
-                {
-                    p.AddStyleSheetPath("StyleSheets/DefaultCommonLight.uss");
-                }
             }
         }
 

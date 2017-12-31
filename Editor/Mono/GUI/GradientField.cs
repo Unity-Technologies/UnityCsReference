@@ -136,7 +136,7 @@ namespace UnityEditor
                     break;
                 }
                 case EventType.ExecuteCommand:
-                    if (s_GradientID == id && evt.commandName == "GradientPickerChanged")
+                    if (s_GradientID == id && evt.commandName == GradientPicker.GradientPickerChangedCommand)
                     {
                         GUI.changed = true;
                         GradientPreviewCache.ClearCache();
@@ -148,7 +148,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ValidateCommand:
-                    if (s_GradientID == id && evt.commandName == "UndoRedoPerformed")
+                    if (s_GradientID == id && evt.commandName == EventCommandNames.UndoRedoPerformed)
                     {
                         if (property != null)
                             GradientPicker.SetCurrentGradient(property.gradientValue);

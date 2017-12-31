@@ -131,6 +131,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             this.AddManipulator(new EdgeManipulator());
             capabilities |= Capabilities.Selectable | Capabilities.Deletable;
+
+            this.AddManipulator(new ContextualMenuManipulator(null));
         }
 
         public override bool Overlaps(Rect rectangle)
@@ -218,34 +220,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public override void OnSelected()
-        {
-            base.OnSelected();
-
-            UpdateEdgeDrawers();
-        }
-
-        public override void OnUnselected()
-        {
-            base.OnUnselected();
-
-            UpdateEdgeDrawers();
-        }
-
-        public void UpdateEdgeDrawers()
-        {
-            if (input != null)
-            {
-                IEdgeDrawerContainer container = input.GetFirstOfType<IEdgeDrawerContainer>();
-                container.EdgeDirty();
-            }
-            if (output != null)
-            {
-                IEdgeDrawerContainer container = output.GetFirstOfType<IEdgeDrawerContainer>();
-                container.EdgeDirty();
-            }
-        }
-
         protected override void OnStyleResolved(ICustomStyle styles)
         {
             base.OnStyleResolved(styles);
@@ -254,11 +228,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             styles.ApplyCustomProperty(k_SelectedEdgeColorProperty, ref m_SelectedColor);
             styles.ApplyCustomProperty(k_GhostEdgeColorProperty, ref m_GhostColor);
             styles.ApplyCustomProperty(k_EdgeColorProperty, ref m_DefaultColor);
-
-            if (IsDirty(ChangeType.Repaint))
-            {
-                UpdateEdgeDrawers();
-            }
         }
 
         public override void OnDataChanged()
@@ -305,14 +274,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 edgeControl.outputColor = selectedColor;
                 edgeControl.edgeWidth = edgeWidth;
 
-                if (m_InputPort == null)
-                    Debug.Log("Selected Edge without input port: this should never be");
-                else
+                if (m_InputPort != null)
                     m_InputPort.capColor = selectedColor;
 
-                if (m_OutputPort == null)
-                    Debug.Log("Selected Edge without output port: this should never be");
-                else
+                if (m_OutputPort != null)
                     m_OutputPort.capColor = selectedColor;
             }
             else

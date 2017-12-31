@@ -300,7 +300,7 @@ namespace UnityEditor
             if (evt.type != EventType.ExecuteCommand && evt.type != EventType.ValidateCommand)
                 return;
 
-            if (evt.commandName == "FrameSelected")
+            if (evt.commandName == EventCommandNames.FrameSelected)
             {
                 if (evt.type == EventType.ExecuteCommand && m_TreeView.HasSelection())
                 {
@@ -310,7 +310,7 @@ namespace UnityEditor
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            if (evt.commandName == "Find")
+            if (evt.commandName == EventCommandNames.Find)
             {
                 if (evt.type == EventType.ExecuteCommand)
                 {

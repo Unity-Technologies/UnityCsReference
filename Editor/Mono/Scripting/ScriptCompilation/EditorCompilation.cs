@@ -55,6 +55,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public string DirectoryPath;
             public string Name;
+            public bool IncludeTestAssemblies;
         }
 
         [Flags]
@@ -84,6 +85,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly string EditorTempPath = "Temp";
 
         public Action<CompilationSetupErrorFlags> setupErrorFlagsChanged;
+        private PackageAssembly[] m_PackageAssemblies;
         public event Action<string> assemblyCompilationStarted;
         public event Action<string, UnityEditor.Compilation.CompilerMessage[]> assemblyCompilationFinished;
 
@@ -339,21 +341,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
                 else
                 {
-                    foreach (var packageAssembly in packageCustomScriptAssemblies)
+                    foreach (var packageCustomScriptAssembly in packageCustomScriptAssemblies)
                     {
-                        var pathPrefix = packageAssembly.PathPrefix.ToLower();
+                        var packageAssembly = this.m_PackageAssemblies.Single(x => x.Name == packageCustomScriptAssembly.Name);
+                        var pathPrefix = packageCustomScriptAssembly.PathPrefix.ToLowerInvariant();
 
                         // We have found an assembly definition file in the package directory, do not
                         // add a default custom script assembly for the package.
-                        if (customScriptAssemblies.Any(a => a.PathPrefix.ToLower().StartsWith(pathPrefix)))
+                        var customAssemblyInPackageRoot = customScriptAssemblies.SingleOrDefault(a => a.PathPrefix.ToLowerInvariant() == pathPrefix);
+                        if (customAssemblyInPackageRoot != null)
+                        {
                             continue;
+                        }
 
-                        // We have found an assembly.json in the package directory, do not
-                        // add a default custom script assembly for the package.
-                        if (customScriptAssemblies.Any(a => a.PathPrefix.ToLower().StartsWith(pathPrefix)))
-                            continue;
-
-                        allCustomScriptAssemblies.Add(CustomScriptAssembly.Create(packageAssembly.Name, packageAssembly.FilePath));
+                        allCustomScriptAssemblies.Add(CreatePackageCustomScriptAssembly(packageAssembly));
                     }
                 }
             }
@@ -362,6 +363,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 try
                 {
+                    if (m_PackageAssemblies != null && !assembly.PackageAssembly.HasValue)
+                    {
+                        var pathPrefix = assembly.PathPrefix.ToLowerInvariant();
+
+                        foreach (var packageAssembly in m_PackageAssemblies)
+                        {
+                            var lower = AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath).ToLowerInvariant();
+                            if (pathPrefix.StartsWith(lower))
+                            {
+                                assembly.PackageAssembly = packageAssembly;
+                                break;
+                            }
+                        }
+                    }
+
                     foreach (var reference in assembly.References)
                     {
                         if (!allCustomScriptAssemblies.Any(a => a.Name == reference))
@@ -436,8 +452,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
         {
-            this.packageCustomScriptAssemblies = packageAssemblies.Select(a => CustomScriptAssembly.Create(a.Name, AssetPath.GetFullPath(a.DirectoryPath))).ToArray();
+            m_PackageAssemblies = packageAssemblies;
+            this.packageCustomScriptAssemblies = m_PackageAssemblies.Select(CreatePackageCustomScriptAssembly).ToArray();
             UpdateCustomTargetAssemblies();
+        }
+
+        private static CustomScriptAssembly CreatePackageCustomScriptAssembly(PackageAssembly packageAssembly)
+        {
+            var customScriptAssembly = CustomScriptAssembly.Create(packageAssembly.Name, AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath));
+            customScriptAssembly.PackageAssembly = packageAssembly;
+            return customScriptAssembly;
         }
 
         // Delete all .dll's that aren't used anymore
@@ -683,13 +707,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
                     Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
-                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
 
                     if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
                         runScriptUpdaterAssemblies.Remove(assembly.Filename);
 
                     if (messages.Any(m => m.type == CompilerMessageType.Error))
+                    {
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
+                    }
 
                     var buildingForEditor = scriptAssemblySettings.BuildingForEditor;
                     string enginePath = InternalEditorUtility.GetEngineCoreModuleAssemblyPath();
@@ -699,6 +725,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         messages.Add(new CompilerMessage { message = "UNet Weaver failed", type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopAllCompilation();
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
 
@@ -707,8 +734,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         messages.Add(new CompilerMessage { message = string.Format("Copying assembly from directory {0} to {1} failed", tempBuildDirectory, assembly.OutputDirectory), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopAllCompilation();
+                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
+
+                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                 };
 
             compilationTask.Poll();
@@ -1057,7 +1087,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options);
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory(), assemblySuffix);
-            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, precompiledAssemblies);
+            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor,  precompiledAssemblies);
             var additionalReferences = EditorBuildRules.GenerateAdditionalReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 

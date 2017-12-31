@@ -18,6 +18,7 @@ namespace UnityEditor
 
     internal class SerializedMinMaxCurve
     {
+        public SerializedProperty rootProperty;
         public SerializedProperty scalar;
         public SerializedProperty minScalar;
         public SerializedProperty maxCurve;
@@ -76,6 +77,7 @@ namespace UnityEditor
             m_AllowRandom = true;
             m_AllowCurves = true;
 
+            rootProperty = useProp0 ? m.GetProperty0(m_Name) : m.GetProperty(m_Name);
             scalar = useProp0 ? m.GetProperty0(m_Name, "scalar") : m.GetProperty(m_Name, "scalar");
             minScalar = useProp0 ? m.GetProperty0(m_Name, "minScalar") : m.GetProperty(m_Name, "minScalar");
             maxCurve = useProp0 ? m.GetProperty0(m_Name, "maxCurve") : m.GetProperty(m_Name, "maxCurve");

@@ -125,7 +125,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.ExecuteCommand)
             {
                 // New shader picked in object selector; add it to the collection
-                if (Event.current.commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == "ShaderVariantSelector".GetHashCode())
+                if (Event.current.commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == "ShaderVariantSelector".GetHashCode())
                 {
                     var newShader = ObjectSelector.GetCurrentObject() as Shader;
                     if (newShader != null)

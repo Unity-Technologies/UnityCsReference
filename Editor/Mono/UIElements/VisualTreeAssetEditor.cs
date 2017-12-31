@@ -73,7 +73,7 @@ namespace UnityEditor.Experimental.UIElements
                 m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor, new DataWatchService());
                 if (m_Panel.visualTree.styleSheets == null)
                 {
-                    GUIView.AddDefaultEditorStyleSheets(m_Panel.visualTree);
+                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_Panel.visualTree);
                     m_Panel.visualTree.LoadStyleSheetsFromPaths();
                 }
                 m_Panel.allowPixelCaching = false;
@@ -86,13 +86,24 @@ namespace UnityEditor.Experimental.UIElements
                 m_Panel.visualTree.Add(m_Tree);
             }
 
-            m_Panel.visualTree.layout = r;
+            EditorGUI.DrawRect(r, EditorGUIUtility.isProSkin ? EditorGUIUtility.kDarkViewBackground : HostView.kViewColor);
+
+            m_Panel.visualTree.layout = GUIClip.UnclipToWindow(r);
 
             m_Panel.visualTree.Dirty(ChangeType.Layout);
             m_Panel.visualTree.Dirty(ChangeType.Repaint);
 
-            EditorGUI.DrawRect(r, EditorGUIUtility.isProSkin ? EditorGUIUtility.kDarkViewBackground : HostView.kViewColor);
+            var oldState = SavedGUIState.Create();
+            int clips = GUIClip.Internal_GetCount();
+            while (clips > 0)
+            {
+                GUIClip.Pop();
+                clips--;
+            }
+
             m_Panel.Repaint(Event.current);
+
+            oldState.ApplyAndForget();
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)

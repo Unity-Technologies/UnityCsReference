@@ -77,5 +77,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 yMax = Math.Max(a.yMax, b.yMax)
             };
         }
+
+        public static Rect Inflate(Rect a, float left, float top, float right, float bottom)
+        {
+            return new Rect
+            {
+                xMin = a.xMin - left,
+                yMin = a.yMin - top,
+                xMax = a.xMax + right,
+                yMax = a.yMax + bottom
+            };
+        }
     }
 }

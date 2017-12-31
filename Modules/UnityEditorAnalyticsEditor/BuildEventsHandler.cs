@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 
 namespace UnityEditor
 {
@@ -25,7 +26,7 @@ namespace UnityEditor
         private static int s_NumOf2dSceneViews = 0;
 
         public int callbackOrder {get { return 0; }}
-        public void OnPostprocessBuild(BuildTarget target, string path)
+        public void OnPostprocessBuild(BuildReport report)
         {
             Object[] views = Resources.FindObjectsOfTypeAll(typeof(SceneView));
             int numOf2dSceneViews = 0;

@@ -20,7 +20,6 @@ namespace UnityEditor
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
-
     public partial class AssetDatabase
     {
         [FreeFunction("AssetDatabase::ReSerializeAssetsForced")]
@@ -69,6 +68,24 @@ namespace UnityEditor
             GUID[] guids = new GUID[guidList.Count];
             guidList.CopyTo(guids);
             ReSerializeAssetsForced(guids, options);
+        }
+
+        [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
+        extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
+
+        public static bool TryGetGUIDAndLocalFileIdentifier(UnityEngine.Object obj, out string guid, out int localId)
+        {
+            return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
+        }
+
+        public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out int localId)
+        {
+            GUID uguid;
+            long fileid;
+            bool res = GetGUIDAndLocalIdentifierInFile(instanceID, out uguid, out fileid);
+            guid = uguid.ToString();
+            localId = (int)fileid;
+            return res;
         }
 
         public static void ForceReserializeAssets()

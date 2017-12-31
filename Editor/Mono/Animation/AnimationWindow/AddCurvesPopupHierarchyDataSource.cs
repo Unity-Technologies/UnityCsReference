@@ -128,7 +128,7 @@ namespace UnityEditorInternal
 
         private TreeViewItem AddScriptableObjectToHierarchy(ScriptableObject scriptableObject, AnimationClip clip, TreeViewItem parent)
         {
-            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetScriptableObjectAnimatableBindings(scriptableObject);
+            EditorCurveBinding[] allCurveBindings = AnimationUtility.GetAnimatableBindings(scriptableObject);
             EditorCurveBinding[] availableBindings = allCurveBindings.Where(c => !AnimationWindowUtility.IsCurveCreated(clip, c)).ToArray();
 
             TreeViewItem node = null;

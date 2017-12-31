@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.StyleSheets;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Profiling;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
@@ -91,6 +89,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal virtual IStylePainter stylePainter { get; set; }
         internal virtual ICursorManager cursorManager { get; set; }
+        internal virtual ContextualMenuManager contextualMenuManager { get; set; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }
@@ -215,6 +214,7 @@ namespace UnityEngine.Experimental.UIElements
             this.dispatcher = dispatcher;
             stylePainter = new StylePainter();
             cursorManager = new CursorManager();
+            contextualMenuManager = null;
             m_RootContainer = new VisualElement();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             m_RootContainer.persistenceKey = "PanelContainer"; // Required!
@@ -602,10 +602,12 @@ namespace UnityEngine.Experimental.UIElements
                                         textureParams.border.bottomLeftRadius * radiusScale);
 
                                     // No border is drawn but the rounded corners are clipped properly.
+                                    // Use premultiply alpha to avoid blending again.
+                                    textureParams.usePremultiplyAlpha = true;
                                     painter.DrawTexture(textureParams);
                                 }
 
-                            // Draw the border.
+                            // Redraw the border (border was already drawn in first root.DoRepaint call).
                             painter.currentTransform = offsetWorldTransform;
                             using (new GUIUtility.ManualTex2SRGBScope(manualTex2SRGBEnabled))
                                 using (new GUIClip.ParentClipScope(painter.currentTransform, textureClip))
@@ -635,7 +637,8 @@ namespace UnityEngine.Experimental.UIElements
                     uv = new Rect(0, 0, 1, 1),
                     texture = root.renderData.pixelCache,
                     color = Color.white,
-                    scaleMode = ScaleMode.ScaleAndCrop
+                    scaleMode = ScaleMode.ScaleAndCrop,
+                    usePremultiplyAlpha = true
                 };
 
                 using (new GUIClip.ParentClipScope(painter.currentTransform, currentGlobalClip))
@@ -681,6 +684,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void Repaint(Event e)
         {
+            Debug.Assert(GUIClip.Internal_GetCount() == 0, "UIElement is not compatible with IMGUI GUIClips, only GUIClip.ParentClipScope");
+
             // if the surface DPI changes we need to invalidate styles
             if (!Mathf.Approximately(m_StyleContext.currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
             {

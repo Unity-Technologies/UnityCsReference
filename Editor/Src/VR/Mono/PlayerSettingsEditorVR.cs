@@ -41,6 +41,7 @@ namespace UnityEditorInternal.VR
 
             public static readonly GUIContent supportedCheckbox = EditorGUIUtility.TrTextContent("Virtual Reality Supported");
             public static readonly GUIContent listHeader = EditorGUIUtility.TrTextContent("Virtual Reality SDKs");
+            public static readonly GUIContent stereo360CaptureCheckbox = EditorGUIUtility.TrTextContent("360 Stereo Capture");
         }
 
         private PlayerSettingsEditor m_Settings;
@@ -55,6 +56,7 @@ namespace UnityEditorInternal.VR
         private SerializedProperty m_StereoRenderingPath;
 
         private SerializedProperty m_AndroidEnableTango;
+        private SerializedProperty m_Enable360StereoCapture;
 
         private bool m_InstallsRequired = false;
         private bool m_VuforiaInstalled = false;
@@ -67,6 +69,10 @@ namespace UnityEditorInternal.VR
             m_StereoRenderingPath = m_Settings.serializedObject.FindProperty("m_StereoRenderingPath");
 
             m_AndroidEnableTango = m_Settings.FindPropertyAssert("AndroidEnableTango");
+
+            SerializedProperty property = m_Settings.serializedObject.FindProperty("vrSettings");
+            if (property != null)
+                m_Enable360StereoCapture = property.FindPropertyRelative("enable360StereoCapture");
         }
 
         private void RefreshVRDeviceList(BuildTargetGroup targetGroup)
@@ -152,6 +158,8 @@ namespace UnityEditorInternal.VR
                     TangoGUI(targetGroup);
 
                     VuforiaGUI(targetGroup);
+
+                    Stereo360CaptureGUI();
 
                     ErrorOnARDeviceIncompatibility(targetGroup);
                 }
@@ -314,6 +322,11 @@ namespace UnityEditorInternal.VR
             {
                 EditorGUILayout.HelpBox(Styles.singlePassInstancedWarning.text, MessageType.Warning);
             }
+        }
+
+        private void Stereo360CaptureGUI()
+        {
+            EditorGUILayout.PropertyField(m_Enable360StereoCapture, Styles.stereo360CaptureCheckbox);
         }
 
         private void AddVRDeviceMenuSelected(object userData, string[] options, int selected)

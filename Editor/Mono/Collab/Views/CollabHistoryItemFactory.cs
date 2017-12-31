@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.Collaboration;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine;
 
 namespace UnityEditor.Collaboration
 {
@@ -15,7 +16,7 @@ namespace UnityEditor.Collaboration
     {
         const int k_MaxChangesPerRevision = 10;
 
-        public IEnumerable<RevisionData> GenerateElements(IEnumerable<Revision> revisions, int totalRevisions, int startIndex, string tipRev, string inProgressRevision, bool revisionActionsEnabled, bool buildServiceEnabled)
+        public IEnumerable<RevisionData> GenerateElements(IEnumerable<Revision> revisions, int totalRevisions, int startIndex, string tipRev, string inProgressRevision, bool revisionActionsEnabled, bool buildServiceEnabled, string currentUser)
         {
             int index = startIndex;
 
@@ -81,12 +82,14 @@ namespace UnityEditor.Collaboration
                     }
                 }
 
+                var displayName = (rev.author != currentUser) ? rev.authorName : "You";
+
                 var item = new RevisionData
                 {
                     id = rev.revisionID,
                     index = totalRevisions - index + 1,
                     timeStamp = TimeStampToDateTime(rev.timeStamp),
-                    authorName = rev.authorName,
+                    authorName = displayName,
                     comment = rev.comment,
 
                     obtained = rev.isObtained,

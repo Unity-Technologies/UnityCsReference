@@ -54,9 +54,6 @@ namespace UnityEditor
             public static GUIContent RootTransformRotationY = EditorGUIUtility.TrTextContent("Root Transform Position (Y)");
             public static GUIContent RootTransformPositionXZ = EditorGUIUtility.TrTextContent("Root Transform Position (XZ)");
 
-            public static GUIContent MotionCurves = EditorGUIUtility.TrTextContent("Root Motion is driven by curves");
-            public static GUIContent RemoveRootMotionCurves = EditorGUIUtility.TrTextContent("Remove Root Motion Curves");
-            public static GUIContent GenerateRootMotionCurves = EditorGUIUtility.TrTextContent("Generate Root Motion Curves");
             public static GUIContent BakeIntoPoseOrientation = EditorGUIUtility.TrTextContent("Bake Into Pose", "Enable to make root rotation be baked into the movement of the bones. Disable to make root rotation be stored as root motion.");
             public static GUIContent OrientationOffsetY = EditorGUIUtility.TrTextContent("Offset", "Offset to the root rotation (in degrees).");
 
@@ -1221,35 +1218,31 @@ namespace UnityEditor
                 }
             }
 
-            if (hasMotionCurves)
+            if (hasGenericRootTransform && hasMotionFloatCurves)
             {
-                EditorGUILayout.Space();
-                GUILayout.Label(Styles.MotionCurves, EditorStyles.label);
+                EditorGUILayout.HelpBox("Root contains both root motion and transform curves", MessageType.Warning);
             }
-
-            if (m_ClipInfo == null && hasGenericRootTransform && !hasMotionFloatCurves)
+            else if (hasMotionFloatCurves)
             {
-                EditorGUILayout.Space();
+                EditorGUILayout.HelpBox("Root contains root motion curves", MessageType.Info);
+            }
+            else if (hasGenericRootTransform)
+            {
+                EditorGUILayout.HelpBox("Root contains position and rotation curves", MessageType.Info);
 
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-
-                if (hasMotionCurves)
+                if (m_ClipInfo == null)
                 {
-                    if (GUILayout.Button(Styles.RemoveRootMotionCurves))
-                    {
-                        AnimationUtility.SetGenerateMotionCurves(m_Clip, false);
-                    }
-                }
-                else
-                {
-                    if (GUILayout.Button(Styles.GenerateRootMotionCurves))
-                    {
-                        AnimationUtility.SetGenerateMotionCurves(m_Clip, true);
-                    }
-                }
+                    GUILayout.BeginHorizontal();
+                    GUILayout.FlexibleSpace();
 
-                GUILayout.EndHorizontal();
+                    bool generateCurves = AnimationUtility.GetGenerateMotionCurves(m_Clip);
+                    generateCurves = GUILayout.Toggle(generateCurves, "Generate Root Motion Curves at Runtime");
+                    AnimationUtility.SetGenerateMotionCurves(m_Clip, generateCurves);
+
+                    GUILayout.EndHorizontal();
+
+                    EditorGUILayout.Space();
+                }
             }
 
             // Stats

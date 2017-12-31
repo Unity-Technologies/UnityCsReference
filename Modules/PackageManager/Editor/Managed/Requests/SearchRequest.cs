@@ -4,12 +4,13 @@
 
 
 using System;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.Requests
 {
     [Serializable]
-    public sealed class SearchRequest : Request<UpmPackageInfo[]>
+    public sealed class SearchRequest : Request<PackageInfo[]>
     {
         [SerializeField]
         private string m_PackageIdOrName;
@@ -38,9 +39,9 @@ namespace UnityEditor.PackageManager.Requests
             m_PackageIdOrName = packageIdOrName;
         }
 
-        protected override UpmPackageInfo[] GetResult()
+        protected override PackageInfo[] GetResult()
         {
-            return NativeClient.GetSearchOperationData(Id);
+            return NativeClient.GetSearchOperationData(Id).Select(p => (PackageInfo)p).ToArray();
         }
     }
 }

@@ -634,13 +634,13 @@ namespace UnityEditor
             {
                 bool execute = eventType == EventType.ExecuteCommand;
 
-                if (Event.current.commandName == "Delete" || Event.current.commandName == "SoftDelete")
+                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
                 {
                     Event.current.Use();
                     if (execute)
                         ProjectWindowUtil.DeleteAssets(m_TreeView.GetSelection().ToList(), true);
                 }
-                else if (Event.current.commandName == "Duplicate")
+                else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
                     Event.current.Use();
                     if (execute)
@@ -694,7 +694,7 @@ namespace UnityEditor
             if (evt.type == EventType.ExecuteCommand)
             {
                 string commandName = evt.commandName;
-                if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == kObjectSelectorID)
+                if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == kObjectSelectorID)
                 {
                     if (m_DraggedMixers == null || m_DraggedMixers.Count == 0)
                         Debug.LogError("Unexpected invalid mixer list used for dragging");
@@ -720,7 +720,7 @@ namespace UnityEditor
                     m_TreeView.SetSelection(selectedIDs, true);
                 }
 
-                if (commandName == "ObjectSelectorClosed")
+                if (commandName == ObjectSelector.ObjectSelectorClosedCommand)
                 {
                     m_DraggedMixers = null;  // cleanup stored state
                 }

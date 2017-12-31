@@ -627,22 +627,30 @@ namespace UnityEditor
             editorDragging.HandleDraggingToBottomArea(remainingRect, m_Tracker);
         }
 
-        private static bool HasLabel(Object target)
+        static bool HasLabel(Object target)
         {
-            string assetPathForLabels = AssetDatabase.GetAssetPath(target);
-            return assetPathForLabels.StartsWith("assets", StringComparison.OrdinalIgnoreCase) && !Directory.Exists(assetPathForLabels);
+            return HasLabel(target, AssetDatabase.GetAssetPath(target));
+        }
+
+        static bool HasLabel(Object target, string assetPath)
+        {
+            return EditorUtility.IsPersistent(target) && assetPath.StartsWith("assets", StringComparison.OrdinalIgnoreCase);
         }
 
         private Object[] GetInspectedAssets()
         {
             // We use this technique to support locking of the inspector. An inspector locks via an editor, so we need to use an editor to get the selection
             Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
-            if (assetEditor != null && assetEditor.targets.Length == 1 && HasLabel(assetEditor.target))
-                return assetEditor.targets;
+            if (assetEditor != null && assetEditor.targets.Length == 1)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
+                if (HasLabel(assetEditor.target, assetPath) && !Directory.Exists(assetPath))
+                    return assetEditor.targets;
+            }
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Where(o => HasLabel(o)).ToArray();
+            return Selection.objects.Where(HasLabel).ToArray();
         }
 
         private void DrawPreviewAndLabels()
@@ -1053,7 +1061,7 @@ namespace UnityEditor
                     m_InvalidateGUIBlockCache = false;
                 }
             }
-            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "EyeDropperUpdate")
+            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
             {
                 rebuildOptimizedGUIBlocks = true;
             }
@@ -1467,7 +1475,7 @@ namespace UnityEditor
                 {
                     case EventType.ExecuteCommand:
                         string commandName = evt.commandName;
-                        if (commandName == "OpenAddComponentDropdown")
+                        if (commandName == AddComponentWindow.OpenAddComponentDropdown)
                         {
                             openWindow = true;
                             evt.Use();
@@ -1593,6 +1601,9 @@ namespace UnityEditor
 
         void RestoreLockStateFromSerializedData()
         {
+            if (m_Tracker == null)
+                return;
+
             // try to retrieve all Objects from their stored instance ids in the list.
             // this is only used for nonpersistent objects (scene objects)
 
@@ -1618,7 +1629,7 @@ namespace UnityEditor
             // set the tracker to the serialized list. if it contains nulls or is empty, the tracker won't lock
             // this fixes case 775007
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
-            tracker.RebuildIfNecessary();
+            m_Tracker.RebuildIfNecessary();
         }
     }
 }
