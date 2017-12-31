@@ -409,7 +409,7 @@ namespace UnityEditor
                 case EventType.ExecuteCommand:
                 {
                     string commandName = evt.commandName;
-                    if (commandName == "ObjectSelectorClosed" && ObjectSelector.get.objectSelectorID == "LODGroupSelector".GetHashCode())
+                    if (commandName == ObjectSelector.ObjectSelectorClosedCommand && ObjectSelector.get.objectSelectorID == "LODGroupSelector".GetHashCode())
                     {
                         var selectedObject = ObjectSelector.GetCurrentObject() as GameObject;
                         if (selectedObject != null)

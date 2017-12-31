@@ -934,7 +934,7 @@ namespace UnityEditor
                     bool execute = evt.type == EventType.ExecuteCommand;
                     switch (evt.commandName)
                     {
-                        case "Delete":
+                        case EventCommandNames.Delete:
                             if (hasSelection)
                             {
                                 if (execute)
@@ -944,12 +944,12 @@ namespace UnityEditor
                                 evt.Use();
                             }
                             break;
-                        case "FrameSelected":
+                        case EventCommandNames.FrameSelected:
                             if (execute)
                                 FrameSelected(true, true);
                             evt.Use();
                             break;
-                        case "SelectAll":
+                        case EventCommandNames.SelectAll:
                             if (execute)
                                 SelectAll();
                             evt.Use();
@@ -1153,8 +1153,11 @@ namespace UnityEditor
                         Vector2 mousePos = Event.current.mousePosition;
                         foreach (CurveSelection cs in selectedCurves)
                         {
-                            CurveWrapper curveWrapper = GetCurveWrapperFromSelection(cs);
-                            if (curveWrapper == null)
+                            AnimationCurve curve = GetCurveFromSelection(cs);
+                            if (curve == null)
+                                continue;
+
+                            if (cs.key < 0 || cs.key >= curve.length)
                                 continue;
 
                             if (IsLeftTangentEditable(cs))
@@ -2974,9 +2977,6 @@ namespace UnityEditor
 
             if (selection.type == CurveSelection.SelectionType.InTangent)
             {
-                Keyframe prevKey = curve[selection.key - 1];
-                float dx = key.time - prevKey.time;
-
                 Vector2 dir = new Vector2(1.0F, key.inTangent);
                 if (key.inTangent == Mathf.Infinity) dir = new Vector2(0, -1);
 
@@ -2984,6 +2984,9 @@ namespace UnityEditor
 
                 if ((key.weightedMode & WeightedMode.In) == WeightedMode.In)
                 {
+                    Keyframe prevKey = (selection.key >= 1 && selection.key < curve.length) ? curve[selection.key - 1] : key;
+                    float dx = key.time - prevKey.time;
+
                     Vector2 bezierDir = dir * dx * key.inWeight;
                     if (viewDir.magnitude * 10F < bezierDir.magnitude)
                         return position - bezierDir;
@@ -2997,9 +3000,6 @@ namespace UnityEditor
             }
             else if (selection.type == CurveSelection.SelectionType.OutTangent)
             {
-                Keyframe nextKey = curve[selection.key + 1];
-                float dx = nextKey.time - key.time;
-
                 Vector2 dir = new Vector2(1.0F, key.outTangent);
                 if (key.outTangent == Mathf.Infinity) dir = new Vector2(0, -1);
 
@@ -3007,6 +3007,9 @@ namespace UnityEditor
 
                 if ((key.weightedMode & WeightedMode.Out) == WeightedMode.Out)
                 {
+                    Keyframe nextKey = (selection.key >= 0 && selection.key < (curve.length - 1)) ? curve[selection.key + 1] : key;
+                    float dx = nextKey.time - key.time;
+
                     Vector2 bezierDir = dir * dx * key.outWeight;
                     if (viewDir.magnitude * 10F < bezierDir.magnitude)
                         return position + bezierDir;
@@ -3106,7 +3109,10 @@ namespace UnityEditor
         bool IsLeftTangentEditable(CurveSelection selection)
         {
             AnimationCurve curve = GetCurveFromSelection(selection);
-            if (curve == null || selection.key < 1)
+            if (curve == null)
+                return false;
+
+            if (selection.key < 1 || selection.key >= curve.length)
                 return false;
 
             Keyframe keyframe = curve[selection.key];
@@ -3126,7 +3132,10 @@ namespace UnityEditor
         bool IsRightTangentEditable(CurveSelection selection)
         {
             AnimationCurve curve = GetCurveFromSelection(selection);
-            if (curve == null || selection.key >= (curve.length - 1))
+            if (curve == null)
+                return false;
+
+            if (selection.key < 0 || selection.key >= (curve.length - 1))
                 return false;
 
             Keyframe keyframe = curve[selection.key];
@@ -3222,7 +3231,6 @@ namespace UnityEditor
 
                 if (sel.semiSelected)
                     continue;
-                Vector2 keyPoint = GetPosition(sel);
 
                 CurveWrapper curveWrapper = GetCurveWrapperFromSelection(sel);
                 if (curveWrapper == null)
@@ -3234,6 +3242,11 @@ namespace UnityEditor
 
                 if (curve.length == 0)
                     continue;
+
+                if (sel.key < 0 || sel.key >= curve.length)
+                    continue;
+
+                Vector2 keyPoint = GetPosition(sel);
 
                 if (IsLeftTangentEditable(sel) && GetKeyframeFromSelection(sel).time != curve.keys[0].time)
                 {

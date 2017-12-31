@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]
     public struct BuildStep
@@ -22,7 +22,7 @@ namespace UnityEditor.BuildReporting
 
         public override string ToString()
         {
-            return string.Format("{0} ({1}ms)", name, duration.Milliseconds);
+            return string.Format("{0} ({1}ms)", name, duration.TotalMilliseconds);
         }
     }
 }

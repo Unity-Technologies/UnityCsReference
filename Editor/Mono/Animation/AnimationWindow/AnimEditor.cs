@@ -450,10 +450,10 @@ namespace UnityEditor
                     {
                         Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(m_State.activeGameObject.transform);
                         m_State.activeAnimationClip = AnimationUtility.GetAnimationClips(animationPlayer.gameObject)[0];
-
-                        //  Selection has changed, bail out now.
-                        EditorGUIUtility.ExitGUI();
                     }
+
+                    //  Layout has changed, bail out now.
+                    EditorGUIUtility.ExitGUI();
                 }
             }
             else
@@ -546,7 +546,6 @@ namespace UnityEditor
                 return;
 
             Rect noSlidersRect = new Rect(position.xMin, position.yMin, position.width - kSliderThickness, position.height - kSliderThickness);
-            Rect masterDopelineRect = new Rect(noSlidersRect.xMin, noSlidersRect.yMin, noSlidersRect.width, AnimationWindowHierarchyGUI.k_DopeSheetRowHeight);
 
             m_DopeSheet.BeginViewGUI();
 
@@ -555,7 +554,6 @@ namespace UnityEditor
             if (!m_State.disabled)
             {
                 m_DopeSheet.TimeRuler(noSlidersRect, m_State.frameRate, false, true, kDisabledRulerAlpha, m_State.timeFormat);  // grid
-                m_DopeSheet.DrawMasterDopelineBackground(masterDopelineRect); // This needs to be under the playhead
             }
             m_DopeSheet.OnGUI(noSlidersRect, m_State.hierarchyState.scrollPos * -1);
 
@@ -1103,7 +1101,7 @@ namespace UnityEditor
             {
                 switch (Event.current.commandName)
                 {
-                    case "Copy":
+                    case EventCommandNames.Copy:
                         if (Event.current.type == EventType.ExecuteCommand)
                         {
                             if (m_State.showCurveEditor)
@@ -1112,7 +1110,7 @@ namespace UnityEditor
                         }
                         Event.current.Use();
                         break;
-                    case "Paste":
+                    case EventCommandNames.Paste:
                         if (Event.current.type == EventType.ExecuteCommand)
                         {
                             SaveCurveEditorKeySelection();

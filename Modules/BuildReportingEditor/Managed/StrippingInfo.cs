@@ -8,9 +8,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     public class StrippingInfo : ScriptableObject, ISerializationCallbackReceiver
     {
@@ -55,28 +55,6 @@ namespace UnityEditor.BuildReporting
         void OnEnable()
         {
             SetIcon(RequiredByScripts, "class/MonoScript");
-
-            // We don't have real icons specifically for all the modules right now.
-            // While it would be nice to have some, for now, we set up the common modules to use some
-            // of their class icons.
-            SetIcon(ModuleName("AI"), "class/NavMeshAgent");
-            SetIcon(ModuleName("Animation"), "class/Animation");
-            SetIcon(ModuleName("Audio"), "class/AudioSource");
-            SetIcon(ModuleName("Core"), "class/GameManager");
-            SetIcon(ModuleName("IMGUI"), "class/GUILayer");
-            SetIcon(ModuleName("ParticleSystem"), "class/ParticleSystem");
-            SetIcon(ModuleName("ParticlesLegacy"), "class/EllipsoidParticleEmitter");
-            SetIcon(ModuleName("Physics"), "class/PhysicMaterial");
-            SetIcon(ModuleName("Physics2D"), "class/PhysicsMaterial2D");
-            SetIcon(ModuleName("TextRendering"), "class/Font");
-            SetIcon(ModuleName("UI"), "class/CanvasGroup");
-            SetIcon(ModuleName("Umbra"), "class/OcclusionCullingSettings");
-            SetIcon(ModuleName("UNET"), "class/NetworkTransform");
-            SetIcon(ModuleName("Vehicles"), "class/WheelCollider");
-            SetIcon(ModuleName("Cloth"), "class/Cloth");
-            SetIcon(ModuleName("ImageConversion"), "class/Texture");
-            SetIcon(ModuleName("ScreenCapture"), "class/RenderTexture");
-            SetIcon(ModuleName("Wind"), "class/WindZone");
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
@@ -128,16 +106,18 @@ namespace UnityEditor.BuildReporting
                 SetIcon(depends, "class/" + depends);
         }
 
-        internal void AddModule(string module)
+        internal void AddModule(string module, bool appendModuleToName = true)
         {
-            if (!modules.Contains(module))
-                modules.Add(module);
-            if (!sizes.ContainsKey(module))
-                sizes[module] = 0;
+            var moduleName = appendModuleToName ? ModuleName(module) : module;
+            var packageName = $"com.unity.modules.{module.ToLower()}";
+            if (!modules.Contains(moduleName))
+                modules.Add(moduleName);
+            if (!sizes.ContainsKey(moduleName))
+                sizes[moduleName] = 0;
 
             // Fall back to default icon for unknown modules
-            if (!icons.ContainsKey(module))
-                SetIcon(module, "class/DefaultAsset");
+            if (!icons.ContainsKey(moduleName))
+                SetIcon(moduleName, $"package/{packageName}");
         }
 
         internal void SetIcon(string dependency, string icon)

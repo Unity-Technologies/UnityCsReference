@@ -506,7 +506,7 @@ namespace UnityEditorInternal
                 switch (Event.current.type)
                 {
                     case EventType.ExecuteCommand:
-                        if ((Event.current.commandName == "SoftDelete" || Event.current.commandName == "Delete"))
+                        if ((Event.current.commandName == EventCommandNames.SoftDelete || Event.current.commandName == EventCommandNames.Delete))
                         {
                             if (Event.current.type == EventType.ExecuteCommand)
                                 RemoveCurvesFromSelectedNodes();

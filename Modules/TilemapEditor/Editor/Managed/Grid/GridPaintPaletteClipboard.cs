@@ -454,13 +454,13 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ValidateCommand:
-                    if (Event.current.commandName == "FrameSelected")
+                    if (Event.current.commandName == EventCommandNames.FrameSelected)
                     {
                         Event.current.Use();
                     }
                     break;
                 case EventType.ExecuteCommand:
-                    if (Event.current.commandName == "FrameSelected")
+                    if (Event.current.commandName == EventCommandNames.FrameSelected)
                     {
                         if (m_ActivePick.HasValue)
                             Frame(m_ActivePick.Value);

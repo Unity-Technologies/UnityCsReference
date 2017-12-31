@@ -10,7 +10,7 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    public class Node : GraphElement, IEdgeDrawerContainer
+    public class Node : GraphElement
     {
         public VisualElement mainContainer { get; private set; }
         public VisualElement titleContainer { get; private set; }
@@ -21,8 +21,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public VisualElement topContainer { get; private set; }
         public VisualElement extensionContainer { get; private set; }
         private VisualElement m_CollapsibleArea;
-        public EdgeDrawer edgeDrawer { get; private set; }
-
 
         private bool m_Expanded;
         public virtual bool expanded
@@ -150,6 +148,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!contains)
                 {
+                    port.OnConnect -= OnPortConnectAction;
+                    port.OnDisconnect -= OnPortConnectAction;
                     OnPortRemoved(port);
                     portContainer.Remove(port);
                 }
@@ -174,7 +174,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!contains)
                 {
-                    portContainer.Insert(index, InstantiatePort(newPres));
+                    Port newPort = InstantiatePort(newPres);
+                    newPort.OnConnect += OnPortConnectAction;
+                    newPort.OnDisconnect += OnPortConnectAction;
+                    portContainer.Insert(index, newPort);
                 }
 
                 index++;
@@ -260,6 +263,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var updatedInputs = inputContainer.Query<Port>().ToList();
             var updatedOutputs = outputContainer.Query<Port>().ToList();
 
+            foreach (Port input in updatedInputs)
+            {
+                input.OnConnect += OnPortConnectAction;
+                input.OnDisconnect += OnPortConnectAction;
+            }
+
+            foreach (Port output in updatedOutputs)
+            {
+                output.OnConnect += OnPortConnectAction;
+                output.OnDisconnect += OnPortConnectAction;
+            }
+
             int inputCount = ShowPorts(expandedState, updatedInputs);
             int outputCount = ShowPorts(expandedState, updatedOutputs);
 
@@ -306,6 +321,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return inputVisible || outputVisible;
         }
 
+        private void OnPortConnectAction(Port port)
+        {
+            bool canCollapse = false;
+            var updatedInputs = inputContainer.Query<Port>().ToList();
+            var updatedOutputs = outputContainer.Query<Port>().ToList();
+            foreach (Port input in updatedInputs)
+            {
+                if (!input.connected)
+                {
+                    canCollapse = true;
+                    break;
+                }
+            }
+
+            if (!canCollapse)
+            {
+                foreach (Port output in updatedOutputs)
+                {
+                    if (!output.connected)
+                    {
+                        canCollapse = true;
+                        break;
+                    }
+                }
+            }
+
+            if (canCollapse)
+                m_CollapseButton.pseudoStates &= ~PseudoStates.Disabled;
+            else
+                m_CollapseButton.pseudoStates |= PseudoStates.Disabled;
+        }
+
         public override void OnDataChanged()
         {
             base.OnDataChanged();
@@ -342,14 +389,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             expanded = !expanded;
         }
 
-        void IEdgeDrawerContainer.EdgeDirty()
-        {
-            if (edgeDrawer != null)
-            {
-                edgeDrawer.Dirty(ChangeType.Repaint);
-            }
-        }
-
         public Node()
         {
             clippingOptions = ClippingOptions.NoClipping;
@@ -370,7 +409,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 mainContainer = main;
             }
 
-
             titleContainer = main.Q(name: "title");
             inputContainer = main.Q(name: "input");
             m_CollapsibleArea = main.Q(name: "collapsible-area");
@@ -379,10 +417,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             outputContainer = output;
 
             topContainer = output.parent;
-
-            edgeDrawer = main.Q(name: "edgeDrawer") as EdgeDrawer;
-            if (edgeDrawer != null)
-                edgeDrawer.element = this;
 
             m_TitleLabel = main.Q<Label>(name: "title-label");
             m_CollapseButton = main.Q<VisualElement>(name: "collapse-button");
@@ -395,7 +429,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Add(main);
             }
 
-            //ClearClassList();
             AddToClassList("node");
 
             capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable | Capabilities.Ascendable;
@@ -403,6 +436,78 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Expanded = true;
             UpdateExpandedButtonState();
             UpdateCollapsibleAreaVisibility();
+
+            this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+        }
+
+        void AddConnectionsToDeleteSet(VisualElement container, ref HashSet<GraphElement> toDelete)
+        {
+            List<GraphElement> toDeleteList = new List<GraphElement>();
+            container.Query<Port>().ForEach(elem =>
+                {
+                    if (elem.connected)
+                    {
+                        foreach (Edge c in elem.connections)
+                        {
+                            if ((c.capabilities & Capabilities.Deletable) == 0)
+                                continue;
+
+                            toDeleteList.Add(c);
+                        }
+                    }
+                });
+
+            toDelete.UnionWith(toDeleteList);
+        }
+
+        void DisconnectAll(EventBase evt)
+        {
+            HashSet<GraphElement> toDelete = new HashSet<GraphElement>();
+
+            AddConnectionsToDeleteSet(inputContainer, ref toDelete);
+            AddConnectionsToDeleteSet(outputContainer, ref toDelete);
+            toDelete.Remove(null);
+
+            GraphView graphView = GetFirstAncestorOfType<GraphView>();
+            if (graphView != null)
+            {
+                graphView.DeleteElements(toDelete);
+            }
+            else
+            {
+                Debug.Log("Disconnecting nodes that are not in a GraphView will not work.");
+            }
+        }
+
+        ContextualMenu.MenuAction.StatusFlags DisconnectAllStatus(EventBase evt)
+        {
+            VisualElement[] containers =
+            {
+                inputContainer, outputContainer
+            };
+
+            foreach (var container in containers)
+            {
+                var currentInputs = container.Query<Port>().ToList();
+                foreach (var elem in currentInputs)
+                {
+                    if (elem.connected)
+                    {
+                        return ContextualMenu.MenuAction.StatusFlags.Normal;
+                    }
+                }
+            }
+
+            return ContextualMenu.MenuAction.StatusFlags.Disabled;
+        }
+
+        public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            if (evt.target is Node)
+            {
+                evt.menu.AppendAction("Disconnect all", DisconnectAll, DisconnectAllStatus);
+                evt.menu.AppendSeparator();
+            }
         }
     }
 }

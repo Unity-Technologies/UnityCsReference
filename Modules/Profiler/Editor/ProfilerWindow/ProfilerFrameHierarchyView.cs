@@ -93,8 +93,7 @@ namespace UnityEditorInternal.Profiling
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
 
-        public ProfilerFrameDataHierarchyView(bool isGpuView)
-            : base(isGpuView)
+        public ProfilerFrameDataHierarchyView()
         {
             m_Initialized = false;
         }
@@ -139,7 +138,8 @@ namespace UnityEditorInternal.Profiling
             m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
 
             if (m_DetailedObjectsView == null)
-                m_DetailedObjectsView = new ProfilerDetailedObjectsView(gpuView);
+                m_DetailedObjectsView = new ProfilerDetailedObjectsView();
+            m_DetailedObjectsView.gpuView = gpuView;
             m_DetailedObjectsView.frameItemEvent += FrameItem;
             if (m_DetailedCallsView == null)
                 m_DetailedCallsView = new ProfilerDetailedCallsView();

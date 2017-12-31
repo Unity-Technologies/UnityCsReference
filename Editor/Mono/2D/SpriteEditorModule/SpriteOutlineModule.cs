@@ -178,7 +178,7 @@ namespace UnityEditor.U2D
     }
 
     [RequireSpriteDataProvider(typeof(ISpriteOutlineDataProvider), typeof(ITextureDataProvider))]
-    internal class SpriteOutlineModule : ISpriteEditorModule
+    internal class SpriteOutlineModule : SpriteEditorModuleBase
     {
         class Styles
         {
@@ -193,14 +193,14 @@ namespace UnityEditor.U2D
         protected SpriteRect m_Selected;
 
         private const float k_HandleSize = 5f;
-        private readonly string k_DeleteCommandName = "Delete";
-        private readonly string k_SoftDeleteCommandName = "SoftDelete";
+        private readonly string k_DeleteCommandName = EventCommandNames.Delete;
+        private readonly string k_SoftDeleteCommandName = EventCommandNames.SoftDelete;
 
         private ShapeEditor[] m_ShapeEditors;
         private bool m_RequestRepaint;
         private Matrix4x4 m_HandleMatrix;
         private Vector2 m_MousePosition;
-        private bool m_Snap;
+        private bool m_Snap = true;
         private ShapeEditorRectSelectionTool m_ShapeSelectionUI;
         private bool m_WasRectSelecting = false;
         private Rect? m_SelectionRect;
@@ -225,12 +225,12 @@ namespace UnityEditor.U2D
             m_ShapeSelectionUI.ClearSelection += ClearSelection;
         }
 
-        public virtual string moduleName
+        public override string moduleName
         {
             get { return "Edit Outline"; }
         }
 
-        public virtual bool ApplyRevert(bool apply)
+        public override bool ApplyRevert(bool apply)
         {
             if (m_Outline != null)
             {
@@ -337,7 +337,7 @@ namespace UnityEditor.U2D
             }
         }
 
-        public void OnModuleActivate()
+        public override void OnModuleActivate()
         {
             m_TextureDataProvider = spriteEditorWindow.GetDataProvider<ITextureDataProvider>();
             LoadOutline();
@@ -376,7 +376,7 @@ namespace UnityEditor.U2D
             }
         }
 
-        public void OnModuleDeactivate()
+        public override void OnModuleDeactivate()
         {
             undoSystem.UnregisterUndoCallback(UndoRedoPerformed);
             CleanupShapeEditors();
@@ -390,7 +390,7 @@ namespace UnityEditor.U2D
             }
         }
 
-        public void DoMainGUI()
+        public override void DoMainGUI()
         {
             IEvent evt = eventSystem.current;
 
@@ -415,7 +415,7 @@ namespace UnityEditor.U2D
                 spriteEditorWindow.RequestRepaint();
         }
 
-        public void DoToolbarGUI(Rect drawArea)
+        public override void DoToolbarGUI(Rect drawArea)
         {
             var style = styles;
 
@@ -474,10 +474,10 @@ namespace UnityEditor.U2D
             }
         }
 
-        public void DoPostGUI()
+        public override void DoPostGUI()
         {}
 
-        public bool CanBeActivated()
+        public override bool CanBeActivated()
         {
             return SpriteUtility.GetSpriteImportMode(spriteEditorWindow.GetDataProvider<ISpriteEditorDataProvider>()) != SpriteImportMode.None;
         }

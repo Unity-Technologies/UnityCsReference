@@ -61,8 +61,8 @@ namespace UnityEngine.Playables
         extern internal Type GetPlayableOutputType();
         extern internal Object GetReferenceObject();
         extern internal void SetReferenceObject(Object target);
-        //extern internal Object GetUserData();
-        //extern internal void SetUserData([Writable] Object target);
+        extern internal Object GetUserData();
+        extern internal void SetUserData([Writable] Object target);
         extern internal PlayableHandle GetSourcePlayable();
         extern internal void SetSourcePlayable(PlayableHandle target);
         extern internal int GetSourceInputPort();

@@ -24,6 +24,7 @@ using UnityEditor.Animations;
 using UnityEditorInternal;
 using UnityEditor.Build;
 using UnityEngine.Bindings;
+using UnityEditor.Experimental.U2D;
 using UnityEditor.Collaboration;
 using UnityEditor.Connect;
 
@@ -471,7 +472,7 @@ public partial struct SpriteMetaData
     public Vector4 border;
 }
 
-public sealed partial class TextureImporter : AssetImporter
+public sealed partial class TextureImporter : AssetImporter, ISpriteEditorDataProvider
 {
     [System.Obsolete ("textureFormat is no longer accessible at the TextureImporter level. For old 'simple' formats use the textureCompression property for the equivalent automatic choice (Uncompressed for TrueColor, Compressed and HQCommpressed for 16 bits). For platform specific formats use the [[PlatformTextureSettings]] API. Using this setter will setup various parameters to match the new automatic system as well as possible. Getter will return the last value set.")]
     public extern  TextureImporterFormat textureFormat

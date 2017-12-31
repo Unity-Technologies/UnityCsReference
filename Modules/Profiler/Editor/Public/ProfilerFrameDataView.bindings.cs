@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEditorInternal.Profiling
@@ -182,6 +181,8 @@ namespace UnityEditorInternal.Profiling
 
             return new MarkerPath(markerIds);
         }
+
+        public static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);
 
         public bool IsValid()
         {

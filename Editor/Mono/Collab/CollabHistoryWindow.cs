@@ -55,7 +55,7 @@ namespace UnityEditor
 
             if (m_Presenter == null)
             {
-                m_Presenter = new CollabHistoryPresenter(this, new CollabHistoryItemFactory(), new RevisionsService(Collab.instance));
+                m_Presenter = new CollabHistoryPresenter(this, new CollabHistoryItemFactory(), new RevisionsService(Collab.instance, UnityConnect.instance));
             }
             m_Presenter.OnWindowEnabled();
         }

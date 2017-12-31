@@ -626,7 +626,7 @@ namespace UnityEditor.IMGUI.Controls
 
             bool execute = evt.type == EventType.ExecuteCommand;
 
-            if (HasFocus() && evt.commandName == "SelectAll")
+            if (HasFocus() && evt.commandName == EventCommandNames.SelectAll)
             {
                 if (execute)
                     SelectAllRows();
@@ -634,7 +634,7 @@ namespace UnityEditor.IMGUI.Controls
                 GUIUtility.ExitGUI();
             }
 
-            if (evt.commandName == "FrameSelected")
+            if (evt.commandName == EventCommandNames.FrameSelected)
             {
                 if (execute)
                 {

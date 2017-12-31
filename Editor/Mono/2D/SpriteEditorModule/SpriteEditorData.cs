@@ -90,7 +90,9 @@ namespace UnityEditor.U2D
             pivot = SpriteEditorUtility.GetPivotValue(alignment, ti.spritePivot);
             tessellationDetail = so.FindProperty("m_SpriteTessellationDetail").floatValue;
 
-            rect = new Rect(0, 0, texture.width, texture.height);
+            int width = 0, height = 0;
+            ti.GetWidthAndHeight(ref width, ref height);
+            rect = new Rect(0, 0, width, height);
 
             var guidSP = so.FindProperty("m_SpriteSheet.m_SpriteID");
             spriteID = new GUID(guidSP.stringValue);

@@ -12,10 +12,18 @@ namespace UnityEditor.DeploymentTargets
 {
     internal struct DeploymentTargetId
     {
+        // Meta-targets, to be able to select targets that does not depend on the current connection state.
+        //  For example: selecting "all" should launch on all connected targets, even if the number of connected targets
+        //  changes between launches.
+        internal static readonly DeploymentTargetId kDefault = new DeploymentTargetId("__builtin__target_default");
+        internal static readonly DeploymentTargetId kAll = new DeploymentTargetId("__builtin__target_all");
+
         public string id;
 
         public DeploymentTargetId(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                id = kDefault.id;
             this.id = id;
         }
 
@@ -27,6 +35,12 @@ namespace UnityEditor.DeploymentTargets
         public static implicit operator string(DeploymentTargetId id)
         {
             return id.id;
+        }
+
+        // Weather this is a meta target (kDefault, kAll) or a specific one.
+        public bool IsSpecificTarget()
+        {
+            return id != kDefault.id && id != kAll.id;
         }
     }
 
@@ -67,7 +81,7 @@ namespace UnityEditor.DeploymentTargets
         public string failureMessage;
     }
 
-    internal struct BuildCheckResult
+    internal struct TargetCheckResult
     {
         public CategoryCheckResult hardware;
         public CategoryCheckResult sdk;
@@ -83,33 +97,25 @@ namespace UnityEditor.DeploymentTargets
     {
         FlagSet<DeploymentTargetSupportFlags> GetSupportFlags();
 
-        // Checks a build against target information
-        // Check passes if the build is compatible with the target
-        BuildCheckResult CheckBuild(BuildProperties buildProperties);
+        // Checks a target requirements against target information
+        // Check passes if the target is compatible
+        TargetCheckResult CheckTarget(DeploymentTargetRequirements targetRequirements);
+
+        string GetDisplayName();
     }
 
-    internal class OperationAbortedException : Exception {}
+    internal class DeploymentOperationAbortedException : Exception {}
 
-    internal class OperationFailedException : Exception
+    internal class DeploymentOperationFailedException : Exception
     {
         public readonly string title;
-        public OperationFailedException(string title, string message, Exception inner = null) : base(message, inner)
+        public DeploymentOperationFailedException(string title, string message, Exception inner = null) : base(message, inner)
         {
             this.title = title;
         }
     }
 
-    internal class UnknownDeploymentTargetException : OperationFailedException
-    {
-        public UnknownDeploymentTargetException(string message = "Unknown deployment target.", Exception inner = null) : base("Cannot find deployment target", message, inner) {}
-    }
-
-    internal class NoResponseFromDeploymentTargetException : OperationFailedException
-    {
-        public NoResponseFromDeploymentTargetException(string message = "No response from deployment target.", Exception inner = null) : base("No response from deployment target", message, inner) {}
-    }
-
-    internal class CorruptBuildException : OperationFailedException
+    internal class CorruptBuildException : DeploymentOperationFailedException
     {
         public CorruptBuildException(string message = "Corrupt build.", Exception inner = null) : base("Corrupt build", message, inner) {}
     }
@@ -121,12 +127,14 @@ namespace UnityEditor.DeploymentTargets
         List<DeploymentTargetIdAndStatus> GetKnownTargets(ProgressHandler progressHandler = null);
 
         // Returns info for a target
-        // Throws UnknownDeploymentTargetException for unknown targets
+        // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
+        // Throws DeploymentOperationAbortedException if process is cancelled by the user.
         //  Can be called from a background thread
         IDeploymentTargetInfo GetTargetInfo(DeploymentTargetId targetId, ProgressHandler progressHandler = null);
 
         // Launches a build on a target
-        // Throws UnknownDeploymentTargetException for unknown targets
+        // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
+        // Throws DeploymentOperationAbortedException if process is cancelled by the user.
         //  Can be called from a background thread
         void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
     }

@@ -421,7 +421,7 @@ namespace UnityEditor
         {
             if (lastActiveSceneView == null)
                 return false;
-            return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent("FrameSelected"));
+            return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelected));
         }
 
         [RequiredByNativeCode]
@@ -429,7 +429,7 @@ namespace UnityEditor
         {
             if (lastActiveSceneView == null)
                 return false;
-            return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent("FrameSelectedWithLock"));
+            return lastActiveSceneView.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.FrameSelectedWithLock));
         }
 
         Editor[] GetActiveEditors()
@@ -990,8 +990,6 @@ namespace UnityEditor
 
         private void CreateCameraTargetTexture(Rect cameraRect, bool hdr)
         {
-            bool useSRGBTarget = QualitySettings.activeColorSpace == ColorSpace.Linear;
-
             int msaa = Mathf.Max(1, QualitySettings.antiAliasing);
             // deferred does not support MSAA now, so not point in using it
             if (IsSceneCameraDeferred())
@@ -1012,14 +1010,7 @@ namespace UnityEditor
             RenderTextureFormat format = (hdr && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf)) ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
             if (m_SceneTargetTexture != null)
             {
-                bool matchingSRGB = m_SceneTargetTexture != null && useSRGBTarget == m_SceneTargetTexture.sRGB;
-
-                //ARGBHalf is always non srgb, so just force a match
-                //stops texture always being recreated: Case:869375
-                if (RenderTextureEditor.IsHDRFormat(format))
-                    matchingSRGB = true;
-
-                if (m_SceneTargetTexture.format != format || m_SceneTargetTexture.antiAliasing != msaa || !matchingSRGB)
+                if (m_SceneTargetTexture.format != format || m_SceneTargetTexture.antiAliasing != msaa)
                 {
                     Object.DestroyImmediate(m_SceneTargetTexture);
                     m_SceneTargetTexture = null;
@@ -2386,12 +2377,12 @@ namespace UnityEditor
             bool execute = Event.current.type == EventType.ExecuteCommand;
             switch (Event.current.commandName)
             {
-                case "Find":
+                case EventCommandNames.Find:
                     if (execute)
                         FocusSearchField();
                     Event.current.Use();
                     break;
-                case "FrameSelected":
+                case EventCommandNames.FrameSelected:
                     if (execute)
                     {
                         bool useLocking = EditorApplication.timeSinceStartup - lastFramingTime < k_MaxDoubleKeypressTime;
@@ -2402,33 +2393,33 @@ namespace UnityEditor
                     }
                     Event.current.Use();
                     break;
-                case "FrameSelectedWithLock":
+                case EventCommandNames.FrameSelectedWithLock:
                     if (execute)
                         FrameSelected(true);
                     Event.current.Use();
                     break;
-                case "SoftDelete":
-                case "Delete":
+                case EventCommandNames.SoftDelete:
+                case EventCommandNames.Delete:
                     if (execute)
                         Unsupported.DeleteGameObjectSelection();
                     Event.current.Use();
                     break;
-                case "Duplicate":
+                case EventCommandNames.Duplicate:
                     if (execute)
                         Unsupported.DuplicateGameObjectsUsingPasteboard();
                     Event.current.Use();
                     break;
-                case "Copy":
+                case EventCommandNames.Copy:
                     if (execute)
                         Unsupported.CopyGameObjectsToPasteboard();
                     Event.current.Use();
                     break;
-                case "Paste":
+                case EventCommandNames.Paste:
                     if (execute)
                         Unsupported.PasteGameObjectsFromPasteboard();
                     Event.current.Use();
                     break;
-                case "SelectAll":
+                case EventCommandNames.SelectAll:
                     if (execute)
                         Selection.objects = FindObjectsOfType(typeof(GameObject));
                     Event.current.Use();

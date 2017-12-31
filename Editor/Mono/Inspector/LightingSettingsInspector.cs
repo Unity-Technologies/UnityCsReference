@@ -73,6 +73,8 @@ namespace UnityEditor
 
         SerializedObject m_SerializedObject;
         SerializedObject m_GameObjectsSerializedObject;
+        SerializedObject m_LightmapSettings;
+
         SerializedProperty m_StaticEditorFlags;
         SerializedProperty m_ImportantGI;
         SerializedProperty m_StitchLightmapSeams;
@@ -91,6 +93,9 @@ namespace UnityEditor
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
         SerializedProperty m_MotionVectors;
+
+        SerializedProperty m_EnabledBakedGI;
+        SerializedProperty m_EnabledRealtimeGI;
 
         Renderer[] m_Renderers;
         Terrain[] m_Terrains;
@@ -139,6 +144,10 @@ namespace UnityEditor
             m_Terrains = m_SerializedObject.targetObjects.OfType<Terrain>().ToArray();
 
             m_StaticEditorFlags = m_GameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
+
+            m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
+            m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
+            m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
         }
 
         public bool Begin()
@@ -171,6 +180,7 @@ namespace UnityEditor
                 return;
 
             m_GameObjectsSerializedObject.Update();
+            m_LightmapSettings.Update();
 
             EditorGUILayout.PropertyField(m_CastShadows, s_Styles.CastShadows, true);
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
@@ -189,7 +199,7 @@ namespace UnityEditor
 
             LightmapStaticSettings();
 
-            if (!LightModeUtil.Get().IsAnyGIEnabled() && !isPrefabAsset)
+            if (!(m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && !isPrefabAsset)
             {
                 EditorGUILayout.HelpBox(s_Styles.GINotEnabledInfo.text, MessageType.Info);
                 return;
@@ -201,8 +211,8 @@ namespace UnityEditor
             // Most of the settings apply to both, realtime and baked GI.
             if (enableSettings)
             {
-                bool showEnlightenSettings = isPrefabAsset || LightModeUtil.Get().IsRealtimeGIEnabled() || (LightModeUtil.Get().AreBakedLightmapsEnabled() && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
-                bool showProgressiveSettings = isPrefabAsset || (LightModeUtil.Get().AreBakedLightmapsEnabled() && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU);
+                bool showEnlightenSettings = isPrefabAsset || m_EnabledRealtimeGI.boolValue || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
+                bool showProgressiveSettings = isPrefabAsset || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten);
 
                 if (showEnlightenSettings)
                 {
@@ -278,10 +288,11 @@ namespace UnityEditor
                 return;
 
             m_GameObjectsSerializedObject.Update();
+            m_LightmapSettings.Update();
 
             LightmapStaticSettings();
 
-            if (!LightModeUtil.Get().IsAnyGIEnabled() && !isPrefabAsset)
+            if (!(m_EnabledBakedGI.boolValue || m_EnabledRealtimeGI.boolValue) && !isPrefabAsset)
             {
                 EditorGUILayout.HelpBox(s_Styles.GINotEnabledInfo.text, MessageType.Info);
                 return;

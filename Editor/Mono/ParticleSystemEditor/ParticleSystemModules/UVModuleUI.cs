@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -147,7 +146,7 @@ namespace UnityEditor
                 GUIFloat(s_Texts.flipV, m_FlipV);
             }
 
-            m_UVChannelMask.intValue = (int)(UVChannelFlags)GUIEnumMask(s_Texts.uvChannelMask, (UVChannelFlags)m_UVChannelMask.intValue);
+            GUIEnumMaskUVChannelFlags(s_Texts.uvChannelMask, m_UVChannelMask);
         }
 
         private void DoListOfSpritesGUI()

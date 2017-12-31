@@ -15,9 +15,14 @@ namespace UnityEditor.DeploymentTargets
             return DeploymentTargetSupportFlags.None;
         }
 
-        public virtual BuildCheckResult CheckBuild(BuildProperties buildProperties)
+        public virtual TargetCheckResult CheckTarget(DeploymentTargetRequirements targetRequirements)
         {
-            return new BuildCheckResult();
+            return new TargetCheckResult();
+        }
+
+        public string GetDisplayName()
+        {
+            return "";
         }
     }
 

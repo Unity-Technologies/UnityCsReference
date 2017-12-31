@@ -28,6 +28,7 @@ namespace UnityEngine.Experimental.UIElements
             else if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 editorEngine.OnLostFocus();
+                editorEngine.SelectNone();
             }
         }
     }

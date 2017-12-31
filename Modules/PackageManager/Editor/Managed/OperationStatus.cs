@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager
         [NativeName("type")]
         private string m_Type;
         [NativeName("packageList")]
-        private UpmPackageInfo[] m_PackageList;
+        private PackageInfo[] m_PackageList;
         [NativeName("progress")]
         private float m_Progress;
         [NativeName("error")]
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager
         public string id { get { return m_Id;  } }
         public NativeStatusCode status { get { return m_Status;  } }
         public string type { get { return m_Type;  } }
-        public UpmPackageInfo[] packageList { get { return m_PackageList; } }
+        public PackageInfo[] packageList { get { return m_PackageList; } }
         public float progress { get { return m_Progress; } }
         public Error error
         {

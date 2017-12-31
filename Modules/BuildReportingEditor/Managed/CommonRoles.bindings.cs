@@ -6,7 +6,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    namespace BuildReporting
+    namespace Build.Reporting
     {
         [NativeType(Header = "Modules/BuildReportingEditor/Public/CommonRoles.h")]
         public static class CommonRoles

@@ -19,11 +19,20 @@ namespace UnityEngine
     {
         public delegate void UpdatedEventHandler();
         public static event UpdatedEventHandler Updated;
+        public static event Action BeforeFetchFromServer;
 
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdated(bool wasLastUpdatedFromServer)
         {
             var handler = Updated;
+            if (handler != null)
+                handler();
+        }
+
+        [RequiredByNativeCode]
+        internal static void RemoteSettingsBeforeFetchFromServer()
+        {
+            var handler = BeforeFetchFromServer;
             if (handler != null)
                 handler();
         }
@@ -82,7 +91,7 @@ namespace UnityEngine
         [System.NonSerialized]
         internal IntPtr m_Ptr;
 
-        public Action<bool> Updated;
+        public event Action<bool> Updated;
 
         private RemoteConfigSettings() {}
 
@@ -123,6 +132,8 @@ namespace UnityEngine
             if (handler != null)
                 handler(wasLastUpdatedFromServer);
         }
+
+        public extern static bool QueueConfig(string name, object param, int ver = 1, string prefix = "");
 
         // Forces an update of the remote config from the server.
         public extern void ForceUpdate();

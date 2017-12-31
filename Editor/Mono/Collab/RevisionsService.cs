@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEditor.Collaboration;
+using UnityEditor.Connect;
 
 namespace UnityEditor.Collaboration
 {
@@ -25,17 +26,20 @@ namespace UnityEditor.Collaboration
     {
         RevisionsResult GetRevisions(int offset, int count);
         string tipRevision { get; }
+        string currentUser { get; }
     }
 
     internal class RevisionsService : IRevisionsService
     {
         protected Collab collab;
+        protected UnityConnect connect;
         protected RevisionsResult history;
         protected int historyOffset = 0;
 
-        public RevisionsService(Collab collabInstance)
+        public RevisionsService(Collab collabInstance, UnityConnect connectInstance)
         {
             collab = collabInstance;
+            connect = connectInstance;
             history = new RevisionsResult();
         }
 
@@ -52,6 +56,7 @@ namespace UnityEditor.Collaboration
             return history;
         }
 
-        public string tipRevision {get { return collab.collabInfo.tip; }}
+        public string tipRevision { get { return collab.collabInfo.tip; } }
+        public string currentUser { get { return connect.GetUserInfo().userName; } }
     }
 }

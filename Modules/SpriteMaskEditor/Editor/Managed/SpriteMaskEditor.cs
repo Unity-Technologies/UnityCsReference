@@ -34,7 +34,7 @@ namespace UnityEditor
         [MenuItem("GameObject/2D Object/Sprite Mask")]
         static void CreateSpriteMaskGameObject()
         {
-            var go = new GameObject("", typeof(SpriteMask));
+            var go = ObjectFactory.CreateGameObject("", typeof(SpriteMask));
             if (Selection.activeObject is Sprite)
                 go.GetComponent<SpriteMask>().sprite = (Sprite)Selection.activeObject;
             else if (Selection.activeObject is Texture2D)
@@ -55,7 +55,7 @@ namespace UnityEditor
                     GameObjectUtility.SetParentAndAlign(go, activeGO);
             }
             go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Contents.newSpriteMaskName.text);
-            Undo.RegisterCreatedObjectUndo(go, Contents.createSpriteMaskUndoString.text);
+            Undo.SetCurrentGroupName(Contents.createSpriteMaskUndoString.text);
             Selection.activeGameObject = go;
         }
 

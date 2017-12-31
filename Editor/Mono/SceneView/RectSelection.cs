@@ -151,7 +151,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ExecuteCommand:
-                    if (id == GUIUtility.hotControl && evt.commandName == "ModifierKeysChanged")
+                    if (id == GUIUtility.hotControl && evt.commandName == EventCommandNames.ModifierKeysChanged)
                     {
                         if (evt.shift)
                             UpdateSelection(m_SelectionStart, m_CurrentSelection, SelectionType.Additive, m_RectSelecting);
@@ -231,7 +231,7 @@ namespace UnityEditor
         // so the window needs to repaint.
         internal void SendCommandsOnModifierKeys()
         {
-            m_Window.SendEvent(EditorGUIUtility.CommandEvent("ModifierKeysChanged"));
+            m_Window.SendEvent(EditorGUIUtility.CommandEvent(EventCommandNames.ModifierKeysChanged));
         }
     }
 } // namespace

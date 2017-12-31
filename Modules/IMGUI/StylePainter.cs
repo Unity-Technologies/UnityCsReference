@@ -77,6 +77,7 @@ namespace UnityEngine
         public int sliceTop;
         public int sliceRight;
         public int sliceBottom;
+        public bool usePremultiplyAlpha;
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -177,6 +178,7 @@ namespace UnityEngine
             int sliceTop = painterParams.sliceTop;
             int sliceRight = painterParams.sliceRight;
             int sliceBottom = painterParams.sliceBottom;
+            bool usePremultiplyAlpha = painterParams.usePremultiplyAlpha;
 
             Rect textureRect = screenRect;
             float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
@@ -218,7 +220,7 @@ namespace UnityEngine
             var borderWidths = painterParams.border.GetWidths();
             var borderRadiuses = painterParams.border.GetRadiuses();
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom);
+            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom, usePremultiplyAlpha);
         }
 
         public void DrawText(TextStylePainterParameters painterParams)

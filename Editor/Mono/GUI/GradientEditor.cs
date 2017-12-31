@@ -381,19 +381,19 @@ namespace UnityEditor
                     break;
 
                 case EventType.ValidateCommand:
-                    if (evt.commandName == "Delete")
+                    if (evt.commandName == EventCommandNames.Delete)
                         Event.current.Use();
                     break;
 
                 case EventType.ExecuteCommand:
-                    if (evt.commandName == "ColorPickerChanged")
+                    if (evt.commandName == EventCommandNames.ColorPickerChanged)
                     {
                         GUI.changed = true;
                         m_SelectedSwatch.m_Value =  ColorPicker.color;
                         AssignBack();
                         HandleUtility.Repaint();
                     }
-                    else if (evt.commandName == "Delete")
+                    else if (evt.commandName == EventCommandNames.Delete)
                     {
                         if (swatches.Count > 1)
                         {

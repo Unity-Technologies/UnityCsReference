@@ -298,7 +298,7 @@ namespace UnityEditor
 
         void ExtractLatestXiaomiPackageInfo(long operationId)
         {
-            UpmPackageInfo[] packageList = NativeClient.GetSearchOperationData(operationId);
+            var packageList = NativeClient.GetSearchOperationData(operationId);
             foreach (var package in packageList)
             {
                 latestXiaomiPackageVersion = package.version;

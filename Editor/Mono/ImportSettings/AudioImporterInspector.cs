@@ -441,7 +441,6 @@ namespace UnityEditor
 
             if (platform != BuildTargetGroup.Standalone &&
                 platform != BuildTargetGroup.WSA &&
-                platform != BuildTargetGroup.WiiU &&
                 platform != BuildTargetGroup.XboxOne &&
                 platform != BuildTargetGroup.Unknown)
             {
@@ -458,9 +457,6 @@ namespace UnityEditor
             {
                 allowedFormats.Add(AudioCompressionFormat.ATRAC9);
             }
-
-            if (platform == BuildTargetGroup.WiiU)
-                allowedFormats.Add(AudioCompressionFormat.GCADPCM);
 
             if (platform == BuildTargetGroup.XboxOne)
                 allowedFormats.Add(AudioCompressionFormat.XMA);

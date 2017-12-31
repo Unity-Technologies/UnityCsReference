@@ -9,29 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.U2D
 {
-    internal interface ISpriteEditorModule
-    {
-        // The module name to display in UI
-        string moduleName { get; }
-        // Called when the module is activated by user
-        void OnModuleActivate();
-        // Called when user switched to another module
-        void OnModuleDeactivate();
-        // Called after SpriteEditorWindow drawed the sprite.
-        // Handles call are in texture space
-        void DoMainGUI();
-        // Draw user tool bar
-        void DoToolbarGUI(Rect drawArea);
-        // Any last GUI draw. This is in the SpriteEditorWindow's space.
-        // Any GUI draw will appear on top
-        void DoPostGUI();
-        // If return false, the module will not be shown for selection
-        bool CanBeActivated();
-        // User triggers data apply. Return true to indicate the asset needs a reimport
-        bool ApplyRevert(bool apply);
-    }
-
-    public abstract class SpriteEditorModuleBase : ISpriteEditorModule
+    public abstract class SpriteEditorModuleBase
     {
         public ISpriteEditor spriteEditor { get; internal set; }
 
@@ -59,11 +37,6 @@ namespace UnityEditor.Experimental.U2D
         void RequestRepaint();
         void SetDataModified();
         void ApplyOrRevertModification(bool apply);
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    public class SpriteEditorModuleAssetPostProcessAttribute : Attribute
-    {
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

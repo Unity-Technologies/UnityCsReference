@@ -335,7 +335,7 @@ namespace UnityEditor
             {
                 case EventType.ExecuteCommand:
                     string commandName = evt.commandName;
-                    if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id)
+                    if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id)
                     {
                         Texture2D icon =  ObjectSelector.GetCurrentObject() as Texture2D;
                         Undo.RecordObject(m_TargetObject, "Set Icon On GameObject");

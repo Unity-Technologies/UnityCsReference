@@ -11,10 +11,10 @@ using UnityEngine;
 namespace UnityEditor.PackageManager
 {
     [Serializable]
-    public class PackageCollection : IEnumerable<UpmPackageInfo>
+    public class PackageCollection : IEnumerable<PackageInfo>
     {
         [SerializeField]
-        private UpmPackageInfo[] m_PackageList;
+        private PackageInfo[] m_PackageList;
 
         [SerializeField]
         private Error m_Error;
@@ -29,17 +29,17 @@ namespace UnityEditor.PackageManager
         private PackageCollection() {}
 
         internal PackageCollection(
-            IEnumerable<UpmPackageInfo> packages,
+            IEnumerable<PackageInfo> packages,
             Error error)
         {
-            m_PackageList = (packages ?? new UpmPackageInfo[] {}).ToArray();
+            m_PackageList = (packages ?? new PackageInfo[] {}).ToArray();
             m_Error = error;
             m_HasError = (m_Error != null);
         }
 
-        IEnumerator<UpmPackageInfo> IEnumerable<UpmPackageInfo>.GetEnumerator()
+        IEnumerator<PackageInfo> IEnumerable<PackageInfo>.GetEnumerator()
         {
-            return ((IEnumerable<UpmPackageInfo>)m_PackageList).GetEnumerator();
+            return ((IEnumerable<PackageInfo>)m_PackageList).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

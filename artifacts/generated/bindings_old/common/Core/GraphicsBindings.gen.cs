@@ -504,3 +504,21 @@ public sealed partial class LightmapSettings : Object
 
 
 }
+
+namespace UnityEditor.Experimental
+{
+public sealed partial class RenderSettings
+{
+    public extern static bool useRadianceAmbientProbe
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+}
+
+}

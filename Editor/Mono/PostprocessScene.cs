@@ -10,7 +10,7 @@ namespace UnityEditor
     internal class UnityBuildPostprocessor : IProcessScene
     {
         public int callbackOrder { get { return 0; } }
-        public void OnProcessScene(UnityEngine.SceneManagement.Scene scene)
+        public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, Build.Reporting.BuildReport report)
         {
             int staticBatching, dynamicBatching;
             PlayerSettings.GetBatchingForPlatform(EditorUserBuildSettings.activeBuildTarget, out staticBatching, out dynamicBatching);

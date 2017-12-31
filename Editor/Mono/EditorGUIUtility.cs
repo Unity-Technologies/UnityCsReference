@@ -207,7 +207,7 @@ namespace UnityEditor
                     type = type.BaseType;
                 }
 
-                AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<EditorHeaderItemAttribute>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
                 Func<EditorHeaderItemAttribute, bool> filter = (a) => targetObjTypes.Any(c => a.TargetType == c);
                 var methodInfos = methods.FilterAndSortOnAttribute(filter, (a) => a.callbackOrder);
                 s_EditorHeaderItemsMethods = new List<HeaderItemDelegate>();

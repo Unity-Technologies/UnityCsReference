@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 using UnityEditor;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditor.Utils;
 using UnityEditorInternal;

@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     internal abstract class StrippingInfoWithSizeAnalysis : StrippingInfo
     {
@@ -139,7 +139,7 @@ namespace UnityEditor.BuildReporting
                     unaccounted -= moduleSize.Value;
 
             moduleSizes["Unaccounted"] = unaccounted;
-            AddModule("Unaccounted");
+            AddModule("Unaccounted", false);
             foreach (var moduleSize in moduleSizes)
                 AddModuleSize(moduleSize.Key, moduleSize.Value);
 

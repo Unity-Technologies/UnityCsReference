@@ -271,7 +271,7 @@ namespace UnityEditor.Animations
 
         public StateMachineBehaviour[] GetStateEffectiveBehaviours(AnimatorState state, int layerIndex)
         {
-            return Internal_GetEffectiveBehaviours(state, layerIndex);
+            return Internal_GetEffectiveBehaviours(state, layerIndex) as StateMachineBehaviour[];
         }
 
         [System.Obsolete("parameterCount is obsolete. Use parameters.Length instead.", true)]

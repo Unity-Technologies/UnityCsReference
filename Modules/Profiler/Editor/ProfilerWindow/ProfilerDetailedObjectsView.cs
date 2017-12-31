@@ -20,9 +20,6 @@ namespace UnityEditorInternal.Profiling
         [NonSerialized]
         bool m_Initialized;
 
-        [NonSerialized]
-        bool m_IsGpuView;
-
         [SerializeField]
         TreeViewState m_TreeViewState;
 
@@ -35,6 +32,8 @@ namespace UnityEditorInternal.Profiling
         ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
         ObjectsTreeView m_TreeView;
         Vector2 m_CallstackScrollViewPos;
+
+        public bool gpuView { get; set; }
 
         public delegate void FrameItemCallback(int id);
         public event FrameItemCallback frameItemEvent;
@@ -170,9 +169,8 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public ProfilerDetailedObjectsView(bool isGpuView)
+        public ProfilerDetailedObjectsView()
         {
-            m_IsGpuView = isGpuView;
         }
 
         void InitIfNeeded()
@@ -182,8 +180,8 @@ namespace UnityEditorInternal.Profiling
 
             var cpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalPercent, ProfilerColumn.GCMemory, ProfilerColumn.TotalTime };
             var gpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
-            var profilerColumns = m_IsGpuView ? gpuDetailColumns : cpuDetailColumns;
-            var defaultSortColumn = m_IsGpuView ? ProfilerColumn.TotalGPUTime : ProfilerColumn.TotalTime;
+            var profilerColumns = gpuView ? gpuDetailColumns : cpuDetailColumns;
+            var defaultSortColumn = gpuView ? ProfilerColumn.TotalGPUTime : ProfilerColumn.TotalTime;
 
             var columns = ProfilerFrameDataHierarchyView.CreateColumns(profilerColumns);
             var headerState = ProfilerFrameDataHierarchyView.CreateDefaultMultiColumnHeaderState(columns, defaultSortColumn);

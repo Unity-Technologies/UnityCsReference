@@ -36,8 +36,11 @@ namespace UnityEditor
         }
         Styles m_Styles;
 
+        public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
+        public const string ObjectSelectorUpdatedCommand = "ObjectSelectorUpdated";
+
         // Filters
-        string          m_RequiredType;
+        string m_RequiredType;
         string          m_SearchFilter;
 
         // Display state
@@ -54,11 +57,11 @@ namespace UnityEditor
         EditorCache     m_EditorCache;
         GUIView         m_DelegateView;
         PreviewResizer  m_PreviewResizer = new PreviewResizer();
-        List<int>       m_AllowedIDs;
+        List<int> m_AllowedIDs;
 
         // Callbacks
-        Action<UnityObject>  m_OnObjectSelectorClosed;
-        Action<UnityObject>  m_OnObjectSelectorUpdated;
+        Action<UnityObject> m_OnObjectSelectorClosed;
+        Action<UnityObject> m_OnObjectSelectorUpdated;
 
         ObjectListAreaState m_ListAreaState;
         ObjectListArea  m_ListArea;
@@ -156,7 +159,7 @@ namespace UnityEditor
                 m_OnObjectSelectorClosed(GetCurrentObject());
             }
 
-            SendEvent("ObjectSelectorClosed", false);
+            SendEvent(ObjectSelectorClosedCommand, false);
             if (m_ListArea != null)
                 m_StartGridSize.value = m_ListArea.gridSize;
 
@@ -197,7 +200,7 @@ namespace UnityEditor
                     m_OnObjectSelectorUpdated(GetCurrentObject());
                 }
 
-                SendEvent("ObjectSelectorUpdated", true);
+                SendEvent(ObjectSelectorUpdatedCommand, true);
             }
         }
 
@@ -234,7 +237,7 @@ namespace UnityEditor
         {
             SearchFilter filter = new SearchFilter();
             filter.SearchFieldStringToFilter(m_SearchFilter);
-            if (!string.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
+            if (!String.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
             {
                 filter.classNames = new[] { m_RequiredType };
             }
@@ -258,7 +261,7 @@ namespace UnityEditor
             return type == typeof(AudioMixerGroup);
         }
 
-        public void Show(UnityObject obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects)
+        public void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects)
         {
             Show(obj, requiredType, property, allowSceneObjects, null);
         }
@@ -270,7 +273,7 @@ namespace UnityEditor
             Show(obj, requiredType, property, allowSceneObjects, allowedInstanceIDs, null, null);
         }
 
-        internal void Show(UnityObject obj, System.Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs, Action<UnityObject> onObjectSelectorClosed, Action<UnityObject> onObjectSelectedUpdated)
+        internal void Show(UnityObject obj, Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs, Action<UnityObject> onObjectSelectorClosed, Action<UnityObject> onObjectSelectedUpdated)
         {
             m_ObjectSelectorReceiver = null;
             m_AllowSceneObjects = allowSceneObjects;
@@ -282,11 +285,14 @@ namespace UnityEditor
 
             if (property != null)
             {
-                ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
-                // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
-                // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
                 if (requiredType == null)
-                    m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                {
+                    ScriptAttributeUtility.GetFieldInfoFromProperty(property, out requiredType);
+                    // case 951876: built-in types do not actually have reflectable fields, so their object types must be extracted from the type string
+                    // this works because built-in types will only ever have serialized references to other built-in types, which this window's filter expects as unqualified names
+                    if (requiredType == null)
+                        m_RequiredType = s_MatchPPtrTypeName.Match(property.type).Groups[1].Value;
+                }
 
                 obj = property.objectReferenceValue;
                 m_ObjectBeingEdited = property.serializedObject.targetObject;
@@ -397,7 +403,7 @@ namespace UnityEditor
                 m_OnObjectSelectorUpdated(GetCurrentObject());
             }
 
-            SendEvent("ObjectSelectorUpdated", true);
+            SendEvent(ObjectSelectorUpdatedCommand, true);
         }
 
         // Grid Section

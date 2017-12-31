@@ -165,8 +165,11 @@ namespace UnityEditor
 
             if (m_AnimationType.intValue == (int)ModelImporterAnimationType.Human)
             {
-                GameObject go = AssetDatabase.LoadMainAssetAtPath(singleImporter.assetPath) as GameObject;
-                m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
+                GameObject go = assetTarget as GameObject;
+                if (go != null)
+                {
+                    m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
+                }
 
                 if (m_Avatar == null)
                 {
@@ -216,7 +219,11 @@ namespace UnityEditor
 
         void ResetAvatar()
         {
-            m_Avatar = AssetDatabase.LoadAssetAtPath((target as ModelImporter).assetPath, typeof(Avatar)) as Avatar;
+            if (assetTarget != null)
+            {
+                var path = singleImporter.assetPath;
+                m_Avatar = AssetDatabase.LoadAssetAtPath<Avatar>(path);
+            }
         }
 
         void LegacyGUI()
@@ -719,7 +726,7 @@ With this option, this model will not create any avatar but only import animatio
                 {
                     ModelImporter importer = targets[i] as ModelImporter;
                     // Special case if the model didn't have animation before...
-                    if (oldModelSettings[i].hasNoAnimation)
+                    if (oldModelSettings[i].hasNoAnimation && assetTarget != null)
                     {
                         // We have to do an extra import first, before the automapping works.
                         // Because the model doesn't have any skinned meshes when it was last imported with
@@ -732,22 +739,25 @@ With this option, this model will not create any avatar but only import animatio
 
                     // Perform auto-setup on this model.
                     SerializedObject so = new SerializedObject(targets[i]);
-                    GameObject go = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as GameObject;
+                    GameObject go = assetTarget as GameObject;
                     // The character could be optimized right now
                     // 'm_OptimizeGameObjects' can't be used to tell if it is optimized, because the user can change this value from UI,
                     // and the change hasn't been applied yet.
-                    Animator animator = go.GetComponent<Animator>();
-                    bool noTransformHierarchy = animator && !animator.hasTransformHierarchy;
-                    if (noTransformHierarchy)
+                    if (go != null)
                     {
-                        go = Instantiate(go) as GameObject;
-                        AnimatorUtility.DeoptimizeTransformHierarchy(go);
-                    }
-                    AvatarSetupTool.AutoSetupOnInstance(go, so);
-                    m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
+                        Animator animator = go.GetComponent<Animator>();
+                        bool noTransformHierarchy = animator && !animator.hasTransformHierarchy;
+                        if (noTransformHierarchy)
+                        {
+                            go = Instantiate(go) as GameObject;
+                            AnimatorUtility.DeoptimizeTransformHierarchy(go);
+                        }
+                        AvatarSetupTool.AutoSetupOnInstance(go, so);
+                        m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
 
-                    if (noTransformHierarchy)
-                        DestroyImmediate(go);
+                        if (noTransformHierarchy)
+                            DestroyImmediate(go);
+                    }
 
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }

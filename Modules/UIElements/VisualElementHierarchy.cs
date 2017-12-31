@@ -210,6 +210,16 @@ namespace UnityEngine.Experimental.UIElements
             shadow.parent.shadow.PlaceBehind(this, sibling);
         }
 
+        public void PlaceInFront(VisualElement sibling)
+        {
+            if (shadow.parent == null || sibling.shadow.parent != shadow.parent)
+            {
+                throw new ArgumentException("VisualElements are not siblings");
+            }
+
+            shadow.parent.shadow.PlaceInFront(this, sibling);
+        }
+
         public struct Hierarchy
         {
             private readonly VisualElement m_Owner;
@@ -362,8 +372,25 @@ namespace UnityEngine.Experimental.UIElements
 
                     if (index < 0) //how can this happen?
                     {
-                        index = childCount;
+                        index = 0;
                     }
+
+                    PutChildAtIndex(child, index);
+                    m_Owner.Dirty(ChangeType.Layout);
+                }
+            }
+
+            internal void PlaceInFront(VisualElement child, VisualElement under)
+            {
+                if (childCount > 0)
+                {
+                    int index = m_Owner.m_Children.IndexOf(child);
+                    if (index < 0)
+                        return;
+
+                    RemoveChildAtIndex(index);
+
+                    index = m_Owner.m_Children.IndexOf(under) + 1;
 
                     PutChildAtIndex(child, index);
                     m_Owner.Dirty(ChangeType.Layout);

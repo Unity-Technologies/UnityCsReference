@@ -587,7 +587,7 @@ namespace UnityEditor
             {
                 bool execute = eventType == EventType.ExecuteCommand;
 
-                if (Event.current.commandName == "Delete" || Event.current.commandName == "SoftDelete")
+                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
                 {
                     Event.current.Use();
                     if (execute)
@@ -596,7 +596,7 @@ namespace UnityEditor
                         GUIUtility.ExitGUI();  // Cached groups might have been deleted to so early out of event
                     }
                 }
-                else if (Event.current.commandName == "Duplicate")
+                else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
                     Event.current.Use();
                     if (execute)

@@ -773,7 +773,7 @@ namespace UnityEditor
                         bool execute = evt.type == EventType.ExecuteCommand;
                         switch (evt.commandName)
                         {
-                            case "Delete":
+                            case EventCommandNames.Delete:
                                 evt.Use();
                                 if (execute)
                                 {

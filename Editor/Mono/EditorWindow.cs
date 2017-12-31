@@ -52,6 +52,7 @@ namespace UnityEditor
                         pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
                         persistenceKey = "rootVisualContainer"
                     };
+                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_RootVisualContainer);
                 }
                 return m_RootVisualContainer;
             }
@@ -112,6 +113,7 @@ namespace UnityEditor
 
         bool m_DontClearBackground;
         EventInterests m_EventInterests = new EventInterests();
+        bool m_DisableInputEvents;
 
         // Dockarea we're inside.
         [NonSerialized]
@@ -322,6 +324,19 @@ namespace UnityEditor
 
         internal bool docked { get { return m_Parent != null && m_Parent.window != null && !m_Parent.window.IsNotDocked(); } }
 
+        // This property can be used to stop OS events from being sent to the EditorWindow
+        internal bool disableInputEvents
+        {
+            get { return m_DisableInputEvents; }
+            set
+            {
+                if (m_DisableInputEvents == value)
+                    return;
+                m_DisableInputEvents = value;
+                MakeParentsSettingsMatchMe();
+            }
+        }
+
         // The EditorWindow which currently has keyboard focus (RO)
         static public EditorWindow focusedWindow
         {
@@ -409,6 +424,7 @@ namespace UnityEditor
             m_Parent.depthBufferBits = m_DepthBufferBits;
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
             m_Parent.eventInterests = m_EventInterests;
+            m_Parent.disableInputEvents = m_DisableInputEvents;
             Vector2 parentBorderSizes = new Vector2(m_Parent.borderSize.left + m_Parent.borderSize.right, m_Parent.borderSize.top + m_Parent.borderSize.bottom);
             m_Parent.SetMinMaxSizes(minSize + parentBorderSizes, maxSize + parentBorderSizes);
             if (parentChanged)

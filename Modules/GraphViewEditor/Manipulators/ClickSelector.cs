@@ -19,12 +19,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown, Capture.Capture);
+            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
         }
 
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown, Capture.Capture);
+            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
         }
 
         protected void OnMouseDown(MouseDownEvent e)

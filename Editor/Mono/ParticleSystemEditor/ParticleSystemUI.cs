@@ -159,18 +159,11 @@ namespace UnityEditor
 
                     // Module header size
                     GUIContent headerLabel = new GUIContent();
-                    GUIStyle headerStyle;
                     Rect moduleHeaderRect;
                     if (initialModule)
-                    {
                         moduleHeaderRect = GUILayoutUtility.GetRect(width, 25);
-                        headerStyle = ParticleSystemStyles.Get().emitterHeaderStyle;
-                    }
                     else
-                    {
                         moduleHeaderRect = GUILayoutUtility.GetRect(width, 15);
-                        headerStyle = ParticleSystemStyles.Get().moduleHeaderStyle;
-                    }
 
                     // Module content here to render it below the the header
                     if (module.foldout)
@@ -281,7 +274,9 @@ namespace UnityEditor
                     else
                         headerLabel.text = module.displayName;
                     headerLabel.tooltip = module.toolTip;
-                    bool newToggleState = GUI.Toggle(moduleHeaderRect, module.foldout, headerLabel, headerStyle);
+
+                    bool newToggleState = module.DrawHeader(moduleHeaderRect, headerLabel);
+
                     if (newToggleState != module.foldout)
                     {
                         switch (Event.current.button)

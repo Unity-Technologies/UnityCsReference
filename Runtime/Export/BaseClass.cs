@@ -111,7 +111,7 @@ namespace UnityEngine
         XboxOne = 27,
         [System.Obsolete("SamsungTVPlayer export is no longer supported in Unity 2017.3+.")]
         SamsungTVPlayer = 28,
-        // Wii U
+        [System.Obsolete("Wii U is no longer supported in Unity 2018.1+.")]
         WiiU = 30,
         // tvOS
         tvOS = 31,

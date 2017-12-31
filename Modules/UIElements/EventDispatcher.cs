@@ -327,7 +327,7 @@ namespace UnityEngine.Experimental.UIElements
                         if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
                             evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
                             evt.GetEventTypeId() == WheelEvent.TypeId() ||
-                            e.type == EventType.DragUpdated)
+                            (e != null && e.type == EventType.DragUpdated))
                         {
                             DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, e);
                             DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, e);

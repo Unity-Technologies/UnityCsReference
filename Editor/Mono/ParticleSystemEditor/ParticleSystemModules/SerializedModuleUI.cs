@@ -12,12 +12,14 @@ namespace UnityEditor
     internal class SerializedModule
     {
         protected string m_ModuleName;
-        SerializedObject m_Object;
+        protected SerializedObject m_Object;
+        protected SerializedProperty m_ModuleRootProperty;
 
         public SerializedModule(SerializedObject o, string name)
         {
             m_Object = o;
             m_ModuleName = name;
+            m_ModuleRootProperty = m_Object.FindProperty(name);
         }
 
         public SerializedProperty GetProperty0(string name)

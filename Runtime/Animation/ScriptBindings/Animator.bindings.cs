@@ -270,6 +270,7 @@ namespace UnityEngine
     // Interface to control the Mecanim animation system
     [NativeHeader("Runtime/Animation/Animator.h")]
     [NativeHeader("Runtime/Animation/ScriptBindings/Animator.bindings.h")]
+    [NativeHeader("Runtime/Animation/ScriptBindings/AnimatorControllerParameter.bindings.h")]
     [UsedByNativeCode]
     public partial class Animator : Behaviour
     {

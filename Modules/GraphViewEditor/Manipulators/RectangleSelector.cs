@@ -64,9 +64,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            if (e.target != target)
-                return;
-
             var graphView = target as GraphView;
             if (graphView == null)
                 return;

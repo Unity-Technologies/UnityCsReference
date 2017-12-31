@@ -729,7 +729,7 @@ namespace UnityEditor
             SplitterGUILayout.EndVerticalSplit();
 
             // Copy & Paste selected item
-            if ((e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand) && e.commandName == "Copy" && m_ActiveText != string.Empty)
+            if ((e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand) && e.commandName == EventCommandNames.Copy && m_ActiveText != string.Empty)
             {
                 if (e.type == EventType.ExecuteCommand)
                     EditorGUIUtility.systemCopyBuffer = m_ActiveText;

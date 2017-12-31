@@ -714,7 +714,6 @@ namespace UnityEditor.Modules
                 case BuildTarget.Tizen: return "Tizen";
                 case BuildTarget.PSP2: return "PSP2";
                 case BuildTarget.PS4: return "PS4";
-                case BuildTarget.WiiU: return "WiiU";
                 case BuildTarget.WebGL: return "WebGL";
                 case BuildTarget.Android: return "Android";
                 case BuildTarget.N3DS: return "N3DS";
@@ -750,7 +749,6 @@ namespace UnityEditor.Modules
                 case BuildTargetGroup.Tizen: return "Tizen";
                 case BuildTargetGroup.PSP2: return "PSP2";
                 case BuildTargetGroup.PS4: return "PS4";
-                case BuildTargetGroup.WiiU: return "WiiU";
                 case BuildTargetGroup.WebGL: return "WebGL";
                 case BuildTargetGroup.Android: return "Android";
                 case BuildTargetGroup.N3DS: return "N3DS";

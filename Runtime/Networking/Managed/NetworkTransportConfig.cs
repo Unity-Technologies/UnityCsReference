@@ -567,6 +567,10 @@ namespace UnityEngine.Networking
         private uint m_MinNetSimulatorTimeout;
         [SerializeField]
         private uint m_MaxNetSimulatorTimeout;
+        [SerializeField]
+        private Action<int, int> m_ConnectionReadyForSend;
+        [SerializeField]
+        private Action<int> m_NetworkEventAvailable;
 
         public GlobalConfig()
         {
@@ -581,6 +585,8 @@ namespace UnityEngine.Networking
             m_MaxTimerTimeout                = g_MaxTimerTimeout;
             m_MinNetSimulatorTimeout         = 1;
             m_MaxNetSimulatorTimeout         = g_MaxNetSimulatorTimeout;
+            m_ConnectionReadyForSend         = null;
+            m_NetworkEventAvailable          = null;
         }
 
         public uint ThreadAwakeTimeout
@@ -684,6 +690,17 @@ namespace UnityEngine.Networking
                     throw new ArgumentOutOfRangeException("MaxNetSimulatorTimeout should be <=" + g_MaxNetSimulatorTimeout.ToString());
                 m_MaxNetSimulatorTimeout = value;
             }
+        }
+        public Action<int> NetworkEventAvailable
+        {
+            get { return m_NetworkEventAvailable; }
+            set { m_NetworkEventAvailable = value; }
+        }
+
+        public Action<int, int> ConnectionReadyForSend
+        {
+            get { return m_ConnectionReadyForSend; }
+            set { m_ConnectionReadyForSend = value; }
         }
     }
 }

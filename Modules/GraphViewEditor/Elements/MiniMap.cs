@@ -59,7 +59,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             clippingOptions = ClippingOptions.NoClipping;
 
-            capabilities = Capabilities.Floating | Capabilities.Movable;
+            capabilities = Capabilities.Movable;
 
             m_Dragger = new Dragger { clampToParentEdges = true };
             this.AddManipulator(m_Dragger);
@@ -73,8 +73,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Add(m_Label);
 
-            RegisterCallback<MouseUpEvent>(ShowContextualMenu);
             RegisterCallback<MouseDownEvent>(OnMouseDown);
+
+            this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
         }
 
         private GraphView m_GraphView;
@@ -87,37 +88,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private void ShowContextualMenu(MouseUpEvent e)
+        void ToggleAnchorState(EventBase e)
         {
-            if (e.button == (int)MouseButton.RightMouse)
+            // TODO: Remove when removing presenters.
+            if (dependsOnPresenter)
             {
-                var menu = new GenericMenu();
-
-                // TODO: Remove when removing presenters.
-                if (dependsOnPresenter)
-                {
-                    var boxPresenter = GetPresenter<MiniMapPresenter>();
-                    menu.AddItem(new GUIContent(boxPresenter.anchored ? "Make floating" : "Anchor"), false,
-                        contentView =>
-                        {
-                            var bPresenter = GetPresenter<MiniMapPresenter>();
-                            bPresenter.anchored = !bPresenter.anchored;
-                        },
-                        this);
-                }
-                else
-                {
-                    menu.AddItem(new GUIContent(anchored ? "Make floating" : "Anchor"), false,
-                        contentView =>
-                        {
-                            anchored = !anchored;
-                        },
-                        this);
-                }
-
-                menu.DropDown(new Rect(e.mousePosition.x, e.mousePosition.y, 0, 0));
-                e.StopPropagation();
+                var bPresenter = GetPresenter<MiniMapPresenter>();
+                bPresenter.anchored = !bPresenter.anchored;
             }
+            else
+            {
+                anchored = !anchored;
+            }
+        }
+
+        public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            bool isAnchored;
+            // TODO: Remove when removing presenters.
+            if (dependsOnPresenter)
+            {
+                var boxPresenter = GetPresenter<MiniMapPresenter>();
+                isAnchored = boxPresenter.anchored;
+            }
+            else
+            {
+                isAnchored = anchored;
+            }
+            evt.menu.AppendAction(isAnchored ? "Make floating" : "Anchor", ToggleAnchorState, ContextualMenu.MenuAction.AlwaysEnabled);
         }
 
         // TODO: Remove when removing presenters.
@@ -261,7 +259,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             // TODO: Should Edges be displayed at all?
             // TODO: Maybe edges need their own capabilities flag.
-            if (elem.IsFloating() || elem is Edge)
+            if (elem is Edge)
             {
                 return new Rect(0, 0, 0, 0);
             }
@@ -342,7 +340,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Color currentColor = Handles.color;
             gView.graphElements.ForEach(elem =>
                 {
-                    if (elem.IsFloating() || elem is Edge)
+                    if (elem is Edge)
                         return;
                     var rect = CalculateElementRect(elem);
                     Handles.color = elem.elementTypeColor;

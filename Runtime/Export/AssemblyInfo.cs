@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
-[assembly: InternalsVisibleTo("UnityEditor.WiiU.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]

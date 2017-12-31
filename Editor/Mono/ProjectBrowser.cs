@@ -2,14 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -79,7 +83,7 @@ namespace UnityEditor
         [SerializeField]
         SearchFilter m_SearchFilter;
 
-        [System.NonSerialized]
+        [NonSerialized]
         string m_SearchFieldText = "";
 
         // Display state
@@ -155,25 +159,25 @@ namespace UnityEditor
         float           m_DirectoriesAreaWidth = k_MinWidthTwoColumns / 2;
         const float     k_ResizerWidth = 5f;
         const float     k_SliderWidth = 55f;
-        [System.NonSerialized]
+        [NonSerialized]
         float m_SearchAreaMenuOffset = -1f;
-        [System.NonSerialized]
+        [NonSerialized]
         Rect m_ListAreaRect;
-        [System.NonSerialized]
+        [NonSerialized]
         Rect m_TreeViewRect;
-        [System.NonSerialized]
+        [NonSerialized]
         Rect m_BottomBarRect;
-        [System.NonSerialized]
+        [NonSerialized]
         Rect m_ListHeaderRect;
-        [System.NonSerialized]
+        [NonSerialized]
         private int m_LastFramedID = -1;
 
         // Used by search menu bar
-        [System.NonSerialized]
+        [NonSerialized]
         public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("Assets"); // do not localize this: Assets=folder name
-        [System.NonSerialized]
+        [NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
-        [System.NonSerialized]
+        [NonSerialized]
         public GUIContent m_SearchAssetStore = EditorGUIUtility.TrTextContent("Asset Store"); // updated when needed
 
         ProjectBrowser()
@@ -312,11 +316,11 @@ namespace UnityEditor
                     string parentFolder = folder;
                     for (int i = 0; i < 30; ++i)
                     {
-                        if (string.IsNullOrEmpty(parentFolder))
+                        if (String.IsNullOrEmpty(parentFolder))
                             break;
 
                         parentFolder = ProjectWindowUtil.GetContainingFolder(parentFolder);
-                        if (!string.IsNullOrEmpty(parentFolder) && AssetDatabase.IsValidFolder(parentFolder))
+                        if (!String.IsNullOrEmpty(parentFolder) && AssetDatabase.IsValidFolder(parentFolder))
                         {
                             validFolders.Add(parentFolder);
                             break;
@@ -847,7 +851,7 @@ namespace UnityEditor
             if (pos >= 0)
             {
                 string folderPath = propertyPath.Substring(0, pos);
-                UnityEngine.Object obj = AssetDatabase.LoadAssetAtPath(folderPath, typeof(UnityEngine.Object));
+                Object obj = AssetDatabase.LoadAssetAtPath(folderPath, typeof(Object));
                 if (obj != null)
                     return obj.GetInstanceID();
             }
@@ -1204,7 +1208,7 @@ namespace UnityEditor
                 {
                     // Add containing folder of the selected asset
                     string folderPath = ProjectWindowUtil.GetContainingFolder(path);
-                    if (!string.IsNullOrEmpty(folderPath))
+                    if (!String.IsNullOrEmpty(folderPath))
                         folders.Add(folderPath);
                 }
             }
@@ -1425,7 +1429,7 @@ namespace UnityEditor
                 // Only one type can be selected at a time (and savedfilters can only be single-selected)
                 ItemType itemType = GetItemType(instanceIDs[0]);
 
-                if (Event.current.commandName == "Delete" || Event.current.commandName == "SoftDelete")
+                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
                 {
                     Event.current.Use();
                     if (execute)
@@ -1438,7 +1442,7 @@ namespace UnityEditor
                         }
                         else if (itemType == ItemType.Asset)
                         {
-                            bool askIfSure = Event.current.commandName == "SoftDelete";
+                            bool askIfSure = Event.current.commandName == EventCommandNames.SoftDelete;
                             DeleteSelectedAssets(askIfSure);
                             if (askIfSure)
                                 Focus(); // Workaround that we do not get focus back when dialog is closed
@@ -1446,7 +1450,7 @@ namespace UnityEditor
                     }
                     GUIUtility.ExitGUI();
                 }
-                else if (Event.current.commandName == "Duplicate")
+                else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
                     if (execute)
                     {
@@ -1472,6 +1476,8 @@ namespace UnityEditor
             return false;
         }
 
+        public const string FocusProjectWindowCommand = "FocusProjectWindow";
+
         // Returns true if we should early out of OnGUI
         bool HandleCommandEvents()
         {
@@ -1480,19 +1486,19 @@ namespace UnityEditor
             {
                 bool execute = eventType == EventType.ExecuteCommand;
 
-                if (Event.current.commandName == "Delete" || Event.current.commandName == "SoftDelete")
+                if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
                 {
                     Event.current.Use();
                     if (execute)
                     {
-                        bool askIfSure = Event.current.commandName == "SoftDelete";
+                        bool askIfSure = Event.current.commandName == EventCommandNames.SoftDelete;
                         DeleteSelectedAssets(askIfSure);
                         if (askIfSure)
                             Focus(); // Workaround that we do not get focus back when dialog is closed
                     }
                     GUIUtility.ExitGUI();
                 }
-                else if (Event.current.commandName == "Duplicate")
+                else if (Event.current.commandName == EventCommandNames.Duplicate)
                 {
                     if (execute)
                     {
@@ -1507,7 +1513,7 @@ namespace UnityEditor
                             Event.current.Use();
                     }
                 }
-                else if (Event.current.commandName == "FocusProjectWindow")
+                else if (Event.current.commandName == FocusProjectWindowCommand)
                 {
                     if (execute)
                     {
@@ -1521,14 +1527,14 @@ namespace UnityEditor
                         Event.current.Use();
                     }
                 }
-                else if (Event.current.commandName == "SelectAll")
+                else if (Event.current.commandName == EventCommandNames.SelectAll)
                 {
                     if (execute)
                         SelectAll();
                     Event.current.Use();
                 }
                 // Frame selected assets
-                else if (Event.current.commandName == "FrameSelected")
+                else if (Event.current.commandName == EventCommandNames.FrameSelected)
                 {
                     if (execute)
                     {
@@ -1538,7 +1544,7 @@ namespace UnityEditor
                     }
                     Event.current.Use();
                 }
-                else if (Event.current.commandName == "Find")
+                else if (Event.current.commandName == EventCommandNames.Find)
                 {
                     if (execute)
                         m_FocusSearchField = true;
@@ -1580,19 +1586,19 @@ namespace UnityEditor
 
             m_SelectedPathSplitted.Clear();
 
-            if (string.IsNullOrEmpty(m_SelectedPath))
+            if (String.IsNullOrEmpty(m_SelectedPath))
             {
                 m_SelectedPathSplitted.Add(new GUIContent());
             }
             else
             {
                 string displayPath = m_SelectedPath;
-                if (m_SelectedPath.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
+                if (m_SelectedPath.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                     displayPath = m_SelectedPath.Substring("assets/".Length);
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
                 {
-                    m_SelectedPathSplitted.Add(new GUIContent(System.IO.Path.GetFileName(m_SelectedPath), AssetDatabase.GetCachedIcon(m_SelectedPath)));
+                    m_SelectedPathSplitted.Add(new GUIContent(Path.GetFileName(m_SelectedPath), AssetDatabase.GetCachedIcon(m_SelectedPath)));
                 }
                 else
                 {
@@ -1945,6 +1951,7 @@ namespace UnityEditor
         void SetTwoColumns()
         {
             SetViewMode(ViewMode.TwoColumns);
+            EnsureValidSetup();
         }
 
         internal bool IsTwoColumns()
@@ -1954,7 +1961,7 @@ namespace UnityEditor
 
         void OpenTreeViewTestWindow()
         {
-            GetWindow<TreeViewExamples.TreeViewTestWindow>();
+            GetWindow<TreeViewTestWindow>();
         }
 
         void ToggleExpansionAnimationPreference()
@@ -2181,7 +2188,7 @@ namespace UnityEditor
             foreach (int instanceID in instanceIDs)
             {
                 string path = AssetDatabase.GetAssetPath(instanceID);
-                if (!string.IsNullOrEmpty(path))
+                if (!String.IsNullOrEmpty(path))
                     paths.Add(path);
             }
             return paths.ToArray();
@@ -2282,13 +2289,13 @@ namespace UnityEditor
                 if (path.StartsWith(packagesRoot))
                 {
                     // Translate the packages root mount point
-                    folderNames = System.Text.RegularExpressions.Regex.Replace(path, "^" + packagesRoot, AssetDatabase.GetPackagesMountPoint()).Split('/');
+                    folderNames = Regex.Replace(path, "^" + packagesRoot, AssetDatabase.GetPackagesMountPoint()).Split('/');
                 }
                 string folderPath = "";
 
                 foreach (string folderName in folderNames)
                 {
-                    if (!string.IsNullOrEmpty(folderPath))
+                    if (!String.IsNullOrEmpty(folderPath))
                         folderPath += "/";
                     folderPath += folderName;
 
@@ -2382,7 +2389,7 @@ namespace UnityEditor
             if (m_ViewMode == ViewMode.TwoColumns && m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing && m_SearchFilter.folders.Length > 0)
             {
                 // Ensure pathName is not already a full asset path
-                if (!pathName.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
+                if (!pathName.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                 {
                     // If no assets are selected we use first currently shown folder path
                     if (Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Length == 0)
@@ -2477,10 +2484,10 @@ namespace UnityEditor
             int folderInstanceID = 0;
 
             string assetPath = AssetDatabase.GetAssetPath(instanceID);
-            if (!string.IsNullOrEmpty(assetPath))
+            if (!String.IsNullOrEmpty(assetPath))
             {
                 string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
-                if (!string.IsNullOrEmpty(containingFolder))
+                if (!String.IsNullOrEmpty(containingFolder))
                     folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(containingFolder);
 
                 if (folderInstanceID == 0)
@@ -2659,10 +2666,10 @@ namespace UnityEditor
                 GenericMenu menu = new GenericMenu();
                 if (subFolders.Length >= 0)
                 {
-                    currentSubFolder = System.IO.Path.GetFileName(currentSubFolder);
+                    currentSubFolder = Path.GetFileName(currentSubFolder);
                     foreach (string subFolderPath in subFolders)
                     {
-                        string subFolderName = System.IO.Path.GetFileName(subFolderPath);
+                        string subFolderName = Path.GetFileName(subFolderPath);
                         menu.AddItem(new GUIContent(subFolderName), subFolderName == currentSubFolder, new BreadCrumbListMenu(subFolderPath).SelectSubFolder);
                         menu.ShowAsContext();
                     }

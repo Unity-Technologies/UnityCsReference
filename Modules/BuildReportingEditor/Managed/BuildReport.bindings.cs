@@ -8,7 +8,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     [NativeHeader("Runtime/Utilities/DateTime.h")]
     [NativeType(Header = "Modules/BuildReportingEditor/Public/BuildReport.h")]

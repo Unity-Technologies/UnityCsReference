@@ -11,7 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -171,10 +171,10 @@ namespace UnityEditor
 
                     switch (report.summary.result)
                     {
-                        case BuildReporting.BuildResult.Unknown:
+                        case Build.Reporting.BuildResult.Unknown:
                             Debug.LogWarning(resultStr);
                             break;
-                        case BuildReporting.BuildResult.Failed:
+                        case Build.Reporting.BuildResult.Failed:
                             Debug.LogError(resultStr);
                             throw new BuildMethodException(report.SummarizeErrors());
                         default:

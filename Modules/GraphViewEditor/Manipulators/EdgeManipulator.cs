@@ -25,7 +25,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public EdgeManipulator()
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
 
             Reset();
         }
@@ -97,12 +96,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // If one end of the edge is not already detached then
             if (!alreadyDetached)
             {
-                // If the user is not holding CTRL then ignore
-                if (!evt.ctrlKey)
-                {
-                    return;
-                }
-
                 float delta = (evt.mousePosition - m_PressPos).magnitude;
 
                 if (delta < s_StartDragDistance)
@@ -123,6 +116,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     m_ConnectedPort = m_Edge.output;
                     m_DetachedPort = m_Edge.input;
+                    m_DetachedPort.Disconnect(m_Edge);
+
                     m_Edge.input = null;
                     if (m_EdgePresenter != null)
                     {
@@ -179,6 +174,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     GraphView graphView = m_Edge.GetFirstAncestorOfType<GraphView>();
 
+                    // Restore the detached port before potentially delete or reconnect it.
+                    // This is to ensure that the edge has valid input and output so it can be properly handled by the model.
+                    RestoreDetachedPort();
+
                     m_ConnectedEdgeDragHelper.HandleMouseUp(evt);
 
                     if ((m_EdgePresenter != null) && ((m_EdgePresenter.input == null) || (m_EdgePresenter.output == null)))
@@ -203,29 +202,42 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (evt.keyCode == KeyCode.Escape)
                 {
-                    if (m_DetachedFromInputPort)
-                    {
-                        m_Edge.input = m_DetachedPort;
-
-                        if (m_EdgePresenter)
-                        {
-                            m_EdgePresenter.input = m_DetachedPort.GetPresenter<PortPresenter>();
-                        }
-                    }
-                    else
-                    {
-                        m_Edge.output = m_DetachedPort;
-
-                        if (m_EdgePresenter)
-                        {
-                            m_EdgePresenter.output = m_DetachedPort.GetPresenter<PortPresenter>();
-                        }
-                    }
+                    RestoreDetachedPort();
 
                     m_ConnectedEdgeDragHelper.Reset();
                     Reset();
                     target.ReleaseMouseCapture();
                     evt.StopPropagation();
+                }
+            }
+        }
+
+        private void RestoreDetachedPort()
+        {
+            if (m_DetachedFromInputPort)
+            {
+                m_Edge.input = m_DetachedPort;
+
+                if (m_EdgePresenter)
+                {
+                    m_EdgePresenter.input = m_DetachedPort.GetPresenter<PortPresenter>();
+                }
+                else
+                {
+                    m_DetachedPort.Connect(m_Edge);
+                }
+            }
+            else
+            {
+                m_Edge.output = m_DetachedPort;
+
+                if (m_EdgePresenter)
+                {
+                    m_EdgePresenter.output = m_DetachedPort.GetPresenter<PortPresenter>();
+                }
+                else
+                {
+                    m_DetachedPort.Connect(m_Edge);
                 }
             }
         }

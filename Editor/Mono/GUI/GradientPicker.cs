@@ -214,11 +214,13 @@ namespace UnityEditor
             }
         }
 
+        public const string GradientPickerChangedCommand = "GradientPickerChanged";
+
         void SendEvent(bool exitGUI)
         {
             if (m_DelegateView)
             {
-                Event e = EditorGUIUtility.CommandEvent("GradientPickerChanged");
+                Event e = EditorGUIUtility.CommandEvent(GradientPickerChangedCommand);
                 Repaint();
                 m_DelegateView.SendEvent(e);
                 if (exitGUI)

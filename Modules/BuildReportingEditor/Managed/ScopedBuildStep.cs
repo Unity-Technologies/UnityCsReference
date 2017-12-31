@@ -4,7 +4,7 @@
 
 using System;
 
-namespace UnityEditor.BuildReporting
+namespace UnityEditor.Build.Reporting
 {
     internal struct ScopedBuildStep : IDisposable
     {

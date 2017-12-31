@@ -37,6 +37,9 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        // Password field (indirectly lossy behaviour when activated via multiline)
+        public virtual bool isPasswordField { get; set; }
+
         public Color selectionColor
         {
             get { return m_SelectionColor.GetSpecifiedValueOrDefault(Color.clear); }
@@ -106,6 +109,37 @@ namespace UnityEngine.Experimental.UIElements
 
             // TextField are focusable by default.
             focusIndex = 0;
+        }
+
+        ContextualMenu.MenuAction.StatusFlags CutCopyActionStatus(EventBase e)
+        {
+            return (editorEngine.hasSelection && !isPasswordField) ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled;
+        }
+
+        ContextualMenu.MenuAction.StatusFlags PasteActionStatus(EventBase e)
+        {
+            return (editorEngine.CanPaste() ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled);
+        }
+
+        void Cut(EventBase e)
+        {
+            editorEngine.Cut();
+
+            editorEngine.text = CullString(editorEngine.text);
+            UpdateText(editorEngine.text);
+        }
+
+        void Copy(EventBase e)
+        {
+            editorEngine.Copy();
+        }
+
+        void Paste(EventBase e)
+        {
+            editorEngine.Paste();
+
+            editorEngine.text = CullString(editorEngine.text);
+            UpdateText(editorEngine.text);
         }
 
         protected override void OnStyleResolved(ICustomStyle style)
@@ -313,9 +347,36 @@ namespace UnityEngine.Experimental.UIElements
             return true;
         }
 
+        protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            if (evt.target is TextInputFieldBase)
+            {
+                evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
+                evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
+                evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
+            }
+        }
+
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             base.ExecuteDefaultActionAtTarget(evt);
+
+            if (elementPanel != null && elementPanel.contextualMenuManager != null)
+            {
+                elementPanel.contextualMenuManager.DisplayMenuIfEventMatches(evt, this);
+            }
+
+            if (evt.GetEventTypeId() == ContextualMenuPopulateEvent.TypeId())
+            {
+                ContextualMenuPopulateEvent e = evt as ContextualMenuPopulateEvent;
+                int count = e.menu.MenuItems().Count;
+                BuildContextualMenu(e);
+
+                if (count > 0 && e.menu.MenuItems().Count > count)
+                {
+                    e.menu.InsertSeparator(count);
+                }
+            }
 
             editorEventHandler.ExecuteDefaultActionAtTarget(evt);
         }

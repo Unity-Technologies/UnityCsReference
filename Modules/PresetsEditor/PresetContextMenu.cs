@@ -10,34 +10,12 @@ namespace UnityEditor.Presets
 {
     internal class PresetContextMenu : PresetSelectorReceiver
     {
-        static class Style
-        {
-            public static GUIContent presetIcon = EditorGUIUtility.IconContent("Preset.Context");
-        }
-
         Object[] m_Targets;
         Preset[] m_Presets;
         AssetImporterEditor[] m_ImporterEditors;
         SerializedObject m_ImporterSerialized;
 
-        [EditorHeaderItem(typeof(Object), -1001)]
-        static bool DisplayPresetsMenu(Rect rectangle, Object[] targets)
-        {
-            var target = targets[0];
-
-            if (Preset.IsObjectExcludedFromPresets(target)
-                || (target.hideFlags & HideFlags.NotEditable) != 0)
-                return false;
-
-            if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,
-                    EditorStyles.iconButton))
-            {
-                CreateAndShow(targets);
-            }
-            return true;
-        }
-
-        static void CreateAndShow(Object[] targets)
+        internal static void CreateAndShow(Object[] targets)
         {
             var instance = CreateInstance<PresetContextMenu>();
             if (targets[0] is AssetImporter)
@@ -67,17 +45,20 @@ namespace UnityEditor.Presets
         {
             if (m_ImporterEditors != null)
             {
-                foreach (var assetImporterTabbedEditor in m_ImporterEditors)
+                foreach (var importerEditor in m_ImporterEditors)
                 {
+                    importerEditor.m_SerializedObject.SetIsDifferentCacheDirty();
+                    importerEditor.m_SerializedObject.Update();
                     var seria = m_ImporterSerialized.GetIterator();
                     while (seria.Next(true))
                     {
-                        assetImporterTabbedEditor.m_SerializedObject.CopyFromSerializedProperty(seria);
+                        importerEditor.m_SerializedObject.CopyFromSerializedPropertyIfDifferent(seria);
                     }
                 }
             }
             else
             {
+                Undo.RecordObjects(m_Targets, "Cancel Preset");
                 for (int i = 0; i < m_Targets.Length; i++)
                 {
                     m_Presets[i].ApplyTo(m_Targets[i]);
@@ -93,18 +74,21 @@ namespace UnityEditor.Presets
             }
             else
             {
+                Undo.RecordObjects(m_Targets, "Apply Preset " + selection.name);
                 foreach (var target in m_Targets)
                 {
                     selection.ApplyTo(target);
                 }
                 if (m_ImporterEditors != null)
                 {
-                    foreach (var assetImporterTabbedEditor in m_ImporterEditors)
+                    foreach (var importerEditor in m_ImporterEditors)
                     {
+                        importerEditor.m_SerializedObject.SetIsDifferentCacheDirty();
+                        importerEditor.m_SerializedObject.Update();
                         var seria = new SerializedObject(m_Targets).GetIterator();
                         while (seria.Next(true))
                         {
-                            assetImporterTabbedEditor.m_SerializedObject.CopyFromSerializedProperty(seria);
+                            importerEditor.m_SerializedObject.CopyFromSerializedPropertyIfDifferent(seria);
                         }
                     }
                 }

@@ -11,7 +11,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 using Object = UnityEngine.Object;
 using Mono.Cecil;
 

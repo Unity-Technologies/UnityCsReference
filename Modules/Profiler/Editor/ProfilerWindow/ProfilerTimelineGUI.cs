@@ -158,7 +158,6 @@ namespace UnityEditorInternal
         RangeSelectionInfo m_RangeSelection = new RangeSelectionInfo();
 
         public ProfilerTimelineGUI(IProfilerWindowController window)
-            : base(false)
         {
             m_Window = window;
             // Configure default groups
@@ -512,7 +511,7 @@ namespace UnityEditorInternal
             Event evt = Event.current;
             if (evt.type == EventType.ValidateCommand || evt.type == EventType.ExecuteCommand)
             {
-                if (evt.commandName == "FrameSelected")
+                if (evt.commandName == EventCommandNames.FrameSelected)
                 {
                     bool execute = evt.type == EventType.ExecuteCommand;
                     if (execute)
@@ -814,9 +813,6 @@ namespace UnityEditorInternal
             {
                 NativeProfilerTimeline_InitializeArgs args = new NativeProfilerTimeline_InitializeArgs();
                 args.Reset();
-                args.profilerColors = ProfilerColors.currentColors;
-                args.allocationSampleColor = ProfilerColors.allocationSample;
-                args.internalSampleColor = ProfilerColors.internalSample;
                 args.ghostAlpha = 0.3f;
                 args.nonSelectedAlpha = 0.75f;
                 args.guiStyle = styles.bar.m_Ptr;

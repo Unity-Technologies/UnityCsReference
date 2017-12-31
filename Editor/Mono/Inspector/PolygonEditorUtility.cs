@@ -297,7 +297,7 @@ namespace UnityEditor
 
         private bool DeleteCommandEvent(Event evt)
         {
-            return (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand) && (evt.commandName == "Delete" || evt.commandName == "SoftDelete");
+            return (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand) && (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete);
         }
 
         private void DrawEdgesForSelectedPoint(Vector3 worldPos, Transform transform, bool leftIntersect, bool rightIntersect, bool loop)

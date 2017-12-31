@@ -30,7 +30,7 @@ namespace UnityEditor
         {
             string text_k = text != null ? text : "";
             string tooltip_k = tooltip != null ? tooltip : "";
-            string key = string.Format("{0}|{1}", text_k, tooltip_k);
+            string key = string.Format("{0}|{1}|{2}", text_k, tooltip_k, icon != null ? icon.name : "");
 
             GUIContent gc = (GUIContent)s_GUIContents[key];
             if (gc == null)
@@ -53,7 +53,8 @@ namespace UnityEditor
         {
             string text_k = text != null ? text : "";
             string tooltip_k = tooltip != null ? tooltip : "";
-            string key = string.Format("{0}|{1}", text_k, tooltip_k);
+            string iconName_k = iconName != null ? iconName : "";
+            string key = string.Format("{0}|{1}|{2}", text_k, tooltip_k, iconName_k);
 
             GUIContent gc = (GUIContent)s_GUIContents[key];
             if (gc == null)

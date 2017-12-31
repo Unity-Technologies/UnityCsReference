@@ -329,28 +329,31 @@ namespace UnityEditor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button(Styles.RemapMaterialsInProject))
+                    using (new EditorGUI.DisabledScope(assetTarget == null))
                     {
-                        try
+                        if (GUILayout.Button(Styles.RemapMaterialsInProject))
                         {
-                            AssetDatabase.StartAssetEditing();
-
-                            foreach (var t in targets)
+                            try
                             {
-                                var importer = t as ModelImporter;
-                                // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
-                                importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
+                                AssetDatabase.StartAssetEditing();
 
-                                AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
-                                AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+                                foreach (var t in targets)
+                                {
+                                    var importer = t as ModelImporter;
+                                    // SearchAndReplaceMaterials will ensure the material name and search options get saved, while all other pending changes stay pending.
+                                    importer.SearchAndRemapMaterials((ModelImporterMaterialName)m_MaterialName.intValue, (ModelImporterMaterialSearch)m_MaterialSearch.intValue);
+
+                                    AssetDatabase.WriteImportSettingsIfDirty(importer.assetPath);
+                                    AssetDatabase.ImportAsset(importer.assetPath, ImportAssetOptions.ForceUpdate);
+                                }
                             }
-                        }
-                        finally
-                        {
-                            AssetDatabase.StopAssetEditing();
-                        }
+                            finally
+                            {
+                                AssetDatabase.StopAssetEditing();
+                            }
 
-                        return true;
+                            return true;
+                        }
                     }
                 }
                 EditorGUILayout.Space();

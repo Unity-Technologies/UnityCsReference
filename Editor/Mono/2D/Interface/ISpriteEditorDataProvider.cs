@@ -9,30 +9,9 @@ using UnityEditor;
 using UnityEditor.U2D;
 using UnityEngine.Experimental.U2D;
 using UnityObject = UnityEngine.Object;
-using UnityTextureImporter = UnityEditor.U2D.Interface.TextureImporter;
+
 namespace UnityEditor.Experimental.U2D
 {
-    internal class SpriteDataProviderUtility
-    {
-        internal static ISpriteEditorDataProvider GetDataProviderFromPath(string path)
-        {
-            var ai = AssetImporter.GetAtPath(path);
-            return GetISpriteDataProviderFromImporter(ai);
-        }
-
-        internal static ISpriteEditorDataProvider GetISpriteDataProviderFromImporter(AssetImporter importer)
-        {
-            var spriteDataProvider = importer as ISpriteEditorDataProvider;
-            if (importer != null)
-            {
-                // Special case because we have a wrapper for actual TextureImporter
-                if (importer is TextureImporter)
-                    spriteDataProvider = new UnityEditor.U2D.Interface.TextureImporter((TextureImporter)importer);
-            }
-            return spriteDataProvider;
-        }
-    }
-
     public interface ISpriteEditorDataProvider
     {
         SpriteImportMode spriteImportMode { get; }
@@ -79,12 +58,12 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpriteDataProviderBase
     {
-        public SpriteDataProviderBase(UnityTextureImporter dp)
+        public SpriteDataProviderBase(TextureImporter dp)
         {
             dataProvider = dp;
         }
 
-        protected UnityTextureImporter dataProvider { get; private set; }
+        protected TextureImporter dataProvider { get; private set; }
     }
 
     [Serializable]
@@ -106,13 +85,13 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpriteBoneDataTransfer : SpriteDataProviderBase, ISpriteBoneDataProvider
     {
-        public SpriteBoneDataTransfer(UnityTextureImporter dp) : base(dp)
+        public SpriteBoneDataTransfer(TextureImporter dp) : base(dp)
         {}
 
         public List<SpriteBone> GetBones(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return Load(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return Load(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetBones(GUID guid, List<SpriteBone> bones)
@@ -160,13 +139,13 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpriteOutlineDataTransfer : SpriteDataProviderBase, ISpriteOutlineDataProvider
     {
-        public SpriteOutlineDataTransfer(UnityTextureImporter dp) : base(dp)
+        public SpriteOutlineDataTransfer(TextureImporter dp) : base(dp)
         {}
 
         public List<Vector2[]> GetOutlines(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return Load(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return Load(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetOutlines(GUID guid, List<Vector2[]> data)
@@ -225,13 +204,13 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpriteMeshDataTransfer : SpriteDataProviderBase, ISpriteMeshDataProvider
     {
-        public SpriteMeshDataTransfer(UnityTextureImporter dp) : base(dp)
+        public SpriteMeshDataTransfer(TextureImporter dp) : base(dp)
         {}
 
         public Vertex2DMetaData[] GetVertices(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return LoadVertex2DMetaData(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return LoadVertex2DMetaData(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetVertices(GUID guid, Vertex2DMetaData[] data)
@@ -242,7 +221,7 @@ namespace UnityEditor.Experimental.U2D
         public int[] GetIndices(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return LoadIndices(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return LoadIndices(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetIndices(GUID guid, int[] indices)
@@ -253,7 +232,7 @@ namespace UnityEditor.Experimental.U2D
         public Vector2Int[] GetEdges(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return LoadEdges(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return LoadEdges(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetEdges(GUID guid, Vector2Int[] edges)
@@ -374,13 +353,13 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpritePhysicsOutlineDataTransfer : SpriteDataProviderBase, ISpritePhysicsOutlineDataProvider
     {
-        public SpritePhysicsOutlineDataTransfer(UnityTextureImporter dp) : base(dp)
+        public SpritePhysicsOutlineDataTransfer(TextureImporter dp) : base(dp)
         {}
 
         public List<Vector2[]> GetOutlines(GUID guid)
         {
             var index = dataProvider.GetSpriteDataIndex(guid);
-            return Load(new SerializedObject(dataProvider.targetObject), dataProvider.spriteImportMode, index);
+            return Load(new SerializedObject(dataProvider), dataProvider.spriteImportMode, index);
         }
 
         public void SetOutlines(GUID guid, List<Vector2[]> data)
@@ -439,20 +418,18 @@ namespace UnityEditor.Experimental.U2D
 
     internal class SpriteTextureDataTransfer : SpriteDataProviderBase, ITextureDataProvider
     {
-        public SpriteTextureDataTransfer(UnityTextureImporter dp) : base(dp)
+        public SpriteTextureDataTransfer(TextureImporter dp) : base(dp)
         {}
 
         Texture2D m_ReadableTexture;
         Texture2D m_OriginalTexture;
-
-        TextureImporter textureImporter { get { return (TextureImporter)dataProvider.targetObject; } }
 
         public Texture2D texture
         {
             get
             {
                 if (m_OriginalTexture == null)
-                    m_OriginalTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(textureImporter.assetPath);
+                    m_OriginalTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(dataProvider.assetPath);
                 return m_OriginalTexture;
             }
         }
@@ -460,7 +437,7 @@ namespace UnityEditor.Experimental.U2D
         public void GetTextureActualWidthAndHeight(out int width, out int height)
         {
             width = height = 0;
-            textureImporter.GetWidthAndHeight(ref width, ref height);
+            dataProvider.GetWidthAndHeight(ref width, ref height);
         }
 
         public Texture2D GetReadableTexture2D()

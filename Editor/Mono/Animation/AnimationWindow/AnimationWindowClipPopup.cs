@@ -32,10 +32,10 @@ namespace UnityEditor
                         {
                             AnimationWindowUtility.AddClipToAnimationPlayerComponent(state.activeAnimationPlayer, newClip);
                             state.activeAnimationClip = newClip;
-
-                            //  Layout has changed, bail out now.
-                            EditorGUIUtility.ExitGUI();
                         }
+
+                        //  Layout has changed, bail out now.
+                        EditorGUIUtility.ExitGUI();
                     }
                     else
                     {
@@ -55,7 +55,7 @@ namespace UnityEditor
             List<string> content = new List<string>();
             content.AddRange(GetClipNames());
 
-            if (state.selection.rootGameObject != null && state.selection.animationIsEditable)
+            if (state.selection.rootGameObject != null)
             {
                 content.Add("");
                 content.Add(AnimationWindowStyles.createNewClip.text);

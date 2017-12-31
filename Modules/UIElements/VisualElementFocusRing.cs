@@ -211,7 +211,7 @@ namespace UnityEngine.Experimental.UIElements
                 KeyDownEvent kde = e as KeyDownEvent;
                 EventModifiers modifiers = kde.modifiers;
 
-                if (kde.keyCode == KeyCode.Tab)
+                if (kde.character == '\t')
                 {
                     if (currentFocusable == null)
                     {

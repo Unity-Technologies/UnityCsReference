@@ -107,6 +107,7 @@ namespace UnityEditor
         N3DS = 35,
 
         /// Build a Wii U player
+        [System.Obsolete("Wii U support was removed in 2018.1")]
         WiiU = 36,
 
         tvOS = 37,

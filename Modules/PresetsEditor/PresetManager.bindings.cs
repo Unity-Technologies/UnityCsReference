@@ -10,6 +10,7 @@ namespace UnityEditor.Presets
     [NativeType(Header = "Modules/PresetsEditor/PresetManager.h")]
     internal class PresetManager : ProjectSettingsBase
     {
-        internal static extern string GetPresetTypeNameAtIndex(int index);
+        internal extern string GetPresetTypeNameAtIndex(int index);
+        internal extern bool SetAsDefaultInternal(Preset index);
     }
 }

@@ -31,8 +31,9 @@ namespace UnityEditor
 
         public enum LayoutMode
         {
-            Horizontal,
-            Vertical
+            Uninitialized = -1,
+            Horizontal = 0,
+            Vertical = 1
         }
 
         [Serializable]
@@ -68,7 +69,8 @@ namespace UnityEditor
         [SerializeField]
         SectionType[] m_SectionOrder = { SectionType.MixerTree, SectionType.SnapshotList, SectionType.GroupTree, SectionType.ViewList }; // default order
 
-        LayoutMode m_LayoutMode;
+        [SerializeField]
+        LayoutMode m_LayoutMode = LayoutMode.Uninitialized;
         [SerializeField]
         bool m_SortGroupsAlphabetically = false;
         [SerializeField]
@@ -278,8 +280,11 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            // We use vertical layout as default as it is the most compact layout
-            m_LayoutMode = EditorPrefs.GetBool(kAudioMixerUseHorzLayout) ? LayoutMode.Horizontal : LayoutMode.Vertical;
+            if (m_LayoutMode == LayoutMode.Uninitialized)
+            {
+                // We use vertical layout as default as it is the most compact layout
+                m_LayoutMode = EditorPrefs.GetBool(kAudioMixerUseHorzLayout) ? LayoutMode.Horizontal : LayoutMode.Vertical;
+            }
             titleContent = GetLocalizedTitleContent();
 
             s_Instance = this;

@@ -9,7 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 using UnityEngine.Scripting;
 
-namespace UnityEngine
+namespace UnityEngine.Experimental.Rendering
 {
     [NativeHeader("Runtime/Graphics/AsyncGPUReadbackManaged.h")]
     [NativeHeader("Runtime/Graphics/Texture.h")]

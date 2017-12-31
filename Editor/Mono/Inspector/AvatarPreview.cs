@@ -1029,7 +1029,7 @@ namespace UnityEditor
             if (evt.type == EventType.ExecuteCommand)
             {
                 string commandName = evt.commandName;
-                if (commandName == "ObjectSelectorUpdated" && ObjectSelector.get.objectSelectorID == m_ModelSelectorId)
+                if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == m_ModelSelectorId)
                 {
                     SetPreview(ObjectSelector.GetCurrentObject() as GameObject);
                     evt.Use();

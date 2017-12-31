@@ -19,6 +19,9 @@ namespace UnityEditor
         [FreeFunction(ThrowsException = true)]
         static extern Component AddDefaultComponent([NotNull] GameObject gameObject, [NotNull] Type type);
 
+        [FreeFunction]
+        static extern GameObject CreateDefaultGameObject(string name);
+
         static void CheckTypeValidity(Type type)
         {
             if (type.IsAbstract)
@@ -72,8 +75,7 @@ namespace UnityEditor
 
         public static GameObject CreateGameObject(string name, params Type[] types)
         {
-            var go = new GameObject(name);
-            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
+            var go = CreateDefaultGameObject(name);
             go.SetActive(false);
             foreach (var type in types)
             {

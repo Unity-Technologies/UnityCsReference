@@ -65,7 +65,7 @@ namespace UnityEditor.Experimental.UIElements
         private void OnGUIHandler()
         {
             // Dirty repaint on eye dropper update to preview the color under the cursor
-            if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == "EyeDropperUpdate")
+            if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
             {
                 Dirty(ChangeType.Repaint);
             }

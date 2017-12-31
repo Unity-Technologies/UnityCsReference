@@ -319,7 +319,7 @@ namespace UnityEditor
             int index = m_TypeToGuiTypeIndex[type];
 
             EditorGUI.BeginChangeCheck();
-            int index2 = GUIPopup(s_Texts.shape, index, s_Texts.shapeTypes);
+            int index2 = GUIPopup(s_Texts.shape, index, s_Texts.shapeTypes, m_Type);
             bool shapeTypeChanged = EditorGUI.EndChangeCheck();
 
             EditorGUI.showMixedValue = false;
@@ -337,7 +337,7 @@ namespace UnityEditor
                     case ParticleSystemShapeType.Box:
                     {
                         int emitFrom = ConvertBoxTypeToBoxEmitFrom((ParticleSystemShapeType)type);
-                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.boxTypes);
+                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.boxTypes, m_Type);
                         type = (int)ConvertBoxEmitFromToBoxType(emitFrom);
 
                         if (type == (int)ParticleSystemShapeType.BoxShell || type == (int)ParticleSystemShapeType.BoxEdge)
@@ -360,7 +360,7 @@ namespace UnityEditor
                         }
 
                         int emitFrom = ConvertConeTypeToConeEmitFrom((ParticleSystemShapeType)type);
-                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.coneTypes);
+                        emitFrom = GUIPopup(s_Texts.emitFrom, emitFrom, s_Texts.coneTypes, m_Type);
                         type = (int)ConvertConeEmitFromToConeType(emitFrom);
                     }
                     break;

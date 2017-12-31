@@ -220,6 +220,7 @@ namespace UnityEditor
         static EventType s_EventTypeBefore = EventType.Ignore;
         static TransformData[] s_MouseDownState = null;
         static Vector3 s_StartHandlePosition = Vector3.zero;
+        static Vector3 s_PreviousHandlePosition = Vector3.zero;
         static Quaternion s_StartHandleRotation = Quaternion.identity;
         public static Vector3 mouseDownHandlePosition { get { return s_StartHandlePosition; } }
         public static Quaternion mouseDownHandleRotation { get { return s_StartHandleRotation; } set { s_StartHandleRotation = value; } }
@@ -266,6 +267,7 @@ namespace UnityEditor
             {
                 RecordMouseDownState(Selection.transforms);
                 s_StartHandlePosition = Tools.handlePosition;
+                s_PreviousHandlePosition = s_StartHandlePosition;
                 s_StartLocalHandleOffset = Tools.localHandleOffset;
                 if (s_LockHandle)
                     Tools.LockHandlePosition();
@@ -352,13 +354,13 @@ namespace UnityEditor
             }
         }
 
-        public static void SetPositionDelta(Vector3 positionDelta)
+        public static void SetPositionDelta(Vector3 newPosition, Vector3 oldPosition)
         {
             if (s_MouseDownState == null)
                 return;
 
-            if (positionDelta.magnitude == 0)
-                return;
+            s_PreviousHandlePosition = newPosition;
+            Vector3 positionDelta = newPosition - oldPosition;
 
             for (int i = 0; i < s_MouseDownState.Length; i++)
             {
@@ -376,6 +378,11 @@ namespace UnityEditor
                     s_MouseDownState[i].SetPositionDelta(firstDelta, false);
                 }
             }
+        }
+
+        public static bool HandleHasMoved(Vector3 position)
+        {
+            return position != s_PreviousHandlePosition;
         }
 
         public static void DebugAlignment(Quaternion targetRotation)

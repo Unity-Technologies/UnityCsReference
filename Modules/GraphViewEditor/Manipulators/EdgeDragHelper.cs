@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
@@ -20,6 +21,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         internal const int k_PanAreaWidth = 100;
         internal const int k_PanSpeed = 4;
         internal const int k_PanInterval = 10;
+        internal const float k_MinSpeedFactor = 0.5f;
+        internal const float k_MaxSpeedFactor = 2.5f;
+        internal const float k_MaxPanSpeed = k_MaxSpeedFactor * k_PanSpeed;
     }
 
     public class EdgeDragHelper<TEdge> : EdgeDragHelper where TEdge : Edge, new()
@@ -149,24 +153,35 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
             m_WasPanned = false;
 
+            edgeCandidate.layer = Int32.MaxValue;
+
             return true;
+        }
+
+        internal Vector2 GetEffectivePanSpeed(Vector2 mousePos)
+        {
+            Vector2 effectiveSpeed = Vector2.zero;
+
+            if (mousePos.x <= k_PanAreaWidth)
+                effectiveSpeed.x = -(((k_PanAreaWidth - mousePos.x) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+            else if (mousePos.x >= m_GraphView.contentContainer.layout.width - k_PanAreaWidth)
+                effectiveSpeed.x = (((mousePos.x - (m_GraphView.contentContainer.layout.width - k_PanAreaWidth)) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+
+            if (mousePos.y <= k_PanAreaWidth)
+                effectiveSpeed.y = -(((k_PanAreaWidth - mousePos.y) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+            else if (mousePos.y >= m_GraphView.contentContainer.layout.height - k_PanAreaWidth)
+                effectiveSpeed.y = (((mousePos.y - (m_GraphView.contentContainer.layout.height - k_PanAreaWidth)) / k_PanAreaWidth) + 0.5f) * k_PanSpeed;
+
+            effectiveSpeed = Vector2.ClampMagnitude(effectiveSpeed, k_MaxPanSpeed);
+
+            return effectiveSpeed;
         }
 
         public override void HandleMouseMove(MouseMoveEvent evt)
         {
             var ve = (VisualElement)evt.target;
             Vector2 gvMousePos = ve.ChangeCoordinatesTo(m_GraphView.contentContainer, evt.localMousePosition);
-            m_PanDiff = Vector3.zero;
-
-            if (gvMousePos.x <= k_PanAreaWidth)
-                m_PanDiff.x = -k_PanSpeed;
-            else if (gvMousePos.x >= m_GraphView.contentContainer.layout.width - k_PanAreaWidth)
-                m_PanDiff.x = k_PanSpeed;
-
-            if (gvMousePos.y <= k_PanAreaWidth)
-                m_PanDiff.y = -k_PanSpeed;
-            else if (gvMousePos.y >= m_GraphView.contentContainer.layout.height - k_PanAreaWidth)
-                m_PanDiff.y = k_PanSpeed;
+            m_PanDiff = GetEffectivePanSpeed(gvMousePos);
 
             if (m_PanDiff != Vector3.zero)
             {
@@ -268,17 +283,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Listener.OnDropOutsidePort(edgeCandidate, mousePosition);
             }
 
-            m_GraphView.RemoveElement(edgeCandidate);
-
             if (edgeCandidate.input != null)
                 edgeCandidate.input.portCapLit = false;
 
             if (edgeCandidate.output != null)
                 edgeCandidate.output.portCapLit = false;
 
+            // If it is an existing valid edge then delete and notify the model (using DeleteElements()).
+            if (edgeCandidate.input != null && edgeCandidate.output != null)
+            {
+                // Save the current input and output before deleting the edge as they will be reset
+                Port oldInput = edgeCandidate.input;
+                Port oldOutput = edgeCandidate.output;
+
+                m_GraphView.DeleteElements(new[] { edgeCandidate });
+
+                // Restore the previous input and output
+                edgeCandidate.input = oldInput;
+                edgeCandidate.output = oldOutput;
+            }
+            // otherwise, if it is an temporary edge then just remove it as it is not already known my the model
+            else
+            {
+                m_GraphView.RemoveElement(edgeCandidate);
+            }
+
             if (endPort != null)
             {
-                if (edgeCandidate.output == null)
+                if (endPort.direction == Direction.Output)
                     edgeCandidate.output = endPort;
                 else
                     edgeCandidate.input = endPort;
@@ -291,6 +323,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 edgeCandidate.output = null;
                 edgeCandidate.input = null;
             }
+
+            edgeCandidate.ResetLayer();
 
             edgeCandidate = null;
             m_CompatiblePorts = null;

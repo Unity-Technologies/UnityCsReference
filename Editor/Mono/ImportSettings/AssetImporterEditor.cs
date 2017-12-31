@@ -241,7 +241,12 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected void ApplyRevertGUI()
         {
-            if (assetEditor == null || assetEditor.target == null) return;
+            if (assetEditor == null || assetEditor.target == null)
+            {
+                // always apply changes when buttons are hidden
+                Apply();
+                return;
+            }
 
             m_MightHaveModified = true;
             EditorGUILayout.Space();

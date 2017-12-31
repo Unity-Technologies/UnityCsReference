@@ -252,7 +252,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == "UndoRedoPerformed")
+            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == EventCommandNames.UndoRedoPerformed)
             {
                 AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
                 for (int i = 0; i < m_Bones.Length; i++)

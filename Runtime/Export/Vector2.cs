@@ -136,6 +136,11 @@ namespace UnityEngine
             return -2F * Dot(inNormal, inDirection) * inNormal + inDirection;
         }
 
+        public static Vector2 Perpendicular(Vector2 inDirection)
+        {
+            return new Vector2(-inDirection.y, inDirection.x);
+        }
+
         // Dot Product of two vectors.
         public static float Dot(Vector2 lhs, Vector2 rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 
@@ -227,6 +232,10 @@ namespace UnityEngine
         public static Vector2 operator+(Vector2 a, Vector2 b) { return new Vector2(a.x + b.x, a.y + b.y); }
         // Subtracts one vector from another.
         public static Vector2 operator-(Vector2 a, Vector2 b) { return new Vector2(a.x - b.x, a.y - b.y); }
+        // Multiplies one vector by another.
+        public static Vector2 operator*(Vector2 a, Vector2 b) { return new Vector2(a.x * b.x, a.y * b.y); }
+        // Divides one vector over another.
+        public static Vector2 operator/(Vector2 a, Vector2 b) { return new Vector2(a.x / b.x, a.y / b.y); }
         // Negates a vector.
         public static Vector2 operator-(Vector2 a) { return new Vector2(-a.x, -a.y); }
         // Multiplies a vector by a number.

@@ -10,6 +10,7 @@ namespace UnityEditor.Modules
 {
     internal class DefaultBuildProperties : BuildProperties
     {
+        public override DeploymentTargetRequirements GetTargetRequirements() { return null; }
     }
 
     internal abstract class DefaultBuildPostprocessor

@@ -14,7 +14,9 @@ namespace UnityEditorInternal
 {
     internal class AnimationRecording
     {
+        const string kLocalPosition = "m_LocalPosition";
         const string kLocalRotation = "m_LocalRotation";
+        const string kLocalScale = "m_LocalScale";
         const string kLocalEulerAnglesHint = "m_LocalEulerAnglesHint";
 
         static bool HasAnyRecordableModifications(GameObject root, UndoPropertyModification[] modifications)
@@ -26,34 +28,6 @@ namespace UnityEditorInternal
                     return true;
             }
             return false;
-        }
-
-        static PropertyModification FindPropertyModification(GameObject root, UndoPropertyModification[] modifications, EditorCurveBinding binding)
-        {
-            for (int i = 0; i < modifications.Length; i++)
-            {
-                EditorCurveBinding tempBinding;
-                AnimationUtility.PropertyModificationToEditorCurveBinding(modifications[i].previousValue, root, out tempBinding);
-                if (tempBinding == binding)
-                    return modifications[i].previousValue;
-            }
-
-            return null;
-        }
-
-        static PropertyModification CreateDummyPropertyModification(GameObject root, PropertyModification baseProperty, EditorCurveBinding binding)
-        {
-            var property = new PropertyModification();
-            property.target = baseProperty.target;
-            property.propertyPath = binding.propertyName;
-
-            object currentValue = CurveBindingUtility.GetCurrentValue(root, binding);
-            if (binding.isPPtrCurve)
-                property.objectReference = (Object)currentValue;
-            else
-                property.value = ((float)currentValue).ToString();
-
-            return property;
         }
 
         static private UndoPropertyModification[] FilterModifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications)
@@ -238,14 +212,10 @@ namespace UnityEditorInternal
             state.AddPropertyModification(binding, modification.previousValue, modification.keepPrefabOverride);
         }
 
-        static private UndoPropertyModification[] ProcessRotationModifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications)
+        static private void ProcessRotationModifications(IAnimationRecordingState state, ref System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications)
         {
-            System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications = new Dictionary<object, RotationModification>();
-
-            //Strip out the rotation modifications from the rest
-            CollectRotationModifications(state, ref modifications, ref rotationModifications);
-
-            UndoPropertyModification[] discardedModifications = FilterRotationModifications(state, ref rotationModifications);
+            AnimationClip clip = state.activeAnimationClip;
+            GameObject root = state.activeRootGameObject;
 
             foreach (KeyValuePair<object, RotationModification> item in rotationModifications)
             {
@@ -328,17 +298,112 @@ namespace UnityEditorInternal
                     AddRotationKey(state, binding, type, previousEulerAngles, currentEulerAngles);
                 }
             }
-
-            return discardedModifications;
         }
 
-        static public UndoPropertyModification[] ProcessModifications(IAnimationRecordingState state, UndoPropertyModification[] modifications)
+        internal class Vector3Modification
+        {
+            public UndoPropertyModification x;
+            public UndoPropertyModification y;
+            public UndoPropertyModification z;
+
+            public UndoPropertyModification last;
+        }
+
+        static private void CollectVector3Modifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications,
+            ref System.Collections.Generic.Dictionary<object, Vector3Modification> vector3Modifications, string propertyName)
+        {
+            List<UndoPropertyModification> outModifs = new List<UndoPropertyModification>();
+            foreach (var modification in modifications)
+            {
+                PropertyModification prop = modification.previousValue;
+                if (!(prop.target is Transform))
+                {
+                    outModifs.Add(modification);
+                    continue;
+                }
+
+                EditorCurveBinding binding = new EditorCurveBinding();
+                AnimationUtility.PropertyModificationToEditorCurveBinding(prop, state.activeRootGameObject, out binding);
+                if (binding.propertyName.StartsWith(propertyName))
+                {
+                    Vector3Modification vector3Modification;
+
+                    if (!vector3Modifications.TryGetValue(prop.target, out vector3Modification))
+                    {
+                        vector3Modification = new Vector3Modification();
+                        vector3Modifications[prop.target] = vector3Modification;
+                    }
+
+                    if (binding.propertyName.EndsWith("x"))
+                        vector3Modification.x = modification;
+                    else if (binding.propertyName.EndsWith("y"))
+                        vector3Modification.y = modification;
+                    else if (binding.propertyName.EndsWith("z"))
+                        vector3Modification.z = modification;
+
+                    vector3Modification.last = modification;
+                }
+                else
+                {
+                    outModifs.Add(modification);
+                }
+            }
+
+            if (vector3Modifications.Count > 0)
+            {
+                modifications = outModifs.ToArray();
+            }
+        }
+
+        static private void ProcessVector3Modification(IAnimationRecordingState state, EditorCurveBinding baseBinding, UndoPropertyModification modification, Transform target, string axis)
+        {
+            var binding = baseBinding;
+            var property = modification.previousValue;
+
+            binding.propertyName = binding.propertyName.Remove(binding.propertyName.Length - 1, 1) + axis;
+
+            if (property == null)
+            {
+                // create dummy
+                property = new PropertyModification();
+                property.target = target;
+                property.propertyPath = binding.propertyName;
+                object currentValue = CurveBindingUtility.GetCurrentValue(state.activeRootGameObject, binding);
+                property.value = ((float)currentValue).ToString();
+            }
+
+            state.AddPropertyModification(binding, property, modification.keepPrefabOverride);
+            AddKey(state, binding, typeof(float), property);
+        }
+
+        static public void ProcessVector3Modifications(IAnimationRecordingState state, ref System.Collections.Generic.Dictionary<object, Vector3Modification> vector3Modifications)
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
-            Animator animator = root.GetComponent<Animator>();
 
-            UndoPropertyModification[] discardedModifications = FilterModifications(state, ref modifications);
+            foreach (KeyValuePair<object, Vector3Modification> item in vector3Modifications)
+            {
+                Vector3Modification m = item.Value;
+                Transform target = item.Key as Transform;
+
+                if (target == null)
+                    continue;
+
+                EditorCurveBinding binding = new EditorCurveBinding();
+                Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(m.last.currentValue, state.activeRootGameObject, out binding);
+                if (type == null)
+                    continue;
+
+                ProcessVector3Modification(state, binding, m.x, target, "x");
+                ProcessVector3Modification(state, binding, m.y, target, "y");
+                ProcessVector3Modification(state, binding, m.z, target, "z");
+            }
+        }
+
+        static public void ProcessModifications(IAnimationRecordingState state, UndoPropertyModification[] modifications)
+        {
+            AnimationClip clip = state.activeAnimationClip;
+            GameObject root = state.activeRootGameObject;
 
             // Record modified properties
             for (int i = 0; i < modifications.Length; i++)
@@ -349,37 +414,10 @@ namespace UnityEditorInternal
                 Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(prop, root, out binding);
                 if (type != null)
                 {
-                    // TODO@mecanim keyframing of transform driven by an animator is disabled until we can figure out
-                    // how to rebind partially a controller at each sampling.
-                    if (animator != null && animator.isHuman && binding.type == typeof(Transform)
-                        && animator.gameObject.transform != prop.target && animator.IsBoneTransform(prop.target as Transform))
-                    {
-                        Debug.LogWarning("Keyframing for humanoid rig is not supported!", prop.target as Transform);
-                        continue;
-                    }
-
-                    EditorCurveBinding[] additionalBindings = RotationCurveInterpolation.RemapAnimationBindingForAddKey(binding, clip);
-                    if (additionalBindings != null)
-                    {
-                        for (int a = 0; a < additionalBindings.Length; a++)
-                        {
-                            PropertyModification additionalProperty = FindPropertyModification(root, modifications, additionalBindings[a]);
-                            if (additionalProperty == null)
-                                additionalProperty = CreateDummyPropertyModification(root, prop, additionalBindings[a]);
-
-                            state.AddPropertyModification(additionalBindings[a], additionalProperty, modifications[i].keepPrefabOverride);
-                            AddKey(state, additionalBindings[a], type, additionalProperty);
-                        }
-                    }
-                    else
-                    {
-                        state.AddPropertyModification(binding, prop, modifications[i].keepPrefabOverride);
-                        AddKey(state, binding, type, prop);
-                    }
+                    state.AddPropertyModification(binding, prop, modifications[i].keepPrefabOverride);
+                    AddKey(state, binding, type, prop);
                 }
             }
-
-            return discardedModifications;
         }
 
         static public UndoPropertyModification[] Process(IAnimationRecordingState state, UndoPropertyModification[] modifications)
@@ -392,12 +430,30 @@ namespace UnityEditorInternal
             if (!HasAnyRecordableModifications(root, modifications))
                 return modifications;
 
-            // Process quaternion rotation modifications first.
-            UndoPropertyModification[] discardedRotationModifications = ProcessRotationModifications(state, ref modifications);
-            // Process what's remaining.
-            UndoPropertyModification[] discardedModifications = ProcessModifications(state, modifications);
+            System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications = new Dictionary<object, RotationModification>();
+            System.Collections.Generic.Dictionary<object, Vector3Modification> scaleModifications = new Dictionary<object, Vector3Modification>();
+            System.Collections.Generic.Dictionary<object, Vector3Modification> positionModifications = new Dictionary<object, Vector3Modification>();
 
-            return discardedRotationModifications.Concat(discardedModifications).ToArray();
+            //Strip out the rotation modifications from the rest
+            CollectRotationModifications(state, ref modifications, ref rotationModifications);
+            UndoPropertyModification[] discardedRotationModifications = FilterRotationModifications(state, ref rotationModifications);
+            UndoPropertyModification[] discardedModifications = FilterModifications(state, ref modifications);
+            CollectVector3Modifications(state, ref modifications, ref positionModifications, kLocalPosition);
+            CollectVector3Modifications(state, ref modifications, ref scaleModifications, kLocalScale);
+
+            // Process Animator Modifications.
+            ProcessAnimatorModifications(state, ref positionModifications, ref rotationModifications, ref scaleModifications);
+            // Process position modifications.
+            ProcessVector3Modifications(state, ref positionModifications);
+            // Process rotation modifications.
+            ProcessRotationModifications(state, ref rotationModifications);
+            // Process scale modifications.
+            ProcessVector3Modifications(state, ref scaleModifications);
+            // Process what's remaining.
+            ProcessModifications(state, modifications);
+
+            discardedModifications.Concat(discardedRotationModifications);
+            return discardedModifications.ToArray();
         }
 
         static bool ValueFromPropertyModification(PropertyModification modification, EditorCurveBinding binding, out object outObject)
@@ -460,32 +516,6 @@ namespace UnityEditorInternal
             state.SaveCurve(curve);
         }
 
-        static public void SaveModifiedCurve(AnimationWindowCurve curve, AnimationClip clip)
-        {
-            curve.m_Keyframes.Sort((a, b) => a.time.CompareTo(b.time));
-
-            if (curve.isPPtrCurve)
-            {
-                ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
-
-                if (objectCurve.Length == 0)
-                    objectCurve = null;
-
-                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
-            }
-            else
-            {
-                AnimationCurve animationCurve = curve.ToAnimationCurve();
-
-                if (animationCurve.keys.Length == 0)
-                    animationCurve = null;
-                else
-                    QuaternionCurveTangentCalculation.UpdateTangentsFromMode(animationCurve, clip, curve.binding);
-
-                AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
-            }
-        }
-
         static void AddRotationKey(IAnimationRecordingState state, EditorCurveBinding binding, Type type, Vector3 previousEulerAngles, Vector3 currentEulerAngles)
         {
             AnimationClip clip = state.activeAnimationClip;
@@ -514,6 +544,272 @@ namespace UnityEditorInternal
 
                 AnimationWindowUtility.AddKeyframeToCurve(curve, currentEulerAngles[i], type, AnimationKeyTime.Frame(state.currentFrame, clip.frameRate));
                 state.SaveCurve(curve);
+            }
+        }
+
+        internal class RootMotionModification
+        {
+            public UndoPropertyModification px;
+            public UndoPropertyModification py;
+            public UndoPropertyModification pz;
+            public UndoPropertyModification lastP;
+
+            public UndoPropertyModification rx;
+            public UndoPropertyModification ry;
+            public UndoPropertyModification rz;
+            public UndoPropertyModification rw;
+            public UndoPropertyModification lastR;
+        }
+
+        static private void ProcessRootMotionModifications(IAnimationRecordingState state,
+            ref System.Collections.Generic.Dictionary<object, RootMotionModification> rootMotionModifications)
+        {
+            AnimationClip clip = state.activeAnimationClip;
+            GameObject root = state.activeRootGameObject;
+            Animator animator = root.GetComponent<Animator>();
+
+            bool isHuman = animator != null ? animator.isHuman : false;
+
+            foreach (KeyValuePair<object, RootMotionModification> item in rootMotionModifications)
+            {
+                RootMotionModification m = item.Value;
+                Transform target = item.Key as Transform;
+
+                Vector3 scale = target.localScale * (isHuman ? animator.humanScale : 1);
+                Vector3 position = target.localPosition;
+                Quaternion rotation = target.localRotation;
+
+                if (m.lastP.previousValue != null)
+                {
+                    ProcessAnimatorModification(state, animator, m.px, "MotionT.x", position.x, scale.x);
+                    ProcessAnimatorModification(state, animator, m.py, "MotionT.y", position.y, scale.y);
+                    ProcessAnimatorModification(state, animator, m.pz, "MotionT.z", position.z, scale.z);
+                }
+
+                if (m.lastR.previousValue != null)
+                {
+                    ProcessAnimatorModification(state, animator, m.rx, "MotionQ.x", rotation.x, 1);
+                    ProcessAnimatorModification(state, animator, m.ry, "MotionQ.y", rotation.y, 1);
+                    ProcessAnimatorModification(state, animator, m.rz, "MotionQ.z", rotation.z, 1);
+                    ProcessAnimatorModification(state, animator, m.rw, "MotionQ.w", rotation.w, 1);
+                }
+            }
+        }
+
+        static private void ProcessAnimatorModifications(IAnimationRecordingState state,
+            ref System.Collections.Generic.Dictionary<object, Vector3Modification> positionModifications,
+            ref System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications,
+            ref System.Collections.Generic.Dictionary<object, Vector3Modification> scaleModifications)
+        {
+            System.Collections.Generic.Dictionary<object, RootMotionModification> rootMotionModifications = new Dictionary<object, RootMotionModification>();
+
+            AnimationClip clip = state.activeAnimationClip;
+            GameObject root = state.activeRootGameObject;
+            Animator animator = root.GetComponent<Animator>();
+
+            bool isHuman = animator != null ? animator.isHuman : false;
+            bool hasRootMotion = animator != null ? animator.hasRootMotion : false;
+            bool applyRootMotion = animator != null ? animator.applyRootMotion : false;
+
+            // process animator positions
+            List<object> discardListPos = new List<object>();
+
+            foreach (KeyValuePair<object, Vector3Modification> item in positionModifications)
+            {
+                Vector3Modification m = item.Value;
+                Transform target = item.Key as Transform;
+
+                if (target == null)
+                    continue;
+
+                EditorCurveBinding binding = new EditorCurveBinding();
+                Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(m.last.currentValue, state.activeRootGameObject, out binding);
+                if (type == null)
+                    continue;
+
+                bool isRootTransform = root.transform == target;
+                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
+
+                if (isHumanBone)
+                {
+                    Debug.LogWarning("Keyframing translation on humanoid rig is not supported!", target as Transform);
+                    discardListPos.Add(item.Key);
+                }
+                else if (isRootMotion)
+                {
+                    RootMotionModification rootMotionModification;
+
+                    if (!rootMotionModifications.TryGetValue(target, out rootMotionModification))
+                    {
+                        rootMotionModification = new RootMotionModification();
+                        rootMotionModifications[target] = rootMotionModification;
+                    }
+
+                    rootMotionModification.lastP = m.last;
+                    rootMotionModification.px = m.x;
+                    rootMotionModification.py = m.y;
+                    rootMotionModification.pz = m.z;
+
+                    discardListPos.Add(item.Key);
+                }
+            }
+
+            foreach (object key in discardListPos)
+            {
+                positionModifications.Remove(key);
+            }
+
+            // process animator rotation
+            List<object> discardListRot = new List<object>();
+
+            foreach (KeyValuePair<object, RotationModification> item in rotationModifications)
+            {
+                RotationModification m = item.Value;
+                Transform target = item.Key as Transform;
+
+                if (target == null)
+                    continue;
+
+                EditorCurveBinding binding = new EditorCurveBinding();
+                Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(m.lastQuatModification.currentValue, state.activeRootGameObject, out binding);
+                if (type == null)
+                    continue;
+
+                bool isRootTransform = root.transform == target;
+                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
+
+                if (isHumanBone)
+                {
+                    Debug.LogWarning("Keyframing rotation on humanoid rig is not supported!", target as Transform);
+                    discardListRot.Add(item.Key);
+                }
+                else if (isRootMotion)
+                {
+                    RootMotionModification rootMotionModification;
+
+                    if (!rootMotionModifications.TryGetValue(target, out rootMotionModification))
+                    {
+                        rootMotionModification = new RootMotionModification();
+                        rootMotionModifications[target] = rootMotionModification;
+                    }
+
+                    rootMotionModification.lastR = m.lastQuatModification;
+                    rootMotionModification.rx = m.x;
+                    rootMotionModification.ry = m.y;
+                    rootMotionModification.rz = m.z;
+                    rootMotionModification.rw = m.w;
+
+                    discardListRot.Add(item.Key);
+                }
+            }
+
+            foreach (object key in discardListRot)
+            {
+                rotationModifications.Remove(key);
+            }
+
+            // process animator scales
+            List<object> discardListScale = new List<object>();
+
+            foreach (KeyValuePair<object, Vector3Modification> item in scaleModifications)
+            {
+                Vector3Modification m = item.Value;
+                Transform target = item.Key as Transform;
+
+                if (target == null)
+                    continue;
+
+                EditorCurveBinding binding = new EditorCurveBinding();
+                Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(m.last.currentValue, state.activeRootGameObject, out binding);
+                if (type == null)
+                    continue;
+
+                bool isRootTransform = root.transform == target;
+                bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
+                if (isHumanBone)
+                {
+                    Debug.LogWarning("Keyframing scale on humanoid rig is not supported!", target as Transform);
+                    discardListScale.Add(item.Key);
+                }
+            }
+
+            foreach (object key in discardListScale)
+            {
+                scaleModifications.Remove(key);
+            }
+
+            ProcessRootMotionModifications(state, ref rootMotionModifications);
+        }
+
+        static void ProcessAnimatorModification(IAnimationRecordingState state, Animator animator, UndoPropertyModification modification, string name, float value, float scale)
+        {
+            AnimationClip clip = state.activeAnimationClip;
+
+            if ((clip.hideFlags & HideFlags.NotEditable) != 0)
+                return;
+
+            float prevValue = value;
+
+            object oValue;
+
+            if (ValueFromPropertyModification(modification.currentValue, new EditorCurveBinding(), out oValue))
+                value = (float)oValue;
+
+            if (ValueFromPropertyModification(modification.previousValue, new EditorCurveBinding(), out oValue))
+                prevValue = (float)oValue;
+
+            value = Mathf.Abs(scale) > Mathf.Epsilon ? value / scale : value;
+            prevValue = Mathf.Abs(scale) > Mathf.Epsilon ? prevValue / scale : prevValue;
+
+            var binding = new EditorCurveBinding();
+            binding.propertyName = name;
+            binding.path = "";
+            binding.type = typeof(Animator);
+
+            var prop = new PropertyModification();
+            prop.target = animator;
+            prop.propertyPath = binding.propertyName;
+            prop.value = value.ToString();
+
+            state.AddPropertyModification(binding, prop, modification.keepPrefabOverride);
+
+            AnimationWindowCurve curve = new AnimationWindowCurve(clip, binding, typeof(float));
+
+            if (state.addZeroFrame && state.currentFrame != 0 && curve.length == 0)
+            {
+                AnimationWindowUtility.AddKeyframeToCurve(curve, prevValue, typeof(float), AnimationKeyTime.Frame(0, clip.frameRate));
+            }
+
+            AnimationWindowUtility.AddKeyframeToCurve(curve, value, typeof(float), AnimationKeyTime.Frame(state.currentFrame, clip.frameRate));
+
+            state.SaveCurve(curve);
+        }
+
+        static public void SaveModifiedCurve(AnimationWindowCurve curve, AnimationClip clip)
+        {
+            curve.m_Keyframes.Sort((a, b) => a.time.CompareTo(b.time));
+
+            if (curve.isPPtrCurve)
+            {
+                ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
+
+                if (objectCurve.Length == 0)
+                    objectCurve = null;
+
+                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
+            }
+            else
+            {
+                AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+                if (animationCurve.keys.Length == 0)
+                    animationCurve = null;
+                else
+                    QuaternionCurveTangentCalculation.UpdateTangentsFromMode(animationCurve, clip, curve.binding);
+
+                AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
             }
         }
     }

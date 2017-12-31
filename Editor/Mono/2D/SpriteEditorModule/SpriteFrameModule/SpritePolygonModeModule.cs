@@ -11,7 +11,7 @@ using System.Collections.Generic;
 namespace UnityEditor
 {
     [RequireSpriteDataProvider(typeof(ISpriteOutlineDataProvider), typeof(ITextureDataProvider))]
-    internal partial class SpritePolygonModeModule : SpriteFrameModuleBase, ISpriteEditorModule
+    internal partial class SpritePolygonModeModule : SpriteFrameModuleBase
     {
         List<List<Vector2[]>> m_Outline;
 

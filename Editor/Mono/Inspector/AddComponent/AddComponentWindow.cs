@@ -31,6 +31,8 @@ namespace UnityEditor
         private DateTime m_ComponentOpenTime;
         private const string kComponentSearch = "ComponentSearchString";
 
+        public const string OpenAddComponentDropdown = "OpenAddComponentDropdown";
+
         protected override bool isSearchFieldDisabled
         {
             get
@@ -187,7 +189,7 @@ namespace UnityEditor
         {
             var insp = FirstInspectorWithGameObject();
             if (insp != null)
-                insp.SendEvent(EditorGUIUtility.CommandEvent("OpenAddComponentDropdown"));
+                insp.SendEvent(EditorGUIUtility.CommandEvent(OpenAddComponentDropdown));
         }
 
         private static InspectorWindow FirstInspectorWithGameObject()

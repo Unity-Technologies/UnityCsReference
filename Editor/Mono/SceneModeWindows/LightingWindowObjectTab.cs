@@ -178,7 +178,7 @@ namespace UnityEditor
                 case EventType.ValidateCommand:
                 case EventType.ExecuteCommand:
 
-                    if (Event.current.commandName == "FrameSelected")
+                    if (Event.current.commandName == EventCommandNames.FrameSelected)
                     {
                         Vector4 lightmapTilingOffset = LightmapVisualizationUtility.GetLightmapTilingOffset(lightmapType);
 

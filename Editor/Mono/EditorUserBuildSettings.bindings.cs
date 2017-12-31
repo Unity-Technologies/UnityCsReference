@@ -46,35 +46,13 @@ namespace UnityEditor
     {
         /// Target only Base hardware (works identically on Neo hardware)
         BaseOnly = 0,
-        /// Target Neo hardware, also must work on Base hardware
+
+        /// Obsolete.  Use PS4ProAndBase instead.
+        [Obsolete("Enum member PS4HardwareTarget.NeoAndBase has been deprecated. Use PS4HardwareTarget.ProAndBase instead (UnityUpgradable) -> ProAndBase", true)]
         NeoAndBase = 1,
-    }
 
-
-    // Wii U Player debugging level.
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
-    public enum WiiUBuildDebugLevel
-    {
-        // Asserts enabled, memory profiling enabled, Nintendo Wii U profiler linked, no optimizations.
-        Debug = 0,
-        // Asserts enabled, memory profiling enabled, Nintendo Wii U profiler linked, optimized build.
-        DebugOptimized = 1,
-        // Memory profiling enabled, Nintendo Wii U profiler linked, optimizations enabled.
-        Development = 2,
-        // Optimizations enabled.
-        Master = 3
-    }
-
-    // Wii U Build Output.
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
-    public enum WiiUBuildOutput
-    {
-        // The basic output, as normally produced by Unity.
-        Unpackaged = 0,
-        // Unpadded disc master archive file.
-        WUMADFile = 1,
-        // Download image, suitable for copying to SD Card and installing to a dev kit.
-        DownloadImage = 2
+        /// Target PS4 Pro hardware, also must work on Base hardware
+        ProAndBase = 1,
     }
 
 
@@ -357,34 +335,6 @@ namespace UnityEditor
             [NativeMethod("SetSelectedXboxBuildSubtarget")]
             set;
         }
-        /// Wii U player debug level.
-        public static extern WiiUBuildDebugLevel wiiUBuildDebugLevel
-        {
-            [NativeMethod("GetSelectedWiiUBuildDebugLevel")]
-            get;
-            [NativeMethod("SetSelectedWiiUBuildDebugLevel")]
-            set;
-        }
-
-        /// Wii U player build output
-        public static extern WiiUBuildOutput wiiuBuildOutput
-        {
-            [NativeMethod("GetSelectedWiiUBuildOutput")]
-            get;
-            [NativeMethod("SetSelectedWiiUBuildOutput")]
-            set;
-        }
-
-        public static extern bool wiiUEnableNetAPI { get; set; }
-
-        /// Wii U player build output
-        public static extern int wiiUBootMode
-        {
-            [NativeMethod("GetSelectedWiiUBootMode")]
-            get;
-            [NativeMethod("SetSelectedWiiUBootMode")]
-            set;
-        }
 
         // 0..X levels are all considered part of the launch set of streaming install chunks
         public static extern int streamingInstallLaunchRange { get; set; }
@@ -458,6 +408,8 @@ namespace UnityEditor
         //  which makes it unclear when connections should be attempted. In the future, the DeploymentTargets
         //  API will most likely support connecting to named external devices, which might make this setting obsolete.
         internal static extern string androidDeviceSocketAddress { get; set; }
+
+        internal static extern string androidCurrentDeploymentTargetId { get; set; }
 
         public static extern WSASubtarget wsaSubtarget
         {

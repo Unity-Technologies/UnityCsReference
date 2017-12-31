@@ -128,12 +128,10 @@ namespace UnityEditor
                         // LightProbeUsage has non-sequential enum values. Extra care is to be taken.
                         if (useMiniStyle)
                         {
-                            EditorGUI.showMixedValue = m_LightProbeUsage.hasMultipleDifferentValues;
                             EditorGUI.BeginChangeCheck();
-                            var newValue = ModuleUI.GUIEnumPop(m_LightProbeUsageStyle, (LightProbeUsage)m_LightProbeUsage.intValue);
+                            var newValue = ModuleUI.GUIEnumPopup(m_LightProbeUsageStyle, (LightProbeUsage)m_LightProbeUsage.intValue, m_LightProbeUsage);
                             if (EditorGUI.EndChangeCheck())
                                 m_LightProbeUsage.intValue = (int)(LightProbeUsage)newValue;
-                            EditorGUI.showMixedValue = false;
                         }
                         else
                         {
@@ -172,7 +170,7 @@ namespace UnityEditor
                     else
                     {
                         if (useMiniStyle)
-                            ModuleUI.GUIEnumPop(m_LightProbeUsageStyle, LightProbeUsage.Off);
+                            ModuleUI.GUIEnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off, m_LightProbeUsage);
                         else
                             EditorGUILayout.EnumPopup(m_LightProbeUsageStyle, LightProbeUsage.Off);
                     }

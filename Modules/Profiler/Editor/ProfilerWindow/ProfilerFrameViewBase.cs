@@ -63,14 +63,13 @@ namespace UnityEditorInternal.Profiling
             (int)ProfilerViewType.RawHierarchy
         };
 
-        public bool gpuView { get; private set; }
+        public bool gpuView { get; set; }
 
         public delegate void ViewTypeChangedCallback(ProfilerViewType viewType);
         public event ViewTypeChangedCallback viewTypeChanged;
 
-        protected ProfilerFrameDataViewBase(bool isGpuView)
+        protected ProfilerFrameDataViewBase()
         {
-            gpuView = isGpuView;
         }
 
         protected void DrawViewTypePopup(ProfilerViewType viewType)

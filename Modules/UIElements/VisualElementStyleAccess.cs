@@ -856,6 +856,24 @@ namespace UnityEngine.Experimental.UIElements
             return m_StyleSheetPaths != null && m_StyleSheetPaths.Contains(sheetPath);
         }
 
+        internal void ReplaceStyleSheetPath(string oldSheetPath, string newSheetPath)
+        {
+            if (m_StyleSheetPaths == null)
+            {
+                Debug.LogWarning("Attempting to replace a style from null style sheet path list");
+                return;
+            }
+
+            int index = m_StyleSheetPaths.IndexOf(oldSheetPath);
+            if (index >= 0)
+            {
+                m_StyleSheetPaths[index] = newSheetPath;
+                //will trigger a reload on next access
+                m_StyleSheets = null;
+                Dirty(ChangeType.Styles);
+            }
+        }
+
         internal void LoadStyleSheetsFromPaths()
         {
             if (m_StyleSheetPaths == null || elementPanel == null)

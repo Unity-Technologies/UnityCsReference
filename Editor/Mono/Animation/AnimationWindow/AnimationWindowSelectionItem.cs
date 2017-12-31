@@ -341,7 +341,7 @@ namespace UnityEditorInternal
             }
             else if (scriptableObject != null)
             {
-                return AnimationUtility.GetScriptableObjectEditorCurveValueType(scriptableObject, curveBinding);
+                return AnimationUtility.GetEditorCurveValueType(scriptableObject, curveBinding);
             }
             else
             {

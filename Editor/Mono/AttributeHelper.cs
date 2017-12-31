@@ -32,10 +32,10 @@ namespace UnityEditor
         {
             var commands = new List<MonoGizmoMethod>();
 
-            foreach (var mi in EditorAssemblies.GetAllMethodsWithAttribute<DrawGizmo>(BindingFlags.Static))
+            foreach (var mi in EditorAssemblies.GetAllMethodsWithAttribute<DrawGizmo>(BindingFlags.Static).Where(m => m.DeclaringType.Assembly == assembly))
             {
-                object[] attrs = mi.GetCustomAttributes(typeof(DrawGizmo), false);
-                foreach (DrawGizmo gizmoAttr in attrs)
+                var attrs = mi.GetCustomAttributes(typeof(DrawGizmo), false).Cast<DrawGizmo>();
+                foreach (var gizmoAttr in attrs)
                 {
                     var parameters = mi.GetParameters();
                     if (parameters.Length != 2)

@@ -44,7 +44,24 @@ namespace UnityEngine
         extern public static int   height {[NativeMethod(Name = "GetHeight", IsThreadSafe = true)] get; }
         extern public static float dpi    {[NativeName("GetDPI")] get; }
 
-        extern public static ScreenOrientation orientation  {[NativeName("GetScreenOrientation")] get; [NativeName("RequestOrientation")] set; }
+        extern private static void RequestOrientation(ScreenOrientation orient);
+        extern private static ScreenOrientation GetScreenOrientation();
+
+        public static ScreenOrientation orientation
+        {
+            get { return GetScreenOrientation(); }
+            set
+            {
+            #pragma warning disable 618 // UnityEngine.ScreenOrientation.Unknown is obsolete
+                if (value == ScreenOrientation.Unknown)
+            #pragma warning restore 649
+                {
+                    Debug.Log("ScreenOrientation.Unknown is deprecated. Please use ScreenOrientation.AutoRotation");
+                    value = ScreenOrientation.AutoRotation;
+                }
+                RequestOrientation(value);
+            }
+        }
         [NativeProperty("ScreenTimeout")] extern public static int sleepTimeout { get; set; }
 
         [NativeName("GetIsOrientationEnabled")] extern private static bool IsOrientationEnabled(EnabledOrientation orient);

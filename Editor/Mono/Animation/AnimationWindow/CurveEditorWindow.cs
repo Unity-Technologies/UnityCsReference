@@ -18,7 +18,7 @@ namespace UnityEditor
         PingPong = (int)WrapMode.PingPong
     }
 
-    [System.Serializable]
+    [Serializable]
     internal class CurveEditorWindow : EditorWindow
     {
         enum NormalizationMode
@@ -43,6 +43,9 @@ namespace UnityEditor
 
         [SerializeField]
         GUIView delegateView;
+
+        public const string CurveChangedCommand = "CurveChanged";
+        public const string CurveChangeCompletedCommand = "CurveChangeCompleted";
 
         public static CurveEditorWindow instance
         {
@@ -180,7 +183,7 @@ namespace UnityEditor
             if (normalization == NormalizationMode.None)
                 return scaledKeys;
 
-            if (rect.width == 0f || rect.height == 0f || float.IsInfinity(rect.width) || float.IsInfinity(rect.height))
+            if (rect.width == 0f || rect.height == 0f || Single.IsInfinity(rect.width) || Single.IsInfinity(rect.height))
             {
                 Debug.LogError("CopyAndScaleCurve: Invalid scale: " + rect);
                 return scaledKeys;
@@ -194,9 +197,9 @@ namespace UnityEditor
                     {
                         scaledKeys[i].time = (orgKeys[i].time - rect.xMin) / rect.width;
                         scaledKeys[i].value = (orgKeys[i].value - rect.yMin) / rect.height;
-                        if (!float.IsInfinity(orgKeys[i].inTangent))
+                        if (!Single.IsInfinity(orgKeys[i].inTangent))
                             scaledKeys[i].inTangent = orgKeys[i].inTangent / tangentMultiplier;
-                        if (!float.IsInfinity(orgKeys[i].outTangent))
+                        if (!Single.IsInfinity(orgKeys[i].outTangent))
                             scaledKeys[i].outTangent = orgKeys[i].outTangent / tangentMultiplier;
                     }
                     break;
@@ -206,9 +209,9 @@ namespace UnityEditor
                     {
                         scaledKeys[i].time = orgKeys[i].time * rect.width + rect.xMin;
                         scaledKeys[i].value = orgKeys[i].value * rect.height + rect.yMin;
-                        if (!float.IsInfinity(orgKeys[i].inTangent))
+                        if (!Single.IsInfinity(orgKeys[i].inTangent))
                             scaledKeys[i].inTangent = orgKeys[i].inTangent * tangentMultiplier;
-                        if (!float.IsInfinity(orgKeys[i].outTangent))
+                        if (!Single.IsInfinity(orgKeys[i].outTangent))
                             scaledKeys[i].outTangent = orgKeys[i].outTangent * tangentMultiplier;
                     }
                     break;
@@ -222,7 +225,7 @@ namespace UnityEditor
             if (m_CurvePresets == null)
             {
                 // Selection callback for library window
-                System.Action<AnimationCurve> presetSelectedCallback = delegate(AnimationCurve presetCurve)
+                Action<AnimationCurve> presetSelectedCallback = delegate(AnimationCurve presetCurve)
                     {
                         ValidateCurveLibraryTypeAndScale();
 
@@ -233,7 +236,7 @@ namespace UnityEditor
 
                         m_CurveEditor.SelectNone();
                         RefreshShownCurves();
-                        SendEvent("CurveChanged", true);
+                        SendEvent(CurveChangedCommand, true);
                     };
 
                 // We set the curve to save when showing the popup to ensure to scale the current state of the curve
@@ -272,9 +275,9 @@ namespace UnityEditor
             ShowAuxWindow();
         }
 
-        System.Action<AnimationCurve> m_OnCurveChanged;
+        Action<AnimationCurve> m_OnCurveChanged;
 
-        public void Show(System.Action<AnimationCurve> onCurveChanged, CurveEditorSettings settings)
+        public void Show(Action<AnimationCurve> onCurveChanged, CurveEditorSettings settings)
         {
             m_OnCurveChanged = onCurveChanged;
             delegateView = null;
@@ -468,7 +471,7 @@ namespace UnityEditor
                         m_Curve.postWrapMode = animCurve.postWrapMode;
                         m_Curve.preWrapMode = animCurve.preWrapMode;
                         m_CurveEditor.SelectNone();
-                        SendEvent("CurveChanged", true);
+                        SendEvent(CurveChangedCommand, true);
                     }
                     if (Event.current.type == EventType.Repaint)
                         curveLibrary.Draw(swatchRect, i);
@@ -488,7 +491,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Used && gotMouseUp)
             {
                 DoUpdateCurve(false);
-                SendEvent("CurveChangeCompleted", true);
+                SendEvent(CurveChangeCompletedCommand, true);
             }
             else if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
             {
@@ -555,7 +558,7 @@ namespace UnityEditor
                     AnimationUtility.ConstrainToPolynomialCurve(m_CurveEditor.animationCurves[i].curve);
 
                 m_CurveEditor.SelectNone();
-                SendEvent ("CurveChanged", true);
+                SendEvent (EventCommandNames.CurveChangedCommand, true);
             }
 
             GUI.enabled = wasEnabled;
@@ -574,7 +577,7 @@ namespace UnityEditor
             {
                 m_CurveEditor.animationCurves[0].changed = false;
                 RefreshShownCurves();
-                SendEvent("CurveChanged", exitGUI);
+                SendEvent(CurveChangedCommand, exitGUI);
             }
         }
 

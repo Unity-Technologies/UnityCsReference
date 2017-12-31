@@ -2,8 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Collections;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Experimental.U2D;
+using UnityEditor.Experimental.U2D;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -118,8 +122,12 @@ namespace UnityEditor
                 return;
 
             string path = AssetDatabase.GetAssetPath(sprite);
-            TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-            SpriteMetaData[] spritesheet = textureImporter.spritesheet;
+            var spriteDataProvider = AssetImporter.GetAtPath(path) as ISpriteEditorDataProvider;
+            if (spriteDataProvider == null)
+                return;
+
+            spriteDataProvider.InitSpriteEditorDataProvider();
+            var spritesheet = spriteDataProvider.GetSpriteRects();
 
             string previousName = null;
             int previousAligment = -1;
@@ -132,10 +140,10 @@ namespace UnityEditor
                 {
                     if (spritesheet[spritesIndex].name.Equals(curSprite.name))
                     {
-                        if (spritesheet[spritesIndex].alignment != previousAligment && previousAligment > 0)
+                        if ((int)spritesheet[spritesIndex].alignment != previousAligment && previousAligment > 0)
                             alignment = false;
                         else
-                            previousAligment = spritesheet[spritesIndex].alignment;
+                            previousAligment = (int)spritesheet[spritesIndex].alignment;
 
                         if (spritesheet[spritesIndex].name != previousName && previousName != null)
                             name = false;
@@ -193,6 +201,8 @@ namespace UnityEditor
                 _matHasTexelSize = spriteRendererMaterial.HasProperty("_MainTex_TexelSize");
             }
 
+            bool hasColors = sprite.HasVertexAttribute(VertexAttribute.Color);
+
             Material copyMaterial = null;
             if (spriteRendererMaterial != null)
             {
@@ -212,7 +222,11 @@ namespace UnityEditor
             }
             else
             {
-                if (texture != null)
+                if (hasColors)
+                {
+                    SpriteUtility.previewSpriteDefaultMaterial.SetPass(0);
+                }
+                else if (texture != null)
                 {
                     copyMaterial = new Material(Shader.Find("Hidden/BlitCopy"));
                     copyMaterial.mainTexture = texture;
@@ -222,12 +236,15 @@ namespace UnityEditor
                 }
             }
 
-
             float pixelsToUnits = sprite.rect.width / sprite.bounds.size.x;
             Vector2[] vertices = sprite.vertices;
             Vector2[] uvs = sprite.uv;
             ushort[] triangles = sprite.triangles;
             Vector2 pivot = sprite.pivot;
+
+            NativeSlice<Color32>? colors = null;
+            if (hasColors)
+                colors = sprite.GetVertexAttribute<Color32>(VertexAttribute.Color);
 
             GL.PushMatrix();
             GL.LoadOrtho();
@@ -239,6 +256,8 @@ namespace UnityEditor
                 Vector2 vertex = vertices[index];
                 Vector2 uv = uvs[index];
                 GL.TexCoord(new Vector3(uv.x, uv.y, 0));
+                if (colors != null)
+                    GL.Color(colors.Value[index]);
                 GL.Vertex3((vertex.x * pixelsToUnits + pivot.x) / spriteWidth, (vertex.y * pixelsToUnits + pivot.y) / spriteHeight, 0);
             }
             GL.End();

@@ -9,14 +9,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     [Flags]
     public enum Capabilities
     {
-        Normal = 1 << 0, // TODO: Remove!
-        Selectable = 1 << 1,
-        DoesNotCollapse = 1 << 2,
-        Floating = 1 << 3,
-        Resizable = 1 << 4,
-        Movable = 1 << 5,
-        Deletable = 1 << 6,
-        Droppable = 1 << 7,
-        Ascendable = 1 << 8
+        Selectable = 1 << 0,
+        Collapsible = 1 << 1,
+        Resizable = 1 << 2,
+        Movable = 1 << 3,
+        Deletable = 1 << 4,
+        Droppable = 1 << 5,
+        Ascendable = 1 << 6
     }
 }

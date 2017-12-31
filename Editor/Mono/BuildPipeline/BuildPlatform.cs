@@ -61,8 +61,6 @@ namespace UnityEditor.Build
                         return BuildTarget.Switch;
                     case BuildTargetGroup.Tizen:
                         return BuildTarget.Tizen;
-                    case BuildTargetGroup.WiiU:
-                        return BuildTarget.WiiU;
                     case BuildTargetGroup.WebGL:
                         return BuildTarget.WebGL;
                     case BuildTargetGroup.WSA:
@@ -104,7 +102,6 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatform("Xbox One", "BuildSettings.XboxOne", BuildTargetGroup.XboxOne, true));
             buildPlatformsList.Add(new BuildPlatform("PS Vita", "BuildSettings.PSP2", BuildTargetGroup.PSP2, true));
             buildPlatformsList.Add(new BuildPlatform("PS4", "BuildSettings.PS4", BuildTargetGroup.PS4, true));
-            buildPlatformsList.Add(new BuildPlatform("Wii U", "BuildSettings.WiiU", BuildTargetGroup.WiiU, false));
             buildPlatformsList.Add(new BuildPlatform("Universal Windows Platform", "BuildSettings.Metro", BuildTargetGroup.WSA, true));
             buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));
             buildPlatformsList.Add(new BuildPlatform("Nintendo 3DS", "BuildSettings.N3DS", BuildTargetGroup.N3DS, false));

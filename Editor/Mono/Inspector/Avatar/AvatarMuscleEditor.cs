@@ -602,7 +602,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == "UndoRedoPerformed")
+            if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == EventCommandNames.UndoRedoPerformed)
             {
                 WritePose();
             }

@@ -25,6 +25,8 @@ namespace UnityEditor
         [SerializeField]
         EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();
 
+        [SerializeField] private int m_LastSelectedObjectID;
+
         private GUIStyle m_LockButtonStyle;
         private GUIContent m_DefaultTitleContent;
         private GUIContent m_RecordTitleContent;
@@ -99,16 +101,31 @@ namespace UnityEditor
             if (m_AnimEditor == null)
                 return;
 
-            GameObject activeGameObject = Selection.activeGameObject;
+            Object activeObject = Selection.activeObject;
+
+            bool restoringLockedSelection = false;
+            if (m_LockTracker.isLocked && m_AnimEditor.stateDisabled)
+            {
+                activeObject = EditorUtility.InstanceIDToObject(m_LastSelectedObjectID);
+                restoringLockedSelection = true;
+                m_LockTracker.isLocked = false;
+            }
+
+            GameObject activeGameObject = activeObject as GameObject;
             if (activeGameObject != null)
             {
                 EditGameObject(activeGameObject);
             }
             else
             {
-                AnimationClip activeAnimationClip = Selection.activeObject as AnimationClip;
+                AnimationClip activeAnimationClip = activeObject as AnimationClip;
                 if (activeAnimationClip != null)
                     EditAnimationClip(activeAnimationClip);
+            }
+
+            if (restoringLockedSelection && !m_AnimEditor.stateDisabled)
+            {
+                m_LockTracker.isLocked = true;
             }
         }
 
@@ -181,6 +198,8 @@ namespace UnityEditor
             {
                 m_AnimEditor.selection = newSelection;
                 m_AnimEditor.overrideControlInterface = controlInterface;
+
+                m_LastSelectedObjectID = gameObject != null ? gameObject.GetInstanceID() : 0;
             }
             else
                 return false;
@@ -195,6 +214,8 @@ namespace UnityEditor
             {
                 m_AnimEditor.selection = newSelection;
                 m_AnimEditor.overrideControlInterface = controlInterface;
+
+                m_LastSelectedObjectID = animationClip != null ? animationClip.GetInstanceID() : 0;
             }
             else
                 return false;
@@ -206,9 +227,6 @@ namespace UnityEditor
         {
             if (m_LockButtonStyle == null)
                 m_LockButtonStyle = "IN LockButton";
-
-            if (m_AnimEditor.stateDisabled)
-                m_LockTracker.isLocked = false;
 
             EditorGUI.BeginChangeCheck();
 

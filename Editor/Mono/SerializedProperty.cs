@@ -91,8 +91,12 @@ namespace UnityEditor
         {
             get
             {
-                // cannot be cached because the displayName varies with array..
-                return isUnityAssembly ? L10n.Tr(displayName) : displayName;
+                if (!this.isValidDisplayNameCache)
+                {
+                    this.isValidDisplayNameCache = true;
+                    m_CachedLocalizedDisplayName = isUnityAssembly ? L10n.Tr(displayName) : displayName;
+                }
+                return m_CachedLocalizedDisplayName;
             }
         }
 

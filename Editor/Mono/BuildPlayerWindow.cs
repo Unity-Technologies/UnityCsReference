@@ -62,6 +62,7 @@ namespace UnityEditor
             const string kShopURL = "https://store.unity3d.com/shop/";
             const string kDownloadURL = "http://unity3d.com/unity/download/";
             const string kMailURL = "http://unity3d.com/company/sales?type=sales";
+            const string kMultiPlatformURL = "https://unity3d.com/unity/features/multiplatform";
             // ADD_NEW_PLATFORM_HERE
             public GUIContent[,] notLicensedMessages =
             {
@@ -70,10 +71,9 @@ namespace UnityEditor
                 { EditorGUIUtility.TextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Tizen Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Xbox One Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Wii U Publishing."), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover Xbox One Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
+                { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
@@ -92,7 +92,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Wii U Player is not supported in this build.\nDownload a build that supports it."),  null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },

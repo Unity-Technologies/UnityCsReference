@@ -353,9 +353,6 @@ namespace UnityEditor.VisualStudioIntegration
                 if (reference.EndsWith("/UnityEditor.dll") || reference.EndsWith("/UnityEngine.dll") || reference.EndsWith("\\UnityEditor.dll") || reference.EndsWith("\\UnityEngine.dll"))
                     continue;
 
-                if (File.Exists(reference) && AssemblyHelper.IsUnityEngineModule(AssemblyDefinition.ReadAssembly(reference)))
-                    continue;
-
                 match = scriptReferenceExpression.Match(reference);
                 if (match.Success)
                 {

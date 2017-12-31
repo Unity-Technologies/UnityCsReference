@@ -20,6 +20,8 @@ namespace UnityEditor.Presets
             public static GUIStyle centerStyle = new GUIStyle() {alignment = TextAnchor.MiddleCenter};
         }
 
+        new PresetManager target { get {return base.target as PresetManager; } }
+
         Dictionary<string, List<Preset>> m_DiscoveredPresets = new Dictionary<string, List<Preset>>();
 
         SerializedProperty m_DefaultPresets;
@@ -72,7 +74,7 @@ namespace UnityEditor.Presets
             m_AddedTypes.Clear();
             for (int i = 0; i < m_DefaultPresets.arraySize; i++)
             {
-                m_AddedTypes.Add(PresetManager.GetPresetTypeNameAtIndex(i));
+                m_AddedTypes.Add(target.GetPresetTypeNameAtIndex(i));
             }
 
             var assets = AssetDatabase.FindAssets("t:Preset")
@@ -112,13 +114,15 @@ namespace UnityEditor.Presets
         {
             serializedObject.ApplyModifiedProperties();
             Undo.RecordObject(target, "Inspector");
-            Preset.SetAsDefault((Preset)userData);
+            target.SetAsDefaultInternal((Preset)userData);
             serializedObject.Update();
             RefreshAddList();
         }
 
         static string FullTypeNameToFriendlyName(string fullTypeName)
         {
+            if (string.IsNullOrEmpty(fullTypeName))
+                return "Unsupported Type";
             int lastDot = fullTypeName.LastIndexOf(".");
             if (lastDot == -1)
                 return fullTypeName;
@@ -133,9 +137,9 @@ namespace UnityEditor.Presets
                 .GetArrayElementAtIndex(index)
                 .FindPropertyRelative("defaultPresets.Array.data[0].m_Preset");
             var presetObject = (Preset)presetProperty.objectReferenceValue;
-            var keyType = PresetManager.GetPresetTypeNameAtIndex(index);
+            var keyType = target.GetPresetTypeNameAtIndex(index);
             var guicontent = GUIContent.Temp(FullTypeNameToFriendlyName(keyType));
-            using (new EditorGUI.DisabledGroupScope(!m_DiscoveredPresets.ContainsKey(keyType)))
+            using (new EditorGUI.DisabledGroupScope(string.IsNullOrEmpty(keyType)))
             {
                 // lets hack a bit the ObjectField because we don't want user to put any Preset in each field of the manager
                 var buttonRect = new Rect(rect.xMax - rect.height, rect.y, rect.height, rect.height);
@@ -145,9 +149,16 @@ namespace UnityEditor.Presets
                         if (buttonRect.Contains(Event.current.mousePosition))
                         {
                             var menu = new GenericMenu();
-                            foreach (var preset in m_DiscoveredPresets[keyType])
+                            if (m_DiscoveredPresets.ContainsKey(keyType))
                             {
-                                menu.AddItem(new GUIContent(preset.name), preset == presetObject, OnAddingPreset, preset);
+                                foreach (var preset in m_DiscoveredPresets[keyType])
+                                {
+                                    menu.AddItem(new GUIContent(preset.name), preset == presetObject, OnAddingPreset, preset);
+                                }
+                            }
+                            else
+                            {
+                                menu.AddItem(new GUIContent("None"), false, null);
                             }
                             menu.ShowAsContext();
                             Event.current.Use();
@@ -178,7 +189,7 @@ namespace UnityEditor.Presets
                 var numberStart = propertyPath.IndexOf("[") + 1;
                 var numberLenght = propertyPath.IndexOf("]") - numberStart;
                 var propertyPosition = int.Parse(propertyPath.Substring(numberStart, numberLenght));
-                if (preset != null && PresetManager.GetPresetTypeNameAtIndex(propertyPosition) == preset.GetTargetFullTypeName())
+                if (preset != null && target.GetPresetTypeNameAtIndex(propertyPosition) == preset.GetTargetFullTypeName())
                 {
                     return references[0];
                 }

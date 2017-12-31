@@ -518,6 +518,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetAspectRatio (AspectRatio aspectRatio, bool enable) ;
 
+    [System.Obsolete ("defaultIsFullScreen is deprecated, use fullScreenMode instead")]
     public extern static bool defaultIsFullScreen
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -608,7 +609,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
-    [System.Obsolete ("macFullscreenMode is deprecated, use fullscreenMode instead")]
+    [System.Obsolete ("macFullscreenMode is deprecated, use fullScreenMode instead")]
     public extern static MacFullscreenMode macFullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -619,7 +620,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
-    [System.Obsolete ("d3d9FullscreenMode is deprecated, use fullscreenMode instead")]
+    [System.Obsolete ("d3d9FullscreenMode is deprecated, use fullScreenMode instead")]
     public extern static D3D9FullscreenMode d3d9FullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -630,7 +631,7 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         set;
     }
 
-    [System.Obsolete ("d3d11FullscreenMode is deprecated, use fullscreenMode instead")]
+    [System.Obsolete ("d3d11FullscreenMode is deprecated, use fullScreenMode instead")]
     public extern static D3D11FullscreenMode d3d11FullscreenMode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

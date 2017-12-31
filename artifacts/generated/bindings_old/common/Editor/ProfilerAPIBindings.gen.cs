@@ -790,9 +790,6 @@ public sealed partial class ProfilerFrameDataIterator
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct NativeProfilerTimeline_InitializeArgs
 {
-    public Color[]    profilerColors;
-    public Color      allocationSampleColor;
-    public Color      internalSampleColor;
     public float      ghostAlpha;
     public float      nonSelectedAlpha;
     public IntPtr     guiStyle;
@@ -803,9 +800,6 @@ public partial struct NativeProfilerTimeline_InitializeArgs
     
     public void Reset()
         {
-            profilerColors = null;
-            allocationSampleColor = Color.clear;
-            internalSampleColor = Color.clear;
             ghostAlpha = 0;
             nonSelectedAlpha = 0;
             guiStyle = (IntPtr)0;

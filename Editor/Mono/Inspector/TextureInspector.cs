@@ -586,13 +586,7 @@ namespace UnityEditor
                     RenderTextureFormat.Default,
                     RenderTextureReadWrite.Linear);
 
-
-            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
-            // We don't want Materials in Editor Resources Project to be modified in the end, so we use an duplicate.
-            // TODO: we should move away from "materials are in editor resources" to keeping just shaders there and creating materials in code
-            if (Unsupported.IsSourceBuild())
-                mat = new Material(mat);
-            Graphics.Blit(texture, tmp, mat);
+            Graphics.Blit(texture, tmp, EditorGUI.GetMaterialForSpecialTexture(texture, EditorGUIUtility.GUITextureBlit2SRGBMaterial));
 
             RenderTexture.active = tmp;
             Texture2D copy;
@@ -611,10 +605,6 @@ namespace UnityEditor
 
             EditorGUIUtility.SetRenderTextureNoViewport(savedRT);
             ShaderUtil.rawViewportRect = savedViewport;
-
-            // Kill the duplicate
-            if (mat && Unsupported.IsSourceBuild())
-                Object.DestroyImmediate(mat);
 
             return copy;
         }

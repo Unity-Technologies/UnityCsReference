@@ -9,7 +9,7 @@ using UnityEngine.U2D.Interface;
 
 namespace UnityEditor
 {
-    internal abstract partial class SpriteFrameModuleBase : ISpriteEditorModule
+    internal abstract partial class SpriteFrameModuleBase : SpriteEditorModuleBase
     {
         protected enum GizmoMode
         {
@@ -509,16 +509,14 @@ namespace UnityEditor
 
         // implements ISpriteEditorModule
 
-        public virtual void DoMainGUI()
+        public override void DoMainGUI()
         {
             m_Zoom = Handles.matrix.GetColumn(0).magnitude;
         }
 
-        public virtual void DoPostGUI()
+        public override void DoPostGUI()
         {
             DoSelectedFrameInspector();
         }
-
-        public abstract void DoToolbarGUI(Rect drawArea);
     }
 }

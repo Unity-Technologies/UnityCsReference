@@ -67,7 +67,6 @@ namespace UnityEditor
 
         [SerializeField]
         private string m_SelectedSpriteRectGUID;
-        private SpriteRect m_Selected;
 
         public static void GetWindow()
         {
@@ -99,9 +98,8 @@ namespace UnityEditor
         public void RefreshPropertiesCache()
         {
             m_SelectedAssetPath = GetSelectionAssetPath();
-            var ai = AssetImporter.GetAtPath(m_SelectedAssetPath);
-            m_SpriteDataProvider = GetISpriteDataProviderFromImporter(ai);
-            if (ai == null || m_SpriteDataProvider == null)
+            m_SpriteDataProvider  = AssetImporter.GetAtPath(m_SelectedAssetPath) as ISpriteEditorDataProvider;
+            if (m_SpriteDataProvider == null)
                 return;
 
             m_SpriteDataProvider.InitSpriteEditorDataProvider();
@@ -130,11 +128,6 @@ namespace UnityEditor
                 }
             }
             return m_AssetDatabase.GetAssetPath(selection);
-        }
-
-        internal static ISpriteEditorDataProvider GetISpriteDataProviderFromImporter(AssetImporter importer)
-        {
-            return SpriteDataProviderUtility.GetISpriteDataProviderFromImporter(importer);
         }
 
         public void InvalidatePropertiesCache()
@@ -201,7 +194,7 @@ namespace UnityEditor
             // In case of changed of texture/sprite or selected on non texture object
             var assetPath = GetSelectionAssetPath();
             var ai = AssetImporter.GetAtPath(assetPath);
-            var dataProvider = GetISpriteDataProviderFromImporter(ai);
+            var dataProvider = ai as ISpriteEditorDataProvider;
 
             if (dataProvider == null || selectedProviderChanged)
             {
@@ -261,10 +254,12 @@ namespace UnityEditor
         private void InitSelectedSpriteRect()
         {
             SpriteRect newSpriteRect = null;
-            if (m_RectsCache != null)
+            if (m_RectsCache != null && m_RectsCache.Count > 0)
             {
-                if (m_RectsCache.Count > 0)
-                    newSpriteRect = m_RectsCache.Contains(selectedSpriteRect) ? selectedSpriteRect : m_RectsCache[0];
+                if (selectedSpriteRect != null)
+                    newSpriteRect = m_RectsCache.FirstOrDefault(x => x.spriteID == selectedSpriteRect.spriteID) != null ? selectedSpriteRect : m_RectsCache[0];
+                else
+                    newSpriteRect = m_RectsCache[0];
             }
 
             selectedSpriteRect = newSpriteRect;
@@ -529,7 +524,7 @@ namespace UnityEditor
             UnityEngine.U2D.Interface.IEvent evt = m_EventSystem.current;
 
             if ((evt.type == EventType.ValidateCommand || evt.type == EventType.ExecuteCommand)
-                && evt.commandName == "FrameSelected")
+                && evt.commandName == EventCommandNames.FrameSelected)
             {
                 if (evt.type == EventType.ExecuteCommand)
                 {
@@ -620,9 +615,9 @@ namespace UnityEditor
         }
 
         GUIContent[] m_RegisteredModuleNames;
-        List<ISpriteEditorModule> m_AllRegisteredModules;
-        List<ISpriteEditorModule> m_RegisteredModules;
-        ISpriteEditorModule m_CurrentModule = null;
+        List<SpriteEditorModuleBase> m_AllRegisteredModules;
+        List<SpriteEditorModuleBase> m_RegisteredModules;
+        SpriteEditorModuleBase m_CurrentModule = null;
         int m_CurrentModuleIndex = 0;
 
         void SetupModule(int newModuleIndex)
@@ -646,7 +641,7 @@ namespace UnityEditor
         {
             if (m_AllRegisteredModules == null)
                 return;
-            m_RegisteredModules = new List<ISpriteEditorModule>();
+            m_RegisteredModules = new List<SpriteEditorModuleBase>();
             foreach (var module in m_AllRegisteredModules)
             {
                 if (module.CanBeActivated())
@@ -674,7 +669,7 @@ namespace UnityEditor
 
         void InitModules()
         {
-            m_AllRegisteredModules = new List<ISpriteEditorModule>();
+            m_AllRegisteredModules = new List<SpriteEditorModuleBase>();
             m_ModuleRequireSpriteDataProvider.Clear();
 
             if (m_OutlineTexture == null)
@@ -701,7 +696,7 @@ namespace UnityEditor
             UpdateAvailableModules();
         }
 
-        void RegisterModule(ISpriteEditorModule module)
+        void RegisterModule(SpriteEditorModuleBase module)
         {
             var type = module.GetType();
             var attributes = type.GetCustomAttributes(typeof(RequireSpriteDataProviderAttribute), false);
@@ -756,7 +751,7 @@ namespace UnityEditor
             }
         }
 
-        internal List<ISpriteEditorModule> activatedModules
+        internal List<SpriteEditorModuleBase> activatedModules
         {
             get { return m_RegisteredModules; }
         }
@@ -775,14 +770,10 @@ namespace UnityEditor
                     return null;
 
                 var guid = new GUID(m_SelectedSpriteRectGUID);
-                if (m_Selected == null || m_Selected.spriteID != guid)
-                    m_Selected = m_RectsCache.FirstOrDefault(x => x.spriteID == guid);
-
-                return m_Selected;
+                return m_RectsCache.FirstOrDefault(x => x.spriteID == guid);
             }
             set
             {
-                m_Selected = value;
                 m_SelectedSpriteRectGUID = value?.spriteID.ToString();
             }
         }

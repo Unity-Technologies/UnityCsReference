@@ -16,7 +16,7 @@ namespace UnityEditor
 
         public static string GetString(DateTime dateTime)
         {
-            var ts = new TimeSpan(DateTime.UtcNow.Ticks - dateTime.Ticks);
+            var ts = new TimeSpan(DateTime.UtcNow.Ticks - dateTime.ToUniversalTime().Ticks);
             double delta = Math.Abs(ts.TotalSeconds);
 
             if (delta < 1 * k_Minute)

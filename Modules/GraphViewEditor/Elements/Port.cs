@@ -228,13 +228,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        internal Action<Port> OnConnect;
+        internal Action<Port> OnDisconnect;
+
         public virtual void Connect(Edge edge)
         {
             if (edge == null)
             {
                 throw new ArgumentException("The value passed to Port.Connect is null");
             }
-            edge.UpdateEdgeDrawers();
 
             // TODO: Remove when removing presenters.
             var presenter = GetPresenter<PortPresenter>();
@@ -242,13 +244,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 var edgePresenter = edge.GetPresenter<EdgePresenter>();
                 presenter.Connect(edgePresenter);
-                return;
+            }
+            else
+            {
+                if (!m_Connections.Contains(edge))
+                {
+                    m_Connections.Add(edge);
+                }
             }
 
-            if (!m_Connections.Contains(edge))
-            {
-                m_Connections.Add(edge);
-            }
+            OnConnect?.Invoke(this);
         }
 
         public virtual void Disconnect(Edge edge)
@@ -258,18 +263,38 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
             }
 
+
             // TODO: Remove when removing presenters.
             var presenter = GetPresenter<PortPresenter>();
             if (presenter != null)
             {
                 var edgePresenter = edge.GetPresenter<EdgePresenter>();
                 presenter.Disconnect(edgePresenter);
-                return;
+            }
+            else
+            {
+                m_Connections.Remove(edge);
             }
 
-            edge.UpdateEdgeDrawers();
+            OnDisconnect?.Invoke(this);
+        }
 
-            m_Connections.Remove(edge);
+        public virtual void DisconnectAll()
+        {
+            // TODO: Remove when removing presenters.
+            var presenter = GetPresenter<PortPresenter>();
+            if (presenter != null)
+            {
+                foreach (var edge in m_Connections)
+                {
+                    var edgePresenter = edge.GetPresenter<EdgePresenter>();
+                    presenter.Disconnect(edgePresenter);
+                }
+            }
+
+            m_Connections.Clear();
+
+            OnDisconnect?.Invoke(this);
         }
 
         private class DefaultEdgeConnectorListener : IEdgeConnectorListener
@@ -469,11 +494,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 boxRect = new Rect(-lRect.xMin, -lRect.yMin,
                         lRect.width + lRect.xMin, rect.height);
+
+                boxRect.width += m_ConnectorText.layout.xMin - lRect.xMax;
             }
             else
             {
                 boxRect = new Rect(0, -lRect.yMin,
                         rect.width - lRect.xMin, rect.height);
+                float leftSpace = lRect.xMin - m_ConnectorText.layout.xMax;
+
+                boxRect.xMin -= leftSpace;
+                boxRect.width += leftSpace;
             }
 
             return boxRect.Contains(this.ChangeCoordinatesTo(m_ConnectorBox, localPoint));

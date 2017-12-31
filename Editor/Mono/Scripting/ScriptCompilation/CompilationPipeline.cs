@@ -64,7 +64,12 @@ namespace UnityEditor.Compilation
 
         static CompilationPipeline()
         {
-            EditorCompilationInterface.Instance.assemblyCompilationStarted += (assemblyPath) =>
+            SubscribeToEvents(EditorCompilationInterface.Instance);
+        }
+
+        internal static void SubscribeToEvents(EditorCompilation editorCompilation)
+        {
+            editorCompilation.assemblyCompilationStarted += (assemblyPath) =>
                 {
                     try
                     {
@@ -77,7 +82,7 @@ namespace UnityEditor.Compilation
                     }
                 };
 
-            EditorCompilationInterface.Instance.assemblyCompilationFinished += (assemblyPath, messages) =>
+            editorCompilation.assemblyCompilationFinished += (assemblyPath, messages) =>
                 {
                     try
                     {

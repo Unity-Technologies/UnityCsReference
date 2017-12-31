@@ -318,7 +318,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             m_ControlPointsDirty = true;
             Dirty(ChangeType.Repaint);
-            GetFirstAncestorOfType<Edge>().UpdateEdgeDrawers();
         }
 
         // The points that will be rendered. Expressed in coordinates local to the element.

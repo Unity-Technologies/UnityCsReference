@@ -122,7 +122,7 @@ namespace UnityEditor.IMGUI.Controls
             if (evt.type != EventType.ExecuteCommand && evt.type != EventType.ValidateCommand)
                 return;
 
-            if (m_AutoSetFocusOnFindCommand && evt.commandName == "Find")
+            if (m_AutoSetFocusOnFindCommand && evt.commandName == EventCommandNames.Find)
             {
                 if (evt.type == EventType.ExecuteCommand)
                     SetFocus();

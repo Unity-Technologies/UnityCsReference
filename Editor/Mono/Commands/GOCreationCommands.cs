@@ -20,7 +20,13 @@ namespace UnityEditor
         {
             if (parent != null)
             {
-                go.transform.SetParent(parent.transform, false);
+                var transform = go.transform;
+                transform.SetParent(parent.transform, false);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+                transform.localScale = Vector3.one;
+                go.layer = parent.layer;
+
                 if (parent.GetComponent<RectTransform>())
                     ObjectFactory.AddComponent<RectTransform>(go);
             }

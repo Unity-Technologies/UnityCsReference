@@ -30,9 +30,6 @@ namespace UnityEditor.PackageManager
         extern public static NativeStatusCode SearchAll([Out] out long operationId);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
-        extern public static NativeStatusCode Outdated([Out] out long operationId);
-
-        [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
@@ -42,20 +39,11 @@ namespace UnityEditor.PackageManager
 
         extern public static OperationStatus GetListOperationData(long operationId);
 
-        extern public static UpmPackageInfo GetAddOperationData(long operationId);
+        extern public static PackageInfo GetAddOperationData(long operationId);
 
         extern public static string GetRemoveOperationData(long operationId);
 
-        extern public static UpmPackageInfo[] GetSearchOperationData(long operationId);
-
-        public static Dictionary<string, OutdatedPackage> GetOutdatedOperationData(long operationId)
-        {
-            OutdatedPackage[] outdatedPackages = GetOutdatedOperationDataNative(operationId);
-            return outdatedPackages.ToDictionary(outdated => outdated.current.name, outdated => outdated);
-        }
-
-        [NativeMethod("GetOutdatedOperationData")]
-        extern private static OutdatedPackage[] GetOutdatedOperationDataNative(long operationId);
+        extern public static PackageInfo[] GetSearchOperationData(long operationId);
     }
 }
 

@@ -14,7 +14,7 @@ using UnityEditor.Scripting;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.BuildReporting;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
 using Debug = UnityEngine.Debug;
 using PackageInfo = Unity.DataContract.PackageInfo;
@@ -382,9 +382,7 @@ namespace UnityEditorInternal
                     var versionText = SystemInfo.operatingSystem.Substring(9);
                     var version = new Version(versionText);
 
-                    // our version of .NET Core does not support high sierra.  We need to upgrade to .NET Core 2.0 before we can use il2cppcore
-                    // on high sierra
-                    if (version >= new Version(10, 9) && version < new Version(10, 13))
+                    if (version >= new Version(10, 9))
                         shouldUse = true;
                 }
                 else
