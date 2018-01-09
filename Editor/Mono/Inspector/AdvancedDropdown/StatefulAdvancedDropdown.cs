@@ -10,7 +10,7 @@ namespace UnityEditor
     internal class StatefulAdvancedDropdown
     {
         [NonSerialized]
-        private AdvancedDropdown s_Instance;
+        private AdvancedDropdownWindow s_Instance;
 
         public Action<string> onSelected { get; set; }
         public string Label { get; set; }
@@ -25,11 +25,15 @@ namespace UnityEditor
                 s_Instance = null;
             }
 
-            s_Instance = ScriptableObject.CreateInstance<AdvancedDropdown>();
+            s_Instance = ScriptableObject.CreateInstance<AdvancedDropdownWindow>();
 
-            s_Instance.DisplayedOptions = DisplayedOptions;
-            s_Instance.SelectedIndex = SelectedIndex;
-            s_Instance.Label = Label;
+            var dataSource = new AdvancedDropdownSimpleDataSource();
+            dataSource.DisplayedOptions = DisplayedOptions;
+            dataSource.SelectedIndex = SelectedIndex;
+            dataSource.Label = Label;
+
+            s_Instance.dataSource = dataSource;
+
             s_Instance.onSelected += w => onSelected(w.GetIdOfSelectedItem());
 
             s_Instance.Init(rect);

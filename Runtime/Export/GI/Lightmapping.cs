@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
+using Unity.Collections;
+using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 
 namespace UnityEngine
 {
@@ -351,21 +353,19 @@ namespace UnityEngine
 
         public static class Lightmapping
         {
-            public delegate void RequestLightsDelegate(List<Light> requests, List<LightDataGI> lightsOutput);
+            public delegate void RequestLightsDelegate(Light[] requests, NativeArray<LightDataGI> lightsOutput);
             public static void SetDelegate(RequestLightsDelegate del)   { s_RequestLightsDelegate = del != null ? del : s_DefaultDelegate; }
             public static void ResetDelegate()                          { s_RequestLightsDelegate = s_DefaultDelegate; }
-            public static void RequestLights()
+
+            [UnityEngine.Scripting.UsedByNativeCode]
+            internal static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount)
             {
-                s_Requests.Clear();
-                Lights.GetModified(s_Requests);
-                s_Storage.Clear();
-                s_RequestLightsDelegate(s_Requests, s_Storage);
-                Lights.SetFromScript(s_Storage);
+                var outLights = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LightDataGI>(outLightsPtr, outLightsCount, Allocator.None);
+                s_RequestLightsDelegate(lights, outLights);
             }
 
-            private static readonly List<LightDataGI>           s_Storage           = new List<LightDataGI>();
-            private static readonly List<Light>                 s_Requests          = new List<Light>();
-            private static readonly RequestLightsDelegate       s_DefaultDelegate   = (List<Light> requests, List<LightDataGI> lightsOutput) =>
+
+            private static readonly RequestLightsDelegate s_DefaultDelegate   = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
                 {
                     // get all lights in the scene
                     DirectionalLight dir   = new DirectionalLight();
@@ -373,8 +373,9 @@ namespace UnityEngine
                     SpotLight        spot  = new SpotLight();
                     RectangleLight   rect  = new RectangleLight();
                     LightDataGI      ld    = new LightDataGI();
-                    foreach (var l in requests)
+                    for (int i = 0; i < requests.Length; i++)
                     {
+                        Light l = requests[i];
                         switch (l.type)
                         {
                             case UnityEngine.LightType.Directional: LightmapperUtils.Extract(l, ref dir); ld.Init(ref dir); break;
@@ -383,7 +384,7 @@ namespace UnityEngine
                             case UnityEngine.LightType.Area: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
                             default: ld.InitNoBake(l.GetInstanceID()); break;
                         }
-                        lightsOutput.Add(ld);
+                        lightsOutput[i] = ld;
                     }
                 };
             private static RequestLightsDelegate s_RequestLightsDelegate = s_DefaultDelegate;

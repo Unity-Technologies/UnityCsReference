@@ -884,6 +884,8 @@ public static void LookLikeInspector()
             float a = GUI.enabled ? 1 : 2;
 
             GUI.color = EditorGUI.showMixedValue ? new Color(0.82f, 0.82f, 0.82f, a) * oldColor : new Color(color.r, color.g, color.b, a);
+            if (hdr)
+                GUI.color = GUI.color.gamma;
             GUI.backgroundColor = Color.white;
 
             GUIStyle gs = whiteTextureStyle;
@@ -891,25 +893,31 @@ public static void LookLikeInspector()
 
             float maxColorComponent = GUI.color.maxColorComponent;
 
-            if (hdr && maxColorComponent > 1.0f)
+            if (hdr)
             {
-                float gradientWidth = position.width / 3f;
-                Rect leftRect = new Rect(position.x, position.y, gradientWidth, position.height);
-                Rect rightRect = new Rect(position.xMax - gradientWidth, position.y, gradientWidth, position.height);
+                Color32 baseColor;
+                float exposure;
+                ColorMutator.DecomposeHdrColor(GUI.color.linear, out baseColor, out exposure);
 
-                Color normalizedColor = GUI.color.RGBMultiplied(1f / maxColorComponent);
+                if (!Mathf.Approximately(exposure, 0f))
+                {
+                    float gradientWidth = position.width / 3f;
+                    Rect leftRect = new Rect(position.x, position.y, gradientWidth, position.height);
+                    Rect rightRect = new Rect(position.xMax - gradientWidth, position.y, gradientWidth,
+                            position.height);
 
-                Color orgColor = GUI.color;
-                GUI.color = normalizedColor;
-                GUIStyle  basicStyle = EditorGUIUtility.GetBasicTextureStyle(EditorGUIUtility.whiteTexture);
-                basicStyle.Draw(leftRect, false, false, false, false);
-                basicStyle.Draw(rightRect, false, false, false, false);
-                GUI.color = orgColor;
+                    Color orgColor = GUI.color;
+                    GUI.color = ((Color)baseColor).gamma;
+                    GUIStyle basicStyle = GetBasicTextureStyle(whiteTexture);
+                    basicStyle.Draw(leftRect, false, false, false, false);
+                    basicStyle.Draw(rightRect, false, false, false, false);
+                    GUI.color = orgColor;
 
-                basicStyle = EditorGUIUtility.GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha0To1());
-                basicStyle.Draw(leftRect, false, false, false, false);
-                basicStyle = EditorGUIUtility.GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha1To0());
-                basicStyle.Draw(rightRect, false, false, false, false);
+                    basicStyle = GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha0To1());
+                    basicStyle.Draw(leftRect, false, false, false, false);
+                    basicStyle = GetBasicTextureStyle(ColorPicker.GetGradientTextureWithAlpha1To0());
+                    basicStyle.Draw(rightRect, false, false, false, false);
+                }
             }
 
             if (!EditorGUI.showMixedValue)
@@ -936,7 +944,7 @@ public static void LookLikeInspector()
             GUI.color = oldColor;
             GUI.backgroundColor = oldBackgroundColor;
 
-            if (hdr && maxColorComponent > 1.0f)
+            if (hdr)
             {
                 GUI.Label(new Rect(position.x, position.y, position.width - 3, position.height), "HDR", EditorStyles.centeredGreyMiniLabel);
             }
@@ -1155,6 +1163,20 @@ public static void LookLikeInspector()
             Color tintColor = (EditorGUIUtility.isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
             GUI.color = GUI.color * tintColor;
             Rect splitterRect = new Rect(dragRect.x - 1, dragRect.y, 1, dragRect.height);
+            GUI.DrawTexture(splitterRect, EditorGUIUtility.whiteTexture);
+            GUI.color = orgColor;
+        }
+    
+    
+    internal static void DrawVerticalSplitter(Rect dragRect)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            Color orgColor = GUI.color;
+            Color tintColor = (EditorGUIUtility.isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
+            GUI.color = GUI.color * tintColor;
+            Rect splitterRect = new Rect(dragRect.x, dragRect.y + 1, dragRect.width, 1f);
             GUI.DrawTexture(splitterRect, EditorGUIUtility.whiteTexture);
             GUI.color = orgColor;
         }

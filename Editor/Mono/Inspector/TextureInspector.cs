@@ -378,7 +378,7 @@ namespace UnityEditor
             bool hasAlpha = true;
             int mipCount = 1;
 
-            if (target is Texture2D || target is ProceduralTexture)
+            if (target is Texture2D)
             {
                 alphaOnly = true;
                 hasAlpha = false;
@@ -393,11 +393,6 @@ namespace UnityEditor
                 if (t is Texture2D)
                 {
                     format = (t as Texture2D).format;
-                    checkFormat = true;
-                }
-                else if (t is ProceduralTexture)
-                {
-                    format = (t as ProceduralTexture).format;
                     checkFormat = true;
                 }
 
@@ -469,7 +464,7 @@ namespace UnityEditor
                 return;
             }
 
-            // Substances can report zero sizes in some cases just after a parameter change;
+            // target can report zero sizes in some cases just after a parameter change;
             // guard against that.
             int texWidth = Mathf.Max(t.width, 1);
             int texHeight = Mathf.Max(t.height, 1);

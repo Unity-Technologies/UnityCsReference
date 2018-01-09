@@ -22,13 +22,13 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_SUBSTANCE;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
+    <DefineConstants>TRACE;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_GRID;ENABLE_TILEMAP;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_DIRECTOR;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_UNITYWEBREQUEST;ENABLE_WWW;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_WEBSOCKET_CLIENT;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_TIMELINE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;INCLUDE_DYNAMIC_GI;INCLUDE_GI;ENABLE_MONO_BDWGC;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_VIDEO;ENABLE_PACKMAN;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_LOCALIZATION;COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_MONO;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_UNITYWEBREQUEST;ENABLE_VIDEO;PLAYERCONNECTION_LISTENS_FIXED_PORT;UNITY_EDITOR;ENABLE_HOLOLENS_MODULE_API;UNITY_PS4_API;ENABLE_VR;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_AR;ENABLE_SPATIALTRACKING;ENABLE_CRUNCH_TEXTURE_COMPRESSION;UNITY_EDITOR_API;UNITY_ANDROID_API;UNITY_STANDALONE_WIN_API;UNITY_STANDALONE_OSX_API;UNITY_PSVITA_API;UNITY_XBOXONE_API;UNITY_SWITCH_API;UNITY_IPHONE_API;UNITY_TVOS_API;UNITY_STANDALONE_LINUX_API;UNITY_TIZEN_API;UNITY_WEBGL_API;UNITY_PS4_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Boo.Lang">
@@ -483,9 +483,6 @@
 <Compile Include="..\..\Editor\Mono\PlayerSettingsPS4.bindings.cs" >
 <Link>Editor\Mono\PlayerSettingsPS4.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\SubstanceImporter.cs" >
-<Link>Editor\Mono\SubstanceImporter.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\DrivenRectTransformUndo.cs" >
 <Link>Editor\Mono\DrivenRectTransformUndo.cs</Link>
 </Compile>
@@ -695,9 +692,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\ImportSettings\EditorPluginImporterExtension.cs" >
 <Link>Editor\Mono\ImportSettings\EditorPluginImporterExtension.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\ImportSettings\SubstanceImporterInspector.cs" >
-<Link>Editor\Mono\ImportSettings\SubstanceImporterInspector.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\ImportSettings\AssetImporterEditor.cs" >
 <Link>Editor\Mono\ImportSettings\AssetImporterEditor.cs</Link>
@@ -2481,9 +2475,6 @@
 <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditor.cs" >
 <Link>Editor\Mono\Inspector\MaterialEditor.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\ProceduralMaterialInspector.cs" >
-<Link>Editor\Mono\Inspector\ProceduralMaterialInspector.cs</Link>
-</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\TargetJoint2DEditor.cs" >
 <Link>Editor\Mono\Inspector\TargetJoint2DEditor.cs</Link>
 </Compile>
@@ -2606,9 +2597,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AssetStoreAssetInspector.cs" >
 <Link>Editor\Mono\Inspector\AssetStoreAssetInspector.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\ProceduralTextureInspector.cs" >
-<Link>Editor\Mono\Inspector\ProceduralTextureInspector.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\NavMeshAgentInspector.cs" >
 <Link>Editor\Mono\Inspector\NavMeshAgentInspector.cs</Link>
@@ -2991,32 +2979,20 @@
 <Compile Include="..\..\Editor\Mono\Inspector\TextMeshInspector.cs" >
 <Link>Editor\Mono\Inspector\TextMeshInspector.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\NewScriptDropdownItem.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\NewScriptDropdownItem.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentDataSource.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\AddComponentDataSource.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs" >
 <Link>Editor\Mono\Inspector\AddComponent\AddComponentWindow.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\ComponentDropdownElement.cs" >
-<Link>Editor\Mono\Inspector\AddComponent\ComponentDropdownElement.cs</Link>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\AddComponentGUI.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\AddComponentGUI.cs</Link>
 </Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\NewScriptDropdownElement.cs" >
-<Link>Editor\Mono\Inspector\AddComponent\NewScriptDropdownElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\DropdownElement.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\DropdownElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\StatefulAdvancedDropdown.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\StatefulAdvancedDropdown.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdown.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdown.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\GroupDropdownElement.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\GroupDropdownElement.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\StatelessAdvancedDropdown.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\StatelessAdvancedDropdown.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdownWindow.cs" >
-<Link>Editor\Mono\Inspector\SearchableDropdown\AdvancedDropdownWindow.cs</Link>
+<Compile Include="..\..\Editor\Mono\Inspector\AddComponent\ComponentDropdownItem.cs" >
+<Link>Editor\Mono\Inspector\AddComponent\ComponentDropdownItem.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\Enlighten\LightmapParameters.cs" >
 <Link>Editor\Mono\Inspector\Enlighten\LightmapParameters.cs</Link>
@@ -3065,6 +3041,27 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsSplashScreenEditor.bindings.cs" >
 <Link>Editor\Mono\Inspector\PlayerSettingsEditor\PlayerSettingsSplashScreenEditor.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\StatefulAdvancedDropdown.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\StatefulAdvancedDropdown.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownItem.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownItem.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownGUI.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownGUI.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\StatelessAdvancedDropdown.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\StatelessAdvancedDropdown.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownWindow.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownWindow.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownSimpleDataSource.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownSimpleDataSource.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownDataSource.cs" >
+<Link>Editor\Mono\Inspector\AdvancedDropdown\AdvancedDropdownDataSource.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\SerializedProperty\SerializedPropertyTable.cs" >
 <Link>Editor\Mono\SerializedProperty\SerializedPropertyTable.cs</Link>
@@ -3487,9 +3484,6 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\StateMachineBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\Editor\StateMachineBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\SubstanceEditorUtilityBindings.gen.cs" >
-<Link>artifacts\generated\bindings_old\common\Editor\SubstanceEditorUtilityBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\HighlighterBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\Editor\HighlighterBindings.gen.cs</Link>

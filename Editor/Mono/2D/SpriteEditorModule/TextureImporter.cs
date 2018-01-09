@@ -32,7 +32,7 @@ namespace UnityEditor
 
         void ISpriteEditorDataProvider.SetSpriteRects(SpriteRect[] spriteRects)
         {
-            if (spriteImportMode == SpriteImportMode.Single && spriteRects.Length == 1)
+            if (spriteImportMode != SpriteImportMode.Multiple && spriteImportMode != SpriteImportMode.None && spriteRects.Length == 1)
             {
                 m_SpriteSingle.CopyFromSpriteRect(spriteRects[0]);
             }

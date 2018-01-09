@@ -98,17 +98,6 @@ namespace UnityEditor
         iPadImage = 2,
     }
 
-    [Flags]
-    public enum iOSSystemGestureDeferMode: uint
-    {
-        None = 0,
-        TopEdge = 1 << 0,
-        LeftEdge = 1 << 1,
-        BottomEdge = 1 << 2,
-        RightEdge = 1 << 3,
-        All = TopEdge | LeftEdge | BottomEdge | RightEdge
-    }
-
     // extern splash screen type (on iOS)
     public enum iOSLaunchScreenType
     {
@@ -324,9 +313,9 @@ namespace UnityEditor
             [NativeProperty("DeferSystemGesturesMode")]
             private extern static int deferSystemGesturesModeInternal { get; set; }
 
-            public static iOSSystemGestureDeferMode deferSystemGesturesMode
+            public static UnityEngine.iOS.SystemGestureDeferMode deferSystemGesturesMode
             {
-                get { return (iOSSystemGestureDeferMode)deferSystemGesturesModeInternal; }
+                get { return (UnityEngine.iOS.SystemGestureDeferMode)deferSystemGesturesModeInternal; }
                 set { deferSystemGesturesModeInternal = (int)value; }
             }
 

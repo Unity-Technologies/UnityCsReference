@@ -27,7 +27,7 @@ namespace UnityEditor
             get
             {
                 return (m_PropertyDrawer != null
-                        && ScriptAttributeUtility.s_DrawerStack.Any()
+                        && ScriptAttributeUtility.s_DrawerStack.Count > 0
                         && m_PropertyDrawer == ScriptAttributeUtility.s_DrawerStack.Peek());
             }
         }

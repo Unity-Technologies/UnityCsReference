@@ -198,5 +198,7 @@ namespace UnityEngine.Experimental.U2D
 
         extern private static SpriteChannelInfo GetDeformableChannelInfo(this SpriteRenderer sprite, VertexAttribute channel);
 
+
+        extern internal static void SetLocalAABB(this SpriteRenderer renderer, Bounds aabb);
     }
 }

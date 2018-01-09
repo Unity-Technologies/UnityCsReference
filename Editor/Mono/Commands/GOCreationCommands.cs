@@ -21,7 +21,7 @@ namespace UnityEditor
             if (parent != null)
             {
                 var transform = go.transform;
-                transform.SetParent(parent.transform, false);
+                Undo.SetTransformParent(transform, parent.transform, "Reparenting");
                 transform.localPosition = Vector3.zero;
                 transform.localRotation = Quaternion.identity;
                 transform.localScale = Vector3.one;
@@ -30,7 +30,10 @@ namespace UnityEditor
                 if (parent.GetComponent<RectTransform>())
                     ObjectFactory.AddComponent<RectTransform>(go);
             }
-            SceneView.PlaceGameObjectInFrontOfSceneView(go);
+            else
+            {
+                SceneView.PlaceGameObjectInFrontOfSceneView(go);
+            }
             EditorWindow.FocusWindowIfItsOpen<SceneHierarchyWindow>();
             Selection.activeGameObject = go;
         }

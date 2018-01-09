@@ -6,21 +6,37 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class ComponentDropdownElement : DropdownElement
+    internal class ComponentDropdownItem : AdvancedDropdownItem
     {
         private string m_MenuPath;
-        private string m_Command;
         private bool m_IsLegacy;
 
-        protected override bool isSearchable
+        private static class Styles
         {
-            get { return true; }
+            public static GUIStyle itemStyle = new GUIStyle("PR Label");
+
+            static Styles()
+            {
+                itemStyle.alignment = TextAnchor.MiddleLeft;
+                itemStyle.padding.left = 0;
+                itemStyle.fixedHeight = 20;
+                itemStyle.margin = new RectOffset(0, 0, 0, 0);
+            }
         }
 
-        public ComponentDropdownElement(string name, string menuPath, string command) : base(name)
+        public override GUIStyle lineStyle => Styles.itemStyle;
+
+        internal ComponentDropdownItem() : base("ROOT", -1)
+        {
+        }
+
+        public ComponentDropdownItem(string path, int menuPath) : base(path, menuPath)
+        {
+        }
+
+        public ComponentDropdownItem(string name, string menuPath, string command) : base(name, -1)
         {
             m_MenuPath = menuPath;
-            m_Command = command;
             m_IsLegacy = menuPath.Contains("Legacy");
 
             if (command.StartsWith("SCRIPT"))
@@ -44,10 +60,10 @@ namespace UnityEditor
 
         public override int CompareTo(object o)
         {
-            if (o is ComponentDropdownElement)
+            if (o is ComponentDropdownItem)
             {
                 // legacy elements should always come after non legacy elements
-                var componentElement = (ComponentDropdownElement)o;
+                var componentElement = (ComponentDropdownItem)o;
                 if (m_IsLegacy && !componentElement.m_IsLegacy)
                     return 1;
                 if (!m_IsLegacy && componentElement.m_IsLegacy)
@@ -72,7 +88,7 @@ namespace UnityEditor
 
         public override string ToString()
         {
-            return m_MenuPath + m_Command;
+            return m_MenuPath;
         }
     }
 }

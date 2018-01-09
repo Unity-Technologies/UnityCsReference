@@ -1431,6 +1431,12 @@ namespace UnityEditor
             return text;
         }
 
+        internal static string ToolbarSearchField(Rect position, string text, bool showWithPopupArrow)
+        {
+            int id = GUIUtility.GetControlID(s_SearchFieldHash, FocusType.Keyboard, position);
+            return ToolbarSearchField(id, position, text, showWithPopupArrow);
+        }
+
         internal static string ToolbarSearchField(int id, Rect position, string text, bool showWithPopupArrow)
         {
             bool dummy;
@@ -4195,6 +4201,8 @@ namespace UnityEditor
                     {
                         Color c = EyeDropper.GetPickedColor();
                         c.a = value.a;
+                        if (hdr)
+                            c = c.linear;
                         EditorGUIUtility.DrawColorSwatch(position2, c, showAlpha, hdr);
                     }
                     else
@@ -4246,7 +4254,7 @@ namespace UnityEditor
                                 Color c = EyeDropper.GetLastPickedColor();
                                 c.a = value.a;
                                 s_ColorPickID = 0;
-                                return c;
+                                return hdr ? c.linear : c;
                             case EventCommandNames.EyeDropperCancelled:
                                 HandleUtility.Repaint();
                                 s_ColorPickID = 0;
