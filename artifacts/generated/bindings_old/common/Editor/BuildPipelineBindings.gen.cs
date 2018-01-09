@@ -74,7 +74,9 @@ public enum BuildOptions
     ComputeCRC = 1 << 20,
     
     StrictMode = 1 << 21,
-    IncludeTestAssemblies = 1 << 22
+    IncludeTestAssemblies = 1 << 22,
+    
+    NoUniqueIdentifier = 1 << 23
 }
 
 [System.Flags]

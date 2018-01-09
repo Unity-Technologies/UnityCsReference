@@ -16,6 +16,9 @@ namespace UnityEditor.U2D
     {
         public List<SpriteBone> spriteBone;
         public float tessellationDetail = 0;
+
+        // The following lists are to be left un-initialized.
+        // If they never loaded or assign explicitly, we avoid writing empty list to metadata.
         public List<Vector2[]> spriteOutline;
         public List<Vertex2DMetaData> vertices;
         public List<int> indices;
@@ -36,9 +39,6 @@ namespace UnityEditor.U2D
             spriteID = sr.spriteID;
             alignment = sr.alignment;
             pivot = sr.pivot;
-            spriteOutline = new List<Vector2[]>();
-            spritePhysicsOutline = new List<Vector2[]>();
-            spriteBone = new List<SpriteBone>();
         }
 
         public void Apply(SerializedObject so)

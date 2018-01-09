@@ -26,7 +26,7 @@ public enum AndroidArchitecture : uint
     
     ARMv7 = 1 << 0,
     
-    
+    ARM64 = 1 << 1,
     
     X86 = 1 << 2,
     

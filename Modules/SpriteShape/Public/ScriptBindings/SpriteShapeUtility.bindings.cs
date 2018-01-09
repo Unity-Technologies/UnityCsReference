@@ -63,6 +63,7 @@ namespace UnityEngine.Experimental.U2D
     {
         extern internal int GetVertexCount();
         extern internal int GetIndexCount();
+        extern internal Bounds GetLocalAABB();
     }
 
     [NativeHeader("Modules/SpriteShape/Public/SpriteShapeUtility.h")]

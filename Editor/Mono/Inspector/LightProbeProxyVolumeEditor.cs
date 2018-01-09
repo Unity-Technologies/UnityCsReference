@@ -122,8 +122,9 @@ namespace UnityEditor
         {
             get
             {
-                Renderer renderer = ((LightProbeProxyVolume)target).GetComponent(typeof(Renderer)) as Renderer;
-                return (renderer == null) && (targets.Length == 1);
+                var proxyVolume = (LightProbeProxyVolume)target;
+                Renderer renderer = proxyVolume.GetComponent(typeof(Renderer)) as Renderer;
+                return (renderer == null && proxyVolume.boundingBoxMode != LightProbeProxyVolume.BoundingBoxMode.Custom) && (targets.Length == 1);
             }
         }
 

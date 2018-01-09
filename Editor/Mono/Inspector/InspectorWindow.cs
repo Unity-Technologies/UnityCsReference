@@ -1034,7 +1034,7 @@ namespace UnityEditor
             // When inspecting a material asset force visible properties (MaterialEditor can be collapsed when shown on a GameObject)
             if (inspectedObject is Material)
             {
-                // Find material editor. MaterialEditor is in either index 0 or 1 (ProceduralMaterialInspector is in index 0).
+                // Find material editor. MaterialEditor is in either index 0 or 1.
                 for (int i = 0; i <= 1 && i < editors.Length; i++)
                 {
                     MaterialEditor me = editors[i] as MaterialEditor;
@@ -1394,7 +1394,7 @@ namespace UnityEditor
             Object currentTarget = editors[editorIndex].target;
 
             // Objects that should always be hidden
-            if (currentTarget is SubstanceImporter || currentTarget is ParticleSystemRenderer)
+            if (currentTarget is ParticleSystemRenderer)
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)
@@ -1629,7 +1629,9 @@ namespace UnityEditor
             // set the tracker to the serialized list. if it contains nulls or is empty, the tracker won't lock
             // this fixes case 775007
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
-            m_Tracker.RebuildIfNecessary();
+            // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
+            // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
+            new DelayedCallback(tracker.RebuildIfNecessary, 0f);
         }
     }
 }

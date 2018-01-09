@@ -195,6 +195,7 @@ namespace UnityEditor
             var assetPath = GetSelectionAssetPath();
             var ai = AssetImporter.GetAtPath(assetPath);
             var dataProvider = ai as ISpriteEditorDataProvider;
+            bool updateModules = false;
 
             if (dataProvider == null || selectedProviderChanged)
             {
@@ -203,6 +204,7 @@ namespace UnityEditor
                 ResetWindow();
                 RefreshPropertiesCache();
                 RefreshRects();
+                updateModules = true;
             }
 
             if (m_RectsCache != null)
@@ -216,7 +218,9 @@ namespace UnityEditor
                 }
             }
 
-            UpdateAvailableModules();
+            // We only update modules when data provider changed
+            if (updateModules)
+                UpdateAvailableModules();
             Repaint();
         }
 

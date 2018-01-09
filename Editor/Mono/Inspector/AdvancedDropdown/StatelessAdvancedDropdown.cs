@@ -9,13 +9,13 @@ namespace UnityEditor
 {
     internal static class StatelessAdvancedDropdown
     {
-        private static AdvancedDropdown s_Instance;
+        private static AdvancedDropdownWindow s_Instance;
         private static EditorWindow s_ParentWindow;
         private static bool m_WindowClosed;
         private static int m_Result;
         private static int s_CurrentControl;
 
-        private static void SearchablePopup(Rect rect, string label, int selectedIndex, string[] displayedOptions,
+        internal static void SearchablePopup(Rect rect, string label, int selectedIndex, string[] displayedOptions,
             Action<string> onSelected)
         {
             ResetAndCreateWindow();
@@ -70,15 +70,19 @@ namespace UnityEditor
                 s_Instance = null;
             }
             s_ParentWindow = EditorWindow.focusedWindow;
-            s_Instance = ScriptableObject.CreateInstance<AdvancedDropdown>();
+            s_Instance = ScriptableObject.CreateInstance<AdvancedDropdownWindow>();
             m_WindowClosed = false;
         }
 
         private static void InitWindow(Rect rect, string label, int selectedIndex, string[] displayedOptions)
         {
-            s_Instance.DisplayedOptions = displayedOptions;
-            s_Instance.SelectedIndex = selectedIndex;
-            s_Instance.Label = label;
+            var dataSource = new AdvancedDropdownSimpleDataSource();
+
+            dataSource.DisplayedOptions = displayedOptions;
+            dataSource.SelectedIndex = selectedIndex;
+            dataSource.Label = label;
+
+            s_Instance.dataSource = dataSource;
 
             s_Instance.onSelected += (w) =>
                 {

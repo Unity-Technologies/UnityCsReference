@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEditor.Experimental.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Scripting;
@@ -96,6 +97,7 @@ namespace UnityEditor
                     }
                     else
                     {
+                        m_InspectedEditorWindow = null;
                         GUIViewDebuggerHelper.StopDebugging();
                     }
                     if (instructionModeView != null)
@@ -139,10 +141,21 @@ namespace UnityEditor
 
             if (m_PaddingHighlighter == null)
             {
+                var borderWidth = 1f;
                 m_PaddingHighlighter = new VisualElement();
-                m_PaddingHighlighter.style.backgroundColor = Styles.paddingHighlighterColor;
+                m_PaddingHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizePaddingSecondaryColor;
+                m_PaddingHighlighter.style.borderLeftWidth = borderWidth;
+                m_PaddingHighlighter.style.borderRightWidth = borderWidth;
+                m_PaddingHighlighter.style.borderTopWidth = borderWidth;
+                m_PaddingHighlighter.style.borderBottomWidth = borderWidth;
+                m_PaddingHighlighter.pickingMode = PickingMode.Ignore;
                 m_ContentHighlighter = new VisualElement();
-                m_ContentHighlighter.style.backgroundColor = Styles.contentHighlighterColor;
+                m_ContentHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizeSecondaryColor;
+                m_ContentHighlighter.style.borderLeftWidth = borderWidth;
+                m_ContentHighlighter.style.borderRightWidth = borderWidth;
+                m_ContentHighlighter.style.borderTopWidth = borderWidth;
+                m_ContentHighlighter.style.borderBottomWidth = borderWidth;
+                m_ContentHighlighter.pickingMode = PickingMode.Ignore;
             }
             m_PaddingHighlighter.layout = instructionRect;
             view.visualTree.Add(m_PaddingHighlighter);
@@ -190,7 +203,11 @@ namespace UnityEditor
 
         VisualElement m_ContentHighlighter;
         VisualElement m_PaddingHighlighter;
+        [SerializeField]
         bool m_ShowHighlighter = true;
+
+        [SerializeField]
+        private bool m_InspectOptimizedGUIBlocks = false;
 
         [NonSerialized]
         bool m_QueuedPointInspection = false;
@@ -216,7 +233,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            titleContent =  EditorGUIUtility.TrTextContent("GUI Inspector");
+            titleContent =  EditorGUIUtility.TrTextContent("IMGUI Debugger");
             GUIViewDebuggerHelper.onViewInstructionsChanged += OnInspectedViewChanged;
             GUIView serializedInspected = m_Inspected;
             inspected = null;
@@ -228,8 +245,7 @@ namespace UnityEditor
         void OnDisable()
         {
             GUIViewDebuggerHelper.onViewInstructionsChanged -= OnInspectedViewChanged;
-            GUIViewDebuggerHelper.StopDebugging();
-            ClearInstructionHighlighter();
+            inspected = null;
         }
 
         void OnBecameVisible()
@@ -248,8 +264,22 @@ namespace UnityEditor
             ShowDrawInstructions();
         }
 
+        private bool m_FlushingOptimizedGUIBlock;
+
         void OnInspectedViewChanged()
         {
+            if (m_InspectOptimizedGUIBlocks && !m_FlushingOptimizedGUIBlock)
+            {
+                var inspector = m_InspectedEditorWindow as InspectorWindow;
+                if (inspector != null && inspector.tracker != null)
+                {
+                    m_FlushingOptimizedGUIBlock = true;
+                    foreach (var editor in inspector.tracker.activeEditors)
+                        editor.isInspectorDirty = true;
+                    inspector.Repaint();
+                }
+            }
+            m_FlushingOptimizedGUIBlock = false;
             RefreshData();
             Repaint();
         }
@@ -261,6 +291,7 @@ namespace UnityEditor
             DoWindowPopup();
             DoInspectTypePopup();
             DoInstructionOverlayToggle();
+            DoOptimizedGUIBlockToggle();
 
             GUILayout.EndHorizontal();
         }
@@ -330,11 +361,19 @@ namespace UnityEditor
         void DoInstructionOverlayToggle()
         {
             EditorGUI.BeginChangeCheck();
-            m_ShowHighlighter = GUILayout.Toggle(m_ShowHighlighter, GUIContent.Temp("Show overlay"), EditorStyles.toolbarButton);
+            m_ShowHighlighter = GUILayout.Toggle(m_ShowHighlighter, GUIContent.Temp("Show Overlay"), EditorStyles.toolbarButton);
             if (EditorGUI.EndChangeCheck())
             {
                 OnShowOverlayChanged();
             }
+        }
+
+        void DoOptimizedGUIBlockToggle()
+        {
+            EditorGUI.BeginChangeCheck();
+            m_InspectOptimizedGUIBlocks = GUILayout.Toggle(m_InspectOptimizedGUIBlocks, GUIContent.Temp("Force Inspect Optimized GUI Blocks"), EditorStyles.toolbarButton);
+            if (EditorGUI.EndChangeCheck())
+                OnInspectedViewChanged();
         }
 
         void OnShowOverlayChanged()

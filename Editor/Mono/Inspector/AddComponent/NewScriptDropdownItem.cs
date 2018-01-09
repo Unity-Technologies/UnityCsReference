@@ -10,7 +10,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    class NewScriptDropdownElement : DropdownElement
+    class NewScriptDropdownItem : AdvancedDropdownItem
     {
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
@@ -18,7 +18,7 @@ namespace UnityEditor
 
         private string m_Directory = string.Empty;
 
-        private string m_ClassName = "NewBehaviourScript";
+        internal string m_ClassName = "NewBehaviourScript";
 
         public string className
         {
@@ -26,44 +26,12 @@ namespace UnityEditor
             get { return m_ClassName; }
         }
 
-        private enum Language
+        internal enum Language
         {
             CSharp = 0
         }
 
-        public NewScriptDropdownElement() : base("New Script") {}
-
-        public override void Draw(bool selected, bool isSearching)
-        {
-            GUILayout.Label("Name", EditorStyles.label);
-
-            EditorGUI.FocusTextInControl("NewScriptName");
-            GUI.SetNextControlName("NewScriptName");
-
-            m_ClassName = EditorGUILayout.TextField(m_ClassName);
-
-            EditorGUILayout.Space();
-
-            EditorGUILayout.EnumPopup("Language", Language.CSharp);
-
-            EditorGUILayout.Space();
-
-            var canCreate = CanCreate();
-            if (!canCreate && m_ClassName != "")
-                GUILayout.Label(GetError(), EditorStyles.helpBox);
-
-            GUILayout.FlexibleSpace();
-
-            using (new EditorGUI.DisabledScope(!canCreate))
-            {
-                if (GUILayout.Button("Create and Add"))
-                {
-                    Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
-                }
-            }
-
-            EditorGUILayout.Space();
-        }
+        public NewScriptDropdownItem() : base("New Script", -1) {}
 
         public override bool OnAction()
         {
@@ -72,7 +40,7 @@ namespace UnityEditor
             return true;
         }
 
-        private bool CanCreate()
+        internal bool CanCreate()
         {
             return m_ClassName.Length > 0 &&
                 !File.Exists(TargetPath()) &&
@@ -81,7 +49,7 @@ namespace UnityEditor
                 !InvalidTargetPath();
         }
 
-        private string GetError()
+        public string GetError()
         {
             // Create string to tell the user what the problem is
             var blockReason = string.Empty;
@@ -99,7 +67,7 @@ namespace UnityEditor
             return blockReason;
         }
 
-        private void Create(GameObject[] gameObjects)
+        internal void Create(GameObject[] gameObjects)
         {
             if (!CanCreate())
                 return;

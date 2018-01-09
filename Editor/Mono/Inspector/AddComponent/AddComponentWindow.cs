@@ -3,12 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEditorInternal;
 using UnityEngine.Scripting;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -37,9 +33,9 @@ namespace UnityEditor
         {
             get
             {
-                var child = CurrentlyRenderedTree.GetSelectedChild();
+                var child = m_CurrentlyRenderedTree.GetSelectedChild();
                 if (child != null)
-                    return child is NewScriptDropdownElement;
+                    return child is NewScriptDropdownItem;
                 return false;
             }
         }
@@ -47,8 +43,11 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
+            gui = new AddComponentGUI();
+            dataSource = new AddComponentDataSource();
             s_AddComponentWindow = this;
             m_Search = EditorPrefs.GetString(kComponentSearch, "");
+            showHeader = true;
         }
 
         protected override void OnDisable()
@@ -70,8 +69,8 @@ namespace UnityEditor
 
         protected override bool SpecialKeyboardHandling(Event evt)
         {
-            var createScriptMenu = CurrentlyRenderedTree.GetSelectedChild();
-            if (createScriptMenu is NewScriptDropdownElement)
+            var createScriptMenu = m_CurrentlyRenderedTree.GetSelectedChild();
+            if (createScriptMenu is NewScriptDropdownItem)
             {
                 // When creating new script name we want to dedicate both left/right arrow and backspace
                 // to editing the script name so they can't be used for navigating the menus.
@@ -92,88 +91,10 @@ namespace UnityEditor
             return false;
         }
 
-        protected override DropdownElement RebuildTree()
-        {
-            var root = new DropdownElement("ROOT");
-            var menus = Unsupported.GetSubmenus("Component");
-            var commands = Unsupported.GetSubmenusCommands("Component");
-            for (var i = 0; i < menus.Length; i++)
-            {
-                if (commands[i] == "ADD")
-                {
-                    continue;
-                }
-
-                var menuPath = menus[i];
-                var paths = menuPath.Split('/');
-
-                var parent = root;
-                for (var j = 0; j < paths.Length; j++)
-                {
-                    var path = paths[j];
-                    if (j == paths.Length - 1)
-                    {
-                        var element = new ComponentDropdownElement(LocalizationDatabase.GetLocalizedString(path), menuPath, commands[i]);
-                        element.SetParent(parent);
-                        parent.AddChild(element);
-                        continue;
-                    }
-                    var group = parent.children.SingleOrDefault(c => c.name == path);
-                    if (group == null)
-                    {
-                        group = new GroupDropdownElement(path);
-                        group.SetParent(parent);
-                        parent.AddChild(group);
-                    }
-                    parent = group;
-                }
-            }
-            root = root.children.Single();
-            root.SetParent(null);
-            var newScript = new GroupDropdownElement("New script");
-            newScript.AddChild(new NewScriptDropdownElement());
-            newScript.SetParent(root);
-            root.AddChild(newScript);
-            return root;
-        }
-
-        protected override DropdownElement RebuildSearch()
-        {
-            var searchTree = base.RebuildSearch();
-
-            if (searchTree != null)
-            {
-                var addNewScriptGroup = new GroupDropdownElement("New script");
-                var addNewScript = new NewScriptDropdownElement();
-                addNewScript.className = m_Search;
-                addNewScriptGroup.AddChild(addNewScript);
-                addNewScript.SetParent(addNewScriptGroup);
-                addNewScriptGroup.SetParent(searchTree);
-                searchTree.AddChild(addNewScriptGroup);
-            }
-            return searchTree;
-        }
-
         internal static void SendUsabilityAnalyticsEvent(AnalyticsEventData eventData)
         {
             var openTime = s_AddComponentWindow.m_ComponentOpenTime;
             UsabilityAnalytics.SendEvent("executeAddComponentWindow", openTime, DateTime.UtcNow - openTime, false, eventData);
-        }
-
-        private static void CloseAllOpenWindows<T>()
-        {
-            var windows = Resources.FindObjectsOfTypeAll(typeof(T));
-            foreach (var window in windows)
-            {
-                try
-                {
-                    ((EditorWindow)window).Close();
-                }
-                catch
-                {
-                    DestroyImmediate(window);
-                }
-            }
         }
 
         [UsedByNativeCode]

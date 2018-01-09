@@ -62,6 +62,7 @@ namespace UnityEngine.Experimental.XR
         {
             inst.m_Ptr = ptr;
             inst.SetHandle(inst);
+            inst.Initialize();
             s_SubsystemInstances.Add(inst);
         }
 
@@ -169,6 +170,7 @@ namespace UnityEngine.Experimental.XR
         internal IXRSubsystemDescriptor m_subsystemDescriptor;
 
         extern internal void SetHandle(XRInstance inst);
+        virtual internal void Initialize() {}
         extern public void Start();
         extern public void Stop();
         public void Destroy()

@@ -54,14 +54,6 @@ namespace UnityEditor
                     return "Default References (" + (script ? script.name : string.Empty) + ")";
                 }
 
-                var substanceImporter = o as SubstanceImporter;
-                if (substanceImporter)
-                {
-                    var assetObject = substanceImporter.GetSubstanceArchive();
-                    if (assetObject)
-                        return assetObject.name + " (Substance Archive)";
-                }
-
                 return o.GetType().Name;
             }
 

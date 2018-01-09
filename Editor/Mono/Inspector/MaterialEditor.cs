@@ -234,7 +234,7 @@ namespace UnityEditor
             }
             else
             {
-                // ensure e.g., ProceduralMaterialInspector correctly rebuilds textures (case 879446)
+                // ensure e.g., correctly rebuilt textures (case 879446)
                 OnShaderChanged();
             }
         }
@@ -242,7 +242,6 @@ namespace UnityEditor
         private void UpdateAllOpenMaterialEditors()
         {
             // copy current list contents to array in case it changes during iteration
-            // e.g., changing shader in ProceduralMaterialInspector will destroy/recreate editors
             foreach (var materialEditor in s_MaterialEditors.ToArray())
                 materialEditor.DetectShaderEditorNeedsUpdate();
         }
