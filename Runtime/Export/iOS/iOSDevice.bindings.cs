@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.iOS
@@ -107,6 +108,27 @@ namespace UnityEngine.iOS
             [FreeFunction("IOSScripting::IsAdvertisingTrackingEnabled")] get;
         }
 
+        extern public static bool hideHomeButton
+        {
+            [NativeConditional("PLATFORM_IPHONE")]
+            [FreeFunction("IOSScripting::GetHideHomeButton")] get;
+            [NativeConditional("PLATFORM_IPHONE")]
+            [FreeFunction("IOSScripting::SetHideHomeButton")] set;
+        }
+
+        extern private static int deferSystemGesturesModeInternal
+        {
+            [NativeConditional("PLATFORM_IPHONE")]
+            [FreeFunction("IOSScripting::GetDeferSystemGesturesMode")] get;
+            [NativeConditional("PLATFORM_IPHONE")]
+            [FreeFunction("IOSScripting::SetDeferSystemGesturesMode")] set;
+        }
+
+        public static SystemGestureDeferMode deferSystemGesturesMode
+        {
+            get { return (SystemGestureDeferMode)deferSystemGesturesModeInternal; }
+            set { deferSystemGesturesModeInternal = (int)value; }
+        }
 
         [NativeConditional("PLATFORM_IPHONE || PLATFORM_TVOS")]
         [NativeMethod(Name = "IOSScripting::SetNoBackupFlag", IsFreeFunction = true, IsThreadSafe = true)]

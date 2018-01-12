@@ -287,40 +287,40 @@ namespace UnityEditor
                             GUIPopup(s_Texts.space, m_RenderAlignment, s_Texts.spaces);
                         }
                     }
+                }
+                GUIVector3Field(s_Texts.pivot, m_Pivot);
 
-                    GUIVector3Field(s_Texts.pivot, m_Pivot);
-
-                    EditorGUI.BeginChangeCheck();
-                    s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
-                    }
+                EditorGUI.BeginChangeCheck();
+                s_VisualizePivot = GUIToggle(s_Texts.visualizePivot, s_VisualizePivot);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetBool("VisualizePivot", s_VisualizePivot);
                 }
 
                 GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
 
-                if (!m_RenderMode.hasMultipleDifferentValues)
-                {
-                    if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
-                        DoVertexStreamsGUI(renderMode);
-
-                    EditorGUILayout.Space();
-
-                    GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
-
-                    // Disable ReceiveShadows options for Deferred rendering path
-                    using (new EditorGUI.DisabledScope(SceneView.IsUsingDeferredRenderingPath()))
-                    {
-                        GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
-                    }
-
-                    GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
-
-                    EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
-                    GUIInt(s_Texts.sortingOrder, m_SortingOrder);
-                }
+                if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
+                    DoVertexStreamsGUI(renderMode);
             }
+
+            EditorGUILayout.Space();
+
+            GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
+
+            // Disable ReceiveShadows options for Deferred rendering path
+            if (SceneView.IsUsingDeferredRenderingPath())
+            {
+                using (new EditorGUI.DisabledScope(true)) { GUIToggle(s_Texts.receiveShadows, true); }
+            }
+            else
+            {
+                GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
+            }
+
+            GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
+
+            EditorGUILayout.SortingLayerField(s_Texts.sortingLayer, m_SortingLayerID, ParticleSystemStyles.Get().popup, ParticleSystemStyles.Get().label);
+            GUIInt(s_Texts.sortingOrder, m_SortingOrder);
 
             List<ParticleSystemRenderer> renderers = new List<ParticleSystemRenderer>();
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)

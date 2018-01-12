@@ -61,11 +61,17 @@ namespace UnityEngine.Events
                     curCall.Invoke();
                 else
                 {
-                    var cachedCurCall = calls[i];
-                    if (m_InvokeArray == null)
-                        m_InvokeArray = new object[0];
+                    var staticCurCall = calls[i] as InvokableCall;
+                    if (staticCurCall != null)
+                        staticCurCall.Invoke();
+                    else
+                    {
+                        var cachedCurCall = calls[i];
+                        if (m_InvokeArray == null)
+                            m_InvokeArray = new object[0];
 
-                    cachedCurCall.Invoke(m_InvokeArray);
+                        cachedCurCall.Invoke(m_InvokeArray);
+                    }
                 }
             }
         }

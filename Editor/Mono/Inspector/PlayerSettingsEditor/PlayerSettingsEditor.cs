@@ -2132,7 +2132,6 @@ namespace UnityEditor
                 {
                     property.stringValue = newStringValue;
                     serializedObject.ApplyModifiedProperties();
-                    GUIUtility.ExitGUI();
                 }
             }
 
@@ -2159,7 +2158,6 @@ namespace UnityEditor
                         property.stringValue = "";
                         serializedObject.ApplyModifiedProperties();
                         GUI.FocusControl("");
-                        GUIUtility.ExitGUI();
                     }
                 }
             }

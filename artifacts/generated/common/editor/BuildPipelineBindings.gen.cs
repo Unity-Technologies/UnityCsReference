@@ -73,7 +73,9 @@ public enum BuildOptions
     
     ComputeCRC = 1 << 20,
     
-    StrictMode = 1 << 21
+    StrictMode = 1 << 21,
+    
+    NoUniqueIdentifier = 1 << 23
 }
 
 [System.Flags]

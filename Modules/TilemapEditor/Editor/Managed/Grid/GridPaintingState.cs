@@ -35,7 +35,6 @@ namespace UnityEditor
         void OnDisable()
         {
             m_InterestedPainters.Clear();
-            m_InterestedPainters = null;
             EditorApplication.hierarchyWindowChanged -= HierarchyChanged;
             Selection.selectionChanged -= OnSelectionChange;
             FlushCache();
