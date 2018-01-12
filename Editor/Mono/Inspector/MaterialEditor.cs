@@ -197,6 +197,12 @@ namespace UnityEditor
             m_Shader = newShader;
             if (customEditor != m_CustomShaderGUI)
             {
+                if (customEditor != null)
+                {
+                    foreach (Material material in targets)
+                        customEditor.OnClosed(material);
+                }
+
                 updateMaterialEditors = true;
             }
 

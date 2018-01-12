@@ -241,6 +241,9 @@
 <Compile Include="..\..\Runtime\Export\GraphicsRenderers.bindings.cs" >
 <Link>Runtime\Export\GraphicsRenderers.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\iOSSystemGestureDeferMode.cs" >
+<Link>Runtime\Export\iOSSystemGestureDeferMode.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_4.cs" >
 <Link>Runtime\Export\UnityEvent_4.cs</Link>
 </Compile>
@@ -1280,6 +1283,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.bindings.cs" >
+<Link>Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs" >
 <Link>Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs</Link>

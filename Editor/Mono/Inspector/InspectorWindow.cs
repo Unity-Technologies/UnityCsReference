@@ -575,22 +575,30 @@ namespace UnityEditor
             editorDragging.HandleDraggingToBottomArea(remainingRect, m_Tracker);
         }
 
-        private static bool HasLabel(Object target)
+        static bool HasLabel(Object target)
         {
-            string assetPathForLabels = AssetDatabase.GetAssetPath(target);
-            return assetPathForLabels.StartsWith("assets", StringComparison.OrdinalIgnoreCase) && !Directory.Exists(assetPathForLabels);
+            return HasLabel(target, AssetDatabase.GetAssetPath(target));
+        }
+
+        static bool HasLabel(Object target, string assetPath)
+        {
+            return EditorUtility.IsPersistent(target) && assetPath.StartsWith("assets", StringComparison.OrdinalIgnoreCase);
         }
 
         private Object[] GetInspectedAssets()
         {
             // We use this technique to support locking of the inspector. An inspector locks via an editor, so we need to use an editor to get the selection
             Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
-            if (assetEditor != null && assetEditor.targets.Length == 1 && HasLabel(assetEditor.target))
-                return assetEditor.targets;
+            if (assetEditor != null && assetEditor.targets.Length == 1)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
+                if (HasLabel(assetEditor.target, assetPath) && !Directory.Exists(assetPath))
+                    return assetEditor.targets;
+            }
 
             // This is used if more than one asset is selected
             // Ideally the tracker should be refactored to track not just editors but also the selection that caused them, so we wouldn't need this
-            return Selection.GetFiltered(typeof(Object), SelectionMode.Assets).Where(o => HasLabel(o)).ToArray();
+            return Selection.objects.Where(HasLabel).ToArray();
         }
 
         private void DrawPreviewAndLabels()

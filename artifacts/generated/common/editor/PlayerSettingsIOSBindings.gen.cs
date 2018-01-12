@@ -118,17 +118,6 @@ public sealed partial class iOSDeviceRequirement
             public IDictionary<string, string> values { get { return m_Values; } }
 }
 
-[Flags]
-public enum iOSSystemGestureDeferMode : uint
-{
-    None = 0,
-    TopEdge = 1 << 0,
-    LeftEdge = 1 << 1,
-    BottomEdge = 1 << 2,
-    RightEdge = 1 << 3,
-    All = TopEdge | LeftEdge | BottomEdge | RightEdge
-}
-
 internal sealed partial class iOSDeviceRequirementGroup
 {
             private string m_VariantName;
@@ -318,7 +307,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        public extern static iOSSystemGestureDeferMode deferSystemGesturesMode
+        public extern static UnityEngine.iOS.SystemGestureDeferMode deferSystemGesturesMode
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
