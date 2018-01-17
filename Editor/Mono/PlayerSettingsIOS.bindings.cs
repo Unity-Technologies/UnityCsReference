@@ -355,16 +355,27 @@ namespace UnityEditor
             public extern static bool allowHTTPDownload { get; set; }
 
             [NativeProperty("AppleDeveloperTeamID")]
-            public extern static string appleDeveloperTeamID
+            private extern static string appleDeveloperTeamIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            public static string appleDeveloperTeamID
+            {
+                get
+                {
+                    return appleDeveloperTeamIDInternal.Length < 1 ?
+                        EditorPrefs.GetString("DefaultiOSAutomaticSignTeamId") : appleDeveloperTeamIDInternal;
+                }
+                set { appleDeveloperTeamIDInternal = value; }
+            }
+
 
             [NativeProperty("iOSManualProvisioningProfileID")]
-            public extern static string iOSManualProvisioningProfileID
+            private extern static string iOSManualProvisioningProfileIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
@@ -372,14 +383,36 @@ namespace UnityEditor
                 set;
             }
 
+            public static string iOSManualProvisioningProfileID
+            {
+                get
+                {
+                    return String.IsNullOrEmpty(iOSManualProvisioningProfileIDInternal) ?
+                        EditorPrefs.GetString("DefaultiOSProvisioningProfileUUID") : iOSManualProvisioningProfileIDInternal;
+                }
+                set { iOSManualProvisioningProfileIDInternal = value; }
+            }
+
+
             [NativeProperty("tvOSManualProvisioningProfileID")]
-            public extern static string tvOSManualProvisioningProfileID
+            private extern static string tvOSManualProvisioningProfileIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            public static string tvOSManualProvisioningProfileID
+            {
+                get
+                {
+                    return String.IsNullOrEmpty(tvOSManualProvisioningProfileIDInternal) ?
+                        EditorPrefs.GetString("DefaulttvOSProvisioningProfileUUID") : tvOSManualProvisioningProfileIDInternal;
+                }
+                set { tvOSManualProvisioningProfileIDInternal = value; }
+            }
+
 
             [NativeProperty("AppleEnableAutomaticSigning")]
             private extern static int appleEnableAutomaticSigningInternal
@@ -394,7 +427,9 @@ namespace UnityEditor
             {
                 get
                 {
-                    return appleEnableAutomaticSigningInternal == (int)iOSAutomaticallySignValue.AutomaticallySignValueTrue;
+                    return appleEnableAutomaticSigningInternal == (int)iOSAutomaticallySignValue.AutomaticallySignValueNotSet ?
+                        EditorPrefs.GetBool("DefaultiOSAutomaticallySignBuild") :
+                        (iOSAutomaticallySignValue)appleEnableAutomaticSigningInternal == iOSAutomaticallySignValue.AutomaticallySignValueTrue;
                 }
                 set
                 {

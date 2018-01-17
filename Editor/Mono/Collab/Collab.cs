@@ -17,6 +17,7 @@ using UnityEditor.SceneManagement;
 namespace UnityEditor.Collaboration
 {
     internal delegate void StateChangedDelegate(CollabInfo info);
+    internal delegate void ErrorDelegate();
 
     [Flags]
     internal enum CollabOperation : ulong
@@ -51,6 +52,8 @@ namespace UnityEditor.Collaboration
         public event StateChangedDelegate StateChanged;
         public event StateChangedDelegate RevisionUpdated;
         public event StateChangedDelegate JobsCompleted;
+        public event ErrorDelegate ErrorOccurred;
+        public event ErrorDelegate ErrorCleared;
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;
@@ -269,6 +272,7 @@ namespace UnityEditor.Collaboration
             }
         }
 
+        [RequiredByNativeCode]
         private static void OnRevisionUpdated()
         {
             var handler = instance.RevisionUpdated;
@@ -276,6 +280,22 @@ namespace UnityEditor.Collaboration
             {
                 handler(instance.collabInfo);
             }
+        }
+
+        [RequiredByNativeCode]
+        private static void SetCollabError()
+        {
+            var handler = instance.ErrorOccurred;
+            if (handler != null)
+                handler();
+        }
+
+        [RequiredByNativeCode]
+        private static void ClearCollabError()
+        {
+            var handler = instance.ErrorCleared;
+            if (handler != null)
+                handler();
         }
 
         private static void OnJobsCompleted()

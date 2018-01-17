@@ -69,7 +69,6 @@ namespace UnityEditor.Collaboration
 
         bool revisionActionsEnabled { get; set; }
         int itemsPerPage { set; }
-        string errMessage { set; }
         string inProgressRevision { get; set; }
         PageChangeAction OnPageChangeAction { set; }
         RevisionAction OnGoBackAction { set; }

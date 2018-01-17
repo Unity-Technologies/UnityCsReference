@@ -73,14 +73,19 @@ namespace UnityEngine.Networking
         [SerializeField]
         internal QosType m_Type;
 
+        [SerializeField]
+        internal bool m_BelongsSharedOrderChannel;
+
         public ChannelQOS(QosType value)
         {
             m_Type = value;
+            m_BelongsSharedOrderChannel = false;
         }
 
         public ChannelQOS()
         {
             m_Type = QosType.Unreliable;
+            m_BelongsSharedOrderChannel = false;
         }
 
         public ChannelQOS(ChannelQOS channel)
@@ -88,9 +93,11 @@ namespace UnityEngine.Networking
             if (channel == null)
                 throw new NullReferenceException("channel is not defined");
             m_Type = channel.m_Type;
+            m_BelongsSharedOrderChannel = channel.m_BelongsSharedOrderChannel;
         }
 
         public QosType QOS { get { return m_Type; } }
+        public bool BelongsToSharedOrderChannel { get { return m_BelongsSharedOrderChannel; } }
     }
 
     //connection configuration proxy class
@@ -155,6 +162,8 @@ namespace UnityEngine.Networking
         private string m_SSLCAFilePath;
         [SerializeField]
         internal List<ChannelQOS> m_Channels = new List<ChannelQOS>();
+        [SerializeField]
+        internal List<List<byte>> m_SharedOrderChannels = new List<List<byte>>();
 
         public ConnectionConfig()
         {
@@ -223,6 +232,10 @@ namespace UnityEngine.Networking
             foreach (var channel in config.m_Channels)
             {
                 m_Channels.Add(new ChannelQOS(channel));
+            }
+            foreach (var channelIds in config.m_SharedOrderChannels)
+            {
+                m_SharedOrderChannels.Add(channelIds);
             }
         }
 
@@ -424,7 +437,10 @@ namespace UnityEngine.Networking
         {
             get { return m_Channels.Count; }
         }
-
+        public int SharedOrderChannelCount
+        {
+            get { return m_SharedOrderChannels.Count; }
+        }
         public byte AddChannel(QosType value)
         {
             if (m_Channels.Count > 255)
@@ -438,11 +454,44 @@ namespace UnityEngine.Networking
             return (byte)(m_Channels.Count - 1);
         }
 
+        public void MakeChannelsSharedOrder(List<byte> channelIndices)
+        {
+            if (channelIndices == null)
+                throw new NullReferenceException("channelIndices must not be null");
+            if (channelIndices.Count == 0)
+                throw new ArgumentOutOfRangeException("Received empty list of shared order channel indexes");
+            for (byte i = 0; i < channelIndices.Count; i++)
+            {
+                byte channelId = channelIndices[i];
+                if (channelId >= m_Channels.Count)
+                    throw new ArgumentOutOfRangeException("Shared order channel list contains wrong channel index " + channelId);
+                ChannelQOS channel = m_Channels[channelId];
+                if (channel.BelongsToSharedOrderChannel)
+                    throw new ArgumentException("Channel with index " + channelId + " has been already included to other shared order channel");
+                if (!(channel.QOS == QosType.Reliable || channel.QOS == QosType.Unreliable))
+                    throw new ArgumentException("Only Reliable and Unreliable QoS are allowed for shared order channel, wrong channel is with index " + channelId);
+            }
+            for (byte i = 0; i < channelIndices.Count; i++)
+            {
+                byte channelId = channelIndices[i];
+                m_Channels[channelId].m_BelongsSharedOrderChannel = true;
+            }
+            List<byte> newChannelIndices = new List<byte>(channelIndices);
+            m_SharedOrderChannels.Add(newChannelIndices);
+        }
+
         public QosType GetChannel(byte idx)
         {
             if (idx >= m_Channels.Count)
                 throw new ArgumentOutOfRangeException("requested index greater than maximum channels count");
             return m_Channels[idx].QOS;
+        }
+
+        public IList<byte> GetSharedOrderChannels(byte idx)
+        {
+            if (idx >= m_SharedOrderChannels.Count)
+                throw new ArgumentOutOfRangeException("requested index greater than maximum shared order channels count");
+            return m_SharedOrderChannels[idx].AsReadOnly();
         }
 
         public List<ChannelQOS> Channels { get { return m_Channels; } }

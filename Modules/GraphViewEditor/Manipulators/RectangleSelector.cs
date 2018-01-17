@@ -47,6 +47,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -54,6 +55,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
+        }
+
+        void OnMouseCaptureOutEvent(MouseCaptureOutEvent e)
+        {
+            if (m_Active)
+            {
+                m_Rectangle.RemoveFromHierarchy();
+                m_Active = false;
+            }
         }
 
         private void OnMouseDown(MouseDownEvent e)

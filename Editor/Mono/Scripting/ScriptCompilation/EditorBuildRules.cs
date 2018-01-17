@@ -225,6 +225,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (!IsCompatibleWithPlatform(targetAssembly, settings))
                     continue;
 
+                var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(scriptFile);
+                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+
+                if (targetAssembly.Language == null && targetAssembly.Type == TargetAssemblyType.Custom)
+                    targetAssembly.Language = scriptLanguage;
+
                 HashSet<string> assemblySourceFiles;
 
                 if (!targetAssemblyFiles.TryGetValue(targetAssembly, out assemblySourceFiles))

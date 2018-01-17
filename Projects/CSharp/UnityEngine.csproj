@@ -1647,6 +1647,9 @@
 <Compile Include="..\..\Modules\UIElements\Panel.cs" >
 <Link>Modules\UIElements\Panel.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\UIElements\PanelWrapper.cs" >
+<Link>Modules\UIElements\PanelWrapper.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\UIElements\RepeatButton.cs" >
 <Link>Modules\UIElements\RepeatButton.cs</Link>
 </Compile>

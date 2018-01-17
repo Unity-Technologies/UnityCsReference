@@ -3432,6 +3432,13 @@ public sealed partial class ParticleSystem : Component
         set;
     }
 
+    public extern bool automaticCullingEnabled
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
     public MainModule main { get { return new MainModule(this); } }
     public EmissionModule emission { get { return new EmissionModule(this); } }
     public ShapeModule shape { get { return new ShapeModule(this); } }

@@ -254,8 +254,15 @@ namespace UnityEditor
 
             if (serializedIcons.Length <= 0)
             {
+                ImportLegacyIcons(platform, kind, icons);
+                SetPlatformIcons(platform, kind, icons);
+            }
+
+            if (serializedIcons.Length <= 0)
+            {
                 foreach (var icon in icons)
-                    icon.SetTextures(null);
+                    if (icon.IsEmpty())
+                        icon.SetTextures(null);
             }
             else
             {
@@ -332,6 +339,13 @@ namespace UnityEditor
             return icons.Count(i => !i.IsEmpty());
         }
 
+        internal static int GetValidPlatformIconCount(PlatformIcon[] icons)
+        {
+            return icons.Count(
+                i => i.GetTextures().Count(t => t != null) >= i.minLayerCount && i.layerCount <= i.maxLayerCount
+                );
+        }
+
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
         [NativeMethod(Name = "SetIconsForPlatform")]
         extern internal static void SetPlatformIconsInternal(string platform, PlatformIconStruct[] icons, int kind);
@@ -351,8 +365,6 @@ namespace UnityEditor
 
         // Old API methods, will be made obsolete when the new API is implemented for all platforms,
         // currently it functions as a wrapper for the new API for all platforms that support it (iOS, Android & tvOS).
-
-
         public static void SetIconsForTargetGroup(BuildTargetGroup platform, Texture2D[] icons, IconKind kind)
         {
             if (platform == BuildTargetGroup.iOS || platform == BuildTargetGroup.tvOS || platform == BuildTargetGroup.Android)
@@ -400,6 +412,37 @@ namespace UnityEditor
                 Texture2D[] icons = GetIconsForPlatform(GetPlatformName(platform), kind);
                 return icons;
             }
+        }
+
+        internal static void ImportLegacyIcons(string platform, PlatformIconKind kind, PlatformIcon[] platformIcons)
+        {
+            if (!Enum.IsDefined(typeof(IconKind), kind.kind))
+                return;
+
+            IconKind iconKind = (IconKind)kind.kind;
+
+            Texture2D[] legacyIcons = GetIconsForPlatform(platform, iconKind);
+            int[] legacyIconWidths = GetIconWidthsForPlatform(platform, iconKind);
+            int[] legacyIconHeights  = GetIconHeightsForPlatform(platform, iconKind);
+
+            for (var i = 0; i < legacyIcons.Length; i++)
+            {
+                List<PlatformIcon> selectedIcons = new List<PlatformIcon>();
+                foreach (var icon in platformIcons)
+                {
+                    if (icon.width == legacyIconWidths[i] && icon.height == legacyIconHeights[i])
+                    {
+                        selectedIcons.Add(icon);
+                    }
+                }
+                foreach (var selectedIcon in selectedIcons)
+                    selectedIcon.SetTextures(legacyIcons[i]);
+            }
+        }
+
+        internal static void ImportLegacyIcons(BuildTargetGroup platform, PlatformIconKind kind, PlatformIcon[] platformIcons)
+        {
+            ImportLegacyIcons(GetPlatformName(platform), kind, platformIcons);
         }
 
         // Returns the list of assigned icons for the specified platform.

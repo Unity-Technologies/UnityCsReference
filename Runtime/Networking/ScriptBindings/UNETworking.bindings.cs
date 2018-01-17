@@ -39,6 +39,15 @@ namespace UnityEngine.Networking
 
         [FreeFunction("UNETManager::Get()->NotifyWhenConnectionReadyForSend")]
         extern public static bool NotifyWhenConnectionReadyForSend(int hostId, int connectionId, int notificationLevel, out byte error);
+
+        [FreeFunction("UNETManager::Get()->GetHostPort")]
+        extern public static int GetHostPort(int hostId);
+    }
+
+    internal sealed partial class ConnectionConfigInternal : IDisposable
+    {
+        [NativeMethod("MakeChannelsSharedOrder")]
+        private extern bool MakeChannelsSharedOrder(byte[] values);
     }
 
 }

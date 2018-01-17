@@ -21,15 +21,6 @@ namespace UnityEditor
         private string m_SupportsCullingText;
         private string m_SupportsCullingTextLabel; // Cached version including bullet points
 
-        // Keep in sync with ParticleSystemEditor.h
-        public enum DefaultTypes
-        {
-            Root,
-            SubBirth,
-            SubCollision,
-            SubDeath,
-        };
-
         protected class Texts
         {
             public GUIContent addModules = new GUIContent("", "Show/Hide Modules");
@@ -64,7 +55,7 @@ namespace UnityEditor
 
         internal ModuleUI GetParticleSystemRendererModuleUI()
         {
-            return m_Modules[m_Modules.Length - 1];
+            return m_Modules.Last();
         }
 
         private void InitRendererUI()
@@ -84,10 +75,10 @@ namespace UnityEditor
             // Create RendererModuleUI
             if (renderers.Count > 0)
             {
-                System.Diagnostics.Debug.Assert(m_Modules[m_Modules.Length - 1] == null); // If hitting this assert we have either not cleaned up the previous renderer or hitting another module
+                System.Diagnostics.Debug.Assert(m_Modules.Last() == null); // If hitting this assert we have either not cleaned up the previous renderer or hitting another module
 
                 m_RendererSerializedObject = new SerializedObject(renderers.ToArray());
-                m_Modules[m_Modules.Length - 1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames[s_ModuleNames.Length - 1]);
+                m_Modules[m_Modules.Length - 1] = new RendererModuleUI(this, m_RendererSerializedObject, s_ModuleNames.Last());
             }
         }
 
@@ -465,7 +456,7 @@ namespace UnityEditor
                 }
 
             // Default setup has a renderer
-            if (m_Modules[m_Modules.Length - 1] == null)
+            if (m_Modules.Last() == null)
                 InitRendererUI();
 
             // Default setup has shape, emission and renderer

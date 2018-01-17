@@ -484,12 +484,12 @@ namespace UnityEngine.Experimental.UIElements
                 // validate cache texture size first
                 var worldBound = root.worldBound;
 
-                int w = Mathf.RoundToInt(worldBound.xMax) - Mathf.RoundToInt(worldBound.xMin);
-                int h = Mathf.RoundToInt(worldBound.yMax) - Mathf.RoundToInt(worldBound.yMin);
+                int w = (int)GUIUtility.Internal_Roundf(worldBound.xMax) - (int)GUIUtility.Internal_Roundf(worldBound.xMin);
+                int h = (int)GUIUtility.Internal_Roundf(worldBound.yMax) - (int)GUIUtility.Internal_Roundf(worldBound.yMin);
 
                 // This needs to be consistent with RoundRect() in GUITexture.cpp. Otherwise, the texture may be stretched.
-                int textureWidth = Mathf.RoundToInt(w * GUIUtility.pixelsPerPoint);
-                int textureHeight = Mathf.RoundToInt(h * GUIUtility.pixelsPerPoint);
+                int textureWidth = (int)GUIUtility.Internal_Roundf(w * GUIUtility.pixelsPerPoint);
+                int textureHeight = (int)GUIUtility.Internal_Roundf(h * GUIUtility.pixelsPerPoint);
 
                 // Prevent the texture size from going empty, which may occur if the element has a sub-pixel size
                 textureWidth = Math.Max(textureWidth, 1);
@@ -546,7 +546,7 @@ namespace UnityEngine.Experimental.UIElements
 
                         // Calculate the offset required to translate the origin of the rect to the upper left corner
                         // of the pixel cache. We need to round because the rect will be rounded when rendered.
-                        var childrenOffset = Matrix4x4.Translate(new Vector3(-Mathf.RoundToInt(worldBound.x), -Mathf.RoundToInt(worldBound.y), 0));
+                        var childrenOffset = Matrix4x4.Translate(new Vector3(-GUIUtility.Internal_Roundf(worldBound.x), -GUIUtility.Internal_Roundf(worldBound.y), 0));
 
                         Matrix4x4 offsetWorldTransform = childrenOffset * root.worldTransform;
 
@@ -633,11 +633,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 var painterParams = new TextureStylePainterParameters
                 {
-                    rect = root.rect,
+                    rect = root.alignedRect,
                     uv = new Rect(0, 0, 1, 1),
                     texture = root.renderData.pixelCache,
                     color = Color.white,
-                    scaleMode = ScaleMode.ScaleAndCrop,
+                    scaleMode = ScaleMode.StretchToFill,
                     usePremultiplyAlpha = true
                 };
 

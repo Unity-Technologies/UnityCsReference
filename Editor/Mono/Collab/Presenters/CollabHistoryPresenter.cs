@@ -15,6 +15,7 @@ namespace UnityEditor.Collaboration
         IRevisionsService m_Service;
         ConnectInfo m_ConnectState;
         CollabInfo m_CollabState;
+        bool m_IsCollabError;
         int m_TotalRevisions;
         int m_CurrentPage;
         BuildAccess m_BuildAccess;
@@ -36,6 +37,8 @@ namespace UnityEditor.Collaboration
             Collab.instance.StateChanged += OnCollabStateChanged;
             Collab.instance.RevisionUpdated += OnCollabRevisionUpdated;
             Collab.instance.JobsCompleted += OnCollabJobsCompleted;
+            Collab.instance.ErrorOccurred += OnCollabError;
+            Collab.instance.ErrorCleared += OnCollabErrorCleared;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             if (Collab.instance.IsConnected())
@@ -133,6 +136,18 @@ namespace UnityEditor.Collaboration
             m_ProgressRevision = null;
         }
 
+        private void OnCollabError()
+        {
+            m_IsCollabError = true;
+            m_Window.UpdateState(RecalculateState(), false);
+        }
+
+        private void OnCollabErrorCleared()
+        {
+            m_IsCollabError = false;
+            m_Window.UpdateState(RecalculateState(), false);
+        }
+
         private void OnPlayModeStateChanged(PlayModeStateChange stateChange)
         {
             // If entering play mode, disable
@@ -151,11 +166,6 @@ namespace UnityEditor.Collaboration
 
         private HistoryState RecalculateState()
         {
-            if (m_ConnectState.error)
-            {
-                m_Window.errMessage = m_ConnectState.lastErrorMsg;
-                return HistoryState.Error;
-            }
             if (!m_ConnectState.online)
                 return HistoryState.Offline;
             if (m_ConnectState.maintenance || m_CollabState.maintenance)
@@ -168,6 +178,8 @@ namespace UnityEditor.Collaboration
                 return HistoryState.Disabled;
             if (!Collab.instance.IsConnected() || !m_CollabState.ready)
                 return HistoryState.Waiting;
+            if (m_ConnectState.error || m_IsCollabError)
+                return HistoryState.Error;
 
             return HistoryState.Ready;
         }

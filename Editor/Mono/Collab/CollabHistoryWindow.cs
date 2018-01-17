@@ -39,7 +39,6 @@ namespace UnityEditor
         VisualElement m_Container;
         PagedListView m_Pager;
         int m_ItemsPerPage = 5;
-        string m_ErrMessage;
         string m_InProgressRev;
         bool m_RevisionActionsEnabled;
 
@@ -242,12 +241,6 @@ namespace UnityEditor
                     return;
                 m_Pager.pageSize = m_ItemsPerPage;
             }
-        }
-
-        public string errMessage
-        {
-            private get { return m_ErrMessage; }
-            set { m_ErrMessage = value; }
         }
 
         public PageChangeAction OnPageChangeAction
