@@ -166,6 +166,31 @@ public partial class GUIUtility
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  bool HasFocusableControls () ;
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal static Rect Internal_AlignRectToDevice (Rect rect, Matrix4x4 transform) {
+        Rect result;
+        INTERNAL_CALL_Internal_AlignRectToDevice ( ref rect, ref transform, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Internal_AlignRectToDevice (ref Rect rect, ref Matrix4x4 transform, out Rect value);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal static Vector3 Internal_MultiplyPoint (Vector3 point, Matrix4x4 transform) {
+        Vector3 result;
+        INTERNAL_CALL_Internal_MultiplyPoint ( ref point, ref transform, out result );
+        return result;
+    }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_Internal_MultiplyPoint (ref Vector3 point, ref Matrix4x4 transform, out Vector3 value);
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal static  float Internal_Roundf (float f) ;
+
 }
 
 internal sealed partial class GUIClip

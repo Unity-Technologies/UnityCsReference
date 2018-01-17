@@ -3583,6 +3583,9 @@
 <Compile Include="..\..\Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs" >
 <Link>Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Src\VR\Mono\Oculus\VRCustomOptionsOculus.cs" >
+<Link>Editor\Src\VR\Mono\Oculus\VRCustomOptionsOculus.cs</Link>
+</Compile>
 <Compile Include="..\..\artifacts\generated\bindings_old\common\VREditor\HolographicEmulationBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\VREditor\HolographicEmulationBindings.gen.cs</Link>
 </Compile>

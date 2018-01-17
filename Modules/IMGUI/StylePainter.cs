@@ -181,6 +181,9 @@ namespace UnityEngine
             bool usePremultiplyAlpha = painterParams.usePremultiplyAlpha;
 
             Rect textureRect = screenRect;
+
+            /// Comparing aspects ratio is error-prone because the <c>screenRect</c> may end up being scaled by the
+            /// transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
             float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
             float destAspect = screenRect.width / screenRect.height;
             switch (scaleMode)

@@ -138,8 +138,8 @@ namespace UnityEditorInternal
             Rect toggleRect = EditorGUILayout.GetControlRect(true, 0);
             EditorGUI.BeginProperty(toggleRect, automaticSigningGUI, enableAutomaticSigningProp);
             bool newValue = EditorGUILayout.Toggle(automaticSigningGUI, oldValue);
-            bool signingValueNotSet = enableAutomaticSigningProp.intValue == (int)iOSAutomaticallySignValue.AutomaticallySignValueNotSet;
-            if (newValue != oldValue || signingValueNotSet)
+
+            if (newValue != oldValue)
             {
                 enableAutomaticSigningProp.intValue = GetIntValueForAutomaticSigningBool(newValue);
             }

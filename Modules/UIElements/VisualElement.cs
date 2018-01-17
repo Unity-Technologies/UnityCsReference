@@ -221,25 +221,34 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        // get the AA aligned bound
+        /// <summary>
+        /// AABB after applying the world transform to <c>rect</c>.
+        /// </summary>
         public Rect worldBound
         {
             get
             {
                 var g = worldTransform;
-                var min = g.MultiplyPoint3x4(rect.min);
-                var max = g.MultiplyPoint3x4(rect.max);
+                var min = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.min.x, rect.min.y, 1), g);
+                var max = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.max.x, rect.max.y, 1), g);
+
+                // We assume that the transform performs translation/scaling without rotation.
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
 
+        /// <summary>
+        /// AABB after applying the transform to the rect, but before applying the layout translation.
+        /// </summary>
         public Rect localBound
         {
             get
             {
                 var g = transform.matrix;
-                var min = g.MultiplyPoint3x4(layout.min);
-                var max = g.MultiplyPoint3x4(layout.max);
+                var min = GUIUtility.Internal_MultiplyPoint(layout.min, g);
+                var max = GUIUtility.Internal_MultiplyPoint(layout.max, g);
+
+                // We assume that the transform performs translation/scaling without rotation.
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
@@ -249,6 +258,22 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 return new Rect(0.0f, 0.0f, layout.width, layout.height);
+            }
+        }
+
+        /// <summary>
+        /// <c>rect</c> converted to world space, aligned to the pixel-grid, and converted back to its original space.
+        /// </summary>
+        /// <remarks>
+        /// The offset used when rendering to a pixel cache can yield numerical errors that result in rounding
+        /// differences in GUITexture.cpp, causing blur. By specifying an already-aligned rect, the numerical
+        /// errors aren't sufficient to generate rounding differences.
+        /// </remarks>
+        internal Rect alignedRect
+        {
+            get
+            {
+                return GUIUtility.Internal_AlignRectToDevice(rect, worldTransform);
             }
         }
 
@@ -1138,7 +1163,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new TextureStylePainterParameters
             {
-                rect = ve.rect,
+                rect = ve.alignedRect,
                 uv = new Rect(0, 0, 1, 1),
                 color = Color.white,
                 texture = style.backgroundImage,
@@ -1157,7 +1182,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new RectStylePainterParameters
             {
-                rect = ve.rect,
+                rect = ve.alignedRect,
                 color = style.backgroundColor,
             };
             painter.SetBorderFromStyle(ref painterParams.border, style);
