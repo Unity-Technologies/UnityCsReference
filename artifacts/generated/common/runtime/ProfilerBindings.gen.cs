@@ -20,7 +20,10 @@ namespace UnityEngine.Profiling
 {
 
 
+[UsedByNativeCode]
 [MovedFrom("UnityEngine")]
+
+
 public sealed partial class Profiler
 {
     private Profiler() {}

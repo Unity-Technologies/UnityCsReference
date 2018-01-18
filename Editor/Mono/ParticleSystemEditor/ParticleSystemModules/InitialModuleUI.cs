@@ -296,6 +296,9 @@ namespace UnityEditor
 
             if (m_GravityModifier.state != MinMaxCurveState.k_Scalar)
                 text += "\nGravity modifier is not constant.";
+
+            if (m_StopAction.intValue != 0)
+                text += "\nStop Action is being used.";
         }
     }
 } // namespace UnityEditor
