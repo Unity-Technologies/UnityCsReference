@@ -187,8 +187,7 @@ namespace UnityEditor
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
 
-                (rootView as SplitView != null &&
-                 rootView.children.Length == 1 &&
+                (rootView is SplitView &&
                  rootView.children.Length == 1 &&
                  rootView.children[0] is DockArea &&
                  ((DockArea)rootView.children[0]).m_Panes.Count == 1)

@@ -45,7 +45,7 @@ namespace UnityEditor
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TextContent("Not applicable for this platform.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TextContent("* Shared setting between multiple platforms.");
-            public static readonly GUIContent VRSupportOverridenInfo = EditorGUIUtility.TextContent("This setting is overridden by Virtual Reality Support.");
+            public static readonly GUIContent vrOrientationInfo = EditorGUIUtility.TrTextContent("Virtual Reality Support is enabled. Upon entering VR mode, landscape left orientation will be the default orientation unless only landscape right is available.");
             public static readonly GUIContent IL2CPPAndroidExperimentalInfo = EditorGUIUtility.TextContent("IL2CPP on Android is experimental and unsupported");
 
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TextContent("Cursor Hotspot");
@@ -831,42 +831,39 @@ namespace UnityEditor
                     {
                         GUILayout.Label(Styles.orientationTitle, EditorStyles.boldLabel);
 
-                        using (new EditorGUI.DisabledScope(PlayerSettings.virtualRealitySupported))
+                        EditorGUILayout.PropertyField(m_DefaultScreenOrientation, Styles.defaultScreenOrientation);
+
+                        if (PlayerSettings.virtualRealitySupported)
                         {
-                            EditorGUILayout.PropertyField(m_DefaultScreenOrientation, Styles.defaultScreenOrientation);
+                            EditorGUILayout.HelpBox(Styles.vrOrientationInfo.text, MessageType.Warning);
+                        }
 
-                            if (PlayerSettings.virtualRealitySupported)
+                        if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
+                        {
+                            if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Tizen)
+                                EditorGUILayout.PropertyField(m_UseOSAutoRotation, Styles.useOSAutoRotation);
+
+                            EditorGUI.indentLevel++;
+
+                            GUILayout.Label(Styles.allowedOrientationTitle, EditorStyles.boldLabel);
+
+                            bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
+                                ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
+                                ||  m_AllowedAutoRotateToLandscapeRight.boolValue
+                                ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
+
+                            if (!somethingAllowed)
                             {
-                                EditorGUILayout.HelpBox(Styles.VRSupportOverridenInfo.text, MessageType.Info);
+                                m_AllowedAutoRotateToPortrait.boolValue = true;
+                                Debug.LogError("All orientations are disabled. Allowing portrait");
                             }
 
-                            if (m_DefaultScreenOrientation.enumValueIndex == 4)
-                            {
-                                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Tizen)
-                                    EditorGUILayout.PropertyField(m_UseOSAutoRotation, Styles.useOSAutoRotation);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
 
-                                EditorGUI.indentLevel++;
-
-                                GUILayout.Label(Styles.allowedOrientationTitle, EditorStyles.boldLabel);
-
-                                bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
-                                    ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
-                                    ||  m_AllowedAutoRotateToLandscapeRight.boolValue
-                                    ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
-
-                                if (!somethingAllowed)
-                                {
-                                    m_AllowedAutoRotateToPortrait.boolValue = true;
-                                    Debug.LogError("All orientations are disabled. Allowing portrait");
-                                }
-
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
-
-                                EditorGUI.indentLevel--;
-                            }
+                            EditorGUI.indentLevel--;
                         }
                     }
 

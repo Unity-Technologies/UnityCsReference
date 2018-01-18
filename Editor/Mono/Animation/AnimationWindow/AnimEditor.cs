@@ -459,10 +459,10 @@ namespace UnityEditor
                     {
                         Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(m_State.activeGameObject.transform);
                         m_State.selection.UpdateClip(m_State.selectedItem, AnimationUtility.GetAnimationClips(animationPlayer.gameObject)[0]);
-
-                        //  Selection has changed, bail out now.
-                        EditorGUIUtility.ExitGUI();
                     }
+
+                    //  Layout has changed, bail out now.
+                    EditorGUIUtility.ExitGUI();
                 }
             }
             else
