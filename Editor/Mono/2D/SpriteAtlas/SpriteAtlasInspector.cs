@@ -643,16 +643,12 @@ namespace UnityEditor.U2D
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
-                float oldBias = t.mipMapBias;
                 float bias = m_MipLevel - (float)(System.Math.Log(t.width / r.width) / System.Math.Log(2));
-                TextureUtil.SetMipMapBiasNoDirty(t, bias);
 
                 if (m_ShowAlpha)
-                    EditorGUI.DrawTextureAlpha(r, t, ScaleMode.ScaleToFit);
+                    EditorGUI.DrawTextureAlpha(r, t, ScaleMode.ScaleToFit, 0, bias);
                 else
-                    EditorGUI.DrawTextureTransparent(r, t, ScaleMode.ScaleToFit);
-
-                TextureUtil.SetMipMapBiasNoDirty(t, oldBias);
+                    EditorGUI.DrawTextureTransparent(r, t, ScaleMode.ScaleToFit, 0, bias);
             }
         }
 

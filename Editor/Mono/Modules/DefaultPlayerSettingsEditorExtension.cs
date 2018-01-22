@@ -92,19 +92,6 @@ namespace UnityEditor.Modules
             return false;
         }
 
-        public string FixTargetOSVersion(string version)
-        {
-            var decimalIndexes = Enumerable.Range(0, version.Length).Where(i => version[i] == '.').ToArray();
-
-            if (decimalIndexes.Length <= 0)
-                return (version + ".0").Trim();
-            else if (decimalIndexes.Length > 1)
-                return (version.Substring(0, decimalIndexes[1])).Trim();
-            else if (decimalIndexes.Length == 1 && decimalIndexes[0] == version.Length - 1)
-                return (version + "0").Trim();
-            return version.Trim();
-        }
-
         public virtual bool SupportsMultithreadedRendering()
         {
             return false;

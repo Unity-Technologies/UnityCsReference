@@ -8,6 +8,8 @@ namespace UnityEngine.Experimental.Rendering
 {
     public abstract class RenderPipeline : IRenderPipeline
     {
+        public static event Action<Camera[]> beginFrameRendering;
+
         public virtual void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         {
             if (disposed)
@@ -19,6 +21,11 @@ namespace UnityEngine.Experimental.Rendering
         public virtual void Dispose()
         {
             disposed = true;
+        }
+
+        public static void BeginFrameRendering(Camera[] cameras)
+        {
+            beginFrameRendering?.Invoke(cameras);
         }
     }
 }

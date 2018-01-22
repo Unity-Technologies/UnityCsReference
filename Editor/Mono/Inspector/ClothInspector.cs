@@ -532,14 +532,15 @@ namespace UnityEditor
                 MeshCollider oldMeshCollider = go.GetComponent<MeshCollider>();
                 if (oldMeshCollider != null)
                 {
-                    if (oldMeshCollider.hideFlags == (HideFlags.HideInHierarchy | HideFlags.HideInInspector))
+                    if (((oldMeshCollider.hideFlags & HideFlags.HideInHierarchy) != 0) || ((oldMeshCollider.hideFlags & HideFlags.HideInInspector) != 0))
                     {
-                        DestroyImmediate(oldMeshCollider);
+                        DestroyImmediate(oldMeshCollider, true);
                     }
                 }
 
                 MeshCollider meshCollider = go.AddComponent<MeshCollider>();
-                meshCollider.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                meshCollider.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector |
+                    HideFlags.DontSaveInEditor | HideFlags.NotEditable;
 
                 meshCollider.sharedMesh = m_SkinnedMeshRenderer.sharedMesh;
 
@@ -559,9 +560,9 @@ namespace UnityEditor
                     MeshCollider meshCollider = go.GetComponent<MeshCollider>();
                     if (meshCollider != null)
                     {
-                        if (meshCollider.hideFlags == (HideFlags.HideInHierarchy | HideFlags.HideInInspector))
+                        if (((meshCollider.hideFlags & HideFlags.HideInHierarchy) != 0) || ((meshCollider.hideFlags & HideFlags.HideInInspector) != 0))
                         {
-                            DestroyImmediate(meshCollider);
+                            DestroyImmediate(meshCollider, true);
                         }
                     }
                     s_BrushCreated = false;
