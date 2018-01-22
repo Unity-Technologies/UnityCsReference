@@ -259,6 +259,12 @@ namespace UnityEditor
                 }
             }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetiOSMinimumVersionString")]
+            static extern string GetMinimumVersionString();
+
+            internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
+
             [NativeProperty("iOSTargetOSVersion")]
             public extern static string targetOSVersionString
             {
@@ -544,8 +550,15 @@ namespace UnityEditor
 
             internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
             {
-                Version minimumVersion = new Version(8, 0);
-                Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
+                Version requestedVersion;
+                try
+                {
+                    requestedVersion = new Version(targetOSVersionString);
+                }
+                catch (Exception)
+                {
+                    requestedVersion = minimumOsVersion;
+                }
                 return requestedVersion >= requiredVersion;
             }
 

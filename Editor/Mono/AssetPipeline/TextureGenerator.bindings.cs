@@ -4,12 +4,11 @@
 
 using System;
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
-using UnityEngine.Scripting;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Experimental.AssetImporters
 {
@@ -81,10 +80,6 @@ namespace UnityEditor.Experimental.AssetImporters
     {
         [NativeName("assetPath")]
         private string m_AssetPath;
-        [NativeName("imageData")]
-        private IntPtr m_ImageData;
-        [NativeName("imageDataSize")]
-        private int m_ImageDataSize;
         [NativeName("qualifyForSpritePacking")]
         private bool m_QualifyForSpritePacking;
         [NativeName("enablePostProcessor")]
@@ -100,14 +95,13 @@ namespace UnityEditor.Experimental.AssetImporters
         [NativeName("spritePackingTag")]
         private string m_SpritePackingTag;
 
+
         public TextureGenerationSettings(TextureImporterType type)
         {
             m_EnablePostProcessor = true;
             m_AssetPath = "";
-            m_ImageDataSize = 0;
             m_QualifyForSpritePacking = false;
             m_SpritePackingTag = "";
-            m_ImageData = new IntPtr();
             m_SpriteImportData = null;
 
             m_SourceTextureInformation = new SourceTextureInformation();
@@ -210,8 +204,6 @@ namespace UnityEditor.Experimental.AssetImporters
         }
 
         public string assetPath { get { return m_AssetPath; } set { m_AssetPath = value; } }
-        public IntPtr imageData { get { return m_ImageData; } set { m_ImageData = value; } }
-        public int imageDataSize { get { return m_ImageDataSize; } set { m_ImageDataSize = value; } }
         public bool qualifyForSpritePacking { get { return m_QualifyForSpritePacking; } set { m_QualifyForSpritePacking = value; } }
         public bool enablePostProcessor { get { return m_EnablePostProcessor; } set { m_EnablePostProcessor = value; } }
         public TextureImporterSettings textureImporterSettings { get { return m_Settings; } set { m_Settings = value; } }
@@ -228,8 +220,13 @@ namespace UnityEditor.Experimental.AssetImporters
     [NativeHeader("Runtime/Serialize/BuildTarget.h")]
     public static class TextureGenerator
     {
+        public static TextureGenerationOutput GenerateTexture(TextureGenerationSettings settings, NativeArray<Color32> colorBuffer)
+        {
+            return GenerateTextureImpl(settings, colorBuffer.GetUnsafeReadOnlyPtr(), colorBuffer.Length * 4);
+        }
+
         [NativeThrows]
         [NativeMethod("GenerateTextureScripting")]
-        extern public static TextureGenerationOutput GenerateTexture(TextureGenerationSettings settings);
+        extern static TextureGenerationOutput GenerateTextureImpl(TextureGenerationSettings settings, IntPtr colorBuffer, int colorBufferLength);
     }
 }

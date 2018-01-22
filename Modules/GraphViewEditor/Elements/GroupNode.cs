@@ -119,6 +119,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private bool m_IsUpdatingGeometryFromContent = false;
         private bool m_IsMovingElements = false;
         bool m_Initialized = false;
+        bool m_FirstRepaint = true;
         bool m_HeaderSizeIsValid = false;
         bool m_EditTitleCancelled = false;
         Vector2 mPreviousPosInCanvasSpace = new Vector2();
@@ -187,6 +188,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_HeaderItem.RegisterCallback<PostLayoutEvent>(OnHeaderSizeChanged);
             RegisterCallback<PostLayoutEvent>(e => { MoveElements(); });
             RegisterCallback<MouseDownEvent>(OnMouseUpEvent);
+
+            this.schedule.Execute(e => {
+                    if (visible && (m_Initialized == false))
+                    {
+                        m_Initialized = true;
+
+                        UpdateGeometryFromContent();
+                    }
+                });
         }
 
         void OnSubElementPostLayout(PostLayoutEvent e)
@@ -426,8 +436,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override void DoRepaint()
         {
-            if (m_Initialized == false)
+            if (m_FirstRepaint)
             {
+                m_FirstRepaint = false;
                 m_Initialized = true;
 
                 UpdateGeometryFromContent();

@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditorInternal.Profiling
 {
+    [MovedFrom("UnityEditorInternal")]
     public enum ProfilerViewType
     {
         Hierarchy = 0,
@@ -15,6 +17,7 @@ namespace UnityEditorInternal.Profiling
         RawHierarchy = 2
     }
 
+    [MovedFrom("UnityEditorInternal")]
     public enum ProfilerColumn
     {
         DontSort = -1,

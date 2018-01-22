@@ -77,6 +77,12 @@ namespace UnityEditor
                 }
             }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GettvOSMinimumVersionString")]
+            static extern string GetMinimumVersionString();
+
+            internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
+
             public static extern string targetOSVersionString
             {
                 [NativeMethod("GettvOSTargetOSVersion")]

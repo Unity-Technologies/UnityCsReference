@@ -296,7 +296,9 @@ namespace UnityEngine.Networking
             if (e == null)
                 return null;
 
-            return WWWTranscoder.URLEncode(s, e);
+            var bytes = Encoding.UTF8.GetBytes(s);
+            var decodedBytes = WWWTranscoder.URLEncode(bytes);
+            return e.GetString(decodedBytes);
         }
 
         public static string UnEscapeURL(string s)
@@ -312,7 +314,9 @@ namespace UnityEngine.Networking
             if (s.IndexOf('%') == -1 && s.IndexOf('+') == -1)
                 return s;
 
-            return WWWTranscoder.URLDecode(s, e);
+            var bytes = Encoding.UTF8.GetBytes(s);
+            var decodedBytes = WWWTranscoder.URLDecode(bytes);
+            return e.GetString(decodedBytes);
         }
 
         public static byte[] SerializeFormSections(List<IMultipartFormSection> multipartFormSections, byte[] boundary)

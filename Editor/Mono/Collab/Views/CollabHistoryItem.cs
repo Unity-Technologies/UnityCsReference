@@ -69,7 +69,7 @@ namespace UnityEditor.Collaboration
                 m_Description = new Label(m_FullDescription);
             }
             m_Description.name = "RevisionDescription";
-            var dropdown = new CollabHistoryDropDown(data.changes, data.changesTotal, data.changesTruncated);
+            var dropdown = new CollabHistoryDropDown(data.changes, data.changesTotal, data.changesTruncated, data.id);
             if (data.current)
             {
                 m_Button = new Button(Restore) {name = "ActionButton", text = "Restore"};
