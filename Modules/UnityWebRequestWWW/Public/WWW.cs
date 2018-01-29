@@ -22,16 +22,7 @@ namespace UnityEngine
 
         public static string EscapeURL(string s, Encoding e)
         {
-            if (s == null)
-                return null;
-
-            if (s == "")
-                return "";
-
-            if (e == null)
-                return null;
-
-            return WWWTranscoder.URLEncode(s, e);
+            return UnityWebRequest.EscapeURL(s, e);
         }
 
         public static string UnEscapeURL(string s)
@@ -41,13 +32,7 @@ namespace UnityEngine
 
         public static string UnEscapeURL(string s, Encoding e)
         {
-            if (null == s)
-                return null;
-
-            if (s.IndexOf('%') == -1 && s.IndexOf('+') == -1)
-                return s;
-
-            return WWWTranscoder.URLDecode(s, e);
+            return UnityWebRequest.UnEscapeURL(s, e);
         }
 
         public static WWW LoadFromCacheOrDownload(string url, int version)
@@ -85,12 +70,14 @@ namespace UnityEngine
         public WWW(string url, WWWForm form)
         {
             _uwr = UnityWebRequest.Post(url, form);
+            _uwr.chunkedTransfer = false;
             _uwr.SendWebRequest();
         }
 
         public WWW(string url, byte[] postData)
         {
             _uwr = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
+            _uwr.chunkedTransfer = false;
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
@@ -103,6 +90,7 @@ namespace UnityEngine
         {
             var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
             _uwr = new UnityWebRequest(url, verb);
+            _uwr.chunkedTransfer = false;
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;
@@ -117,6 +105,7 @@ namespace UnityEngine
         {
             var verb = postData == null ? UnityWebRequest.kHttpVerbGET : UnityWebRequest.kHttpVerbPOST;
             _uwr = new UnityWebRequest(url, verb);
+            _uwr.chunkedTransfer = false;
             UploadHandler formUploadHandler = new UploadHandlerRaw(postData);
             formUploadHandler.contentType = "application/x-www-form-urlencoded";
             _uwr.uploadHandler = formUploadHandler;

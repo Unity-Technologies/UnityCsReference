@@ -512,7 +512,7 @@ namespace UnityEditor
 
             // Set ortho camera and position it
             var cam = previewUtility.camera;
-            cam.orthographic = is2D;
+            cam.orthographic = true;
             cam.orthographicSize = scale * 2.0f;
             cam.nearClipPlane = 1 * scale;
             cam.farClipPlane = 25 * scale;
@@ -655,7 +655,7 @@ namespace UnityEditor
 
             // Render shadow map
             Matrix4x4 shadowMatrix;
-            RenderTexture shadowMap = RenderPreviewShadowmap(previewUtility.lights[0], m_BoundingVolumeScale / 2, bodyPos, floorPos, out shadowMatrix);
+            RenderTexture shadowMap = RenderPreviewShadowmap(previewUtility.lights[0], m_BoundingVolumeScale / 2, bodyPosition, floorPos, out shadowMatrix);
 
             float tempZoomFactor = (is2D ? 1.0f : m_ZoomFactor);
             // Position camera
