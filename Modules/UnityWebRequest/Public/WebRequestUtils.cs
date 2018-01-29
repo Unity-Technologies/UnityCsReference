@@ -546,7 +546,16 @@ namespace UnityEngineInternal
 
             // for file://protocol pass in unescaped string so we can pass it to VFS
             if (targetUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-                return targetUrl.Contains("%") ? UnityEngine.WWWTranscoder.URLDecode(targetUrl, System.Text.Encoding.UTF8) : targetUrl;
+            {
+                if (targetUrl.Contains("%"))
+                {
+                    var urlBytes = Encoding.UTF8.GetBytes(targetUrl);
+                    var decodedBytes = UnityEngine.WWWTranscoder.URLDecode(urlBytes);
+                    return Encoding.UTF8.GetString(decodedBytes);
+                }
+                else
+                    return targetUrl;
+            }
 
             // if URL contains '%', assume it is properly escaped, otherwise '%2f' gets unescaped as '/' (which may not be correct)
             // otherwise escape it, i.e. replaces spaces by '%20'
