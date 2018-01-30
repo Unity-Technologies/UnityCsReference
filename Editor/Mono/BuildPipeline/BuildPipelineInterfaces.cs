@@ -102,9 +102,10 @@ namespace UnityEditor.Build
         {
             if (findFlags == previousFlags)
                 return;
-            previousFlags = findFlags;
 
             CleanupBuildCallbacks();
+            previousFlags = findFlags;
+
             bool findBuildProcessors = (findFlags & BuildCallbacks.BuildProcessors) == BuildCallbacks.BuildProcessors;
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
