@@ -506,7 +506,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 precompiledAssembliesForReferences = precompiledAssembliesForReferences.Where(x => x.OptionalUnityReferences == OptionalUnityReferences.None || ((targetAssembly.OptionalUnityReferences & x.OptionalUnityReferences & settings.OptionalUnityReferences) != 0)).ToArray();
             }
 
-            var precompiledReferences = GetPrecompiledReferences(scriptAssembly, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledAssembliesForReferences);
+            var precompiledReferences = GetPrecompiledReferences(scriptAssembly, targetAssembly.Type, settings.CompilationOptions, targetAssembly.editorCompatibility, precompiledAssembliesForReferences);
             references.AddRange(precompiledReferences);
 
             if (buildingForEditor && assemblies.EditorAssemblyReferences != null)
@@ -625,12 +625,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references;
         }
 
-        public static List<string> GetPrecompiledReferences(ScriptAssembly scriptAssembly, EditorScriptCompilationOptions options, EditorCompatibility editorCompatibility, PrecompiledAssembly[] precompiledAssemblies)
+        public static List<string> GetPrecompiledReferences(ScriptAssembly scriptAssembly, TargetAssemblyType targetAssemblyType, EditorScriptCompilationOptions options, EditorCompatibility editorCompatibility, PrecompiledAssembly[] precompiledAssemblies)
         {
             var references = new List<string>();
 
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
             bool assemblyEditorOnly = (scriptAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            bool isCustomAssembly = (targetAssemblyType & TargetAssemblyType.Custom) == TargetAssemblyType.Custom;
 
             if (precompiledAssemblies != null)
                 foreach (var precompiledAssembly in precompiledAssemblies)
@@ -638,7 +639,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     bool compiledAssemblyEditorOnly = (precompiledAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 
                     // Add all pre-compiled runtime assemblies as references to all script assemblies. Don't add pre-compiled editor assemblies as dependencies to runtime assemblies.
-                    if (!compiledAssemblyEditorOnly || assemblyEditorOnly || (buildingForEditor && editorCompatibility == EditorCompatibility.CompatibleWithEditor))
+                    if (!compiledAssemblyEditorOnly || assemblyEditorOnly || (isCustomAssembly && buildingForEditor && editorCompatibility == EditorCompatibility.CompatibleWithEditor))
                     {
                         if (IsPrecompiledAssemblyCompatibleWithScriptAssembly(precompiledAssembly, scriptAssembly))
                             references.Add(precompiledAssembly.Path);

@@ -184,9 +184,6 @@
 <Compile Include="..\..\Runtime\Export\ArrayUtils.cs" >
 <Link>Runtime\Export\ArrayUtils.cs</Link>
 </Compile>
-<Compile Include="..\..\Runtime\Export\AtomicSafetyHandle.bindings.cs" >
-<Link>Runtime\Export\AtomicSafetyHandle.bindings.cs</Link>
-</Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent.cs" >
 <Link>Runtime\Export\UnityEvent.cs</Link>
 </Compile>
@@ -667,8 +664,14 @@
 <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs" >
 <Link>Runtime\Export\GI\Lightmapping.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Burst\BurstDiscardAttribute.cs" >
+<Link>Runtime\Export\Burst\BurstDiscardAttribute.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs" >
 <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatched.cs" >
+<Link>Runtime\Export\Unsafe\UnsafeUtilityPatched.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Export\iOS\iOSReplayKit.bindings.cs" >
 <Link>Runtime\Export\iOS\iOSReplayKit.bindings.cs</Link>
@@ -737,7 +740,10 @@
 <Link>Runtime\Export\Assertions\Must\MustFloat.cs</Link>
 </Compile><Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs" >
 <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-</Compile><Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelForTransform.cs" >
+</Compile><Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs" >
+<Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Jobs\Managed\IJobParallelForTransform.cs" >
 <Link>Runtime\Jobs\Managed\IJobParallelForTransform.cs</Link>
 </Compile>
 <Compile Include="..\..\Runtime\Jobs\Managed\IJob.cs" >
@@ -1001,6 +1007,9 @@
 </Compile>
 <Compile Include="..\..\Runtime\Dynamics\Managed\Dynamics.cs" >
 <Link>Runtime\Dynamics\Managed\Dynamics.cs</Link>
+</Compile>
+<Compile Include="..\..\Runtime\Dynamics\ScriptBindings\RaycastCommand.bindings.cs" >
+<Link>Runtime\Dynamics\ScriptBindings\RaycastCommand.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs</Link>
@@ -1277,6 +1286,12 @@
 </Compile>
 <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\AI\NavMeshExperimental.bindings.cs" >
+<Link>Modules\AI\NavMeshExperimental.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\AI\NavMesh\NavMesh.bindings.cs" >
+<Link>Modules\AI\NavMesh\NavMesh.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\AI\NavMesh\NavMesh.cs" >
 <Link>Modules\AI\NavMesh\NavMesh.cs</Link>

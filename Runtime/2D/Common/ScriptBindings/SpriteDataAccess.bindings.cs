@@ -58,7 +58,7 @@ namespace UnityEngine.Experimental.U2D
         [NativeNameAttribute("stride")]
         int m_Stride;
 
-        public IntPtr buffer { get { return m_Buffer; } set { m_Buffer = value; } }
+        unsafe public void* buffer { get { return (void*)m_Buffer; } set { m_Buffer = (IntPtr)value; } }
         public int count { get { return m_Count; } set { m_Count = value; } }
         public int offset { get { return m_Offset; } set { m_Offset = value; } }
         public int stride { get { return m_Stride; } set { m_Stride = value; } }
@@ -96,52 +96,53 @@ namespace UnityEngine.Experimental.U2D
                 throw new InvalidOperationException(String.Format("The requested channel '{0}' does not match the return type {1}.", channel, typeof(T).Name));
         }
 
-        public static NativeSlice<T> GetVertexAttribute<T>(this Sprite sprite, VertexAttribute channel) where T : struct
+        public unsafe static NativeSlice<T> GetVertexAttribute<T>(this Sprite sprite, VertexAttribute channel) where T : struct
         {
             CheckAttributeTypeMatchesAndThrow<T>(channel);
             var info = GetChannelInfo(sprite, channel);
-            var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<T>(info.buffer, info.offset, info.count, info.stride);
+            var buffer = (byte*)(info.buffer) + info.offset;
+            var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<T>(buffer, info.stride, info.count);
             return slice;
         }
 
-        public static void SetVertexAttribute<T>(this Sprite sprite, VertexAttribute channel, NativeArray<T> src) where T : struct
+        unsafe public static void SetVertexAttribute<T>(this Sprite sprite, VertexAttribute channel, NativeArray<T> src) where T : struct
         {
             CheckAttributeTypeMatchesAndThrow<T>(channel);
             SetChannelData(sprite, channel, src.GetUnsafeReadOnlyPtr());
         }
 
-        public static NativeArray<Matrix4x4> GetBindPoses(this Sprite sprite)
+        unsafe public static NativeArray<Matrix4x4> GetBindPoses(this Sprite sprite)
         {
             var info = GetBindPoseInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(info.buffer, info.count, Allocator.Invalid);
             return arr;
         }
 
-        public static void SetBindPoses(this Sprite sprite, NativeArray<Matrix4x4> src)
+        unsafe public static void SetBindPoses(this Sprite sprite, NativeArray<Matrix4x4> src)
         {
             SetBindPoseData(sprite, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
-        public static NativeArray<ushort> GetIndices(this Sprite sprite)
+        unsafe public static NativeArray<ushort> GetIndices(this Sprite sprite)
         {
             var info = GetIndicesInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(info.buffer, info.count, Allocator.Invalid);
             return arr;
         }
 
-        public static void SetIndices(this Sprite sprite, NativeArray<ushort> src)
+        unsafe public static void SetIndices(this Sprite sprite, NativeArray<ushort> src)
         {
             SetIndicesData(sprite, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
 
-        public static NativeArray<BoneWeight> GetBoneWeights(this Sprite sprite)
+        unsafe public static NativeArray<BoneWeight> GetBoneWeights(this Sprite sprite)
         {
             var info = GetBoneWeightsInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BoneWeight>(info.buffer, info.count, Allocator.Invalid);
             return arr;
         }
 
-        public static void SetBoneWeights(this Sprite sprite, NativeArray<BoneWeight> src)
+        unsafe public static void SetBoneWeights(this Sprite sprite, NativeArray<BoneWeight> src)
         {
             SetBoneWeightsData(sprite, src.GetUnsafeReadOnlyPtr(), src.Length);
         }
@@ -165,19 +166,19 @@ namespace UnityEngine.Experimental.U2D
 
         // This lenght is not tied to vertexCount
         extern private static SpriteChannelInfo GetBindPoseInfo(Sprite sprite);
-        extern private static void SetBindPoseData(Sprite sprite, IntPtr src, int count);
+        unsafe extern private static void SetBindPoseData(Sprite sprite, void* src, int count);
 
         extern private static SpriteChannelInfo GetIndicesInfo(Sprite sprite);
-        extern private static void SetIndicesData(Sprite sprite, IntPtr src, int count);
+        unsafe extern private static void SetIndicesData(Sprite sprite, void* src, int count);
 
         extern private static SpriteChannelInfo GetChannelInfo(Sprite sprite, VertexAttribute channel);
-        extern private static void SetChannelData(Sprite sprite, VertexAttribute channel, IntPtr src);
+        unsafe extern private static void SetChannelData(Sprite sprite, VertexAttribute channel, void* src);
 
         extern private static SpriteBone[] GetBoneInfo(Sprite sprite);
         extern private static void SetBoneData(Sprite sprite, SpriteBone[] src);
 
         extern private static SpriteChannelInfo GetBoneWeightsInfo(Sprite sprite);
-        extern private static void SetBoneWeightsData(Sprite sprite, IntPtr src, int count);
+        unsafe extern private static void SetBoneWeightsData(Sprite sprite, void* src, int count);
 
     }
 
@@ -185,7 +186,7 @@ namespace UnityEngine.Experimental.U2D
     [NativeHeader("Runtime/Graphics/Mesh/SpriteRenderer.h")]
     public static class SpriteRendererDataAccessExtensions
     {
-        public static NativeArray<Vector3> GetDeformableVertices(this SpriteRenderer spriteRenderer)
+        public unsafe static NativeArray<Vector3> GetDeformableVertices(this SpriteRenderer spriteRenderer)
         {
             var info = GetDeformableChannelInfo(spriteRenderer, VertexAttribute.Position);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(info.buffer, info.count, Allocator.Invalid);

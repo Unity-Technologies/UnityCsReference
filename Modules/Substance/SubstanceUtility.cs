@@ -15,7 +15,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
-    [Obsolete("ProceduralProcessorUsage is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralProcessorUsage
     {
         Unsupported = 0,
@@ -24,7 +24,7 @@ namespace UnityEngine
         All = 3
     }
 
-    [Obsolete("ProceduralCacheSize is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralCacheSize
     {
         Tiny = 0,
@@ -34,7 +34,7 @@ namespace UnityEngine
         None = 4
     }
 
-    [Obsolete("ProceduralLoadingBehavior is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralLoadingBehavior
     {
         DoNothing = 0,
@@ -45,7 +45,7 @@ namespace UnityEngine
         DoNothingAndCache = 5
     }
 
-    [Obsolete("ProceduralPropertyType is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralPropertyType
     {
         Boolean = 0,
@@ -60,7 +60,7 @@ namespace UnityEngine
         String = 9
     }
 
-    [Obsolete("ProceduralOutputType is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralOutputType
     {
         Unknown = 0,
@@ -78,7 +78,7 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [Obsolete("ProceduralPropertyDescription is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public sealed partial class ProceduralPropertyDescription
     {
         public string name;
@@ -93,7 +93,7 @@ namespace UnityEngine
         public string[] componentLabels;
     }
 
-    [Obsolete("ProceduralMaterial is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     [ExcludeFromPreset]
     public sealed partial class ProceduralMaterial : Material
     {
@@ -105,22 +105,22 @@ namespace UnityEngine
 
         public ProceduralPropertyDescription[] GetProceduralPropertyDescriptions()
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public bool HasProceduralProperty(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public bool GetProceduralBoolean(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public bool IsProceduralPropertyVisible(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralBoolean(string inputName, bool value)
@@ -130,7 +130,7 @@ namespace UnityEngine
 
         public float GetProceduralFloat(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralFloat(string inputName, float value)
@@ -140,7 +140,7 @@ namespace UnityEngine
 
         public Vector4 GetProceduralVector(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralVector(string inputName, Vector4 value)
@@ -150,7 +150,7 @@ namespace UnityEngine
 
         public Color GetProceduralColor(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralColor(string inputName, Color value)
@@ -160,7 +160,7 @@ namespace UnityEngine
 
         public int GetProceduralEnum(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralEnum(string inputName, int value)
@@ -170,7 +170,7 @@ namespace UnityEngine
 
         public Texture2D GetProceduralTexture(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralTexture(string inputName, Texture2D value)
@@ -180,7 +180,7 @@ namespace UnityEngine
 
         public string GetProceduralString(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void SetProceduralString(string inputName, string value)
@@ -190,7 +190,7 @@ namespace UnityEngine
 
         public bool IsProceduralPropertyCached(string inputName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public void CacheProceduralProperty(string inputName, bool value)
@@ -205,14 +205,14 @@ namespace UnityEngine
 
         public ProceduralCacheSize cacheSize
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
 
         public int animationUpdateRate
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
@@ -228,7 +228,7 @@ namespace UnityEngine
 
         public bool isProcessing
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public static void StopRebuilds()
@@ -238,50 +238,50 @@ namespace UnityEngine
 
         public bool isCachedDataAvailable
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public bool isLoadTimeGenerated
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
         public ProceduralLoadingBehavior loadingBehavior
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public static bool isSupported
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public static ProceduralProcessorUsage substanceProcessorUsage
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
         public string preset
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
         public Texture[] GetGeneratedTextures()
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public ProceduralTexture GetGeneratedTexture(string textureName)
         {
-            throw new Exception("ProceduralMaterial is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public bool isReadable
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
             set { FeatureRemoved(); }
         }
 
@@ -292,42 +292,42 @@ namespace UnityEngine
 
         public bool isFrozen
         {
-            get { throw new Exception("ProceduralMaterial is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
     }
 
-    [Obsolete("ProceduralTexture is deprecated and no longer available.", true)]
+    [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     [ExcludeFromPreset]
     public sealed partial class ProceduralTexture : Texture
     {
         private ProceduralTexture()
         {
-            throw new Exception("ProceduralTexture is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public ProceduralOutputType GetProceduralOutputType()
         {
-            throw new Exception("ProceduralTexture is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         internal ProceduralMaterial GetProceduralMaterial()
         {
-            throw new Exception("ProceduralTexture is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
 
         public bool hasAlpha
         {
-            get { throw new Exception("ProceduralTexture is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public TextureFormat format
         {
-            get { throw new Exception("ProceduralTexture is deprecated and no longer available."); }
+            get { throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store."); }
         }
 
         public Color32[] GetPixels32(int x, int y, int blockWidth, int blockHeight)
         {
-            throw new Exception("ProceduralTexture is deprecated and no longer available.");
+            throw new Exception("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.");
         }
     }
 

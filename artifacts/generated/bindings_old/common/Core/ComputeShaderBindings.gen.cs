@@ -13,6 +13,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -323,6 +325,14 @@ public sealed partial class ComputeBuffer : IDisposable
     
     
             [System.Security.SecuritySafeCritical] 
+    unsafe public void SetData<T>(NativeArray<T> data) where T : struct
+        {
+            InternalSetNativeData((IntPtr)data.GetUnsafeReadOnlyPtr(), 0, 0, data.Length, UnsafeUtility.SizeOf<T>());
+        }
+    
+    
+    
+            [System.Security.SecuritySafeCritical] 
     public void SetData(System.Array data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
         {
             if (data == null)
@@ -349,6 +359,22 @@ public sealed partial class ComputeBuffer : IDisposable
         }
     
     
+    
+            [System.Security.SecuritySafeCritical] 
+    public unsafe void SetData<T>(NativeArray<T> data, int nativeBufferStartIndex, int computeBufferStartIndex, int count) where T : struct
+        {
+            if (nativeBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || nativeBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (nativeBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", nativeBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalSetNativeData((IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, computeBufferStartIndex, count, UnsafeUtility.SizeOf<T>());
+        }
+    
+    
+    [System.Security.SecurityCritical] 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void InternalSetNativeData (IntPtr data, int nativeBufferStartIndex, int computeBufferStartIndex, int count, int elemSize) ;
+
     [System.Security.SecurityCritical] 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

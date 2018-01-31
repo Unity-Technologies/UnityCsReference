@@ -325,13 +325,13 @@ namespace UnityEditor
 
             if (m_ResetOnNextRepaint || selectedProviderChanged || m_RectsCache == null)
             {
+                m_ResetOnNextRepaint = false;
                 HandleApplyRevertDialog(SpriteEditorWindowStyles.applyRevertDialogTitle.text, SpriteEditorWindowStyles.pendingChangesDialogContent.text);
                 ResetWindow();
                 RefreshPropertiesCache();
                 RefreshRects();
                 UpdateAvailableModules();
                 SetupModule(m_CurrentModuleIndex);
-                m_ResetOnNextRepaint = false;
             }
             Matrix4x4 oldHandlesMatrix = Handles.matrix;
 
@@ -629,15 +629,16 @@ namespace UnityEditor
             if (s_Instance == null)
                 return;
 
-            if (m_CurrentModule != null)
-                m_CurrentModule.OnModuleDeactivate();
-
-            m_CurrentModule = null;
             if (m_RegisteredModules.Count > newModuleIndex)
             {
+                m_CurrentModuleIndex = newModuleIndex;
+                if (m_CurrentModule != null)
+                    m_CurrentModule.OnModuleDeactivate();
+
+                m_CurrentModule = null;
+
                 m_CurrentModule = m_RegisteredModules[newModuleIndex];
                 m_CurrentModule.OnModuleActivate();
-                m_CurrentModuleIndex = newModuleIndex;
             }
         }
 

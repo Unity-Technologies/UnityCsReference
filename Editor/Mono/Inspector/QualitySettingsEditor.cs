@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor.Build;
 using System.Linq;
 using UnityEditorInternal;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -534,14 +535,16 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
             GUILayout.Space(10);
 
+            GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
+            if (SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
+                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
+
             if (!usingSRP)
             {
-                GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(shadowsProperty);
                 EditorGUILayout.PropertyField(shadowResolutionProperty);
                 EditorGUILayout.PropertyField(shadowProjectionProperty);
                 EditorGUILayout.PropertyField(shadowDistanceProperty);
-                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
                 EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
                 EditorGUILayout.PropertyField(shadowCascadesProperty);
 

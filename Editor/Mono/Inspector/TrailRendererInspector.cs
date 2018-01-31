@@ -42,6 +42,7 @@ namespace UnityEditor
             excludedProperties.Add("m_ReflectionProbeUsage");
             excludedProperties.Add("m_ProbeAnchor");
             excludedProperties.Add("m_Parameters");
+            excludedProperties.Add("m_RenderingLayerMask");
             m_ExcludedProperties = excludedProperties.ToArray();
 
             m_CurveEditor.OnEnable(serializedObject);

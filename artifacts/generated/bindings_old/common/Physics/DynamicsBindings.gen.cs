@@ -1271,19 +1271,15 @@ public partial struct ContactPoint
     public Vector3 normal { get { return m_Normal; } }
     
     
-    public Collider thisCollider { get { return ColliderFromInstanceId(m_ThisColliderInstanceID); } }
+    public Collider thisCollider { get { return Object.FindObjectFromInstanceID(m_ThisColliderInstanceID) as Collider; } }
     
     
-    public Collider otherCollider { get { return ColliderFromInstanceId(m_OtherColliderInstanceID); } }
+    public Collider otherCollider { get { return Object.FindObjectFromInstanceID(m_OtherColliderInstanceID) as Collider; } }
     
     
     public float separation { get { return m_Separation; }}
     
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  Collider ColliderFromInstanceId (int instanceID) ;
-
 }
 
 [RequireComponent(typeof(Transform))]
@@ -3056,7 +3052,7 @@ public partial struct RaycastHit
     private int       m_FaceID;
     private float     m_Distance;
     private Vector2   m_UV;
-    private Collider  m_Collider;
+    private int       m_Collider;
     
     
     private static void CalculateRaycastTexCoord (out Vector2 output, Collider col, Vector2 uv, Vector3 point, int face, int index) {
@@ -3108,9 +3104,7 @@ public partial struct RaycastHit
         }
     
     
-    public Collider collider { get { return m_Collider; }   }
-    
-    
+    public Collider collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider; }   }
     
     
     public Rigidbody rigidbody { get { return collider != null ? collider.attachedRigidbody : null; }  }

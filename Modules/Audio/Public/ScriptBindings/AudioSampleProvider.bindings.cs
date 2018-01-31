@@ -106,13 +106,13 @@ namespace UnityEngine.Experimental.Audio
             set { InternalSetEnableSilencePadding(id, value); }
         }
 
-        public uint ConsumeSampleFrames(NativeArray<float> sampleFrames)
+        unsafe public uint ConsumeSampleFrames(NativeArray<float> sampleFrames)
         {
             if (channelCount == 0)
                 return 0;
 
             return m_ConsumeSampleFramesNativeFunction(
-                id, sampleFrames.GetUnsafePtr(), (uint)sampleFrames.Length / channelCount);
+                id, (IntPtr)sampleFrames.GetUnsafePtr(), (uint)sampleFrames.Length / channelCount);
         }
 
         public static ConsumeSampleFramesNativeFunction consumeSampleFramesNativeFunction

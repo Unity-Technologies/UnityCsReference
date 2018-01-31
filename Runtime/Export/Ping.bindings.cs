@@ -25,12 +25,11 @@ namespace UnityEngine
         [ThreadAndSerializationSafe]
         public void DestroyPing()
         {
-            m_Ptr = IntPtr.Zero;
             Internal_Destroy(m_Ptr);
+            m_Ptr = IntPtr.Zero;
         }
 
-        [ThreadAndSerializationSafe]
-        [FreeFunction("DestroyPing")]
+        [NativeMethod(Name = "DestroyPing", IsFreeFunction = true, IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
         [FreeFunction("CreatePing")]
         private static extern IntPtr Internal_Create(string address);

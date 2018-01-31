@@ -43,6 +43,7 @@ namespace UnityEditor
                 excludedProperties.Add("m_MotionVectors");
             if (!SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
                 excludedProperties.Add("m_ReceiveShadows");
+            excludedProperties.Add("m_RenderingLayerMask");
             m_ExcludedProperties = excludedProperties.ToArray();
 
             m_CurveEditor.OnEnable(serializedObject);

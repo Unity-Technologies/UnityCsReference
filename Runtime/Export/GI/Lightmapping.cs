@@ -358,9 +358,9 @@ namespace UnityEngine
             public static void ResetDelegate()                          { s_RequestLightsDelegate = s_DefaultDelegate; }
 
             [UnityEngine.Scripting.UsedByNativeCode]
-            internal static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount)
+            internal unsafe static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount)
             {
-                var outLights = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LightDataGI>(outLightsPtr, outLightsCount, Allocator.None);
+                var outLights = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LightDataGI>((void*)outLightsPtr, outLightsCount, Allocator.None);
                 s_RequestLightsDelegate(lights, outLights);
             }
 
