@@ -67,7 +67,8 @@ namespace UnityEditor.Modules
 
             internal virtual void Apply(PluginImporterInspector inspector)
             {
-                inspector.importer.SetPlatformData(platformName, key, value.ToString());
+                string valueString = type == typeof(bool) ? value.ToString().ToLower() : value.ToString();
+                inspector.importer.SetPlatformData(platformName, key, valueString);
             }
 
             internal virtual void OnGUI(PluginImporterInspector inspector)

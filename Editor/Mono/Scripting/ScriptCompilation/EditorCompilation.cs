@@ -1087,7 +1087,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options);
             var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory(), assemblySuffix);
-            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor,  precompiledAssemblies);
+            var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor,  precompiledAssemblies);
             var additionalReferences = EditorBuildRules.GenerateAdditionalReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];
 

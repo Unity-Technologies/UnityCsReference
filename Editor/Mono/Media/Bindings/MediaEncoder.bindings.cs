@@ -83,7 +83,7 @@ namespace UnityEditor.Media
             return Internal_AddFrame(m_Ptr, texture);
         }
 
-        public bool AddSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
+        unsafe public bool AddSamples(ushort trackIndex, NativeArray<float> interleavedSamples)
         {
             return Internal_AddSamples(
                 m_Ptr, trackIndex, interleavedSamples.GetUnsafeReadOnlyPtr(),
@@ -126,7 +126,7 @@ namespace UnityEditor.Media
         extern private static bool Internal_AddFrame(IntPtr encoder, Texture2D texture);
 
         [FreeFunction]
-        extern private static bool Internal_AddSamples(
-            IntPtr encoder, ushort trackIndex, IntPtr buffer, int sampleCount);
+        unsafe extern private static bool Internal_AddSamples(
+            IntPtr encoder, ushort trackIndex, void* buffer, int sampleCount);
     }
 }

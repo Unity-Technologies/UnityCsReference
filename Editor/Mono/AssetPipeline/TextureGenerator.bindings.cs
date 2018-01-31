@@ -218,15 +218,15 @@ namespace UnityEditor.Experimental.AssetImporters
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterTypes.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.bindings.h")]
     [NativeHeader("Runtime/Serialize/BuildTarget.h")]
-    public static class TextureGenerator
+    public static unsafe class TextureGenerator
     {
         public static TextureGenerationOutput GenerateTexture(TextureGenerationSettings settings, NativeArray<Color32> colorBuffer)
         {
-            return GenerateTextureImpl(settings, colorBuffer.GetUnsafeReadOnlyPtr(), colorBuffer.Length * 4);
+            return GenerateTextureImpl(settings, colorBuffer.GetUnsafeReadOnlyPtr(), colorBuffer.Length * UnsafeUtility.SizeOf<Color32>());
         }
 
         [NativeThrows]
         [NativeMethod("GenerateTextureScripting")]
-        extern static TextureGenerationOutput GenerateTextureImpl(TextureGenerationSettings settings, IntPtr colorBuffer, int colorBufferLength);
+        extern static unsafe TextureGenerationOutput GenerateTextureImpl(TextureGenerationSettings settings, void* colorBuffer, int colorBufferLength);
     }
 }

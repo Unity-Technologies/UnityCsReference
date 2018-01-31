@@ -8,6 +8,7 @@ using UnityEngine;
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEditor.UIAutomation")]
+[assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerStandalone")]
 [assembly: InternalsVisibleTo("Unity.Automation")]

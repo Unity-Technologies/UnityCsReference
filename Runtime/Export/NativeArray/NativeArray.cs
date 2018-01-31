@@ -6,17 +6,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Collections
 {
-    [System.Flags]
     public enum NativeArrayOptions
     {
-        None            = 0,
-        ClearMemory     = 1 << 0
+        UninitializedMemory            = 0,
+        ClearMemory                    = 1
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -25,9 +24,10 @@ namespace Unity.Collections
     [NativeContainerSupportsDeallocateOnJobCompletion]
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeArrayDebugView < >))]
-    public struct NativeArray<T> : IDisposable, IEnumerable<T> where T : struct
+    unsafe public struct NativeArray<T> : IDisposable, IEnumerable<T> where T : struct
     {
-        internal IntPtr                   m_Buffer;
+        [NativeDisableUnsafePtrRestriction]
+        internal void*                    m_Buffer;
         internal int                      m_Length;
 
 
@@ -37,7 +37,7 @@ namespace Unity.Collections
         {
             Allocate(length, allocator, out this);
             if ((options & NativeArrayOptions.ClearMemory) == NativeArrayOptions.ClearMemory)
-                UnsafeUtility.MemClear(m_Buffer, (ulong)Length * (ulong)UnsafeUtility.SizeOf<T>());
+                UnsafeUtility.MemClear(m_Buffer, (long)Length * (long)UnsafeUtility.SizeOf<T>());
         }
 
         public NativeArray(T[] array, Allocator allocator)
@@ -58,7 +58,7 @@ namespace Unity.Collections
             long totalSize = UnsafeUtility.SizeOf<T>() * (long)length;
 
 
-            array.m_Buffer = UnsafeUtility.Malloc((ulong)totalSize, UnsafeUtility.AlignOf<T>(), allocator);
+            array.m_Buffer = UnsafeUtility.Malloc(totalSize, UnsafeUtility.AlignOf<T>(), allocator);
             array.m_Length = length;
             array.m_AllocatorLabel = allocator;
 
@@ -66,34 +66,54 @@ namespace Unity.Collections
 
         public int Length { get { return m_Length; } }
 
+        [BurstDiscard]
+        internal static void IsBlittableAndThrow()
+        {
+            if (!UnsafeUtility.IsBlittable<T>())
+                throw new ArgumentException(string.Format("{0} used in NativeArray<{0}> must be blittable", typeof(T)));
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private unsafe void CheckElementReadAccess(int index)
+        {
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private unsafe void CheckElementWriteAccess(int index)
+        {
+        }
+
         public unsafe T this[int index]
         {
             get
             {
+                CheckElementReadAccess(index);
                 return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
             }
 
+            [WriteAccessRequired]
             set
             {
-
+                CheckElementWriteAccess(index);
                 UnsafeUtility.WriteArrayElement(m_Buffer, index, value);
             }
         }
 
         public bool IsCreated
         {
-            get { return m_Buffer != IntPtr.Zero; }
+            get { return m_Buffer != null; }
         }
 
+        [WriteAccessRequired]
         public void Dispose()
         {
 
             UnsafeUtility.Free(m_Buffer, m_AllocatorLabel);
-            m_Buffer = IntPtr.Zero;
+            m_Buffer = null;
             m_Length = 0;
         }
 
-        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
+        [WriteAccessRequired]
         public void CopyFrom(T[] array)
         {
 
@@ -101,13 +121,12 @@ namespace Unity.Collections
                 UnsafeUtility.WriteArrayElement(m_Buffer, i, array[i]);
         }
 
-        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
+        [WriteAccessRequired]
         public void CopyFrom(NativeArray<T> array)
         {
             array.CopyTo(this);
         }
 
-        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyTo(T[] array)
         {
 
@@ -115,14 +134,12 @@ namespace Unity.Collections
                 array[i] = UnsafeUtility.ReadArrayElement<T>(m_Buffer, i);
         }
 
-        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public void CopyTo(NativeArray<T> array)
         {
 
-            UnsafeUtility.MemCpy(array.m_Buffer, m_Buffer, (ulong)Length * (ulong)UnsafeUtility.SizeOf<T>());
+            UnsafeUtility.MemCpy(array.m_Buffer, m_Buffer, (long)Length * (long)UnsafeUtility.SizeOf<T>());
         }
 
-        [MethodImpl((MethodImplOptions) 256)] // AggressiveInlining
         public T[] ToArray()
         {
             var array = new T[Length];
@@ -206,12 +223,13 @@ namespace Unity.Collections.LowLevel.Unsafe
     public static class NativeArrayUnsafeUtility
     {
 
-        public static NativeArray<T> ConvertExistingDataToNativeArray<T>(IntPtr dataPointer, int length, Allocator allocator) where T : struct
+        /// Internal method used typically by other systems to provide a view on them.
+        /// The caller is still the owner of the data.
+        unsafe public static NativeArray<T> ConvertExistingDataToNativeArray<T>(void* dataPointer, int length, Allocator allocator) where T : struct
         {
+
             var newArray = new NativeArray<T>
             {
-                // Internal method used typically by other systems to provide a view on them.
-                // The caller is still the owner of the data.
                 m_Buffer = dataPointer,
                 m_Length = length,
                 m_AllocatorLabel = allocator,
@@ -221,17 +239,17 @@ namespace Unity.Collections.LowLevel.Unsafe
             return newArray;
         }
 
-        public static IntPtr GetUnsafePtr<T>(this NativeArray<T> nativeArray) where T : struct
+        public unsafe static void* GetUnsafePtr<T>(this NativeArray<T> nativeArray) where T : struct
         {
             return nativeArray.m_Buffer;
         }
 
-        public static IntPtr GetUnsafeReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : struct
+        public unsafe static void* GetUnsafeReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : struct
         {
             return nativeArray.m_Buffer;
         }
 
-        public static IntPtr GetUnsafeBufferPointerWithoutChecks<T>(this NativeArray<T> nativeArray) where T : struct
+        unsafe public static void* GetUnsafeBufferPointerWithoutChecks<T>(this NativeArray<T> nativeArray) where T : struct
         {
             return nativeArray.m_Buffer;
         }

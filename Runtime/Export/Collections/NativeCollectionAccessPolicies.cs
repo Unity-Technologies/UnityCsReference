@@ -8,12 +8,12 @@ using UnityEngine.Scripting;
 namespace Unity.Collections
 {
     [RequiredByNativeCode]
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     public sealed class ReadOnlyAttribute : Attribute
     {}
 
     [RequiredByNativeCode]
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     public sealed class WriteOnlyAttribute : Attribute
     {}
 
@@ -38,11 +38,6 @@ namespace Unity.Collections
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class NativeDisableParallelForRestrictionAttribute : Attribute
-    {}
-
-    [RequiredByNativeCode]
-    [AttributeUsage(AttributeTargets.Field)]
-    public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute
     {}
 }
 
@@ -71,5 +66,19 @@ namespace Unity.Collections.LowLevel.Unsafe
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class NativeContainerNeedsThreadIndexAttribute : Attribute
+    {}
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
+    public class WriteAccessRequiredAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class NativeSetClassTypeToNullOnScheduleAttribute : Attribute
     {}
 }

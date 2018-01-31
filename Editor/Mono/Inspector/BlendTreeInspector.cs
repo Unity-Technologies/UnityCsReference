@@ -1305,6 +1305,11 @@ namespace UnityEditor
                 if (list.index >= m_Childs.arraySize)
                     list.index = m_Childs.arraySize - 1;
                 SetMinMaxThresholds();
+
+                serializedObject.ApplyModifiedProperties();
+
+                //  Layout has changed, bail out now.
+                EditorGUIUtility.ExitGUI();
             }
         }
 

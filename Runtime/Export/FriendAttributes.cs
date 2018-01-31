@@ -25,3 +25,4 @@ using System.Runtime.CompilerServices;
 
 // needed for UnityEngine.UnsafeUtility and Object.FindObjectFromInstanceID.
 [assembly: InternalsVisibleTo("UnityEngine.Physics2DModule")]
+[assembly: InternalsVisibleTo("UnityEngine.PhysicsModule")]

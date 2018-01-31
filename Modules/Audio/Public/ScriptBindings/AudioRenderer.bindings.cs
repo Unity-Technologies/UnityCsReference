@@ -30,12 +30,12 @@ namespace UnityEngine
         }
 
         // We should consider making this delegate-based in order to provide information like channel count and format. Also the term "sink" is quite audio-domain specific.
-        internal static bool AddMixerGroupSink(AudioMixerGroup mixerGroup, NativeArray<float> buffer, bool excludeFromMix)
+        unsafe internal static bool AddMixerGroupSink(AudioMixerGroup mixerGroup, NativeArray<float> buffer, bool excludeFromMix)
         {
             return Internal_AudioRenderer_AddMixerGroupSink(mixerGroup, buffer.GetUnsafePtr(), buffer.Length, excludeFromMix);
         }
 
-        public static bool Render(NativeArray<float> buffer)
+        unsafe public static bool Render(NativeArray<float> buffer)
         {
             return Internal_AudioRenderer_Render(buffer.GetUnsafePtr(), buffer.Length);
         }
@@ -43,7 +43,7 @@ namespace UnityEngine
         internal static extern bool Internal_AudioRenderer_Start();
         internal static extern bool Internal_AudioRenderer_Stop();
         internal static extern int  Internal_AudioRenderer_GetSampleCountForCaptureFrame();
-        internal static extern bool Internal_AudioRenderer_AddMixerGroupSink(AudioMixerGroup mixerGroup, IntPtr ptr, int length, bool excludeFromMix);
-        internal static extern bool Internal_AudioRenderer_Render(IntPtr ptr, int length);
+        unsafe internal static extern bool Internal_AudioRenderer_AddMixerGroupSink(AudioMixerGroup mixerGroup, void* ptr, int length, bool excludeFromMix);
+        unsafe internal static extern bool Internal_AudioRenderer_Render(void* ptr, int length);
     }
 }

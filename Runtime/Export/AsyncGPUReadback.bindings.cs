@@ -24,7 +24,7 @@ namespace UnityEngine.Experimental.Rendering
         extern public void Update();
         extern public void WaitForCompletion();
 
-        public NativeArray<T> GetData<T>(int layer = 0) where T : struct
+        public unsafe NativeArray<T> GetData<T>(int layer = 0) where T : struct
         {
             if (!done || hasError)
                 throw new InvalidOperationException("Cannot access the data as it is not available");
@@ -34,7 +34,7 @@ namespace UnityEngine.Experimental.Rendering
 
             int stride = UnsafeUtility.SizeOf<T>();
 
-            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(GetDataRaw(layer), GetLayerDataSize() / stride, Allocator.None);
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetDataRaw(layer), GetLayerDataSize() / stride, Allocator.None);
             return array;
         }
 
@@ -47,7 +47,7 @@ namespace UnityEngine.Experimental.Rendering
         private extern bool HasError();
         private extern int GetLayerCount();
 
-        private extern IntPtr GetDataRaw(int layer);
+        unsafe private extern IntPtr GetDataRaw(int layer);
         private extern int GetLayerDataSize();
     }
 

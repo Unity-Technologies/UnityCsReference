@@ -75,7 +75,8 @@ namespace UnityEditor
 
         static readonly Dictionary<string, string> s_blackListNativeClassesDependencyNames = new Dictionary<string, string>
         {
-            {"ParticleSystemRenderer", "ParticleSystem"}
+            {"ParticleSystemRenderer", "ParticleSystem"},
+            {"ParticleSystem", "ParticleSystemRenderer"}
         };
 
         static Dictionary<UnityType, UnityType> s_blackListNativeClassesDependency;

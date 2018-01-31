@@ -89,7 +89,6 @@ namespace UnityEngine.Jobs
 
         }
 
-
         public bool IsCreated
         {
             get { return m_TransformArray != IntPtr.Zero; }

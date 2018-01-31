@@ -21,18 +21,18 @@ namespace UnityEngineInternal.Input
 
         // C# doesn't allow taking the address of a value type because of pinning requirements for the heap.
         // And our bindings generator doesn't support overloading. So ugly code following here...
-        public static void SendInput<TInputEvent>(TInputEvent inputEvent)
+        public unsafe static void SendInput<TInputEvent>(TInputEvent inputEvent)
             where TInputEvent : struct
         {
-            SendInput(UnsafeUtility.AddressOf<TInputEvent>(ref inputEvent));
+            SendInput((IntPtr)UnsafeUtility.AddressOf<TInputEvent>(ref inputEvent));
         }
 
         public static extern void SendInput(IntPtr inputEvent);
 
-        public static bool SendOutput<TOutputEvent>(int deviceId, int type, TOutputEvent outputEvent)
+        unsafe public static bool SendOutput<TOutputEvent>(int deviceId, int type, TOutputEvent outputEvent)
             where TOutputEvent : struct
         {
-            return SendOutput(deviceId, type, UnsafeUtility.SizeOf<TOutputEvent>(), UnsafeUtility.AddressOf(ref outputEvent));
+            return SendOutput(deviceId, type, UnsafeUtility.SizeOf<TOutputEvent>(), (IntPtr)UnsafeUtility.AddressOf(ref outputEvent));
         }
 
         public static extern bool SendOutput(int deviceId, int type, int sizeInBytes, IntPtr data);

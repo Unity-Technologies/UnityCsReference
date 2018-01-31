@@ -9,6 +9,17 @@ using UnityEngine.Bindings;
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
+    [AttributeUsage(AttributeTargets.Interface)]
+    public sealed class JobProducerTypeAttribute : Attribute
+    {
+        public Type ProducerType { get; }
+
+        public JobProducerTypeAttribute(Type producerType)
+        {
+            ProducerType = producerType;
+        }
+    }
+
     public unsafe struct JobRanges
     {
         public int  batchSize;
@@ -27,6 +38,12 @@ namespace Unity.Jobs.LowLevel.Unsafe
         Batched      = 1
     }
 
+    public enum JobType
+    {
+        Single      = 0,
+        ParallelFor = 1
+    }
+
     [NativeType(Header = "Runtime/Jobs/ScriptBindings/JobsBindings.h")]
     public static class JobsUtility
     {
@@ -38,10 +55,10 @@ namespace Unity.Jobs.LowLevel.Unsafe
             public IntPtr       reflectionData;
             public IntPtr       jobDataPtr;
 
-            public JobScheduleParameters(IntPtr i_jobData, IntPtr i_reflectionData, JobHandle i_dependency, ScheduleMode i_scheduleMode)
+            unsafe public JobScheduleParameters(void* i_jobData, IntPtr i_reflectionData, JobHandle i_dependency, ScheduleMode i_scheduleMode)
             {
                 dependency = i_dependency;
-                jobDataPtr = i_jobData;
+                jobDataPtr = (IntPtr)i_jobData;
                 reflectionData = i_reflectionData;
                 scheduleMode = (int)i_scheduleMode;
             }
@@ -67,27 +84,25 @@ namespace Unity.Jobs.LowLevel.Unsafe
         public static extern JobHandle ScheduleParallelForTransform(ref JobScheduleParameters parameters, IntPtr transfromAccesssArray);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
-        public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, IntPtr jobdata, int startIndex, int rangeSize);
+        unsafe public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, void* jobdata, int startIndex, int rangeSize);
 
         [FreeFunction]
-        private static extern IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, object managedJobFunction0, object managedJobFunction1, object managedJobFunction2);
+        private static extern IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, JobType jobType, object managedJobFunction0, object managedJobFunction1, object managedJobFunction2);
 
-        public static IntPtr CreateJobReflectionData(Type type, object managedJobFunction0, object managedJobFunction1 = null, object managedJobFunction2 = null)
+        public static IntPtr CreateJobReflectionData(Type type, JobType jobType, object managedJobFunction0, object managedJobFunction1 = null, object managedJobFunction2 = null)
         {
-            return CreateJobReflectionData(type, type, managedJobFunction0, managedJobFunction1, managedJobFunction2);
+            return CreateJobReflectionData(type, type, jobType, managedJobFunction0, managedJobFunction1, managedJobFunction2);
         }
 
-        public static IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, object managedJobFunction0)
+        public static IntPtr CreateJobReflectionData(Type wrapperJobType, Type userJobType, JobType jobType, object managedJobFunction0)
         {
-            return CreateJobReflectionData(wrapperJobType, userJobType, managedJobFunction0, null, null);
+            return CreateJobReflectionData(wrapperJobType, userJobType, jobType, managedJobFunction0, null, null);
         }
 
-        [FreeFunction]
-        public static extern void SetJobDebuggerEnabled(bool value);
+        public static extern bool JobDebuggerEnabled {[FreeFunction] get; [FreeFunction] set; }
+        public static extern bool JobCompilerEnabled {[FreeFunction] get; [FreeFunction] set; }
 
-        [FreeFunction]
-        public static extern bool GetJobDebuggerEnabled();
-
+        //@TODO: @timj Should we decrease this???
         public const int MaxJobThreadCount = 128;
         public const int CacheLineSize = 64;
     }

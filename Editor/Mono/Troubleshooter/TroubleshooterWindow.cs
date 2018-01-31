@@ -29,7 +29,7 @@ internal class TroubleshooterWindow : WebViewEditorWindow, IHasCustomMenu
         set { m_WebView = value; }
     }
 
-    [MenuItem("Help/Troubleshoot Issue...")]
+    [MenuItem("Help/Troubleshoot Issue...", priority = 2000)]
     public static void RunTroubleshooter()
     {
         TroubleshooterWindow window = EditorWindow.GetWindowWithRect<TroubleshooterWindow>(new Rect(100, 100, 990, 680), true, "Troubleshooter") as TroubleshooterWindow;

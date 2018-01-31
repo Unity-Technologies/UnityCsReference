@@ -28,7 +28,7 @@ namespace Unity.Jobs
             JobHandle* jobs = stackalloc JobHandle[2];
             jobs[0] = job0;
             jobs[1] = job1;
-            ScheduleBatchedJobsAndCompleteAll((IntPtr)jobs, 2);
+            ScheduleBatchedJobsAndCompleteAll(jobs, 2);
 
             job0 = new JobHandle();
             job1 = new JobHandle();
@@ -40,7 +40,7 @@ namespace Unity.Jobs
             jobs[0] = job0;
             jobs[1] = job1;
             jobs[2] = job2;
-            ScheduleBatchedJobsAndCompleteAll((IntPtr)jobs, 3);
+            ScheduleBatchedJobsAndCompleteAll(jobs, 3);
 
             job0 = new JobHandle();
             job1 = new JobHandle();
@@ -68,7 +68,7 @@ namespace Unity.Jobs
         static extern bool      ScheduleBatchedJobsAndIsCompleted(ref JobHandle job);
 
         [NativeMethod(IsFreeFunction = true)]
-        unsafe extern static void ScheduleBatchedJobsAndCompleteAll(IntPtr jobs, int count);
+        unsafe extern static void ScheduleBatchedJobsAndCompleteAll(void* jobs, int count);
 
 
         public static JobHandle CombineDependencies(JobHandle job0, JobHandle job1)
@@ -81,7 +81,7 @@ namespace Unity.Jobs
             return CombineDependenciesInternal3(ref job0, ref job1, ref job2);
         }
 
-        public static JobHandle CombineDependencies(NativeArray<JobHandle> jobs)
+        unsafe public static JobHandle CombineDependencies(NativeArray<JobHandle> jobs)
         {
             return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
         }
@@ -93,9 +93,21 @@ namespace Unity.Jobs
         static extern JobHandle CombineDependenciesInternal3(ref JobHandle job0, ref JobHandle job1, ref JobHandle job2);
 
         [NativeMethod(IsFreeFunction = true)]
-        static extern JobHandle CombineDependenciesInternalPtr(IntPtr jobs, int count);
+        unsafe internal static extern JobHandle CombineDependenciesInternalPtr(void* jobs, int count);
 
         [NativeMethod(IsFreeFunction = true)]
         public static extern bool CheckFenceIsDependencyOrDidSyncFence(JobHandle jobHandle, JobHandle dependsOn);
     }
 }
+
+namespace Unity.Jobs.LowLevel.Unsafe
+{
+    public static class JobHandleUnsafeUtility
+    {
+        unsafe public static JobHandle CombineDependencies(JobHandle* jobs, int count)
+        {
+            return JobHandle.CombineDependenciesInternalPtr(jobs, count);
+        }
+    }
+}
+

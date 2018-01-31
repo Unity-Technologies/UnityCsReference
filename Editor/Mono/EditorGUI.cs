@@ -1706,7 +1706,7 @@ namespace UnityEditor
         }
 
         // Handle dragging of value
-        private static void DragNumberValue(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, double dragSensitivity)
+        internal static void DragNumberValue(RecycledTextEditor editor, Rect position, Rect dragHotZone, int id, bool isDouble, ref double doubleVal, ref long longVal, string formatString, GUIStyle style, double dragSensitivity)
         {
             Event evt = Event.current;
 
