@@ -281,6 +281,8 @@ namespace UnityEditor
                         EditorUserSettings.WorkOffline = workOfflineNew;
                         EditorApplication.RequestRepaintAllViews();
                     }
+
+                    EditorUserSettings.allowAsyncStatusUpdate = EditorGUILayout.Toggle("Allow Async Update", EditorUserSettings.allowAsyncStatusUpdate);
                 }
 
                 if (Provider.hasCheckoutSupport)
@@ -446,6 +448,7 @@ namespace UnityEditor
             DrawOverlayDescription(Asset.States.Conflicted);
             DrawOverlayDescription(Asset.States.LockedLocal);
             DrawOverlayDescription(Asset.States.LockedRemote);
+            DrawOverlayDescription(Asset.States.Updating);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
         }

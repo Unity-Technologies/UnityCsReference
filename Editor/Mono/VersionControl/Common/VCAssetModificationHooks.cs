@@ -12,18 +12,27 @@ namespace UnityEditorInternal.VersionControl
     // Monitor the behavior of assets.  This is where general unity asset operations are handled
     public class AssetModificationHook
     {
-        private static Asset GetStatusCachedIfPossible(string from)
+        private enum CachedStatusMode
+        {
+            Sync,
+            Async
+        };
+
+        private static Asset GetStatusCachedIfPossible(string from, CachedStatusMode mode)
         {
             Asset asset = Provider.CacheStatus(from);
             if (asset == null || asset.IsState(Asset.States.Updating))
             {
-                // Fetch status
-                Task statusTask = Provider.Status(from, false);
-                statusTask.Wait();
-                if (statusTask.success)
-                    asset = Provider.CacheStatus(from);
-                else
-                    asset = null;
+                if (mode == CachedStatusMode.Sync)
+                {
+                    // Fetch status
+                    Task statusTask = Provider.Status(from, false);
+                    statusTask.Wait();
+                    if (statusTask.success)
+                        asset = Provider.CacheStatus(from);
+                    else
+                        asset = null;
+                }
             }
             return asset;
         }
@@ -41,7 +50,7 @@ namespace UnityEditorInternal.VersionControl
             if (!Provider.enabled)
                 return AssetMoveResult.DidNotMove;
 
-            Asset asset = GetStatusCachedIfPossible(from);
+            Asset asset = GetStatusCachedIfPossible(from, CachedStatusMode.Sync);
 
             if (asset == null || !asset.IsUnderVersionControl)
                 return AssetMoveResult.DidNotMove;
@@ -98,7 +107,14 @@ namespace UnityEditorInternal.VersionControl
             if (string.IsNullOrEmpty(assetPath))
                 return true;
 
-            Asset asset = statusOptions == StatusQueryOptions.UseCachedIfPossible ? GetStatusCachedIfPossible(assetPath) : GetStatusForceUpdate(assetPath);
+            Asset asset = null;
+            if (statusOptions == StatusQueryOptions.UseCachedIfPossible || statusOptions == StatusQueryOptions.UseCachedAsync)
+            {
+                CachedStatusMode mode = statusOptions == StatusQueryOptions.UseCachedAsync ? CachedStatusMode.Async : CachedStatusMode.Sync;
+                asset = GetStatusCachedIfPossible(assetPath, mode);
+            }
+            else
+                asset = GetStatusForceUpdate(assetPath);
 
             if (asset == null)
             {

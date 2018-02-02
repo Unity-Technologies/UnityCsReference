@@ -593,14 +593,15 @@ namespace UnityEditor
         {
             message = string.Empty;
 
+            StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
             if (AssetDatabase.IsNativeAsset(assetObject))
             {
-                if (!AssetDatabase.IsOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible))
+                if (!AssetDatabase.IsOpenForEdit(assetObject, out message, opts))
                     return false;
             }
             else if (AssetDatabase.IsForeignAsset(assetObject))
             {
-                if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, out message, StatusQueryOptions.UseCachedIfPossible))
+                if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, out message, opts))
                     return false;
             }
 

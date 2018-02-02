@@ -207,6 +207,9 @@
 <Compile Include="..\..\Runtime\Export\AndroidJNISafe.cs" >
 <Link>Runtime\Export\AndroidJNISafe.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\iOSSystemGestureDeferMode.cs" >
+<Link>Runtime\Export\iOSSystemGestureDeferMode.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\UnityEvent_4.cs" >
 <Link>Runtime\Export\UnityEvent_4.cs</Link>
 </Compile>
