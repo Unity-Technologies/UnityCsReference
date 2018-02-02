@@ -95,10 +95,16 @@ namespace UnityEditor.Build
             }
         }
 
+        static BuildCallbacks previousFlags = BuildCallbacks.None;
         [RequiredByNativeCode]
         internal static void InitializeBuildCallbacks(BuildCallbacks findFlags)
         {
+            if (findFlags == previousFlags)
+                return;
+
             CleanupBuildCallbacks();
+            previousFlags = findFlags;
+
             bool findBuildProcessors = (findFlags & BuildCallbacks.BuildProcessors) == BuildCallbacks.BuildProcessors;
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;

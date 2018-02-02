@@ -40,6 +40,7 @@ public enum StatusQueryOptions
 {
     ForceUpdate         = 0,
     UseCachedIfPossible = 1,
+    UseCachedAsync = 2,
 }
 
 public sealed partial class AssetDatabase

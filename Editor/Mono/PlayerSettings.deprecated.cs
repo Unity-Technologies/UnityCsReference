@@ -56,6 +56,19 @@ namespace UnityEditor
         Unknown = 999,
     }
 
+    // deprecated in 5.6
+    [Flags]
+    [Obsolete("Use UnityEngine.iOS.SystemGestureDeferMode instead. (UnityUpgradable) -> [UnityEngine] UnityEngine.iOS.SystemGestureDeferMode", true)]
+    public enum iOSSystemGestureDeferMode: uint
+    {
+        None = 0,
+        TopEdge = 1 << 0,
+        LeftEdge = 1 << 1,
+        BottomEdge = 1 << 2,
+        RightEdge = 1 << 3,
+        All = TopEdge | LeftEdge | BottomEdge | RightEdge
+    }
+
     partial class PlayerSettings
     {
         // deprecated since forever
