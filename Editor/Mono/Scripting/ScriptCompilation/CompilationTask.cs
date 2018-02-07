@@ -10,6 +10,13 @@ using UnityEditor.Scripting.Compilers;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    [Flags]
+    enum CompilationTaskOptions
+    {
+        None = 0,
+        StopOnFirstError = (1 << 0)
+    }
+
     // CompilationTask represents one complete rebuild of all the ScriptAssembly's that are passed in the constructor.
     // The ScriptAssembly's are built in correct order according to their ScriptAssembly dependencies.
     class CompilationTask
@@ -20,6 +27,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         string buildOutputDirectory;
         int compilePhase = 0;
         EditorScriptCompilationOptions options;
+        CompilationTaskOptions compilationTaskOptions;
         int maxConcurrentCompilers;
 
         public event Action<ScriptAssembly, int> OnCompilationStarted;
@@ -28,12 +36,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
 
-        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, EditorScriptCompilationOptions options, int maxConcurrentCompilers)
+        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, EditorScriptCompilationOptions options, CompilationTaskOptions compilationTaskOptions, int maxConcurrentCompilers)
         {
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
             this.options = options;
+            this.compilationTaskOptions = compilationTaskOptions;
             this.maxConcurrentCompilers = maxConcurrentCompilers;
         }
 
@@ -120,8 +129,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     compiler.Dispose();
                 }
 
-            // Do not queue assemblies for compilation in case of compile errors.
-            if (CompileErrors)
+            // If StopOnFirstError is set, do not queue assemblies for compilation in case of compile errors.
+            bool stopOnFirstError = (compilationTaskOptions & CompilationTaskOptions.StopOnFirstError) == CompilationTaskOptions.StopOnFirstError;
+
+            if (stopOnFirstError && CompileErrors)
             {
                 // Set empty compiler messages for all pending assemblies.
                 // Makes handling of messages easier in the editor.
@@ -149,6 +160,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return;
 
             List<ScriptAssembly> assemblyCompileQueue = null;
+            List<ScriptAssembly> removePendingAssemblies = null;
 
             // Find assemblies that have all their references already compiled.
             foreach (var pendingAssembly in pendingAssemblies)
@@ -157,8 +169,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                 foreach (var reference in pendingAssembly.ScriptAssemblyReferences)
                 {
-                    if (!processedAssemblies.ContainsKey(reference))
+                    CompilerMessage[] messages;
+
+                    if (!processedAssemblies.TryGetValue(reference, out messages))
                     {
+                        compileAssembly = false;
+                        break;
+                    }
+
+                    // If reference has compile errors, do not compile the pending assembly.
+                    bool compileErrors = messages.Any(m => m.type == CompilerMessageType.Error);
+
+                    if (compileErrors)
+                    {
+                        if (removePendingAssemblies == null)
+                            removePendingAssemblies = new List<ScriptAssembly>();
+
+                        removePendingAssemblies.Add(pendingAssembly);
+
                         compileAssembly = false;
                         break;
                     }
@@ -173,10 +201,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+            if (removePendingAssemblies != null)
+            {
+                foreach (var assembly in removePendingAssemblies)
+                    pendingAssemblies.Remove(assembly);
+
+                // All pending assemblies were removed and no assemblies
+                // were queued for compilation.
+                if (assemblyCompileQueue == null)
+                    return;
+            }
+
             // No assemblies to compile, need to wait for more references to finish compiling.
             if (assemblyCompileQueue == null)
             {
-                Debug.Assert(compilerTasks.Count > 0, "No pending assemblies queued for compilation and no compilers running. Compilation will never finish.");
+                UnityEngine.Assertions.Assert.IsTrue(compilerTasks.Count > 0, "No pending assemblies queued for compilation and no compilers running. Compilation will never finish.");
                 return;
             }
 

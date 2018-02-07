@@ -523,37 +523,44 @@ namespace UnityEditor
             //bool keepRangeHidden = m_ShowDirOptions.isAnimating && m_ShowDirOptions.target;
             //float fadeRange = keepRangeHidden ? 0.0f : 1.0f - m_ShowDirOptions.faded;
             // Light Range
-            using (new EditorGUILayout.FadeGroupScope(1.0f - m_AnimShowDirOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(1.0f - m_AnimShowDirOptions.faded))
                 settings.DrawRange(m_AnimShowAreaOptions.target);
+            EditorGUILayout.EndFadeGroup();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowSpotOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowSpotOptions.faded))
                 settings.DrawSpotAngle();
+            EditorGUILayout.EndFadeGroup();
 
             // Area width & height
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowAreaOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowAreaOptions.faded))
                 settings.DrawArea();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawColor();
 
             EditorGUILayout.Space();
 
             // Baking type
-            using (new EditorGUILayout.FadeGroupScope(1.0F - m_AnimShowAreaOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
                 settings.DrawLightmapping();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawIntensity();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowLightBounceIntensity.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowLightBounceIntensity.faded))
                 settings.DrawBounceIntensity();
+            EditorGUILayout.EndFadeGroup();
 
             ShadowsGUI();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowRuntimeOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded))
                 settings.DrawCookie();
+            EditorGUILayout.EndFadeGroup();
 
             // Cookie size also requires directional light
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowRuntimeOptions.faded * m_AnimShowDirOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded * m_AnimShowDirOptions.faded))
                 settings.DrawCookieSize();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawHalo();
             settings.DrawFlare();
@@ -576,20 +583,29 @@ namespace UnityEditor
 
             // Shadows drop-down. Area lights can only be baked and always have shadows.
             float show = 1 - m_AnimShowAreaOptions.faded;
-            using (new EditorGUILayout.FadeGroupScope(show))
+
+            if (EditorGUILayout.BeginFadeGroup(show))
                 settings.DrawShadowsType();
+            EditorGUILayout.EndFadeGroup();
 
             EditorGUI.indentLevel += 1;
             show *= m_AnimShowShadowOptions.faded;
+
             // Baked Shadow radius
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimBakedShadowRadiusOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
                 settings.DrawBakedShadowRadius();
+            EditorGUILayout.EndFadeGroup();
+
             // Baked Shadow angle
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimBakedShadowAngleOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowAngleOptions.faded))
                 settings.DrawBakedShadowAngle();
+            EditorGUILayout.EndFadeGroup();
+
             // Runtime shadows - shadow strength, resolution, bias
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimShowRuntimeOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimShowRuntimeOptions.faded))
                 settings.DrawRuntimeShadow();
+            EditorGUILayout.EndFadeGroup();
+
             EditorGUI.indentLevel -= 1;
 
             EditorGUILayout.Space();

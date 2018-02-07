@@ -66,12 +66,6 @@ namespace UnityEditor
             return bounds;
         }
 
-        private void NonEditableHandleDrawFunction(
-            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
-            )
-        {
-        }
-
         private static readonly Quaternion s_RightHandedHandleOrientationOffset =
             Quaternion.AngleAxis(180f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up);
         private static readonly Quaternion s_LeftHandedHandleOrientationOffset =
@@ -96,9 +90,9 @@ namespace UnityEditor
             // only display control handles on manipulator if in edit mode
             var editMode = EditMode.editMode == EditMode.SceneViewEditMode.JointAngularLimits && EditMode.IsOwner(this);
             if (editMode)
-                m_AngularLimitHandle.angleHandleDrawFunction = null;
+                m_AngularLimitHandle.angleHandleDrawFunction = ArcHandle.DefaultAngleHandleDrawFunction;
             else
-                m_AngularLimitHandle.angleHandleDrawFunction = NonEditableHandleDrawFunction;
+                m_AngularLimitHandle.angleHandleDrawFunction = null;
 
             // to enhance usability, orient the manipulator to best illustrate its affects on the dynamic body in the system
             var dynamicBody = hingeJoint2D.attachedRigidbody;

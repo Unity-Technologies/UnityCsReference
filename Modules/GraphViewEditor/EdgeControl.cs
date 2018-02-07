@@ -334,6 +334,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ControlPointsDirty = false;
         }
 
+        void RenderStraightLines(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        {
+            float safeSpan = orientation == Orientation.Horizontal
+                ? Mathf.Abs((p1.x + k_EdgeLengthFromPort) - (p4.x - k_EdgeLengthFromPort))
+                : Mathf.Abs((p1.y + k_EdgeLengthFromPort) - (p4.y - k_EdgeLengthFromPort));
+
+            float safeSpan3 = safeSpan / k_EdgeStraightLineSegmentDivisor;
+            float nodeToP2Dist = Mathf.Min(safeSpan3, k_EdgeTurnDiameter);
+            nodeToP2Dist = Mathf.Max(0, nodeToP2Dist);
+
+            var offset = orientation == Orientation.Horizontal
+                ? new Vector2(k_EdgeTurnDiameter - nodeToP2Dist, 0)
+                : new Vector2(0, k_EdgeTurnDiameter - nodeToP2Dist);
+
+            m_RenderPoints.Add(p1);
+            m_RenderPoints.Add(p2 - offset);
+            m_RenderPoints.Add(p3 + offset);
+            m_RenderPoints.Add(p4);
+        }
+
         protected virtual void UpdateRenderPoints()
         {
             ComputeControlPoints(); // This should have been updated before : make sure anyway.
@@ -362,32 +382,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if ((orientation == Orientation.Horizontal && Mathf.Abs(p1.y - p4.y) < 2 && p1.x + k_EdgeLengthFromPort < p4.x - k_EdgeLengthFromPort) ||
                 (orientation == Orientation.Vertical && Mathf.Abs(p1.x - p4.x) < 2 && p1.y + k_EdgeLengthFromPort < p4.y - k_EdgeLengthFromPort))
             {
-                float safeSpan = orientation == Orientation.Horizontal
-                    ? Mathf.Abs((p1.x + k_EdgeLengthFromPort) - (p4.x - k_EdgeLengthFromPort))
-                    : Mathf.Abs((p1.y + k_EdgeLengthFromPort) - (p4.y - k_EdgeLengthFromPort));
+                RenderStraightLines(p1, p2, p3, p4);
 
-                float safeSpan3 = safeSpan / k_EdgeStraightLineSegmentDivisor;
-                float nodeToP2Dist = Mathf.Min(safeSpan3, diameter);
-                nodeToP2Dist = Mathf.Max(0, nodeToP2Dist);
+                return;
+            }
 
-                var offset = orientation == Orientation.Horizontal
-                    ? new Vector2(diameter - nodeToP2Dist, 0)
-                    : new Vector2(0, diameter - nodeToP2Dist);
 
-                m_RenderPoints.Add(p1);
-                m_RenderPoints.Add(p2 - offset);
-                m_RenderPoints.Add(p3 + offset);
-                m_RenderPoints.Add(p4);
+            EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
+            EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
+
+            if (!ValidateCornerSweepValues(ref corner1, ref corner2))
+            {
+                RenderStraightLines(p1, p2, p3, p4);
 
                 return;
             }
 
             m_RenderPoints.Add(p1);
-
-            EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
-            EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
-
-            ValidateCornerSweepValues(ref corner1, ref corner2);
 
             GetRoundedCornerPoints(m_RenderPoints, corner1, Direction.Output);
             GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
@@ -395,7 +406,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_RenderPoints.Add(p4);
         }
 
-        private void ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
+        private bool ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
         {
             // Get the midpoint between the two corner circle centers.
             Vector2 circlesMidpoint = (corner1.circleCenter + corner2.circleCenter) / 2;
@@ -404,8 +415,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Vector2 p2CenterToCross1 = corner1.circleCenter - corner1.crossPoint1;
             Vector2 p2CenterToCirclesMid = corner1.circleCenter - circlesMidpoint;
             double angleToCirclesMid = orientation == Orientation.Horizontal
-                ? Math.Atan2(p2CenterToCross1.y, p2CenterToCross1.x) - Math.Atan2(p2CenterToCirclesMid.y, p2CenterToCirclesMid.x)
-                : Math.Atan2(p2CenterToCross1.x, p2CenterToCross1.y) - Math.Atan2(p2CenterToCirclesMid.x, p2CenterToCirclesMid.y);
+                ? Math.Atan2(p2CenterToCross1.y, p2CenterToCross1.x) -
+                Math.Atan2(p2CenterToCirclesMid.y, p2CenterToCirclesMid.x)
+                : Math.Atan2(p2CenterToCross1.x, p2CenterToCross1.y) -
+                Math.Atan2(p2CenterToCirclesMid.x, p2CenterToCirclesMid.y);
+
+            if (double.IsNaN(angleToCirclesMid))
+            {
+                return false;
+            }
 
             // We need the angle to the circles midpoint to match the turn direction of the first corner's sweep angle.
             angleToCirclesMid = Math.Sign(angleToCirclesMid) * 2 * Mathf.PI - angleToCirclesMid;
@@ -424,6 +442,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 corner1.sweepAngle = Math.Sign(corner1.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner1.sweepAngle));
                 corner2.sweepAngle = Math.Sign(corner2.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner2.sweepAngle));
             }
+
+            return true;
         }
 
         private EdgeCornerSweepValues GetCornerSweepValues(

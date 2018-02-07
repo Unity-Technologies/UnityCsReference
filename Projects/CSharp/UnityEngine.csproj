@@ -1896,14 +1896,14 @@
 <Compile Include="..\..\Modules\UnityAnalytics\UnityAnalytics.cs" >
 <Link>Modules\UnityAnalytics\UnityAnalytics.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\UnityAnalytics\UnityAnalyticsHandler.bindings.cs" >
+<Link>Modules\UnityAnalytics\UnityAnalyticsHandler.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\UnityAnalytics\Events\CustomEventData.bindings.cs" >
+<Link>Modules\UnityAnalytics\Events\CustomEventData.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\UnityAnalytics\Events\CustomEventData.cs" >
 <Link>Modules\UnityAnalytics\Events\CustomEventData.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs" >
-<Link>artifacts\generated\bindings_old\common\UnityAnalytics\UnityAnalyticsHandlerBindings.gen.cs</Link>
-</Compile>
-<Compile Include="..\..\artifacts\generated\bindings_old\common\UnityAnalytics\CustomEventDataBindings.gen.cs" >
-<Link>artifacts\generated\bindings_old\common\UnityAnalytics\CustomEventDataBindings.gen.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\UnityConnect\AnalyticsSessionInfo.bindings.cs" >
 <Link>Modules\UnityConnect\AnalyticsSessionInfo.bindings.cs</Link>

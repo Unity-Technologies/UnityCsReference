@@ -70,9 +70,9 @@ namespace UnityEditor.Experimental.UIElements
                 m_ObjectLabel.text = content.text;
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
-                base.ExecuteDefaultAction(evt);
+                base.ExecuteDefaultActionAtTarget(evt);
 
                 if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
                     OnMouseDown();
@@ -133,6 +133,9 @@ namespace UnityEditor.Experimental.UIElements
                             m_ObjectField.SetValueAndNotify(validatedObject);
 
                             DragAndDrop.AcceptDrag();
+
+                            evt.StopPropagation();
+
                             RemoveFromClassList("acceptDrop");
                         }
                         else

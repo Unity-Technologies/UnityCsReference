@@ -158,9 +158,23 @@ namespace UnityEditor
         {
             get
             {
-                int headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count() +
-                    SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
-                int modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
+                int headers;
+                int modes;
+
+                // TODO: This needs to be fixed and we need to find a way to dif. between disabled and unsupported
+                if (GraphicsSettings.renderPipelineAsset != null)
+                {
+                    // When using SRP, we completely hide disabled builtin modes, including headers
+                    headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count() +
+                        SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
+                    modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
+                }
+                else
+                {
+                    headers = Styles.sBuiltinCameraModes.Select(mode => mode.section).Distinct().Count() + SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeEnabled(mode)).Select(mode => mode.section).Distinct().Count();
+                    modes = Styles.sBuiltinCameraModes.Count() + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeEnabled(mode));
+                }
+
                 int separators = headers - 2;
                 return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators) + kShowLightmapResolutionHeight;
             }

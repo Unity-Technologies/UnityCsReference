@@ -48,7 +48,7 @@ namespace UnityEditor.IMGUI.Controls
         }
         private static GUIContent s_EditModeButton;
 
-        private static float DefaultMidpointHandleSizeFunction(Vector3 position)
+        public static float DefaultMidpointHandleSizeFunction(Vector3 position)
         {
             return HandleUtility.GetHandleSize(position) * s_DefaultMidpointHandleSize;
         }
@@ -81,6 +81,8 @@ namespace UnityEditor.IMGUI.Controls
             handleColor = Color.white;
             wireframeColor = Color.white;
             axes = Axes.X | Axes.Y | Axes.Z;
+            midpointHandleDrawFunction = Handles.DotHandleCap;
+            midpointHandleSizeFunction = DefaultMidpointHandleSizeFunction;
         }
 
         public void SetColor(Color color)
@@ -272,14 +274,15 @@ namespace UnityEditor.IMGUI.Controls
 
             AdjustMidpointHandleColor(localPos, localTangent, localBinormal, isCameraInsideBox);
 
-            if (Handles.color.a > 0f)
+            if (Handles.color.a > 0f && midpointHandleDrawFunction != null)
             {
                 Vector3 localDir = Vector3.Cross(localTangent, localBinormal).normalized;
 
-                var drawFunc = midpointHandleDrawFunction ?? Handles.DotHandleCap;
-                var sizeFunc = midpointHandleSizeFunction ?? DefaultMidpointHandleSizeFunction;
+                var size = midpointHandleSizeFunction == null ? 0f : midpointHandleSizeFunction(localPos);
 
-                localPos = UnityEditorInternal.Slider1D.Do(id, localPos, localDir, sizeFunc(localPos), drawFunc, SnapSettings.scale);
+                localPos = UnityEditorInternal.Slider1D.Do(
+                        id, localPos, localDir, size, midpointHandleDrawFunction, SnapSettings.scale
+                        );
             }
 
             Handles.color = oldColor;

@@ -19,7 +19,7 @@ namespace UnityEditor
 
         internal static bool UxmlLiveReloadIsEnabled
         {
-            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, true); }
+            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, false); }
             set { EditorPrefs.SetBool(k_UielementsUxmllivereloadPrefsKey, value); }
         }
 
@@ -113,7 +113,7 @@ namespace UnityEditor
                         // Usually called by the USS importer, which might not get called here
                         StyleSheetCache.ClearCaches();
 
-                        if (UxmlLiveReloadIsEnabled)
+                        if (UxmlLiveReloadIsEnabled && Unsupported.IsDeveloperMode())
                         {
                             // Delay the view reloading so we do not try to reload the view that
                             // is currently active in the current callstack (i.e. ProjectView).

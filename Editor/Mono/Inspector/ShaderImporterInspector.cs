@@ -224,6 +224,9 @@ namespace UnityEditor
                             results.AddRange(result);
                     }
                 }
+                // The paths appear in the list in random order. We sort the list here so that the same paths will always
+                // result into the exact same list. Otherwise the shader importer will think the paths have changed.
+                results.Sort();
                 s_ShaderIncludePaths = results.ToArray();
             }
             return s_ShaderIncludePaths;

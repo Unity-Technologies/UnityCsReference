@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-using UnityEngine.Connect;
-
 namespace UnityEngine.Analytics
 {
     public enum Gender
@@ -38,7 +36,9 @@ namespace UnityEngine.Analytics
         {
             if (s_UnityAnalyticsHandler == null)
                 s_UnityAnalyticsHandler = new UnityAnalyticsHandler();
-            return s_UnityAnalyticsHandler;
+            if (s_UnityAnalyticsHandler.IsInitialized())
+                return s_UnityAnalyticsHandler;
+            return null;
         }
 
         public static bool limitUserTracking
@@ -88,7 +88,7 @@ namespace UnityEngine.Analytics
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
 
-            return (AnalyticsResult)unityAnalyticsHandler.FlushEvents();
+            return unityAnalyticsHandler.FlushEvents() ? AnalyticsResult.Ok : AnalyticsResult.NotInitialized;
         }
 
         public static AnalyticsResult SetUserId(string userId)
@@ -98,7 +98,7 @@ namespace UnityEngine.Analytics
             UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.SetUserId(userId);
+            return unityAnalyticsHandler.SetUserId(userId);
         }
 
         public static AnalyticsResult SetUserGender(Gender gender)
@@ -106,7 +106,7 @@ namespace UnityEngine.Analytics
             UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.SetUserGender(gender);
+            return unityAnalyticsHandler.SetUserGender(gender);
         }
 
         public static AnalyticsResult SetUserBirthYear(int birthYear)
@@ -114,31 +114,33 @@ namespace UnityEngine.Analytics
             UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
             if (s_UnityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.SetUserBirthYear(birthYear);
+            return unityAnalyticsHandler.SetUserBirthYear(birthYear);
         }
 
         public static AnalyticsResult Transaction(string productId, decimal amount, string currency)
         {
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
-                return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.Transaction(productId, Convert.ToDouble(amount), currency, null, null);
+            return Transaction(productId, amount, currency, null, null, false);
         }
 
         public static AnalyticsResult Transaction(string productId, decimal amount, string currency, string receiptPurchaseData, string signature)
         {
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
-                return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.Transaction(productId, Convert.ToDouble(amount), currency, receiptPurchaseData, signature);
+            return Transaction(productId, amount, currency, receiptPurchaseData, signature, false);
         }
 
         public static AnalyticsResult Transaction(string productId, decimal amount, string currency, string receiptPurchaseData, string signature, bool usingIAPService)
         {
+            if (string.IsNullOrEmpty(productId))
+                throw new ArgumentException("Cannot set productId to an empty or null string");
+            if (string.IsNullOrEmpty(currency))
+                throw new ArgumentException("Cannot set currency to an empty or null string");
             UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.Transaction(productId, Convert.ToDouble(amount), currency, receiptPurchaseData, signature, usingIAPService);
+            if (receiptPurchaseData == null)
+                receiptPurchaseData = string.Empty;
+            if (signature == null)
+                signature = string.Empty;
+            return unityAnalyticsHandler.Transaction(productId, Convert.ToDouble(amount), currency, receiptPurchaseData, signature, usingIAPService);
         }
 
         public static AnalyticsResult CustomEvent(string customEventName)
@@ -148,7 +150,7 @@ namespace UnityEngine.Analytics
             UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
-            return (AnalyticsResult)unityAnalyticsHandler.CustomEvent(customEventName);
+            return unityAnalyticsHandler.SendCustomEventName(customEventName);
         }
 
         public static AnalyticsResult CustomEvent(string customEventName, Vector3 position)
@@ -159,10 +161,10 @@ namespace UnityEngine.Analytics
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
             CustomEventData customEvent = new CustomEventData(customEventName);
-            customEvent.Add("x", (double)System.Convert.ToDecimal(position.x));
-            customEvent.Add("y", (double)System.Convert.ToDecimal(position.y));
-            customEvent.Add("z", (double)System.Convert.ToDecimal(position.z));
-            return (AnalyticsResult)unityAnalyticsHandler.CustomEvent(customEvent);
+            customEvent.AddDouble("x", (double)System.Convert.ToDecimal(position.x));
+            customEvent.AddDouble("y", (double)System.Convert.ToDecimal(position.y));
+            customEvent.AddDouble("z", (double)System.Convert.ToDecimal(position.z));
+            return unityAnalyticsHandler.SendCustomEvent(customEvent);
         }
 
         public static AnalyticsResult CustomEvent(string customEventName, IDictionary<string, object> eventData)
@@ -173,10 +175,10 @@ namespace UnityEngine.Analytics
             if (unityAnalyticsHandler == null)
                 return AnalyticsResult.NotInitialized;
             if (eventData == null)
-                return (AnalyticsResult)unityAnalyticsHandler.CustomEvent(customEventName);
+                return unityAnalyticsHandler.SendCustomEventName(customEventName);
             CustomEventData customEvent = new CustomEventData(customEventName);
-            customEvent.Add(eventData);
-            return (AnalyticsResult)unityAnalyticsHandler.CustomEvent(customEvent);
+            customEvent.AddDictionary(eventData);
+            return unityAnalyticsHandler.SendCustomEvent(customEvent);
         }
     }
 }

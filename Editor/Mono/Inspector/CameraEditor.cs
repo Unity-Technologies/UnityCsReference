@@ -450,8 +450,10 @@ namespace UnityEditor
 
             settings.DrawClearFlags();
 
-            using (new EditorGUILayout.FadeGroupScope(m_ShowBGColorOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_ShowBGColorOptions.faded))
                 settings.DrawBackgroundColor();
+            EditorGUILayout.EndFadeGroup();
+
             settings.DrawCullingMask();
 
             EditorGUILayout.Space();
@@ -480,8 +482,9 @@ namespace UnityEditor
             settings.DrawVR();
             settings.DrawMultiDisplay();
 
-            using (new EditorGUILayout.FadeGroupScope(m_ShowTargetEyeOption.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_ShowTargetEyeOption.faded))
                 settings.DrawTargetEye();
+            EditorGUILayout.EndFadeGroup();
 
             DepthTextureModeGUI();
             CommandBufferGUI();
@@ -563,7 +566,7 @@ namespace UnityEditor
                 }
 
                 var previewTexture = GetPreviewTextureWithSize((int)cameraRect.width, (int)cameraRect.height);
-                previewTexture.antiAliasing = QualitySettings.antiAliasing;
+                previewTexture.antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
                 previewCamera.targetTexture = previewTexture;
                 previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
 

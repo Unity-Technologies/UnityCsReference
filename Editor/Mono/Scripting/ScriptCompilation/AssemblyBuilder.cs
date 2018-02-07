@@ -72,7 +72,7 @@ namespace UnityEditor.Compilation
             var scriptAssembly = editorCompilation.CreateScriptAssembly(this);
 
             compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory,
-                    EditorScriptCompilationOptions.BuildingEmpty, 1);
+                    EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1);
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
                 {

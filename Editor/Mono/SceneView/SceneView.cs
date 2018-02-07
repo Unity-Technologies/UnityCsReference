@@ -235,7 +235,15 @@ namespace UnityEditor
 
         public CameraMode cameraMode
         {
-            get { return m_CameraMode; }
+            get
+            {
+                // fix for case 969889 where the toolbar is empty when we havent fully initialized the value
+                if (string.IsNullOrEmpty(m_CameraMode.name))
+                {
+                    m_CameraMode = SceneRenderModeWindow.GetBuiltinCameraMode(m_CameraMode.drawMode);
+                }
+                return m_CameraMode;
+            }
             set
             {
                 m_CameraMode = value;
@@ -1717,16 +1725,16 @@ namespace UnityEditor
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            var ldrSceneTargetTexture = m_SceneTargetTexture;
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
             {
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.colorFormat = RenderTextureFormat.ARGB32;
                 rtDesc.depthBufferBits = 0;
-                rtDesc.sRGB = false;
-                ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
+                RenderTexture ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
-                Graphics.SetRenderTarget(ldrSceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
+                Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
+                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
+                RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
             if (!UseSceneFiltering())
@@ -1771,9 +1779,7 @@ namespace UnityEditor
                     GUIClip.Pop();
                 if (evt.type == EventType.Repaint)
                 {
-                    Graphics.DrawTexture(guiRect, ldrSceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
-                    if (RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
-                        RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
+                    Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
                     Profiler.EndSample();
                 }
             }

@@ -1661,6 +1661,9 @@
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\GradientField.cs" >
 <Link>Editor\Mono\UIElements\Controls\GradientField.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\UIElements\Controls\PopupField.cs" >
+<Link>Editor\Mono\UIElements\Controls\PopupField.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\UIElements\Controls\CompoundFields.cs" >
 <Link>Editor\Mono\UIElements\Controls\CompoundFields.cs</Link>
 </Compile>
@@ -1849,6 +1852,9 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssemblyDefinitionException.cs" >
 <Link>Editor\Mono\Scripting\ScriptCompilation\AssemblyDefinitionException.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs" >
+<Link>Editor\Mono\Scripting\ScriptCompilation\MonoLibraryHelpers.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs" >
 <Link>Editor\Mono\PerceptionRemoting\HolographicEmulation\HolographicEmulationWindow.cs</Link>
