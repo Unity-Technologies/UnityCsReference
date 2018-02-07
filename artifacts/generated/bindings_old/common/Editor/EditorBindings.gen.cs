@@ -221,7 +221,10 @@ public static Editor CreateEditor(Object[] targetObjects, [uei.DefaultValue("nul
     internal virtual void OnForceReloadInspector()
         {
             if (m_SerializedObject != null)
+            {
                 m_SerializedObject.SetIsDifferentCacheDirty();
+                InternalSetTargets(m_SerializedObject.targetObjects);
+            }
         }
     
     internal bool GetOptimizedGUIBlockImplementation(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)

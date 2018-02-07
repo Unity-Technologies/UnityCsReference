@@ -16,6 +16,7 @@ namespace UnityEngine
 
         private static int s_HotTextField = -1;
 
+        private static readonly int s_BoxHash               = "Box".GetHashCode();
         private static readonly int s_RepeatButtonHash      = "repeatButton".GetHashCode();
         private static readonly int s_ToggleHash            = "Toggle".GetHashCode();
         private static readonly int s_ButtonGridHash        = "ButtonGrid".GetHashCode();
@@ -340,8 +341,11 @@ namespace UnityEngine
         public static void Box(Rect position, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
+            int id = GUIUtility.GetControlID(s_BoxHash, FocusType.Passive);
             if (Event.current.type == EventType.Repaint)
-                style.Draw(position, content, false, false, false, false);
+            {
+                style.Draw(position, content, id);
+            }
         }
 
         /// *listonly*

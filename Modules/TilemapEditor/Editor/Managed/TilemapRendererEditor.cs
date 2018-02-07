@@ -15,6 +15,13 @@ namespace UnityEditor
         private SerializedProperty m_Material;
         private SerializedProperty m_SortOrder;
         private SerializedProperty m_MaskInteraction;
+        private SerializedProperty m_ChunkCullingBounds;
+        private SerializedProperty m_DetectChunkCullingBounds;
+
+        private TilemapRenderer tilemapRenderer
+        {
+            get { return target as TilemapRenderer; }
+        }
 
         private static class Styles
         {
@@ -29,6 +36,8 @@ namespace UnityEditor
             m_Material = serializedObject.FindProperty("m_Materials.Array"); // Only allow to edit one material
             m_SortOrder = serializedObject.FindProperty("m_SortOrder");
             m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
+            m_ChunkCullingBounds = serializedObject.FindProperty("m_ChunkCullingBounds");
+            m_DetectChunkCullingBounds = serializedObject.FindProperty("m_DetectChunkCullingBounds");
         }
 
         public override void OnInspectorGUI()
@@ -37,6 +46,11 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Material.GetArrayElementAtIndex(0), Styles.materialLabel, true);
             EditorGUILayout.PropertyField(m_SortOrder);
+            EditorGUILayout.PropertyField(m_DetectChunkCullingBounds);
+            GUI.enabled = (!m_DetectChunkCullingBounds.hasMultipleDifferentValues && TilemapRenderer.DetectChunkCullingBounds.Manual == tilemapRenderer.detectChunkCullingBounds);
+            EditorGUILayout.PropertyField(m_ChunkCullingBounds);
+            GUI.enabled = true;
+
             RenderSortingLayerFields();
 
             EditorGUILayout.Space();

@@ -265,12 +265,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             foreach (Port input in updatedInputs)
             {
+                // Make sure we don't register these more than once.
+                input.OnConnect -= OnPortConnectAction;
+                input.OnDisconnect -= OnPortConnectAction;
+
                 input.OnConnect += OnPortConnectAction;
                 input.OnDisconnect += OnPortConnectAction;
             }
 
             foreach (Port output in updatedOutputs)
             {
+                // Make sure we don't register these more than once.
+                output.OnConnect -= OnPortConnectAction;
+                output.OnDisconnect -= OnPortConnectAction;
+
                 output.OnConnect += OnPortConnectAction;
                 output.OnDisconnect += OnPortConnectAction;
             }

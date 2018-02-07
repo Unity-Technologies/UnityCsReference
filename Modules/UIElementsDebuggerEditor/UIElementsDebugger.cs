@@ -131,10 +131,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             m_Overlay = GUILayout.Toggle(m_Overlay, Styles.overlayContent, EditorStyles.toolbarButton);
 
-            bool uxmlLiveReloadIsEnabled = RetainedMode.UxmlLiveReloadIsEnabled;
-            bool newUxmlLiveReloadIsEnabled = GUILayout.Toggle(uxmlLiveReloadIsEnabled, Styles.liveReloadContent, EditorStyles.toolbarButton);
-            if (newUxmlLiveReloadIsEnabled != uxmlLiveReloadIsEnabled)
-                RetainedMode.UxmlLiveReloadIsEnabled = newUxmlLiveReloadIsEnabled;
+            // Note for future us : the UXML reload feature isn't quite ready to be public
+            if (Unsupported.IsDeveloperBuild())
+            {
+                bool uxmlLiveReloadIsEnabled = RetainedMode.UxmlLiveReloadIsEnabled;
+                bool newUxmlLiveReloadIsEnabled = GUILayout.Toggle(uxmlLiveReloadIsEnabled, Styles.liveReloadContent, EditorStyles.toolbarButton);
+                if (newUxmlLiveReloadIsEnabled != uxmlLiveReloadIsEnabled)
+                    RetainedMode.UxmlLiveReloadIsEnabled = newUxmlLiveReloadIsEnabled;
+            }
 
             EditorGUILayout.EndHorizontal();
 

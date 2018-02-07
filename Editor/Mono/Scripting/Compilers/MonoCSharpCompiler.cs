@@ -9,6 +9,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor.Utils;
 using System.Text;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -59,13 +60,10 @@ namespace UnityEditor.Scripting.Compilers
             var compilerPath = Path.Combine(dir, "mcs.exe");
             if (File.Exists(compilerPath))
             {
-                var profile = _island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0  ? "2.0-api"
-                    : BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+                var systemAssemblyDirectory = MonoLibraryHelpers.GetSystemReferenceDirectory(_island._api_compatibility_level);
 
-                if (_island._api_compatibility_level != ApiCompatibilityLevel.NET_Standard_2_0)
-                {
-                    arguments.Add("-lib:" + PrepareFileName(MonoInstallationFinder.GetProfileDirectory(profile, MonoInstallationFinder.MonoBleedingEdgeInstallation)));
-                }
+                if (!string.IsNullOrEmpty(systemAssemblyDirectory) && Directory.Exists(systemAssemblyDirectory))
+                    arguments.Add("-lib:" + PrepareFileName(systemAssemblyDirectory));
                 return compilerPath;
             }
 

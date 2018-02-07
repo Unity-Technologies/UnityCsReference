@@ -110,6 +110,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void DirtyPredefinedAssemblyScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        {
+            EmitExceptionAsError(() => Instance.DirtyPredefinedAssemblyScripts(options, platformGroup, platform));
+        }
+
+        [RequiredByNativeCode]
         public static void DirtyAllScripts()
         {
             Instance.DirtyAllScripts();
@@ -188,6 +194,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static bool CompileCustomScriptAssemblies(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
+        {
+            return EmitExceptionAsError(() => Instance.CompileCustomScriptAssemblies(definesOptions, platformGroup, platform), false);
+        }
+
+        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyDirtyScripts();
@@ -227,6 +239,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static EditorCompilation.CompileStatus TickCompilationPipeline(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             return EmitExceptionAsError(() => Instance.TickCompilationPipeline(options, platformGroup, platform), EditorCompilation.CompileStatus.Idle);
+        }
+
+        [RequiredByNativeCode]
+        public static EditorCompilation.CompileStatus PollCompilation()
+        {
+            return EmitExceptionAsError(() => Instance.PollCompilation(), EditorCompilation.CompileStatus.Idle);
         }
 
         [RequiredByNativeCode]

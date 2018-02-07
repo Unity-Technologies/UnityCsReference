@@ -8111,6 +8111,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public class FadeGroupScope : GUI.Scope
         {
+            // when using the FadeGroupScope, make sure to only show the content when 'visible' is set to true,
+            // otherwise only the hide animation will run, and then the content will be visible again.
             public bool visible { get; protected set; }
             float m_Value;
 

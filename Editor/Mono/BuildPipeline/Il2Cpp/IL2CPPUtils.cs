@@ -104,7 +104,7 @@ namespace UnityEditorInternal
                     return "net20";
 
                 case ApiCompatibilityLevel.NET_4_6:
-                    return "net45";
+                    return "unityjit";
 
                 case ApiCompatibilityLevel.NET_Standard_2_0:
                     return "unityaot";
@@ -195,7 +195,7 @@ namespace UnityEditorInternal
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                    arguments.Add("--dotnetprofile=\"net45\"");
+                    arguments.Add("--dotnetprofile=\"unityjit\"");
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
                     arguments.Add("--dotnetprofile=\"unityaot\"");
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
@@ -287,7 +287,7 @@ namespace UnityEditorInternal
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                arguments.Add("--dotnetprofile=\"net45\"");
+                arguments.Add("--dotnetprofile=\"unityjit\"");
 
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
                 arguments.Add("--dotnetprofile=\"unityaot\"");
