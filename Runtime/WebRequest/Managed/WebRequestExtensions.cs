@@ -233,11 +233,6 @@ namespace UnityEngine.Networking
                 string sectionName = section.sectionName;
                 string fileName = section.fileName;
 
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    disposition = "file";
-                }
-
                 string header = "Content-Disposition: " + disposition;
 
                 if (!string.IsNullOrEmpty(sectionName))
