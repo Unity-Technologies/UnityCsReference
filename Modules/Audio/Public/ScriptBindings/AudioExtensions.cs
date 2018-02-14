@@ -410,14 +410,6 @@ namespace UnityEngine
         {
             RegisterBuiltinDefinitions();
 
-            if (m_SpatializerName != AudioSettings.GetSpatializerPluginName())
-            {
-                m_SpatializerName = AudioSettings.GetSpatializerPluginName();
-                if (GetSourceSpatializerExtensionType() != null)
-                    m_SpatializerExtensionName = GetSourceSpatializerExtensionType().Name;
-                if (GetListenerSpatializerExtensionEditorType() != null)
-                    m_ListenerSpatializerExtensionName = GetListenerSpatializerExtensionType().Name;
-            }
 
             AudioListener listener = GetAudioListener() as AudioListener;
             if (listener != null)
