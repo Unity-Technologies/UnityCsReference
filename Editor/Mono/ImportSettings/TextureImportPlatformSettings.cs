@@ -353,6 +353,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBAHalf,
             (int)TextureImporterFormat.BC4,
             (int)TextureImporterFormat.BC5,
+            (int)TextureImporterFormat.BC6H,
+            (int)TextureImporterFormat.BC7,
 
             (int)TextureImporterFormat.ASTC_RGB_4x4,
             (int)TextureImporterFormat.ASTC_RGB_5x5,

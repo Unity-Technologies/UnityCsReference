@@ -405,7 +405,6 @@ namespace UnityEditor
                 s_CurrentInspectorWindow = this;
                 Editor[] editors = tracker.activeEditors;
 
-                AssignAssetEditor(editors);
                 Profiler.BeginSample("InspectorWindow.DrawEditors()");
                 DrawEditors(editors);
                 Profiler.EndSample();
@@ -995,15 +994,6 @@ namespace UnityEditor
             GUIContent content = GUIContent.Temp(currentState);
             content.tooltip = tooltip;
             EditorGUI.LabelField(textRect, content, styles.preToolbar2);
-        }
-
-        protected void AssignAssetEditor(Editor[] editors)
-        {
-            // Assign asset editor to importer editor
-            if (editors.Length > 1 && editors[0] is AssetImporterEditor)
-            {
-                (editors[0] as AssetImporterEditor).assetEditor = editors[1];
-            }
         }
 
         private void DrawEditors(Editor[] editors)

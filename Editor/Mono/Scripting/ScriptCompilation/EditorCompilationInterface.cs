@@ -128,6 +128,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void ClearDirtyScripts()
+        {
+            Instance.ClearDirtyScripts();
+        }
+
+        [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             Instance.RunScriptUpdaterOnAssembly(assemblyFilename);
@@ -203,6 +209,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyDirtyScripts();
+        }
+
+        [RequiredByNativeCode]
+        public static bool AreAllScriptsDirty()
+        {
+            return Instance.AreAllScriptsDirty();
         }
 
         [RequiredByNativeCode]

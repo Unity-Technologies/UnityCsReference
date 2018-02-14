@@ -266,11 +266,15 @@ namespace UnityEditor
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
 
+        internal delegate void SelectionChangedCallback(string selectedPropertyPath);
+        public event SelectionChangedCallback selectionChanged;
+
         public void SetSelectedPropertyPath(string path)
         {
             if (ProfilerDriver.selectedPropertyPath != path)
             {
                 ProfilerDriver.selectedPropertyPath = path;
+                selectionChanged.Invoke(path);
                 UpdateCharts();
             }
         }
@@ -280,6 +284,7 @@ namespace UnityEditor
             if (ProfilerDriver.selectedPropertyPath != string.Empty)
             {
                 ProfilerDriver.selectedPropertyPath = string.Empty;
+                selectionChanged.Invoke(string.Empty);
                 UpdateCharts();
             }
         }
@@ -372,12 +377,14 @@ namespace UnityEditor
             m_CPUFrameDataHierarchyView.gpuView = false;
             m_CPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_CPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
+            selectionChanged += m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
 
             if (m_GPUFrameDataHierarchyView == null)
                 m_GPUFrameDataHierarchyView = new ProfilerFrameDataHierarchyView();
             m_GPUFrameDataHierarchyView.gpuView = true;
             m_GPUFrameDataHierarchyView.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_GPUFrameDataHierarchyView.selectionChanged += CPUOrGPUViewSelectionChanged;
+            selectionChanged += m_GPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath;
 
             m_CPUTimelineGUI = new ProfilerTimelineGUI(this);
             m_CPUTimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
@@ -396,24 +403,13 @@ namespace UnityEditor
             if (m_FrameDataView == null || !m_FrameDataView.IsValid())
                 return;
 
-            var ancestors = m_FrameDataView.GetItemAncestors(id);
-            var propertyPathBuilder = new StringBuilder();
-            foreach (var ancestor in ancestors)
-            {
-                propertyPathBuilder.Append(m_FrameDataView.GetItemFunctionName(ancestor));
-                propertyPathBuilder.Append('/');
-            }
-            propertyPathBuilder.Append(m_FrameDataView.GetItemFunctionName(id));
-            SetSelectedPropertyPath(propertyPathBuilder.ToString());
+            SetSelectedPropertyPath(m_FrameDataView.GetItemPath(id));
         }
 
         void CPUOrGPUViewTypeChanged(ProfilerViewType viewtype)
         {
             if (m_ViewType == viewtype)
                 return;
-
-            if (m_ViewType == ProfilerViewType.Timeline)
-                m_CPUFrameDataHierarchyView.SetSelectionFromLegacyPropertyPath(ProfilerDriver.selectedPropertyPath);
 
             m_ViewType = viewtype;
         }

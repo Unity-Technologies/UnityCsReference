@@ -123,7 +123,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     processedAssemblies.Add(assembly, messagesList.ToArray());
 
                     if (!CompileErrors)
-                        CompileErrors = messages.Any(m => m.type == CompilerMessageType.Error);
+                        CompileErrors = messagesList.Any(m => m.type == CompilerMessageType.Error);
 
                     compilerTasks.Remove(assembly);
                     compiler.Dispose();
@@ -173,6 +173,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     if (!processedAssemblies.TryGetValue(reference, out messages))
                     {
+                        // If a reference is not compiling and not pending
+                        // also remove this assembly from pending.
+                        if (!compilerTasks.ContainsKey(reference) && !pendingAssemblies.Contains(reference))
+                        {
+                            if (removePendingAssemblies == null)
+                                removePendingAssemblies = new List<ScriptAssembly>();
+
+                            removePendingAssemblies.Add(pendingAssembly);
+                        }
+
                         compileAssembly = false;
                         break;
                     }
@@ -215,7 +225,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // No assemblies to compile, need to wait for more references to finish compiling.
             if (assemblyCompileQueue == null)
             {
-                UnityEngine.Assertions.Assert.IsTrue(compilerTasks.Count > 0, "No pending assemblies queued for compilation and no compilers running. Compilation will never finish.");
+                if (compilerTasks.Count() == 0)
+                    throw new Exception("No pending assemblies queued for compilation and no compilers running. Compilation will never finish.");
                 return;
             }
 

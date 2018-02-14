@@ -33,6 +33,15 @@ namespace UnityEngine
             Unknown
         }
 
+        public enum FalloffType : byte
+        {
+            InverseSquared,
+            InverseSquaredNoRangeAttenuation,
+            Linear,
+            Legacy,
+            Undefined
+        }
+
         // The linear color struct contains 4 values. 3 values are for specifying normalized RGB values, in other words they're between 0 and 1.
         // The fourth value is an positive unbounded intensity value. Color information in this struct must always be in linear space.
         // When converting a Unity color that's either in linear or gamma space, the Convert function will make sure to account for all relevant
@@ -141,6 +150,7 @@ namespace UnityEngine
             public LinearColor  indirectColor;
             public float        range;
             public float        sphereRadius;
+            public FalloffType  falloff;
         }
         public struct SpotLight
         {
@@ -159,6 +169,7 @@ namespace UnityEngine
             public float        sphereRadius;
             public float        coneAngle;
             public float        innerConeAngle;
+            public FalloffType  falloff;
         }
         public struct RectangleLight
         {
@@ -202,7 +213,7 @@ namespace UnityEngine
             public LightType    type;
             public LightMode    mode;
             public byte         shadow;
-            private const byte _pad = 0; // explicitly align to 4 bytes
+            public FalloffType  falloff;
 
             public void Init(ref DirectionalLight light)
             {
@@ -219,6 +230,7 @@ namespace UnityEngine
                 type           = LightType.Directional;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = FalloffType.Undefined;
             }
 
             public void Init(ref PointLight light)
@@ -236,6 +248,7 @@ namespace UnityEngine
                 type           = LightType.Point;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = light.falloff;
             }
 
             public void Init(ref SpotLight light)
@@ -253,6 +266,7 @@ namespace UnityEngine
                 type           = LightType.Spot;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = light.falloff;
             }
 
             public void Init(ref RectangleLight light)
@@ -270,6 +284,7 @@ namespace UnityEngine
                 type           = LightType.Rectangle;
                 mode           = light.mode;
                 shadow         = (byte)(light.shadow ? 1 : 0);
+                falloff        = FalloffType.Undefined;
             }
 
             public void InitNoBake(int lightInstanceID)
@@ -319,6 +334,7 @@ namespace UnityEngine
                 point.indirectColor = ExtractIndirect(l);
                 point.range         = l.range;
                 point.sphereRadius = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
+                point.falloff      = FalloffType.Legacy;
             }
 
             public static void Extract(Light l, ref SpotLight spot)
@@ -331,16 +347,17 @@ namespace UnityEngine
                 spot.color         = LinearColor.Convert(l.color, l.intensity);
                 spot.indirectColor = ExtractIndirect(l);
                 spot.range         = l.range;
-                spot.sphereRadius = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
+                spot.sphereRadius  = l.shadows == LightShadows.Soft ? l.shadowRadius : 0.0f;
                 spot.coneAngle     = l.spotAngle * Mathf.Deg2Rad;
                 spot.innerConeAngle = ExtractInnerCone(l);
+                spot.falloff       = FalloffType.Legacy;
             }
 
             public static void Extract(Light l, ref RectangleLight rect)
             {
-                rect.instanceID    = l.GetInstanceID();
+                rect.instanceID     = l.GetInstanceID();
                 rect.mode           = Extract(l.lightmapBakeType);
-                rect.shadow        = l.shadows != LightShadows.None;
+                rect.shadow         = l.shadows != LightShadows.None;
                 rect.position       = l.transform.position;
                 rect.orientation    = l.transform.rotation;
                 rect.color          = LinearColor.Convert(l.color, l.intensity);

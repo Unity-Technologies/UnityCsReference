@@ -45,6 +45,7 @@ namespace UnityEditorInternal
         public ProfilerChart(ProfilerArea area, Chart.ChartType type, float dataScale, int seriesCount) : base()
         {
             labelRange = new Vector2(Mathf.Epsilon, Mathf.Infinity);
+            graphRange = new Vector2(Mathf.Epsilon, Mathf.Infinity);
             m_Area = area;
             m_Type = type;
             m_DataScale = dataScale;

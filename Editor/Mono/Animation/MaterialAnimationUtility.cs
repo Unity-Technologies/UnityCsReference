@@ -66,8 +66,8 @@ namespace UnityEditorInternal
                 undoModifications[i].previousValue = modifications[i];
             }
 
-            UndoPropertyModification[] ret = Undo.postprocessModifications(undoModifications);
-            return (ret.Length != modifications.Length);
+            UndoPropertyModification[] ret = Undo.InvokePostprocessModifications(undoModifications);
+            return ret.Length != modifications.Length;
         }
 
         static public bool OverridePropertyColor(MaterialProperty materialProp, Renderer target, out Color color)

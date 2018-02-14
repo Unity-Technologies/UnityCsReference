@@ -144,11 +144,22 @@ namespace UnityEditorInternal
 
         public void SetSelectionFromLegacyPropertyPath(string selectedPropertyPath)
         {
-            if (string.IsNullOrEmpty(selectedPropertyPath))
+            // if the path is the same as the current selection, don't change anything
+            if (m_SelectedItemMarkerIdPath != null && PropertyPathMatchesSelectedIDs(selectedPropertyPath, state.selectedIDs))
                 return;
 
             m_LegacySelectedItemMarkerNamePath = selectedPropertyPath;
             m_SelectedItemMarkerIdPath = null;
+        }
+
+        private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
+        {
+            if (string.IsNullOrEmpty(legacyPropertyPath) || selectedIDs == null || selectedIDs.Count == 0)
+            {
+                return string.IsNullOrEmpty(legacyPropertyPath) && (selectedIDs == null || selectedIDs.Count == 0);
+            }
+
+            return m_FrameDataView.GetItemPath(selectedIDs[0]) == legacyPropertyPath;
         }
 
         void StoreSelectedState()
@@ -182,13 +193,14 @@ namespace UnityEditorInternal
             state.expandedIDs = newExpandedIds;
         }
 
-        void MigrateSelectedState()
+        void MigrateSelectedState(bool expandIfNecessary)
         {
             if (m_SelectedItemMarkerIdPath == null && m_LegacySelectedItemMarkerNamePath == null)
                 return;
 
             // Find view id which corresponds to markerPath
             var newSelectedId = m_FrameDataView.GetRootItemID();
+            bool selectedItemsPathIsExpanded = true;
             if (m_SelectedItemMarkerIdPath != null)
             {
                 foreach (var marker in m_SelectedItemMarkerIdPath.Value.markerIds)
@@ -198,6 +210,10 @@ namespace UnityEditorInternal
                     {
                         if (marker == m_FrameDataView.GetItemMarkerID(childId))
                         {
+                            // check if the parent is expanded
+                            if (!IsExpanded(newSelectedId))
+                                selectedItemsPathIsExpanded = false;
+
                             newSelectedId = childId;
                             break;
                         }
@@ -218,6 +234,10 @@ namespace UnityEditorInternal
                     {
                         if (markerName == m_FrameDataView.GetItemFunctionName(childId))
                         {
+                            // check if the parent is expanded
+                            if (!IsExpanded(newSelectedId))
+                                selectedItemsPathIsExpanded = false;
+
                             newSelectedId = childId;
                             markerIdPath.Add(m_FrameDataView.GetItemMarkerID(childId));
                             break;
@@ -232,9 +252,12 @@ namespace UnityEditorInternal
                 m_LegacySelectedItemMarkerNamePath = null;
             }
 
+
             var newSelection = (newSelectedId == 0) ? new List<int>() : new List<int>() { newSelectedId };
             state.selectedIDs = newSelection;
-            FrameItem(newSelectedId);
+
+            if (newSelectedId != 0 && isInitialized && (selectedItemsPathIsExpanded || expandIfNecessary))
+                FrameItem(newSelectedId);
         }
 
         public IList<int> GetSelectedInstanceIds()
@@ -285,7 +308,7 @@ namespace UnityEditorInternal
             }
 
             MigrateExpandedState(newExpandedIds);
-            MigrateSelectedState();
+            MigrateSelectedState(false);
 
             return m_Rows;
         }
@@ -465,7 +488,7 @@ namespace UnityEditorInternal
         public override void OnGUI(Rect rect)
         {
             if (m_LegacySelectedItemMarkerNamePath != null)
-                MigrateSelectedState();
+                MigrateSelectedState(true);
 
             base.OnGUI(rect);
         }

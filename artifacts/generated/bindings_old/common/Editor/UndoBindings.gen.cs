@@ -187,12 +187,20 @@ public static void RegisterUndo(Object[] objectsToUndo, string name)
     public static PostprocessModifications postprocessModifications;
     
     
-    private static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
+    internal static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
         {
-            if (postprocessModifications != null)
-                return postprocessModifications(modifications);
-            else
+            if (postprocessModifications == null)
                 return modifications;
+
+            var delegates = postprocessModifications.GetInvocationList();
+            var remainingModifications = modifications;
+
+            for (int i = 0, n = delegates.Length; i < n; ++i)
+            {
+                remainingModifications = ((Undo.PostprocessModifications)delegates[i]).Invoke(remainingModifications);
+            }
+
+            return remainingModifications;
         }
     
     

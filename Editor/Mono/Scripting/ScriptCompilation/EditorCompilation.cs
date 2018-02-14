@@ -151,6 +151,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             dirtyScripts.Add(path);
         }
 
+        public void ClearDirtyScripts()
+        {
+            dirtyScripts.Clear();
+            areAllScriptsDirty = false;
+        }
+
         public void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             runScriptUpdaterAssemblies.Add(assemblyFilename);
@@ -761,7 +767,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath))
                     {
                         messages.Add(new CompilerMessage { message = string.Format("Copying assembly from directory {0} to {1} failed", tempBuildDirectory, assembly.OutputDirectory), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
-                        StopAllCompilation();
+                        StopCompilationTask();
                         InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
@@ -786,6 +792,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var convertedMessages = ConvertCompilerMessages(messages);
                 assemblyCompilationFinished(assemblyOutputPath, convertedMessages);
             }
+        }
+
+        public bool AreAllScriptsDirty()
+        {
+            return areAllScriptsDirty;
         }
 
         public bool DoesProjectFolderHaveAnyDirtyScripts()
@@ -898,11 +909,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void StopAllCompilation()
         {
-            if (compilationTask != null)
-            {
-                compilationTask.Stop();
-                compilationTask = null;
-            }
+            StopCompilationTask();
+            compilationTask = null;
+        }
+
+        public void StopCompilationTask()
+        {
+            if (compilationTask == null)
+                return;
+
+            compilationTask.Stop();
         }
 
         internal static OptionalUnityReferences ToOptionalUnityReferences(EditorScriptCompilationOptions editorScriptCompilationOptions)
