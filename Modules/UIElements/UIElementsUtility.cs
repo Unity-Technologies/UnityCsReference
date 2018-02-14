@@ -81,6 +81,11 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
+        public static void RemoveCachedPanel(int instanceID)
+        {
+            s_UIElementsCache.Remove(instanceID);
+        }
+
         private static void CleanupRoots()
         {
             // see GUI.CleanupRoots

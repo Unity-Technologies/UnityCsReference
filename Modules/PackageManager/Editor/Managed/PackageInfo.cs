@@ -64,7 +64,8 @@ namespace UnityEditor.PackageManager
             string tag = "",
             PackageStatus status = PackageStatus.Unavailable,
             IEnumerable<Error> errors = null,
-            VersionsInfo versions = null)
+            VersionsInfo versions = null,
+            string version = "")
         {
             // Set the default values
             m_OriginType = OriginType.Unknown;
@@ -80,7 +81,7 @@ namespace UnityEditor.PackageManager
             // Populate name and version
             var nameAndVersion = packageId.Split('@');
             m_Name = nameAndVersion[0];
-            m_Version = nameAndVersion[1];
+            m_Version = !string.IsNullOrEmpty(version) ? version : nameAndVersion[1];
         }
 
         public string packageId { get { return m_PackageId;  } }

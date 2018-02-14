@@ -174,6 +174,8 @@ namespace UnityEngine.Experimental.UIElements
                 s_Pool.Release(evt);
                 // To avoid double release from pool
                 evt.flags &= ~EventFlags.Pooled;
+                // Set target to null before pooling to avoid leaking VisualElement
+                evt.target = null;
             }
         }
 

@@ -53,7 +53,6 @@ namespace UnityEditor
             Editor.m_AllowMultiObjectAccess = true;
 
             CreatePreviewables();
-            AssignAssetEditor(tracker.activeEditors);
 
             // Do we have an editor that supports previews? Null if not.
             IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);

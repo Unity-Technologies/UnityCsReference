@@ -180,6 +180,28 @@ namespace UnityEngine.Analytics
             customEvent.AddDictionary(eventData);
             return unityAnalyticsHandler.SendCustomEvent(customEvent);
         }
+
+        public static AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey = "", string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
+            if (unityAnalyticsHandler == null)
+                return AnalyticsResult.NotInitialized;
+            return unityAnalyticsHandler.RegisterEvent(eventName,  maxEventPerHour, maxItems, vendorKey, prefix);
+        }
+
+        public static AnalyticsResult SendEvent(string eventName, object parameters, int ver = 1, string prefix = "")
+        {
+            if (string.IsNullOrEmpty(eventName))
+                throw new ArgumentException("Cannot set event name to an empty or null string");
+            if (parameters == null)
+                throw new ArgumentException("Cannot set parameters to null");
+            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
+            if (unityAnalyticsHandler == null)
+                return AnalyticsResult.NotInitialized;
+            return unityAnalyticsHandler.SendEvent(eventName, parameters, ver, prefix);
+        }
     }
 }
 

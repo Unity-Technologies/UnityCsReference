@@ -99,6 +99,8 @@ namespace UnityEditor
                 UnityEngine.Object.DestroyImmediate(w, true);
             }
 
+            m_Panes.Clear();
+
             base.OnDestroy();
         }
 

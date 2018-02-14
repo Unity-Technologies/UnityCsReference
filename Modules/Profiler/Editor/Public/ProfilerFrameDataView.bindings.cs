@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -183,6 +184,19 @@ namespace UnityEditorInternal.Profiling
             markerIds.Add(GetItemMarkerID(id));
 
             return new MarkerPath(markerIds);
+        }
+
+        public string GetItemPath(int id)
+        {
+            var ancestors = GetItemAncestors(id);
+            var propertyPathBuilder = new StringBuilder();
+            for (int i = ancestors.Length - 1; i >= 0; i--)
+            {
+                propertyPathBuilder.Append(GetItemFunctionName(ancestors[i]));
+                propertyPathBuilder.Append('/');
+            }
+            propertyPathBuilder.Append(GetItemFunctionName(id));
+            return propertyPathBuilder.ToString();
         }
 
         public static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);

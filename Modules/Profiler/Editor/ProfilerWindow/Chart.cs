@@ -66,6 +66,7 @@ namespace UnityEditorInternal
 
         public GUIContent legendHeaderLabel { get; set; }
         public Vector2 labelRange { get; set; }
+        public Vector2 graphRange { get; set; }
 
         int m_DragItemIndex = -1;
         Vector2 m_DragDownPos;
@@ -75,6 +76,7 @@ namespace UnityEditorInternal
         public Chart()
         {
             labelRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
+            graphRange = new Vector2(-Mathf.Infinity, Mathf.Infinity);
         }
 
         private int MoveSelectedFrame(int selectedFrame, ChartViewData cdata, int direction)
@@ -677,7 +679,7 @@ namespace UnityEditorInternal
             {
                 m_LineDrawingPoints[i].Set(
                     (series.xValues[i] - domain.x) * domainScale + r.x,
-                    rectBottom - (series.yValues[i] - series.rangeAxis.x) * rangeScale,
+                    rectBottom - (Mathf.Clamp(series.yValues[i], graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                     0f
                     );
             }

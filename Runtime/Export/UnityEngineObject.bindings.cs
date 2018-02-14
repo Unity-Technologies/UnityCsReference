@@ -145,7 +145,11 @@ namespace UnityEngine
         }
 
         // The name of the object.
-        public extern string name { get; set; }
+        public string name
+        {
+            get { return GetName(this); }
+            set { SetName(this, value); }
+        }
 
         // Clones the object /original/ and returns the clone.
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
@@ -345,6 +349,12 @@ namespace UnityEngine
 
         [FreeFunction("UnityEngineObjectBindings::ToString")]
         extern static string ToString(Object obj);
+
+        [FreeFunction("UnityEngineObjectBindings::GetName")]
+        extern static string GetName(Object obj);
+
+        [FreeFunction("UnityEngineObjectBindings::SetName")]
+        extern static void SetName(Object obj, string name);
 
         [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
         internal extern static bool DoesObjectWithInstanceIDExist(int instanceID);

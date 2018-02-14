@@ -80,7 +80,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private abstract class SingleQueryMatcher : UQueryMatcher
         {
-            public VisualElement match { get; protected set; }
+            public VisualElement match { get; set; }
 
             public override void Run(VisualElement root, List<RuleMatcher> matchers)
             {
@@ -484,14 +484,21 @@ namespace UnityEngine.Experimental.UIElements
             public T First()
             {
                 s_First.Run(m_Element, m_Matchers);
-                return s_First.match as T;
+
+                // We need to make sure we don't leak a ref to the VisualElement.
+                var match = s_First.match as T;
+                s_First.match = null;
+                return match;
             }
 
             public T Last()
             {
                 s_Last.Run(m_Element, m_Matchers);
 
-                return s_Last.match as T;
+                // We need to make sure we don't leak a ref to the VisualElement.
+                var match = s_Last.match as T;
+                s_Last.match = null;
+                return match;
             }
 
             private class ListQueryMatcher : UQueryMatcher
@@ -531,7 +538,10 @@ namespace UnityEngine.Experimental.UIElements
                 s_Index.matchIndex = index;
                 s_Index.Run(m_Element, m_Matchers);
 
-                return s_Index.match as T;
+                // We need to make sure we don't leak a ref to the VisualElement.
+                var match = s_Index.match as T;
+                s_Index.match = null;
+                return match;
             }
 
             //Convoluted trick so save on allocating memory for delegates or lambdas
