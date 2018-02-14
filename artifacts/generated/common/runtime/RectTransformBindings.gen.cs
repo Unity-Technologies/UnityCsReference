@@ -65,11 +65,11 @@ public partial struct DrivenRectTransformTracker
             if (m_Tracked == null)
                 m_Tracked = new List<RectTransform>();
 
-            rectTransform.drivenByObject = driver;
-            rectTransform.drivenProperties = rectTransform.drivenProperties | drivenProperties;
-
             if (!Application.isPlaying && CanRecordModifications())
                 RuntimeUndo.RecordObject(rectTransform, "Driving RectTransform");
+
+            rectTransform.drivenByObject = driver;
+            rectTransform.drivenProperties = rectTransform.drivenProperties | drivenProperties;
 
             m_Tracked.Add(rectTransform);
         }
